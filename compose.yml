@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    container_name: linker-db
+    environment:
+      POSTGRES_DB: linker
+      POSTGRES_USER: linker
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - "127.0.0.1:5500:5432"
+    volumes:
+      - linker_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linker -d linker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  linker_postgres_data:
