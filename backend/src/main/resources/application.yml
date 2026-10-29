@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: linker-backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5500/linker}
+    username: ${DB_USERNAME:linker}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
