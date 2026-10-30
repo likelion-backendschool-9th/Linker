@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "dev:mock": "cross-env NEXT_PUBLIC_USE_MOCKS=true next dev"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -55,6 +56,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.2",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "jsdom": "^30.1.3",

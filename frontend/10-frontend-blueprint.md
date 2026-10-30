@@ -15,6 +15,7 @@
 | App | Expo + react-native-webview. Every screen is web; native handles login return, push, share, back, external links |
 | State | Server data = TanStack Query (orval hooks) · URL state (tabs, filters, overlays) = nuqs · other UI = Zustand |
 | UI | CSS Modules + CSS tokens · `radix-ui` · Motion (LazyMotion + `m`) · TanStack Virtual · dnd-kit · react-hook-form + zod · date-fns + `@date-fns/tz` |
+| Mock data | `pnpm dev:mock`: `apiFetch` answers from `src/mocks/` (one file per page, 09 WBS paths) until Spring is live (§1-2) |
 | Realtime · Tests | `@stomp/stompjs` (Spring STOMP) · Vitest + Testing Library + vitest-axe, Playwright + @axe-core/playwright, MSW (orval mocks) |
 | A11y · Search | WCAG 2.2 AA, KWCAG 2.2 · metadata + OG on every page; only developer profiles, posts, recruit posts indexed (POL-A-9) |
 
@@ -62,6 +63,19 @@ Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](
 - [ ] Android app: open sheet, hardware back → only the sheet closes; twice on the first screen exits
 - [ ] One orval hook loads `GET /api/v1/user/me` and shows the member type
 - [ ] axe: 0 violations on the empty page
+
+### 1-2. Mock data mode (until the backend APIs are live)
+Frontend work is due before Spring is ready (target 2 Nov), so pages are built and checked against mock data. **The page code is the real code**: it calls orval hooks / `apiFetch` exactly as it will with Spring, and the mock layer answers underneath. Nothing in a page, `_lib` or component may know about mocks.
+- **On/off**: `pnpm dev:mock` (= `NEXT_PUBLIC_USE_MOCKS=true next dev`). Off by default, and the build drops all mock code when off (`next.config.ts` always defines the flag; check with `grep -r MOCK_NOT_IMPLEMENTED .next`).
+- **Where it plugs in**: only `lib/api/api-fetch.ts` (server and browser), `lib/realtime/stomp-client.ts` (no socket; an in-tab bus makes chat work) and `features/image-upload/upload-image.ts` (no storage PUT). Each guards with `process.env.NEXT_PUBLIC_USE_MOCKS === 'true'` written out, never a shared constant, or the bundler keeps the mock chunks.
+- **Folder**: `src/mocks/` — one file per page, `pages/pNN-<name>.ts`, exporting `routes: MockRoute[]` with the **same path as 09 WBS**. Shared rows live in `fixtures/` (users, teams, issues, posts, recruits, chat, tech tags); `core/define.ts` has `get/post/put/patch/del`, `fail()`, `paginate()` and time helpers. New page → add its file to `mocks/routes.ts`.
+- **Permissions follow the URL prefix** like the real API: `/api/v1/user|recruiter|admin` answer a guest with 401 `LOGIN_REQUIRED` (so the login sheet path is exercised), `/recruiter` and `/admin` 403 other roles, `{ only: 'developer' }` 403 `DEVELOPER_ONLY` for recruiters.
+- **Who is logged in**: a plain cookie `linker_mock_role` = `guest | developer | newcomer (onboarding not done) | recruiter | operator`. Use the "목업 계정" switcher bottom-left, or open `/api/mock/login/<role>?returnTo=/path`. `proxy.ts` and `session.ts` read it instead of the JWT, so guards behave as in production. "GitHub로 시작" in mock mode just logs in as a developer.
+- **State**: writes (follow, like, comment, issue status/assignee/schedule, apply/accept, chat send, recruit/post create …) change in-memory data, so lists and detail screens follow. Server and browser each keep their own copy: a write made in the browser disappears on a full reload and server renders never see it.
+- **Errors you can trigger**: the mocks return the real error codes for the cases in 04 (`PLAN_LIMIT`, `RATE_LIMITED`, `GITHUB_PERMISSION`, `ALREADY_MEMBER`, …). Team 2 is read-only for the mock user, team 1 is Flex and team 2 free, invite codes `demo-expired` / `demo-revoked` / `demo-member` / `demo-full`, recruiter login `jihyun.song@nextlab.example` / `password1234`, email code `123456`. See the header comment of each mock file.
+- **Response shapes are provisional.** They follow the endpoint descriptions in 09 WBS, not a real OpenAPI. When the backend publishes `/v3/api-docs`: run `pnpm generate`, switch pages from hand-written types to the orval hooks, fix field-name differences in the page, and either delete that page's mock file or let orval's MSW mocks take over. Keep the mock file until the real API for that page is verified.
+- A missing mock answers 404 `MOCK_NOT_IMPLEMENTED` and logs `[mock] no mock for …` in the console. A page that needs a field the mock lacks adds it to the mock (and its fixture), not to the page.
+- Tests: `src/mocks/mock-fetch.test.ts` checks the route table (no duplicates, permission prefixes) and the main rules. Component tests keep using MSW in `src/mocks/handlers.ts`.
 
 ## 2. Monorepo structure
 `apps/web`, `apps/mobile`, `packages/{api,bridge,config}`, `turbo.json`, `pnpm-workspace.yaml`.
@@ -117,6 +131,8 @@ src/lib/        api/ (api-fetch, api-error, query-client)  auth/ (session, route
                 navigation/ (use-overlay, overlay-keys, nav-depth, use-app-back)  bridge/  realtime/
                 seo/ (metadata, seo-flags)  format/ (time KST, number "1.2천", text counts)  browser/ (safe-storage)  policy.ts
 src/stores/     Zustand (no server data, no overlays)
+src/mocks/      core/ (define, viewer)  fixtures/  pages/pNN-*.ts  routes.ts  mock-fetch.ts  mock-realtime.ts — dev data, ch. 1-2
+src/features/mock/  MockRoleSwitcher (mock mode only)   public/mock/  placeholder images
 src/styles/     globals.css  tokens.css  tokens/{color,typography,layout}.css
 ```
 
@@ -491,12 +507,14 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 - [ ] Checked with recruiter and developer seed accounts (multi-role pages)
 - [ ] No horizontal scroll at 360px; everything works by keyboard
 - [ ] 0 axe violations (Vitest + vitest-axe, Playwright + axe)
+- [ ] Works with `pnpm dev:mock` as each role the page allows; a field the page needs is in the page's mock file (§1-2)
 - [ ] Numbers come from `policy.ts`; passes the [11 Design Guide](./11-design-guide.md) ch. 8 checklist
 
 ## 15. Alignment with backend and other docs
 - **JWT claims** (09 WBS 00 A task): `sub`, `typ` (`DEVELOPER`/`RECRUITER`), `adm`, `onb`, `st` (`ACTIVE`/`SUSPENDED`/`WITHDRAWING`). Asymmetric signature (RS256 etc.); the web holds only the public key. Reissue on onboarding completion, suspension, unsuspension, operator assignment. Cookie `Domain=.<domain>`, `HttpOnly; Secure; SameSite=Lax`.
 - **CORS**: `api.` allows `credentials: true` for the `app.` origin; the STOMP handshake uses the same cookie.
 - **orval tags**: `@Tag(name = "pNN-…")` per controller; renaming breaks frontend imports.
+- **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from 09 WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
 - **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 `LoginController` (not in 09 WBS yet).
 - **GitHub App callback URLs**: register web `/auth/callback` and app (`?client=app` or a separate URL).
 - **Search**: sitemap lists from 09 WBS 00 `SitemapController` (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.

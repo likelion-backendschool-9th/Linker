@@ -51,6 +51,12 @@ Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The
 - CSS Modules next to the component; read every color, size, space, and radius through `var(--token)` from `styles/tokens/`. Never a raw hex, font size, or radius in a component. Add missing values to the tokens and the guide first.
 - Text on tinted surfaces uses `--color-text-subtle-on-tint`; text on dark surfaces uses `--color-text-inverse*`. Accent is never a CTA fill. No shadows except `--shadow-segment-active`.
 
+## Mock data (blueprint §1-2)
+- Until Spring is live, run `pnpm dev:mock`. Pages call orval/`apiFetch` as usual; `src/mocks/` answers. Pages, components and `_lib` never reference mocks, `USE_MOCKS` or `linker_mock_role`.
+- One mock file per page in `src/mocks/pages/pNN-*.ts` with the 09 WBS path; shared rows in `fixtures/`; register new files in `mocks/routes.ts`. Missing field → add it to the mock, not a fallback in the page.
+- Log in as a role with the "목업 계정" switcher or `/api/mock/login/<role>`. Response shapes are provisional; verify against OpenAPI once it exists.
+- Check mock code stays out of the normal build: `grep -r MOCK_NOT_IMPLEMENTED apps/web/.next` must find nothing.
+
 ## Caching (blueprint ch. 9)
 - Next fetch cache only for cookie-less public data (legal, tech tags, job categories, contribution graph). Plans include personal trial eligibility: server `no-store`, no shared Next cache. Per-user data uses TanStack Query `staleTime` per §9-1.
 

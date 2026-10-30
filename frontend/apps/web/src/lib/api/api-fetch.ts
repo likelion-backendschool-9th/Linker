@@ -4,6 +4,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 
 /** orval mutator. Works on the server and in the browser (blueprint §5-4). */
 export async function apiFetch<T>(url: string, init: RequestInit = {}): Promise<T> {
+  // Mock mode (blueprint §1-2): answered from src/mocks/, never reaches Spring
+  // Written out (not the shared USE_MOCKS const) so the bundler can drop this branch and the mock code
+  if (process.env.NEXT_PUBLIC_USE_MOCKS === 'true') {
+    const { mockFetch } = await import('@/mocks/mock-fetch');
+    return mockFetch<T>(url, init);
+  }
+
   const isServer = typeof window === 'undefined';
   const headers = new Headers(init.headers);
   if (isServer) {

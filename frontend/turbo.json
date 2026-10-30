@@ -17,6 +17,10 @@
       "env": ["API_INTERNAL_URL"],
       "persistent": true
     },
+    "dev:mock": {
+      "cache": false,
+      "persistent": true
+    },
     "lint": {},
     "typecheck": {},
     "test": {}
