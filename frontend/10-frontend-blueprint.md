@@ -547,6 +547,7 @@ export async function apiFetch<T>(url: string, init: RequestInit = {}): Promise<
 
 - Shared handling per error code (`query-client.ts`): `LOGIN_REQUIRED` → login-prompt sheet, `PLAN_LIMIT` → limit sheet (links to `/subscribe?reason=` with the limit name from `detail`), `RATE_LIMITED` → "잠시 후 다시 시도해 주세요" (please try again shortly) + time remaining, `SUSPENDED` → suspension banner, `GITHUB_UNAVAILABLE` → GitHub instability banner.
 - Public data you want cached is fetched by the separate server functions in ch. 9 (attaching cookies makes the response per-person, so it can't be cached).
+- Container execution: `api-fetch.ts` uses the server-only `API_INTERNAL_URL` for server requests when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Browser requests use the public build-time origin. Local container setup is documented in [DOCKER.md](../DOCKER.md); this does not introduce a BFF.
 
 ---
 
