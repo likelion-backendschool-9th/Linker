@@ -3,19 +3,69 @@
 Nginx, Next.js 웹, Spring Boot, PostgreSQL 16, Redis 7을 함께 실행하는 로컬 구성입니다.
 Docker Engine/Desktop과 Docker Compose가 필요하며 Node·pnpm·Java는 컨테이너에서 설치합니다.
 
-## 시작
+## 시작 전 준비
 
 루트 `.env`가 없다면 `.env.example`을 복사하고 `DB_PASSWORD`를 설정합니다.
 이미 `.env`가 있으면 덮어쓰지 말고 필요한 키만 추가하세요.
 
 ```bash
 cp .env.example .env
-docker compose up -d --build --wait --wait-timeout 240
-docker compose ps
 ```
 
 최초 빌드는 Node·Java 이미지와 의존성을 내려받으므로 시간이 걸릴 수 있습니다.
 `.env`의 비밀값은 커밋하지 않습니다.
+
+## 화면 개발: 저장하면 바로 반영
+
+Docker Compose **2.32 이상**에서 다음 개발용 명령을 사용합니다. `docker compose version`으로 버전을 확인할 수 있습니다.
+
+```bash
+docker compose -f compose.yml -f compose.dev.yml up --build --watch
+```
+
+터미널을 열어 둔 채 **http://localhost:8000**에 접속하고 프론트 파일을 수정·저장하면 됩니다.
+Compose Watch가 소스를 컨테이너로 복사하고 Next.js 개발 서버가 변경을 반영합니다. 페이지·컴포넌트·CSS 수정에는 이미지 재빌드가 필요하지 않습니다.
+일부 변경은 Fast Refresh 대신 브라우저 전체 새로고침으로 반영될 수 있습니다.
+
+| 변경 대상 | 개발 모드 동작 |
+| --- | --- |
+| `frontend/apps/web`의 소스·정적 파일 | 동기화 후 Next.js에서 반영 |
+| `frontend/packages`의 공유 소스·생성 API | 동기화 후 사용하는 화면에서 반영 |
+| `next.config.ts` | 동기화 후 웹 컨테이너 자동 재시작 |
+| package.json·pnpm-lock.yaml·workspace 설정·Dockerfile | 웹 이미지 자동 재빌드·컨테이너 재생성 |
+| `.env` 등 환경변수 | 자동 동기화하지 않음. 실행을 종료한 뒤 변경하고 `--build`로 다시 시작 |
+| 백엔드 소스 | 자동 반영 대상 아님. 백엔드 이미지 재빌드 필요 |
+
+라이브러리를 추가할 때는 호스트의 package.json과 lockfile을 함께 갱신해야 합니다. 동기화는 **호스트 → 컨테이너 단방향**이므로 컨테이너 안에서만 수정한 파일은 호스트에 저장되지 않습니다.
+`node_modules`, `.next`, 실제 `.env`는 동기화하지 않습니다. 호스트와 컨테이너의 의존성·빌드 파일이 섞이지 않으며 소스를 호스트에 root 소유로 생성하지 않습니다.
+Nginx는 Next.js 자동 갱신용 `/_next/hmr`·`/_next/webpack-hmr` 연결을 웹으로 전달합니다. Spring 채팅용 `/ws`와는 다른 연결입니다. 개발 리소스 접근은 `localhost`·`127.0.0.1`을 허용합니다.
+
+개발 종료는 실행 터미널에서 **Ctrl+C**를 누르고, 컨테이너를 제거하려면 다음 명령을 사용합니다. 데이터 볼륨은 유지됩니다.
+
+```bash
+docker compose -f compose.yml -f compose.dev.yml down
+```
+
+백그라운드 실행이 필요하면 아래처럼 시작한 뒤, 두 번째 명령으로 파일 감시를 유지할 수도 있습니다.
+
+```bash
+docker compose -f compose.yml -f compose.dev.yml up -d --build --wait --wait-timeout 240
+docker compose -f compose.yml -f compose.dev.yml watch --no-up
+```
+
+파일 감시를 종료하면 이후 저장한 변경은 자동 반영되지 않습니다. 다시 시작할 때 초기 동기화로 중간에 수정한 소스를 반영합니다.
+
+## 빌드된 앱 실행: 배포 전 확인
+
+기존 명령은 계속 빌드된 앱을 실행합니다. 이 모드는 소스 변경 후 재빌드가 필요합니다.
+두 모드는 같은 서비스·포트를 사용하므로 동시에 실행하지 말고, 기존 모드를 종료한 뒤 전환하세요.
+
+```bash
+docker compose up -d --build --wait --wait-timeout 240
+docker compose ps
+```
+
+개발 설정을 지정하지 않으면 Dockerfile의 마지막 `runtime` 단계를 사용합니다. 개발 서버와 Compose Watch는 실제 공개 서버에서 사용하지 않습니다.
 
 | 서비스 | 로컬 주소 | 준비 상태 확인 |
 | --- | --- | --- |
@@ -40,6 +90,7 @@ DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 
 | `/api/v1/*` (GitHub 웹훅 포함) | Spring `backend:8080` | 경로·쿼리·메서드·본문·쿠키를 전달. API는 후속 구현 |
 | `/api/bff/*` | Next.js `web:3000` | BFF 구현을 위한 경로 예약. 현재 404 |
 | `/ws`, `/ws/*` | Spring `backend:8080` | WebSocket Upgrade 헤더·300초 timeout 설정. STOMP 서버 구현 전에는 404 |
+| `/_next/hmr`, `/_next/webpack-hmr` | Next.js `web:3000` | 개발 모드의 브라우저 자동 갱신 연결 |
 
 `nginx/default.conf`가 위 경로를 정의합니다. 컨테이너가 재생성되어 IP가 바뀌면 Docker DNS로 다시 조회합니다.
 인증 쿠키를 JavaScript에 노출하거나 별도의 사용자 ID 헤더로 변환하지 않습니다. 실제 로그인·쿠키 발급·WebSocket 권한 검사는 아직 구현 전입니다.
@@ -72,7 +123,7 @@ docker compose up -d --build --wait --wait-timeout 240
 docker compose down
 ```
 
-이 구성은 빌드된 앱을 실행합니다. 소스를 수정하면 재빌드가 필요하며, 개발용 hot reload 마운트는 아직 추가하지 않았습니다.
+기본 구성은 빌드된 앱을 실행하며, `compose.dev.yml`을 함께 지정하면 개발 서버와 소스 동기화 규칙을 사용합니다.
 웹 이미지는 프론트 모노레포를 컨텍스트로 사용하고 `web` 및 공유 패키지 의존성만 설치합니다. Expo 앱은 이미지에 포함하지 않습니다.
 Next.js standalone 서버는 공유 패키지를 포함하도록 모노레포 루트까지 파일을 추적합니다.
 API 생성은 실행 중인 서버에 의존하므로 이미지 빌드 중 자동 실행하지 않습니다. 페이지가 생성 API를 사용하게 되면 빌드 전에 OpenAPI 기반 생성물을 준비해야 합니다.

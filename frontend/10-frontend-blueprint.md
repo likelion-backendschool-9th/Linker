@@ -68,6 +68,7 @@ Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](
 - No `packages/ui`; base components live in `apps/web/src/components/ui`.
 - `pnpm-workspace.yaml`: `onlyBuiltDependencies: [sharp, esbuild]` (pnpm 10 blocks install scripts).
 - If Metro can't resolve modules, set `node-linker=hoisted` in `.npmrc`.
+- Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [DOCKER.md](../DOCKER.md) for mode switching and dependency/environment changes.
 
 ### 2-1. orval (`packages/api`)
 - Generated from springdoc `/v3/api-docs`. Controller `@Tag` = page (09 WBS §1-3 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).

@@ -5,6 +5,7 @@ const imageHost = process.env.NEXT_PUBLIC_IMAGE_HOST;
 
 // cacheComponents stays off for the MVP (blueprint §9-2)
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['localhost', '127.0.0.1'],
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
   typedRoutes: true,
