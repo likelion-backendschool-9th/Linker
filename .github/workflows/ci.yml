@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # 어떤 폴더가 바뀌었는지 판별
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
+  frontend:
+    name: frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  backend:
+    name: backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - run: chmod +x gradlew
+      # 테스트가 DB 없이 돌 수 있게 세팅되면 `-x test` 지우기
+      - run: ./gradlew build -x test
+
+  # 룰셋 필수 체크는 이거 하나만 걸면 됨
+  ci-result:
+    name: ci-result
+    needs: [changes, frontend, backend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "변경 감지 단계 실패"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend.result }}" == "failure" || "${{ needs.frontend.result }}" == "cancelled" || \
+                "${{ needs.backend.result }}" == "failure"  || "${{ needs.backend.result }}" == "cancelled" ]]; then
+            echo "CI 실패"
+            exit 1
+          fi
+          echo "CI 통과 (frontend: ${{ needs.frontend.result }}, backend: ${{ needs.backend.result }})"
