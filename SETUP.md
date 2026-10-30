@@ -146,10 +146,10 @@ CI는 아래를 전제로 작성됨. 다르면 `.github/workflows/ci.yml` 수정
 
 | 항목 | 현재 설정 | 다르면 |
 |---|---|---|
-| 프론트 패키지 매니저 | npm (`package-lock.json`) | pnpm/yarn이면 setup-node `cache`, 설치 명령 변경 |
-| 프론트 스크립트 | `npm run lint`, `npm run build` | package.json scripts 이름 맞추기 |
-| Node 버전 | 20 | `node-version` 수정 |
-| Java 버전 | 17 | Spring Boot 3.x + Java 21이면 `java-version: 21` |
+| 프론트 패키지 매니저 | pnpm (`frontend/package.json`의 `packageManager`, `pnpm-lock.yaml`) | pnpm 버전과 lockfile을 함께 갱신 |
+| 프론트 스크립트 | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` (Turborepo) | package.json scripts 이름 맞추기 |
+| Node 버전 | 24 (CI), 로컬 최소 22 (`engines`) | CI의 `node-version`과 package.json의 `engines` 확인 |
+| Java 버전 | 21 (Spring Boot 4.1.2) | `build.gradle`의 toolchain과 CI의 `java-version` 함께 수정 |
 | 백엔드 테스트 | 스킵 (`-x test`) | DB 없이 테스트 돌게 세팅되면 `-x test` 제거 |
 | 폴더명 | `frontend/`, `backend/` | 다르면 ci.yml, labeler.yml 경로 수정 |
 
