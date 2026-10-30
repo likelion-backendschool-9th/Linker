@@ -1,14 +1,20 @@
 import { importSPKI, jwtVerify } from 'jose';
 
+import { USE_MOCKS } from '@/lib/mock-mode';
+
+import { MOCK_ROLE_COOKIE, parseMockRole, viewerFromMockRole } from './mock-viewer';
 import { GUEST, type Viewer } from './route-access';
 
 /**
  * Reads the viewer from the session cookie's verified JWT claims (blueprint §4-1, ch. 15):
  * `typ` DEVELOPER | RECRUITER, `adm` operator, `onb` onboarding done, `st` status. No API call.
  * Missing key, cookie or a bad signature → guest. Claims only route screens; Spring checks permissions.
+ * With mocks on (blueprint §1-2) the cookie is the mock role instead of a JWT.
  */
 
-export const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? 'linker_session';
+export const SESSION_COOKIE = USE_MOCKS
+  ? MOCK_ROLE_COOKIE
+  : (process.env.SESSION_COOKIE_NAME ?? 'linker_session');
 const PUBLIC_KEY_PEM = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
 const ALGORITHM = process.env.JWT_ALGORITHM ?? 'RS256';
 
@@ -28,6 +34,7 @@ type SessionClaims = {
 };
 
 export async function readViewerFromToken(token: string | undefined): Promise<Viewer> {
+  if (USE_MOCKS) return viewerFromMockRole(parseMockRole(token));
   const key = publicKey();
   if (!token || !key) return GUEST;
   try {

@@ -48,6 +48,14 @@ export async function uploadImage(
       body: JSON.stringify({ type: 'IMAGE', contentType: file.type, size: file.size }),
     },
   );
-  await putWithProgress(uploadUrl, file, onProgress);
+  if (process.env.NEXT_PUBLIC_USE_MOCKS === 'true') {
+    // Mock mode (blueprint §1-2): no storage to PUT to; fake the progress so the UI shows it
+    for (const step of [0.3, 0.7, 1]) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      onProgress(step);
+    }
+  } else {
+    await putWithProgress(uploadUrl, file, onProgress);
+  }
   return apiFetch<UploadedImage>(`/api/v1/user/uploads/${fileId}/complete`, { method: 'POST' });
 }

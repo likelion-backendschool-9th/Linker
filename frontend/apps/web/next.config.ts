@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
   typedRoutes: true,
+  // Always defined, so an unset flag is inlined as 'false' and the bundler drops the mock code (blueprint §1-2)
+  env: { NEXT_PUBLIC_USE_MOCKS: process.env.NEXT_PUBLIC_USE_MOCKS ?? 'false' },
   transpilePackages: ['@linker/api', '@linker/bridge'],
   images: {
     formats: ['image/avif', 'image/webp'],

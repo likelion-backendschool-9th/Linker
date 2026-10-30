@@ -9,6 +9,7 @@ import { OverlayRoot } from '@/components/overlay/overlay-root';
 import { Toaster } from '@/components/ui/toaster';
 import { LoginPromptSheet } from '@/features/auth/login-prompt-sheet';
 import { ExternalLinkSheet } from '@/features/external-link/external-link-sheet';
+import { MockRoleSwitcher } from '@/features/mock/mock-role-switcher';
 import { PlanLimitSheet } from '@/features/plan-limit/plan-limit-sheet';
 import { ReportSheet } from '@/features/report/report-sheet';
 import { getQueryClient } from '@/lib/api/query-client';
@@ -33,6 +34,7 @@ export function Providers({ viewer, children }: { viewer: ClientViewer; children
                 <ExternalLinkSheet />
                 <ReportSheet />
                 <Toaster />
+                <MockRoleSwitcher />
               </NativeBridgeProvider>
             </MotionConfig>
           </LazyMotion>
