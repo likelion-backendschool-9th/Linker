@@ -8,7 +8,7 @@
 - **Assumptions**: 5 people, 2 weeks (10 weekdays, D1–D10), two repos: Spring Boot backend (Gradle) and Next.js frontend (pnpm monorepo), Toss Payments test mode, no store release.
 - **Work unit**: pages 00–33 of the 07 TODO. One backend controller per page (1:1). Only 00 common foundation is not a page, so it has 7 common controllers.
 - **Ownership**: one person owns both frontend and backend of their pages (07 TODO ch. 11 assumption), so "controller owner = page owner". If roles split into frontend/backend, two people pair on a page and the controller owner becomes the backend person.
-- **Size**: 40 controllers (33 pages + 7 common), 204 REST endpoints, 5 STOMP destinations, 69 tables (2026-10-30: feed job ads added 8 endpoints and 4 tables. The same day's subscription revamp added 3 endpoints for the progress graph and share cards, removed the recruit post bump endpoint, and added 1 table. No new controller).
+- **Size**: 40 controllers (33 pages + 7 common), 204 REST endpoints, 5 realtime paths (1 WebSocket connection endpoint + 4 STOMP destinations), 69 tables (2026-10-30: feed job ads added 8 endpoints and 4 tables. The same day's subscription revamp added 3 endpoints for the progress graph and share cards, removed the recruit post bump endpoint, and added 1 table. No new controller).
 - **Marks**: `[Required]` / `[Included]` are the same as the 07 TODO. `[Included]` is the first to be deferred if the schedule slips.
 
 ### The five owners
@@ -150,7 +150,7 @@ Not a page; 7 common controllers. Other pages borrow these APIs.
 **Tasks by person**
 
 - [ ] **A** Separate members from login methods, `user_type`, JWT httpOnly cookie, GitHub token encryption, `@DeveloperOnly`, user status filter (block writes while suspended), activity log, configure the 5 Security roles
-- [ ] **A** JWT claims: `sub` (member id), `typ` (`DEVELOPER`/`RECRUITER`), `adm` (is operator), `onb` (onboarding done), `st` (`ACTIVE`/`SUSPENDED`/`PENDING_DELETION`). The frontend `proxy.ts` routes screens by these, so sign with an asymmetric key (RS256 etc.) and provide the public key to the frontend. Reissue the cookie on onboarding completion, suspension, unsuspension and operator assignment (so the next request sees the new values). Cookie on the parent domain so both `app.` and `api.` read it, `HttpOnly; Secure; SameSite=Lax`. Claims are only for screen routing; permissions are still checked by the server against the DB ([10 frontend blueprint](../frontend/10-frontend-blueprint.md) ch. 4 and ch. 15)
+- [ ] **A** JWT claims: `sub` (member id), `typ` (`DEVELOPER`/`RECRUITER`), `adm` (is operator), `onb` (onboarding done), `st` (`ACTIVE`/`SUSPENDED`/`WITHDRAWING`). The frontend `proxy.ts` routes screens by these, so sign with an asymmetric key (RS256 etc.) and provide the public key to the frontend. Reissue the cookie on onboarding completion, suspension, unsuspension and operator assignment (so the next request sees the new values). Cookie on the parent domain so both `app.` and `api.` read it, `HttpOnly; Secure; SameSite=Lax`. Claims are only for screen routing; permissions are still checked by the server against the DB ([10 frontend blueprint](../frontend/10-frontend-blueprint.md) ch. 4 and ch. 15)
 - [ ] **A** Frontend (D1): access table `route-access.ts`, `session.ts`, access guard `proxy.ts` (Next.js 16's former middleware; guests only on read URLs, POL-A-9), 6 role route groups and group `layout.tsx`, screen frame (`PageFrame`, 3 shells, bottom tab arrays, "본문 바로가기" skip link), header "로그인" (Log in) button, suspension banner — blueprint ch. 3, ch. 4, 6-1
 - [ ] **A** Login-prompt sheet + `useRequireLogin()` hook (blocks guest actions in one place and stores `returnTo`), common handling of API 401 `LOGIN_REQUIRED`
 - [ ] **A** Server: optional-auth filter on `public` paths, guest 60/min per IP. Googlebot and Naver Yeti get a separate limit only after reverse DNS confirms they're real bots (never trust User-Agent alone)
@@ -302,7 +302,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 - Borrowed: block list / unblock (00 `BlockController`), owner transfer / team delete (09)
 - Tables: new none · shared users, user_agreements, user_blocks, user_sessions, team_members, subscriptions (after 28)
 - [ ] Server: scheduler that deletes 30 days after pending withdrawal (posts and comments deleted; team chat shows "탈퇴한 사용자" (Withdrawn user))
-- [ ] Frontend: sections, "푸시 알림" (Push notifications) switch (in a browser, note that push is Android-app only), withdrawal sheet steps, hide GitHub and subscription items for recruiters
+- [ ] Frontend: sections, "푸시 알림" (Push notifications) switch (in a browser, note that push is Android-app only), withdrawal sheet steps, hide GitHub items for recruiters and show Scout subscription & billing → 29
 
 ## 4-2. Creating teams and invites
 
@@ -371,8 +371,8 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 | DELETE | `/api/v1/user/teams/{teamId}/members/me` | 2nd pass: leave team (not owner) | team MEMBER |
 | POST | `/api/v1/user/teams/{teamId}/ownership-transfers` | 2nd pass: request owner transfer | team OWNER |
 | POST | `/api/v1/user/teams/{teamId}/ownership-transfers/{transferId}/accept` | 2nd pass: recipient accepts | team MEMBER (recipient) |
-| POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "작업물 올리기" (Post your project) notification to members | team OWNER |
-| DELETE | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: revert within 7 days | team OWNER |
+| POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "작업물 올리기" (Post your project) notification to members | team OWNER/ADMIN |
+| DELETE | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: revert within 7 days | team OWNER/ADMIN |
 | POST | `/api/v1/user/teams/{teamId}/archive` | 2nd pass: archive | team OWNER |
 | DELETE | `/api/v1/user/teams/{teamId}` | 2nd pass: delete (confirm team name) | team OWNER |
 
@@ -551,12 +551,15 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 | POST | `/api/v1/user/chat-rooms/{roomId}/ai-summaries/{summaryId}/share` | `[Included]` Share to chat → `AI_SUMMARY` card message | requester |
 | POST | `/api/v1/recruiter/chat-requests` | `[Included]` Recruiting offer request (`request_kind = RECRUITING`, 1,000 chars, no photos, 10/day or 50 with Scout; rejected if job-seeking is OFF, or if a request to the same developer is pending or was rejected within 30 days) | recruiter |
 
-| STOMP | Destination | Does |
+**Shared realtime paths (16–18)**: the overview counts 5 paths: 1 WebSocket connection endpoint + 1 STOMP SEND destination + 3 SUBSCRIBE destinations. `/ws` is the connection endpoint, not a STOMP frame destination. The list-update subscription belongs to 16; the notification subscription is shared with 18.
+
+| STOMP | Destination / connection endpoint | Does |
 | --- | --- | --- |
 | CONNECT | `/ws` | Cookie auth |
 | SEND | `/app/chat-rooms/{roomId}/messages` | Send message (text 2,000 chars, 10 photo fileIds, issue card, 5 per second) |
 | SUBSCRIBE | `/topic/chat-rooms/{roomId}` | New message, edit, delete, read |
 | SUBSCRIBE | `/user/queue/notifications` | Notification badge (shared with 18) |
+| SUBSCRIBE | `/user/queue/chat-rooms` | Chat list and unread summary updates (owned by 16) |
 
 - Borrowed: photo upload (00), message report (00 `ReportController`, copy 10 before/after), accept/delete request (16), "이슈로 만들기" (Make an issue) → 13
 - Tables: new chat_messages, chat_message_images, pull_requests, chat_message_mentions, report_message_snapshots, 🟡 ai_chat_summaries (after 28) · shared chat_rooms, chat_room_members, uploaded_files, issues, follows, team_members, user_blocks, report_cases, reports, notifications, subscriptions (after 28), recruiter_profiles (after 31)
@@ -929,8 +932,8 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 | 13 | `IssueCreateController` | C | user | 4 |
 | 14 | `BoardController` | C | user | 1 |
 | 15 | `CalendarController` | C | user | 1 |
-| 16 | `ChatListController` | D | user | 4 |
-| 17 | `ChatRoomController` | D | user · recruiter + STOMP | 21 + STOMP 4 |
+| 16 | `ChatListController` | D | user | 4 + 1 STOMP subscription |
+| 17 | `ChatRoomController` | D | user · recruiter + STOMP | 21 + 4 realtime paths (plus 16's list-update subscription; 5 shared paths total) |
 | 18 | `NotificationController` | D | user | 7 |
 | 19 | `RecruitListController` | E | public · user | 4 |
 | 20 | `RecruitEditorController` | E | user | 7 |
