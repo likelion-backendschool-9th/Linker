@@ -173,7 +173,8 @@ Token expiry → BFF makes/forwards at most one restricted refresh call → defi
 **6.1 Recommended Spring Package Boundaries**
 
 ```text
-com.linker
+com.linker.backend
+  BackendApplication.java
   api/            # WBS page controllers, request/response DTOs
     common/       # Shared page 00 foundation
     p01_login/ ... p33_recruiter_offer/
@@ -184,7 +185,7 @@ com.linker
   async/          # Webhook consumers, outbox/retry, schedulers
   global/         # Security, errors, validation, rate limits, config
 ```
-This respects the WBS one-controller-per-page rule without duplicating domain services/entities/repositories for each controller. `api.pNN_*` naming and Orval `@Tag` are part of the frontend's expected contract; coordinate any adjustment with the BFF follow-up work.
+The base package is the existing `com.linker.backend`; keep all application packages under `BackendApplication`'s package for default Spring component and JPA scanning. Gradle's `group = 'com.linker'` remains a separate build identifier. This respects the WBS one-controller-per-page rule without duplicating domain services/entities/repositories for each controller. `api.pNN_*` naming and Orval `@Tag` are part of the frontend's expected contract; coordinate any adjustment with the BFF follow-up work.
 **6.2 Domain Responsibilities and External Boundaries**
 
 | Domain | Responsibility/core data | Authorization/transactions/integrations |
