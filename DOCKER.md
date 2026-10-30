@@ -17,7 +17,7 @@ cp .env.example .env
 
 ## 화면 개발: 저장하면 바로 반영
 
-Docker Compose **2.32 이상**에서 다음 개발용 명령을 사용합니다. `docker compose version`으로 버전을 확인할 수 있습니다.
+Docker Compose **5.6.0 이상**에서 다음 개발용 명령을 사용합니다. `docker compose version`으로 버전을 확인할 수 있습니다. 로컬·CI 검증 기준은 5.6.0이며, 기존 2.32.x는 `initial_sync` 설정을 인식하지 못합니다.
 
 ```bash
 docker compose -f compose.yml -f compose.dev.yml up --build --watch

@@ -11,7 +11,7 @@ export default defineConfig({
       target: 'src/generated',
       client: 'react-query',
       httpClient: 'fetch',
-      mock: { type: 'msw' },
+      mock: { generators: [{ type: 'msw' }] },
       clean: true,
       override: {
         mutator: {
