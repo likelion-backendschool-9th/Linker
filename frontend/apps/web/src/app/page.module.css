@@ -1,0 +1,19 @@
+.main {
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.title {
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-page-title);
+  color: var(--color-text-heading);
+}
+
+.description {
+  margin-top: 8px;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
