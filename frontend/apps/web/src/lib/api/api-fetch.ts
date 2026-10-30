@@ -10,7 +10,9 @@ export async function apiFetch<T>(url: string, init: RequestInit = {}): Promise<
     const { cookies } = await import('next/headers');
     headers.set('cookie', (await cookies()).toString());
   }
-  const res = await fetch(`${API_BASE_URL}${url}`, {
+  // Containers resolve Spring by service name; browsers use the public build-time origin.
+  const baseUrl = isServer ? (process.env.API_INTERNAL_URL ?? API_BASE_URL) : API_BASE_URL;
+  const res = await fetch(`${baseUrl}${url}`, {
     ...init,
     headers,
     credentials: isServer ? undefined : 'include',

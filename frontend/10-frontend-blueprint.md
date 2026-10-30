@@ -191,10 +191,11 @@ Split only for one of these reasons, written as a one-line comment at the top (`
 NEVER split only because a file is long (one region of one screen stays one file even at 200 lines), use names like `Wrapper`/`Container`/`Box`/`Item2`, or generalize for "maybe later" (promote per §3-1 when a second user appears). Names say what it does (`IssueAssigneeSheet`, `RecruitDeadlineBadge`). Style-only variants are a `variant` prop mapped to CSS Module classes.
 
 ### 5-4. `api-fetch.ts` (orval mutator)
-- Works on server and browser; calls `${API_BASE_URL}${url}`. Server: forwards the viewer's cookies from `next/headers` (imported only on the server). Browser: `credentials: 'include'`.
+- Works on server and browser; prefixes `url` with the API base (see container note below). Server: forwards the viewer's cookies from `next/headers` (imported only on the server). Browser: `credentials: 'include'`.
 - `!res.ok` → `throw ApiError.from(res)` (`{ code, message, detail }`, 09 WBS §1-4). 204 → `undefined`.
 - Shared error handling in `query-client.ts`: `LOGIN_REQUIRED` → login sheet · `PLAN_LIMIT` → limit sheet → `/subscribe?reason=` from `detail` · `RATE_LIMITED` → "잠시 후 다시 시도해 주세요" + time left · `SUSPENDED` → banner · `GITHUB_UNAVAILABLE` → GitHub banner.
 - Cacheable public data uses separate cookie-less server functions (ch. 9).
+- Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [DOCKER.md](../DOCKER.md).
 
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)

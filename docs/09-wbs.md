@@ -66,7 +66,8 @@ Two permissions the role can't express are checked with annotations, not URLs:
 6. **orval tag = controller name.** Put springdoc `@Tag(name = "p11-issue-list")` on each controller; orval then generates a hook file per page, so on the frontend "the APIs this page calls" sit in one file.
 
 ```
-backend/src/main/java/com/linker
+backend/src/main/java/com/linker/backend
+├── BackendApplication.java
 ├── api                  # per-page controllers + request/response DTOs (1:1)
 │   ├── common           # 00: 7 common controllers
 │   ├── p01_login
@@ -77,6 +78,8 @@ backend/src/main/java/com/linker
 │   └── recruit, post, feed, moderation, billing, recruiter
 └── global               # security, exceptions, annotations (@DeveloperOnly, @TeamRole), config (PlanLimits)
 ```
+
+The base package is `com.linker.backend`, matching the existing `BackendApplication`. Keep application packages below this base so Spring's default component and JPA scanning includes them. For example, page 11 uses `com.linker.backend.api.p11_issuelist`. Gradle's `group = 'com.linker'` is a separate build identifier and remains unchanged.
 
 ### 1-4. Common responses
 
