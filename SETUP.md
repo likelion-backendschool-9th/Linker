@@ -95,9 +95,9 @@ CLI 없으면 레포 → Issues → Labels → New label 에서 수동 생성
    - **Require branches to be up to date before merging** 체크
 4. Save
 
-> `frontend`, `backend` 잡은 추가하지 말고 **`ci-result` 하나만** 걸 것.
+> `frontend`, `backend`, `infrastructure` 잡은 추가하지 말고 **`ci-result` 하나만** 걸 것.
 > 프론트만 바꾼 PR에선 backend 잡이 스킵되는데, 그걸 필수로 걸면 머지가 영원히 막힘.
-> `ci-result`가 둘 다 확인하고 실패한 게 있을 때만 막아줌.
+> `ci-result`가 세 검사 결과를 확인하고 실패하거나 취소된 검사가 있으면 막아줌.
 
 ---
 
@@ -152,7 +152,8 @@ CI는 아래를 전제로 작성됨. 다르면 `.github/workflows/ci.yml` 수정
 | 프론트 스크립트 | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` (Turborepo) | package.json scripts 이름 맞추기 |
 | Node 버전 | 24 (CI), 로컬 최소 22 (`engines`) | CI의 `node-version`과 package.json의 `engines` 확인 |
 | Java 버전 | 21 (Spring Boot 4.1.2) | `build.gradle`의 toolchain과 CI의 `java-version` 함께 수정 |
-| 백엔드 테스트 | 스킵 (`-x test`) | DB 없이 테스트 돌게 세팅되면 `-x test` 제거 |
+| 백엔드 테스트 | PostgreSQL 16·Redis 7 서비스와 함께 `./gradlew build`로 실행 | 테스트용 환경변수와 서비스 상태 확인 |
+| 인프라 검사 | 기본·개발 Compose 설정 및 Nginx 문법 검사 | 실제 컨테이너 빌드·기능 통합 검증은 별도 수행 |
 | 폴더명 | `frontend/`, `backend/` | 다르면 ci.yml, labeler.yml 경로 수정 |
 
 > 프론트/백 폴더가 아직 없어도 CI는 스킵 처리돼서 통과함. 지금 바로 적용해도 OK
