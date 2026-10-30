@@ -114,6 +114,7 @@ linker-web/                      # frontend repo (backend is a separate Gradle r
 - No `packages/ui`. Only one app (`apps/web`) draws screens, so base components (built on `radix-ui`, styled with CSS Modules) live in `apps/web/src/components/ui`.
 - Put `onlyBuiltDependencies: [sharp, esbuild]` in `pnpm-workspace.yaml`. pnpm 10 blocks install scripts by default, so the sharp binary install may be skipped (ch. 10).
 - Expo supports pnpm monorepos, but if Metro can't find modules, set `node-linker=hoisted` in `.npmrc` as the Expo monorepo guide says.
+- Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [DOCKER.md](../DOCKER.md) for mode switching and dependency/environment changes.
 
 ### 2-1. orval (`packages/api`)
 
