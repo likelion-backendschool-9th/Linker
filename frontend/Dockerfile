@@ -13,7 +13,7 @@ RUN --mount=type=cache,id=linker-pnpm,target=/pnpm/store \
 
 COPY apps/web ./apps/web
 COPY packages ./packages
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+ARG NEXT_PUBLIC_API_BASE_URL=
 ARG NEXT_PUBLIC_IMAGE_HOST=
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_IMAGE_HOST=$NEXT_PUBLIC_IMAGE_HOST
