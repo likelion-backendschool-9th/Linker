@@ -1,6 +1,6 @@
 # Linker frontend — agent guide
 
-Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The blueprint is the full rulebook: MUST/NEVER are mandatory; RECOMMENDED requires judgment. Read it explicitly; `@` imports in `CLAUDE.md` are not needed here.
+Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The blueprint is the full rulebook: MUST/NEVER are mandatory; RECOMMENDED requires judgment. It is not auto-imported; read the sections you need. Look and feel (colors, type, spacing, component styles) is in `11-design-guide.md`; token values are in `apps/web/src/styles/tokens/`.
 
 ## Before implementing a page
 1. Blueprint ch. 13: route group, directory, controller/orval tag.
@@ -46,6 +46,13 @@ Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The
 - Format dates in KST via `@date-fns/tz` and `src/lib/format/time.ts`; servers run UTC. Use `<RelativeTime>` to avoid hydration mismatches.
 - Use `packages/bridge` shared types, `postToNative`, `requestNative`, `NativeBridgeProvider`. JWT never crosses the bridge; native stores only `userId`/`userType`.
 - Every screen is web; native handles GitHub login return, push (Android-only MVP), sharing, back, external links.
+
+## Styling (11-design-guide.md)
+- CSS Modules next to the component; read every color, size, space, and radius through `var(--token)` from `styles/tokens/`. Never a raw hex, font size, or radius in a component. Add missing values to the tokens and the guide first.
+- Text on tinted surfaces uses `--color-text-subtle-on-tint`; text on dark surfaces uses `--color-text-inverse*`. Accent is never a CTA fill. No shadows except `--shadow-segment-active`.
+
+## Caching (blueprint ch. 9)
+- Next fetch cache only for cookie-less public data (legal, tech tags, plans, job categories, contribution graph); per-user data uses TanStack Query `staleTime` per §9-1.
 
 ## SEO and privacy
 - Every page needs a unique title via `buildMetadata()` in `metadata`/`generateMetadata`. Default `noindex`; only blueprint §8-1 pages use `indexable: true`.
