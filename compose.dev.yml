@@ -1,5 +1,5 @@
 # Opt in: docker compose -f compose.yml -f compose.dev.yml up --build --watch
-# Requires Docker Compose 2.32+ for initial_sync.
+# Validated with Docker Compose 5.6.0; CI installs the same version.
 services:
   web:
     build:
