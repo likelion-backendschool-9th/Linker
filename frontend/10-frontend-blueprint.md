@@ -1,9 +1,9 @@
 # Linker Frontend Blueprint
 
 > Question this document answers: **What structure and rules do AI (and humans) follow when writing Linker frontend code?**
-> Page numbers and paths come from [07 Page TODO](./07-page-todo.md), APIs and controllers from [09 WBS](./09-wbs.md), and per-role access and numbers from [04 Policy](./04-policy.md); those are the sources of truth. This document turns them into **folder, component and code rules**, so if it disagrees with a source, the source wins.
+> Page numbers and paths come from [07 Page TODO](../docs/07-page-todo.md), APIs and controllers from [09 WBS](../docs/09-wbs.md), and per-role access and numbers from [04 Policy](../docs/04-policy.md); those are the sources of truth. This document turns them into **folder, component and code rules**, so if it disagrees with a source, the source wins.
 >
-> **For AI workers**: `MUST` and `NEVER` in this document are followed without exception. Places that need judgment say `RECOMMENDED`. Work order follows the [07 TODO](./07-page-todo.md) page order (00 → 01 → … → 33). **Before page work, first check that everything in §1-1 "foundation built first" exists.** When you take a page: ① find its group, folder and orval tag in the ch. 13 table, ② read the checklist with the same number in the 07 TODO, ③ finish with the ch. 14 checklist.
+> **For AI workers**: `MUST` and `NEVER` in this document are followed without exception. Places that need judgment say `RECOMMENDED`. Work order follows the [07 TODO](../docs/07-page-todo.md) page order (00 → 01 → … → 33). **Before page work, first check that everything in §1-1 "foundation built first" exists.** When you take a page: ① find its group, folder and orval tag in the ch. 13 table, ② read the checklist with the same number in the 07 TODO, ③ finish with the ch. 14 checklist.
 >
 > Korean UI copy is kept in quotes, with an English gloss where helpful. This is a translation of the Korean `10-프론트엔드-청사진.md`; when the Korean document changes, this copy must be updated too.
 
@@ -60,7 +60,7 @@ The list AI checks every time before writing code. Reasons and examples are in e
 
 ### 1-1. Foundation built before pages (the most important work)
 
-Every page uses the code below. Adding it later means reworking all 33 pages, so **build it first on D1–D2 in this order.** Checkboxes live in [07 TODO 00 "Frontend"](./07-page-todo.md#00-common-foundation-required--days-12-everyone); owners and dates in [09 WBS ch. 3](./09-wbs.md#3-common-foundation-00-required--d1d2--everyone) are the source.
+Every page uses the code below. Adding it later means reworking all 33 pages, so **build it first on D1–D2 in this order.** Checkboxes live in [07 TODO 00 "Frontend"](../docs/07-page-todo.md#00-common-foundation-required--days-12-everyone); owners and dates in [09 WBS ch. 3](../docs/09-wbs.md#3-common-foundation-00-required--d1d2--everyone) are the source.
 
 - **MUST NOT** build ad-hoc versions of this foundation inside page code (own sheet opening, own fetch, own permission branching, own date formatting). If the foundation lacks something, add it to the foundation and use that.
 - A stage starts only after the previous stage finishes. Items within one stage may run in parallel.

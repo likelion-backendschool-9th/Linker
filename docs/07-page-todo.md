@@ -77,7 +77,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Frontend**
 
-> Foundation used by every page, so built before any page. Build order and the "end-of-D2 check" list are in the [10 frontend blueprint §1-1](./10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work); code rules in the blueprint chapter noted in parentheses.
+> Foundation used by every page, so built before any page. Build order and the "end-of-D2 check" list are in the [10 frontend blueprint §1-1](../frontend/10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work); code rules in the blueprint chapter noted in parentheses.
 
 - [ ] pnpm monorepo, Next.js App Router, Tailwind + shadcn/ui, orval-generated API hooks, TanStack Query, Zustand, nuqs setup
 - [ ] One API call function (`api-fetch.ts`, works on server and browser) and common handling of failure codes (`LOGIN_REQUIRED`, `PLAN_LIMIT`, `RATE_LIMITED`, `SUSPENDED`, `GITHUB_UNAVAILABLE`) (blueprint 5-4)
@@ -817,7 +817,7 @@ Assumes each of the 5 people owns both frontend and server for their pages. If r
 
 | Days | Goal |
 | --- | --- |
-| Days 1–2 | 00 common foundation and the 6 risky-area spikes. The frontend foundation "end-of-D2 check" ([10 frontend blueprint §1-1](./10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) must pass before page work starts |
+| Days 1–2 | 00 common foundation and the 6 risky-area spikes. The frontend foundation "end-of-D2 check" ([10 frontend blueprint §1-1](../frontend/10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) must pass before page work starts |
 | Days 3–5 | Week-1 pages. End of day 5: verify "login → create team → issue list/detail (GitHub sync) → team chat" (create issue 13 on days 6–7) |
 | Days 6–8 | Week-2 pages. End of day 8: verify "recruit → apply → accept → join team → complete project → publish post" |
 | Day 9 | Connect ops, subscription, recruiting; tidy remaining `[Included]` items |
