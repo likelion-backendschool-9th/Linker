@@ -82,6 +82,7 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 - No `packages/ui`; base components live in `apps/web/src/components/ui`.
 - `pnpm-workspace.yaml`: `onlyBuiltDependencies: [sharp, esbuild]` (pnpm 10 blocks install scripts).
 - If Metro can't resolve modules, set `node-linker=hoisted` in `.npmrc`.
+- Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [DOCKER.md](../DOCKER.md) for mode switching and dependency/environment changes.
 
 ### 2-1. orval (`packages/api`)
 - Generated from springdoc `/v3/api-docs`. Controller `@Tag` = page (09 WBS §1-3 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
@@ -354,7 +355,8 @@ export function useOverlay(key: OverlayKey) {
 ### 9-1. Where to cache
 | Data | Web |
 | --- | --- |
-| 03 legal, tech tags, job categories, 28 plans | Next fetch cache 1 day (`revalidate: 86400`), tags `legal` (+ `generateStaticParams`), `tech-tags`, `job-categories`, `plans:{developer\|recruiter}` |
+| 03 legal, tech tags, job categories | Next fetch cache 1 day (`revalidate: 86400`), tags `legal` (+ `generateStaticParams`), `tech-tags`, `job-categories` |
+| 28 plans (`GET /api/v1/user/plans?reason=`) | Personalized (including trial eligibility): server `cache: 'no-store'`, no shared Next cache; TanStack `staleTime 30s`, query key includes account ID and reason; invalidate after checkout/subscription changes and clear on logout/account switch |
 | 04 contribution graph | Server: Next fetch cache 1h, tag `contrib:{login}`; month navigation: TanStack `staleTime 1h` |
 | 23 README (on expand), 30 My stats (per person, no Next cache) | TanStack `staleTime 1h` |
 | 11 Progress | TanStack `staleTime 60s`; invalidate on issue status change (12, 14) |

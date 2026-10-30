@@ -58,7 +58,7 @@ Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The
 - Check mock code stays out of the normal build: `grep -r MOCK_NOT_IMPLEMENTED apps/web/.next` must find nothing.
 
 ## Caching (blueprint ch. 9)
-- Next fetch cache only for cookie-less public data (legal, tech tags, plans, job categories, contribution graph); per-user data uses TanStack Query `staleTime` per §9-1.
+- Next fetch cache only for cookie-less public data (legal, tech tags, job categories, contribution graph). Plans include personal trial eligibility: server `no-store`, no shared Next cache. Per-user data uses TanStack Query `staleTime` per §9-1.
 
 ## SEO and privacy
 - Every page needs a unique title via `buildMetadata()` in `metadata`/`generateMetadata`. Default `noindex`; only blueprint §8-1 pages use `indexable: true`.
