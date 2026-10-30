@@ -26,6 +26,21 @@
   --touch-target-min: 44px;
   --control-height: 48px; /* pill buttons and inputs */
   --app-max-width: 640px; /* app screens keep the mobile width (blueprint §6-6) */
+  --header-height: 56px; /* top bar of tab and stack screens */
+  --tab-bar-height: 56px; /* bottom tab bar, before the safe-area inset */
+  --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
+  --dialog-max-width: 400px; /* centered dialogs and confirm modals */
+  --admin-aside-width: 400px; /* admin detail column from 1024px */
+  --icon-size: 24px;
+
+  /* Layers: page chrome < overlays < toasts */
+  --z-chrome: 10;
+  --z-overlay: 100;
+  --z-toast: 200;
+
+  /* Motion (off under prefers-reduced-motion via globals.css) */
+  --duration-overlay: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
   /* The only shadow: the active segment of a segmented control */
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);

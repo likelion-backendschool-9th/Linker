@@ -1,0 +1,11 @@
+.main {
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: var(--space-md);
+  outline: none;
+}
+
+.home {
+  display: flex;
+  justify-content: center;
+}

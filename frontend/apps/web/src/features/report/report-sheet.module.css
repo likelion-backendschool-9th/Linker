@@ -1,0 +1,58 @@
+.reasons {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-heading);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-body);
+}
+
+.option input {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  accent-color: var(--color-primary);
+}
+
+.field {
+  margin-top: var(--space-md);
+}
+
+.textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-field);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  resize: vertical;
+}
+
+.textarea[aria-invalid='true'] {
+  border-color: var(--color-status-error);
+}
+
+.error {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+}
+
+.submit {
+  margin-top: var(--space-lg);
+}
