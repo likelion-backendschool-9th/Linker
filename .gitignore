@@ -32,3 +32,6 @@ backend/bin/
 # 비밀값 담은 설정 파일을 분리한다면
 backend/src/main/resources/application-secret.yml
 backend/src/main/resources/application-local.yml
+
+# ===== 개인 작업 파일 =====
+.local-notes
