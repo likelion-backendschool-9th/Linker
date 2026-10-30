@@ -256,7 +256,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Account: linked GitHub (@handle), view/change notification email
 - [ ] Notifications: "푸시 알림" (Push notifications) on/off switch. Off stops push only; the in-app list keeps filling. In a web browser, show "푸시는 Android 앱에서만 받아요" (Push is only received in the Android app)
 - [ ] Subscription & billing → 29
-- [ ] Blocked users → (sheet) list, unblock
+- [ ] Blocked users → (sheet) list of active blocks, unblock; server closes the blocking period instead of deleting it (ERD `user_blocks`)
 - [ ] 3 legal docs → 03, contact (mail link), app version
 - [ ] Delete account → (sheet) show teams I own; must transfer ownership or delete the team to proceed → final confirm → pending deletion (deleted after 30 days)
 - [ ] Server: scheduler deleting after 30 days pending (delete posts/comments; team chat messages become "탈퇴한 사용자")
@@ -460,7 +460,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Realtime updates (STOMP user queue), bottom tab badge
 - [ ] Requests tab: accept / delete; disappears after 30 days
 - [ ] `[Included]` Recruiting offer requests show a "채용 제안" label + company name (after 31). Recruiters see their sent offers as "대기 중" (pending) in the 1:1 tab
-- [ ] Rooms with blocked people hidden
+- [ ] Rooms with blocked people hidden; after unblocking, messages from blocked periods stay invisible. Use retained `user_blocks` intervals for DM history, catch-up, previews and unread counts; team chat is exempt (Policy ch. 9, ERD ch. 4-8)
 - [ ] Empty-state copy
 
 ### 17. Chat room (team & 1:1) `[Required]` · `/chats/[roomId]`
@@ -711,6 +711,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 > Basis: S-1, S-3, S-7, H-5 · Needs first: screens with benefits (04, 09, 17, 20, 22) · Merged: plan comparison + web checkout + payment complete → one page and two return URLs
 
 - [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Flex is monthly only
+- [ ] Server: plans API includes personal trial eligibility. Return `Cache-Control: private, no-store`; frontend uses server `no-store` and account-scoped TanStack queries, with no shared Next cache
 - [ ] Monthly/annual toggle; show the entry reason (`?reason=photo-limit` etc. when coming from a limit prompt sheet)
 - [ ] Flex requires choosing a team (where I'm owner or billing manager) + price from current headcount (₩7,900 up to 6, ₩1,900 per member from the 7th), "인원이 바뀌면 다음 결제일부터 반영돼요" (headcount changes apply from the next billing date)
 - [ ] Toss Payments payment widget (test key), show "테스트 결제라 실제로 돈이 나가지 않아요" (test payment, no real charge)

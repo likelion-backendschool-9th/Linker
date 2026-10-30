@@ -790,7 +790,8 @@ erDiagram
   user_blocks {
     bigint id PK
     bigint blocker_id FK
-    bigint blocked_id FK "UK with blocker_id"
+    bigint blocked_id FK "one active period per blocker + blocked pair"
+    timestamptz unblocked_at "nullable; retain closed periods for DM visibility"
   }
   report_cases {
     bigint id PK
@@ -1200,7 +1201,7 @@ erDiagram
 | visibility | HIDDEN when hidden by report ("운영 정책에 따라 숨겨진 메시지예요" — hidden under the operating policy) |
 
 - Indexes: `(room_id, id desc)` infinite scroll, `body` GIN (trgm).
-- 1:1 messages from a blocked user are stored but not delivered to or readable by the recipient (`user_blocks` join).
+- 1:1 messages from a blocked user are stored but not delivered to or readable by the recipient. Filter messages whose `sender_id` is the blocked user and whose `created_at` falls in any recipient-owned `user_blocks` period: `[created_at, unblocked_at)` (an open period has no end). Apply the same filter to history, reconnect catch-up, previews, unread counts, search and notifications. Closed periods still apply after unblocking (POL ch. 9); team chat is exempt.
 
 **ai_chat_summaries**: Created only in chat rooms of teams with an active Flex subscription (including the 7-day free trial) and `teams.ai_summary_enabled` (server check). 10 per person per day is a Redis counter. Pressing "채팅에 공유" (Share to chat) creates a `message_type = AI_SUMMARY` message, copies the summary into its payload and stores it in `shared_message_id`. So the shared card stays in team chat even after the summary row is deleted after 7 days. Creating an issue from an action item fills `issue_id` in `action_items`.
 
@@ -1219,7 +1220,7 @@ erDiagram
 
 | Table | Scope | Purpose | Basis |
 | --- | --- | --- | --- |
-| user_blocks | 🟢 | User blocks | POL ch. 9 blocking |
+| user_blocks | 🟢 | Active and closed blocking periods (`created_at`, `unblocked_at`) | POL ch. 9 blocking; 00 creates/closes periods, 06 lists active blocks, 16–17 filter DM visibility |
 | report_cases | 🟢 | Reports grouped by target, the unit operators handle | O-1 |
 | reports | 🟢 | One report (per reporter) | O-1, POL ch. 9 reports |
 | sanctions | 🟢 | Warning, suspension, permanent ban, feature restrictions | O-3, POL ch. 9 sanction steps |
@@ -1228,6 +1229,8 @@ erDiagram
 | report_message_snapshots | 🟢 | Copy of 10 messages before/after a reported chat message | O-4 |
 | appeals | 🟢 | One appeal | POL ch. 9 appeals |
 | banned_github_ids | 🟢 | Blocks re-sign-up of permanently banned GitHub accounts | POL ch. 9 re-sign-up |
+
+**user_blocks**: `created_at` is the start of each blocking period; nullable `unblocked_at` is its end. Replace the pair-wide unique constraint with a partial unique index `(blocker_id, blocked_id) WHERE unblocked_at IS NULL`. Blocking an already-active pair is idempotent. Unblocking sets `unblocked_at` instead of deleting the row; blocking again inserts a new period, preserving all previous intervals. Lists and current access checks use only active periods; DM visibility checks use both active and closed periods. Index `(blocker_id, blocked_id, created_at)` for interval lookup and CHECK `unblocked_at IS NULL OR unblocked_at >= created_at`. Serialize block/unblock and message-visibility decisions for the same pair to avoid races. Preserve history while related DM messages remain, subject to the account/data-deletion policy; unblocking alone must not purge it. No new tables, enums, controllers or endpoints are introduced (69 tables / 40 controllers / 204 REST endpoints unchanged).
 
 **report_cases, reports**: A new report attaches to the pending case with the same `target_type + target_id`, or creates one. `reports` UK `case_id + reporter_id` counts duplicate reports from one person as one. When distinct reporters reach 5, `auto_hidden_at` is set and the target content's `visibility` becomes UNDER_REVIEW. Reports from users restricted for false reporting are not counted in `reporter_count`.
 
@@ -1369,7 +1372,7 @@ Pages 00–33 in the order of [07 Page TODO](./07-page-todo.md). **New tables** 
 
 | # | Page | New tables | Shared tables |
 | --- | --- | --- | --- |
-| 00 | Common foundation | users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks, report_cases, reports, github_webhook_deliveries, admins (seed) | — |
+| 00 | Common foundation | users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks (blocking periods), report_cases, reports, github_webhook_deliveries, admins (seed) | — |
 | 01 | Start & login | banned_github_ids | users, auth_identities, github_tokens, user_sessions |
 | 02 | Onboarding | user_agreements, tech_tags (seed), user_tech_tags | users |
 | 03 | Legal documents | None (static docs) | — |

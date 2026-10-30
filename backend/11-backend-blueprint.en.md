@@ -351,6 +351,7 @@ PRD Section 8 requires user authentication (PKCE), Metadata/Contents read, Issue
 - Messages, room membership, request state, and read cursors persist in PostgreSQL. STOMP is a delivery channel, not the source of truth.
 - WBS shared realtime paths: `/ws` is the cookie-authenticated WebSocket connection endpoint; `/app/chat-rooms/{roomId}/messages` is the SEND destination; `/topic/chat-rooms/{roomId}`, `/user/queue/notifications`, and page 16's `/user/queue/chat-rooms` are SUBSCRIBE destinations. The count is 5 paths: 1 connection endpoint + 4 STOMP destinations.
 - On CONNECT, validate account state, origin, and session. On SUBSCRIBE, validate room membership, block/suspension, and team role; changing the room ID must not grant access; Deliver only after message persistence. Deduplicate acknowledgements/retries with `client_message_id`. After reconnect, use REST to fill gaps after the last confirmed ID.
+- Retain `user_blocks` periods after unblocking (`unblocked_at`, partial unique index for active pairs; ERD ch. 4-8). Exclude recipient-blocked-period DMs from history, catch-up, previews, unread counts, search and notifications even after unblocking; team chat is exempt.
 - Follow WBS destinations/APIs for live chat-list/unread-count updates. Never log personal data or message bodies; Direct chat is immediate for mutual follows/same-team; otherwise use message requests. Enforce accept/reject/30-day expiry/re-request limits/blocks server-side. Distinguish recruiter offers from regular DMs with `RECRUITING` request type.
 **11.2 Messages, Notifications, and Push**
 - Validate message/image length/count/size policies, remove image EXIF, and enforce the 24-hour edit/deletion policy.
@@ -367,6 +368,8 @@ PRD specifies self-hosted Ollama by default and requires vendor/training/non-tra
 | Pro | Individual analytics/profile-view alerts; larger photo/pinned-post/recruitment limits | S-1–S-3 payment flow Required; S-4/S-5/S-10 benefits Included |
 | Flex | Team-size pricing, full-history search/image retention, AI summary/progress graph | Subscription flow Required; S-6–S-9 and C-5/T-7 Included |
 | Scout | One recruitment ad, higher daily offer limit | H-5–H-9 Included in MVP; reconcile with demo criteria and WBS deferral rules |
+The plans endpoint includes personal trial eligibility: return `Cache-Control: private, no-store`; Next server callers must use `no-store` and must not put this response in the shared public cache.
+
 Use PRD/policy as the source for exact prices, trial, limits, and cancellation grace. A server-side entitlement service evaluates user type, owner (account/team), validity, payment-failure grace, trial, and suspension state; do not trust subscription rows sent by the frontend. Separately apply the policy for existing posts/summaries/messages after benefit expiry.
 **12.2 Payment Flow and Toss**
 1. The server determines plan/owner/price/currency/order ID, creates the order, and records a pending payment.

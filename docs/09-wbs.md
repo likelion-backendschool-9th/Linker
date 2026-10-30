@@ -143,8 +143,8 @@ Not a page; 7 common controllers. Other pages borrow these APIs.
 | | | POST | `/api/v1/user/uploads/{fileId}/complete` | Upload complete → resize, strip EXIF | user |
 | `ReportController` | E | POST | `/api/v1/user/reports` | Report (target type, id, reason; for chat, copy 10 before/after) | user |
 | `BlockController` | E | GET | `/api/v1/user/me/blocks` | Blocked users list (06) | user |
-| | | POST | `/api/v1/user/blocks` | Block | user |
-| | | DELETE | `/api/v1/user/blocks/{userId}` | Unblock | user |
+| | | POST | `/api/v1/user/blocks` | Open a blocking period (idempotent while active) | user |
+| | | DELETE | `/api/v1/user/blocks/{userId}` | Close the active blocking period; retain history for DM filtering | user |
 | `GithubWebhookController` | B | POST | `/api/v1/webhook/github` | Verify signature → save `github_webhook_deliveries` → Redis queue | webhook |
 | `SitemapController` | B | GET | `/api/v1/public/sitemap/{kind}?page=` | Search-indexable list (`kind` = `posts` / `recruits` / `users`, 50k per page, only id, URL values, updated time). Excludes hidden, deleted, suspended, pending withdrawal and recruiters; recruit posts only while open (04 Policy POL-A-9) | public |
 
@@ -167,7 +167,7 @@ Not a page; 7 common controllers. Other pages borrow these APIs.
 - [ ] **D** Spike: Toss test-key checkout → confirm → cancel
 - [ ] **D** Frontend (D2): STOMP client singleton and subscription hooks (`lib/realtime`) — blueprint 11-1
 - [ ] **E** Common components (bottom sheet, confirm modal, toast, empty state, skeleton, `error.tsx`, `not-found.tsx`), sheet/modal open-close `useOverlay()` and `useAppBack()` (D1, blueprint ch. 7), common sheets (report, block, external link, delete confirm, limit notice, draft restore), image uploader
-- [ ] **E** Report rules (one per person per target, temp hide at 5 distinct reporters), block filter for queries (shared by feed, profile, comments, 1:1 chat, applications)
+- [ ] **E** Report rules (one per person per target, temp hide at 5 distinct reporters), block filter for queries (shared by feed, profile, comments, 1:1 chat, applications). Store blocking periods in `user_blocks` (ERD ch. 4-8); unblock closes the period without deleting it. Current block lists use active rows; D uses all periods for DM visibility.
 - [ ] **E** Frontend monorepo, orval, TanStack Query, Zustand, nuqs, API fetch function `api-fetch.ts` and shared error-code handling (D1 morning, others wait on it; blueprint ch. 2, 5-4), Vercel deploy
 - [ ] **Everyone** Sentry; agree on OpenAPI tag rule (rule 6 in 1-3)
 
@@ -566,7 +566,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 - Borrowed: photo upload (00), message report (00 `ReportController`, copy 10 before/after), accept/delete request (16), "이슈로 만들기" (Make an issue) → 13
 - Tables: new chat_messages, chat_message_images, pull_requests, chat_message_mentions, report_message_snapshots, 🟡 ai_chat_summaries (after 28) · shared chat_rooms, chat_room_members, uploaded_files, issues, follows, team_members, user_blocks, report_cases, reports, notifications, subscriptions (after 28), recruiter_profiles (after 31)
-- [ ] Server (D): new message notifications (grouped per room), mention notifications (even when muted), @all only for owner/admin, don't deliver messages from blocked users, expire requests after 30 days
+- [ ] Server (D): new message notifications (grouped per room), mention notifications (even when muted), @all only for owner/admin, don't deliver messages from blocked users; keep blocked-period DMs invisible after unblocking using retained `user_blocks` intervals (history, catch-up, previews, unread counts, search and notifications; team chat exempt), expire requests after 30 days
 - [ ] Server (B): `pull_request` webhook → system messages (undeletable) only for opened, review requested, merged, closed
 - [ ] Server (C, reviewed by D): `LlmClient` interface + Ollama implementation (JSON-format response, max 500 messages, excluding deleted, hidden, images and blocked users), 7-day retention batch. B runs Ollama in Docker next to the backend server (D9)
 - [ ] Server (D) `[Included]`: share cards and Linker link cards are filled from the original in the message list response (deleted, hidden or blocked → "볼 수 없는 게시물이에요"); post views via a card are logged in 23 with `source = CHAT_SHARE`
@@ -806,7 +806,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 | Method | Path | Does | Permission |
 | --- | --- | --- | --- |
-| GET | `/api/v1/user/plans?reason=` | Developers: Free / Pro / Flex; recruiters: `[Included]` Scout only. Monthly and yearly prices (Flex and Scout monthly only), entry reason, free trial eligibility | user |
+| GET | `/api/v1/user/plans?reason=` | Developers: Free / Pro / Flex; recruiters: `[Included]` Scout only. Monthly and yearly prices (Flex and Scout monthly only), entry reason, free trial eligibility. Personalized response: `Cache-Control: private, no-store`; frontend server `no-store`, no shared Next cache | user |
 | GET | `/api/v1/user/plans/team-candidates` | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price (₩7,900 up to 6, ₩1,900 per member from the 7th) | user · developers only |
 | POST | `/api/v1/user/payments/checkout` | Create order (orderId, amount, customerKey). Checks plan matches member type | user |
 | POST | `/api/v1/user/payments/confirm` | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day) | user |
