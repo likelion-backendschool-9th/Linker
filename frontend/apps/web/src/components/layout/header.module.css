@@ -1,0 +1,70 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-chrome);
+  padding-top: env(safe-area-inset-top);
+  background-color: var(--color-canvas);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  max-width: var(--app-max-width);
+  height: var(--header-height);
+  margin: 0 auto;
+  padding: 0 var(--space-xs);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-heading);
+}
+
+.title {
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Title starts at the gutter when there's no back button */
+.inner > .title:first-child {
+  padding-left: var(--space-xs);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.iconButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+.loginButton {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}

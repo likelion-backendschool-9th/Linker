@@ -1,13 +1,12 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 
-import { WEB_ORIGIN } from '@/lib/config';
+import { LinkerWebView } from '@/webview/linker-webview';
 
-// Only screen of the app. Bridge, back handling and navigation policy come in stage 3 (blueprint ch. 12).
+// Only screen of the app (blueprint ch. 12). Background matches the web's --color-canvas.
 export default function Index() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <WebView source={{ uri: WEB_ORIGIN }} sharedCookiesEnabled />
+      <LinkerWebView />
     </SafeAreaView>
   );
 }

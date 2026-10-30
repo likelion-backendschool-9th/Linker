@@ -1,0 +1,54 @@
+/* Sits above the bottom tab bar; inverse surface like the footer band (guide ch. 4) */
+.viewport {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-xs));
+  left: 0;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  outline: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text-inverse);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  animation: rise var(--duration-overlay) var(--ease-standard);
+}
+
+.toast :focus-visible {
+  outline-color: var(--color-focus-ring-on-dark);
+}
+
+.message {
+  flex: 1;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+.action {
+  flex-shrink: 0;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  text-decoration: underline;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-xs));
+  }
+}

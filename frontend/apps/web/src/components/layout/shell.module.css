@@ -1,0 +1,10 @@
+.app,
+.entry {
+  min-height: 100dvh;
+  background-color: var(--color-canvas);
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+}
