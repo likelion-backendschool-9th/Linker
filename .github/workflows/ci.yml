@@ -119,6 +119,9 @@ jobs:
       DB_PASSWORD: compose-validation-only
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-compose-action@v1
+        with:
+          version: v2.32.4
       - name: Validate production Compose
         run: docker compose --env-file /dev/null -f compose.yml config --quiet
       - name: Validate development Compose
