@@ -6,7 +6,23 @@
 - UI language is Korean. Use documented UI copy verbatim.
 - `frontend/`: pnpm/Turborepo, Next.js 16 web, Expo shell, generated API and bridge packages. Read `frontend/AGENTS.md` before frontend work.
 - `backend/`: Spring Boot/Gradle, Security, JPA, PostgreSQL, Redis, WebSocket/STOMP, springdoc. Read a local `AGENTS.md` or `CLAUDE.md` if present.
-- Keep existing `CLAUDE.md` files unchanged unless explicitly asked to edit them.
+- `CLAUDE.md` files only import the same-folder `AGENTS.md` (`@AGENTS.md`). Put all guidance in `AGENTS.md`, not `CLAUDE.md`.
+
+## Work areas (WBS ch. 0)
+One person owns both frontend and backend of their pages (controller owner = page owner).
+
+| Owner | Area | Pages |
+| --- | --- | --- |
+| A | Accounts & recruiting | 01, 02, 03, 04, 05, 06, 25, 31, 32, 33 |
+| B | GitHub, teams, ops | 07, 08, 09, 10, 26, 27, 30 + PR posting in 17 |
+| C | Issues | 11, 12, 13, 14, 15 + my issues in 07 + AI summary (Flex) in 17 + progress card (Flex) in 11 |
+| D | Chat, notifications, subscription | 16, 17, 18, 28, 29 |
+| E | Find Team & project posts | 19, 20, 21, 22, 23, 24 |
+
+Foundation page 00 (D1–D2) is split across everyone; see WBS ch. 3.
+
+## Four roles
+Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub login) / Recruiter (company email sign-up) / Operator (developer account + `admins` row + OTP). The single role × page/action table is Policy ch. 2.
 
 ## Read only the relevant documentation
 | Source | Authority |
@@ -20,6 +36,7 @@
 | `docs/08-erd.md` | Tables, columns, enums |
 | `docs/09-wbs.md` | Endpoints, controllers, ownership, schedule |
 | `frontend/10-frontend-blueprint.md` | Frontend implementation rules; 04/07/09 take precedence |
+| `frontend/11-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/src/styles/tokens/` |
 
 - Search for the relevant page number, feature, table, or controller instead of reading every document.
 - `[Required]` is essential; `[Included]` may be deferred in the order in WBS ch. 6.
@@ -42,11 +59,54 @@
 - `docs/` translates Korean originals maintained outside this repo. Report doc changes so the user can update those originals.
 
 ## Git workflow
-Follow `AI_GIT_GUIDE.md`; its essential rules are:
-- Start work branches from the latest `dev`; one main task per branch. PR work branches into `dev`, then merge `dev` into `main` for release.
-- Never commit directly to `main` or `dev`. Do not add release/hotfix branches without a team request.
-- Branch: `<type>/<short-kebab-case-description>`. Commit: `<type>: <concise imperative description>` (one space after `:`).
-- Allowed types only: `feat`, `fix`, `chore`, `docs`. Prefer matching branch/commit types and small, focused commits; separate unrelated scope into another branch.
-- Example: `docs/agent-guides` and `docs: add agent guides`.
-- Remove merged work branches only with explicit approval. Destructive operations (`reset --hard`, force-push, branch deletion) require explicit user approval.
-- Inspect branch/status before Git operations; clarify unclear state before potentially destructive commands.
+### Branches
+- `main`: stable, release-ready version.
+- `dev`: integration and testing branch for the team's work.
+- Work branches: feature, bug fix, configuration, and documentation work. Created per type:
+
+| Type | Purpose | Branch example |
+| --- | --- | --- |
+| `feat` | New feature | `feat/login-implementation` |
+| `fix` | Bug fix | `fix/login-error` |
+| `chore` | Configuration and other maintenance | `chore/eslint-config` |
+| `docs` | Writing or editing documents | `docs/git-convention` |
+
+### Workflow
+1. Switch to the latest `dev` and pull.
+2. Create a work branch of the matching type.
+3. Do the work and commit following the commit convention.
+4. Push the work branch to the remote.
+5. Open a PR from the work branch into `dev`.
+6. Review and test the changes, then merge into `dev`.
+7. When development is complete, merge `dev` into `main`.
+
+### Rules
+- Never commit directly to `main` or `dev`.
+- Pick the branch type that matches the work; one main task per branch (separate unrelated scope into another branch).
+- Every work branch opens its PR into `dev`. Review and test before merging.
+- Delete a work branch after it is merged. (Agents: only with explicit user approval.)
+- No `release` or `hotfix` branches; this is a two-week project.
+- Prefer matching branch type and commit type.
+
+### Branch naming
+Format: `<type>/<description>`
+- Type is lowercase: `feat`, `fix`, `chore`, `docs` only. Use `feat`, never `feature`.
+- Description is short and clear, with words joined by hyphens (kebab-case).
+
+### Commit messages
+Format: `<type>: <description>` (one space after the colon).
+- Type is one of `feat`, `fix`, `chore`, `docs`.
+
+| Type | Purpose | Commit example |
+| --- | --- | --- |
+| `feat` | New feature | `feat: implement login` |
+| `fix` | Bug fix | `fix: fix login error` |
+| `chore` | Configuration and other maintenance | `chore: configure ESLint` |
+| `docs` | Writing or editing documents | `docs: write Git convention` |
+
+- Write the description short and clear. One main change per commit.
+- Never use vague messages such as "fix", "work", or "update".
+
+### Agent safety
+- Destructive operations (`reset --hard`, force-push, branch deletion) require explicit user approval.
+- Inspect branch and status before Git operations; clarify unclear state before potentially destructive commands.
