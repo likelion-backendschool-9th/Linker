@@ -357,7 +357,7 @@ Required permissions and webhooks are in [PRD ch. 8](./02-prd.md#8-github-integr
 | Server state | TanStack Query | Server data cache |
 | URL state | nuqs | Keep filters, tabs, selected date in the URL |
 | Client state | Zustand | UI state only |
-| Style / UI | Tailwind CSS + shadcn/ui, Motion (LazyMotion + m), Lottie if needed | |
+| Style / UI | CSS Modules + plain CSS design tokens, `radix-ui` primitives, Motion (LazyMotion + m), Lottie if needed | |
 | Forms / validation | react-hook-form + zod | |
 | API types | springdoc-openapi → orval generates Query hooks | Types match the backend |
 | Realtime | @stomp/stompjs (applied to Query cache) | |

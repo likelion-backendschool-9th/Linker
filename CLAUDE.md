@@ -30,6 +30,7 @@ Read the CLAUDE.md of the folder you are working in. The docs are large; open on
 | `09-wbs.md` | API rules (ch. 1), D1–D10 schedule (ch. 2), per-page controller + endpoints + tables + tasks (ch. 3–4), controller list (ch. 5) | **Endpoints, controllers, owners, dates** |
 
 `frontend/10-frontend-blueprint.md` turns 04/07/09 into frontend code rules. If it disagrees with them, the docs above win.
+`frontend/11-design-guide.md` is the source for how screens look (colors, type, spacing, shapes, component styles); token values live in `frontend/apps/web/src/styles/tokens/`.
 
 Marks used everywhere: `[Required]` (core flow breaks without it) / `[Included]` (in scope, first to be deferred). Deferral order is in 09 ch. 6.
 

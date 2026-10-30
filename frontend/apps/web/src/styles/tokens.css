@@ -1,63 +1,8 @@
 /*
- * Design tokens. Components read these through var() in their *.module.css.
- * Typography follows the Pretendard typography guide: mobile sizes by default,
- * desktop sizes from 1024px. Colors assume a white (#FFFFFF) background.
- *
- * Breakpoints (custom properties can't be used inside @media, so write the px value):
- *   sm 640px · md 768px · lg 1024px (desktop typography)
+ * Design token entry point. Components read tokens through var() in their *.module.css.
+ * Rules for using them: frontend/11-design-guide.md.
  */
 
-:root {
-  /* Font */
-  --font-sans:
-    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
-    'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-
-  /* Font size — mobile (default) */
-  --font-size-page-title: 1.5rem; /* 24px */
-  --font-size-section-title: 1.25rem; /* 20px */
-  --font-size-card-title: 1.125rem; /* 18px */
-  --font-size-body: 1rem; /* 16px, also buttons and inputs */
-  --font-size-caption: 0.875rem; /* 14px, helper text; minimum for errors and notices */
-  --font-size-meta: 0.8125rem; /* 13px, time, view count */
-
-  /* Font weight */
-  --font-weight-regular: 400;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  /* Line height */
-  --line-height-page-title: 1.3;
-  --line-height-title: 1.4; /* section and card titles */
-  --line-height-body: 1.6;
-  --line-height-caption: 1.5; /* caption and meta */
-
-  /* Text color */
-  --color-text-heading: #171717; /* page and section headers */
-  --color-text-title: #262626; /* card, post and item titles */
-  --color-text-body: #404040; /* body text and entered values */
-  --color-text-secondary: #525252; /* helper text needed to understand the content */
-  --color-text-placeholder: #737373;
-  --color-text-meta: #737373; /* low-priority meta; never for required guidance */
-
-  /* Status color — always paired with a message, never color alone */
-  --color-status-error: #b91c1c; /* also delete, leave and other irreversible actions */
-  --color-status-success: #15803d;
-  --color-status-warning: #92400e;
-
-  /* Surface */
-  --color-bg: #ffffff;
-  --color-focus-ring: #171717;
-
-  /* Layout */
-  --touch-target-min: 44px;
-  --app-max-width: 640px; /* app screens keep the mobile width (blueprint §6-6) */
-}
-
-@media (min-width: 1024px) {
-  :root {
-    --font-size-page-title: 2rem; /* 32px */
-    --font-size-section-title: 1.5rem; /* 24px */
-    --font-size-card-title: 1.25rem; /* 20px */
-  }
-}
+@import './tokens/color.css';
+@import './tokens/typography.css';
+@import './tokens/layout.css';

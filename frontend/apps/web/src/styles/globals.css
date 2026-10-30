@@ -24,7 +24,7 @@ body {
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-body);
   color: var(--color-text-body);
-  background-color: var(--color-bg);
+  background-color: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   word-break: keep-all;
   overflow-wrap: anywhere;
@@ -76,8 +76,9 @@ button {
   padding: 0;
 }
 
+/* Placeholders sit on the tinted input fill, so they use the on-tint color (guide ch. 2) */
 ::placeholder {
-  color: var(--color-text-placeholder);
+  color: var(--color-text-subtle-on-tint);
   opacity: 1;
 }
 

@@ -1,0 +1,39 @@
+/*
+ * Spacing, shape and size tokens (design guide ch. 3).
+ * Breakpoints (custom properties can't be used inside @media, so write the px value):
+ *   sm 640px · md 768px · lg 1024px (desktop typography) · xl 1280px
+ */
+
+:root {
+  /* Spacing: 8px base unit, 4px half-step */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-section: 48px; /* gap between page sections; 80px from lg */
+  --space-section-lg: 80px; /* gap between major blocks; 120px from lg */
+
+  /* Radius */
+  --radius-none: 0;
+  --radius-sm: 16px; /* inputs, FAQ rows, small cards */
+  --radius-md: 24px; /* content cards, sheets (top corners), footer */
+  --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
+
+  /* Size */
+  --touch-target-min: 44px;
+  --control-height: 48px; /* pill buttons and inputs */
+  --app-max-width: 640px; /* app screens keep the mobile width (blueprint §6-6) */
+
+  /* The only shadow: the active segment of a segmented control */
+  --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --space-section: 80px;
+    --space-section-lg: 120px;
+  }
+}

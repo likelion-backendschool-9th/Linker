@@ -79,7 +79,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Foundation used by every page, so built before any page. Build order and the "end-of-D2 check" list are in the [10 frontend blueprint §1-1](../frontend/10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work); code rules in the blueprint chapter noted in parentheses.
 
-- [ ] pnpm monorepo, Next.js App Router, Tailwind + shadcn/ui, orval-generated API hooks, TanStack Query, Zustand, nuqs setup
+- [ ] pnpm monorepo, Next.js App Router, CSS Modules + design tokens + `radix-ui`, orval-generated API hooks, TanStack Query, Zustand, nuqs setup
 - [ ] One API call function (`api-fetch.ts`, works on server and browser) and common handling of failure codes (`LOGIN_REQUIRED`, `PLAN_LIMIT`, `RATE_LIMITED`, `SUSPENDED`, `GITHUB_UNAVAILABLE`) (blueprint 5-4)
 - [ ] 6 role-based route groups (`(auth)` `(public)` `(member)` `(developer)` `(recruiter)` `(admin)`) and group `layout.tsx` files (blueprint ch. 3)
 - [ ] Access table `route-access.ts`: the one place that encodes Policy ch. 2's table; read by both `proxy.ts` and group `layout.tsx` (blueprint ch. 4)

@@ -2,7 +2,7 @@
 
 # Linker frontend
 
-The blueprint above is the full rulebook (`MUST` / `NEVER` are absolute, `RECOMMENDED` needs judgment). This file is the short version to check every time, plus where to look before starting. Project overview and doc consistency rules are in the root `../CLAUDE.md`.
+The blueprint above is the full rulebook (`MUST` / `NEVER` are absolute, `RECOMMENDED` needs judgment). This file is the short version to check every time, plus where to look before starting. Project overview and doc consistency rules are in the root `../CLAUDE.md`. Colors, type, spacing and component styles: `11-design-guide.md`; token values: `apps/web/src/styles/tokens/`.
 
 ## Before working on a page
 
@@ -37,8 +37,12 @@ The blueprint above is the full rulebook (`MUST` / `NEVER` are absolute, `RECOMM
 - Contrast 4.5:1 (text) / 3:1 (large text, icons). Never remove the `focus-visible` ring. Touch targets ≥ 44×44px. Drag actions have a button alternative. `MotionConfig reducedMotion="user"`. Never block zoom.
 
 **Mobile first (§6-6)**
-- Base classes target 360px; widen with `sm:` `md:` `lg:`. App screens keep `max-w-screen-sm`; only admin goes two-column at `lg`.
+- Base styles target 360px; widen with `@media (min-width: 640px | 768px | 1024px)`. App screens keep `max-width: var(--app-max-width)`; only admin goes two-column at 1024px.
 - `100dvh`, safe-area padding on bottom tabs and input bars, inputs ≥ 16px font, no hover-only UI.
+
+**Styling (11-design-guide.md)**
+- CSS Modules next to the component; read every color, size, space and radius through `var(--token)` from `styles/tokens/`. NEVER a raw hex, font size or radius in a component. Add a missing value to the tokens and the guide first.
+- Text on tinted surfaces uses `--color-text-subtle-on-tint`; text on dark surfaces uses the `--color-text-inverse*` tokens. Accent is never a CTA fill. No shadows except `--shadow-segment-active`.
 
 **Overlays never trap back navigation (ch. 7)**
 - Bottom sheets, modals, drawers and the photo viewer open only through `useOverlay()`; never a sheet opened with plain `useState`.

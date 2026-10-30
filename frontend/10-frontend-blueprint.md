@@ -1,6 +1,7 @@
 # Linker Frontend Blueprint
 
 > Question this document answers: **What structure and rules do AI (and humans) follow when writing Linker frontend code?**
+> How things look (colors, type, spacing, shapes, component styles) is in [11 Design Guide](./11-design-guide.md); token values live in `apps/web/src/styles/tokens/`.
 > Page numbers and paths come from [07 Page TODO](../docs/07-page-todo.md), APIs and controllers from [09 WBS](../docs/09-wbs.md), and per-role access and numbers from [04 Policy](../docs/04-policy.md); those are the sources of truth. This document turns them into **folder, component and code rules**, so if it disagrees with a source, the source wins.
 >
 > **For AI workers**: `MUST` and `NEVER` in this document are followed without exception. Places that need judgment say `RECOMMENDED`. Work order follows the [07 TODO](../docs/07-page-todo.md) page order (00 → 01 → … → 33). **Before page work, first check that everything in §1-1 "foundation built first" exists.** When you take a page: ① find its group, folder and orval tag in the ch. 13 table, ② read the checklist with the same number in the 07 TODO, ③ finish with the ch. 14 checklist.
@@ -15,7 +16,7 @@
 | Web | Next.js 16 App Router, React 19, TypeScript strict. Deployed on Vercel (icn1) |
 | App | Expo + react-native-webview. Every screen is web; native only handles login return, push, sharing, back navigation, external links |
 | State | Server data = TanStack Query (orval hooks) · URL state (tabs, filters, **overlays**) = nuqs · other UI state = Zustand |
-| UI | Tailwind CSS v4 + shadcn/ui (Radix) · Motion (LazyMotion + `m`) · TanStack Virtual · dnd-kit · react-hook-form + zod · date-fns (+ `@date-fns/tz`) |
+| UI | CSS Modules + plain CSS design tokens (`styles/tokens/`, [11 Design Guide](./11-design-guide.md)) · `radix-ui` primitives · Motion (LazyMotion + `m`) · TanStack Virtual · dnd-kit · react-hook-form + zod · date-fns (+ `@date-fns/tz`) |
 | Realtime | `@stomp/stompjs` (Spring STOMP) |
 | Tests | Vitest + Testing Library + vitest-axe · Playwright + @axe-core/playwright · MSW (orval mocks) |
 | Accessibility standard | WCAG 2.2 AA, KWCAG 2.2 (Korean Web Content Accessibility Guidelines) |
@@ -32,6 +33,7 @@
 | Server components as parents of client components | Ch. 5 |
 | Purposeful component splits | §5-3 |
 | Mobile first | §6-6 |
+| Colors, type, spacing, component styles | [11 Design Guide](./11-design-guide.md) |
 | Modals, bottom sheets, drawers never trap back navigation | Ch. 7 |
 | Once-a-day policies → Next cache / TanStack Query | Ch. 9 |
 | next/image optimization + sharp | Ch. 10 |
@@ -55,8 +57,9 @@ The list AI checks every time before writing code. Reasons and examples are in e
 8. **Landmarks per page: 1 `header` · 1 `main` · 1 bottom `nav`.** Exactly one `h1` per page (ch. 6).
 9. **Buttons are `<button>`, navigation is `<Link>`.** `div onClick` is NEVER allowed.
 10. **Numbers (character counts, photo counts, limits) are never hard-coded; import them from `src/lib/policy.ts`.** Values come from the 04 Policy.
-11. **Mobile by default → widen with `sm:`, `md:`, `lg:`.** Don't write for desktop and override for mobile.
+11. **Mobile by default → widen with `@media (min-width: 640px | 768px | 1024px)`.** Don't write for desktop and override for mobile.
 12. **APIs are called only through orval-generated hooks and functions.** Direct `fetch('/api/v1/...')` calls are NEVER allowed (exception: inside `src/lib/api/`).
+13. **Styles are CSS Modules that read design tokens.** NEVER write a hex color, font size, spacing or radius as a raw value in a component; use `var(--token)` from `styles/tokens/`. New values are added to the tokens and the [11 Design Guide](./11-design-guide.md) first. No CSS-in-JS and no utility-class framework.
 
 ### 1-1. Foundation built before pages (the most important work)
 
@@ -67,7 +70,7 @@ Every page uses the code below. Adding it later means reworking all 33 pages, so
 
 | Stage | Foundation | Files | Blueprint | Owner (09) |
 | --- | --- | --- | --- | --- |
-| 1 · D1 morning | Monorepo, Next.js, Tailwind tokens, shadcn install | root, `apps/web`, `styles/globals.css` | Ch. 2 | E |
+| 1 · D1 morning | Monorepo, Next.js, design tokens, `radix-ui` install | root, `apps/web`, `styles/tokens/*`, `styles/globals.css` | Ch. 2 | E |
 | 1 · D1 morning | orval generation + API call function + shared failure-code handling + Providers | `packages/api`, `lib/api/*`, `app/providers.tsx` | §2-1, §5-4, §9-3 | E |
 | 2 · D1 | Role computation, access table, guards | `lib/auth/route-access.ts`, `session.ts`, `read-role.ts`, `proxy.ts` | Ch. 4 | A |
 | 2 · D1 | Screen frames and landmarks | `components/layout/*` (AppShell, EntryShell, AdminShell, PageFrame, TabHeader, StackHeader, BottomTabBar, SkipLink), 6 group `layout.tsx` files | §3-2, §4-6, §6-1 | A |
@@ -108,7 +111,7 @@ linker-web/                      # frontend repo (backend is a separate Gradle r
 └── package.json
 ```
 
-- No `packages/ui`. Only one app (`apps/web`) draws screens, so shadcn components live in `apps/web/src/components/ui`.
+- No `packages/ui`. Only one app (`apps/web`) draws screens, so base components (built on `radix-ui`, styled with CSS Modules) live in `apps/web/src/components/ui`.
 - Put `onlyBuiltDependencies: [sharp, esbuild]` in `pnpm-workspace.yaml`. pnpm 10 blocks install scripts by default, so the sharp binary install may be skipped (ch. 10).
 - Expo supports pnpm monorepos, but if Metro can't find modules, set `node-linker=hoisted` in `.npmrc` as the Expo monorepo guide says.
 
@@ -129,7 +132,7 @@ linker-web/                      # frontend repo (backend is a separate Gradle r
 - **What only one page uses lives in that page's folder.** Components, hooks, schemas and tests go in private folders next to `page.tsx` (`_components`, `_hooks`, `_lib`, `_views`). Folders starting with `_` never become URLs.
 - **If two or more pages use it, move it up to the nearest common ancestor folder.** e.g. the editor shared by post create (`/posts/new`) and edit (`/posts/[id]/edit`) → `(developer)/posts/_components/post-editor/`.
 - **If used across role groups, move it to `src/features/<domain>/`.** e.g. the 4 sheets made by issue detail (12) and used by 13, 14, 15 are all under `teams/[id]`, so `teams/[id]/_components/issue-sheets/`. Something used by nearly every group, like the report sheet, goes to `src/features/report/`.
-- **Only domain-free shared parts go in `src/components/`.** shadcn originals (`ui/`), layout skeletons (`layout/`), overlay frames (`overlay/`).
+- **Only domain-free shared parts go in `src/components/`.** base UI components (`ui/`), layout skeletons (`layout/`), overlay frames (`overlay/`).
 - Tests sit next to their target as `*.test.tsx`. MSW handlers use orval output; only per-screen overrides go in `_lib/handlers.ts`.
 - File names are kebab-case (`issue-status-sheet.tsx`), exported component names PascalCase (`IssueStatusSheet`). One exported component per file.
 
@@ -241,7 +244,7 @@ apps/web/
     │           └── audit/page.tsx                # ★27
     │
     ├── components/
-    │   ├── ui/                       # shadcn originals (button, drawer, dialog, sheet, tabs …). No domain logic
+    │   ├── ui/                       # base components on radix-ui + CSS Modules (button, dialog, tabs …). No domain logic
     │   ├── layout/                   # AppShell, EntryShell, AdminShell, PageFrame, TabHeader, StackHeader, BottomTabBar, SkipLink
     │   └── overlay/                  # OverlaySheet, OverlayDialog (frames bound to useOverlay)
     ├── features/                     # domain parts used across groups
@@ -271,7 +274,10 @@ apps/web/
     │   ├── browser/                  # safe-storage.ts, is-browser.ts
     │   └── policy.ts                 # 04 Policy numbers (with POL id comments)
     ├── stores/                       # Zustand: ui-store.ts etc. (no server data, no overlays)
-    └── styles/globals.css            # Tailwind v4 @theme tokens
+    └── styles/
+        ├── globals.css               # reset and base styles; imports tokens.css
+        ├── tokens.css                # imports the three token files below
+        └── tokens/                   # color.css · typography.css · layout.css (design guide values)
 ```
 
 ### 3-4. Shape of one page folder
@@ -517,7 +523,7 @@ export default async function IssueListPage({ params, searchParams }: PageProps)
 - NEVER split just because a file is long. If it's one region of one screen, one file is better even at 200 lines.
 - NEVER use purposeless names like `Wrapper`, `Container`, `Box`, `Item2`. Names say "what it does" (`IssueAssigneeSheet`, `RecruitDeadlineBadge`).
 - NEVER generalize ahead of time because "it might be reused later". When a second user appears, promote it per rule 3-1.
-- Variants that differ only in style are `cva` variants, not duplicated components.
+- Variants that differ only in style are a `variant` prop mapped to CSS Module classes, not duplicated components.
 
 ### 5-4. API calls: `api-fetch.ts` (orval mutator)
 
@@ -583,7 +589,7 @@ Every app screen gets the same landmark order through `PageFrame` (server).
 | Name–value groups (repo info, plan comparison, profile meta) | `<dl>` `<dt>` `<dd>` |
 | Photo + caption | `<figure>` + `<figcaption>` |
 | Radio groups (job-seeking status, meeting style) | `<fieldset>` + `<legend>` |
-| Tabs (feed tabs, chat tabs, recruit tabs) | shadcn `Tabs` (Radix, `role="tablist"`). Tab value in the URL via nuqs |
+| Tabs (feed tabs, chat tabs, recruit tabs) | Radix `Tabs` (`role="tablist"`). Tab value in the URL via nuqs |
 | Chat message list | `role="log"` + `aria-live="polite"`, each message an `<article>` |
 | Toast | `role="status"` (errors `role="alert"`) |
 | Step screens (onboarding, team creation, recruiter signup) | `<ol>` step indicator + current step `aria-current="step"` |
@@ -603,14 +609,14 @@ Every app screen gets the same landmark order through `PageFrame` (server).
 
 ### 6-4. Overlay accessibility
 
-- Bottom sheets are shadcn `Drawer`, centered modals `Dialog`, side panels `Sheet`. All are Radix-based, so focus trapping, `Esc` to close and returning focus to the trigger after close are built in. Do not turn these off.
+- Bottom sheets, centered modals and side panels are all Radix `Dialog`, styled differently in `components/overlay/`, so focus trapping, `Esc` to close and returning focus to the trigger after close are built in. Do not turn these off.
 - Every overlay has a `DialogTitle` (may be visually hidden) and a `DialogDescription`.
 - Confirm modals (delete, leave service, delete team) use `AlertDialog`, with default focus on "취소" (Cancel).
 
 ### 6-5. Other musts
 
-- Contrast: body text 4.5:1, large text and icons 3:1. Check when creating color tokens.
-- Focus indicator: never remove the `focus-visible` ring (NEVER `outline-none` alone).
+- Contrast: body text 4.5:1, large text and icons 3:1. Check when creating color tokens; measured ratios and the surface-specific text tokens are in [11 Design Guide](./11-design-guide.md) ch. 1.
+- Focus indicator: never remove the `focus-visible` ring (NEVER `outline: none` without a visible replacement).
 - Touch targets: 44×44px or more (more generous than the WCAG 2.5.8 minimum of 24px).
 - Drag actions (board drag, reordering photos) have a button alternative doing the same thing (WCAG 2.5.7). Board: card menu "상태 바꾸기" (change status); photos: "앞으로/뒤로" (forward/back) buttons. Also enable dnd-kit `KeyboardSensor` and `announcements` (in Korean).
 - Motion: `<MotionConfig reducedMotion="user">`. Autoplay GIFs play only on tap (same as policy).
@@ -620,9 +626,9 @@ Every app screen gets the same landmark order through `PageFrame` (server).
 
 ### 6-6. Mobile first
 
-- Base Tailwind classes = 360px-wide mobile. Wider screens add `sm:` (640) `md:` (768) `lg:` (1024).
-- App screens keep a centered max width (`max-w-screen-sm`) even at `lg`; only admin screens expand to list + detail two columns at `lg` (07 TODO ch. 8 says "admin screens are desktop-first", but CSS is still written mobile-first).
-- Height `100dvh`; bottom tabs and input bars use `pb-[env(safe-area-inset-bottom)]`. `viewportFit: 'cover'` in `viewport`.
+- Base styles = 360px-wide mobile. Wider screens add `@media (min-width: 640px)`, `768px`, `1024px`.
+- App screens keep a centered max width (`max-width: var(--app-max-width)`) even at `lg`; only admin screens expand to list + detail two columns at `lg` (07 TODO ch. 8 says "admin screens are desktop-first", but CSS is still written mobile-first).
+- Height `100dvh`; bottom tabs and input bars use `padding-bottom: env(safe-area-inset-bottom)`. `viewportFit: 'cover'` in `viewport`.
 - Input font size 16px or more (prevents iOS zoom).
 - NEVER rely on hover-only UI (hover menus, hover tooltips). Long-press actions have a "더보기" (More) button alternative.
 
@@ -1181,6 +1187,7 @@ Each page was matched against the 07 TODO paths, the 04 Policy access table and 
 - [ ] No horizontal scroll at 360px width. Every action works with keyboard only
 - [ ] Zero violations in Vitest + vitest-axe (components) and Playwright + axe (pages)
 - [ ] Numbers come from `policy.ts`
+- [ ] Styling passes the [11 Design Guide](./11-design-guide.md) ch. 8 checklist (tokens only, no raw values)
 
 ---
 
