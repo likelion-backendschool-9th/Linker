@@ -98,7 +98,8 @@ Operators = developer + operator permission: they use `(developer)`, `(member)`,
 ### 3-3. Tree (`apps/web`)
 Page paths per group are in ch. 13. Beyond them:
 ```
-next.config.ts  proxy.ts  public/
+next.config.ts  public/
+src/proxy.ts    (with a src/ dir Next 16 requires it next to app/)
 src/app/        layout.tsx (<html lang="ko">)  providers.tsx ('use client': QueryClient, NuqsAdapter, LazyMotion, Toaster, NativeBridgeProvider)
                 not-found.tsx ("삭제되었거나 볼 수 없는 콘텐츠예요")  error.tsx  global-error.tsx  robots.ts  manifest.ts
   (public)/_components/recruiter-ad-card/          shared by 24 feed and 04 job ad sheet
@@ -140,6 +141,8 @@ Next 16 name for middleware. `readRoleFromCookie(req)` → `resolveAccess(path, 
 - `notFound`: rewrite to `/404` with status 404
 - Matcher excludes `_next/static`, `_next/image`, favicon, robots, manifest, image files.
 - `returnTo` accepts only same-origin paths (starts with `/`, `//` forbidden).
+- On allow, `proxy.ts` sets request headers `x-linker-pathname` / `x-linker-search` so group layouts (which get no path prop) can re-check with `enforceAccess()` (`lib/auth/enforce-access.ts`).
+- Env: `JWT_PUBLIC_KEY` (PEM, `\n` escapes allowed), `JWT_ALGORITHM` (default `RS256`), `SESSION_COOKIE_NAME` (default `linker_session`; set once the backend names the cookie). No key → every request is a guest.
 
 ### 4-4. Same URL, several roles: `_views/`
 Don't split the URL; `page.tsx` reads the session and picks a view. If only buttons differ, branch inside one action component instead.

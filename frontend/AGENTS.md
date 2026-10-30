@@ -30,7 +30,7 @@ Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The
 - Icon buttons need sr-only text; toggles use `aria-pressed`; state cannot rely on color alone.
 - Contrast ≥ 4.5:1 for text, 3:1 for large text/icons; retain focus-visible rings; targets ≥ 44×44px; provide button alternatives to dragging.
 - Honor reduced motion with `MotionConfig reducedMotion="user"`; allow zoom; no hover-only interaction.
-- Base layout targets 360px, widening with `sm:`/`md:`/`lg:`. App screens use `max-w-screen-sm`; only admin becomes two-column at `lg`.
+- Base layout targets 360px, widening with `@media (min-width: 640px | 768px | 1024px)` in CSS Modules (no Tailwind or other utility-class framework). App screens keep `max-width: var(--app-max-width)`; only admin becomes two-column at 1024px.
 - Use `100dvh`, safe-area padding for bottom tabs/input bars, and input fonts ≥ 16px.
 
 ## Navigation and overlays

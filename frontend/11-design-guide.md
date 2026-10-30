@@ -122,6 +122,9 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 - **Breakpoints:** `640px` (single column → wider cards), `768px` (nav links may expand), `1024px` (desktop type and admin two-column), `1280px` (admin default grid). Custom properties cannot be used in `@media`, so write the px value.
 - **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
+- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
+- **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
 
 ## 4. Shape and elevation
@@ -187,7 +190,17 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Not defined yet** — bottom tab bar, bottom sheet content, toast, calendar cells, chat bubbles, disabled state, dark mode. Compose from ch. 1–4 for now; when a decision is made, add it here (and the token if one is needed) in the same change.
+**Bottom tab bar** — fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
+
+**Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`, close is a 44px icon button.
+
+**Toast** — inverse surface like the footer: `--color-primary` fill, `--color-text-inverse` caption text, `--radius-sm`, above the bottom tab bar. Focus ring inside uses `--color-focus-ring-on-dark`.
+
+**Disabled button** — 50% opacity with `not-allowed` cursor; the reason is given in text, never by the dimming alone.
+
+**Destructive button** — the outline button with a `--color-status-error` label (delete, leave, block). Never a red fill.
+
+**Not defined yet** — calendar cells, chat bubbles, dark mode. Compose from ch. 1–4 for now; when a decision is made, add it here (and the token if one is needed) in the same change.
 
 ## 6. Left out of the source design reference on purpose
 
