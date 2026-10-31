@@ -27,6 +27,7 @@ export const chatKeys = {
 
 export function chatRoomsOptions(login: string | null, tab: ChatTab) {
   return infiniteQueryOptions({
+    refetchOnMount: 'always',
     queryKey: [...chatKeys.account(login), 'rooms', tab],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => {
@@ -40,6 +41,7 @@ export function chatRoomsOptions(login: string | null, tab: ChatTab) {
 
 export function unreadSummaryOptions(login: string | null) {
   return queryOptions({
+    refetchOnMount: 'always',
     queryKey: [...chatKeys.account(login), 'unread-summary'],
     queryFn: ({ signal }) =>
       apiFetch<UnreadSummary>('/api/v1/user/chat-rooms/unread-summary', { signal }),

@@ -6,6 +6,7 @@ export type MessageType =
   'TEXT' | 'IMAGE' | 'ISSUE_CARD' | 'PR_EVENT' | 'SHARE_CARD' | 'AI_SUMMARY' | 'SYSTEM';
 
 export type MockMessage = {
+  clientMessageId?: string;
   id: number;
   roomId: number;
   /** null for system and PR messages */

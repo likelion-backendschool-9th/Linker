@@ -76,6 +76,10 @@ export const TEAM = {
 
 /** 04 ch. 8 */
 export const CHAT = {
+  /** Policy ch. 2 rate limits/network failures; TODO 17 reconnect limit. */
+  sendsPerSecond: 5,
+  autoRetries: 3,
+  catchUpMax: 500,
   messageMax: 2000,
   imagesPerSend: 10,
   editWithinHours: 24,
