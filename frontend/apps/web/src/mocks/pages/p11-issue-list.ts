@@ -22,7 +22,11 @@ export function issueRow(item: MockIssue) {
     title: item.title,
     status: item.status,
     state: item.state,
-    assignees: item.assignees,
+    // Assignees who aren't current team members show as "팀 밖 사용자" (04 ch. 7 exceptions)
+    assignees: item.assignees.map((user) => ({
+      ...user,
+      inTeam: (TEAM_MEMBERS[item.teamId] ?? []).some((m) => m.user.id === user.id),
+    })),
     labels: item.labels,
     startDate: item.startDate,
     dueDate: item.dueDate,
@@ -86,8 +90,10 @@ export const routes: MockRoute[] = [
       statuses: ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE'] as IssueStatus[],
     };
   }),
-  // Once per minute (POL-I sync): the second call inside a minute is rejected
-  post('/api/v1/user/teams/:teamId/issues/refresh', () => {
+  // Once per minute (POL-I sync): the second call inside a minute is rejected.
+  // Takes the screen's `view` and filters so only that screen's issues are re-fetched (04 ch. 7 "Sync").
+  post('/api/v1/user/teams/:teamId/issues/refresh', ({ params }) => {
+    teamOr404(params.teamId);
     const waitMs = 60_000 - (Date.now() - lastRefreshAt);
     if (waitMs > 0) {
       fail(429, 'RATE_LIMITED', '잠시 후 다시 시도해 주세요', {

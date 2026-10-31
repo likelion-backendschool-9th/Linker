@@ -4,9 +4,10 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { Route } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useQueryState, useQueryStates } from 'nuqs';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -14,6 +15,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
+import { formatDate } from '@/lib/format/time';
 import { ISSUE } from '@/lib/policy';
 import { toast } from '@/stores/toast-store';
 
@@ -25,12 +27,14 @@ import {
   issueListOptions,
   refreshIssues,
   type IssueListView,
+  type IssueRow as IssueRowData,
 } from '../../_lib/issue-queries';
-import { usePullToRefresh } from '../_hooks/use-pull-to-refresh';
+import { ISSUE_STATUS_LABELS } from '../../_lib/issue-status';
+import { PULL_MAX, usePullToRefresh } from '../_hooks/use-pull-to-refresh';
 import { issueViewParser } from '../_lib/issue-view';
 import styles from './issue-list.module.css';
-import { IssueRow } from './issue-row';
-import { PullIndicator } from './pull-indicator';
+import rowStyles from './issue-row.module.css';
+import pullStyles from './pull-indicator.module.css';
 
 const VIEW_LABELS: Record<IssueListView, string> = { all: '전체', unscheduled: '일정 없음' };
 
@@ -70,7 +74,7 @@ export function IssueList({ teamId }: { teamId: string }) {
   const cooldown = useCooldown();
 
   const refresh = useMutation({
-    mutationFn: () => refreshIssues(teamId),
+    mutationFn: () => refreshIssues(teamId, view, filters),
     onSuccess: async () => {
       cooldown.start(ISSUE.refreshIntervalSeconds);
       await client.invalidateQueries({ queryKey: issueKeys.team(teamId) });
@@ -97,10 +101,8 @@ export function IssueList({ teamId }: { teamId: string }) {
       toast('프로젝트에 추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' }),
   });
 
-  const pull = usePullToRefresh({
-    onRefresh: () => refresh.mutate(),
-    disabled: refresh.isPending || cooldown.left !== null,
-  });
+  const refreshBlocked = refresh.isPending || cooldown.left !== null;
+  const pull = usePullToRefresh({ onRefresh: () => refresh.mutate(), disabled: refreshBlocked });
 
   const pages = issues.data?.pages ?? [];
   const items = pages.flatMap((page) => page.items);
@@ -127,10 +129,17 @@ export function IssueList({ teamId }: { teamId: string }) {
         </div>
         <div className={styles.actions}>
           {view === 'all' && <IssueFilterButton />}
+          {/* aria-disabled, not disabled: stays focusable so the seconds left are read (blueprint §9-1) */}
           <Button
             variant="soft"
-            disabled={refresh.isPending || cooldown.left !== null}
-            onClick={() => refresh.mutate()}
+            aria-disabled={refreshBlocked}
+            onClick={() => {
+              if (cooldown.left !== null) {
+                toast(`${cooldown.left}초 후에 다시 새로 고칠 수 있어요.`);
+                return;
+              }
+              if (!refresh.isPending) refresh.mutate();
+            }}
           >
             <RefreshCw aria-hidden />
             {refresh.isPending
@@ -175,7 +184,7 @@ export function IssueList({ teamId }: { teamId: string }) {
               description="모든 이슈가 보드와 캘린더에 들어가 있어요."
             />
           ) : filtered ? (
-            <EmptyState title="조건에 맞는 이슈가 없어요." description="필터를 바꿔 보세요." />
+            <EmptyState title="조건에 맞는 이슈가 없어요." description="필터를 줄여 보세요." />
           ) : (
             <EmptyState
               title="아직 이슈가 없어요."
@@ -230,5 +239,136 @@ export function IssueList({ teamId }: { teamId: string }) {
         )}
       </section>
     </>
+  );
+}
+
+type IssueRowProps = {
+  teamId: string;
+  issue: IssueRowData;
+  /** Row action, e.g. "프로젝트에 추가" on the "일정 없음" tab */
+  action?: ReactNode;
+};
+
+const MAX_AVATARS = 3;
+
+/**
+ * One issue: repo, number, title, status, assignees, due date, labels, overdue mark (07 TODO 11).
+ * The title links to the issue detail (12).
+ */
+function IssueRow({ teamId, issue, action }: IssueRowProps) {
+  const titleId = `issue-${issue.id}-title`;
+  const shown = issue.assignees.slice(0, MAX_AVATARS);
+  const hidden = issue.assignees.length - shown.length;
+  const outside = issue.assignees.filter((user) => !user.inTeam).length;
+
+  return (
+    <article aria-labelledby={titleId} className={rowStyles.row}>
+      <p className={rowStyles.repo}>
+        {issue.repoName} #{issue.number}
+      </p>
+      <h2 id={titleId} className={rowStyles.title}>
+        <Link href={`/teams/${teamId}/issues/${issue.id}` as Route} className={rowStyles.link}>
+          {issue.title}
+        </Link>
+      </h2>
+
+      <div className={rowStyles.meta}>
+        <span className={rowStyles.status}>{ISSUE_STATUS_LABELS[issue.status]}</span>
+        {issue.dueDate && (
+          <span className={issue.overdue ? rowStyles.overdue : rowStyles.due}>
+            마감 <time dateTime={issue.dueDate}>{formatDate(issue.dueDate)}</time>
+            {issue.overdue && ' · 마감 지남'}
+          </span>
+        )}
+        {issue.assignees.length > 0 ? (
+          <span className={rowStyles.assignees}>
+            <span className="sr-only">
+              담당자{' '}
+              {issue.assignees
+                .map((user) => (user.inTeam ? user.name : `${user.name}(팀 밖 사용자)`))
+                .join(', ')}
+            </span>
+            {shown.map((user) => (
+              <Image
+                key={user.id}
+                src={user.avatarUrl}
+                alt=""
+                width={24}
+                height={24}
+                sizes="24px"
+                className={rowStyles.avatar}
+              />
+            ))}
+            {hidden > 0 && (
+              <span className={rowStyles.more} aria-hidden>
+                +{hidden}
+              </span>
+            )}
+            {outside > 0 && (
+              <span className={rowStyles.outside} aria-hidden>
+                팀 밖 사용자{outside > 1 ? ` ${outside}명` : ''}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className={rowStyles.unassigned}>담당자 없음</span>
+        )}
+      </div>
+
+      {issue.labels.length > 0 && (
+        <ul className={rowStyles.labels} aria-label="라벨">
+          {issue.labels.map((label) => (
+            <li key={label.name} className={rowStyles.label}>
+              {/* GitHub's label color is data, so it's inline; the name always carries the meaning */}
+              <span
+                className={rowStyles.swatch}
+                style={{ backgroundColor: `#${label.color.replace(/^#/, '')}` }}
+                aria-hidden
+              />
+              {label.name}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {issue.scheduleSyncFailed && (
+        <p className={rowStyles.warning}>일정이 GitHub에 반영되지 않았어요</p>
+      )}
+      {action && <div className={rowStyles.action}>{action}</div>}
+    </article>
+  );
+}
+
+type PullIndicatorProps = {
+  /** Current pull distance in px (0 = hidden) */
+  distance: number;
+  ready: boolean;
+  /** Seconds until refresh is allowed again; null when allowed */
+  waitSeconds: number | null;
+};
+
+/**
+ * What the pull gesture will do. Visual only (`aria-hidden`): the "새로 고침" button next to it
+ * says the same and the result is announced by a toast. Moves with transform/opacity only.
+ */
+function PullIndicator({ distance, ready, waitSeconds }: PullIndicatorProps) {
+  const label =
+    waitSeconds !== null
+      ? `${waitSeconds}초 후에 새로 고칠 수 있어요`
+      : ready
+        ? '놓으면 새로 고침'
+        : '당겨서 새로 고침';
+  const style = {
+    '--pull-distance': `${distance}px`,
+    '--pull-progress': String(Math.min(distance / PULL_MAX, 1)),
+  } as CSSProperties;
+
+  return (
+    <div className={pullStyles.indicator} style={style} aria-hidden data-active={distance > 0}>
+      <span className={pullStyles.pill}>
+        <RefreshCw className={pullStyles.icon} />
+        {label}
+      </span>
+    </div>
   );
 }

@@ -77,6 +77,12 @@
   color: var(--color-text-meta);
 }
 
+.outside {
+  margin-left: var(--space-xs);
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+}
+
 .unassigned {
   color: var(--color-text-meta);
 }

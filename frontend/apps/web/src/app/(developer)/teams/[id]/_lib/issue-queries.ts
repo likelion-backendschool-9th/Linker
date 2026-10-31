@@ -12,6 +12,8 @@ import type { IssueStatus } from './issue-status';
 
 export type IssueUser = { id: number; login: string; name: string; avatarUrl: string };
 export type IssueLabel = { name: string; color: string };
+/** `inTeam: false` = assigned on GitHub but no longer a team member → "팀 밖 사용자" (04 ch. 7 exceptions) */
+export type IssueAssignee = IssueUser & { inTeam: boolean };
 
 /** List row; the board (14) reuses it as its card */
 export type IssueRow = {
@@ -22,7 +24,7 @@ export type IssueRow = {
   title: string;
   status: IssueStatus;
   state: 'OPEN' | 'CLOSED';
-  assignees: IssueUser[];
+  assignees: IssueAssignee[];
   labels: IssueLabel[];
   /** `yyyy-MM-dd` in KST */
   startDate: string | null;
@@ -86,9 +88,16 @@ export function issueFilterOptions(teamId: string) {
   });
 }
 
-/** Re-fetch this team's issues from GitHub (once a minute, POL-I sync) */
-export function refreshIssues(teamId: string) {
-  return apiFetch<{ refreshedAt: string }>(`${base(teamId)}/issues/refresh`, { method: 'POST' });
+/**
+ * Re-fetch only this screen's issues from GitHub (once a minute, 04 ch. 7 "Sync"): the current tab
+ * and filters go along as the query. The `view` + filter query is a proposal beyond 09 WBS 11.
+ */
+export function refreshIssues(teamId: string, view: IssueListView, filters: IssueFilters) {
+  const query = view === 'all' ? issueFilterQuery(filters) : new URLSearchParams();
+  query.set('view', view);
+  return apiFetch<{ refreshedAt: string }>(`${base(teamId)}/issues/refresh?${query}`, {
+    method: 'POST',
+  });
 }
 
 /** "프로젝트에 추가": put an issue on the team's Projects board */
