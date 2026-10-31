@@ -82,22 +82,38 @@
   margin-left: auto;
 }
 
-.settingsButton,
-.ctaButton {
+.softPillButton,
+.ctaButton,
+.profileButton {
   display: none;
   align-items: center;
   justify-content: center;
   height: var(--control-height);
-  padding: 0 var(--space-md);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   border-radius: var(--radius-full);
 }
 
-.settingsButton {
+.softPillButton,
+.ctaButton {
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.softPillButton {
+  position: relative;
   color: var(--color-text-heading);
-  background-color: var(--color-canvas-soft);
+  background-color: var(--color-field);
+}
+
+.unreadDot {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-full);
 }
 
 .ctaButton {
@@ -105,19 +121,11 @@
   background-color: var(--color-primary);
 }
 
-@media (min-width: 1024px) {
-  .search {
-    display: flex;
-  }
-
-  .settingsButton,
-  .ctaButton {
-    display: inline-flex;
-  }
-
-  .loginButton {
-    display: none;
-  }
+.profileButton {
+  width: var(--control-height);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline-soft);
 }
 
 .iconButton {
@@ -138,4 +146,25 @@
   color: var(--color-text-heading);
   background-color: var(--color-canvas-soft);
   border-radius: var(--radius-full);
+}
+
+/* Mobile/tablet-only controls (bell icon, "로그인"); the desktop block below replaces them */
+.mobileOnly {
+  display: inline-flex;
+}
+
+@media (min-width: 1024px) {
+  .search {
+    display: flex;
+  }
+
+  .softPillButton,
+  .ctaButton,
+  .profileButton {
+    display: inline-flex;
+  }
+
+  .mobileOnly {
+    display: none;
+  }
 }
