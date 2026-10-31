@@ -39,7 +39,7 @@ export function PaymentSuccess({ payment }: { payment: PaymentReturn | null }) {
       <ErrorState
         title="결제 정보를 확인할 수 없어요"
         description="요금제 화면에서 다시 결제해 주세요."
-        onRetry={() => router.replace('/subscribe')}
+        onRetry={() => router.replace('/settings/subscription')}
       />
     );
   if (approval.isError)
@@ -69,8 +69,8 @@ export function PaymentSuccess({ payment }: { payment: PaymentReturn | null }) {
         ))}
       </ul>
       <Button onClick={() => router.replace('/feed')}>서비스 이용하기</Button>
-      <Button variant="outline" onClick={() => router.replace('/subscribe')}>
-        요금제 보기
+      <Button variant="outline" onClick={() => router.replace('/settings/subscription')}>
+        구독 관리
       </Button>
     </section>
   );
