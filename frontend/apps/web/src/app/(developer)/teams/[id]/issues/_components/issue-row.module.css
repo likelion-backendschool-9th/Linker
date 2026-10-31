@@ -1,0 +1,115 @@
+/* Card (guide ch. 5) */
+.row {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-sm);
+}
+
+.repo {
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-meta);
+}
+
+.title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title);
+}
+
+.link {
+  display: block;
+  min-height: var(--touch-target-min);
+  padding-block: var(--space-xs);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+/* Neutral badge (guide ch. 5) */
+.status {
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.due {
+  color: var(--color-text-secondary);
+}
+
+/* Overdue is red and also says "마감 지남" (POL-I-4; never color alone) */
+.overdue {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-status-error);
+}
+
+.assignees {
+  display: inline-flex;
+  align-items: center;
+}
+
+.avatar {
+  margin-left: calc(-1 * var(--space-xxs));
+  border: 2px solid var(--color-canvas);
+  border-radius: var(--radius-full);
+}
+
+.avatar:first-of-type {
+  margin-left: 0;
+}
+
+.more {
+  margin-left: var(--space-xxs);
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+}
+
+.unassigned {
+  color: var(--color-text-meta);
+}
+
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.swatch {
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--radius-full);
+}
+
+.warning {
+  font-size: var(--font-size-caption);
+  color: var(--color-status-warning);
+}
+
+.action {
+  display: flex;
+  justify-content: flex-end;
+}

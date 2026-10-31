@@ -8,7 +8,7 @@ import {
   type MockRoute,
 } from '../core/define';
 import { ISSUES, isOverdue, LABELS, type IssueStatus, type MockIssue } from '../fixtures/issues';
-import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
+import { findTeam, TEAM_MEMBERS, type MockTeam } from '../fixtures/teams';
 
 /** 11 Issue list: `IssueListController`. `issueRow` and `filterIssues` are borrowed by 14 and 15. */
 
@@ -55,21 +55,27 @@ function teamOr404(id: string) {
   return team;
 }
 
+/** Repo write permission (POL-I-2) and an active team; team 2 is read-only for the mock user, like 12 */
+function canWrite(team: MockTeam) {
+  return team.id !== 2 && team.status !== 'READ_ONLY' && team.status !== 'ARCHIVED';
+}
+
 let lastRefreshAt = 0;
 
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/issues', (ctx) => {
-    teamOr404(ctx.params.teamId!);
+    const team = teamOr404(ctx.params.teamId!);
     const items = filterIssues(ctx, ctx.params.teamId!)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .map(issueRow);
-    return { ...paginate(items, ctx.query), total: items.length };
+    return { ...paginate(items, ctx.query), total: items.length, canWrite: canWrite(team) };
   }),
   get('/api/v1/user/teams/:teamId/issues/unscheduled', ({ params, query }) => {
+    const team = teamOr404(params.teamId);
     const items = ISSUES.filter(
-      (item) => item.teamId === Number(params.teamId) && (!item.inProject || !item.dueDate),
+      (item) => item.teamId === team.id && (!item.inProject || !item.dueDate),
     ).map(issueRow);
-    return paginate(items, query);
+    return { ...paginate(items, query), total: items.length, canWrite: canWrite(team) };
   }),
   get('/api/v1/user/teams/:teamId/issue-filters', ({ params }) => {
     const team = teamOr404(params.teamId);
