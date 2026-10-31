@@ -74,6 +74,15 @@ export const TEAM = {
   inviteValidDays: 7,
 } as const;
 
+/** 04 ch. 2 rate limits, ch. 7 POL-I-2, POL-I-4 and "Sync" */
+export const ISSUE = {
+  createPerDay: 100,
+  /** GitHub caps assignees at 10 (POL-I-2) */
+  assigneesMax: 10,
+  /** Pull to refresh: that screen's issues, once a minute */
+  refreshIntervalSeconds: 60,
+} as const;
+
 /** 04 ch. 8 */
 export const CHAT = {
   /** Policy ch. 2 rate limits/network failures; TODO 17 reconnect limit. */

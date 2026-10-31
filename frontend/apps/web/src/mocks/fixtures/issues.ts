@@ -40,7 +40,8 @@ export const LABELS = [
 ];
 const label = (name: string) => LABELS.find((item) => item.name === name)!;
 
-const [, doyun, seoyeon, minjae, hayun] = DEVELOPERS;
+// jiwoo is not in team 1: an assignee who left the team (04 ch. 7 exceptions, "팀 밖 사용자")
+const [, doyun, seoyeon, minjae, hayun, jiwoo] = DEVELOPERS;
 const me = brief(ME);
 const d = (u: (typeof DEVELOPERS)[number] | undefined) => brief(u!);
 
@@ -158,7 +159,7 @@ export const ISSUES: MockIssue[] = [
     number: 14,
     title: '배포 파이프라인 정리',
     status: 'OTHER',
-    assignees: [],
+    assignees: [d(jiwoo)],
     dueDate: dateOnly(10),
   }),
   issue(2, 21, 'study-notes', {

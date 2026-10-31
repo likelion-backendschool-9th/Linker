@@ -14,6 +14,7 @@ export const OVERLAY_KEYS = [
   'appeal',
   'subscription-cancel',
   'payment-refund',
+  'issue-filter',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];
