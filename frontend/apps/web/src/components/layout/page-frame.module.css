@@ -1,7 +1,7 @@
 .main {
-  max-width: var(--app-max-width);
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: var(--space-md) var(--space-md) calc(var(--space-xxl) + env(safe-area-inset-bottom));
+  padding: var(--space-md) var(--page-gutter) calc(var(--space-xxl) + env(safe-area-inset-bottom));
   outline: none;
 }
 

@@ -10,10 +10,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-xxs);
-  max-width: var(--app-max-width);
+  max-width: var(--content-max-width);
   height: var(--header-height);
   margin: 0 auto;
-  padding: 0 var(--space-xs);
+  /* Logo and icon buttons carry their own inset, so the visible gutter equals --page-gutter */
+  padding: 0 calc(var(--page-gutter) - var(--space-xs));
 }
 
 .logo {

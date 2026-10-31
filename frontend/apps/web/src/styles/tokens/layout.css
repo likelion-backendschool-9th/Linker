@@ -1,7 +1,8 @@
 /*
  * Spacing, shape and size tokens (design guide ch. 3).
  * Breakpoints (custom properties can't be used inside @media, so write the px value):
- *   sm 640px · md 768px · lg 1024px (desktop typography) · xl 1280px
+ *   mobile 360–599px (base) · tablet from 600px · desktop from 1024px (desktop typography)
+ * Admin shell keeps its own 1024px two-column and 1280px grid.
  */
 
 :root {
@@ -25,7 +26,10 @@
   /* Size */
   --touch-target-min: 44px;
   --control-height: 48px; /* pill buttons and inputs */
-  --app-max-width: 640px; /* app screens keep the mobile width (blueprint §6-6) */
+  --content-max-width: 1440px; /* app screens and header content, centered beyond this (blueprint §6-6) */
+  --page-gutter: 16px; /* side gutter; 24px from tablet, 32px from desktop */
+  --tab-bar-max-width: 640px; /* bottom tab items stay centered at this width */
+  --sheet-max-width: 640px; /* bottom sheets and toasts */
   --header-height: 56px; /* top bar of tab and stack screens */
   --tab-bar-height: 56px; /* bottom tab bar, before the safe-area inset */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
@@ -46,8 +50,15 @@
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
 }
 
+@media (min-width: 600px) {
+  :root {
+    --page-gutter: 24px;
+  }
+}
+
 @media (min-width: 1024px) {
   :root {
+    --page-gutter: 32px;
     --space-section: 80px;
     --space-section-lg: 120px;
   }
