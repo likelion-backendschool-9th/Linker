@@ -82,6 +82,11 @@ export const CHAT = {
   offerMessageMax: 1000,
 } as const;
 
+/** 04 ch. 10 — operator admin session is locked after 30 minutes without activity. */
+export const ADMIN = {
+  otpIdleMinutes: 30,
+} as const;
+
 /** `null` = no limit. 04 ch. 11 (Pro / Flex / Scout tables) */
 export const PLAN_LIMITS = {
   photosPerPost: { free: 5, pro: 10 },

@@ -90,12 +90,18 @@ export function findRule(pathname: string): AccessRule | undefined {
 }
 
 export function resolveAccess(pathname: string, viewer: Viewer): AccessResult {
+  const rule = findRule(pathname);
+  // Keep operations routes hidden even from developers who have not completed onboarding.
+  if (rule && rule.allow !== 'all' && !rule.allow.includes(viewer.role)) {
+    const deny = typeof rule.deny === 'string' ? rule.deny : rule.deny?.[viewer.role];
+    return deny ?? (viewer.role === 'guest' ? 'login' : 'home');
+  }
+
   // Recruiters have no onboarding (31 replaces it), so only developers are sent there
   const needsOnboarding =
     !viewer.onboarded && (viewer.role === 'developer' || viewer.role === 'operator');
   if (needsOnboarding && !ONBOARDING_EXEMPT.test(pathname)) return 'onboarding';
 
-  const rule = findRule(pathname);
   // Unknown paths fall through to Next's own 404
   if (!rule || rule.allow === 'all' || rule.allow.includes(viewer.role)) return 'allow';
 

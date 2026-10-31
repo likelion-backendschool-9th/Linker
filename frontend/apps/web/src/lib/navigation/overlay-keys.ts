@@ -10,6 +10,13 @@ export const OVERLAY_KEYS = [
   'delete-confirm',
   'plan-limit',
   'draft-restore',
+  'tech-tags',
+  'profile-people',
+  'profile-actions',
+  'profile-leave',
+  'settings-blocks',
+  'recruiter-offer-message',
+  'admin-report-action',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

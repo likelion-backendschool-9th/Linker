@@ -41,6 +41,7 @@ describe('resolveAccess', () => {
   it('sends onboarding-incomplete developers to /onboarding except exempt paths', () => {
     const newcomer = as('developer', false);
     expect(resolveAccess('/feed', newcomer)).toBe('onboarding');
+    expect(resolveAccess('/admin/reports', newcomer)).toBe('notFound');
     expect(resolveAccess('/legal/terms', newcomer)).toBe('allow');
     expect(resolveAccess('/onboarding', newcomer)).toBe('allow');
     expect(resolveAccess('/auth/callback', newcomer)).toBe('allow');
