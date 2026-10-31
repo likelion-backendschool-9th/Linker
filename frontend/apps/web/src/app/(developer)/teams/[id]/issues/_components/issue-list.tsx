@@ -1,6 +1,6 @@
 'use client';
 
-// Client boundary: URL tab and filters, refresh cooldown, "프로젝트에 추가"
+// Client boundary: URL tab and filters, refresh (button + pull gesture) cooldown, "프로젝트에 추가"
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { Route } from 'next';
@@ -26,9 +26,11 @@ import {
   refreshIssues,
   type IssueListView,
 } from '../../_lib/issue-queries';
+import { usePullToRefresh } from '../_hooks/use-pull-to-refresh';
 import { issueViewParser } from '../_lib/issue-view';
 import styles from './issue-list.module.css';
 import { IssueRow } from './issue-row';
+import { PullIndicator } from './pull-indicator';
 
 const VIEW_LABELS: Record<IssueListView, string> = { all: '전체', unscheduled: '일정 없음' };
 
@@ -95,6 +97,11 @@ export function IssueList({ teamId }: { teamId: string }) {
       toast('프로젝트에 추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' }),
   });
 
+  const pull = usePullToRefresh({
+    onRefresh: () => refresh.mutate(),
+    disabled: refresh.isPending || cooldown.left !== null,
+  });
+
   const pages = issues.data?.pages ?? [];
   const items = pages.flatMap((page) => page.items);
   const total = pages[0]?.total ?? 0;
@@ -103,6 +110,7 @@ export function IssueList({ teamId }: { teamId: string }) {
 
   return (
     <>
+      <PullIndicator distance={pull.distance} ready={pull.ready} waitSeconds={cooldown.left} />
       <div className={styles.toolbar}>
         <div className={styles.views} role="group" aria-label="이슈 보기">
           {(Object.keys(VIEW_LABELS) as IssueListView[]).map((item) => (
