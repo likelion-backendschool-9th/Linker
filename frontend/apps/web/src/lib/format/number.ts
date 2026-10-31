@@ -9,3 +9,7 @@ export function formatCount(value: number): string {
   if (value < 10000) return `${oneDecimal(value / 1000)}천`;
   return `${oneDecimal(value / 10000)}만`;
 }
+
+export function formatWon(value: number): string {
+  return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+}
