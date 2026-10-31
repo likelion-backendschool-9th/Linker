@@ -1,0 +1,128 @@
+/* Shared by the four issue sheets (12, reused by 13, 14, 15) */
+
+.form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--space-xs);
+  padding: 0;
+  border: 0;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+/* One choice row: the whole row is the label, at least 44px high */
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.option:has(input:checked) {
+  background-color: var(--color-canvas-soft);
+}
+
+.option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.control {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  accent-color: var(--color-primary);
+}
+
+.optionText {
+  display: grid;
+  min-width: 0;
+}
+
+.optionTitle {
+  font-size: var(--font-size-body);
+  color: var(--color-text-title);
+}
+
+.optionHint {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-secondary);
+}
+
+.avatar {
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+
+.swatch {
+  flex-shrink: 0;
+  width: var(--space-sm);
+  height: var(--space-sm);
+  border-radius: var(--radius-full);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+}
+
+/* Text input look (guide ch. 5) */
+.input {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text-body);
+  background-color: var(--color-field);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--color-status-error);
+}
+
+.note {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  color: var(--color-status-error);
+}
+
+.warning {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-status-warning);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-xs);
+}
+
+@media (min-width: 600px) {
+  .actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}

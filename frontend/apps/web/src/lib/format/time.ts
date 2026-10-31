@@ -28,3 +28,8 @@ export function formatRelativeTime(value: Date | string | number, now: Date = ne
   if (minutes < 24 * 60) return `${Math.floor(minutes / 60)}시간 전`;
   return formatDate(value, now);
 }
+
+/** Today's date in KST as `yyyy-MM-dd`, the format of issue start/due dates (POL-I-4: team timezone is KST). */
+export function todayKst(now: Date = new Date()): string {
+  return format(toKst(now), 'yyyy-MM-dd');
+}
