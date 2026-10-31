@@ -16,8 +16,10 @@ COPY --chown=node:node apps/web ./apps/web
 COPY --chown=node:node packages ./packages
 ARG NEXT_PUBLIC_API_BASE_URL=
 ARG NEXT_PUBLIC_IMAGE_HOST=
+ARG NEXT_PUBLIC_TOSS_CLIENT_KEY=
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_IMAGE_HOST=$NEXT_PUBLIC_IMAGE_HOST
+ENV NEXT_PUBLIC_TOSS_CLIENT_KEY=$NEXT_PUBLIC_TOSS_CLIENT_KEY
 
 # Selected only by compose.dev.yml. Source changes are copied by Compose Watch.
 FROM source AS development

@@ -114,6 +114,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.14.24
         version: 3.14.24(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@tosspayments/tosspayments-sdk':
+        specifier: ^2.10.0
+        version: 2.10.0
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
@@ -2761,6 +2764,9 @@ packages:
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
+
+  '@tosspayments/tosspayments-sdk@2.10.0':
+    resolution: {integrity: sha512-nwpLRKPBwFvajv6MG2bCqB9dAyeHeIAhBaTeAEm9T0NHvjGrv11pGtWEF+GEXXwNGlof4LROZEKQEJMe808U7w==}
 
   '@turbo/darwin-64@2.11.10':
     resolution: {integrity: sha512-By4idRap5+nLnMuRzLB4qkOPRlvNdyY1ne4VJYDyUoUB11H94k7uif9mbe3JT8JSNXs1D68uMcBj6hJ/jMQRvA==}
@@ -9304,6 +9310,8 @@ snapshots:
   '@testing-library/user-event@14.6.8(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
+
+  '@tosspayments/tosspayments-sdk@2.10.0': {}
 
   '@turbo/darwin-64@2.11.10':
     optional: true

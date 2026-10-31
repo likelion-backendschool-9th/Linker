@@ -105,6 +105,7 @@ DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 
 - Compose는 브라우저용 `NEXT_PUBLIC_API_BASE_URL`을 빈 문자열로 빌드합니다. `/api/v1/*` 요청은 현재 접속한 Nginx 주소를 사용합니다. 이전 `.env`의 `WEB_API_BASE_URL`은 더 이상 사용하지 않습니다.
 - Nginx 호스트 포트는 `PROXY_PORT`(기본 `8000`)로 바꿀 수 있습니다. 변경 후 컨테이너를 재생성하면 됩니다. 직접 `pnpm dev`로 개발할 때는 `frontend/apps/web/.env.example`의 API 주소 설정을 사용합니다.
 - 웹 서버 내부 API 요청은 서버 전용 `API_INTERNAL_URL=http://backend:8080`을 사용합니다. 브라우저에 이 내부 주소를 전달하지 않습니다.
+- Toss 테스트 위젯을 연결할 때는 루트 `.env`에 공개 클라이언트 키 `NEXT_PUBLIC_TOSS_CLIENT_KEY`를 지정하고 웹 이미지를 다시 빌드합니다. `test_` 키만 사용하며 시크릿 키는 프론트에 넣지 않습니다. 실제 결제 승인 API는 Spring에서 구현해야 합니다.
 - 이미지 저장소를 연결하면 `NEXT_PUBLIC_IMAGE_HOST`를 지정하고 웹 이미지를 다시 빌드합니다.
 - 현재 브라우저 REST는 Nginx를 거쳐 Spring을 호출하며 Next.js BFF는 아직 없습니다. 직접 접근용 3000 포트 대신 기본 Nginx 주소를 사용하세요. BFF·HTTPS·쿠키 인증·STOMP 구현은 후속 작업입니다.
 

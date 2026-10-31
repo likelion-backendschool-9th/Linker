@@ -97,3 +97,13 @@ export const PLAN_LIMITS = {
   recruitingOffersPerDay: { free: 10, scout: 50 },
   jobAds: { free: 0, scout: 1 },
 } as const;
+
+/** Policy ch. 11. UI prices come from the API; these values seed the mock/server contract. */
+export const SUBSCRIPTION_PRICE = {
+  proMonthly: 2900,
+  proYearly: 29000,
+  flexMonthly: 7900,
+  flexExtraMember: 1900,
+  scoutMonthly: 14900,
+  trialDays: 7,
+} as const;
