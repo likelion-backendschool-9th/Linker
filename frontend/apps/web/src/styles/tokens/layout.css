@@ -18,7 +18,9 @@
 
   /* Radius */
   --radius-none: 0;
+  --radius-xs: 8px; /* the floating mobile bottom GNB pill */
   --radius-sm: 16px; /* inputs, FAQ rows, small cards */
+  --radius-lg: 20px; /* the floating desktop/tablet bottom GNB pill */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
 
@@ -26,8 +28,9 @@
   --touch-target-min: 44px;
   --control-height: 48px; /* pill buttons and inputs */
   --app-max-width: 640px; /* app screens keep the mobile width (blueprint §6-6) */
+  --gnb-max-width: 1440px; /* bottom GNB only: wider than --app-max-width, 16px inset below it at every size */
   --header-height: 56px; /* top bar of tab and stack screens */
-  --tab-bar-height: 56px; /* bottom tab bar, before the safe-area inset */
+  --tab-bar-height: 56px; /* bottom tab bar content height, before the safe-area inset and the bar's own padding */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
   --dialog-max-width: 400px; /* centered dialogs and confirm modals */
   --admin-aside-width: 400px; /* admin detail column from 1024px */
@@ -41,6 +44,7 @@
   /* Motion (off under prefers-reduced-motion via globals.css) */
   --duration-overlay: 200ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --blur-gnb: blur(20px); /* backdrop blur behind the desktop/tablet bottom GNB pill */
 
   /* The only shadow: the active segment of a segmented control */
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);

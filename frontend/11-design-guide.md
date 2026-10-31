@@ -31,6 +31,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
+| `--color-gnb-pill` | `rgb(244 244 244 / 0.8)` | Tablet/desktop bottom GNB frosted fill, with `--blur-gnb` |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -118,13 +119,13 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
 - **Page gutter** is `--space-md` on mobile.
-- **Container:** app screens stay in one centered column, `max-width: var(--app-max-width)` (640px), even on desktop. Only admin screens go to list + detail two columns at 1024px (blueprint §6-6).
+- **Container:** app screens stay in one centered column, `max-width: var(--app-max-width)` (640px), even on desktop. Only admin screens go to list + detail two columns at 1024px (blueprint §6-6). The bottom GNB is the one exception — it's a floating bar outside that content column, capped at its own wider `--gnb-max-width` (1440px) instead.
 - **Breakpoints:** `640px` (single column → wider cards), `768px` (nav links may expand), `1024px` (desktop type and admin two-column), `1280px` (admin default grid). Custom properties cannot be used in `@media`, so write the px value.
 - **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
-- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
+- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tab content height, plus the safe-area inset and the bar's own padding), `--gnb-max-width` 1440px (bottom GNB only — wider than `--app-max-width`), `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`. `--blur-gnb` (`blur(20px)`) is the tablet/desktop bottom GNB's backdrop blur.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
 
 ## 4. Shape and elevation
@@ -132,7 +133,9 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 | Token | Value | Use |
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
+| `--radius-xs` | 8px | The floating mobile bottom GNB pill |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
+| `--radius-lg` | 20px | The floating tablet/desktop bottom GNB pill |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
 | `--radius-full` | 9999px | Every pill: buttons, badges, toggles, nav pill |
 
@@ -190,7 +193,9 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
+**Bottom tab bar** — a floating pill, inset `--space-md` (16px) from the viewport edges at every width (fixed outer wrapper with that padding), capped at `--gnb-max-width` (1440px) and centered beyond it; safe-area inset at the bottom. Profile is not one of these tabs — it lives in the top header on every size. Inactive label `--color-text-body` / icon via `currentColor`, current `--color-accent` with a semibold label (not color alone).
+- Mobile (base, below 640px): icon (`--icon-size`) over a caption-size label, `--color-canvas-soft` fill, `--radius-xs` corners.
+- Tablet/desktop (640px+, one shared layout): text only, no icons — `--color-gnb-pill` frosted fill with `--blur-gnb` backdrop blur, `--radius-lg` corners, card-title-size label.
 
 **Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`, close is a 44px icon button.
 
