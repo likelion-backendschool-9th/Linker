@@ -1,4 +1,4 @@
-import { Bell, Search, UserRound } from 'lucide-react';
+import { Bell, UserRound } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { Role } from '@/lib/auth/route-access';
 
 import { HeaderLoginButton } from './header-login-button';
+import { HeaderSearch } from './header-search';
 import styles from './header.module.css';
 
 type TabHeaderProps = {
@@ -30,18 +31,7 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
           <Image src="/textlogo.svg" alt="Linker" width={118} height={36} priority />
           <span className="sr-only"> 홈</span>
         </Link>
-        <div className={styles.search}>
-          <Search aria-hidden className={styles.searchIcon} />
-          <label htmlFor="header-search" className="sr-only">
-            검색어를 입력해 주세요
-          </label>
-          <input
-            id="header-search"
-            type="search"
-            placeholder="검색어를 입력해 주세요"
-            className={styles.searchInput}
-          />
-        </div>
+        <HeaderSearch />
         <div className={styles.actions}>
           {role === 'guest' ? (
             <>

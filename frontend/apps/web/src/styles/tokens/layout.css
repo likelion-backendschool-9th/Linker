@@ -37,6 +37,7 @@
   --dialog-max-width: 400px; /* centered dialogs and confirm modals */
   --admin-aside-width: 400px; /* admin detail column from 1024px */
   --icon-size: 24px;
+  --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
 
   /* Layers: page chrome < overlays < toasts */

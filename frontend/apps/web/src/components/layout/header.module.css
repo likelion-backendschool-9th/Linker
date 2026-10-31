@@ -51,7 +51,12 @@
   margin: 0 auto;
   padding: 0 var(--space-md);
   background-color: var(--color-field);
+  border: 2px solid transparent;
   border-radius: var(--radius-full);
+}
+
+.search:focus-within {
+  border-color: var(--color-focus-ring);
 }
 
 .searchIcon {
@@ -73,6 +78,32 @@
 
 .searchInput::placeholder {
   color: var(--color-text-subtle-on-tint);
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+/* The custom .searchClear button replaces the browser's native search-field clear control */
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchClear {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-body);
+  background-color: var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.searchClearIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
 }
 
 .actions {
