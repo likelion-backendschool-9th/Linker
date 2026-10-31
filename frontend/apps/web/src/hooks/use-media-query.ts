@@ -2,7 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
-/** Matches a media query after hydration; `false` on the server. Breakpoints: 640 / 768 / 1024 / 1280px. */
+/** Matches a media query after hydration; `false` on the server. Breakpoints: 600 (tablet) / 1024px (desktop). */
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {

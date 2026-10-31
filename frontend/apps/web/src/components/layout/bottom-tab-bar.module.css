@@ -11,7 +11,7 @@
 
 .list {
   display: flex;
-  max-width: var(--app-max-width);
+  max-width: var(--tab-bar-max-width);
   height: var(--tab-bar-height);
   margin: 0 auto;
 }
