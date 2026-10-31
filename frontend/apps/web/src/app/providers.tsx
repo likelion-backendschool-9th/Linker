@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { LoginPromptSheet } from '@/features/auth/login-prompt-sheet';
 import { ExternalLinkSheet } from '@/features/external-link/external-link-sheet';
 import { MockRoleSwitcher } from '@/features/mock/mock-role-switcher';
+import { NotificationRealtime } from '@/features/notifications/notification-realtime';
 import { PlanLimitSheet } from '@/features/plan-limit/plan-limit-sheet';
 import { ReportSheet } from '@/features/report/report-sheet';
 import { getQueryClient } from '@/lib/api/query-client';
@@ -28,6 +29,7 @@ export function Providers({ viewer, children }: { viewer: ClientViewer; children
             <MotionConfig reducedMotion="user">
               <NativeBridgeProvider>
                 {children}
+                <NotificationRealtime />
                 <OverlayRoot />
                 <LoginPromptSheet />
                 <PlanLimitSheet />

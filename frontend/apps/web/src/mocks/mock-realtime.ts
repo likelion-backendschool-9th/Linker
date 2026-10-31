@@ -4,6 +4,7 @@ import { countChars } from '@/lib/format/text';
 import { buildViewer } from './core/viewer';
 import { findTeam } from './fixtures/teams';
 import { emit } from './realtime-bus';
+import { addChatNotification } from './pages/p18-notifications';
 import { findRoom, nextMessageId, MESSAGES, UNREAD, type MockMessage } from './fixtures/chat';
 import { brief, ME } from './fixtures/users';
 import './routes';
@@ -74,6 +75,7 @@ export function publish(destination: string, body: unknown): boolean {
     UNREAD[roomId] = (UNREAD[roomId] ?? 0) + 1;
     emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: reply });
     emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId });
+    addChatNotification(viewer, roomId, room.title, `이도윤: ${reply.text}`);
   }, 1200);
   return true;
 }

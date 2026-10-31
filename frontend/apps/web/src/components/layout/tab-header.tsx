@@ -1,7 +1,9 @@
-import { Bell, Settings, UserRound } from 'lucide-react';
+import { Settings, UserRound } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+
+import { NotificationBell } from '@/features/notifications/notification-bell';
 
 import type { Role } from '@/lib/auth/route-access';
 
@@ -51,14 +53,11 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
             </>
           ) : (
             <>
-              <Link
-                href={'/notifications' as Route}
+              <NotificationBell
+                compact
+                initiallyUnread={hasUnread}
                 className={`${styles.iconButton} ${styles.mobileOnly}`}
-              >
-                <Bell aria-hidden />
-                {hasUnread && <span className={styles.unreadDot} aria-hidden />}
-                <span className="sr-only">알림{hasUnread ? ' (안 읽은 알림 있음)' : ''}</span>
-              </Link>
+              />
               <Link
                 href={(login ? `/u/${login}` : '/feed') as Route}
                 className={`${styles.iconButton} ${styles.mobileOnly}`}
@@ -66,16 +65,11 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
                 <UserRound aria-hidden />
                 <span className="sr-only">내 프로필</span>
               </Link>
-              <Link href={'/notifications' as Route} className={styles.softPillButton}>
-                알람
-                {hasUnread && (
-                  <>
-                    <span className={styles.unreadDot} aria-hidden />
-                    <span className="sr-only"> (안 읽은 알림 있음)</span>
-                  </>
-                )}
-              </Link>
-              <Link href={(login ? `/u/${login}` : '/feed') as Route} className={styles.profileButton}>
+              <NotificationBell initiallyUnread={hasUnread} className={styles.softPillButton} />
+              <Link
+                href={(login ? `/u/${login}` : '/feed') as Route}
+                className={styles.profileButton}
+              >
                 <UserRound aria-hidden />
                 <span className="sr-only">내 프로필</span>
               </Link>
