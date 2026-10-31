@@ -22,9 +22,6 @@
   gap: var(--space-xs);
   min-height: var(--touch-target-min);
   padding: 0 var(--space-xs);
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-heading);
 }
 
 .title {

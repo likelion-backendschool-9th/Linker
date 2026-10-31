@@ -14,8 +14,8 @@ export function TabHeader({ role }: { role: Role }) {
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/feed" className={styles.logo}>
-          <Image src="/logo.svg" alt="" width={32} height={32} priority />
-          <span>Linker</span>
+          <Image src="/logo.svg" alt="" width={46} height={46} priority />
+          <Image src="/textlogo.svg" alt="Linker" width={118} height={36} priority />
           <span className="sr-only"> 홈</span>
         </Link>
         <div className={styles.actions}>
