@@ -1,24 +1,30 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import styles from './header.module.css';
 
-/** Desktop top nav search field: blur/focus/active states (04 frontend task 4). */
-export function HeaderSearch() {
+type HeaderSearchProps = {
+  /** Extra class merged onto the root, e.g. the mobile search panel's full-width variant */
+  className?: string;
+};
+
+/** Top nav search field: blur/focus/active states (04 frontend task 4). Desktop: persistent. Mobile: the panel below the search icon. */
+export function HeaderSearch({ className }: HeaderSearchProps) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
 
   return (
-    <div className={styles.search}>
+    <div className={`${styles.search} ${className ?? ''}`}>
       <Search aria-hidden className={styles.searchIcon} />
-      <label htmlFor="header-search" className="sr-only">
+      <label htmlFor={inputId} className="sr-only">
         검색어를 입력해 주세요
       </label>
       <input
         ref={inputRef}
-        id="header-search"
+        id={inputId}
         type="search"
         placeholder="검색어를 입력해 주세요"
         className={styles.searchInput}
