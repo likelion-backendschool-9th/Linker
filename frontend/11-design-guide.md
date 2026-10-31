@@ -9,7 +9,7 @@
 
 1. **MUST** style with CSS Modules (`*.module.css` next to the component) and read every color, size, space and radius through `var(--token)`. **NEVER** write a hex color, a font size or a radius as a raw value in a component.
 2. **MUST NOT** add a new color, font size or radius in a component. Add the token first (token file + this guide), then use it.
-3. Mobile first: base styles target a 360px screen; widen with `@media (min-width: 640px | 768px | 1024px)`. No `max-width` queries for layout.
+3. Mobile first: base styles target a 360px screen; widen with `@media (min-width: 600px | 1024px)` (tablet, desktop). No `max-width` queries for layout.
 4. Source order when values conflict: **text color and type** (ch. 2) over **palette** (ch. 1) over **everything else** (ch. 3–5). Text on a white surface uses the `--color-text-*` tokens only.
 5. Shadow-free. Depth comes from fill differences and 1px hairlines (ch. 4). The only shadow token is `--shadow-segment-active`.
 6. Never signal state by color alone. Pair color with text, an icon or a border (WCAG 1.4.1).
@@ -31,6 +31,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
+| `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill of the scrolled top nav, with `--blur-header-scroll` |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -117,14 +118,15 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 The two section tokens are Linker's mobile adaptation: the source guide's fixed 80/120px is too tall for a 360px screen.
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Page gutter** is `--space-md` on mobile.
-- **Container:** app screens stay in one centered column, `max-width: var(--app-max-width)` (640px), even on desktop. Only admin screens go to list + detail two columns at 1024px (blueprint §6-6).
-- **Breakpoints:** `640px` (single column → wider cards), `768px` (nav links may expand), `1024px` (desktop type and admin two-column), `1280px` (admin default grid). Custom properties cannot be used in `@media`, so write the px value.
+- **Page gutter** is `--page-gutter`: 16px on mobile, 24px from 600px, 32px from 1024px.
+- **Container:** app screens fill the width up to `--content-max-width` (1440px) and are centered beyond it. Admin screens are outside this rule and keep their own shell (list + detail two columns at 1024px, blueprint §6-6).
+- **Breakpoints:** mobile `360–599px` (base), tablet from `600px`, desktop from `1024px` (desktop type, `--space-section*`, `--page-gutter`). Admin keeps `1024px` two-column and `1280px` default grid. Custom properties cannot be used in `@media`, so write the px value.
+- **Tablet follows mobile:** same nav and type sizes as mobile; only content width, column count (cards 1 → 2) and gutter grow. Desktop adds more columns and the desktop type sizes.
 - **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
-- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
+- **Frame sizes:** `--header-height` 56px (top bar), 80px from 1024px (room for the desktop search field); `--header-search-width` 512px (desktop top nav search field); `--badge-dot-size` 6px (unread dot); `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--content-max-width` 1440px, `--tab-bar-max-width` 640px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px, `--icon-size-sm` 16px (icon inside a small control, e.g. the search clear button).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts, and for the top nav's scroll transition; globals.css turns it off under `prefers-reduced-motion`. `--blur-header-scroll` (`blur(20px)`) is the scrolled top nav's backdrop blur.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
 
 ## 4. Shape and elevation
@@ -133,6 +135,7 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
+| `--radius-lg` | 20px | The scrolled top nav's floating pill |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
 | `--radius-full` | 9999px | Every pill: buttons, badges, toggles, nav pill |
 
@@ -183,14 +186,19 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Segmented control** (tab-like toggle)
 - Track `--color-canvas-soft`, `--radius-full`. Active option is a `--color-canvas` pill with `--shadow-segment-active`; inactive label `--color-text-secondary`. Each option is a full pill-sized target (at least 44px high).
 
-**Top nav**
-- Desktop: a floating, centered `--radius-full` bar filled `--color-canvas-soft`, logo left, links right, a primary button at the end; sticky on scroll.
-- Mobile: logo and one action; links move behind a menu button.
+**Top nav** — sticky, content up to `--content-max-width`. Contains the logo, search, notifications and settings (my page). Mobile and tablet share one layout: logo + icon-only buttons (`--touch-target-min` targets) — a search icon that reveals the input below it, then "설정" (guests) or "알람" + profile (members). Desktop (1024px+) swaps the icons for a persistent search field and text pills: guests get "설정" next to a "무료로 시작하기" CTA, members get "알람" next to a circular profile link instead.
+- Desktop search field: `--color-field` fill, `--radius-full` (pill, not the standard input's `--radius-sm`), height `--control-height`, width up to `--header-search-width`, centered between the logo and the right-hand actions. Leading `--icon-size` search icon, `--space-sm` gap to the placeholder/value text (`--font-size-body`). Shown for guests and members alike.
+- Focus/active: fill stays `--color-field` (never turns white), 2px `--color-focus-ring` border (reserved as transparent at rest so focusing doesn't shift layout) — the field's Figma reference shows an ad hoc blue (`#2563eb`) here instead; we kept the global focus-ring token for consistency with every other control rather than add a one-off color. Active (has a value): trailing clear button, `--icon-size` circle, `--color-hairline` fill, `--color-text-body` `X` icon at `--icon-size-sm`, clears the field and refocuses it.
+- "설정" / "알람" share one pill style: `--color-field` fill (not the generic soft-pill's `--color-canvas-soft`, per the Figma reference), `--color-text-heading` label; "무료로 시작하기" is the primary button. All three: `--control-height`, `--radius-full`, `--space-md` horizontal padding, `--font-size-body` / `--font-weight-semibold` label.
+- Desktop profile link (members only): circular, `--control-height` diameter, `--color-canvas-soft` fill, 1px `--color-hairline-soft` border, `UserRound` icon until a real avatar is wired in.
+- Unread notifications: a `--badge-dot-size` `--color-accent` dot at the top-right corner of the bell icon (mobile) or "알람" pill (desktop) (ch. 5 "Badge" highlight style), `--space-xs` inset from each edge. Paired with sr-only text, never the dot alone.
+- Scrolled (past `8px`, desktop only — mobile and tablet have no scroll animation): the bar's own background goes transparent and the row inside becomes a floating pill — `--color-scroll-header` fill, `--blur-header-scroll` backdrop blur, `--radius-lg` corners, `--space-sm` top margin, animated with `--duration-overlay`/`--ease-standard`. The row is already capped at `--content-max-width`, so this is the cap becoming visible, not a width change. The search field and "설정"/"알람" pill switch to a plain `--color-canvas` fill so they read against the frosted bar; the CTA and profile link don't change.
+- Mobile/tablet search: tapping the search icon swaps it for an `X` (closes it) and drops a full-width `HeaderSearch` row below the header — `--page-gutter` side padding, `--space-sm` bottom padding, `--color-canvas` background. Same field look and focus/active behavior as the desktop search field, just without the `--header-search-width` cap or centering.
 
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
+**Bottom tab bar** — on every screen size (mobile, tablet, desktop). Tablet and desktop share one layout; the items stay centered within `--tab-bar-max-width`. Fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
 
 **Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`, close is a 44px icon button.
 
@@ -220,7 +228,7 @@ The Mobbin-based reference this guide was built from contains parts Linker does 
 - [ ] No raw hex, font size, spacing or radius in the module CSS; everything is `var(--…)`.
 - [ ] Text on tinted or dark surfaces uses the on-tint / inverse tokens (ch. 1-2).
 - [ ] Accent is not used for text on a tinted surface or as a CTA fill.
-- [ ] Layout written for 360px first, widened at 640 / 768 / 1024.
+- [ ] Layout written for 360px first, widened at 600 / 1024.
 - [ ] Buttons and inputs are at least 44px; input font is 16px.
 - [ ] Error, success and warning states have a message, not color alone.
 - [ ] No shadow except `--shadow-segment-active`.

@@ -3,6 +3,13 @@
 .env.*
 !.env.example
 
+# ===== Accidental repo-root installs (workspaces live in frontend/, backend/) =====
+/node_modules/
+/package.json
+/package-lock.json
+/pnpm-lock.yaml
+/yarn.lock
+
 # ===== OS / IDE =====
 .DS_Store
 Thumbs.db
