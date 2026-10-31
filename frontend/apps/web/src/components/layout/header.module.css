@@ -41,10 +41,83 @@
   padding-left: var(--space-xs);
 }
 
+.search {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: var(--header-search-width);
+  height: var(--control-height);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  background-color: var(--color-field);
+  border-radius: var(--radius-full);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-subtle-on-tint);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-body);
+  background: none;
+  border: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-subtle-on-tint);
+}
+
 .actions {
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
   margin-left: auto;
+}
+
+.settingsButton,
+.ctaButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  border-radius: var(--radius-full);
+}
+
+.settingsButton {
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+}
+
+.ctaButton {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+@media (min-width: 1024px) {
+  .search {
+    display: flex;
+  }
+
+  .settingsButton,
+  .ctaButton {
+    display: inline-flex;
+  }
+
+  .loginButton {
+    display: none;
+  }
 }
 
 .iconButton {

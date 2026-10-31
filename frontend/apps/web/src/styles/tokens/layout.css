@@ -31,6 +31,7 @@
   --tab-bar-max-width: 640px; /* bottom tab items stay centered at this width */
   --sheet-max-width: 640px; /* bottom sheets and toasts */
   --header-height: 56px; /* top bar of tab and stack screens */
+  --header-search-width: 512px; /* desktop top nav search field */
   --tab-bar-height: 56px; /* bottom tab bar, before the safe-area inset */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
   --dialog-max-width: 400px; /* centered dialogs and confirm modals */
@@ -61,5 +62,6 @@
     --page-gutter: 32px;
     --space-section: 80px;
     --space-section-lg: 120px;
+    --header-height: 80px; /* top nav grows to fit the search field */
   }
 }

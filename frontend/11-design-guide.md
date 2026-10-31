@@ -123,7 +123,7 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 - **Tablet follows mobile:** same nav and type sizes as mobile; only content width, column count (cards 1 → 2) and gutter grow. Desktop adds more columns and the desktop type sizes.
 - **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
-- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--content-max-width` 1440px, `--tab-bar-max-width` 640px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
+- **Frame sizes:** `--header-height` 56px (top bar), 80px from 1024px (room for the desktop search field); `--header-search-width` 512px (desktop top nav search field); `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--content-max-width` 1440px, `--tab-bar-max-width` 640px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
 - **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
@@ -184,7 +184,9 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Segmented control** (tab-like toggle)
 - Track `--color-canvas-soft`, `--radius-full`. Active option is a `--color-canvas` pill with `--shadow-segment-active`; inactive label `--color-text-secondary`. Each option is a full pill-sized target (at least 44px high).
 
-**Top nav** — sticky, content up to `--content-max-width`. Contains the logo, search, notifications, settings (my page) and the login button (guests). Mobile and tablet share one layout; desktop has its own (wider search field). Navigation between sections is always the bottom tab bar, never links in the top nav.
+**Top nav** — sticky, content up to `--content-max-width`. Contains the logo, search, notifications, settings (my page) and the login button (guests). Mobile and tablet share one layout (logo + bell, or logo + "로그인" for guests); desktop (1024px+) adds the search field and shows guests "설정" next to a "무료로 시작하기" CTA instead of the plain login button. Navigation between sections is always the bottom tab bar, never links in the top nav.
+- Desktop search field: `--color-field` fill, `--radius-full` (pill, not the standard input's `--radius-sm`), height `--control-height`, width up to `--header-search-width`, centered between the logo and the right-hand actions. Leading `--icon-size` search icon, `--space-sm` gap to the placeholder/value text (`--font-size-body`).
+- "설정" is the soft pill button (ch. 4 level 1); "무료로 시작하기" is the primary button. Both `--control-height`, `--radius-full`, `--space-md` horizontal padding, `--font-size-body` / `--font-weight-semibold` label.
 
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
