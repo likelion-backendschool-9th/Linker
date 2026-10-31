@@ -11,6 +11,7 @@ export const OVERLAY_KEYS = [
   'plan-limit',
   'draft-restore',
   'chat-info',
+  'appeal',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

@@ -1,0 +1,9 @@
+.dot {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
