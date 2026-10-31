@@ -1,6 +1,7 @@
 import { addMonths, addYears } from 'date-fns';
 import { PLAN_LIMITS, SUBSCRIPTION_PRICE } from '@/lib/policy';
-import type { MockViewer } from '../core/viewer';
+import { ownOrder, saveOrder, type Order } from '../fixtures/payment-orders';
+import { state } from '../fixtures/subscriptions';
 import { fail, get, newId, post, type MockRoute } from '../core/define';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 
@@ -51,52 +52,6 @@ const recruiterPlans = [
   },
 ];
 
-// Mock orders survive provider callbacks/reloads within this browser tab. No real payment data is stored.
-type Order = {
-  orderId: string;
-  userId: number;
-  amount: number;
-  planKey: 'PRO' | 'FLEX' | 'SCOUT';
-  billing: 'MONTHLY' | 'YEARLY';
-  teamId: number | null;
-  state: 'PENDING' | 'PAID' | 'FAILED';
-  expiresOn: string;
-};
-const orders = new Map<string, Order>();
-function readOrders(viewer: MockViewer): Order[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = JSON.parse(
-        sessionStorage.getItem(`linker:mock:orders:${viewer.me!.id}`) ?? '[]',
-      ) as Order[];
-      if (Array.isArray(stored))
-        for (const order of stored)
-          if (order.userId === viewer.me!.id && !orders.has(order.orderId))
-            orders.set(order.orderId, order);
-    } catch {
-      /* In-memory flow remains available when storage is disabled. */
-    }
-  }
-  return [...orders.values()].filter((order) => order.userId === viewer.me!.id);
-}
-function saveOrder(order: Order) {
-  orders.set(order.orderId, order);
-  if (typeof window !== 'undefined') {
-    try {
-      sessionStorage.setItem(
-        `linker:mock:orders:${order.userId}`,
-        JSON.stringify([...orders.values()].filter((item) => item.userId === order.userId)),
-      );
-    } catch {
-      /* optional persistence */
-    }
-  }
-}
-function ownOrder(viewer: MockViewer, id: string): Order {
-  const order = readOrders(viewer).find((item) => item.orderId === id);
-  if (!order) fail(404, 'ORDER_NOT_FOUND', '주문을 찾지 못했어요.');
-  return order;
-}
 const flexAmount = (members: number) =>
   SUBSCRIPTION_PRICE.flexMonthly +
   Math.max(0, members - PLAN_LIMITS.teamMembers.free) * SUBSCRIPTION_PRICE.flexExtraMember;
@@ -114,13 +69,13 @@ function candidates() {
 
 export const routes: MockRoute[] = [
   get('/api/v1/user/plans', ({ query, viewer }) => {
-    const personal = readOrders(viewer)
-      .filter((order) => order.state === 'PAID' && order.planKey !== 'FLEX')
+    const personal = state(viewer)
+      .subscriptions.filter((sub) => sub.kind !== 'FLEX' && sub.status !== 'ENDED')
       .at(-1);
     return {
       reason: query.get('reason'),
       plans: viewer.role === 'recruiter' ? recruiterPlans : developerPlans,
-      currentPlan: personal?.planKey ?? (viewer.role === 'recruiter' ? 'FREE' : 'PRO'),
+      currentPlan: personal?.kind ?? 'FREE',
     };
   }),
   get('/api/v1/user/plans/team-candidates', () => ({ items: candidates() }), { only: 'developer' }),
@@ -163,11 +118,12 @@ export const routes: MockRoute[] = [
   }),
   post('/api/v1/user/payments/confirm', ({ body, viewer }) => {
     const order = ownOrder(viewer, String(body.orderId));
-    if (order.state === 'FAILED')
+    if (order.state === 'FAILED' || order.state === 'REFUNDED')
       fail(409, 'ORDER_FAILED', '완료되지 않은 주문이에요. 새로 결제해 주세요.');
     if (body.amount !== order.amount) fail(400, 'AMOUNT_MISMATCH', '결제 금액이 달라요.');
     if (body.paymentKey !== `mock_${order.orderId}`)
       fail(400, 'INVALID_PAYMENT', '결제 정보를 확인할 수 없어요.');
+    order.paidAt ??= new Date().toISOString();
     order.state = 'PAID';
     saveOrder(order); // Idempotent confirmation; no second entitlement activation.
     const plan = [...developerPlans, ...recruiterPlans].find((item) => item.key === order.planKey)!;

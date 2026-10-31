@@ -107,3 +107,6 @@ export const SUBSCRIPTION_PRICE = {
   scoutMonthly: 14900,
   trialDays: 7,
 } as const;
+
+/** Policy ch. 11 payment and expiry rules. */
+export const SUBSCRIPTION_RULES = { refundWithinDays: 7, flexGraceDays: 30 } as const;

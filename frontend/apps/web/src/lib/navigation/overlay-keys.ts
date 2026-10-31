@@ -12,6 +12,8 @@ export const OVERLAY_KEYS = [
   'draft-restore',
   'chat-info',
   'appeal',
+  'subscription-cancel',
+  'payment-refund',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];
