@@ -5,6 +5,8 @@ import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { ChatUnreadBadge } from '@/features/chat/chat-unread-badge';
+
 import { useRequireLogin } from '@/features/auth/use-require-login';
 
 import type { TabItem, TabKey } from './bottom-tabs.config';
@@ -35,7 +37,10 @@ export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
           const content = (
             <>
               <Icon aria-hidden />
-              <span className={styles.label}>{tab.label}</span>
+              <span className={styles.label}>
+                {tab.label}
+                {tab.key === 'chats' && !tab.requiresLogin && <ChatUnreadBadge />}
+              </span>
             </>
           );
           return (
