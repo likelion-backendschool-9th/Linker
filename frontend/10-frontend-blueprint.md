@@ -30,7 +30,7 @@
 8. Per page: 1 `header`, 1 `main`, 1 main-menu `nav`, exactly one `h1` (ch. 6).
 9. Actions are `<button>`, navigation is `<Link>`. `div onClick` NEVER.
 10. Numbers (character counts, limits, plan values) come from `src/lib/policy.ts` (values from 04 Policy), never hard-coded.
-11. Mobile first: base styles at 360px, widen with `@media (min-width: 640px | 768px | 1024px)`.
+11. Mobile first: base styles at 360px, widen with `@media (min-width: 600px | 1024px)` (tablet, desktop).
 12. APIs only through orval hooks/functions. Direct `fetch('/api/v1/...')` NEVER outside `src/lib/api/`.
 13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + 11 Design Guide first. No CSS-in-JS, no utility-class framework.
 
@@ -258,7 +258,7 @@ All overlays are Radix `Dialog` (styled in `components/overlay/`): focus trap, `
 - Every page needs a unique `title` (Next route announcer reads it).
 
 ### 6-6. Mobile first
-- Base = 360px; app screens keep `max-width: var(--app-max-width)`; only admin goes two-column at 1024px.
+- Base = 360px (mobile 360–599, tablet from 600, desktop from 1024). App screens use `max-width: var(--content-max-width)` (1440px, centered); side gutter is `var(--page-gutter)`. Bottom tab bar on all sizes; the top bar is shared by mobile and tablet. The admin shell is separate and goes two-column at 1024px.
 - `100dvh`; bottom tabs/input bars use `padding-bottom: env(safe-area-inset-bottom)`; `viewportFit: 'cover'`.
 - Input font ≥ 16px. No hover-only UI; long-press has a "더보기" button alternative.
 
@@ -377,12 +377,12 @@ export function useOverlay(key: OverlayKey) {
 
 ## 10. Images
 ### 10-1. Install and config
-`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 640, 768, 1024, 1280]`; `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
+`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 600, 1024, 1440]`; `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
 
 ### 10-2. Usage
 | Image | Rule |
 | --- | --- |
-| Feed cover | `sizes="(min-width: 640px) 600px, 100vw"`; only the first card `preload` |
+| Feed cover | `sizes="(min-width: 1024px) 480px, (min-width: 600px) 50vw, 100vw"`; only the first card `preload` |
 | Post gallery | First image `preload`, rest lazy; `fill` + fixed-ratio parent |
 | Avatar | Fixed size 24–96; GitHub `?s=` param |
 | Chat photo | Thumbnail `sizes="240px"`; large in the viewer |

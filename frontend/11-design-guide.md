@@ -9,7 +9,7 @@
 
 1. **MUST** style with CSS Modules (`*.module.css` next to the component) and read every color, size, space and radius through `var(--token)`. **NEVER** write a hex color, a font size or a radius as a raw value in a component.
 2. **MUST NOT** add a new color, font size or radius in a component. Add the token first (token file + this guide), then use it.
-3. Mobile first: base styles target a 360px screen; widen with `@media (min-width: 640px | 768px | 1024px)`. No `max-width` queries for layout.
+3. Mobile first: base styles target a 360px screen; widen with `@media (min-width: 600px | 1024px)` (tablet, desktop). No `max-width` queries for layout.
 4. Source order when values conflict: **text color and type** (ch. 2) over **palette** (ch. 1) over **everything else** (ch. 3–5). Text on a white surface uses the `--color-text-*` tokens only.
 5. Shadow-free. Depth comes from fill differences and 1px hairlines (ch. 4). The only shadow token is `--shadow-segment-active`.
 6. Never signal state by color alone. Pair color with text, an icon or a border (WCAG 1.4.1).
@@ -117,12 +117,13 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 The two section tokens are Linker's mobile adaptation: the source guide's fixed 80/120px is too tall for a 360px screen.
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Page gutter** is `--space-md` on mobile.
-- **Container:** app screens stay in one centered column, `max-width: var(--app-max-width)` (640px), even on desktop. Only admin screens go to list + detail two columns at 1024px (blueprint §6-6).
-- **Breakpoints:** `640px` (single column → wider cards), `768px` (nav links may expand), `1024px` (desktop type and admin two-column), `1280px` (admin default grid). Custom properties cannot be used in `@media`, so write the px value.
+- **Page gutter** is `--page-gutter`: 16px on mobile, 24px from 600px, 32px from 1024px.
+- **Container:** app screens fill the width up to `--content-max-width` (1440px) and are centered beyond it. Admin screens are outside this rule and keep their own shell (list + detail two columns at 1024px, blueprint §6-6).
+- **Breakpoints:** mobile `360–599px` (base), tablet from `600px`, desktop from `1024px` (desktop type, `--space-section*`, `--page-gutter`). Admin keeps `1024px` two-column and `1280px` default grid. Custom properties cannot be used in `@media`, so write the px value.
+- **Tablet follows mobile:** same nav and type sizes as mobile; only content width, column count (cards 1 → 2) and gutter grow. Desktop adds more columns and the desktop type sizes.
 - **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
-- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
+- **Frame sizes:** `--header-height` 56px (top bar), `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--content-max-width` 1440px, `--tab-bar-max-width` 640px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px.
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
 - **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
@@ -183,14 +184,12 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Segmented control** (tab-like toggle)
 - Track `--color-canvas-soft`, `--radius-full`. Active option is a `--color-canvas` pill with `--shadow-segment-active`; inactive label `--color-text-secondary`. Each option is a full pill-sized target (at least 44px high).
 
-**Top nav**
-- Desktop: a floating, centered `--radius-full` bar filled `--color-canvas-soft`, logo left, links right, a primary button at the end; sticky on scroll.
-- Mobile: logo and one action; links move behind a menu button.
+**Top nav** — sticky, content up to `--content-max-width`. Contains the logo, search, notifications, settings (my page) and the login button (guests). Mobile and tablet share one layout; desktop has its own (wider search field). Navigation between sections is always the bottom tab bar, never links in the top nav.
 
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
+**Bottom tab bar** — on every screen size (mobile, tablet, desktop). Tablet and desktop share one layout; the items stay centered within `--tab-bar-max-width`. Fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
 
 **Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`, close is a 44px icon button.
 
@@ -220,7 +219,7 @@ The Mobbin-based reference this guide was built from contains parts Linker does 
 - [ ] No raw hex, font size, spacing or radius in the module CSS; everything is `var(--…)`.
 - [ ] Text on tinted or dark surfaces uses the on-tint / inverse tokens (ch. 1-2).
 - [ ] Accent is not used for text on a tinted surface or as a CTA fill.
-- [ ] Layout written for 360px first, widened at 640 / 768 / 1024.
+- [ ] Layout written for 360px first, widened at 600 / 1024.
 - [ ] Buttons and inputs are at least 44px; input font is 16px.
 - [ ] Error, success and warning states have a message, not color alone.
 - [ ] No shadow except `--shadow-segment-active`.
