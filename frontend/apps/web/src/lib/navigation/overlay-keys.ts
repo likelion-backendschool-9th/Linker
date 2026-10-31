@@ -17,6 +17,8 @@ export const OVERLAY_KEYS = [
   'settings-blocks',
   'recruiter-offer-message',
   'admin-report-action',
+  'chat-info',
+  'appeal',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

@@ -1,3 +1,5 @@
+import { PLAN_LIMITS } from '@/lib/policy';
+import { emit } from '../realtime-bus';
 import { daysAgo, del, fail, get, newId, patch, post, type MockRoute } from '../core/define';
 import { findRoom, MESSAGES, ROOMS, UNREAD } from '../fixtures/chat';
 import { ISSUES } from '../fixtures/issues';
@@ -27,16 +29,32 @@ export const routes: MockRoute[] = [
       members: room.teamId
         ? (TEAM_MEMBERS[room.teamId] ?? []).map((m) => m.user)
         : [brief(ME), room.counterpart],
-      team: team ? { id: team.id, name: team.name, plan: team.plan, myRole: team.myRole } : null,
+      team: team
+        ? {
+            id: team.id,
+            name: team.name,
+            plan: team.plan,
+            myRole: team.myRole,
+            status: team.status,
+          }
+        : null,
       aiSummaryEnabled: team?.plan === 'FLEX',
       // Free teams only see the last 60 days (04 ch. 8)
       historyLimitDays: team && team.plan === 'FREE' ? 60 : null,
     };
   }),
   get('/api/v1/user/chat-rooms/:roomId/messages', ({ params, query }) => {
-    const all = MESSAGES.filter((m) => m.roomId === Number(params.roomId)).sort(
-      (a, b) => a.id - b.id,
-    );
+    const room = roomOr404(params.roomId);
+    const team = room.teamId ? findTeam(room.teamId) : undefined;
+    const cutoff =
+      team?.plan === 'FREE'
+        ? Date.now() - PLAN_LIMITS.teamChatHistoryDays.free * 24 * 60 * 60 * 1000
+        : null;
+    const all = MESSAGES.filter(
+      (m) =>
+        m.roomId === Number(params.roomId) &&
+        (cutoff === null || new Date(m.createdAt).getTime() >= cutoff),
+    ).sort((a, b) => a.id - b.id);
     const before = query.get('before');
     const after = query.get('after');
     if (after) return { items: all.filter((m) => m.id > Number(after)), hasMore: false };
@@ -45,6 +63,7 @@ export const routes: MockRoute[] = [
   }),
   post('/api/v1/user/chat-rooms/:roomId/read', ({ params }) => {
     UNREAD[Number(params.roomId)] = 0;
+    emit('/user/queue/chat-rooms', { event: 'READ', roomId: Number(params.roomId) });
     return undefined;
   }),
   get('/api/v1/user/chat-rooms/:roomId/messages/:messageId/unread-members', ({ params }) => ({

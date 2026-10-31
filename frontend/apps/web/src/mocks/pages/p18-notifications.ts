@@ -1,5 +1,6 @@
 import {
   daysAgo,
+  fail,
   get,
   hoursAgo,
   newId,
@@ -10,6 +11,9 @@ import {
   minutesAgo,
   type MockRoute,
 } from '../core/define';
+
+import type { MockViewer } from '../core/viewer';
+import { emit } from '../realtime-bus';
 
 /** 18 Notifications: `NotificationController` */
 
@@ -22,6 +26,7 @@ type Notification = {
   targetUrl: string;
   read: boolean;
   createdAt: string;
+  appeal?: { sanctionId: number; submitted: boolean };
 };
 
 const items: Notification[] = [
@@ -110,6 +115,7 @@ const items: Notification[] = [
   {
     id: 10,
     type: 'SANCTION',
+    appeal: { sanctionId: 101, submitted: false },
     title: '운영 정책 안내',
     body: '운영 정책 위반으로 경고가 부여됐어요. 이의 제기하기',
     targetUrl: '/notifications',
@@ -118,21 +124,97 @@ const items: Notification[] = [
   },
 ];
 
+// Each account owns its read/appeal state; operator and developer roles for the same account share it.
+const byAccount = new Map<number, Notification[]>();
+function accountItems(viewer: MockViewer): Notification[] {
+  const id = viewer.me!.id;
+  if (!byAccount.has(id)) {
+    const seed =
+      viewer.role === 'recruiter'
+        ? [
+            {
+              ...items[0]!,
+              title: '한서준',
+              body: '제안 감사합니다. 자세히 이야기 나눠 보고 싶어요.',
+              targetUrl: '/chats/30',
+            },
+            items[items.length - 1]!,
+          ]
+        : items;
+    byAccount.set(
+      id,
+      seed.map((item) => ({
+        ...item,
+        ...(item.appeal ? { appeal: { sanctionId: id * 100 + 1, submitted: false } } : {}),
+      })),
+    );
+  }
+  return byAccount.get(id)!;
+}
+function updated() {
+  emit('/user/queue/notifications', { event: 'UPDATED' });
+}
+
+/** Chat replies also exercise the live notification list and header; one notice per room. */
+export function addChatNotification(
+  viewer: MockViewer,
+  roomId: number,
+  title: string,
+  body: string,
+) {
+  const list = accountItems(viewer);
+  const targetUrl = `/chats/${roomId}`;
+  const old = list.find((item) => item.type === 'CHAT' && item.targetUrl === targetUrl);
+  if (old) Object.assign(old, { title, body, read: false, createdAt: new Date().toISOString() });
+  else
+    list.push({
+      id: newId(),
+      type: 'CHAT',
+      title,
+      body,
+      targetUrl,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  updated();
+}
+
 export const routes: MockRoute[] = [
-  get('/api/v1/user/notifications', ({ query }) => paginate(items, query)),
-  get('/api/v1/user/notifications/unread-count', () => ({
-    count: items.filter((n) => !n.read).length,
+  get('/api/v1/user/notifications', ({ query, viewer }) =>
+    paginate(
+      [...accountItems(viewer)].sort(
+        (a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id,
+      ),
+      query,
+    ),
+  ),
+  get('/api/v1/user/notifications/unread-count', ({ viewer }) => ({
+    count: accountItems(viewer).filter((n) => !n.read).length,
   })),
-  patch('/api/v1/user/notifications/:notificationId/read', ({ params }) => {
-    const item = items.find((n) => n.id === Number(params.notificationId));
-    if (item) item.read = true;
+  patch('/api/v1/user/notifications/:notificationId/read', ({ params, viewer }) => {
+    const item = accountItems(viewer).find((n) => n.id === Number(params.notificationId));
+    if (!item) fail(404, 'NOT_FOUND', '알림을 찾지 못했어요.');
+    item.read = true;
+    updated();
     return undefined;
   }),
-  post('/api/v1/user/notifications/read-all', () => {
-    items.forEach((n) => (n.read = true));
+  post('/api/v1/user/notifications/read-all', ({ viewer }) => {
+    accountItems(viewer).forEach((n) => (n.read = true));
+    updated();
     return undefined;
   }),
-  post('/api/v1/user/appeals', () => ({ appealId: newId() })),
+  post('/api/v1/user/appeals', ({ viewer, body }) => {
+    const list = accountItems(viewer);
+    const item = list.find((n) => n.appeal?.sanctionId === Number(body.sanctionId));
+    if (!item?.appeal) fail(404, 'NOT_FOUND', '이의 제기할 알림을 찾지 못했어요.');
+    if (item.appeal.submitted) fail(409, 'ALREADY_APPEALED', '이미 이의 제기를 접수했어요.');
+    if (typeof body.body !== 'string' || !body.body.trim())
+      fail(400, 'BODY_REQUIRED', '사유를 입력해 주세요.');
+    for (const entry of list)
+      if (entry.appeal?.sanctionId === item.appeal.sanctionId) entry.appeal.submitted = true;
+    updated();
+    return { appealId: newId() };
+  }),
   post('/api/v1/user/push-tokens', () => undefined),
   del('/api/v1/user/push-tokens/:token', () => undefined),
 ];
