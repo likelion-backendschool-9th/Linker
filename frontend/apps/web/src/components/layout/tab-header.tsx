@@ -1,4 +1,4 @@
-import { Bell, UserRound } from 'lucide-react';
+import { Bell, Search, Settings, UserRound } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,9 +19,10 @@ type TabHeaderProps = {
 };
 
 /**
- * Top bar of tab screens. Mobile/tablet: logo, then the bell (members) or "로그인" (guests).
- * Desktop adds a search field and swaps those for "설정" + "무료로 시작하기" (guests) or "알람" + the profile
- * avatar (members).
+ * Top bar of tab screens. Mobile/tablet: logo, a search icon (opens the input below it, 04 frontend
+ * mobile header task 4), then "설정" (guests) or "알람" + profile (members), all icon-only.
+ * Desktop swaps the icons for a persistent search field and text pills: "설정" + "무료로 시작하기"
+ * (guests) or "알람" + the profile avatar (members).
  */
 export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderProps) {
   return (
@@ -33,11 +34,18 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
       </Link>
       <HeaderSearch />
       <div className={styles.actions}>
+        <button type="button" className={`${styles.iconButton} ${styles.mobileOnly}`}>
+          <Search aria-hidden />
+          <span className="sr-only">검색</span>
+        </button>
         {role === 'guest' ? (
           <>
-            <HeaderLoginButton label="설정" className={styles.softPillButton} />
-            <HeaderLoginButton className={`${styles.loginButton} ${styles.mobileOnly}`} />
-            <HeaderLoginButton label="무료로 시작하기" className={styles.ctaButton} />
+            <HeaderLoginButton className={`${styles.iconButton} ${styles.mobileOnly}`}>
+              <Settings aria-hidden />
+              <span className="sr-only">설정</span>
+            </HeaderLoginButton>
+            <HeaderLoginButton className={styles.softPillButton}>설정</HeaderLoginButton>
+            <HeaderLoginButton className={styles.ctaButton}>무료로 시작하기</HeaderLoginButton>
           </>
         ) : (
           <>
@@ -46,7 +54,15 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
               className={`${styles.iconButton} ${styles.mobileOnly}`}
             >
               <Bell aria-hidden />
-              <span className="sr-only">알림</span>
+              {hasUnread && <span className={styles.unreadDot} aria-hidden />}
+              <span className="sr-only">알림{hasUnread ? ' (안 읽은 알림 있음)' : ''}</span>
+            </Link>
+            <Link
+              href={(login ? `/u/${login}` : '/feed') as Route}
+              className={`${styles.iconButton} ${styles.mobileOnly}`}
+            >
+              <UserRound aria-hidden />
+              <span className="sr-only">내 프로필</span>
             </Link>
             <Link href={'/notifications' as Route} className={styles.softPillButton}>
               알람

@@ -219,7 +219,7 @@ NEVER split only because a file is long (one region of one screen stays one file
 
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)
-Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/StackHeader: logo or back, notification bell; guests get a "로그인" button) → `main id="main" tabIndex={-1} aria-labelledby="page-title"` with one `h1` (may be `sr-only`) → `nav aria-label="주 메뉴"` (bottom tabs, after `main` in the DOM).
+Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/StackHeader: logo or back, search, notification bell; guests get a "설정" icon that opens the login sheet instead) → `main id="main" tabIndex={-1} aria-labelledby="page-title"` with one `h1` (may be `sr-only`) → `nav aria-label="주 메뉴"` (bottom tabs, after `main` in the DOM).
 - Other `nav`s MUST have names ("팀 메뉴", "게시물 탭"). On stack screens the top-bar title may be the `h1`.
 - No skipped heading levels; card titles are `h2`/`h3` by position.
 - Admin: `header` + `nav aria-label="운영 메뉴"` + `main` + `aside aria-label="신고 상세"` (a sheet on narrow screens).
