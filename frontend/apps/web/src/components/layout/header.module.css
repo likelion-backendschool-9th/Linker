@@ -4,6 +4,11 @@
   z-index: var(--z-chrome);
   padding-top: env(safe-area-inset-top);
   background-color: var(--color-canvas);
+  transition: background-color var(--duration-overlay) var(--ease-standard);
+}
+
+.headerScrolled {
+  background-color: transparent;
 }
 
 .inner {
@@ -15,6 +20,26 @@
   margin: 0 auto;
   /* Logo and icon buttons carry their own inset, so the visible gutter equals --page-gutter */
   padding: 0 calc(var(--page-gutter) - var(--space-xs));
+  border-radius: var(--radius-none);
+  transition:
+    margin-top var(--duration-overlay) var(--ease-standard),
+    border-radius var(--duration-overlay) var(--ease-standard),
+    background-color var(--duration-overlay) var(--ease-standard),
+    backdrop-filter var(--duration-overlay) var(--ease-standard);
+}
+
+/* The floating "scroll header" (04 frontend task 2): the Figma reference is already capped at
+   --content-max-width at rest, so shrinking to 1440px is this pill becoming visible, not a width change */
+.innerScrolled {
+  margin-top: var(--space-sm);
+  background-color: var(--color-scroll-header);
+  backdrop-filter: var(--blur-header-scroll);
+  border-radius: var(--radius-lg);
+}
+
+.innerScrolled .search,
+.innerScrolled .softPillButton {
+  background-color: var(--color-canvas);
 }
 
 .logo {

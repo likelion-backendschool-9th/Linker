@@ -31,6 +31,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
+| `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill of the scrolled top nav, with `--blur-header-scroll` |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -125,7 +126,7 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
 - **Frame sizes:** `--header-height` 56px (top bar), 80px from 1024px (room for the desktop search field); `--header-search-width` 512px (desktop top nav search field); `--badge-dot-size` 6px (unread dot); `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--content-max-width` 1440px, `--tab-bar-max-width` 640px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px, `--icon-size-sm` 16px (icon inside a small control, e.g. the search clear button).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts, and for the top nav's scroll transition; globals.css turns it off under `prefers-reduced-motion`. `--blur-header-scroll` (`blur(20px)`) is the scrolled top nav's backdrop blur.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
 
 ## 4. Shape and elevation
@@ -134,6 +135,7 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
+| `--radius-lg` | 20px | The scrolled top nav's floating pill |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
 | `--radius-full` | 9999px | Every pill: buttons, badges, toggles, nav pill |
 
@@ -190,6 +192,7 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 - "설정" / "알람" share one pill style: `--color-field` fill (not the generic soft-pill's `--color-canvas-soft`, per the Figma reference), `--color-text-heading` label; "무료로 시작하기" is the primary button. All three: `--control-height`, `--radius-full`, `--space-md` horizontal padding, `--font-size-body` / `--font-weight-semibold` label.
 - Desktop profile link (members only): circular, `--control-height` diameter, `--color-canvas-soft` fill, 1px `--color-hairline-soft` border, `UserRound` icon until a real avatar is wired in.
 - Unread notifications: a `--badge-dot-size` `--color-accent` dot at the "알람" button's top-right corner (ch. 5 "Badge" highlight style), `--space-xs` inset from each edge. Paired with sr-only text, never the dot alone.
+- Scrolled (past `8px`, any screen size): the bar's own background goes transparent and the row inside becomes a floating pill — `--color-scroll-header` fill, `--blur-header-scroll` backdrop blur, `--radius-lg` corners, `--space-sm` top margin, animated with `--duration-overlay`/`--ease-standard`. The row is already capped at `--content-max-width`, so this is the cap becoming visible, not a width change. The search field and "설정"/"알람" pill switch to a plain `--color-canvas` fill so they read against the frosted bar; the CTA and profile link don't change.
 
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
