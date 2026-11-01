@@ -25,6 +25,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-primary` | `#141414` | Primary CTA fill, footer band, focus ring |
 | `--color-on-primary` | `#ffffff` | Text and icons on `--color-primary` (18.4:1) |
 | `--color-accent` | `#0066ff` | Popular/new badges, savings emphasis. **NEVER** a CTA fill |
+| `--color-gnb-current` | `#005fed` | Current GNB label/icon on the gray pill (4.90:1 on `--color-canvas-soft`); preserves blue emphasis with readable mobile text |
 | `--color-canvas` | `#ffffff` | Page and card background |
 | `--color-canvas-soft` | `#f3f3f3` | Nav pill, featured card, accordion row, toggle track, soft pill |
 | `--color-field` | `#f0f0f0` | Input fill |
@@ -74,6 +75,7 @@ Measured ratios, so nobody has to recompute:
 | `#adadad` (palette "Faint") | white | 2.24 | **fail** → never on a light surface |
 | `#adadad` inverse-secondary | `#141414` | 8.21 | pass |
 | `#0066ff` accent text | white / `#f3f3f3` | 4.83 / 4.36 | accent text only on white |
+| `#005fed` GNB current text | `#f3f3f3` | 4.90 | pass; use `--color-gnb-current` for the selected tab |
 | `#ffffff` on accent badge | `#0066ff` | 4.83 | pass |
 
 - **MUST** re-check contrast when text sits on any surface other than white and add a token if no existing one passes.
@@ -200,7 +202,7 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — a floating pill, inset `--space-md` (16px) from the viewport edges at every width (fixed outer wrapper with that padding), capped at `--content-max-width` (1440px) and centered beyond it; safe-area inset at the bottom. Profile is not one of these tabs — it lives in the top header on every size. Inactive label `--color-text-body` / icon via `currentColor`, current `--color-accent` with a semibold label (not color alone).
+**Bottom tab bar** — a floating pill, inset `--space-md` (16px) from the viewport edges at every width (fixed outer wrapper with that padding), capped at `--content-max-width` (1440px) and centered beyond it; safe-area inset at the bottom. Profile is not one of these tabs — it lives in the top header on every size. Inactive label `--color-text-body` / icon via `currentColor`, current `--color-gnb-current` with a semibold label (not color alone). The dedicated blue token fixes the original accent's 4.36:1 contrast on the gray mobile pill without changing the shared GNB layout.
 - Mobile (base, below 640px): icon (`--icon-size`) over a caption-size label, `--color-canvas-soft` fill, `--radius-xs` corners.
 - Tablet/desktop (640px+, one shared layout): text only, no icons — `--color-gnb-pill` frosted fill with `--blur-header-scroll` backdrop blur, `--radius-lg` corners, card-title-size label.
 

@@ -4,6 +4,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 
 import type { RoomMessage } from '../_lib/room-api';
 import styles from './chat-room.module.css';
+import { PrEventCard } from './pr-event-card';
 
 type Props = { message: RoomMessage; mine: boolean };
 
@@ -28,7 +29,11 @@ export function ChatMessage({ message, mine }: Props) {
           <p>운영 정책에 따라 숨겨진 메시지예요</p>
         ) : (
           <>
-            {message.text && <p className={styles.text}>{message.text}</p>}
+            {message.type === 'PR_EVENT' ? (
+              <PrEventCard message={message} />
+            ) : (
+              message.text && <p className={styles.text}>{message.text}</p>
+            )}
             {!!message.imageUrls.length && (
               <div className={styles.images}>
                 {message.imageUrls.map((url, index) => (

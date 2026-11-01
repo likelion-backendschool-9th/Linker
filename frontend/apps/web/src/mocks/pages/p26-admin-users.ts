@@ -16,29 +16,40 @@ const sanctions: Record<number, Sanction[]> = {
   7: [{ id: 1, step: 'WARNING', reason: '홍보성 게시물 반복', startsAt: daysAgo(7), endsAt: null }],
 };
 const needsReview = new Set<number>([7, 8]);
-const suspended = new Set<number>();
+// Read-only examples cover the status filters before mutation integration.
+const suspended = new Set<number>([7]);
+const withdrawing = new Set<number>([8]);
+const userStatus = (id: number) =>
+  suspended.has(id) ? 'SUSPENDED' : withdrawing.has(id) ? 'WITHDRAWING' : 'ACTIVE';
 
 const mask = (email: string) => `${email.slice(0, 3)}***@${email.split('@')[1]}`;
 
 export const routes: MockRoute[] = [
   get('/api/v1/admin/users', ({ query }) => {
-    const q = (query.get('q') ?? '').toLowerCase();
+    const q = (query.get('q') ?? '').replace(/^@/, '').toLowerCase();
     const status = query.get('status');
     const userType = query.get('userType');
     const review = query.get('needsReview');
+    const items = ALL_USERS.filter((u) => !q || u.login.includes(q) || u.name.includes(q))
+      .filter((u) => !userType || u.userType === userType)
+      .filter((u) => !status || userStatus(u.id) === status)
+      .filter((u) => review !== 'true' || needsReview.has(u.id))
+      .map((u) => ({
+        ...brief(u),
+        emailMasked: mask(u.email),
+        status: userStatus(u.id),
+        // 3× a daily limit (POL ch. 2 rate limits)
+        needsReview: needsReview.has(u.id),
+        joinedAt: u.joinedAt,
+      }));
+    const start = query.get('cursor')
+      ? items.findIndex((item) => String(item.id) === query.get('cursor')) + 1
+      : 0;
+    const size = Math.max(1, Math.min(100, Number(query.get('size') ?? 20)));
+    const page = items.slice(start, start + size);
     return {
-      items: ALL_USERS.filter((u) => !q || u.login.includes(q) || u.name.includes(q))
-        .filter((u) => !userType || u.userType === userType)
-        .filter((u) => !status || (suspended.has(u.id) ? 'SUSPENDED' : 'ACTIVE') === status)
-        .filter((u) => review !== 'true' || needsReview.has(u.id))
-        .map((u) => ({
-          ...brief(u),
-          emailMasked: mask(u.email),
-          status: suspended.has(u.id) ? 'SUSPENDED' : 'ACTIVE',
-          // 3× a daily limit (POL ch. 2 rate limits)
-          needsReview: needsReview.has(u.id),
-          joinedAt: u.joinedAt,
-        })),
+      items: page,
+      nextCursor: start + size < items.length ? String(page.at(-1)!.id) : null,
     };
   }),
   get('/api/v1/admin/users/:userId', ({ params }) => {
@@ -47,7 +58,8 @@ export const routes: MockRoute[] = [
     return {
       ...brief(user),
       emailMasked: mask(user.email),
-      status: suspended.has(user.id) ? 'SUSPENDED' : 'ACTIVE',
+      status: userStatus(user.id),
+      allowedActions: { permanentSanction: false, liftSanction: false, refund: true },
       joinedAt: user.joinedAt,
       sanctions: sanctions[user.id] ?? [],
       reportHistory: [{ caseId: 1, targetType: 'POST', result: 'HIDE', at: daysAgo(9) }],

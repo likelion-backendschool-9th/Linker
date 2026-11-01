@@ -46,9 +46,9 @@ Every Linker user has one of four roles. Owner/admin/member permissions within a
 
 | Role | How | Login method | Bottom tabs | Detailed policy |
 | --- | --- | --- | --- | --- |
-| Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat / Profile (last 3 show login prompt) | Ch. 3 "Guests" (POL-A-9) |
-| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat / Profile | Ch. 3–9, 11 |
-| Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat / Profile | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
+| Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat (Workspace and Chat show login prompt; profile is in the header) | Ch. 3 "Guests" (POL-A-9) |
+| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
+| Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat (profile is in the header) | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
 | Operator | Operator permission granted to a developer account via DB | GitHub + back-office OTP | Same as developer + `/admin` | Ch. 10 |
 
 - An account is either developer or recruiter and never changes after sign-up. A person who wants both creates separate accounts.
@@ -69,7 +69,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 04 | Profile | View (except follower/following lists) | ○ | View + "Send recruiting offer"; own profile is the recruiter my page (incl. job ad sheet) | Same as developer |
 | 05 | Edit profile | × | ○ incl. job categories of interest | ○ name, company, job title, website (company email can't change) | Same as developer |
 | 06 | Settings | × | ○ | ○ no GitHub items, subscription is Scout only, has change password | Same as developer |
-| 07 | Workspace home | Prompt | ○ | × | Same as developer |
+| 07 | Workspace home / my issues (`/workspace`, `/workspace/issues`) | Prompt | ○ | × | Same as developer |
 | 08 | Create team | Prompt | ○ | × | Same as developer |
 | 09 | Team settings & members | × | Per team role (ch. 6) | × | Same as developer |
 | 10 | Accept invite | View team preview, accept = prompt | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |
