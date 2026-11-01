@@ -1,6 +1,9 @@
 'use client';
 
-import { Briefcase, House, MessageCircle, UsersRound } from 'lucide-react';
+import { ChatRoundLineIcon } from '@solar-icons/react/linear/chat-round-line';
+import { CodeScanIcon } from '@solar-icons/react/linear/code-scan';
+import { HomeIcon } from '@solar-icons/react/linear/home';
+import { Radar2Icon } from '@solar-icons/react/linear/radar-2';
 import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,11 +14,11 @@ import { ChatUnreadBadge } from '@/features/chat/chat-unread-badge';
 import type { TabItem, TabKey } from './bottom-tabs.config';
 import styles from './bottom-tab-bar.module.css';
 
-const ICONS: Record<TabKey, typeof House> = {
-  home: House,
-  recruits: UsersRound,
-  workspace: Briefcase,
-  chats: MessageCircle,
+const ICONS: Record<TabKey, typeof HomeIcon> = {
+  home: HomeIcon,
+  recruits: Radar2Icon,
+  workspace: CodeScanIcon,
+  chats: ChatRoundLineIcon,
 };
 
 function isCurrent(pathname: string, href: string) {

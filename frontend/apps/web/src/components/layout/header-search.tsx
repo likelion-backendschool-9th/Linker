@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, X } from 'lucide-react';
+import { CloseIcon } from '@solar-icons/react/linear/close';
+import { MagnifierIcon } from '@solar-icons/react/linear/magnifier';
 import { useId, useRef, useState } from 'react';
 
 import styles from './header.module.css';
@@ -18,7 +19,7 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
 
   return (
     <div className={`${styles.search} ${className ?? ''}`}>
-      <Search aria-hidden className={styles.searchIcon} />
+      <MagnifierIcon aria-hidden className={styles.searchIcon} />
       <label htmlFor={inputId} className="sr-only">
         검색어를 입력해 주세요
       </label>
@@ -40,7 +41,7 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
             inputRef.current?.focus();
           }}
         >
-          <X aria-hidden className={styles.searchClearIcon} />
+          <CloseIcon aria-hidden className={styles.searchClearIcon} />
           <span className="sr-only">검색어 지우기</span>
         </button>
       )}

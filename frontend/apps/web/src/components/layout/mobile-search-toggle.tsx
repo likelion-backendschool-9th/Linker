@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, X } from 'lucide-react';
+import { CloseIcon } from '@solar-icons/react/linear/close';
+import { MagnifierIcon } from '@solar-icons/react/linear/magnifier';
 
 import styles from './header.module.css';
 import { useMobileSearch } from './mobile-search-context';
@@ -16,7 +17,7 @@ export function MobileSearchToggle() {
       aria-controls="mobile-search-panel"
       onClick={toggle}
     >
-      {isOpen ? <X aria-hidden /> : <Search aria-hidden />}
+      {isOpen ? <CloseIcon aria-hidden /> : <MagnifierIcon aria-hidden />}
       <span className="sr-only">{isOpen ? '검색창 닫기' : '검색'}</span>
     </button>
   );

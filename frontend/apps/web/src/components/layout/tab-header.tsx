@@ -1,4 +1,5 @@
-import { Settings, UserRound } from 'lucide-react';
+import { SettingsIcon } from '@solar-icons/react/linear/settings';
+import { UserIcon } from '@solar-icons/react/linear/user';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -45,7 +46,7 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
           {role === 'guest' ? (
             <>
               <HeaderLoginButton className={`${styles.iconButton} ${styles.mobileOnly}`}>
-                <Settings aria-hidden />
+                <SettingsIcon aria-hidden />
                 <span className="sr-only">설정</span>
               </HeaderLoginButton>
               <HeaderLoginButton className={styles.softPillButton}>설정</HeaderLoginButton>
@@ -62,7 +63,7 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
                 href={(login ? `/u/${login}` : '/feed') as Route}
                 className={`${styles.iconButton} ${styles.mobileOnly}`}
               >
-                <UserRound aria-hidden />
+                <UserIcon aria-hidden />
                 <span className="sr-only">내 프로필</span>
               </Link>
               <NotificationBell initiallyUnread={hasUnread} className={styles.softPillButton} />
@@ -70,7 +71,7 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
                 href={(login ? `/u/${login}` : '/feed') as Route}
                 className={styles.profileButton}
               >
-                <UserRound aria-hidden />
+                <UserIcon aria-hidden />
                 <span className="sr-only">내 프로필</span>
               </Link>
             </>
