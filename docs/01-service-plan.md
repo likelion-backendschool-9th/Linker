@@ -119,7 +119,7 @@ Subscriptions (Pro / Flex) are not a separate area; they extend limits and stats
 
 ## 4. Information architecture (IA)
 
-Five bottom tabs separate social and workspace so the two roles don't mix within one app. The full page list and build order by phase are in the [screen map](https://claude.ai/artifact/NusmaEiai4A7bHj7uT6RW2).
+Four bottom tabs separate social and workspace so the two roles don't mix within one app; profile now lives in the top header instead of a tab. The full page list and build order by phase are in the [screen map](https://claude.ai/artifact/NusmaEiai4A7bHj7uT6RW2).
 
 ```text
 Linker
@@ -158,7 +158,7 @@ Linker
 │   ├── Stats (Free: likes/comments/views; Pro: traffic sources, 30-day trend, recruiter view count)
 │   └── Settings (account, notifications, block list, subscription & billing, terms, delete account)
 │       (profile edit has up to 3 job categories of interest; empty = no job ads)
-├── Recruiter screens (3 bottom tabs: Home / Chat / Profile)
+├── Recruiter screens (2 bottom tabs: Home / Chat; profile in the header)
 │   ├── Home: same feed + "only developers open to offers" filter; view posts/profiles (no likes/comments/follows)
 │   ├── Chat: sent recruiting offers and open conversations
 │   └── My page (recruiter): name, company, job title, "company email verified" mark, offer summary
@@ -288,16 +288,16 @@ Summarizes existing team chat like meeting notes, with no recording or transcrip
 | Chat | Chat list, team chat room, 1:1 chat room, message requests | Talk and follow the PR flow | 1 |
 | Profile | My profile, other's profile, stats, settings | Where activity gathers | 1 |
 | Explore | Tech tags / popular posts, developer search | Find new work and people | 2 |
-| Recruiter | Home (feed + open-to-offers filter), chat, my page (company info + sent offers list + job ad sheet + Scout subscription) | Recruiter only; only 3 bottom tabs | 1 |
+| Recruiter | Home (feed + open-to-offers filter), chat, my page (company info + sent offers list + job ad sheet + Scout subscription) | Recruiter only; only 2 bottom tabs | 1 |
 | Talent search | Developer search, formal offer box | Extra recruiter-only tab | 3 |
 
 **Screen principles**
 
 - Designed for one-handed mobile use; main buttons sit at the bottom of the screen.
-- Social (Home, Profile) and work (Workspace, team chat) are separated by color and tabs so they don't mix.
+- Social (Home, Profile) and work (Workspace, team chat) are separated by color so they don't mix; Profile sits in the header instead of a bottom tab.
 - Information from GitHub (repo cards, PR notices, issues) is shown with the GitHub icon so the source is clear.
 - Error and empty-state copy follows the [Policy's UI copy guide](./04-policy.md#12-ui-copy-guide).
-- Without logging in, users can read Home (feed, posts), Find Team (recruit posts) and profiles. Actions like like/comment/follow/apply/message, or tapping the Workspace/Chat/Profile tabs, show the "This feature is for logged-in users" sheet and return to the same screen after login (A-9, POL-A-9).
+- Without logging in, users can read Home (feed, posts), Find Team (recruit posts) and profiles. Actions like like/comment/follow/apply/message, or tapping the Workspace/Chat tabs or the header's profile icon, show the "This feature is for logged-in users" sheet and return to the same screen after login (A-9, POL-A-9).
 
 ## 7. System architecture
 

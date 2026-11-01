@@ -1,8 +1,8 @@
 import type { Role } from '@/lib/auth/route-access';
 
-/** Bottom tabs per role (04 ch. 2 "Access by role", blueprint §4-6). */
+/** Bottom tabs per role (04 ch. 2 "Access by role", blueprint §4-6). Profile lives in the top header, not here. */
 
-export type TabKey = 'home' | 'recruits' | 'workspace' | 'chats' | 'profile';
+export type TabKey = 'home' | 'recruits' | 'workspace' | 'chats';
 
 export type TabItem = {
   key: TabKey;
@@ -13,24 +13,22 @@ export type TabItem = {
 };
 
 const LABELS: Record<TabKey, string> = {
-  home: '홈',
+  home: '홈 피드',
   recruits: '팀 찾기',
-  workspace: '워크스페이스',
-  chats: '채팅',
-  profile: '프로필',
+  workspace: '오피스',
+  chats: '채팅방',
 };
 
 const TABS_BY_ROLE: Record<Role, readonly TabKey[]> = {
-  guest: ['home', 'recruits', 'workspace', 'chats', 'profile'],
-  developer: ['home', 'recruits', 'workspace', 'chats', 'profile'],
-  operator: ['home', 'recruits', 'workspace', 'chats', 'profile'],
-  // Profile = recruiter my page (`/u/[login]` `_views/recruiter-my-page-view.tsx`)
-  recruiter: ['home', 'chats', 'profile'],
+  guest: ['home', 'recruits', 'workspace', 'chats'],
+  developer: ['home', 'recruits', 'workspace', 'chats'],
+  operator: ['home', 'recruits', 'workspace', 'chats'],
+  recruiter: ['home', 'chats'],
 };
 
-const GUEST_LOGIN_TABS: readonly TabKey[] = ['workspace', 'chats', 'profile'];
+const GUEST_LOGIN_TABS: readonly TabKey[] = ['workspace', 'chats'];
 
-function hrefFor(key: TabKey, login: string | null): string {
+function hrefFor(key: TabKey): string {
   switch (key) {
     case 'home':
       return '/feed';
@@ -40,16 +38,14 @@ function hrefFor(key: TabKey, login: string | null): string {
       return '/workspace';
     case 'chats':
       return '/chats';
-    case 'profile':
-      return login ? `/u/${login}` : '/feed';
   }
 }
 
-export function tabsFor(role: Role, login: string | null): TabItem[] {
+export function tabsFor(role: Role): TabItem[] {
   return TABS_BY_ROLE[role].map((key) => ({
     key,
     label: LABELS[key],
-    href: hrefFor(key, login),
+    href: hrefFor(key),
     requiresLogin: role === 'guest' && GUEST_LOGIN_TABS.includes(key),
   }));
 }

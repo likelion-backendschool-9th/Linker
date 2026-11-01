@@ -68,7 +68,7 @@ export async function PageFrame({
         )}
         {children}
       </main>
-      {showTabs && <BottomTabBar tabs={tabsFor(role, session?.login ?? null)} />}
+      {showTabs && <BottomTabBar tabs={tabsFor(role)} />}
     </>
   );
 }

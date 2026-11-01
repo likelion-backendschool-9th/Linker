@@ -32,6 +32,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
 | `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill of the scrolled top nav, with `--blur-header-scroll` |
+| `--color-gnb-pill` | `rgb(244 244 244 / 0.8)` | Tablet/desktop bottom GNB frosted fill, with `--blur-header-scroll` |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -119,14 +120,14 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
 - **Page gutter** is `--page-gutter`: 16px on mobile, 24px from 600px, 32px from 1024px.
-- **Container:** app screens fill the width up to `--content-max-width` (1440px) and are centered beyond it. Admin screens are outside this rule and keep their own shell (list + detail two columns at 1024px, blueprint §6-6).
-- **Breakpoints:** mobile `360–599px` (base), tablet from `600px`, desktop from `1024px` (desktop type, `--space-section*`, `--page-gutter`). Admin keeps `1024px` two-column and `1280px` default grid. Custom properties cannot be used in `@media`, so write the px value.
+- **Container:** app screens fill the width up to `--content-max-width` (1440px) and are centered beyond it. Admin screens are outside this rule and keep their own shell (list + detail two columns at 1024px, blueprint §6-6). The bottom GNB also uses `--content-max-width`, but as a floating bar outside the page's content column with its own fixed `--space-md` (16px) inset (not `--page-gutter`).
+- **Breakpoints:** mobile `360–599px` (base), tablet from `600px`, desktop from `1024px` (desktop type, `--space-section*`, `--page-gutter`). The bottom GNB's own mobile/tablet split is at `640px`. Admin keeps `1024px` two-column and `1280px` default grid. Custom properties cannot be used in `@media`, so write the px value.
 - **Tablet follows mobile:** same nav and type sizes as mobile; only content width, column count (cards 1 → 2) and gutter grow. Desktop adds more columns and the desktop type sizes.
 - **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
 - **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
-- **Frame sizes:** `--header-height` 56px (top bar), 80px from 1024px (room for the desktop search field); `--header-search-width` 512px (desktop top nav search field); `--badge-dot-size` 6px (unread dot); `--tab-bar-height` 56px (bottom tabs, plus the safe-area inset), `--content-max-width` 1440px, `--tab-bar-max-width` 640px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px, `--icon-size-sm` 16px (icon inside a small control, e.g. the search clear button).
+- **Frame sizes:** `--header-height` 56px (top bar), 80px from 1024px (room for the desktop search field); `--header-search-width` 512px (desktop top nav search field); `--badge-dot-size` 6px (unread dot); `--tab-bar-height` 96px (bottom GNB's total footprint — mobile and desktop differ, this covers the taller desktop pill — for other elements' clearance, plus the safe-area inset), `--content-max-width` 1440px, `--sheet-max-width` 640px, `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px, `--icon-size-sm` 16px (icon inside a small control, e.g. the search clear button).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts, and for the top nav's scroll transition; globals.css turns it off under `prefers-reduced-motion`. `--blur-header-scroll` (`blur(20px)`) is the scrolled top nav's backdrop blur.
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts, and for the top nav's scroll transition; globals.css turns it off under `prefers-reduced-motion`. `--blur-header-scroll` (`blur(20px)`) is the backdrop blur shared by the scrolled top nav and the tablet/desktop bottom GNB.
 - **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
 
 ## 4. Shape and elevation
@@ -134,8 +135,9 @@ The two section tokens are Linker's mobile adaptation: the source guide's fixed 
 | Token | Value | Use |
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
+| `--radius-xs` | 8px | The floating mobile bottom GNB pill |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
-| `--radius-lg` | 20px | The scrolled top nav's floating pill |
+| `--radius-lg` | 20px | Floating frosted pills: the scrolled top nav, the tablet/desktop bottom GNB |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
 | `--radius-full` | 9999px | Every pill: buttons, badges, toggles, nav pill |
 
@@ -198,7 +200,9 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 **Footer**
 - `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — on every screen size (mobile, tablet, desktop). Tablet and desktop share one layout; the items stay centered within `--tab-bar-max-width`. Fixed `--color-canvas` bar with a 1px `--color-hairline-soft` top line, `--tab-bar-height` + safe-area inset. Icon over a meta-size label; inactive `--color-text-meta`, current `--color-text-heading` with a semibold label (not color alone).
+**Bottom tab bar** — a floating pill, inset `--space-md` (16px) from the viewport edges at every width (fixed outer wrapper with that padding), capped at `--content-max-width` (1440px) and centered beyond it; safe-area inset at the bottom. Profile is not one of these tabs — it lives in the top header on every size. Inactive label `--color-text-body` / icon via `currentColor`, current `--color-accent` with a semibold label (not color alone).
+- Mobile (base, below 640px): icon (`--icon-size`) over a caption-size label, `--color-canvas-soft` fill, `--radius-xs` corners.
+- Tablet/desktop (640px+, one shared layout): text only, no icons — `--color-gnb-pill` frosted fill with `--blur-header-scroll` backdrop blur, `--radius-lg` corners, card-title-size label.
 
 **Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`, close is a 44px icon button.
 
