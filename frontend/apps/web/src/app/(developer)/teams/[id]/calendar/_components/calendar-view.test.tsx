@@ -68,7 +68,8 @@ it('is a table of date buttons named "11월 4일 수요일, 이슈 2개", access
   // Overdue bars are marked (red), and "마감 지남" shows in the day sheet
   expect(container.querySelector('[data-overdue="true"]')).not.toBeNull();
   expect(await axe(container)).toHaveNoViolations();
-});
+  // axe over a whole month of date buttons: fine alone, over 5s on a busy CI runner
+}, 15_000);
 
 it("opens the day sheet with that day's issues, each linking to 12", async () => {
   const updates: UrlUpdateEvent[] = [];
