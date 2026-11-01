@@ -24,6 +24,12 @@ export const OVERLAY_KEYS = [
   'application-cancel',
   'tech-tags',
   'recruit-status',
+  'recruit-menu',
+  'recruit-apply',
+  'recruit-application',
+  'recruit-reject',
+  'recruit-team-required',
+  'recruit-role-full',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

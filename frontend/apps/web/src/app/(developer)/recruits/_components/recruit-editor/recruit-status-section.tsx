@@ -1,6 +1,6 @@
 'use client';
 
-// Own region: close / reopen / delete on the edit screen (07 TODO 20, also borrowed by 21's menu)
+// Own region: close / reopen / delete on the edit screen (07 TODO 20)
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
@@ -8,10 +8,10 @@ import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { DeleteConfirmDialog } from '@/components/overlay/delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { closeRecruit, deleteRecruit, reopenRecruit } from '@/features/recruit/recruit-status-api';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
-import { closeRecruit, deleteRecruit, reopenRecruit } from '../../_lib/editor-queries';
 import styles from './recruit-editor.module.css';
 
 type RecruitStatusSectionProps = {

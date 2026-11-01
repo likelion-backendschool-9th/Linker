@@ -79,23 +79,3 @@ export function updateRecruit(recruitId: string, request: RecruitRequest) {
     ...json(request),
   });
 }
-
-/** Also borrowed by 21's menu */
-export function closeRecruit(recruitId: string) {
-  return apiFetch<void>(`/api/v1/user/recruits/${encodeURIComponent(recruitId)}/close`, {
-    method: 'POST',
-  });
-}
-
-export function reopenRecruit(recruitId: string) {
-  return apiFetch<void>(`/api/v1/user/recruits/${encodeURIComponent(recruitId)}/reopen`, {
-    method: 'POST',
-  });
-}
-
-/** Pending applications become expired and applicants are notified (04 ch. 5 exceptions) */
-export function deleteRecruit(recruitId: string) {
-  return apiFetch<void>(`/api/v1/user/recruits/${encodeURIComponent(recruitId)}`, {
-    method: 'DELETE',
-  });
-}
