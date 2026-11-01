@@ -35,6 +35,7 @@ export const routes: MockRoute[] = [
           id: i.id,
           teamId: i.teamId,
           teamName: TEAMS.find((t) => t.id === i.teamId)?.name ?? '',
+          repoName: i.repoName,
           number: i.number,
           title: i.title,
           status: i.status,

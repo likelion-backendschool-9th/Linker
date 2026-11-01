@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api/api-fetch';
 
 import type { IssueAssignee, IssueLabel, IssueUser } from './issue-queries';
-import type { IssueStatus } from './issue-status';
+import type { IssueStatus } from '../../../_lib/issue-status';
 
 /**
  * Provisional 12 `IssueDetailController` contract (09 WBS 12). Hand-written until the controller is in

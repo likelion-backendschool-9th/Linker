@@ -1,6 +1,6 @@
 import { createLoader, parseAsBoolean, parseAsString, parseAsStringLiteral } from 'nuqs/server';
 
-import { ISSUE_STATUSES } from './issue-status';
+import { ISSUE_STATUSES } from '../../../_lib/issue-status';
 
 /**
  * Issue filters kept in the URL (07 TODO 11). One parser map for the list (11), board (14) and calendar (15),

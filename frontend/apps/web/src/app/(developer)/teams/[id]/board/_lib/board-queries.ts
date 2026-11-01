@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import { issueFilterQuery, type IssueFilters } from '../../_lib/issue-filters';
 import type { IssueRow } from '../../_lib/issue-queries';
-import type { IssueStatus } from '../../_lib/issue-status';
+import type { IssueStatus } from '../../../../_lib/issue-status';
 
 /**
  * Provisional 14 `BoardController` contract (09 WBS 14). Moves borrow 12's status API.

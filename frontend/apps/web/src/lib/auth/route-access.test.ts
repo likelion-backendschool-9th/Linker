@@ -17,6 +17,7 @@ describe('resolveAccess', () => {
     ['/posts/12/edit', 'login', 'allow', 'home', 'allow'],
     ['/recruits/new', 'login', 'allow', 'home', 'allow'],
     ['/workspace', 'login', 'allow', 'home', 'allow'],
+    ['/workspace/issues', 'login', 'allow', 'home', 'allow'],
     ['/teams/3/issues/new', 'login', 'allow', 'home', 'allow'],
     ['/chats', 'login', 'allow', 'allow', 'allow'],
     ['/settings/subscription', 'login', 'allow', 'allow', 'allow'],

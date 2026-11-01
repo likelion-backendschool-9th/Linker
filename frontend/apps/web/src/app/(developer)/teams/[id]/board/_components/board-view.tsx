@@ -40,7 +40,7 @@ import { IssueStatusSheet } from '../../_components/issue-sheets/issue-status-sh
 import { saveStatus } from '../../_lib/issue-detail-queries';
 import { issueFilterParsers } from '../../_lib/issue-filters';
 import { issueKeys, type IssueRow } from '../../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS, type IssueStatus } from '../../_lib/issue-status';
+import { ISSUE_STATUS_LABELS, type IssueStatus } from '../../../../_lib/issue-status';
 import { boardOptions } from '../_lib/board-queries';
 import styles from './board-view.module.css';
 

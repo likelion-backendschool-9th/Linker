@@ -3,7 +3,7 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api/api-fetch';
 
 import { issueFilterQuery, type IssueFilters } from './issue-filters';
-import type { IssueStatus } from './issue-status';
+import type { IssueStatus } from '../../../_lib/issue-status';
 
 /**
  * Provisional 11 `IssueListController` contract (09 WBS 11). Hand-written until the controller is in
