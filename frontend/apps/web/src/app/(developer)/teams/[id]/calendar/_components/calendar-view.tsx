@@ -16,7 +16,7 @@ import { formatDate, todayKst } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
 import { issueFilterOptions, type IssueRow } from '../../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS } from '../../_lib/issue-status';
+import { ISSUE_STATUS_LABELS } from '../../../../_lib/issue-status';
 import {
   issuesOnDay,
   layoutWeek,

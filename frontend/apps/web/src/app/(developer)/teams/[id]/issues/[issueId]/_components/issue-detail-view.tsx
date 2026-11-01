@@ -35,7 +35,7 @@ import {
   type IssueDetail,
 } from '../../../_lib/issue-detail-queries';
 import { issueKeys } from '../../../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS } from '../../../_lib/issue-status';
+import { ISSUE_STATUS_LABELS } from '../../../../../_lib/issue-status';
 import styles from './issue-detail-view.module.css';
 
 /** 04 ch. 12 "No GitHub permission" */

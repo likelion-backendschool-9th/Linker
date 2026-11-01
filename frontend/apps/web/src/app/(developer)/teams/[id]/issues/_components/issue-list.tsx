@@ -29,7 +29,7 @@ import {
   type IssueListView,
   type IssueRow as IssueRowData,
 } from '../../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS } from '../../_lib/issue-status';
+import { ISSUE_STATUS_LABELS } from '../../../../_lib/issue-status';
 import { PULL_MAX, usePullToRefresh } from '../_hooks/use-pull-to-refresh';
 import { issueViewParser } from '../_lib/issue-view';
 import styles from './issue-list.module.css';

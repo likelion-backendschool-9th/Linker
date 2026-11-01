@@ -12,7 +12,7 @@ import { useOverlay, type OverlayControl } from '@/lib/navigation/use-overlay';
 
 import { issueFilterParsers, type IssueFilters } from '../_lib/issue-filters';
 import { issueFilterOptions } from '../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS, ISSUE_STATUSES } from '../_lib/issue-status';
+import { ISSUE_STATUS_LABELS, ISSUE_STATUSES } from '../../../_lib/issue-status';
 import styles from './issue-filter-sheet.module.css';
 
 type IssueFilterSheetProps = {

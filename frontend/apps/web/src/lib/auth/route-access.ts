@@ -43,6 +43,8 @@ export const ROUTE_ACCESS: readonly AccessRule[] = [
   { page: '29', match: /^\/settings\/subscription$/, allow: MEMBERS, deny: 'login' },
   { page: '06', match: /^\/settings$/, allow: MEMBERS, deny: 'login' },
   { page: '07', match: /^\/workspace$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
+  // 07's "내 이슈" as its own page (team decision 2026-11-01); same access as 07
+  { page: '07', match: /^\/workspace\/issues$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
   { page: '08', match: /^\/teams\/new(\/callback)?$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
   { page: '09', match: /^\/teams\/[^/]+\/settings$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
   { page: '11', match: /^\/teams\/[^/]+\/issues$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
