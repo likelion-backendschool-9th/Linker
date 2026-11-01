@@ -20,12 +20,14 @@ test('PR 29 header trigger opens the shared sheet across C pages and B settings 
     '/teams/1/settings',
   ]) {
     await page.goto(route);
+    await page.waitForLoadState('networkidle');
     const trigger = page.getByRole('button', {
       name: /Linker 해커톤팀.*팀 전환/,
       includeHidden: true,
     });
     await trigger.focus();
-    await page.keyboard.press('Enter');
+    await expect(trigger).toBeFocused();
+    await trigger.press('Enter');
     await expect(page.getByRole('dialog', { name: '팀 전환' })).toBeVisible();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await page.keyboard.press('Escape');

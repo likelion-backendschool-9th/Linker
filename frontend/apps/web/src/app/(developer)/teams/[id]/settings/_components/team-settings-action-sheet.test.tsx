@@ -1,5 +1,7 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { apiFetch } from '@/lib/api/api-fetch';
+import { resetOverlayHistory, useOverlay } from '@/lib/navigation/use-overlay';
 import { renderWithProviders } from '@/test/render-with-providers';
 import type { Members, TeamSettings } from '../_lib/settings-queries';
 import { TeamSettingsActionSheet } from './team-settings-action-sheet';
@@ -54,6 +56,33 @@ function renderSheet(value: TeamSettings, action: string, members: Members['item
 }
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
+  resetOverlayHistory();
+});
+
+it('keeps the selected role and confirmation consistent when member management is reopened', async () => {
+  const owner = {
+    ...team,
+    myRole: 'OWNER' as const,
+    permissions: { ...team.permissions, changeRoles: true },
+  };
+  function Preview() {
+    const overlay = useOverlay('team-settings-action');
+    return (
+      <>
+        <button onClick={() => overlay.open('member:2')}>관리 다시 열기</button>
+        <TeamSettingsActionSheet team={owner} members={[member]} />
+      </>
+    );
+  }
+  renderWithProviders(<Preview />, { searchParams: '?overlay=team-settings-action&oid=member:2' });
+  await userEvent.selectOptions(screen.getByLabelText('팀 역할'), 'MEMBER');
+  await userEvent.click(screen.getByRole('button', { name: '역할 변경 확인' }));
+  expect(await screen.findByText(/다른 관리자님의 역할을 멤버로 변경해요/)).toBeVisible();
+  await userEvent.keyboard('{Escape}');
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  await userEvent.click(screen.getByRole('button', { name: '관리 다시 열기' }));
+  expect(await screen.findByLabelText('팀 역할')).toHaveValue('MEMBER');
+  expect(apiFetch).not.toHaveBeenCalled();
 });
 
 it('shows undo only when the server allows it, with no mutation request', () => {

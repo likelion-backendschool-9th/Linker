@@ -146,7 +146,7 @@ export function TeamSettingsActionSheet({
               <select
                 id="member-role"
                 className={styles.select}
-                defaultValue={member.role}
+                value={roleDrafts[target!] ?? member.role}
                 onChange={(event) =>
                   setRoleDrafts((drafts) => ({ ...drafts, [target!]: event.target.value }))
                 }
