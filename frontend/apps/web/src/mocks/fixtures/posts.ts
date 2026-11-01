@@ -140,6 +140,8 @@ export const POSTS: MockPost[] = [
       stars: 120,
       forks: 18,
       isFork: false,
+      // Made private after posting: the card says "레포를 볼 수 없음" (POL-P-1)
+      state: 'PRIVATE_OR_DELETED',
     }),
     photos: ['/mock/cover-2.svg'],
     myRole: '모델링',

@@ -91,7 +91,9 @@ function postOr404(id: string) {
 
 export const routes: MockRoute[] = [
   get('/api/v1/public/posts/:postId', ({ params, query, viewer }) => {
-    const item = postOr404(params.postId!);
+    const found = findPost(params.postId!);
+    // Hidden by reports: only the author still sees it, marked "검토 중" (04 ch. 4 exceptions)
+    const item = found && viewer.me?.id === found.author.id ? found : postOr404(params.postId!);
     const isAuthor = viewer.me?.id === item.author.id;
     return {
       ...item,
@@ -199,8 +201,9 @@ export const routes: MockRoute[] = [
   get('/api/v1/public/posts/:postId/same-repo-posts', ({ params }) => {
     const item = findPost(params.postId!);
     return {
+      // By name: fixture repo ids come from the name length and collide
       items: POSTS.filter(
-        (p) => item && p.id !== item.id && p.repo.repoId === item.repo.repoId,
+        (p) => item && p.id !== item.id && p.repo.fullName === item.repo.fullName,
       ).map(postCard),
     };
   }),
