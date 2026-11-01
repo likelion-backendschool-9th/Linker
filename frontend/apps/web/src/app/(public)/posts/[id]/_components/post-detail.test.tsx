@@ -130,17 +130,14 @@ it('shows a guest the whole post and sends reactions to the login prompt', async
 });
 
 it('applies a like at once and rolls it back when the server fails', async () => {
-  // Fails a moment later, so the optimistic state is visible before the rollback
+  // The server answers only when the test says so: optimistic state first, then the failure
+  let failLike: (error: unknown) => void = () => undefined;
   serve(
     base,
     () =>
-      new Promise((_, reject) =>
-        setTimeout(
-          () =>
-            reject(new ApiError(500, { code: 'UNKNOWN', message: '잠시 후 다시 시도해 주세요' })),
-          100,
-        ),
-      ),
+      new Promise((_, reject) => {
+        failLike = reject;
+      }),
   );
   const user = userEvent.setup();
   renderWithProviders(<PostDetail postId="1" />, {
@@ -150,6 +147,7 @@ it('applies a like at once and rolls it back when the server fails', async () =>
   await user.click(like);
   await waitFor(() => expect(like).toHaveAttribute('aria-pressed', 'true'));
   expect(screen.getByRole('button', { name: /좋아요 43/ })).toBeVisible();
+  failLike(new ApiError(500, { code: 'UNKNOWN', message: '잠시 후 다시 시도해 주세요' }));
   await waitFor(() => expect(like).toHaveAttribute('aria-pressed', 'false'));
   expect(screen.getByRole('button', { name: /좋아요 42/ })).toBeVisible();
 });

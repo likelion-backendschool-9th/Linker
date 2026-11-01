@@ -1,0 +1,21 @@
+/* Menu sheet: full-width rows with an icon */
+.menu {
+  display: grid;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-body);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-sm);
+}
+
+.item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
