@@ -1,4 +1,4 @@
-import type { IssueStatus } from '../../../_lib/issue-status';
+import type { IssueStatus } from '../../../../../_lib/issue-status';
 import type { FormAnswers } from './form-body';
 
 /**

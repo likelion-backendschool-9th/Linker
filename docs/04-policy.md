@@ -69,7 +69,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 04 | Profile | View (except follower/following lists) | ○ | View + "Send recruiting offer"; own profile is the recruiter my page (incl. job ad sheet) | Same as developer |
 | 05 | Edit profile | × | ○ incl. job categories of interest | ○ name, company, job title, website (company email can't change) | Same as developer |
 | 06 | Settings | × | ○ | ○ no GitHub items, subscription is Scout only, has change password | Same as developer |
-| 07 | Workspace home | Prompt | ○ | × | Same as developer |
+| 07 | Workspace home / my issues (`/workspace`, `/workspace/issues`) | Prompt | ○ | × | Same as developer |
 | 08 | Create team | Prompt | ○ | × | Same as developer |
 | 09 | Team settings & members | × | Per team role (ch. 6) | × | Same as developer |
 | 10 | Accept invite | View team preview, accept = prompt | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |

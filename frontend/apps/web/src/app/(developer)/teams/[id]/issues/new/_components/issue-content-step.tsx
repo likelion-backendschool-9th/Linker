@@ -23,7 +23,7 @@ import { IssueAssigneeSheet } from '../../../_components/issue-sheets/issue-assi
 import { IssueLabelSheet } from '../../../_components/issue-sheets/issue-label-sheet';
 import { IssueScheduleSheet } from '../../../_components/issue-sheets/issue-schedule-sheet';
 import { IssueStatusSheet } from '../../../_components/issue-sheets/issue-status-sheet';
-import { ISSUE_STATUS_LABELS, type IssueStatus } from '../../../_lib/issue-status';
+import { ISSUE_STATUS_LABELS, type IssueStatus } from '../../../../../_lib/issue-status';
 import {
   createAssigneeOptions,
   createIssue,

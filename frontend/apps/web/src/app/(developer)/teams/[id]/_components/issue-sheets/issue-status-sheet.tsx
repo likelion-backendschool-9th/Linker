@@ -7,7 +7,7 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import { ISSUE_STATUS_LABELS, ISSUE_STATUSES, type IssueStatus } from '../../_lib/issue-status';
+import { ISSUE_STATUS_LABELS, ISSUE_STATUSES, type IssueStatus } from '../../../../_lib/issue-status';
 import { saveErrorMessage } from './save-error';
 import styles from './issue-sheets.module.css';
 

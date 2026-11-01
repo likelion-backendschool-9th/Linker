@@ -466,7 +466,7 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 | 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | ProfileController · p04 |
 | 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | ProfileEditController · p05 |
 | 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | SettingsController · p06 |
-| 07 | `/workspace` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
+| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
 | 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | TeamCreateController · p08 |
 | 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | TeamSettingsController · p09 |
 | 10 | `/invite/[code]` | (public) | preview / ○ / × message / ○ | InviteController · p10 |

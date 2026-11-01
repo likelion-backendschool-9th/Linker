@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import type { AssigneeCandidates } from '../../../_lib/issue-detail-queries';
 import type { IssueLabel } from '../../../_lib/issue-queries';
-import type { IssueStatus } from '../../../_lib/issue-status';
+import type { IssueStatus } from '../../../../../_lib/issue-status';
 
 /**
  * Provisional 13 `IssueCreateController` contract (09 WBS 13). Hand-written until it's in OpenAPI.
