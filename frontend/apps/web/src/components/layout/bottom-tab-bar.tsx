@@ -1,13 +1,12 @@
 'use client';
 
-import { Briefcase, House, MessageCircle, UserRound, UsersRound } from 'lucide-react';
+import { Briefcase, House, MessageCircle, UsersRound } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { ChatUnreadBadge } from '@/features/chat/chat-unread-badge';
-
 import { useRequireLogin } from '@/features/auth/use-require-login';
+import { ChatUnreadBadge } from '@/features/chat/chat-unread-badge';
 
 import type { TabItem, TabKey } from './bottom-tabs.config';
 import styles from './bottom-tab-bar.module.css';
@@ -17,14 +16,17 @@ const ICONS: Record<TabKey, typeof House> = {
   recruits: UsersRound,
   workspace: Briefcase,
   chats: MessageCircle,
-  profile: UserRound,
 };
 
 function isCurrent(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** The page's main-menu nav, after `main` in the DOM (blueprint §6-1). Guests' login-only tabs are buttons. */
+/**
+ * The page's main-menu nav, after `main` in the DOM (blueprint §6-1). Guests' login-only tabs are
+ * buttons. Mobile: icon + label. Tablet/desktop: a floating text-only pill, no icons (profile now
+ * lives in the top header on every size, so it isn't one of these tabs).
+ */
 export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
   const pathname = usePathname();
   const requireLogin = useRequireLogin();
@@ -36,7 +38,7 @@ export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
           const Icon = ICONS[tab.key];
           const content = (
             <>
-              <Icon aria-hidden />
+              <Icon aria-hidden className={styles.icon} />
               <span className={styles.label}>
                 {tab.label}
                 {tab.key === 'chats' && !tab.requiresLogin && <ChatUnreadBadge />}
@@ -46,11 +48,7 @@ export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
           return (
             <li key={tab.key} className={styles.item}>
               {tab.requiresLogin ? (
-                <button
-                  type="button"
-                  className={styles.tab}
-                  onClick={() => requireLogin(tab.key === 'profile' ? undefined : tab.href)}
-                >
+                <button type="button" className={styles.tab} onClick={() => requireLogin(tab.href)}>
                   {content}
                 </button>
               ) : (

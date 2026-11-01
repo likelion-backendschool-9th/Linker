@@ -9,12 +9,18 @@
   --color-primary: #141414; /* primary CTA fill, footer, focus ring */
   --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
   --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
+  --color-gnb-current: #005fed; /* current GNB label/icon: 4.90:1 on --color-canvas-soft */
 
   /* Surface */
   --color-canvas: #ffffff; /* page and card background */
   --color-canvas-soft: #f3f3f3; /* nav pill, featured card, FAQ row, toggle track */
   --color-field: #f0f0f0; /* input fill */
-  --color-scroll-header: rgb(236 236 236 / 0.8); /* frosted fill of the scrolled top nav */
+  --color-scroll-header: rgb(
+    236 236 236 / 0.8
+  ); /* frosted fill of the scrolled top nav, with --blur-header-scroll */
+  --color-gnb-pill: rgb(
+    244 244 244 / 0.8
+  ); /* tablet/desktop bottom GNB frosted fill, with --blur-header-scroll */
 
   /* Border */
   --color-hairline-soft: #f0f0f0; /* 1px outline of cards on white */

@@ -279,6 +279,9 @@ fieldset.section > legend {
 .picker[aria-current='true'] {
   background: var(--color-canvas-soft);
 }
+.picker[aria-current='true'] .meta {
+  color: var(--color-text-subtle-on-tint);
+}
 .heroIcon {
   display: grid;
   place-items: center;

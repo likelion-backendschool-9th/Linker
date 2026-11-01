@@ -90,12 +90,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Web↔app bridge (`packages/bridge`, `NativeBridgeProvider`): Android back, GitHub login return, share, push permission (blueprint ch. 11, 12)
 - [ ] Test setup: Vitest + vitest-axe, Playwright + axe, MSW (orval mocks) (blueprint ch. 14)
 - [ ] Mock data mode for frontend work before the backend is live: `pnpm dev:mock`, one mock file per page with the 09 WBS endpoints, role switcher (guest / developer / recruiter / operator) (blueprint §1-2)
-- [ ] App layout: 5 bottom tabs (Home / Find Team / Workspace / Chat / Profile), top header (bell + unread count; "로그인" button in its place for guests). Keep the tab list as an array switchable by member type (recruiter: Home / Chat / Profile, after 31)
+- [ ] App layout: 4 bottom tabs (Home / Find Team / Workspace / Chat), top header (bell + unread count + profile icon; "로그인" button and "설정" icon in their place for guests). Keep the tab list as an array switchable by member type (recruiter: Home / Chat, after 31)
 - [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](./04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/u/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
 - [ ] Common components: bottom sheet, confirm modal, toast, empty state, error state, skeleton
 - [ ] `error.tsx` (unexpected error, retry), `not-found.tsx` ("삭제되었거나 볼 수 없는 콘텐츠예요" — deleted or unavailable content). Replace the screen map's "error" and "unavailable content" pages
 - [ ] Common banners: offline ("인터넷 연결이 끊겼어요…"), GitHub unstable ("최신 정보가 아닐 수 있어요"), suspended ("N월 N일까지 이용이 제한됐어요 · 이의 제기하기")
-- [ ] Common sheet: login prompt ("로그인한 사용자만 쓸 수 있는 기능이에요" + "GitHub로 시작" + "채용 담당자 로그인"; return to the same screen after login). For guests, like/comment/follow/apply/message/report/block/write buttons and the Workspace/Chat/Profile tabs open this sheet. Wrap with a single `useRequireLogin()` hook
+- [ ] Common sheet: login prompt ("로그인한 사용자만 쓸 수 있는 기능이에요" + "GitHub로 시작" + "채용 담당자 로그인"; return to the same screen after login). For guests, like/comment/follow/apply/message/report/block/write buttons and the Workspace/Chat tabs open this sheet. Wrap with a single `useRequireLogin()` hook
 - [ ] Common sheets: report (choose reason + other text), block confirm, external site confirm (first time per domain), delete confirm, limit-reached subscription prompt, restore draft
 - [ ] `[Included]` Common share sheet (`ShareSheet`): exactly two options, "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). Copy link puts the URL with `?from=share` on the clipboard and shows a toast. "Share to chat room" moves to a chat room picker (my team chat rooms + open 1:1 rooms, most recent first, search by name); picking one sends immediately and shows "○○에 공유했어요 · 채팅방으로 가기". Guests tapping "Share to chat room" get the login prompt. Server API is in 17 (connect after 17)
 - [ ] Format functions: time ("방금", "N분 전", "10월 16일", "2025. 10. 16."), numbers ("1.2천", "1.2만"), character count (trim leading/trailing whitespace)
@@ -771,7 +771,7 @@ Recruiters get only three new pages: sign-up (31), login (32) and the sent offer
 **Step 3: Account and company info**
 
 - [ ] Password (8–64 chars, letters + digits) + confirm, name (1–20), company (2–40), job title (1–30), company website (optional, https)
-- [ ] Done → logged in, `/feed` (recruiter's 3 bottom tabs)
+- [ ] Done → logged in, `/feed` (recruiter's 2 bottom tabs)
 
 **Server**
 

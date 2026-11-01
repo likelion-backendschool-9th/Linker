@@ -876,7 +876,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 - Tables: new 🟡 recruiter_profiles, 🟡 email_verifications · shared users (user_type, job_seeking_status), auth_identities, user_agreements, user_sessions
 - [ ] Server: mail service (shared by codes and reset; Mailpit in dev), free-domain list as config, store code hashes, username `r-` + number, bcrypt, age 19+
 - [ ] Server: test that `@DeveloperOnly` is on every developer-only API (call all write APIs with a recruiter account → 403)
-- [ ] Frontend: stepped (terms → email verification → account & company), resend countdown, done → `/feed` (3 bottom tabs)
+- [ ] Frontend: stepped (terms → email verification → account & company), resend countdown, done → `/feed` (2 bottom tabs)
 
 ### 32. Recruiter login & password reset `[Included]` · `/recruiter/login`, `/recruiter/reset`
 

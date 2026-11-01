@@ -46,9 +46,9 @@ Every Linker user has one of four roles. Owner/admin/member permissions within a
 
 | Role | How | Login method | Bottom tabs | Detailed policy |
 | --- | --- | --- | --- | --- |
-| Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat / Profile (last 3 show login prompt) | Ch. 3 "Guests" (POL-A-9) |
-| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat / Profile | Ch. 3–9, 11 |
-| Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat / Profile | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
+| Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat (Workspace and Chat show login prompt; profile is in the header) | Ch. 3 "Guests" (POL-A-9) |
+| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
+| Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat (profile is in the header) | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
 | Operator | Operator permission granted to a developer account via DB | GitHub + back-office OTP | Same as developer + `/admin` | Ch. 10 |
 
 - An account is either developer or recruiter and never changes after sign-up. A person who wants both creates separate accounts.
@@ -229,9 +229,9 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | --- | --- |
 | Can read | Home feed (popular this week and latest; "why shown" only "이번 주 인기" / "새로 올라온 작업물"), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, team preview of invite links |
 | Login required to see | Follower/following lists, list of likers (people lists are easy to scrape), "Open to offers" (recruiters only), applicant list (author only) |
-| Login-prompt sheet | Like, write comment, follow, apply, message/recruiting offer, report, block, write post/recruit post buttons; bottom tabs Workspace, Chat, Profile (my profile); notifications in the header |
+| Login-prompt sheet | Like, write comment, follow, apply, message/recruiting offer, report, block, write post/recruit post buttons; bottom tabs Workspace, Chat; the header's profile icon (my profile); notifications in the header |
 | Sheet copy | "로그인한 사용자만 쓸 수 있는 기능이에요" (this feature is for logged-in users) + "GitHub로 시작" (start with GitHub) + small link "채용 담당자 로그인" (recruiter login). After login, returns to the screen being viewed (does not perform the attempted action) |
-| Layout | Still 5 bottom tabs; a "로그인" button in place of the header bell. First visit to `/` shows the intro screen; "둘러보기" (browse) enters the feed. Shared links (posts, recruit posts, profiles) open directly without the intro |
+| Layout | Still 4 bottom tabs; a "로그인" button in place of the header bell. First visit to `/` shows the intro screen; "둘러보기" (browse) enters the feed. Shared links (posts, recruit posts, profiles) open directly without the intro |
 | Hidden / blocked | Content hidden by reports and suspended accounts are handled the same as for logged-in users. Blocking is a relationship between accounts, so it doesn't apply to guest screens |
 | Search engines | **Developer profiles, posts and recruit posts readable by guests are exposed to search engines** (indexing allowed, sitemap provided). Start screen and legal docs also exposed. Recruiter profiles, login-only screens and operations pages are `noindex`. Content hidden by reports, suspended / pending-deletion accounts and deleted content become "unavailable content", `noindex`, and are removed from the sitemap. Follower/following/liker lists require login so they aren't exposed |
 | Stats | Guest visits are not counted in recruiter view counts or post view stats (MVP) |

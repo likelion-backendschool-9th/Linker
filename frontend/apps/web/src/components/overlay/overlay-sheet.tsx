@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import type { OverlayControl } from '@/lib/navigation/use-overlay';
 
@@ -14,6 +14,8 @@ type OverlaySheetProps = {
   /** Every overlay has a description; pass `describeHidden` when it would only repeat the title */
   description: string;
   describeHidden?: boolean;
+  /** Optional in-place trigger; Radix then restores keyboard focus on sheet close. */
+  trigger?: ReactElement;
   children?: ReactNode;
 };
 
@@ -23,10 +25,12 @@ export function OverlaySheet({
   title,
   description,
   describeHidden = false,
+  trigger,
   children,
 }: OverlaySheetProps) {
   return (
     <Dialog.Root open={overlay.isOpen} onOpenChange={overlay.onOpenChange}>
+      {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
       <Dialog.Portal>
         <Dialog.Overlay className={styles.scrim} />
         <Dialog.Content className={styles.sheet}>
