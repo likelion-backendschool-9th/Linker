@@ -24,11 +24,21 @@ function requireWrite(teamId: string) {
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/issues/:issueId', ({ params }) => {
     const issue = issueOr404(params.teamId!, params.issueId!);
+    const members = TEAM_MEMBERS[issue.teamId] ?? [];
     return {
       ...issue,
+      // Assignees no longer in the team show as "팀 밖 사용자" (04 ch. 7 exceptions)
+      assignees: issue.assignees.map((user) => ({
+        ...user,
+        inTeam: members.some((m) => m.user.id === user.id),
+      })),
       overdue: isOverdue(issue),
       canWrite: Number(params.teamId) !== 2,
+      // `sync_status = FAILED`: "일정이 GitHub에 반영되지 않았어요" (same issue as the list mock)
+      syncFailed: issue.number === 9,
+      // Transferred on GitHub → the page follows to `movedToIssueId` (07 TODO 12)
       deletedOrMoved: null as null | 'DELETED' | 'MOVED',
+      movedToIssueId: null as number | null,
     };
   }),
   // Members with repo access who accepted the org invite; max 10 assignees (POL-I-2)
@@ -43,8 +53,21 @@ export const routes: MockRoute[] = [
     const issue = issueOr404(params.teamId!, params.issueId!);
     const ids = (body.userIds as number[] | undefined) ?? [];
     const members = TEAM_MEMBERS[Number(params.teamId)] ?? [];
-    issue.assignees = members.filter((m) => ids.includes(m.user.id)).map((m) => m.user);
-    return { assignees: issue.assignees };
+    // Keeps assignees outside the team only if they stay selected; unknown ids are dropped
+    const kept = issue.assignees.filter(
+      (user) => ids.includes(user.id) && !members.some((m) => m.user.id === user.id),
+    );
+    issue.assignees = [
+      ...members.filter((m) => ids.includes(m.user.id)).map((m) => m.user),
+      ...kept,
+    ];
+    issue.updatedAt = new Date().toISOString();
+    return {
+      assignees: issue.assignees.map((user) => ({
+        ...user,
+        inTeam: members.some((m) => m.user.id === user.id),
+      })),
+    };
   }),
   get('/api/v1/user/teams/:teamId/issues/:issueId/label-options', () => ({ items: LABELS })),
   put('/api/v1/user/teams/:teamId/issues/:issueId/labels', ({ params, body }) => {
