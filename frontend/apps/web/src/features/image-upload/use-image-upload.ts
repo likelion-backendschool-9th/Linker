@@ -8,19 +8,36 @@ import { uploadImage, validateImage, type UploadedImage } from './upload-image';
 
 export type UploadItem = {
   key: string;
-  file: File;
+  /** null for a photo that was already uploaded (edit form, restored draft): nothing to retry */
+  file: File | null;
   previewUrl: string;
   status: 'uploading' | 'done' | 'failed';
   progress: number;
   result?: UploadedImage;
 };
 
+type ImageUploadOptions = {
+  /** Already uploaded photos to start with, in order */
+  initial?: UploadedImage[];
+  /** Called instead of the default toast when more photos are picked than `max` allows */
+  onOverflow?: () => void;
+};
+
+const fromUploaded = (image: UploadedImage): UploadItem => ({
+  key: `uploaded-${image.fileId}`,
+  file: null,
+  previewUrl: image.url,
+  status: 'done',
+  progress: 1,
+  result: image,
+});
+
 /**
  * Upload state for one picker. `max` comes from `PLAN_LIMITS` by the caller (e.g. photos per post).
  * Publishing waits for `allDone` (04 ch. 4: publish only after every photo uploaded).
  */
-export function useImageUpload(max: number) {
-  const [items, setItems] = useState<UploadItem[]>([]);
+export function useImageUpload(max: number, { initial = [], onOverflow }: ImageUploadOptions = {}) {
+  const [items, setItems] = useState<UploadItem[]>(() => initial.map(fromUploaded));
   const itemsRef = useRef(items);
   useEffect(() => {
     itemsRef.current = items;
@@ -52,7 +69,8 @@ export function useImageUpload(max: number) {
         continue;
       }
       if (accepted.length >= room) {
-        toast(`사진은 ${max}장까지 올릴 수 있어요.`, { tone: 'alert' });
+        if (onOverflow) onOverflow();
+        else toast(`사진은 ${max}장까지 올릴 수 있어요.`, { tone: 'alert' });
         break;
       }
       accepted.push({
@@ -64,22 +82,41 @@ export function useImageUpload(max: number) {
       });
     }
     setItems((current) => [...current, ...accepted]);
-    accepted.forEach((item) => start(item.key, item.file));
+    accepted.forEach((item) => start(item.key, item.file!));
   }
 
   function retry(key: string) {
     const item = itemsRef.current.find((candidate) => candidate.key === key);
-    if (item) start(key, item.file);
+    if (item?.file) start(key, item.file);
   }
 
   function remove(key: string) {
     const item = itemsRef.current.find((candidate) => candidate.key === key);
-    if (item) URL.revokeObjectURL(item.previewUrl);
+    if (item?.file) URL.revokeObjectURL(item.previewUrl);
     setItems((current) => current.filter((candidate) => candidate.key !== key));
   }
 
+  /** Button alternative to dragging (blueprint §6-5): -1 = 앞으로, +1 = 뒤로. The first is the cover. */
+  function move(key: string, offset: -1 | 1) {
+    setItems((current) => {
+      const from = current.findIndex((item) => item.key === key);
+      const to = from + offset;
+      if (from < 0 || to < 0 || to >= current.length) return current;
+      const next = [...current];
+      [next[from], next[to]] = [next[to]!, next[from]!];
+      return next;
+    });
+  }
+
+  /** Replace everything with already uploaded photos (restoring a draft) */
+  function reset(images: UploadedImage[]) {
+    itemsRef.current.forEach((item) => item.file && URL.revokeObjectURL(item.previewUrl));
+    setItems(images.map(fromUploaded));
+  }
+
   useEffect(
-    () => () => itemsRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl)),
+    () => () =>
+      itemsRef.current.forEach((item) => item.file && URL.revokeObjectURL(item.previewUrl)),
     [],
   );
 
@@ -89,6 +126,8 @@ export function useImageUpload(max: number) {
     add,
     retry,
     remove,
+    move,
+    reset,
     allDone: items.every((item) => item.status === 'done'),
     uploaded: items.flatMap((item) => (item.result ? [item.result] : [])),
   };

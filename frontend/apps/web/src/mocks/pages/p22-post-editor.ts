@@ -45,6 +45,7 @@ const repos = [
     language: 'JavaScript',
     stars: 0,
     isFork: true,
+    parentFullName: 'facebook/react',
     teamId: null,
   },
 ];
@@ -63,13 +64,16 @@ function applyForm(item: MockPost, body: Record<string, unknown>) {
       reason: 'POST_PHOTOS',
     });
   }
+  // Nullable fields: a sent `null` clears them, a missing key keeps the old value
+  const nullable = <K extends keyof MockPost>(key: K) =>
+    (key in body ? body[key] : item[key]) as MockPost[K];
   Object.assign(item, {
     intro: String(body.intro ?? item.intro),
     body: String(body.body ?? item.body),
-    myRole: (body.myRole as string | null | undefined) ?? item.myRole,
+    myRole: nullable('myRole'),
     demoLinks: (body.demoLinks as string[] | undefined) ?? item.demoLinks,
-    period: (body.period as MockPost['period'] | undefined) ?? item.period,
-    teamSize: (body.teamSize as number | null | undefined) ?? item.teamSize,
+    period: nullable('period'),
+    teamSize: nullable('teamSize'),
     tags: (body.tags as string[] | undefined) ?? item.tags,
     photos: photos ?? item.photos,
   });
@@ -107,6 +111,9 @@ export const routes: MockRoute[] = [
         stars: repo.stars,
         forks: 1,
         isFork: repo.isFork,
+        parentFullName: 'parentFullName' in repo ? repo.parentFullName : null,
+        // Proposal beyond 09 WBS: the viewer's photo cap (5, Pro 10) so the picker can prompt early
+        photoLimit: PHOTO_LIMIT,
         // 0 also when the commit email isn't registered (POL-P-2 exceptions)
         authorCommitCount: repo.repoId === 12 ? 0 : 84,
         handledIssueCount: 17,
@@ -161,7 +168,11 @@ export const routes: MockRoute[] = [
   ),
   get('/api/v1/user/posts/:postId/edit-form', ({ params }) => {
     const item = ownPost(params.postId!);
-    return { ...item, photos: item.photos.map((url, index) => ({ id: index + 1, url })) };
+    return {
+      ...item,
+      photos: item.photos.map((url, index) => ({ fileId: `post-${item.id}-${index + 1}`, url })),
+      photoLimit: PHOTO_LIMIT,
+    };
   }),
   put('/api/v1/user/posts/:postId', ({ params, body }) => {
     const item = ownPost(params.postId!);
