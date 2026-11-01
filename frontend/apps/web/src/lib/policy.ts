@@ -72,6 +72,10 @@ export const RECRUIT = {
 export const TEAM = {
   maxTeamsPerUser: 10,
   inviteValidDays: 7,
+  completionUndoDays: 7,
+  completionMembershipDays: 14,
+  chatDeletionDays: 30,
+  removedApplyBlockedDays: 7,
 } as const;
 
 /** 04 ch. 2 rate limits, ch. 7 POL-I-2, POL-I-4 and "Sync" */
@@ -119,3 +123,6 @@ export const SUBSCRIPTION_PRICE = {
 
 /** Policy ch. 11 payment and expiry rules. */
 export const SUBSCRIPTION_RULES = { refundWithinDays: 7, flexGraceDays: 30 } as const;
+
+/** 07 TODO 30 / 09 WBS 30: displayed analytics periods. */
+export const STATS = { trendDays: 30, recruiterWeeks: 8 } as const;

@@ -310,7 +310,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ## 4-2. Creating teams and invites
 
-### 07. Workspace home `[Required]` · `/workspace`
+### 07. Workspace home `[Required]` · `/workspace`, `/workspace/issues`
 
 | Owner | Schedule | Prereq | Basis |
 | --- | --- | --- | --- |
@@ -326,6 +326,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 - Tables: new none · shared teams, team_members, issues, issue_assignees
 - [ ] Frontend: team cards, empty state ("팀 만들기" (Create team) + "팀 찾으러 가기" (Find a team)), team switcher sheet (header of 11–15), 10-team limit notice
 - Note: B owns the 07 controller; C adds one method on D9. No time overlap, so no conflict; B reviews the PR.
+- Frontend handoff (PR #35): B's “내 이슈 전체 보기” links to C's `/workspace/issues`; the list's back fallback is `/workspace`. Both URLs belong to page 07; no additional controller or endpoint is introduced.
 
 ### 08. Create team `[Required]` · `/teams/new`, `/teams/new/callback`
 
