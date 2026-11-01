@@ -1,0 +1,37 @@
+/* Sits just under the top bar; slides down with the finger (transform/opacity only, PRD ch. 9) */
+.indicator {
+  position: fixed;
+  top: var(--header-height);
+  right: 0;
+  left: 0;
+  z-index: var(--z-chrome);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: var(--pull-progress, 0);
+  transform: translateY(calc(var(--pull-distance, 0px) - var(--control-height)));
+}
+
+.indicator[data-active='false'] {
+  visibility: hidden;
+}
+
+/* Neutral soft pill (guide ch. 5) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.icon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  transform: rotate(calc(var(--pull-progress, 0) * 360deg));
+}

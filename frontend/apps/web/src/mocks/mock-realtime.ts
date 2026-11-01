@@ -1,4 +1,11 @@
-import { nextMessageId, MESSAGES, UNREAD, type MockMessage } from './fixtures/chat';
+import { MOCK_ROLE_COOKIE, parseMockRole } from '@/lib/auth/mock-viewer';
+import { CHAT } from '@/lib/policy';
+import { countChars } from '@/lib/format/text';
+import { buildViewer } from './core/viewer';
+import { findTeam } from './fixtures/teams';
+import { emit } from './realtime-bus';
+import { addChatNotification } from './pages/p18-notifications';
+import { findRoom, nextMessageId, MESSAGES, UNREAD, type MockMessage } from './fixtures/chat';
 import { brief, ME } from './fixtures/users';
 import './routes';
 
@@ -8,19 +15,7 @@ import './routes';
  * in this tab only, so chat feels live without a server. Other destinations accept subscriptions and stay quiet.
  */
 
-type Listener = (body: unknown) => void;
-const listeners = new Map<string, Set<Listener>>();
-
-export function subscribe(destination: string, onMessage: Listener): () => void {
-  const set = listeners.get(destination) ?? new Set<Listener>();
-  set.add(onMessage);
-  listeners.set(destination, set);
-  return () => set.delete(onMessage);
-}
-
-function emit(destination: string, body: unknown) {
-  listeners.get(destination)?.forEach((listener) => listener(body));
-}
+export { subscribe } from './realtime-bus';
 
 const SEND = /^\/app\/chat-rooms\/(\d+)\/messages$/;
 
@@ -28,11 +23,28 @@ export function publish(destination: string, body: unknown): boolean {
   const match = SEND.exec(destination);
   if (!match) return false;
   const roomId = Number(match[1]);
-  const payload = body as { text?: string; imageUrls?: string[] };
+  const payload = body as { clientMessageId?: string; text?: string; imageUrls?: string[] };
+  const cookie = document.cookie.match(new RegExp(`(?:^|; )${MOCK_ROLE_COOKIE}=([^;]*)`));
+  const viewer = buildViewer(parseMockRole(cookie?.[1]));
+  const room = findRoom(String(roomId));
+  if (!viewer.me || !room || room.kind === 'REQUEST') return false;
+  if (room.teamId && findTeam(room.teamId)?.status !== 'ACTIVE') return false;
+  if (!payload.text?.trim() || countChars(payload.text) > CHAT.messageMax) return false;
+  const existing =
+    payload.clientMessageId &&
+    MESSAGES.find(
+      (item) =>
+        item.clientMessageId === payload.clientMessageId && item.sender?.id === viewer.me!.id,
+    );
+  if (existing) {
+    emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: existing });
+    return true;
+  }
   const message: MockMessage = {
     id: nextMessageId(),
     roomId,
-    sender: brief(ME),
+    sender: brief(viewer.me),
+    clientMessageId: payload.clientMessageId,
     type: payload.imageUrls?.length ? 'IMAGE' : 'TEXT',
     text: payload.text ?? null,
     imageUrls: payload.imageUrls ?? [],
@@ -43,6 +55,7 @@ export function publish(destination: string, body: unknown): boolean {
   };
   MESSAGES.push(message);
   emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message });
+  emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId });
 
   // A teammate answers a moment later so the receive path is easy to see
   setTimeout(() => {
@@ -59,8 +72,10 @@ export function publish(destination: string, body: unknown): boolean {
       deletedAt: null,
     };
     MESSAGES.push(reply);
-    UNREAD[roomId] = 0;
+    UNREAD[roomId] = (UNREAD[roomId] ?? 0) + 1;
     emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: reply });
+    emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId });
+    addChatNotification(viewer, roomId, room.title, `이도윤: ${reply.text}`);
   }, 1200);
   return true;
 }

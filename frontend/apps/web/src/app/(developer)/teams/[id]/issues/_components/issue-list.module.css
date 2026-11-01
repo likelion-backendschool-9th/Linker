@@ -1,0 +1,75 @@
+.toolbar {
+  display: grid;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+/* Segmented control (guide ch. 5) */
+.views {
+  display: flex;
+  gap: var(--space-xxs);
+  padding: var(--space-xxs);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.view {
+  flex: 1;
+  white-space: nowrap;
+  min-height: var(--touch-target-min);
+  padding: var(--space-xs);
+  color: var(--color-text-subtle-on-tint);
+  border-radius: var(--radius-full);
+}
+
+.view[aria-pressed='true'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas);
+  box-shadow: var(--shadow-segment-active);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.note {
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+}
+
+.count {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-xs);
+}
+
+@media (min-width: 600px) {
+  .toolbar {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+  }
+
+  .view {
+    padding-inline: var(--space-md);
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
+}

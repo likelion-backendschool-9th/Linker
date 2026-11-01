@@ -1,152 +1,50 @@
-import { daysAgo, fail, get, post, type MockRoute } from '../core/define';
-
-/** 29 Manage subscription: `SubscriptionManageController` */
-
-type Sub = {
-  id: number;
-  kind: 'PRO' | 'FLEX' | 'SCOUT';
-  name: string;
-  teamName: string | null;
-  status: 'ACTIVE' | 'CANCELING' | 'ENDED';
-  billing: 'MONTHLY' | 'YEARLY';
-  nextBillingDate: string | null;
-  endsOn: string | null;
-  amount: number;
-  /** Flex: next headcount and amount (POL ch. 11) */
-  nextMemberCount: number | null;
-  billingOwner: boolean;
-};
-
-const developerSubs: Sub[] = [
-  {
-    id: 1,
-    kind: 'PRO',
-    name: 'Pro',
-    teamName: null,
-    status: 'ACTIVE',
-    billing: 'MONTHLY',
-    nextBillingDate: '2026-11-28',
-    endsOn: null,
-    amount: 2900,
-    nextMemberCount: null,
-    billingOwner: true,
-  },
-  {
-    id: 2,
-    kind: 'FLEX',
-    name: 'Flex',
-    teamName: 'Linker 해커톤팀',
-    status: 'ACTIVE',
-    billing: 'MONTHLY',
-    nextBillingDate: '2026-11-12',
-    endsOn: null,
-    amount: 7900,
-    nextMemberCount: 5,
-    billingOwner: true,
-  },
-];
-const recruiterSubs: Sub[] = [
-  {
-    id: 3,
-    kind: 'SCOUT',
-    name: 'Scout',
-    teamName: null,
-    status: 'ACTIVE',
-    billing: 'MONTHLY',
-    nextBillingDate: '2026-11-20',
-    endsOn: null,
-    amount: 14900,
-    nextMemberCount: null,
-    billingOwner: true,
-  },
-];
-
-type Payment = {
-  id: number;
-  subscriptionId: number;
-  amount: number;
-  status: 'PAID' | 'REFUNDED';
-  paidAt: string;
-  description: string;
-};
-const payments: Payment[] = [
-  {
-    id: 1,
-    subscriptionId: 1,
-    amount: 2900,
-    status: 'PAID',
-    paidAt: daysAgo(3),
-    description: 'Pro 월간',
-  },
-  {
-    id: 2,
-    subscriptionId: 2,
-    amount: 7900,
-    status: 'PAID',
-    paidAt: daysAgo(19),
-    description: 'Flex 월간 · Linker 해커톤팀',
-  },
-  {
-    id: 3,
-    subscriptionId: 1,
-    amount: 2900,
-    status: 'PAID',
-    paidAt: daysAgo(33),
-    description: 'Pro 월간',
-  },
-  {
-    id: 4,
-    subscriptionId: 3,
-    amount: 14900,
-    status: 'PAID',
-    paidAt: daysAgo(11),
-    description: 'Scout 월간',
-  },
-];
-
-const subsFor = (role: string) => (role === 'recruiter' ? recruiterSubs : developerSubs);
-const findSub = (id: string) =>
-  [...developerSubs, ...recruiterSubs].find((s) => s.id === Number(id));
+import { fail, get, post, type MockRoute } from '../core/define';
+import { toKstIso } from '@/lib/format/time';
+import { readOrders, saveOrder } from '../fixtures/payment-orders';
+import { state, save, paymentView } from '../fixtures/subscriptions';
 
 export const routes: MockRoute[] = [
-  get('/api/v1/user/me/subscriptions', ({ viewer }) => ({ items: subsFor(viewer.role) })),
-  get('/api/v1/user/me/payments', ({ viewer }) => {
-    const ids = subsFor(viewer.role).map((s) => s.id);
-    return {
-      items: payments
-        .filter((p) => ids.includes(p.subscriptionId))
-        .map((p) => ({
-          ...p,
-          // Full refund within 7 days when benefits are unused (POL ch. 11)
-          refundable: p.status === 'PAID' && Date.now() - new Date(p.paidAt).getTime() < 7 * 864e5,
-        })),
-    };
-  }),
-  // Benefits stay until the paid period ends; no pro-rated refund
-  post('/api/v1/user/me/subscriptions/:subscriptionId/cancel', ({ params }) => {
-    const sub = findSub(params.subscriptionId!);
-    if (!sub) fail(404, 'NOT_FOUND', '구독을 찾지 못했어요');
-    sub.status = 'CANCELING';
-    sub.endsOn = sub.nextBillingDate;
-    sub.nextBillingDate = null;
+  get('/api/v1/user/me/subscriptions', ({ viewer }) => ({ items: state(viewer).subscriptions })),
+  get('/api/v1/user/me/payments', ({ viewer }) => ({
+    items: state(viewer).payments.map(paymentView),
+  })),
+  post('/api/v1/user/me/subscriptions/:subscriptionId/cancel', ({ params, viewer }) => {
+    const data = state(viewer);
+    const sub = data.subscriptions.find((item) => item.id === params.subscriptionId);
+    if (!sub) fail(404, 'NOT_FOUND', '구독을 찾지 못했어요.');
+    if (!sub.billingOwner) fail(403, 'BILLING_OWNER_ONLY', '결제 담당자만 해지할 수 있어요.');
+    if (sub.status === 'ENDED') fail(409, 'SUBSCRIPTION_ENDED', '이미 종료된 구독이에요.');
+    if (sub.status === 'ACTIVE') {
+      sub.endsOn = sub.nextBillingDate;
+      sub.nextBillingDate = null;
+      sub.status = 'CANCELING';
+    }
+    save(viewer, data);
     return sub;
   }),
-  post('/api/v1/user/me/payments/:paymentId/refund', ({ params }) => {
-    const payment = payments.find((p) => p.id === Number(params.paymentId));
-    if (!payment) fail(404, 'NOT_FOUND', '결제 내역을 찾지 못했어요');
-    if (Date.now() - new Date(payment.paidAt).getTime() >= 7 * 864e5) {
-      fail(409, 'REFUND_EXPIRED', '결제 후 7일이 지나 환불할 수 없어요');
-    }
+  post('/api/v1/user/me/payments/:paymentId/refund', ({ params, viewer }) => {
+    const data = state(viewer);
+    const payment = data.payments.find((item) => item.id === params.paymentId);
+    if (!payment) fail(404, 'NOT_FOUND', '결제 내역을 찾지 못했어요.');
+    if (payment.status === 'REFUNDED') return paymentView(payment);
+    if (!paymentView(payment).refundable)
+      fail(409, 'REFUND_NOT_ALLOWED', paymentView(payment).refundReason!);
     payment.status = 'REFUNDED';
-    return payment;
+    const sub = data.subscriptions.find((item) => item.id === payment.subscriptionId)!;
+    sub.status = 'ENDED';
+    sub.nextBillingDate = null;
+    sub.endsOn = toKstIso(new Date()).slice(0, 10);
+    const order = readOrders(viewer).find((item) => item.orderId === payment.id);
+    if (order) {
+      order.state = 'REFUNDED';
+      saveOrder(order);
+    }
+    save(viewer, data);
+    return paymentView(payment);
   }),
   post(
     '/api/v1/user/me/subscriptions/:subscriptionId/billing-owner',
-    ({ params }) => {
-      const sub = findSub(params.subscriptionId!);
-      if (sub) sub.billingOwner = false;
-      return undefined;
-    },
+    () => fail(501, 'NOT_IMPLEMENTED', '결제 담당자 변경은 준비 중이에요.'),
     { only: 'developer' },
   ),
 ];

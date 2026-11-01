@@ -1,29 +1,56 @@
 import { fail, get, newId, post, type MockRoute } from '../core/define';
-import { ISSUES, type MockIssue } from '../fixtures/issues';
-import { findTeam } from '../fixtures/teams';
+import { ISSUES, LABELS, type IssueStatus, type MockIssue } from '../fixtures/issues';
+import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
 
-/** 13 Create issue: `IssueCreateController`. Creation is 202 + a job that finishes after a few polls. */
+/**
+ * 13 Create issue: `IssueCreateController`. Creation is 202 + a job that finishes after a few polls.
+ * The repo-scoped `issue-create/repos`, `repos/:repoId/assignee-candidates` and `repos/:repoId/label-options`
+ * are a proposal beyond 09 WBS 13: 12's options need an issue id, and GitHub takes assignees and labels per repo.
+ */
 
-const templates = [
-  { key: 'repo:bug', source: 'REPO', name: '버그 제보' },
-  { key: 'default:feature', source: 'DEFAULT', name: '기능 제안' },
-  { key: 'default:task', source: 'DEFAULT', name: '작업' },
-  { key: 'form:request', source: 'REPO', name: '요청 (이슈 폼)' },
+type Source = 'REPO' | 'ORG' | 'DEFAULT';
+
+// Repo templates on top, the 3 defaults below (POL-I-1). `repo:broken` fails to parse → default template.
+const templates: { key: string; source: Source; name: string; description: string }[] = [
+  {
+    key: 'repo:bug',
+    source: 'REPO',
+    name: '버그 제보',
+    description: '고쳐야 할 문제를 알려 주세요',
+  },
+  {
+    key: 'form:request',
+    source: 'REPO',
+    name: '요청 (이슈 폼)',
+    description: '입력란을 채우면 본문이 만들어져요',
+  },
+  {
+    key: 'repo:broken',
+    source: 'REPO',
+    name: '배포 체크리스트',
+    description: '레포에 있는 템플릿',
+  },
+  { key: 'default:bug', source: 'DEFAULT', name: '버그', description: '고쳐야 할 문제' },
+  { key: 'default:feature', source: 'DEFAULT', name: '기능', description: '새로 만들 기능' },
+  { key: 'default:task', source: 'DEFAULT', name: '작업', description: '해야 할 일' },
 ];
 
 const bodies: Record<string, string> = {
   'repo:bug': '## 현상\n\n## 재현 방법\n1. \n\n## 기대 결과\n',
+  'default:bug': '## 현상\n\n## 재현 방법\n\n## 기대 결과\n',
   'default:feature': '## 배경\n\n## 제안\n\n## 완료 조건\n- [ ] \n',
   'default:task': '## 할 일\n- [ ] \n',
 };
 
 // Issue forms (YAML) arrive as a field list (POL-I-1)
 const formFields = [
+  { id: 'intro', type: 'markdown', value: '요청 전에 **중복 이슈**가 있는지 확인해 주세요.' },
   {
     id: 'summary',
     type: 'input',
     label: '요약',
+    description: '무엇이 필요한지 한 줄로',
     required: true,
     placeholder: '한 줄로 적어 주세요',
   },
@@ -39,36 +66,85 @@ const formFields = [
     id: 'checks',
     type: 'checkboxes',
     label: '확인 사항',
-    options: ['중복 이슈를 확인했어요', '재현 가능해요'],
+    options: [
+      { label: '중복 이슈를 확인했어요', required: true },
+      { label: '재현 가능해요', required: false },
+    ],
   },
+  { id: 'screenshot', type: 'upload', label: '스크린샷' },
 ];
 
-const jobs = new Map<string, { polls: number; issueId: number }>();
+function teamOr404(teamId: string) {
+  const team = findTeam(teamId);
+  if (!team) fail(404, 'NOT_FOUND', '삭제되었거나 볼 수 없는 콘텐츠예요');
+  return team;
+}
+
+/** Team 2 is read-only for the mock user, like 11 and 12 */
+const canWrite = (teamId: number) => teamId !== 2;
+
+const jobs = new Map<string, { polls: number; issueId: number; failedStep: string | null }>();
 
 export const routes: MockRoute[] = [
+  // Linked repos with my write permission (07 TODO 13 step 1)
+  get('/api/v1/user/teams/:teamId/issue-create/repos', ({ params }) => {
+    const team = teamOr404(params.teamId);
+    return {
+      items: team.repos.map(({ id, name, fullName }) => ({
+        id,
+        name,
+        fullName,
+        canWrite: canWrite(team.id),
+      })),
+    };
+  }),
+  // Members with access to this repo who accepted the org invite (POL-I-2)
+  get('/api/v1/user/teams/:teamId/repos/:repoId/assignee-candidates', ({ params }) => ({
+    items: (TEAM_MEMBERS[teamOr404(params.teamId).id] ?? [])
+      .filter((m) => m.inGithubOrg)
+      .map((m) => m.user),
+    max: 10,
+  })),
+  get('/api/v1/user/teams/:teamId/repos/:repoId/label-options', () => ({ items: LABELS })),
+
   get('/api/v1/user/teams/:teamId/issue-templates', () => ({ items: templates })),
   get('/api/v1/user/teams/:teamId/issue-templates/:templateKey', ({ params }) => {
     const template = templates.find((t) => t.key === params.templateKey);
     if (!template) fail(404, 'NOT_FOUND', '템플릿을 찾지 못했어요');
+    if (params.templateKey === 'repo:broken') {
+      // Parsing failed on the server → the default task template instead (POL-I-1)
+      const fallback = templates.find((t) => t.key === 'default:task')!;
+      return {
+        ...fallback,
+        kind: 'MARKDOWN',
+        body: bodies['default:task'],
+        defaultLabels: [],
+        defaultAssignees: [],
+        fallback: true,
+      };
+    }
     return params.templateKey === 'form:request'
       ? {
           ...template,
           kind: 'FORM',
           fields: formFields,
+          defaultTitle: '[요청] ',
           defaultLabels: ['help wanted'],
-          defaultAssignees: [],
+          defaultAssignees: [ME.login],
+          fallback: false,
         }
       : {
           ...template,
           kind: 'MARKDOWN',
-          body: bodies[params.templateKey!] ?? '',
-          defaultLabels: [],
+          body: bodies[params.templateKey] ?? '',
+          defaultLabels: params.templateKey === 'repo:bug' ? ['bug'] : [],
           defaultAssignees: [],
+          fallback: false,
         };
   }),
   post('/api/v1/user/teams/:teamId/issues', ({ params, body }) => {
-    const team = findTeam(params.teamId!);
-    if (!team || team.id === 2) {
+    const team = teamOr404(params.teamId);
+    if (!canWrite(team.id)) {
       fail(
         403,
         'GITHUB_PERMISSION',
@@ -76,20 +152,24 @@ export const routes: MockRoute[] = [
       );
     }
     const repo = team.repos.find((r) => r.id === Number(body.repoId)) ?? team.repos[0]!;
+    const members = TEAM_MEMBERS[team.id] ?? [];
+    const assigneeIds = (body.assigneeIds as number[] | undefined) ?? [];
+    const labelNames = (body.labels as string[] | undefined) ?? [];
     const number = 100 + ISSUES.length;
     const now = new Date().toISOString();
+    const title = String(body.title ?? '').trim();
     const issue: MockIssue = {
       id: team.id * 1000 + number,
       teamId: team.id,
       number,
       repoId: repo.id,
       repoName: repo.name,
-      title: String(body.title ?? '제목 없음'),
+      title: title || '제목 없음',
       body: String(body.body ?? ''),
-      status: 'TODO',
-      state: 'OPEN',
-      assignees: [],
-      labels: [],
+      status: (body.status as IssueStatus | undefined) ?? 'TODO',
+      state: body.status === 'DONE' ? 'CLOSED' : 'OPEN',
+      assignees: members.filter((m) => assigneeIds.includes(m.user.id)).map((m) => m.user),
+      labels: LABELS.filter((label) => labelNames.includes(label.name)),
       startDate: (body.startDate as string | null | undefined) ?? null,
       dueDate: (body.dueDate as string | null | undefined) ?? null,
       inProject: true,
@@ -102,21 +182,28 @@ export const routes: MockRoute[] = [
     };
     ISSUES.unshift(issue);
     const jobId = String(newId());
-    jobs.set(jobId, { polls: 0, issueId: issue.id });
+    // A title with "일정 실패" simulates a step that keeps failing after the issue exists
+    jobs.set(jobId, {
+      polls: 0,
+      issueId: issue.id,
+      failedStep: title.includes('일정 실패') ? '마감일' : null,
+    });
     return { jobId, issueId: issue.id };
   }),
   // create issue → add to project → start date → due date → status (POL-I sync)
   get('/api/v1/user/teams/:teamId/issue-sync-jobs/:jobId', ({ params }) => {
-    const job = jobs.get(params.jobId!);
+    const job = jobs.get(params.jobId);
     if (!job) fail(404, 'NOT_FOUND', '작업을 찾지 못했어요');
     job.polls += 1;
     const steps = ['이슈 만들기', '프로젝트에 추가', '시작일', '마감일', '상태'];
-    const done = Math.min(job.polls, steps.length);
+    const failedAt = job.failedStep ? steps.indexOf(job.failedStep) : -1;
+    const done = Math.min(job.polls, failedAt >= 0 ? failedAt : steps.length);
+    const failed = failedAt >= 0 && job.polls > failedAt;
     return {
-      status: done === steps.length ? 'DONE' : 'RUNNING',
+      status: failed ? 'FAILED' : done === steps.length ? 'DONE' : 'RUNNING',
       steps: steps.map((name, index) => ({ name, done: index < done })),
       issueId: job.issueId,
-      failedStep: null as string | null,
+      failedStep: failed ? job.failedStep : null,
     };
   }),
 ];

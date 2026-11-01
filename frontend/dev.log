@@ -1,0 +1,36 @@
+
+> linker-frontend@ dev:mock D:\portfolio\Linker\frontend
+> turbo run dev:mock
+
+
+   • turbo 2.11.10
+   • Packages in scope: @linker/api, @linker/bridge, @linker/config, mobile, web
+   • Running dev:mock in 5 packages
+   • Remote caching disabled
+
+web:dev:mock: cache bypass, force executing cef2e148065f435d
+web:dev:mock: 
+web:dev:mock: > web@0.1.0 dev:mock D:\portfolio\Linker\frontend\apps\web
+web:dev:mock: > cross-env NEXT_PUBLIC_USE_MOCKS=true next dev
+web:dev:mock: 
+web:dev:mock: ▲ Next.js 16.4.3 (Turbopack)
+web:dev:mock: - Local:         http://localhost:3000
+web:dev:mock: - Network:       http://172.30.1.59:3000
+web:dev:mock: ✓ Ready in 3.7s
+web:dev:mock: ✓ Running next.config.ts took 355ms
+web:dev:mock: 
+web:dev:mock: ○ Compiling /feed ...
+web:dev:mock:  GET /feed 200 in 5.9s (next.js: 3.8s, proxy.ts: 17ms, application-code: 2.1s)
+web:dev:mock:  GET /feed 200 in 173ms (next.js: 70ms, proxy.ts: 7ms, application-code: 97ms)
+web:dev:mock:  GET /feed 200 in 135ms (next.js: 8ms, proxy.ts: 6ms, application-code: 120ms)
+web:dev:mock: [?25h
+web:dev:mock:  ELIFECYCLE  Command failed with exit code 4294967295.
+web#dev:mock:  ERROR  command (D:\portfolio\Linker\frontend\apps\web) C:\Users\user\AppData\Roaming\npm\pnpm.cmd run dev:mock exited (-1)
+
+ Tasks:    0 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    1m55.662s 
+Failed:    web#dev:mock
+
+ ERROR  run failed: command  exited (-1)
+ ELIFECYCLE  Command failed with exit code 4294967295.

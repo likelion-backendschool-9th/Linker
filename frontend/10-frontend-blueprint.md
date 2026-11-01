@@ -30,7 +30,7 @@
 8. Per page: 1 `header`, 1 `main`, 1 main-menu `nav`, exactly one `h1` (ch. 6).
 9. Actions are `<button>`, navigation is `<Link>`. `div onClick` NEVER.
 10. Numbers (character counts, limits, plan values) come from `src/lib/policy.ts` (values from 04 Policy), never hard-coded.
-11. Mobile first: base styles at 360px, widen with `@media (min-width: 640px | 768px | 1024px)`.
+11. Mobile first: base styles at 360px, widen with `@media (min-width: 600px | 1024px)` (tablet, desktop).
 12. APIs only through orval hooks/functions. Direct `fetch('/api/v1/...')` NEVER outside `src/lib/api/`.
 13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + 11 Design Guide first. No CSS-in-JS, no utility-class framework.
 
@@ -67,11 +67,11 @@ Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](
 ### 1-2. Mock data mode (until the backend APIs are live)
 Frontend work is due before Spring is ready (target 2 Nov), so pages are built and checked against mock data. **The page code is the real code**: it calls orval hooks / `apiFetch` exactly as it will with Spring, and the mock layer answers underneath. Nothing in a page, `_lib` or component may know about mocks.
 - **On/off**: `pnpm dev:mock` (= `NEXT_PUBLIC_USE_MOCKS=true next dev`). Off by default, and the build drops all mock code when off (`next.config.ts` always defines the flag; check with `grep -r MOCK_NOT_IMPLEMENTED .next`).
-- **Where it plugs in**: only `lib/api/api-fetch.ts` (server and browser), `lib/realtime/stomp-client.ts` (no socket; an in-tab bus makes chat work) and `features/image-upload/upload-image.ts` (no storage PUT). Each guards with `process.env.NEXT_PUBLIC_USE_MOCKS === 'true'` written out, never a shared constant, or the bundler keeps the mock chunks.
+- **Where it plugs in**: only `lib/api/api-fetch.ts` (server and browser), `lib/realtime/stomp-client.ts` (no socket; an in-tab bus makes chat work), `features/image-upload/upload-image.ts` (no storage PUT), and `lib/payments/payment-widget.ts` (labelled local payment simulation, no Toss request). Each guards with `process.env.NEXT_PUBLIC_USE_MOCKS === 'true'` written out, never a shared constant, or the bundler keeps the mock chunks.
 - **Folder**: `src/mocks/` — one file per page, `pages/pNN-<name>.ts`, exporting `routes: MockRoute[]` with the **same path as 09 WBS**. Shared rows live in `fixtures/` (users, teams, issues, posts, recruits, chat, tech tags); `core/define.ts` has `get/post/put/patch/del`, `fail()`, `paginate()` and time helpers. New page → add its file to `mocks/routes.ts`.
 - **Permissions follow the URL prefix** like the real API: `/api/v1/user|recruiter|admin` answer a guest with 401 `LOGIN_REQUIRED` (so the login sheet path is exercised), `/recruiter` and `/admin` 403 other roles, `{ only: 'developer' }` 403 `DEVELOPER_ONLY` for recruiters.
 - **Who is logged in**: a plain cookie `linker_mock_role` = `guest | developer | newcomer (onboarding not done) | recruiter | operator`. Use the "목업 계정" switcher bottom-left, or open `/api/mock/login/<role>?returnTo=/path`. `proxy.ts` and `session.ts` read it instead of the JWT, so guards behave as in production. "GitHub로 시작" in mock mode just logs in as a developer.
-- **State**: writes (follow, like, comment, issue status/assignee/schedule, apply/accept, chat send, recruit/post create …) change in-memory data, so lists and detail screens follow. Server and browser each keep their own copy: a write made in the browser disappears on a full reload and server renders never see it.
+- **State**: writes (follow, like, comment, issue status/assignee/schedule, apply/accept, chat send, recruit/post create …) change in-memory data, so lists and detail screens follow. Mock payment orders and subscription cancellation/refund records are additionally kept per account in browser session storage so a payment callback or reload can re-confirm the same order. Other server and browser state each keep their own copy: a write made in the browser disappears on a full reload and server renders never see it.
 - **Errors you can trigger**: the mocks return the real error codes for the cases in 04 (`PLAN_LIMIT`, `RATE_LIMITED`, `GITHUB_PERMISSION`, `ALREADY_MEMBER`, …). Team 2 is read-only for the mock user, team 1 is Flex and team 2 free, invite codes `demo-expired` / `demo-revoked` / `demo-member` / `demo-full`, recruiter login `jihyun.song@nextlab.example` / `password1234`, email code `123456`. See the header comment of each mock file.
 - **Response shapes are provisional.** They follow the endpoint descriptions in 09 WBS, not a real OpenAPI. When the backend publishes `/v3/api-docs`: run `pnpm generate`, switch pages from hand-written types to the orval hooks, fix field-name differences in the page, and either delete that page's mock file or let orval's MSW mocks take over. Keep the mock file until the real API for that page is verified.
 - A missing mock answers 404 `MOCK_NOT_IMPLEMENTED` and logs `[mock] no mock for …` in the console. A page that needs a field the mock lacks adds it to the mock (and its fixture), not to the page.
@@ -219,7 +219,7 @@ NEVER split only because a file is long (one region of one screen stays one file
 
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)
-Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/StackHeader: logo or back, notification bell; guests get a "로그인" button) → `main id="main" tabIndex={-1} aria-labelledby="page-title"` with one `h1` (may be `sr-only`) → `nav aria-label="주 메뉴"` (bottom tabs, after `main` in the DOM).
+Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/StackHeader: logo or back, search, notification bell; guests get a "설정" icon that opens the login sheet instead) → `main id="main" tabIndex={-1} aria-labelledby="page-title"` with one `h1` (may be `sr-only`) → `nav aria-label="주 메뉴"` (bottom tabs, after `main` in the DOM).
 - Other `nav`s MUST have names ("팀 메뉴", "게시물 탭"). On stack screens the top-bar title may be the `h1`.
 - No skipped heading levels; card titles are `h2`/`h3` by position.
 - Admin: `header` + `nav aria-label="운영 메뉴"` + `main` + `aside aria-label="신고 상세"` (a sheet on narrow screens).
@@ -258,7 +258,7 @@ All overlays are Radix `Dialog` (styled in `components/overlay/`): focus trap, `
 - Every page needs a unique `title` (Next route announcer reads it).
 
 ### 6-6. Mobile first
-- Base = 360px; app screens keep `max-width: var(--app-max-width)`; only admin goes two-column at 1024px.
+- Base = 360px (mobile 360–599, tablet from 600, desktop from 1024). App screens use `max-width: var(--content-max-width)` (1440px, centered); side gutter is `var(--page-gutter)`. Bottom tab bar on all sizes; the top bar is shared by mobile and tablet. The admin shell is separate and goes two-column at 1024px.
 - `100dvh`; bottom tabs/input bars use `padding-bottom: env(safe-area-inset-bottom)`; `viewportFit: 'cover'`.
 - Input font ≥ 16px. No hover-only UI; long-press has a "더보기" button alternative.
 
@@ -377,12 +377,12 @@ export function useOverlay(key: OverlayKey) {
 
 ## 10. Images
 ### 10-1. Install and config
-`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 640, 768, 1024, 1280]`; `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
+`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 600, 1024, 1440]`; `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
 
 ### 10-2. Usage
 | Image | Rule |
 | --- | --- |
-| Feed cover | `sizes="(min-width: 640px) 600px, 100vw"`; only the first card `preload` |
+| Feed cover | `sizes="(min-width: 1024px) 480px, (min-width: 600px) 50vw, 100vw"`; only the first card `preload` |
 | Post gallery | First image `preload`, rest lazy; `fill` + fixed-ratio parent |
 | Avatar | Fixed size 24–96; GitHub `?s=` param |
 | Chat photo | Thumbnail `sizes="240px"`; large in the viewer |

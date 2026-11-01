@@ -15,7 +15,7 @@
   justify-content: space-around;
   align-items: center;
   width: 100%;
-  max-width: var(--gnb-max-width);
+  max-width: var(--content-max-width);
   margin-bottom: var(--space-xs);
   padding: var(--space-xs) 0;
   background-color: var(--color-canvas-soft);
@@ -63,7 +63,7 @@
     margin-bottom: var(--space-md);
     padding: var(--space-md) var(--space-lg);
     background-color: var(--color-gnb-pill);
-    backdrop-filter: var(--blur-gnb);
+    backdrop-filter: var(--blur-header-scroll);
     border-radius: var(--radius-lg);
   }
 

@@ -1,6 +1,7 @@
 import type { Route } from 'next';
 import type { ReactNode } from 'react';
 
+import { hasUnreadNotifications } from '@/features/notifications/get-unread';
 import { StatusBanners } from '@/features/status-banner/status-banners';
 import { getSession, viewerFromSession } from '@/lib/auth/session';
 
@@ -43,12 +44,13 @@ export async function PageFrame({
   const session = await getSession();
   const { role } = viewerFromSession(session);
   const showTabs = bottomTabs ?? variant === 'tab';
+  const hasUnread = session ? await hasUnreadNotifications() : false;
 
   return (
     <>
       <SkipLink />
       {variant === 'tab' ? (
-        <TabHeader role={role} />
+        <TabHeader role={role} login={session?.login ?? null} hasUnread={hasUnread} />
       ) : (
         <StackHeader title={title} backHref={backHref} actions={actions} />
       )}

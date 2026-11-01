@@ -68,22 +68,28 @@ export function useOverlay(key: OverlayKey) {
     }
   }
 
+  /**
+   * Close, wait until the URL no longer has the overlay, then run `action`. Use it for URL changes made
+   * from inside an overlay (e.g. applying filters): set while open, `history.back()` would undo them.
+   */
+  async function closeAnd(action: () => unknown) {
+    if (isOpen) {
+      if (pushedByApp) {
+        pushedByApp = false;
+        await new Promise<void>((resolve) => {
+          window.addEventListener('popstate', () => resolve(), { once: true });
+          window.history.back();
+        });
+      } else {
+        await set(CLOSED, { history: 'replace' });
+      }
+    }
+    await action();
+  }
+
   /** Leave the page from inside the overlay: close first, then navigate (blueprint §7-2 rule 4). */
-  async function closeThen(href: Route) {
-    if (!isOpen) {
-      router.push(href);
-      return;
-    }
-    if (pushedByApp) {
-      pushedByApp = false;
-      await new Promise<void>((resolve) => {
-        window.addEventListener('popstate', () => resolve(), { once: true });
-        window.history.back();
-      });
-    } else {
-      await set(CLOSED, { history: 'replace' });
-    }
-    router.push(href);
+  function closeThen(href: Route) {
+    return closeAnd(() => router.push(href));
   }
 
   return {
@@ -92,6 +98,7 @@ export function useOverlay(key: OverlayKey) {
     returnTo: isOpen ? returnTo : null,
     open,
     close,
+    closeAnd,
     closeThen,
     onOpenChange: (next: boolean) => (next ? open() : close()),
   };

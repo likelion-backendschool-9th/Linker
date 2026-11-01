@@ -1,0 +1,65 @@
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { axe } from 'vitest-axe';
+
+import { apiFetch } from '@/lib/api/api-fetch';
+import { renderWithProviders } from '@/test/render-with-providers';
+
+import { NotificationList } from './notification-list';
+
+vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
+const fetchMock = vi.mocked(apiFetch);
+const notice = {
+  id: 1,
+  type: 'CHAT',
+  title: '팀 채팅',
+  body: '새 메시지',
+  targetUrl: '/chats/1',
+  read: false,
+  createdAt: '2026-11-01T00:00:00Z',
+};
+
+beforeEach(() => {
+  fetchMock.mockReset();
+  fetchMock.mockImplementation(async (url) =>
+    url.endsWith('unread-count') ? { count: 1 } : { items: [notice], nextCursor: null },
+  );
+});
+it('marks all read, updates the count, and exposes readable status with no axe violations', async () => {
+  const { container } = renderWithProviders(<NotificationList />, {
+    viewer: { role: 'developer', login: 'developer' },
+  });
+  await screen.findByText('읽지 않음');
+  expect(await axe(container)).toHaveNoViolations();
+  fetchMock.mockImplementation(async (url) =>
+    url.endsWith('unread-count')
+      ? { count: 0 }
+      : { items: [{ ...notice, read: true }], nextCursor: null },
+  );
+  await userEvent.click(screen.getByRole('button', { name: '모두 읽음' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/notifications/read-all', {
+      method: 'POST',
+    }),
+  );
+  await screen.findByText('읽지 않은 알림 0개');
+  expect(screen.queryByText('읽지 않음')).not.toBeInTheDocument();
+});
+it('keeps the list and a retry action when marking an item read fails', async () => {
+  renderWithProviders(<NotificationList />, { viewer: { role: 'developer', login: 'developer' } });
+  const link = await screen.findByRole('link', { name: /팀 채팅/ });
+  fetchMock.mockImplementation(async (url) => {
+    if (url.endsWith('/read')) throw new Error('offline');
+    return url.endsWith('unread-count') ? { count: 1 } : { items: [notice], nextCursor: null };
+  });
+  await userEvent.click(link);
+  expect(await screen.findByText('읽음 상태를 저장하지 못했어요')).toBeVisible();
+  expect(screen.getByRole('button', { name: '다시 시도' })).toBeVisible();
+});
+it('shows a useful empty state', async () => {
+  fetchMock.mockImplementation(async (url) =>
+    url.endsWith('unread-count') ? { count: 0 } : { items: [], nextCursor: null },
+  );
+  renderWithProviders(<NotificationList />, { viewer: { role: 'developer', login: 'developer' } });
+  expect(await screen.findByText('아직 알림이 없어요.')).toBeVisible();
+});

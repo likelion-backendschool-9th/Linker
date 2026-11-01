@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
       ...(imageHost ? [{ protocol: 'https' as const, hostname: imageHost }] : []),
     ],
-    deviceSizes: [360, 414, 640, 768, 1024, 1280],
+    deviceSizes: [360, 414, 600, 1024, 1440],
     imageSizes: [24, 32, 40, 48, 64, 96, 128, 256],
   },
 };

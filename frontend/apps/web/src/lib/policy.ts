@@ -74,8 +74,21 @@ export const TEAM = {
   inviteValidDays: 7,
 } as const;
 
+/** 04 ch. 2 rate limits, ch. 7 POL-I-2, POL-I-4 and "Sync" */
+export const ISSUE = {
+  createPerDay: 100,
+  /** GitHub caps assignees at 10 (POL-I-2) */
+  assigneesMax: 10,
+  /** Pull to refresh: that screen's issues, once a minute */
+  refreshIntervalSeconds: 60,
+} as const;
+
 /** 04 ch. 8 */
 export const CHAT = {
+  /** Policy ch. 2 rate limits/network failures; TODO 17 reconnect limit. */
+  sendsPerSecond: 5,
+  autoRetries: 3,
+  catchUpMax: 500,
   messageMax: 2000,
   imagesPerSend: 10,
   editWithinHours: 24,
@@ -93,3 +106,16 @@ export const PLAN_LIMITS = {
   recruitingOffersPerDay: { free: 10, scout: 50 },
   jobAds: { free: 0, scout: 1 },
 } as const;
+
+/** Policy ch. 11. UI prices come from the API; these values seed the mock/server contract. */
+export const SUBSCRIPTION_PRICE = {
+  proMonthly: 2900,
+  proYearly: 29000,
+  flexMonthly: 7900,
+  flexExtraMember: 1900,
+  scoutMonthly: 14900,
+  trialDays: 7,
+} as const;
+
+/** Policy ch. 11 payment and expiry rules. */
+export const SUBSCRIPTION_RULES = { refundWithinDays: 7, flexGraceDays: 30 } as const;
