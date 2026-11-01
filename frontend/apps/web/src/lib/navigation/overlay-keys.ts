@@ -33,6 +33,7 @@ export const OVERLAY_KEYS = [
   'photo-viewer',
   'post-menu',
   'post-likers',
+  'ad-menu',
   'comment-menu',
 ] as const;
 
