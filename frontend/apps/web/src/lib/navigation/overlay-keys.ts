@@ -26,6 +26,8 @@ export const OVERLAY_KEYS = [
   'admin-user-action',
   'chat-pull-requests',
   'stats-featured',
+  'recruit-filter',
+  'application-cancel',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

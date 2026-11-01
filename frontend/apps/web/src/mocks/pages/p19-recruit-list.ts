@@ -5,14 +5,14 @@ import { ME } from '../fixtures/users';
 /** 19 Recruit post list: `RecruitListController` */
 
 export const routes: MockRoute[] = [
-  // Open posts only; filters role / tech / mode (online, offline, hybrid) / sort (NEWEST, DEADLINE)
+  // Open posts only; filters role (RecruitRoleKey) / tech / mode (online, offline, hybrid) / sort (NEWEST, DEADLINE)
   get('/api/v1/public/recruits', ({ query }) => {
     const role = query.get('role');
     const tech = query.get('tech');
     const mode = query.get('mode');
     const sort = query.get('sort') ?? 'NEWEST';
     const items = RECRUITS.filter((item) => item.status === 'OPEN')
-      .filter((item) => !role || item.roles.some((r) => r.name.includes(role)))
+      .filter((item) => !role || item.roles.some((r) => r.role === role))
       .filter((item) => !tech || item.techTags.includes(tech))
       .filter((item) => !mode || item.format === mode)
       .sort((a, b) =>

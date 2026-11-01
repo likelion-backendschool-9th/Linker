@@ -1,7 +1,16 @@
+import type { RecruitRoleKey } from '@/features/recruit/recruit-labels';
+
 import { dateOnly, daysAgo, hoursAgo } from '../core/define';
 import { brief, DEVELOPERS, ME, type UserBrief } from './users';
 
-export type RecruitRole = { id: number; name: string; headcount: number; filled: number };
+/** `role` = ERD `recruit_roles.role` key (19 filter), `name` = its label */
+export type RecruitRole = {
+  id: number;
+  role: RecruitRoleKey;
+  name: string;
+  headcount: number;
+  filled: number;
+};
 
 export type MockRecruit = {
   id: number;
@@ -53,8 +62,8 @@ export const RECRUITS: MockRecruit[] = [
     status: 'OPEN',
     techTags: ['Next.js', 'Spring Boot', 'PostgreSQL'],
     roles: [
-      { id: 11, name: '백엔드', headcount: 2, filled: 1 },
-      { id: 12, name: '디자이너', headcount: 1, filled: 0 },
+      { id: 11, role: 'BACKEND', name: '백엔드', headcount: 2, filled: 1 },
+      { id: 12, role: 'DESIGN', name: '디자이너', headcount: 1, filled: 0 },
     ],
     createdAt: daysAgo(3),
   },
@@ -71,7 +80,7 @@ export const RECRUITS: MockRecruit[] = [
     deadline: dateOnly(12),
     status: 'OPEN',
     techTags: ['TypeScript', 'Go'],
-    roles: [{ id: 21, name: '프론트엔드', headcount: 3, filled: 1 }],
+    roles: [{ id: 21, role: 'FRONTEND', name: '프론트엔드', headcount: 3, filled: 1 }],
     createdAt: daysAgo(6),
   },
   {
@@ -88,8 +97,8 @@ export const RECRUITS: MockRecruit[] = [
     status: 'OPEN',
     techTags: ['Flutter', 'Firebase'],
     roles: [
-      { id: 31, name: '앱 개발', headcount: 2, filled: 0 },
-      { id: 32, name: '백엔드', headcount: 1, filled: 1 },
+      { id: 31, role: 'MOBILE', name: '앱 개발', headcount: 2, filled: 0 },
+      { id: 32, role: 'BACKEND', name: '백엔드', headcount: 1, filled: 1 },
     ],
     createdAt: daysAgo(1),
   },
@@ -107,8 +116,8 @@ export const RECRUITS: MockRecruit[] = [
     status: 'OPEN',
     techTags: ['Python', 'React'],
     roles: [
-      { id: 41, name: '프론트엔드', headcount: 1, filled: 0 },
-      { id: 42, name: '데이터 엔지니어', headcount: 1, filled: 0 },
+      { id: 41, role: 'FRONTEND', name: '프론트엔드', headcount: 1, filled: 0 },
+      { id: 42, role: 'DATA_AI', name: '데이터 엔지니어', headcount: 1, filled: 0 },
     ],
     createdAt: hoursAgo(30),
   },
@@ -125,7 +134,7 @@ export const RECRUITS: MockRecruit[] = [
     deadline: dateOnly(-3),
     status: 'CLOSED',
     techTags: ['Docker', 'Kubernetes', 'AWS'],
-    roles: [{ id: 51, name: '스터디원', headcount: 4, filled: 4 }],
+    roles: [{ id: 51, role: 'ETC', name: '스터디원', headcount: 4, filled: 4 }],
     createdAt: daysAgo(20),
   },
 ];

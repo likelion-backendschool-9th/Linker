@@ -33,3 +33,8 @@ export function formatRelativeTime(value: Date | string | number, now: Date = ne
 export function todayKst(now: Date = new Date()): string {
   return format(toKst(now), 'yyyy-MM-dd');
 }
+
+/** Calendar days from today (KST) to a `yyyy-MM-dd` date; 0 = today, negative = past (recruit D-day). */
+export function daysUntil(date: string, now: Date = new Date()): number {
+  return Math.round((Date.parse(date) - Date.parse(todayKst(now))) / (24 * 60 * 60 * 1000));
+}
