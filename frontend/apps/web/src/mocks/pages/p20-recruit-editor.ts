@@ -22,16 +22,19 @@ function ownRecruit(id: string) {
 function applyForm(item: MockRecruit, body: Record<string, unknown>) {
   const roles =
     (body.roles as { id?: number; role: RecruitRoleKey; headcount: number }[] | undefined) ?? [];
+  // Nullable fields: a sent `null` clears them, a missing key keeps the old value
+  const nullable = <K extends keyof MockRecruit>(key: K) =>
+    (key in body ? body[key] : item[key]) as MockRecruit[K];
   Object.assign(item, {
     title: String(body.title ?? item.title),
     intro: String(body.intro ?? item.intro),
     format: body.format ?? item.format,
-    region: (body.region as string | null | undefined) ?? item.region,
-    goal: (body.goal as MockRecruit['goal']) ?? item.goal,
-    duration: (body.duration as string | null | undefined) ?? item.duration,
+    region: nullable('region'),
+    goal: nullable('goal'),
+    duration: nullable('duration'),
     deadline: String(body.deadline ?? item.deadline),
     techTags: (body.techTags as string[] | undefined) ?? item.techTags,
-    teamId: (body.teamId as number | null | undefined) ?? item.teamId,
+    teamId: nullable('teamId'),
   });
   if (roles.length) {
     item.roles = roles.map((role) => ({

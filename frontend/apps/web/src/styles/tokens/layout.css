@@ -31,6 +31,7 @@
   --content-max-width: 1440px; /* app screens, header content and the bottom GNB, centered beyond this (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter; 24px from tablet, 32px from desktop */
   --sheet-max-width: 640px; /* bottom sheets and toasts */
+  --form-max-width: 720px; /* single-column writing forms (recruit/post editors), centered in the content column */
   --header-height: 56px; /* top bar of tab and stack screens */
   --header-search-width: 512px; /* desktop top nav search field */
   --tab-bar-height: 96px; /* bottom GNB's total footprint (~73px mobile, ~92px desktop pill), for content/toast clearance */
