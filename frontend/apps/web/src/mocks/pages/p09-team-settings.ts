@@ -1,5 +1,6 @@
 import { daysFromNow, del, fail, get, newId, patch, post, type MockRoute } from '../core/define';
 import { findTeam, TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
+import { SUBSCRIPTION_PRICE, PLAN_LIMITS } from '@/lib/policy';
 
 /** 09 Team settings & members: `TeamSettingsController` */
 
@@ -55,12 +56,44 @@ export const routes: MockRoute[] = [
       completedAt: team.completedAt,
       // Free teams: 6 members (POL-T-1)
       memberLimit: team.plan === 'FLEX' ? null : 6,
+      availableRepos: [
+        ...team.repos,
+        { id: 990 + team.id, name: 'docs', fullName: `${team.orgLogin}/docs`, private: false },
+      ],
+      githubOrgOwner: team.myRole === 'OWNER',
+      githubInvitationBlockedReason: null,
+      billing: {
+        managerName: '한서준',
+        canManage: team.myRole === 'OWNER',
+        nextAmount:
+          team.plan === 'FLEX'
+            ? SUBSCRIPTION_PRICE.flexMonthly +
+              Math.max(0, (TEAM_MEMBERS[team.id]?.length ?? 0) - PLAN_LIMITS.teamMembers.free) *
+                SUBSCRIPTION_PRICE.flexExtraMember
+            : null,
+        nextBillingAt: team.plan === 'FLEX' ? daysFromNow(15) : null,
+      },
+      ownershipTransfer:
+        team.id === 2 ? { id: 1, fromName: '이도윤', toName: '한서준', isRecipient: true } : null,
+      ownershipClaim: null,
+      completion: {
+        canUndo: false,
+        finalized: team.status === 'COMPLETED',
+        canRestart: team.status === 'COMPLETED',
+      },
     };
   }),
   get('/api/v1/user/teams/:teamId/members', ({ params }) => {
     const team = teamOr404(params.teamId);
     const items = TEAM_MEMBERS[team.id] ?? [];
-    return { items, count: items.length, limit: team.plan === 'FLEX' ? null : 6 };
+    return {
+      items: items.map((member) => ({
+        ...member,
+        githubOrgStatus: member.inGithubOrg ? 'MEMBER' : 'INVITED',
+      })),
+      count: items.length,
+      limit: team.plan === 'FLEX' ? null : 6,
+    };
   }),
   get('/api/v1/user/teams/:teamId/invite-links', ({ params }) => ({
     items: inviteLinks[Number(params.teamId)] ?? [],

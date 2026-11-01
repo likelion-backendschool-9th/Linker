@@ -33,6 +33,7 @@ import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
 import { MessageTimeline } from './message-timeline';
 import { RoomInfoSheet } from './room-info-sheet';
+import { PullRequestSheet } from './pull-request-sheet';
 import styles from './chat-room.module.css';
 
 const CONNECTION = {
@@ -155,7 +156,9 @@ export function ChatRoom({ roomId }: { roomId: number }) {
   const room = info.data;
   const suspended = viewer.status === 'SUSPENDED';
   const readOnly =
-    suspended || room.kind === 'REQUEST' || (room.team !== null && room.team.status !== 'ACTIVE');
+    suspended ||
+    room.kind === 'REQUEST' ||
+    (room.team !== null && ['READ_ONLY', 'ARCHIVED'].includes(room.team.status));
   return (
     <div className={styles.room}>
       <div className={styles.toolbar}>
@@ -163,6 +166,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           {CONNECTION[connection]}
         </p>
         <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
+        {room.team && <PullRequestSheet roomId={roomId} login={viewer.login} />}
       </div>
       {room.historyLimitDays !== null && (
         <p className={styles.notice}>
