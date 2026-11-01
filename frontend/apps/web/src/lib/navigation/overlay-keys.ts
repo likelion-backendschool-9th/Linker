@@ -36,6 +36,10 @@ export const OVERLAY_KEYS = [
   'recruit-reject',
   'recruit-team-required',
   'recruit-role-full',
+  'photo-viewer',
+  'post-menu',
+  'post-likers',
+  'comment-menu',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

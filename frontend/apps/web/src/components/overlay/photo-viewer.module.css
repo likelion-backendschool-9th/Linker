@@ -1,0 +1,51 @@
+/* Inverse surface (guide ch. 4) covering the screen, so photos of any color read the same */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  color: var(--color-text-inverse);
+  background-color: var(--color-primary);
+  outline: none;
+}
+
+.bar,
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--page-gutter);
+}
+
+.count {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stage {
+  position: relative;
+}
+
+.image {
+  object-fit: contain;
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-full);
+}
+
+.button:focus-visible {
+  outline-color: var(--color-focus-ring-on-dark);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

@@ -1,0 +1,500 @@
+/* One column; from desktop the repo card and related posts sit in a sticky right column */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-xl);
+}
+
+.main {
+  display: grid;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.aside {
+  display: grid;
+  align-content: start;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--space-xxl);
+  }
+
+  .aside {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-md));
+  }
+}
+
+/* Hidden by reports, author only: a warning in text */
+.review {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-warning);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.review strong {
+  margin-right: var(--space-xxs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.authorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: var(--touch-target-min);
+}
+
+.authorAvatar,
+.personAvatar {
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.authorAvatar,
+.personAvatar {
+  width: calc(var(--control-height) - var(--space-xs));
+  height: calc(var(--control-height) - var(--space-xs));
+}
+
+.authorText,
+.personText {
+  display: grid;
+  min-width: 0;
+}
+
+.authorName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+/* Highlight badge (guide ch. 5): the one blue element here */
+.seeking {
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  color: var(--color-on-primary);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-full);
+}
+
+.meta {
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-meta);
+}
+
+.iconButton {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+.intro {
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-page-title);
+  color: var(--color-text-heading);
+  overflow-wrap: anywhere;
+}
+
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+}
+
+/* Toggle pill: pressed state shows a filled heart and bold label, not color alone */
+.likeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--control-height);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.likeButton[aria-pressed='true'] {
+  background-color: var(--color-canvas-soft);
+  border-color: var(--color-canvas-soft);
+}
+
+.heart,
+.heartOn {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.heartOn {
+  fill: currentcolor;
+}
+
+.countButton {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: var(--space-xxs);
+}
+
+.commentCount,
+.iconText {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.metaIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.body {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-text-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-text-heading);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+}
+
+/* Term / value rows separated by hairlines */
+.info {
+  display: grid;
+  border-top: 1px solid var(--color-hairline-soft);
+}
+
+.infoRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.infoRow dt {
+  color: var(--color-text-secondary);
+}
+
+.infoRow dd {
+  min-width: 0;
+  color: var(--color-text-body);
+}
+
+.links {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+}
+
+.tag {
+  padding: var(--space-xxs) var(--space-sm);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-body);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+/* Repo card (guide ch. 5 card) */
+.repoCard {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-md);
+}
+
+.repoName {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title);
+  overflow-wrap: anywhere;
+}
+
+.repoMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs) var(--space-sm);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.forkBadge {
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.repoDescription {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.unavailable {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.contribution {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.contribution > div {
+  display: grid;
+  gap: var(--space-xxs);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.contribution dt {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-subtle-on-tint);
+}
+
+.contribution dd {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.githubLink {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  text-decoration: underline;
+}
+
+/* README: accordion row (guide ch. 5) + sanitized markdown; wide tables and code scroll */
+.readme {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.readmeHeading {
+  font-size: var(--font-size-body);
+}
+
+.readmeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.chevron,
+.chevronOpen {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  transition: transform var(--duration-overlay) var(--ease-standard);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.markdown {
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-body);
+  overflow-wrap: anywhere;
+}
+
+.markdown > * + * {
+  margin-top: var(--space-sm);
+}
+
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: var(--space-lg);
+  list-style: revert;
+}
+
+.markdown a {
+  color: var(--color-text-heading);
+  text-decoration: underline;
+}
+
+.markdown pre,
+.markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown pre {
+  padding: var(--space-sm);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.markdown th,
+.markdown td {
+  padding: var(--space-xxs) var(--space-xs);
+  border: 1px solid var(--color-hairline);
+}
+
+.markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.samePosts {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.samePost {
+  display: grid;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-sm);
+}
+
+.samePostIntro {
+  font-size: var(--font-size-body);
+  color: var(--color-text-title);
+}
+
+/* Menu sheets: full-width rows with an icon */
+.menu {
+  display: grid;
+}
+
+.menuItem,
+.menuItemDanger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-body);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-sm);
+}
+
+.menuItemDanger {
+  color: var(--color-status-error);
+}
+
+/* Likers sheet */
+.people {
+  display: grid;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-xs) 0;
+  text-align: left;
+}
+
+.personName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.personLogin {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+}
