@@ -28,6 +28,8 @@ export const OVERLAY_KEYS = [
   'stats-featured',
   'recruit-filter',
   'application-cancel',
+  'tech-tags',
+  'recruit-status',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];
