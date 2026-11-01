@@ -15,6 +15,19 @@ function status(code: string) {
   return 'VALID' as const;
 }
 
+// Read-only presentation fixtures; no membership or chat room is created.
+function participation(code: string) {
+  const states = {
+    'demo-member': 'ALREADY_MEMBER',
+    'demo-full': 'TEAM_MEMBER_LIMIT',
+    'demo-limit': 'TEAM_COUNT_LIMIT',
+    'demo-accepted': 'ACCEPTED',
+    'demo-read-only': 'READ_ONLY',
+    'demo-archived': 'ARCHIVED',
+  } as const;
+  return { state: states[code as keyof typeof states] ?? 'ELIGIBLE', canManageTeam: false };
+}
+
 export const routes: MockRoute[] = [
   get('/api/v1/public/invites/:code', ({ params }) => ({
     code: params.code,
@@ -27,6 +40,7 @@ export const routes: MockRoute[] = [
       memberCount: TEAM_MEMBERS[team.id]?.length ?? 0,
     },
     invitedBy: '이도윤',
+    participation: participation(params.code),
   })),
   post(
     '/api/v1/user/invites/:code/accept',

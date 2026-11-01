@@ -1,5 +1,5 @@
 import { fail, get, newId, post, put, type MockRoute } from '../core/define';
-import { TEAMS } from '../fixtures/teams';
+import { TEAMS, findTeam } from '../fixtures/teams';
 
 /** 08 Create team: `TeamCreateController` (5 steps: install → verify → repos → board → complete) */
 
@@ -34,12 +34,22 @@ export const routes: MockRoute[] = [
     }),
     { only: 'developer' },
   ),
-  get('/api/v1/user/teams/:teamId/setup/repos', () => ({
-    items: [
-      { id: 901, name: 'web', fullName: 'my-new-org/web', private: false },
-      { id: 902, name: 'api', fullName: 'my-new-org/api', private: false },
-      { id: 903, name: 'infra', fullName: 'my-new-org/infra', private: true },
-    ],
+  get('/api/v1/user/teams/:teamId/setup/repos', ({ params }) => ({
+    items: findTeam(params.teamId)
+      ? [
+          ...findTeam(params.teamId)!.repos,
+          {
+            id: 903,
+            name: 'infra',
+            fullName: `${findTeam(params.teamId)!.orgLogin}/infra`,
+            private: true,
+          },
+        ]
+      : [
+          { id: 901, name: 'web', fullName: 'my-new-org/web', private: false },
+          { id: 902, name: 'api', fullName: 'my-new-org/api', private: false },
+          { id: 903, name: 'infra', fullName: 'my-new-org/infra', private: true },
+        ],
     // Repos the app wasn't installed on: link to grant access on GitHub
     notInstalledCount: 1,
   })),
@@ -61,9 +71,9 @@ export const routes: MockRoute[] = [
     return { boardId: 'board-new', name: 'Linker' };
   }),
   // The org's default repo permission; "read" shows the write-permission notice (POL-T-1)
-  get('/api/v1/user/teams/:teamId/setup/permission-check', () => ({
+  get('/api/v1/user/teams/:teamId/setup/permission-check', ({ params }) => ({
     basePermission: 'READ' as 'READ' | 'WRITE',
-    settingsUrl: 'https://github.com/organizations/my-new-org/settings/member_privileges',
+    settingsUrl: `https://github.com/organizations/${findTeam(params.teamId)?.orgLogin ?? 'my-new-org'}/settings/member_privileges`,
   })),
   post('/api/v1/user/teams/:teamId/setup/complete', () => ({ queued: true })),
 ];

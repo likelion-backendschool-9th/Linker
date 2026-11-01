@@ -9,6 +9,7 @@ import { PageFrame } from '@/components/layout/page-frame';
 import { getTeam } from '../_lib/get-team';
 import styles from './team-frame.module.css';
 import { TeamNav } from './team-nav';
+import { TeamSwitcher } from './team-switcher';
 
 type TeamFrameProps = {
   teamId: string;
@@ -39,10 +40,10 @@ export async function TeamFrame({ teamId, title, children }: TeamFrameProps) {
           sizes="40px"
           className={styles.avatar}
         />
-        <p className={styles.name}>
-          {team.name}
+        <div className={styles.name}>
+          <TeamSwitcher teamId={teamId} name={team.name} />
           {note && <span className={styles.badge}>{note}</span>}
-        </p>
+        </div>
         <Link href={`/chats/${team.chatRoomId}` as Route} className={styles.chat}>
           <MessageCircle aria-hidden />
           <span className="sr-only">팀 채팅으로 가기</span>

@@ -80,3 +80,31 @@ it('shows recruiters only Scout without querying developer team candidates', asy
   expect(screen.queryByRole('button', { name: '연간' })).not.toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([url]) => url.includes('team-candidates'))).toBe(false);
 });
+
+it('selects a team handed off by settings only from the permitted candidates, without creating an order', async () => {
+  renderWithProviders(<PlanSelector reason="team-members" />, {
+    viewer: { role: 'developer', login: 'developer' },
+    searchParams: '?teamId=1',
+  });
+  expect(await screen.findByRole('combobox', { name: '결제할 팀' })).toHaveValue('1');
+  expect(screen.getByRole('button', { name: 'Flex 결제 준비' })).toBeEnabled();
+  expect(fetchMock.mock.calls.every(([, init]) => !init?.method || init.method === 'GET')).toBe(
+    true,
+  );
+});
+
+it('a forged team id does not bypass the permitted candidate list', async () => {
+  renderWithProviders(<PlanSelector reason="team-members" />, {
+    viewer: { role: 'developer', login: 'developer' },
+    searchParams: '?teamId=999',
+  });
+  expect(
+    await screen.findByText(
+      '이 팀을 선택할 수 없어요. 결제할 수 있는 팀 목록에서 다시 선택해 주세요.',
+    ),
+  ).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Flex 결제 준비' })).toBeDisabled();
+  expect(fetchMock.mock.calls.every(([, init]) => !init?.method || init.method === 'GET')).toBe(
+    true,
+  );
+});

@@ -1,4 +1,5 @@
 import { daysAgo, get, hoursAgo, newId, type MockRoute } from '../core/define';
+import { todayKst } from '@/lib/format/time';
 
 /** 27 Ops: action log: `AdminAuditController` (who, when, what, why; PRD O-5) */
 
@@ -67,12 +68,20 @@ export const routes: MockRoute[] = [
     const actionType = query.get('actionType');
     const from = query.get('from');
     const to = query.get('to');
+    const items = logs
+      .filter((l) => !admin || l.admin === admin)
+      .filter((l) => !actionType || l.actionType === actionType)
+      .filter((l) => !from || todayKst(new Date(l.createdAt)) >= from)
+      .filter((l) => !to || todayKst(new Date(l.createdAt)) <= to)
+      .toSorted((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    const start = query.get('cursor')
+      ? items.findIndex((item) => String(item.id) === query.get('cursor')) + 1
+      : 0;
+    const size = Math.max(1, Math.min(100, Number(query.get('size') ?? 20)));
+    const page = items.slice(start, start + size);
     return {
-      items: logs
-        .filter((l) => !admin || l.admin === admin)
-        .filter((l) => !actionType || l.actionType === actionType)
-        .filter((l) => !from || l.createdAt.slice(0, 10) >= from)
-        .filter((l) => !to || l.createdAt.slice(0, 10) <= to),
+      items: page,
+      nextCursor: start + size < items.length ? String(page.at(-1)!.id) : null,
     };
   }),
   get('/api/v1/admin/audit-logs/filters', () => ({

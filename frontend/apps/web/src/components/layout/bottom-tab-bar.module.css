@@ -48,9 +48,9 @@
   line-height: var(--line-height-caption);
 }
 
-/* Current tab: accent color plus a heavier label, not color alone */
+/* Current tab: accessible blue on the gray pill, plus a heavier label (not color alone). */
 .tab[aria-current='page'] {
-  color: var(--color-accent);
+  color: var(--color-gnb-current);
 }
 
 .tab[aria-current='page'] .label {
