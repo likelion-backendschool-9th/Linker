@@ -28,7 +28,7 @@
 | 04 | Profile | `/u/[login]` | Required | 02 |
 | 05 | Edit profile | `/settings/profile` | Required | 04 |
 | 06 | Settings | `/settings` | Required | 01 |
-| 07 | Workspace home | `/workspace` | Required | 01 |
+| 07 | Workspace home / my issues | `/workspace`, `/workspace/issues` | Required | 01 |
 | 08 | Create team | `/teams/new`, `/teams/new/callback` | Required | 07 |
 | 09 | Team settings & members | `/teams/[id]/settings` | Required | 08 |
 | 10 | Accept invite | `/invite/[code]` | Required | 09 |
@@ -266,15 +266,16 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 ## 3. Creating teams and invites
 
-### 07. Workspace home `[Required]` · `/workspace`
+### 07. Workspace home `[Required]` · `/workspace`, `/workspace/issues`
 
 > Basis: T-1, I-5 · Needs first: 01 · Merged: my team list + my issues → one page
-> First screen of the Workspace tab. The My issues section is filled after 11–12.
+> First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07, with the same controller and access rules.
 
 - [ ] My teams: grouped active / completed / read-only / archived; team card (org avatar, team name, member count, status)
 - [ ] "팀 만들기" (create team) button → 08
 - [ ] No teams: "팀 만들기" + "팀 찾으러 가기" (go find a team, 19)
 - [ ] `[Included]` My issues: issues assigned to me across all teams by due date, overdue in red, team name shown, tap → 12. Empty: "배정된 이슈가 없어요"
+- [ ] “내 이슈 전체 보기” → `/workspace/issues`; its back fallback is `/workspace`. B owns the entry link; C owns the list and data query.
 - [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15)
 
 **Policy & exceptions**
