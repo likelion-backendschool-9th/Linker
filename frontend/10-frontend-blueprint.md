@@ -180,7 +180,7 @@ Every "login prompt" cell in POL-A-9 uses this hook: for guests it opens the log
 - 403 `DEVELOPER_ONLY` means a screen-branching bug (the button shouldn't exist): toast + Sentry.
 
 ### 4-6. Bottom tabs per role (`components/layout/bottom-tabs.config.ts`)
-guest / developer / operator: `home, recruits, workspace, chats, profile` (guest's last 3 are buttons opening the login prompt) · recruiter: `home, chats, profile` (profile = recruiter my page).
+guest / developer / operator: `home, recruits, workspace, chats` (guest Workspace/Chat entries open the login prompt) · recruiter: `home, chats`. Profile is reached from the header on every screen size; the recruiter's own profile uses the recruiter my-page view. This matches the shared GNB from PR #34.
 
 ## 5. Server and client components
 ### 5-1. Rules
@@ -466,7 +466,7 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 | 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | ProfileController · p04 |
 | 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | ProfileEditController · p05 |
 | 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | SettingsController · p06 |
-| 07 | `/workspace` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
+| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
 | 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | TeamCreateController · p08 |
 | 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | TeamSettingsController · p09 |
 | 10 | `/invite/[code]` | (public) | preview / ○ / × message / ○ | InviteController · p10 |

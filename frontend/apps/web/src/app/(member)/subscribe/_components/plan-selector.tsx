@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,8 @@ const REASONS: Record<string, string> = {
   PHOTO_LIMIT: '더 많은 사진을 올리고 싶으신가요?',
   AI_SUMMARY: '팀 대화 요약이 필요하신가요?',
   'ai-summary': '팀 대화 요약이 필요하신가요?',
+  'team-members': '팀 인원 제한 없이 함께하려면 Flex를 확인해 보세요.',
+  stats: '작업물의 유입 경로와 채용 담당자 조회 수를 확인해 보세요.',
 };
 export function PlanSelector({ reason }: { reason: string }) {
   const { login, role, status } = useViewer();
@@ -38,7 +40,7 @@ export function PlanSelector({ reason }: { reason: string }) {
     'billing',
     parseAsStringLiteral(['MONTHLY', 'YEARLY'] as const).withDefault('MONTHLY'),
   );
-  const [teamId, setTeamId] = useState('');
+  const [teamId, setTeamId] = useQueryState('teamId', parseAsString.withDefault(''));
   const [order, setOrder] = useState<CheckoutOrder | null>(null);
   const checkout = useMutation({ mutationFn: createCheckout, onSuccess: setOrder });
   if (plans.isPending)
@@ -169,7 +171,7 @@ export function PlanSelector({ reason }: { reason: string }) {
                             value={teamId}
                             className={styles.input}
                             disabled={checkout.isPending}
-                            onChange={(event) => setTeamId(event.target.value)}
+                            onChange={(event) => void setTeamId(event.target.value)}
                           >
                             <option value="">팀을 선택해 주세요</option>
                             {teams.data?.items.map((team) => (
@@ -178,6 +180,12 @@ export function PlanSelector({ reason }: { reason: string }) {
                               </option>
                             ))}
                           </select>
+                          {teamId && !selectedTeam && (
+                            <p className={styles.notice}>
+                              이 팀을 선택할 수 없어요. 결제할 수 있는 팀 목록에서 다시 선택해
+                              주세요.
+                            </p>
+                          )}
                           {teams.data?.items.length === 0 && (
                             <p className={styles.description}>결제할 수 있는 팀이 없어요.</p>
                           )}

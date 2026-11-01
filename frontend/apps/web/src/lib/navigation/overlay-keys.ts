@@ -20,6 +20,12 @@ export const OVERLAY_KEYS = [
   'issue-schedule',
   'issue-status',
   'calendar-day',
+  'team-switcher',
+  'team-settings-action',
+  'admin-user-detail',
+  'admin-user-action',
+  'chat-pull-requests',
+  'stats-featured',
   'recruit-filter',
   'application-cancel',
 ] as const;
