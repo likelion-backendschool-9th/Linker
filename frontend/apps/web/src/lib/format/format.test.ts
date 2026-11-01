@@ -1,6 +1,6 @@
 import { formatCount } from './number';
 import { countChars, normalizeLineBreaks } from './text';
-import { formatDate, formatRelativeTime, toKstIso } from './time';
+import { daysUntil, formatDate, formatRelativeTime, toKstIso } from './time';
 
 const now = new Date('2026-10-31T03:00:00Z'); // 12:00 KST
 
@@ -26,6 +26,16 @@ describe('formatDate', () => {
 describe('toKstIso', () => {
   it('writes the +09:00 offset', () => {
     expect(toKstIso('2026-10-31T03:00:00Z')).toBe('2026-10-31T12:00:00+09:00');
+  });
+});
+
+describe('daysUntil', () => {
+  it('counts KST calendar days to a date', () => {
+    expect(daysUntil('2026-10-31', now)).toBe(0);
+    expect(daysUntil('2026-11-05', now)).toBe(5);
+    expect(daysUntil('2026-10-30', now)).toBe(-1);
+    // 2026-10-31 15:30 UTC is already 2026-11-01 in KST
+    expect(daysUntil('2026-11-01', new Date('2026-10-31T15:30:00Z'))).toBe(0);
   });
 });
 

@@ -20,6 +20,8 @@ export const OVERLAY_KEYS = [
   'issue-schedule',
   'issue-status',
   'calendar-day',
+  'recruit-filter',
+  'application-cancel',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

@@ -1,3 +1,5 @@
+import { RECRUIT_ROLE_LABELS, type RecruitRoleKey } from '@/features/recruit/recruit-labels';
+
 import { dateOnly, del, fail, get, newId, post, put, type MockRoute } from '../core/define';
 import { RECRUITS, type MockRecruit } from '../fixtures/recruits';
 import { TEAMS } from '../fixtures/teams';
@@ -19,7 +21,7 @@ function ownRecruit(id: string) {
 
 function applyForm(item: MockRecruit, body: Record<string, unknown>) {
   const roles =
-    (body.roles as { id?: number; name: string; headcount: number }[] | undefined) ?? [];
+    (body.roles as { id?: number; role: RecruitRoleKey; headcount: number }[] | undefined) ?? [];
   Object.assign(item, {
     title: String(body.title ?? item.title),
     intro: String(body.intro ?? item.intro),
@@ -34,7 +36,8 @@ function applyForm(item: MockRecruit, body: Record<string, unknown>) {
   if (roles.length) {
     item.roles = roles.map((role) => ({
       id: role.id ?? newId(),
-      name: role.name,
+      role: role.role,
+      name: RECRUIT_ROLE_LABELS[role.role],
       headcount: role.headcount,
       filled: item.roles.find((r) => r.id === role.id)?.filled ?? 0,
     }));
