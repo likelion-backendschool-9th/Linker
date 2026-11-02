@@ -56,7 +56,14 @@ export function RecruiterLoginForm({ returnTo }: { returnTo: string }) {
           {form.formState.errors.password && <span id="recruiter-password-error" className={styles.error}>{form.formState.errors.password.message}</span>}
         </div>
         {apiError && <p className={styles.errorBox} role="alert">{apiError}</p>}
-        <Button block type="submit" disabled={login.isPending} aria-busy={login.isPending}>{login.isPending ? '로그인 중…' : '로그인'}</Button>
+        <Button
+          block
+          type="submit"
+          disabled={login.isPending}
+          aria-busy={login.isPending}
+          pending={login.isPending}
+          pendingLabel="로그인 중…"
+        >로그인</Button>
         <nav className={styles.actionRow} aria-label="계정 도움말">
           <Link href="/recruiter/reset">비밀번호를 잊었어요</Link>
           <Link href="/recruiter/signup">채용 담당자 회원가입</Link>

@@ -8,6 +8,7 @@ import { useEffect, useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewer } from '@/lib/auth/viewer-context';
 
@@ -71,12 +72,9 @@ export function RepoStep({ teamId, repoId, onSelect, onNext }: RepoStepProps) {
       </div>
 
       {repos.isPending ? (
-        <div aria-busy="true">
-          <p role="status" className="sr-only">
-            레포를 불러오고 있어요.
-          </p>
+        <LoadingIndicator label="레포를 불러오고 있어요." variant="block" labelHidden>
           <Skeleton count={3} />
-        </div>
+        </LoadingIndicator>
       ) : repos.isError ? (
         <ErrorState title="레포를 불러오지 못했어요" onRetry={() => void repos.refetch()} />
       ) : items.length === 0 ? (

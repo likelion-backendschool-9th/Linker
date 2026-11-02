@@ -81,8 +81,14 @@ function RejectForm({ recruitId, applicationId, overlay }: RejectFormProps) {
         <Button variant="outline" onClick={() => overlay.close()}>
           취소
         </Button>
-        <Button type="submit" variant="danger" aria-disabled={reject.isPending}>
-          {reject.isPending ? '거절하는 중…' : '거절하기'}
+        <Button
+          type="submit"
+          variant="danger"
+          aria-disabled={reject.isPending}
+          pending={reject.isPending}
+          pendingLabel="거절하는 중…"
+        >
+          거절하기
         </Button>
       </div>
     </form>

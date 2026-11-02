@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   notificationCountOptions,
@@ -130,10 +131,9 @@ export function NotificationList() {
       )}
       <section aria-label="알림 목록" aria-busy={list.isPending}>
         {list.isPending ? (
-          <>
-            <p role="status">알림을 불러오고 있어요.</p>
+          <LoadingIndicator label="알림을 불러오고 있어요." variant="block">
             <Skeleton count={3} />
-          </>
+          </LoadingIndicator>
         ) : list.isError && !list.data ? (
           <ErrorState
             onRetry={() => {
@@ -185,8 +185,10 @@ export function NotificationList() {
             onClick={() => {
               void list.fetchNextPage();
             }}
+            pending={list.isFetchingNextPage}
+            pendingLabel="불러오는 중…"
           >
-            {list.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
+            더 보기
           </Button>
         )}
       </section>

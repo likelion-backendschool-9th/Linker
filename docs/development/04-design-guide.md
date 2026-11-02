@@ -214,6 +214,13 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 
 **Disabled button** — 50% opacity with `not-allowed` cursor; the reason is given in text, never by the dimming alone.
 
+**Loading** — the shared `LoadingIndicator` uses the Composing preset of `thinking-orbs`.
+- Sizes: `--size-loading-inline` 20px; `--size-loading-block` 64px. These match vendor presets; do not scale them with CSS. The 64px mark sits inside an existing large placeholder, never a new page-height block.
+- Keep existing Korean status copy and skeleton shapes/counts. The orb is decorative (`aria-hidden`); one status text announces progress. Skeletons inside the indicator stay static; standalone Skeleton defaults stay unchanged.
+- Ink uses the existing surface's text token. White/soft surfaces use dark ink; black primary buttons use `--color-on-primary` with the inverse ink tuning. Danger buttons retain `--color-status-error`. No new palette, glow, shadow, cursor effect or app dark mode.
+- `Button pending` is opt-in for native buttons. Its original content reserves the same footprint and accessible action name while the 20px orb overlays it; optional `pendingLabel` is announced outside the busy button. Default buttons and `asChild` links retain their behavior. Preserve pre-existing disabled styling and do not derive pending from disabled.
+- Fixed Canvas rendering is the loading-only exception to the PRD's DOM motion rule. Reduced motion is static; the renderer pauses offscreen/hidden and on WebView background messages. Missing Canvas falls back to static token-colored decoration and HTML text.
+
 **Destructive button** — the outline button with a `--color-status-error` label (delete, leave, block). Never a red fill.
 
 **Not defined yet** — calendar cells, chat bubbles, dark mode. Compose from ch. 1–4 for now; when a decision is made, add it here (and the token if one is needed) in the same change.
@@ -240,3 +247,4 @@ The Mobbin-based reference this guide was built from contains parts Linker does 
 - [ ] Buttons and inputs are at least 44px; input font is 16px.
 - [ ] Error, success and warning states have a message, not color alone.
 - [ ] No shadow except `--shadow-segment-active`.
+- [ ] Shared Composing loading only; normal/empty/error layouts, buttons and navigation retain their existing sizes/colors. Compare pending and settled states at mobile/tablet/desktop and the GNB breakpoint.

@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { GitHubMark as Github } from '@/features/github/github-mark';
@@ -245,7 +246,9 @@ export function TeamSetup() {
                 description="연결을 마치면 접근이 허용된 레포가 여기에 표시돼요."
               />
             ) : repos.isPending ? (
-              <Skeleton />
+              <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+                <Skeleton />
+              </LoadingIndicator>
             ) : repos.isError ? (
               <ErrorState onRetry={() => void repos.refetch()} />
             ) : (
@@ -284,7 +287,9 @@ export function TeamSetup() {
             </p>
             {previewTeam ? (
               boards.isPending ? (
-                <Skeleton />
+                <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+                  <Skeleton />
+                </LoadingIndicator>
               ) : boards.isError ? (
                 <ErrorState onRetry={() => void boards.refetch()} />
               ) : (
@@ -363,7 +368,9 @@ export function TeamSetup() {
                 팀원이 이슈에 담당자·라벨을 정하려면 쓰기 권한이 필요해요
               </p>
             )}
-            {previewTeam && permission.isPending && <Skeleton />}
+            {previewTeam && permission.isPending && <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+              <Skeleton />
+            </LoadingIndicator>}
             {previewTeam && permission.isError && (
               <ErrorState
                 title="기본 레포 권한을 확인하지 못했어요"

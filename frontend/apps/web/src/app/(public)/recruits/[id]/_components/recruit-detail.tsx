@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { RECRUIT_FORMAT_LABELS, RECRUIT_GOAL_LABELS } from '@/features/recruit/recruit-labels';
@@ -43,10 +44,9 @@ export function RecruitDetail({ recruitId }: { recruitId: string }) {
 
   if (detail.isPending) {
     return (
-      <div aria-busy="true">
-        <p role="status">모집 글을 불러오고 있어요.</p>
+      <LoadingIndicator label="모집 글을 불러오고 있어요." variant="block">
         <Skeleton count={3} />
-      </div>
+      </LoadingIndicator>
     );
   }
   if (detail.isError) return <ErrorState onRetry={() => void detail.refetch()} />;

@@ -283,7 +283,7 @@ API and permission verification per feature is in the [GitHub API verification r
 | Item | Requirement |
 | --- | --- |
 | Supported environments | Responsive browser web (mobile-first, desktop supported) and an Expo WebView app wrapping the same screens. App installed as a development build |
-| Performance | Virtual scroll for feed and chat; animate only transform/opacity; no layout animations on long lists |
+| Performance | Virtual scroll for feed and chat; DOM animation uses transform/opacity, with no layout animations on long lists. The shared Composing loading indicator may redraw inside a fixed 20/64px Canvas only; static under reduced motion, paused offscreen/background, never repeated per list item |
 | Realtime | Chat over WebSocket (STOMP); auto-reconnect and reload missed messages |
 | AI summary | One interface for the server's LLM connection; default is self-hosted Ollama open model (free, conversations stay in-house). Switch to a low-cost LLM API if quality falls short. On-demand (button), no recording or transcription |
 | Security | GitHub tokens encrypted on server, webhook signature verification, httpOnly cookie login, 2FA for back office, recruiter passwords one-way hashed (bcrypt) |

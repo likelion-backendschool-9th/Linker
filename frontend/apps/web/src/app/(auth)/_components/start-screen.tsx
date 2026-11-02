@@ -52,8 +52,15 @@ export function StartScreen() {
           </ol>
 
           <div className={styles.actions}>
-            <Button block onClick={onLogin} disabled={pending} aria-busy={pending}>
-              {pending ? 'GitHub에 연결하고 있어요…' : 'GitHub로 시작'}
+            <Button
+              block
+              onClick={onLogin}
+              disabled={pending}
+              aria-busy={pending}
+              pending={pending}
+              pendingLabel="GitHub에 연결하고 있어요…"
+            >
+              GitHub로 시작
             </Button>
             {error && (
               <p className={styles.error} role="alert">

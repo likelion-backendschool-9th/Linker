@@ -10,6 +10,7 @@ import { parseAsString, useQueryState } from 'nuqs';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { formatDate } from '@/lib/format/time';
@@ -48,7 +49,9 @@ export function StatsView() {
     enabled: summary.data?.isPro === true && !summary.isFetching,
   });
   const [postId, setPost] = useQueryState('post', parseAsString);
-  if (summary.isPending || summary.isFetching) return <Skeleton variant="card" count={3} />;
+  if (summary.isPending || summary.isFetching) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton variant="card" count={3} />
+  </LoadingIndicator>;
   if (summary.isError) return <ErrorState onRetry={() => void summary.refetch()} />;
   const selected =
     summary.data.items.find((p) => String(p.postId) === postId) ?? summary.data.items[0];
@@ -142,7 +145,9 @@ export function StatsView() {
               채용 담당자 조회
             </h2>
             {recruiters.isPending ? (
-              <Skeleton />
+              <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+                <Skeleton />
+              </LoadingIndicator>
             ) : recruiters.isError ? (
               <ErrorState onRetry={() => void recruiters.refetch()} />
             ) : (
@@ -171,7 +176,9 @@ export function StatsView() {
                 </Button>
               </div>
               {posts.isPending ? (
-                <Skeleton variant="card" />
+                <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+                  <Skeleton variant="card" />
+                </LoadingIndicator>
               ) : posts.isError ? (
                 <ErrorState onRetry={() => void posts.refetch()} />
               ) : detail ? (

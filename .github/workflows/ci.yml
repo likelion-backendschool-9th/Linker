@@ -79,6 +79,34 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  frontend_loading:
+    name: frontend-loading
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm --filter web exec playwright test --config playwright.mock.config.ts loading-ui.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: loading-browser-results
+          path: frontend/apps/web/test-results
+
   backend:
     name: backend
     needs: changes
@@ -167,7 +195,7 @@ jobs:
   # 룰셋 필수 체크는 이거 하나만 걸면 됨
   ci-result:
     name: ci-result
-    needs: [changes, frontend, backend, infrastructure]
+    needs: [changes, frontend, frontend_loading, backend, infrastructure]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -178,9 +206,10 @@ jobs:
             exit 1
           fi
           if [[ "${{ needs.frontend.result }}" == "failure" || "${{ needs.frontend.result }}" == "cancelled" || \
+                "${{ needs.frontend_loading.result }}" == "failure" || "${{ needs.frontend_loading.result }}" == "cancelled" || \
                 "${{ needs.backend.result }}" == "failure"  || "${{ needs.backend.result }}" == "cancelled" || \
                 "${{ needs.infrastructure.result }}" == "failure" || "${{ needs.infrastructure.result }}" == "cancelled" ]]; then
             echo "CI 실패"
             exit 1
           fi
-          echo "CI 통과 (frontend: ${{ needs.frontend.result }}, backend: ${{ needs.backend.result }}, infrastructure: ${{ needs.infrastructure.result }})"
+          echo "CI 통과 (frontend: ${{ needs.frontend.result }}, frontend-loading: ${{ needs.frontend_loading.result }}, backend: ${{ needs.backend.result }}, infrastructure: ${{ needs.infrastructure.result }})"

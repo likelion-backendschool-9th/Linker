@@ -101,13 +101,13 @@ test('operator reports stay hidden until mock OTP, then detail and review action
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: '숨기기', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('신고 처리를 저장했어요');
+  await expect(page.getByRole('status').filter({ hasText: '신고 처리를 저장했어요' })).toBeVisible();
 
   await page.getByRole('button', { name: '이의 제기' }).click();
   await expect(page.getByText(/이의 제기 #1/)).toBeVisible();
   await page.getByRole('button', { name: '수용', exact: true }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: '결정 저장' }).click();
-  await expect(page.getByRole('status')).toContainText('이의 제기 결정을 저장했어요');
+  await expect(page.getByRole('status').filter({ hasText: '이의 제기 결정을 저장했어요' })).toBeVisible();
 
   await page.clock.fastForward(30 * 60 * 1000);
   await expect(page.getByRole('heading', { name: '운영자 추가 인증' })).toBeVisible();

@@ -1,13 +1,13 @@
 import { PageFrame } from '@/components/layout/page-frame';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CalendarLoading() {
   return (
     <PageFrame title="캘린더">
-      <div aria-busy="true">
-        <p role="status">캘린더를 불러오고 있어요.</p>
+      <LoadingIndicator label="캘린더를 불러오고 있어요." variant="block">
         <Skeleton count={2} />
-      </div>
+      </LoadingIndicator>
     </PageFrame>
   );
 }

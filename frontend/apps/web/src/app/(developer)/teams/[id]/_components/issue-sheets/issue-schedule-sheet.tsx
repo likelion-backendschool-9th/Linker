@@ -127,8 +127,8 @@ function ScheduleForm({ value, onSave, onDone }: IssueScheduleSheetProps & { onD
         </p>
       )}
       <div className={styles.actions}>
-        <Button type="submit" aria-disabled={pending}>
-          {pending ? '저장하는 중…' : askPast ? '지난 날짜로 저장' : '저장'}
+        <Button type="submit" aria-disabled={pending} pending={pending} pendingLabel="저장하는 중…" >
+          {askPast ? '지난 날짜로 저장' : '저장'}
         </Button>
       </div>
     </form>

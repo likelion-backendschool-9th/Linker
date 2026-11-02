@@ -11,6 +11,7 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import styles from '@/features/teams/team-ui.module.css';
 import { TEAM } from '@/lib/policy';
@@ -66,7 +67,9 @@ function WorkspaceTeams() {
     'status',
     parseAsStringLiteral(FILTERS).withDefault('all'),
   );
-  if (teams.isPending) return <Skeleton variant="card" count={3} />;
+  if (teams.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton variant="card" count={3} />
+  </LoadingIndicator>;
   if (teams.isError) return <ErrorState onRetry={() => void teams.refetch()} />;
   const activeCount = teams.data.items.filter((team) => team.status !== 'ARCHIVED').length;
   const atLimit = activeCount >= TEAM.maxTeamsPerUser;

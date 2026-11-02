@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOverlay, type OverlayControl } from '@/lib/navigation/use-overlay';
 
@@ -47,7 +48,9 @@ function TagChoices({
   const [selected, setSelected] = useState(value);
   const full = selected.length >= max;
 
-  if (tags.isPending) return <Skeleton count={2} />;
+  if (tags.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton count={2} />
+  </LoadingIndicator>;
   if (tags.isError) {
     return <ErrorState title="기술 스택을 불러오지 못했어요" onRetry={() => void tags.refetch()} />;
   }

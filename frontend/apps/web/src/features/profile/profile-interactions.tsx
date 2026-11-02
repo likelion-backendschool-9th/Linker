@@ -19,6 +19,7 @@ import type { ProfilePeopleResponse, PublicProfile } from './profile-types';
 import { profileQueryKey } from './profile-types';
 
 import styles from './profile-interactions.module.css';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 export function ProfileInteractions({
   profile,
@@ -205,7 +206,7 @@ function ProfilePeopleSheet({
         aria-labelledby={type === 'followers' ? 'profile-followers-tab' : 'profile-followings-tab'}
       >
         {people.isPending ? (
-          <p role="status">목록을 불러오고 있어요.</p>
+          <p role="status"><LoadingIndicator label="목록을 불러오고 있어요." announce={false} /></p>
         ) : people.isError ? (
           <p className={styles.error} role="alert">
             목록을 불러오지 못했어요. 다시 시도해 주세요.

@@ -12,6 +12,7 @@
 
 ## 리뷰 참고 사항
 <!-- 리뷰어가 중점적으로 확인할 내용이 있다면 작성해 주세요. -->
+<!-- Frontend pending UI: use the shared Composing indicator/Button pending, or explain the semantic exception. Include default/loading/empty/error layout comparison and unverified browser/device environments. -->
 
 ## 체크리스트
 - [ ] PR 대상 브랜치를 확인했습니다. (작업 브랜치 → dev / dev → main)

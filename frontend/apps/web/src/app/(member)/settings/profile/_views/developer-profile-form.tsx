@@ -305,8 +305,10 @@ export function DeveloperProfileForm({
             onClick={() => sync.mutate()}
             disabled={sync.isPending || form.formState.isDirty}
             aria-busy={sync.isPending}
+            pending={sync.isPending}
+            pendingLabel="불러오는 중…"
           >
-            {sync.isPending ? '불러오는 중…' : 'GitHub에서 다시 불러오기'}
+            GitHub에서 다시 불러오기
           </Button>
           <Button type="button" variant="outline" onClick={goBack}>
             취소
@@ -315,8 +317,10 @@ export function DeveloperProfileForm({
             type="submit"
             disabled={!form.formState.isDirty || save.isPending}
             aria-busy={save.isPending}
+            pending={save.isPending}
+            pendingLabel="저장 중…"
           >
-            {save.isPending ? '저장 중…' : '저장'}
+            저장
           </Button>
         </div>
         {error && (

@@ -12,6 +12,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -140,13 +141,13 @@ export function IssueList({ teamId }: { teamId: string }) {
               }
               if (!refresh.isPending) refresh.mutate();
             }}
+            pending={refresh.isPending}
+            pendingLabel="불러오는 중…"
           >
             <RefreshCw aria-hidden />
-            {refresh.isPending
-              ? '불러오는 중…'
-              : cooldown.left !== null
-                ? `${cooldown.left}초 후 새로 고침`
-                : '새로 고침'}
+            {cooldown.left !== null
+              ? `${cooldown.left}초 후 새로 고침`
+              : '새로 고침'}
           </Button>
           {canWrite && (
             <Button asChild>
@@ -171,10 +172,9 @@ export function IssueList({ teamId }: { teamId: string }) {
         className={styles.content}
       >
         {issues.isPending ? (
-          <>
-            <p role="status">이슈를 불러오고 있어요.</p>
+          <LoadingIndicator label="이슈를 불러오고 있어요." variant="block">
             <Skeleton count={4} />
-          </>
+          </LoadingIndicator>
         ) : issues.isError && !issues.data ? (
           <ErrorState onRetry={() => void issues.refetch()} />
         ) : items.length === 0 ? (
@@ -212,6 +212,7 @@ export function IssueList({ teamId }: { teamId: string }) {
                           variant="outline"
                           disabled={addToProject.isPending}
                           onClick={() => addToProject.mutate(issue.id)}
+                          pending={addToProject.isPending && addToProject.variables === issue.id}
                         >
                           프로젝트에 추가
                           <span className="sr-only">: {issue.title}</span>
@@ -233,8 +234,10 @@ export function IssueList({ teamId }: { teamId: string }) {
             block
             disabled={issues.isFetchingNextPage}
             onClick={() => void issues.fetchNextPage()}
+            pending={issues.isFetchingNextPage}
+            pendingLabel="불러오는 중…"
           >
-            {issues.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
+            더 보기
           </Button>
         )}
       </section>

@@ -9,6 +9,7 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { GitHubMark } from '@/features/github/github-mark';
@@ -71,7 +72,9 @@ export function PullRequestSheet({ roomId, login }: { roomId: number; login: str
             </button>
           </div>
           {query.isPending ? (
-            <Skeleton count={3} />
+            <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+              <Skeleton count={3} />
+            </LoadingIndicator>
           ) : query.isError ? (
             <ErrorState onRetry={() => void query.refetch()} />
           ) : query.data.items.length ? (

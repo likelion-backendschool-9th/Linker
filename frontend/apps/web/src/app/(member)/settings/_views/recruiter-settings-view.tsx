@@ -59,7 +59,13 @@ export function RecruiterSettingsView({ login, settings }: { login: string; sett
           <PasswordField id="confirm-password" label="새 비밀번호 확인" error={form.formState.errors.confirmPassword?.message} register={form.register('confirmPassword')} />
           <p className={styles.description}>비밀번호는 {RECRUITER.password.min}~{RECRUITER.password.max}자로 입력해 주세요.</p>
           {passwordError && <p className={styles.error} role="alert">{passwordError}</p>}
-          <Button type="submit" variant="outline" disabled={changePassword.isPending}>{changePassword.isPending ? '변경 중…' : '비밀번호 변경'}</Button>
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={changePassword.isPending}
+            pending={changePassword.isPending}
+            pendingLabel="변경 중…"
+          >비밀번호 변경</Button>
         </form>
       </section>
     </SettingsCommon>

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { GitHubMark as Github } from '@/features/github/github-mark';
@@ -43,7 +44,9 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
   const invites = useQuery({ ...invitesOptions(teamId), enabled: canManage });
   const action = useOverlay('team-settings-action');
   const external = useOpenExternal();
-  if (settings.isPending || members.isPending) return <Skeleton variant="card" count={3} />;
+  if (settings.isPending || members.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton variant="card" count={3} />
+  </LoadingIndicator>;
   if (settings.isError || members.isError)
     return (
       <ErrorState
@@ -214,7 +217,9 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
             초대 링크는 {TEAM.inviteValidDays}일 동안 사용할 수 있어요.
           </p>
           {invites.isPending ? (
-            <Skeleton />
+            <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+              <Skeleton />
+            </LoadingIndicator>
           ) : invites.isError ? (
             <ErrorState onRetry={() => void invites.refetch()} />
           ) : invites.data.items.length ? (

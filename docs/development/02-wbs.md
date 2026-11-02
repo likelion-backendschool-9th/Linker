@@ -170,6 +170,7 @@ Not a page; 7 common controllers. Other pages borrow these APIs.
 - [ ] **E** Report rules (one per person per target, temp hide at 5 distinct reporters), block filter for queries (shared by feed, profile, comments, 1:1 chat, applications). Store blocking periods in `user_blocks` (ERD ch. 4-8); unblock closes the period without deleting it. Current block lists use active rows; D uses all periods for DM visibility.
 - [ ] **E** Frontend monorepo, orval, TanStack Query, Zustand, nuqs, API fetch function `api-fetch.ts` and shared error-code handling (D1 morning, others wait on it; blueprint ch. 2, 5-4), Vercel deploy
 - [ ] **Everyone** Sentry; agree on OpenAPI tag rule (rule 6 in 1-3)
+- [ ] **E + C + page owners** Shared Composing loading UI: E/common UI integration, C/contract and browser checks, A–E/adapt their pending regions. Use existing tokens/frames and preserve API behavior; blueprint §5-5. This is foundation UI, with no new page/controller/endpoint.
 - [ ] **Everyone** Frontend mock data (until the backend is live): each page owner keeps their page's endpoints in `frontend/apps/web/src/mocks/pages/` in step with the endpoint list above, and compares field names with the real OpenAPI before removing the mock file (blueprint §1-2)
 
 ---

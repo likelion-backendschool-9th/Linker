@@ -9,6 +9,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import { toKst } from '@/lib/format/time';
 
 import styles from './profile.module.css';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 type ContributionResponse = {
   month: string;
@@ -43,7 +44,7 @@ export function ContributionCalendar({ login }: { login: string }) {
     return (
       <section className={styles.section} aria-labelledby="contribution-title">
         <h2 id="contribution-title">GitHub 기여</h2>
-        <p role="status">기여 기록을 불러오고 있어요.</p>
+        <p role="status"><LoadingIndicator label="기여 기록을 불러오고 있어요." announce={false} /></p>
       </section>
     );
   }

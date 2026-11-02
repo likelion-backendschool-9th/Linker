@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { ISSUE } from '@/lib/policy';
@@ -72,10 +73,9 @@ function AssigneeForm<Key extends readonly unknown[]>({
   }
   if (query.isPending) {
     return (
-      <div aria-busy="true">
-        <p role="status">담당자 목록을 불러오고 있어요.</p>
+      <LoadingIndicator label="담당자 목록을 불러오고 있어요." variant="inline">
         <Skeleton variant="line" count={3} />
-      </div>
+      </LoadingIndicator>
     );
   }
 
@@ -159,8 +159,8 @@ function AssigneeForm<Key extends readonly unknown[]>({
         </p>
       )}
       <div className={styles.actions}>
-        <Button type="submit" aria-disabled={pending}>
-          {pending ? '저장하는 중…' : '저장'}
+        <Button type="submit" aria-disabled={pending} pending={pending} pendingLabel="저장하는 중…" >
+          저장
         </Button>
       </div>
     </form>

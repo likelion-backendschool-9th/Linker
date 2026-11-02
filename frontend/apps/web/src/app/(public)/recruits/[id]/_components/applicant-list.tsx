@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -35,10 +36,9 @@ export function ApplicantList({ recruit }: { recruit: RecruitDetail }) {
 
   if (applicants.isPending) {
     return (
-      <div aria-busy="true">
-        <p role="status">지원자를 불러오고 있어요.</p>
+      <LoadingIndicator label="지원자를 불러오고 있어요." variant="block">
         <Skeleton count={3} />
-      </div>
+      </LoadingIndicator>
     );
   }
   if (applicants.isError) return <ErrorState onRetry={() => void applicants.refetch()} />;

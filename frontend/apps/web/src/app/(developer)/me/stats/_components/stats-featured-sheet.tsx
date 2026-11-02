@@ -7,6 +7,7 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { OverlayLink } from '@/components/overlay/overlay-link';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import teamStyles from '@/features/teams/team-ui.module.css';
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -47,7 +48,9 @@ export function StatsFeaturedSheet({
         </Button>
       )}
       {profile.isPending ? (
-        <Skeleton />
+        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+          <Skeleton />
+        </LoadingIndicator>
       ) : profile.isError ? (
         <ErrorState onRetry={() => void profile.refetch()} />
       ) : (

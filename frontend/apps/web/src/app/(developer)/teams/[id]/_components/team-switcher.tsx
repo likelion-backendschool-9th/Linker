@@ -11,6 +11,7 @@ import { OverlayLink } from '@/components/overlay/overlay-link';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import styles from '@/features/teams/team-ui.module.css';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -41,7 +42,9 @@ export function TeamSwitcher({ teamId, name }: { teamId: string; name: string })
       }
     >
       {teams.isPending ? (
-        <Skeleton count={3} />
+        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+          <Skeleton count={3} />
+        </LoadingIndicator>
       ) : teams.isError ? (
         <ErrorState onRetry={() => void teams.refetch()} />
       ) : teams.data.items.length ? (

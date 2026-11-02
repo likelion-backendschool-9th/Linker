@@ -9,6 +9,7 @@ import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { createReposOptions, templatesOptions, type TemplateSummary } from '../_lib/create-queries';
@@ -49,10 +50,9 @@ export function RepoTemplateStep({
 
   if (repos.isPending) {
     return (
-      <div aria-busy="true">
-        <p role="status">레포를 불러오고 있어요.</p>
+      <LoadingIndicator label="레포를 불러오고 있어요." variant="inline">
         <Skeleton variant="line" count={2} />
-      </div>
+      </LoadingIndicator>
     );
   }
   if (repos.isError) return <ErrorState onRetry={() => void repos.refetch()} />;
@@ -145,7 +145,9 @@ export function RepoTemplateStep({
               onRetry={() => void templates.refetch()}
             />
           ) : templates.isPending ? (
-            <Skeleton variant="line" count={3} />
+            <LoadingIndicator label="불러오는 중…" labelHidden variant="inline">
+              <Skeleton variant="line" count={3} />
+            </LoadingIndicator>
           ) : (
             groups.map((group) => (
               <div key={group.title} className={styles.group}>

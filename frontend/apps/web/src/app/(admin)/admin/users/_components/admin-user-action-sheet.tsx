@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -34,7 +35,9 @@ export function AdminUserActionSheet() {
       description="입력 화면 미리보기예요. 제재·해제·열람·환불은 실행되지 않아요."
     >
       {user.isPending ? (
-        <Skeleton />
+        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+          <Skeleton />
+        </LoadingIndicator>
       ) : user.isError ? (
         <ErrorState onRetry={() => void user.refetch()} />
       ) : (

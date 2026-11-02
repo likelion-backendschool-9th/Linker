@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -26,7 +27,9 @@ export function AdminUserDetailPanel({ userId }: { userId: string }) {
   const query = useQuery(adminUserOptions(userId));
   const action = useOverlay('admin-user-action');
   const detail = useOverlay('admin-user-detail');
-  if (query.isPending) return <Skeleton variant="card" count={2} />;
+  if (query.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton variant="card" count={2} />
+  </LoadingIndicator>;
   if (query.isError) return <ErrorState onRetry={() => void query.refetch()} />;
   const user = query.data;
   return (

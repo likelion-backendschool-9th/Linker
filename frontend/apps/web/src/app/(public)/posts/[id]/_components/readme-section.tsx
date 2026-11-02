@@ -9,6 +9,7 @@ import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 
@@ -39,7 +40,9 @@ export function ReadmeSection({ postId }: { postId: string }) {
       <div id={`${id}-body`} hidden={!open}>
         {open &&
           (readme.isPending ? (
-            <Skeleton count={2} />
+            <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+              <Skeleton count={2} />
+            </LoadingIndicator>
           ) : readme.isError ? (
             <ErrorState title="README를 불러오지 못했어요" onRetry={() => void readme.refetch()} />
           ) : (

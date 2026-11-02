@@ -122,8 +122,10 @@ function RoleFullBody({ recruit, applicationId, overlay }: RoleFullBodyProps) {
             onClick={() => {
               if (!accept.isPending && row) accept.mutate();
             }}
+            pending={accept.isPending}
+            pendingLabel="수락하는 중…"
           >
-            {accept.isPending ? '수락하는 중…' : '인원 늘리고 수락'}
+            인원 늘리고 수락
           </Button>
         )}
       </div>

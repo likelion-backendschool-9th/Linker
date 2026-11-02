@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay, type OverlayControl } from '@/lib/navigation/use-overlay';
@@ -33,7 +34,9 @@ function Likers({ postId, overlay }: { postId: string; overlay: OverlayControl }
   const viewer = useViewer();
   const likers = useQuery(likersOptions(viewer.login, postId));
 
-  if (likers.isPending) return <Skeleton count={3} />;
+  if (likers.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton count={3} />
+  </LoadingIndicator>;
   if (likers.isError) return <ErrorState onRetry={() => void likers.refetch()} />;
   if (likers.data.items.length === 0) return <EmptyState title="아직 좋아요가 없어요." />;
 

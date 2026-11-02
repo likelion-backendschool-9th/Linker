@@ -18,6 +18,7 @@ import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { RECRUIT_FORMAT_LABELS, RECRUIT_ROLE_LABELS } from '@/features/recruit/recruit-labels';
@@ -309,7 +310,9 @@ function PagedList<T extends { id: number }>({
         <p role="status" className="sr-only">
           {label}을 불러오고 있어요.
         </p>
-        <Skeleton count={3} />
+        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+          <Skeleton count={3} />
+        </LoadingIndicator>
       </div>
     );
   }
@@ -334,8 +337,10 @@ function PagedList<T extends { id: number }>({
             block
             disabled={isFetchingNextPage}
             onClick={() => void fetchNextPage()}
+            pending={isFetchingNextPage}
+            pendingLabel="불러오는 중…"
           >
-            {isFetchingNextPage ? '불러오는 중…' : '더 보기'}
+            더 보기
           </Button>
         </>
       )}

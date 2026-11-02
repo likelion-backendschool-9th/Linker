@@ -215,8 +215,10 @@ export function RecruiterProfileForm({
             type="submit"
             disabled={!form.formState.isDirty || save.isPending}
             aria-busy={save.isPending}
+            pending={save.isPending}
+            pendingLabel="저장 중…"
           >
-            {save.isPending ? '저장 중…' : '저장'}
+            저장
           </Button>
         </div>
         {error && (

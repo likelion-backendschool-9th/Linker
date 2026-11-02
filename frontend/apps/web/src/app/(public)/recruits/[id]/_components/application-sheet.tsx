@@ -11,6 +11,7 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -76,7 +77,9 @@ function ApplicationBody({ recruit, applicationId, overlay }: ApplicationBodyPro
     },
   });
 
-  if (application.isPending) return <Skeleton count={3} />;
+  if (application.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+    <Skeleton count={3} />
+  </LoadingIndicator>;
   if (application.isError) {
     return (
       <ErrorState title="지원서를 불러오지 못했어요" onRetry={() => void application.refetch()} />
@@ -122,8 +125,10 @@ function ApplicationBody({ recruit, applicationId, overlay }: ApplicationBodyPro
               onClick={() => {
                 if (!accept.isPending) accept.mutate();
               }}
+              pending={accept.isPending}
+              pendingLabel="수락하는 중…"
             >
-              {accept.isPending ? '수락하는 중…' : '수락'}
+              수락
             </Button>
           </div>
         </>

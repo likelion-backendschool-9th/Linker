@@ -233,6 +233,10 @@ Expo 실기기 실행은 `frontend/apps/mobile/.env.example`의 웹 주소를 �
 
 ### 검증 명령
 
+팀 공통 로딩은 **Composing**으로 통일합니다. 팀원은 공통 변경을 작업 브랜치에 반영한 뒤 `frontend/`에서 `pnpm install --frozen-lockfile`로 의존성을 맞춥니다. 새 로딩은 `@/components/ui/loading-indicator`, 실제 버튼 대기는 `Button pending`을 사용합니다. 사용 예제·예외는 [프론트 청사진 §5-5](docs/development/03-frontend-blueprint.md#5-5-shared-loading-contract-all-page-owners), 크기·표면별 색상은 [디자인 가이드](docs/development/04-design-guide.md)를 따릅니다.
+
+로딩 브라우저 회귀는 `pnpm --filter web exec playwright test --config playwright.mock.config.ts loading-ui.spec.ts`로 실행합니다. 전용 목업 Next 서버(3100)와 테스트용 UI fixture 서버(3101)를 사용하며 제품 라우트·실제 DB/결제 서버를 추가하지 않습니다.
+
 ```bash
 cd frontend
 pnpm lint

@@ -196,7 +196,7 @@ guest / developer / operator: `home, recruits, workspace, chats` (guest Workspac
 Server `page.tsx` prefetches with orval query options into `getQueryClient()` → `<HydrationBoundary state={dehydrate(qc)}>` → client hooks render immediately from cache. nuqs filters parsed on the server with the shared cache parser (`_lib/issue-filters.ts`).
 - `generateMetadata` and `page` share data through `_lib/get-*.ts` wrapped in React `cache()`.
 - Read-only areas (repo card, terms body) render on the server without prefetch.
-- Heavy lower areas go in `<Suspense fallback={<Skeleton/>}>`.
+- Heavy lower areas use a shared fallback, e.g. `<Suspense fallback={<LoadingIndicator label="불러오는 중…" labelHidden variant="block"><Skeleton count={2}/></LoadingIndicator>}>`. Existing content is not replaced during background revalidation.
 
 ### 5-3. When to split a component
 Split only for one of these reasons, written as a one-line comment at the top (`// client boundary: optimistic like`):
@@ -218,6 +218,16 @@ NEVER split only because a file is long (one region of one screen stays one file
 - Shared error handling in `query-client.ts`: `LOGIN_REQUIRED` → login sheet · `PLAN_LIMIT` → limit sheet → `/subscribe?reason=` from `detail` · `RATE_LIMITED` → "잠시 후 다시 시도해 주세요" + time left · `SUSPENDED` → banner · `GITHUB_UNAVAILABLE` → GitHub banner.
 - Cacheable public data uses separate cookie-less server functions (ch. 9).
 - Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [Docker 가이드](../operations/02-docker.md).
+
+### 5-5. Shared loading contract (all page owners)
+
+- Import `LoadingIndicator` from `@/components/ui/loading-indicator`. Only its internal Canvas adapter imports `thinking-orbs`; pages never import that adapter or the vendor directly.
+- `loading.tsx` preserves its existing frame/landmarks and uses this shared indicator. A label hidden in a previously text-free placeholder does not add a visible row. Keep all placeholder shapes/counts; the indicator disables their pulse locally.
+- Query/sheet initial loading uses the same component. Labels reuse existing Korean copy; `announce={false}` is for a parent that already announces status. Do not put the live status under a new `aria-busy` container that withholds it.
+- For actual actions, use `<Button pending={save.isPending} pendingLabel="저장 중…">저장</Button>` while preserving the action handler and validation/permission guards. `pending` disables only that native button and preserves its footprint/action name. It is not available on `asChild` links.
+- Sending/upload progress, optimistic reactions, success, read-only notices and errors keep their own meaning. Neither `disabled` nor `role="status"` implies loading. A loader never starts/retries requests or changes query keys, overlays or history.
+- Shared ink/size/Composing/reduced-motion/fallback rules live in the Design Guide. The fixed loading Canvas is a narrow PRD performance exception, not permission for DOM layout animations.
+- ESLint restricts vendor/adapter imports (including literal dynamic import/require). A Vitest AST contract checks every route loading export; add new fallbacks through this entry point. Screen-internal pending branches also require owner review.
 
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)
@@ -497,6 +507,7 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 - Same URL prefix may span groups (`/recruits`, `/posts`, `/recruiter`). 28 and 29 are in `(member)` because recruiters pay for Scout (2026-10-30).
 
 ## 14. Page completion checklist (before a PR)
+- [ ] New loading/Suspense/query/action pending uses the shared Composing contract (§5-5), or documents a semantic exception (real progress, optimistic updates). Check default and pending buttons and settled/empty/error frames for visual regressions.
 - [ ] Group and URL from ch. 13; a rule exists in `route-access.ts`
 - [ ] No `'use client'` in `page.tsx`/`layout.tsx`; client components only at leaves
 - [ ] Every split component has a §5-3 reason

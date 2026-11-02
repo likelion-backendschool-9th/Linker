@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   acceptChatRequest,
@@ -112,10 +113,9 @@ export function ChatList() {
         className={styles.content}
       >
         {rooms.isPending ? (
-          <>
-            <p role="status">채팅 목록을 불러오고 있어요.</p>
+          <LoadingIndicator label="채팅 목록을 불러오고 있어요." variant="block">
             <Skeleton count={3} />
-          </>
+          </LoadingIndicator>
         ) : rooms.isError && !rooms.data ? (
           <ErrorState
             onRetry={() => {
@@ -131,6 +131,7 @@ export function ChatList() {
                 <ChatRoomRow
                   room={room}
                   disabled={pending || viewer.status === 'SUSPENDED'}
+                  accepting={accept.isPending && accept.variables === room.id}
                   onAccept={() => accept.mutate(room.id)}
                   onDelete={() => overlay.open(String(room.id))}
                 />
@@ -154,8 +155,10 @@ export function ChatList() {
             onClick={() => {
               void rooms.fetchNextPage();
             }}
+            pending={rooms.isFetchingNextPage}
+            pendingLabel="불러오는 중…"
           >
-            {rooms.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
+            더 보기
           </Button>
         )}
       </section>

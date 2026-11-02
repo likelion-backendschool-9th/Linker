@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDraft } from '@/features/draft-restore/use-draft';
 import { ApiError } from '@/lib/api/api-error';
@@ -61,10 +62,9 @@ export function IssueContentStep(props: IssueContentStepProps) {
   const template = useQuery(templateOptions(teamId, repoId, templateKey));
   if (template.isPending) {
     return (
-      <div aria-busy="true">
-        <p role="status">템플릿을 불러오고 있어요.</p>
+      <LoadingIndicator label="템플릿을 불러오고 있어요." variant="block">
         <Skeleton count={2} />
-      </div>
+      </LoadingIndicator>
     );
   }
   if (template.isError) {

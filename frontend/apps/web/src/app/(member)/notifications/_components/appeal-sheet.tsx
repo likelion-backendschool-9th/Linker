@@ -114,8 +114,13 @@ export function AppealSheet({ notification }: { notification: NotificationItem |
               }
             />
           )}
-          <Button type="submit" disabled={appeal.isPending}>
-            {appeal.isPending ? '접수 중…' : '이의 제기 보내기'}
+          <Button
+            type="submit"
+            disabled={appeal.isPending}
+            pending={appeal.isPending}
+            pendingLabel="접수 중…"
+          >
+            이의 제기 보내기
           </Button>
         </form>
       )}

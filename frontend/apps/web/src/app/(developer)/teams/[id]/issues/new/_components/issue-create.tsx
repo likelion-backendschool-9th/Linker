@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet';
 import { useDraft } from '@/features/draft-restore/use-draft';
@@ -75,10 +76,9 @@ export function IssueCreate({ teamId }: { teamId: string }) {
       </ol>
 
       {leaving ? (
-        <div aria-busy="true">
-          <p role="status">만든 이슈로 이동하고 있어요.</p>
+        <LoadingIndicator label="만든 이슈로 이동하고 있어요." variant="block">
           <Skeleton count={2} />
-        </div>
+        </LoadingIndicator>
       ) : step === 1 ? (
         <RepoTemplateStep
           teamId={teamId}

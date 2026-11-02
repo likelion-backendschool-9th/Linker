@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -135,7 +136,13 @@ export function SettingsCommon({
             {form.formState.errors.email && <span id="email-error" className={styles.error}>{form.formState.errors.email.message}</span>}
           </div>
           {form.formState.errors.root && <p className={styles.error} role="alert">{form.formState.errors.root.message}</p>}
-          <Button type="submit" variant="outline" disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '알림 이메일 저장'}</Button>
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={emailSave.isPending || !form.formState.isDirty}
+            pending={emailSave.isPending}
+            pendingLabel="저장 중…"
+          >알림 이메일 저장</Button>
         </form>
       </section>
 
@@ -143,7 +150,12 @@ export function SettingsCommon({
         <h2 id="notification-heading">알림</h2>
         <div className={styles.row}>
           <div className={styles.rowInfo}><span className={styles.label}>푸시 알림</span><span className={styles.description}>끄면 푸시만 중단되고 앱 내 알림은 계속 쌓여요. 푸시는 Android 앱에서만 받을 수 있어요.</span></div>
-          <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} disabled={pushSave.isPending} onClick={() => pushSave.mutate(!pushEnabled)}>{pushSave.isPending ? '…' : pushEnabled ? '켜짐' : '꺼짐'}</button>
+          <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} aria-busy={pushSave.isPending} disabled={pushSave.isPending} onClick={() => pushSave.mutate(!pushEnabled)}>{pushSave.isPending ? <LoadingIndicator
+            label="푸시 알림 저장 중…"
+            labelHidden
+            announce={false}
+            tone={pushEnabled ? 'inverse' : 'inherit'}
+          /> : pushEnabled ? '켜짐' : '꺼짐'}</button>
         </div>
       </section>
 
@@ -168,7 +180,13 @@ export function SettingsCommon({
       <section className={styles.section} aria-labelledby="account-action-heading">
         <h2 id="account-action-heading">계정 관리</h2>
         <Button variant="outline" onClick={() => logoutOverlay.open()}>로그아웃</Button>
-        <Button variant="danger" onClick={() => withdrawalCheck.mutate()} disabled={withdrawalCheck.isPending}>{withdrawalCheck.isPending ? '확인 중…' : '계정 탈퇴'}</Button>
+        <Button
+          variant="danger"
+          onClick={() => withdrawalCheck.mutate()}
+          disabled={withdrawalCheck.isPending}
+          pending={withdrawalCheck.isPending}
+          pendingLabel="확인 중…"
+        >계정 탈퇴</Button>
       </section>
 
       <ConfirmDialog
@@ -180,8 +198,13 @@ export function SettingsCommon({
         onConfirm={() => logout.mutate()}
       />
       <OverlaySheet overlay={blocksOverlay} title="차단한 사용자" description="차단을 해제할 사용자를 선택해 주세요.">
-        {blocks.isPending ? <p role="status">차단 목록을 불러오는 중…</p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : blocks.data?.length ? (
-          <ul className={styles.blockList}>{blocks.data.map(({ user }) => <li className={styles.blockItem} key={user.id}><span>{user.name} · @{user.login}</span><Button variant="outline" disabled={unblock.isPending} onClick={() => unblock.mutate(user.id)}>차단 해제</Button></li>)}</ul>
+        {blocks.isPending ? <p role="status"><LoadingIndicator label="차단 목록을 불러오는 중…" announce={false} /></p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : blocks.data?.length ? (
+          <ul className={styles.blockList}>{blocks.data.map(({ user }) => <li className={styles.blockItem} key={user.id}><span>{user.name} · @{user.login}</span><Button
+            variant="outline"
+            disabled={unblock.isPending}
+            onClick={() => unblock.mutate(user.id)}
+            pending={unblock.isPending && unblock.variables === user.id}
+          >차단 해제</Button></li>)}</ul>
         ) : <p>차단한 사용자가 없어요.</p>}
       </OverlaySheet>
       <OverlaySheet overlay={withdrawalSheet} title="계정 탈퇴 안내" description="탈퇴 전에 소유한 팀을 확인해 주세요.">
