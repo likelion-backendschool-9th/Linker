@@ -1,0 +1,153 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-heading);
+}
+
+.count {
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-meta);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xs);
+}
+
+@media (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.hint {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.cell {
+  display: grid;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.item {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.preview {
+  object-fit: cover;
+}
+
+/* Cover marker: inverse surface so it reads over any photo */
+.cover {
+  position: absolute;
+  top: var(--space-xs);
+  left: var(--space-xs);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-inverse);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+/* 앞으로 / 뒤로 under each photo (drag alternative, blueprint §6-5) */
+.order {
+  display: flex;
+  justify-content: space-between;
+}
+
+.orderButton {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+.orderButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.progress {
+  position: absolute;
+  right: var(--space-xs);
+  bottom: var(--space-xs);
+  left: var(--space-xs);
+  width: auto;
+  accent-color: var(--color-primary);
+}
+
+/* Failed photo: inverse surface so the retry label passes contrast over any preview */
+.retry {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  background-color: var(--color-primary);
+}
+
+.remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-inverse);
+}
+
+.remove svg {
+  padding: var(--space-xxs);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-heading);
+  cursor: pointer;
+}
+
+/* The file input is visually hidden; show its focus on the visible add tile */
+.root:has(input:focus-visible) .add {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}

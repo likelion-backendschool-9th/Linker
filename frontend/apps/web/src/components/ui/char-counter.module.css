@@ -1,0 +1,17 @@
+.counter,
+.over {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter {
+  color: var(--color-text-meta);
+}
+
+/* Over the limit also says so in text (never color alone) */
+.over {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-status-error);
+}

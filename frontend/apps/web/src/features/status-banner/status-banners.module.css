@@ -1,0 +1,41 @@
+.banners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.banners:has(.banner) {
+  margin-bottom: var(--space-md);
+}
+
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.live:empty {
+  display: none;
+}
+
+/* Tinted surface: text uses tokens that pass 4.5:1 on --color-canvas-soft (guide ch. 1-3) */
+.banner {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.warning {
+  color: var(--color-status-warning);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+}

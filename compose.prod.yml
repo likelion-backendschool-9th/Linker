@@ -1,0 +1,47 @@
+# Host Nginx terminates HTTPS and forwards to this stack's loopback-only entry point.
+# Run with: docker compose -f compose.yml -f compose.prod.yml ...
+# Requires Compose >= 2.24.4; server verified with 2.40.3.
+x-runtime: &runtime
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    <<: *runtime
+    ports: !reset []
+    cpus: "1.0"
+    mem_limit: 1g
+
+  redis:
+    <<: *runtime
+    ports: !reset []
+    cpus: "0.5"
+    mem_limit: 256m
+
+  backend:
+    <<: *runtime
+    ports: !reset []
+    cpus: "1.0"
+    mem_limit: 1g
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0"
+      SPRING_JPA_SHOW_SQL: "false"
+
+  web:
+    <<: *runtime
+    ports: !reset []
+    cpus: "1.0"
+    mem_limit: 768m
+
+  proxy:
+    <<: *runtime
+    cpus: "0.5"
+    mem_limit: 128m
+    ports: !override
+      - "127.0.0.1:${PROXY_PORT:-3004}:80"
+    volumes:
+      - ./nginx/production.conf:/etc/nginx/conf.d/default.conf:ro

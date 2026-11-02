@@ -1,0 +1,8 @@
+/*
+ * Design token entry point. Components read tokens through var() in their *.module.css.
+ * Rules for using them: docs/development/04-design-guide.md.
+ */
+
+@import './tokens/color.css';
+@import './tokens/typography.css';
+@import './tokens/layout.css';

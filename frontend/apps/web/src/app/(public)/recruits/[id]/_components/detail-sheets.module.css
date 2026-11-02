@@ -1,0 +1,303 @@
+/* Shared by the sheets of 21 (apply, application, reject, exceptions, menu) */
+
+.form,
+.body {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.field,
+.fieldset {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.label {
+  padding: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-heading);
+}
+
+.optional {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+/* Text input look (guide ch. 5) */
+.textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-text-body);
+  background-color: var(--color-field);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  resize: vertical;
+}
+
+.textarea[aria-invalid='true'] {
+  border-color: var(--color-status-error);
+}
+
+/* Role choices: outlined rows, chosen one tinted (the radio itself shows the state too) */
+.options {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  background-color: var(--color-canvas-soft);
+  border-color: var(--color-primary);
+}
+
+.option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.control {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  accent-color: var(--color-primary);
+}
+
+.optionTitle {
+  flex: 1;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.optionMeta {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.hint,
+.meta {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.meta {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+}
+
+/* Featured surface (guide ch. 5) */
+.notice {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-xs);
+}
+
+@media (min-width: 600px) {
+  .actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+/* Application sheet */
+.applicant {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.avatar {
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.applicantText {
+  min-width: 0;
+}
+
+.applicantName {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title);
+}
+
+.block {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.blockTitle {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+}
+
+.message {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-text-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+}
+
+.tag {
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-body);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+
+.stat {
+  display: grid;
+  gap: var(--space-xxs);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.stat dt {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-subtle-on-tint);
+}
+
+.stat dd {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+/* Contribution cells: the level is drawn with the primary color's opacity */
+.graph {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+}
+
+.cell {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-xs);
+}
+
+.cell[data-level='0'] {
+  background-color: var(--color-canvas-soft);
+}
+
+.cell[data-level='1'] {
+  opacity: 0.3;
+}
+
+.cell[data-level='2'] {
+  opacity: 0.6;
+}
+
+.posts {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.post {
+  display: grid;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-sm);
+}
+
+.postIntro {
+  font-size: var(--font-size-body);
+  color: var(--color-text-title);
+}
+
+.accepted {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--color-status-success);
+  border-radius: var(--radius-sm);
+}
+
+.acceptedTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-status-success);
+}
+
+/* Menu sheet: full-width rows with an icon */
+.menu {
+  display: grid;
+}
+
+.menuItem,
+.menuItemDanger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-body);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-sm);
+}
+
+.menuItemDanger {
+  color: var(--color-status-error);
+}

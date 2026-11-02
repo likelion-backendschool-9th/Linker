@@ -1,0 +1,134 @@
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-md);
+}
+
+/* Toggle with a switch track; on = filled thumb on the right, and aria-pressed for screen readers */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+.switch {
+  position: relative;
+  width: calc(var(--icon-size) * 2);
+  height: var(--icon-size);
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-overlay) var(--ease-standard);
+}
+
+.switch::after {
+  position: absolute;
+  top: 50%;
+  left: var(--space-xxs);
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  content: '';
+  background-color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  transform: translateY(-50%);
+  transition: transform var(--duration-overlay) var(--ease-standard);
+}
+
+.toggle[aria-pressed='true'] .switch {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.toggle[aria-pressed='true'] .switch::after {
+  background-color: var(--color-on-primary);
+  transform: translate(calc(var(--icon-size) - var(--space-xxs)), -50%);
+}
+
+/* Virtual list: rows are absolutely placed; the gap between rows is each row's bottom padding */
+.list {
+  position: relative;
+  margin-bottom: var(--space-md);
+}
+
+.row {
+  position: absolute;
+  top: 0;
+  padding-bottom: var(--space-md);
+}
+
+/* Floating "게시물 쓰기" above the bottom GNB, aligned with the content column's right edge */
+.write {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100% - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+  z-index: var(--z-chrome);
+}
+
+/* Empty feed: recommended developers */
+.recommended {
+  display: grid;
+  gap: var(--space-sm);
+  max-width: var(--form-max-width);
+  margin-inline: auto;
+}
+
+.recommendedTitle {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+}
+
+.people {
+  display: grid;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.personLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: var(--touch-target-min);
+}
+
+.personAvatar {
+  flex-shrink: 0;
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.personText {
+  display: grid;
+  min-width: 0;
+}
+
+.personName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.personStack {
+  overflow: hidden;
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

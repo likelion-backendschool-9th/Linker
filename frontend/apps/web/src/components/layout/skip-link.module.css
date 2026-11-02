@@ -1,0 +1,22 @@
+/* Off screen until focused */
+.skip {
+  position: fixed;
+  top: var(--space-xs);
+  left: var(--space-xs);
+  z-index: var(--z-toast);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  transform: translateY(calc(-100% - var(--space-md)));
+}
+
+.skip:focus-visible {
+  transform: none;
+  outline-color: var(--color-focus-ring-on-dark);
+  outline-offset: -4px;
+}

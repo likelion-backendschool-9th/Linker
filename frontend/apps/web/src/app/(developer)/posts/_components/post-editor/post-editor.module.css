@@ -1,0 +1,434 @@
+/* Shared by the regions of the 22 editor (steps, repo step, content form) */
+
+.editor {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: var(--form-max-width);
+  margin-inline: auto;
+}
+
+/* Step indicator: ol + aria-current="step" (blueprint §6-2) */
+.steps {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.stepItem {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.stepItem[aria-current='step'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.stepNumber {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  font-size: var(--font-size-meta);
+  border: 1px solid currentcolor;
+  border-radius: var(--radius-full);
+}
+
+.step,
+.form {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+.step {
+  gap: var(--space-md);
+}
+
+/* Whitespace groups the sections (guide ch. 3); a hairline only between them */
+.section {
+  display: grid;
+  gap: var(--space-md);
+  padding-bottom: var(--space-xl);
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+}
+
+.optional {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.field,
+.fieldset {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.label {
+  padding: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-heading);
+}
+
+.subLabel {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+/* Text input look (guide ch. 5) */
+.input,
+.textarea {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text-body);
+  background-color: var(--color-field);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.textarea {
+  line-height: var(--line-height-body);
+  resize: vertical;
+}
+
+/* Native month inputs have an intrinsic min width that overflows two columns at 360px */
+.period .input {
+  min-width: 0;
+  padding-inline: var(--space-sm);
+}
+
+.input[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  border-color: var(--color-status-error);
+}
+
+.fieldFoot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.fieldFoot > :last-child {
+  margin-left: auto;
+}
+
+.hint {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+}
+
+/* Step 1: search field (pill, like the header search) and repo rows */
+.search {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-md);
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-subtle-on-tint);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-md) var(--space-sm)
+    calc(var(--space-md) + var(--icon-size) + var(--space-sm));
+  font-size: var(--font-size-body);
+  color: var(--color-text-body);
+  background-color: var(--color-field);
+  border: 0;
+  border-radius: var(--radius-full);
+}
+
+.repos {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.repo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-md);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.repo:has(input:checked) {
+  background-color: var(--color-canvas-soft);
+  border-color: var(--color-primary);
+}
+
+.repo:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.control {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  accent-color: var(--color-primary);
+}
+
+.repoText {
+  display: grid;
+  flex: 1;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.repoName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+  overflow-wrap: anywhere;
+}
+
+.repoMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs) var(--space-sm);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-meta);
+}
+
+.stars,
+.fork {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.fork {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.metaIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.posted {
+  flex-shrink: 0;
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+/* Step 2 header: the chosen repo + "레포 바꾸기" */
+.chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.chosenText {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+/* Repo card (guide ch. 5 card), filled from GitHub */
+.repoCard {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-md);
+}
+
+.repoCardName {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title);
+  overflow-wrap: anywhere;
+}
+
+.repoDescription {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.contribution {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.contribution > div {
+  display: grid;
+  gap: var(--space-xxs);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.contribution dt {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-subtle-on-tint);
+}
+
+.contribution dd {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+/* 0 commits: a warning in text with the GitHub email settings link (04 ch. 4 exceptions) */
+.commitNotice {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-warning);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+}
+
+/* Demo link rows: input + remove, error under the input */
+.linkRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xxs) var(--space-xs);
+}
+
+.linkError {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-caption);
+  color: var(--color-status-error);
+}
+
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  color: var(--color-status-error);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.period {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+
+.suffixInput {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: calc(var(--control-height) * 3);
+  font-size: var(--font-size-body);
+  color: var(--color-text-body);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-sm) 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.failure {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+  border: 1px solid var(--color-status-error);
+  border-radius: var(--radius-sm);
+}
+
+/* The submit stays reachable at the bottom of the viewport while scrolling a long form */
+.submitBar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-chrome);
+  padding: var(--space-sm) 0 calc(var(--space-sm) + env(safe-area-inset-bottom));
+  background-color: var(--color-canvas);
+  border-top: 1px solid var(--color-hairline-soft);
+}
+
+@media (min-width: 600px) {
+  .submitBar {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .submitBar > * {
+    width: auto;
+  }
+}

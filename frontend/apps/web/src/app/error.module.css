@@ -1,0 +1,11 @@
+.main {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-md) var(--page-gutter);
+  outline: none;
+}
+
+.home {
+  display: flex;
+  justify-content: center;
+}

@@ -1,0 +1,97 @@
+.root,
+.buttons,
+.sheetActions {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.counts,
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.counts button {
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-body);
+  font: inherit;
+  cursor: pointer;
+}
+
+.counts strong {
+  color: var(--color-text-heading);
+}
+
+.error,
+.offerForm p {
+  color: var(--color-status-error);
+}
+
+.peopleList {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.peopleTabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.peopleTabs button {
+  min-height: var(--touch-target-min);
+  padding-inline: var(--space-sm);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.peopleTabs button[aria-selected='true'] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-text-heading);
+  font-weight: var(--font-weight-semibold);
+}
+
+.peopleList a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  text-decoration: none;
+}
+
+.personAvatar {
+  position: relative;
+  width: var(--space-xl);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-soft);
+}
+
+.personAvatar img {
+  object-fit: cover;
+}
+
+.personHandle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.personName {
+  color: var(--color-text-heading);
+}

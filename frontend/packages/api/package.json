@@ -1,0 +1,24 @@
+{
+  "name": "@linker/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/generated/*.ts"
+  },
+  "scripts": {
+    "generate": "orval --config ./orval.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "@tanstack/react-query": "^5.105.0",
+    "msw": "^3.0.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@linker/config": "workspace:*",
+    "orval": "^8.45.0",
+    "react": "19.3.0"
+  }
+}

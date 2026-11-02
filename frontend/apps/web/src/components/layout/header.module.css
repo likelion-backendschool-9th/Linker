@@ -1,0 +1,235 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-chrome);
+  padding-top: env(safe-area-inset-top);
+  background-color: var(--color-canvas);
+  transition: background-color var(--duration-overlay) var(--ease-standard);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  max-width: var(--content-max-width);
+  height: var(--header-height);
+  margin: 0 auto;
+  /* Logo and icon buttons carry their own inset, so the visible gutter equals --page-gutter */
+  padding: 0 calc(var(--page-gutter) - var(--space-xs));
+  border-radius: var(--radius-none);
+  transition:
+    margin-top var(--duration-overlay) var(--ease-standard),
+    border-radius var(--duration-overlay) var(--ease-standard),
+    background-color var(--duration-overlay) var(--ease-standard),
+    backdrop-filter var(--duration-overlay) var(--ease-standard);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+}
+
+.title {
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Title starts at the gutter when there's no back button */
+.inner > .title:first-child {
+  padding-left: var(--space-xs);
+}
+
+.search {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: var(--header-search-width);
+  height: var(--control-height);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  background-color: var(--color-field);
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+}
+
+.search:focus-within {
+  border-color: var(--color-focus-ring);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-subtle-on-tint);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-body);
+  background: none;
+  border: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-subtle-on-tint);
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+/* The custom .searchClear button replaces the browser's native search-field clear control */
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchClear {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-body);
+  background-color: var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.searchClearIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.softPillButton,
+.ctaButton,
+.profileButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  white-space: nowrap;
+  border-radius: var(--radius-full);
+}
+
+.softPillButton,
+.ctaButton {
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.softPillButton {
+  position: relative;
+  color: var(--color-text-heading);
+  background-color: var(--color-field);
+}
+
+.unreadDot {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-full);
+}
+
+.ctaButton {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.profileButton {
+  width: var(--control-height);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline-soft);
+}
+
+.iconButton {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+/* Mobile/tablet-only icon controls; the desktop block below replaces them with text pills */
+.mobileOnly {
+  display: inline-flex;
+}
+
+/* Mobile/tablet: the search icon's input row, below the header (04 mobile header task 4-6) */
+.mobileSearchPanel {
+  padding: 0 var(--page-gutter) var(--space-sm);
+  background-color: var(--color-canvas);
+}
+
+.searchMobile {
+  display: flex;
+  max-width: none;
+  margin: 0;
+}
+
+@media (min-width: 1024px) {
+  .search {
+    display: flex;
+  }
+
+  .softPillButton,
+  .ctaButton,
+  .profileButton {
+    display: inline-flex;
+  }
+
+  .mobileOnly {
+    display: none;
+  }
+
+  .mobileSearchPanel {
+    display: none;
+  }
+
+  /* The floating "scroll header" (04 frontend task 2), desktop only: mobile has no scroll
+     animation. The Figma reference is already capped at --content-max-width at rest, so
+     shrinking to 1440px is this pill becoming visible, not a width change. */
+  .headerScrolled {
+    background-color: transparent;
+  }
+
+  .innerScrolled {
+    margin-top: var(--space-sm);
+    background-color: var(--color-scroll-header);
+    backdrop-filter: var(--blur-header-scroll);
+    border-radius: var(--radius-lg);
+  }
+
+  .innerScrolled .search,
+  .innerScrolled .softPillButton {
+    background-color: var(--color-canvas);
+  }
+}

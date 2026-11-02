@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # 어떤 폴더가 바뀌었는지 판별
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.frontend }}
+      backend: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.backend }}
+      infrastructure: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.infrastructure }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/deploy.yml'
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/deploy.yml'
+            infrastructure:
+              - 'compose*.yml'
+              - 'nginx/**'
+              - 'scripts/verify-production-compose.py'
+              - 'deploy/**'
+              - '.env.example'
+              - 'frontend/Dockerfile'
+              - 'frontend/.dockerignore'
+              - 'backend/Dockerfile'
+              - 'backend/.dockerignore'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/deploy.yml'
+
+  frontend:
+    name: frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm 버전은 frontend/package.json의 packageManager를 따름
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  backend:
+    name: backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: linker
+          POSTGRES_USER: linker
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U linker -d linker"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/linker
+      DB_USERNAME: linker
+      DB_PASSWORD: ci-only-password
+      REDIS_HOST: localhost
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew build
+
+  infrastructure:
+    name: infrastructure
+    needs: changes
+    if: needs.changes.outputs.infrastructure == 'true'
+    runs-on: ubuntu-latest
+    env:
+      DB_PASSWORD: compose-validation-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-compose-action@v1
+        with:
+          version: v2.40.3
+      - name: Validate base Compose
+        run: docker compose --env-file /dev/null -f compose.yml config --quiet
+      - name: Validate production Compose and deployment invariants
+        run: python3 scripts/verify-production-compose.py
+      - name: Validate deployment scripts and rollback
+        run: |
+          bash -n deploy/apply.sh deploy/ship.sh
+          python3 -m unittest discover -s deploy/tests -v
+      - uses: docker/setup-compose-action@v1
+        with:
+          version: v5.6.0
+      - name: Validate development Compose
+        run: docker compose --env-file /dev/null -f compose.yml -f compose.dev.yml config --quiet
+      - name: Validate Nginx
+        run: >-
+          docker run --rm
+          --mount "type=bind,src=${{ github.workspace }}/nginx/default.conf,dst=/etc/nginx/conf.d/default.conf,readonly"
+          nginx:1.28-alpine nginx -t
+      - name: Validate production Nginx
+        run: >-
+          docker run --rm
+          --mount "type=bind,src=${{ github.workspace }}/nginx/production.conf,dst=/etc/nginx/conf.d/default.conf,readonly"
+          nginx:1.28-alpine nginx -t
+      - name: Validate host Nginx example
+        run: >-
+          docker run --rm
+          --mount "type=bind,src=${{ github.workspace }}/nginx/host-linker.http.conf.example,dst=/etc/nginx/conf.d/default.conf,readonly"
+          nginx:1.28-alpine nginx -t
+
+  # 룰셋 필수 체크는 이거 하나만 걸면 됨
+  ci-result:
+    name: ci-result
+    needs: [changes, frontend, backend, infrastructure]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "변경 감지 단계 실패"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend.result }}" == "failure" || "${{ needs.frontend.result }}" == "cancelled" || \
+                "${{ needs.backend.result }}" == "failure"  || "${{ needs.backend.result }}" == "cancelled" || \
+                "${{ needs.infrastructure.result }}" == "failure" || "${{ needs.infrastructure.result }}" == "cancelled" ]]; then
+            echo "CI 실패"
+            exit 1
+          fi
+          echo "CI 통과 (frontend: ${{ needs.frontend.result }}, backend: ${{ needs.backend.result }}, infrastructure: ${{ needs.infrastructure.result }})"

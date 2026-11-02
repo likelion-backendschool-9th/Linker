@@ -1,0 +1,45 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--control-height);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  border-radius: var(--radius-full);
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.primary {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.outline {
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+}
+
+.soft {
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+}
+
+/* Delete, leave and other irreversible actions: error color on the outline twin, never a red fill */
+.danger {
+  color: var(--color-status-error);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+}
+
+.block {
+  width: 100%;
+}
