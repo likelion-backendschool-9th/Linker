@@ -112,4 +112,4 @@ sudo docker compose -f compose.yml -f compose.prod.yml down
 
 1. 이 설정을 서버에 적용하고 HTTPS·포트 제거·자원 사용 확인.
 2. 백엔드 구현에 맞춰 BFF 인증·쿠키·API·WebSocket 검증. 현재 `/api/v1/*`는 Spring으로 직접 전달한다.
-3. `main` 병합 → 테스트·이미지 빌드 → GHCR → SSH 배포 및 롤백 자동화. 현재 자동 배포는 미연결.
+3. [자동 배포 안내](./04-automatic-deployment.md)에 따라 SSH 키·권한·GitHub 항목을 준비한 뒤 `main` 자동 배포를 활성화.

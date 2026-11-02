@@ -42,3 +42,8 @@ backend/src/main/resources/application-local.yml
 
 # ===== 개인 작업 파일 =====
 .local-notes
+
+# Server-side release bundles and deployment state (never .env or credentials).
+/releases/
+/.deployment-state/
+deploy/tests/__pycache__/

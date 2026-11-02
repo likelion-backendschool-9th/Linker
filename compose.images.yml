@@ -1,0 +1,8 @@
+# Automatic deployment: use images built by GitHub Actions, never build on the server.
+services:
+  backend:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}-backend:${IMAGE_TAG:?IMAGE_TAG is required}
+  web:
+    build: !reset null
+    image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}-web:${IMAGE_TAG:?IMAGE_TAG is required}

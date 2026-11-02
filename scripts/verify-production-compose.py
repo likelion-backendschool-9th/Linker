@@ -18,7 +18,7 @@ def configuration(*files):
     result = subprocess.run(
         command,
         cwd=ROOT,
-        env={**os.environ, "DB_PASSWORD": "compose-validation-only", "PROXY_PORT": "3004"},
+        env={**os.environ, "DB_PASSWORD": "compose-validation-only", "PROXY_PORT": "3004", "IMAGE_PREFIX": "ghcr.io/example/linker", "IMAGE_TAG": "a" * 40},
         check=True,
         capture_output=True,
         text=True,
@@ -58,7 +58,14 @@ def main():
     for name in services:
         assert services[name]["healthcheck"] == base["services"][name]["healthcheck"]
     assert base["services"]["db"]["ports"], "local debugging must still be available"
-    print("PASS: production ports, resources, restart, logging, mounts and retained volumes")
+    images = configuration("compose.yml", "compose.prod.yml", "compose.images.yml")
+    for name in ["web", "backend"]:
+        assert not images["services"][name].get("build"), name
+        assert images["services"][name]["image"] == f"ghcr.io/example/linker-{name}:{'a' * 40}"
+        for field in ["ports", "healthcheck", "restart", "mem_limit"]:
+            assert images["services"][name].get(field) == services[name].get(field)
+    assert images["volumes"] == production["volumes"]
+    print("PASS: production and image-only deployment keep ports, resources and data volumes")
 
 
 if __name__ == "__main__":
