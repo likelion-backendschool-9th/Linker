@@ -1,7 +1,7 @@
 # Linker Policy
 
 > Question this document answers: **By what rules do the service's features operate?**
-> Why each feature is needed is in the [PRD](./02-prd.md), screens and flows in the [Service Plan](./01-service-plan.md). Legal rights and duties of members and the company are covered by the [Terms of Service](./05-terms-of-service.md), and collection/retention/destruction of personal data by the [Privacy Policy](./06-privacy-policy.md).
+> Why each feature is needed is in the [PRD](02-prd.md), screens and flows in the [Service Plan](01-service-plan.md). Legal rights and duties of members and the company are covered by the [Terms of Service](05-terms-of-service.md), and collection/retention/destruction of personal data by the [Privacy Policy](06-privacy-policy.md).
 >
 > **UI copy is kept in Korean** (the app's language) with an English gloss where helpful. Use the Korean string as-is in code.
 
@@ -616,7 +616,7 @@ People whose copyright, reputation or privacy is infringed (including non-member
 
 ## 11. Subscription
 
-Subscription principles, plans and prices are set in [PRD ch. 6](./02-prd.md#6-revenue-model). This chapter defines limits per benefit and payment behavior.
+Subscription principles, plans and prices are set in [PRD ch. 6](02-prd.md#6-revenue-model). This chapter defines limits per benefit and payment behavior.
 
 ### Free on every plan
 

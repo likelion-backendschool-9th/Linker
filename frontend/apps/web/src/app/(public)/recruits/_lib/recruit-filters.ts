@@ -19,7 +19,7 @@ export const recruitTabParser = parseAsStringLiteral(RECRUIT_TABS).withDefault('
 
 /**
  * Sort and filters kept in the URL (POL-R-2), read on the server with `loadRecruitParams` and on the
- * client with `useQueryStates(recruitFilterParsers)`. One value each, like the 09 WBS query.
+ * client with `useQueryStates(recruitFilterParsers)`. One value each, like the WBS query.
  */
 export const recruitFilterParsers = {
   sort: parseAsStringLiteral(RECRUIT_SORTS).withDefault('NEWEST'),
@@ -37,7 +37,7 @@ export type RecruitFilters = {
   mode: RecruitFormat | null;
 };
 
-/** Query string for `GET /api/v1/public/recruits?role=&tech=&mode=&sort=` (09 WBS 19) */
+/** Query string for `GET /api/v1/public/recruits?role=&tech=&mode=&sort=` (WBS 19) */
 export function recruitFilterQuery(filters: RecruitFilters): URLSearchParams {
   const query = new URLSearchParams({ sort: filters.sort });
   if (filters.role) query.set('role', filters.role);

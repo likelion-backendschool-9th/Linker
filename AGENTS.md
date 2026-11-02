@@ -27,16 +27,16 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 ## Read only the relevant documentation
 | Source | Authority |
 | --- | --- |
-| `docs/01-service-plan.md` | Product direction and architecture |
-| `docs/02-prd.md` | Feature IDs and completion conditions |
-| `docs/03-mvp-definition.md` | Scope and launch conditions |
-| `docs/04-policy.md` | All numbers, limits, states, roles, exceptions, UI copy |
-| `docs/05-terms-of-service.md`, `docs/06-privacy-policy.md` | Legal wording |
-| `docs/07-page-todo.md` | Pages, URLs, screen contents |
-| `docs/08-erd.md` | Tables, columns, enums |
-| `docs/09-wbs.md` | Endpoints, controllers, ownership, schedule |
-| `frontend/10-frontend-blueprint.md` | Frontend implementation rules; 04/07/09 take precedence |
-| `frontend/11-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/src/styles/tokens/` |
+| `docs/planning/01-service-plan.md` | Product direction and architecture |
+| `docs/planning/02-prd.md` | Feature IDs and completion conditions |
+| `docs/planning/03-mvp-definition.md` | Scope and launch conditions |
+| `docs/planning/04-policy.md` | All numbers, limits, states, roles, exceptions, UI copy |
+| `docs/planning/05-terms-of-service.md`, `docs/planning/06-privacy-policy.md` | Legal wording |
+| `docs/planning/07-page-todo.md` | Pages, URLs, screen contents |
+| `docs/development/01-erd.md` | Tables, columns, enums |
+| `docs/development/02-wbs.md` | Endpoints, controllers, ownership, schedule |
+| `docs/development/03-frontend-blueprint.md` | Frontend implementation rules; Policy, Page TODO and WBS take precedence |
+| `docs/development/04-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/src/styles/tokens/` |
 
 - Search for the relevant page number, feature, table, or controller instead of reading every document.
 - `[Required]` is essential; `[Included]` may be deferred in the order in WBS ch. 6.

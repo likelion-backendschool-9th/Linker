@@ -1,9 +1,9 @@
 # 레포 설정 가이드
 
-> Next.js·Spring·PostgreSQL·Redis의 로컬 컨테이너 실행은 [Docker Compose 가이드](./DOCKER.md)를 참고하세요.
+> Next.js·Spring·PostgreSQL·Redis의 로컬 컨테이너 실행은 [Docker Compose 가이드](02-docker.md)를 참고하세요.
 
 > 예상 소요 시간: 20~30분
-> 이 폴더 안의 파일들을 **레포 루트에 그대로 복사**한 뒤 아래 순서대로 진행
+> 명령은 **레포 루트에서 실행**합니다. 아래 파일 배치는 저장소 루트를 기준으로 합니다.
 
 ---
 

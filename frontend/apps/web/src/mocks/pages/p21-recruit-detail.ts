@@ -134,7 +134,7 @@ export const routes: MockRoute[] = [
       const role = item.roles.find((r) => r.id === application.roleId);
       if (!item.teamId) fail(409, 'TEAM_REQUIRED', '팀을 먼저 만들어야 수락할 수 있어요');
       if (role && role.filled >= role.headcount) {
-        // Proposal beyond 09 WBS: "인원 늘리고 수락" (04 ch. 5 exceptions) in one call
+        // Proposal beyond WBS: "인원 늘리고 수락" (04 ch. 5 exceptions) in one call
         if (body.increaseHeadcount === true && role.headcount < 10) role.headcount += 1;
         else
           fail(409, 'ROLE_FULL', '이 역할은 이미 다 찼어요', {

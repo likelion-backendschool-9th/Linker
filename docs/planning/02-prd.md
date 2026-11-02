@@ -1,7 +1,7 @@
 # Linker PRD
 
 > Question this document answers: **Why are we building it, and what should it achieve?**
-> How the service is structured (IA, screens, flows) is in the [Service Plan](./01-service-plan.md), how much ships in the first release in the [MVP Definition](./03-mvp-definition.md), and per-feature limits and exception rules in the [Policy](./04-policy.md).
+> How the service is structured (IA, screens, flows) is in the [Service Plan](01-service-plan.md), how much ships in the first release in the [MVP Definition](03-mvp-definition.md), and per-feature limits and exception rules in the [Policy](04-policy.md).
 
 ## 1. Overview
 
@@ -13,7 +13,7 @@
 
 ## 2. Problem definition
 
-Developers on team projects hit different problems at three points: **before finding a team, while working together, and after finishing**. Linker solves these three as one flow. Scenes illustrating each problem are in [Service Plan ch. 2](./01-service-plan.md#2-user-pain-points-and-how-linker-solves-them).
+Developers on team projects hit different problems at three points: **before finding a team, while working together, and after finishing**. Linker solves these three as one flow. Scenes illustrating each problem are in [Service Plan ch. 2](01-service-plan.md#2-user-pain-points-and-how-linker-solves-them).
 
 | # | Pain point | When | One-sentence definition |
 | --- | --- | --- | --- |
@@ -230,11 +230,11 @@ Metrics such as sign-ups and active teams are not built into the back office; us
 | Flex | Team (owner pays) | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th | No team member limit, full-history team chat search/scroll and image retention, AI chat summary (minutes), project progress graph |
 | Scout | Recruiters | ₩14,900/month | One feed job ad (job-category matched), recruiting offers 10 → 50 per day. Phase 4 may add talent search filters and ad stats |
 
-Flex and Scout are working names. Free on every plan: follow/like/comment, 1:1 chat, team chat, Find Team, teams/issues/calendar. Exact limits per benefit and payment/cancel/refund rules are in [Policy: Subscription](./04-policy.md#11-subscription).
+Flex and Scout are working names. Free on every plan: follow/like/comment, 1:1 chat, team chat, Find Team, teams/issues/calendar. Exact limits per benefit and payment/cancel/refund rules are in [Policy: Subscription](04-policy.md#11-subscription).
 
 ## 7. Success metrics (KPI)
 
-Targets are set before launch. Criteria for moving from phase 1 to 2 are in the [MVP Definition](./03-mvp-definition.md#6-criteria-for-moving-to-the-next-phase).
+Targets are set before launch. Criteria for moving from phase 1 to 2 are in the [MVP Definition](03-mvp-definition.md#6-criteria-for-moving-to-the-next-phase).
 
 **North star metric**: **Weekly active teams** (teams with issue creation/status change or team chat in Linker within a week). Teams must work in Linker for completion records and posts to accumulate, which in turn feed Find Team and social.
 
@@ -256,7 +256,7 @@ Targets are set before launch. Criteria for moving from phase 1 to 2 are in the 
 
 ## 8. GitHub integration requirements
 
-Linker handles login and org integration with one GitHub App. GitHub is the source of truth for issues, PRs and orgs; the Linker DB is a copy refreshed via webhooks. The integration structure is explained in [Service Plan 7-2](./01-service-plan.md#7-2-github-integration).
+Linker handles login and org integration with one GitHub App. GitHub is the source of truth for issues, PRs and orgs; the Linker DB is a copy refreshed via webhooks. The integration structure is explained in [Service Plan 7-2](01-service-plan.md#7-2-github-integration).
 
 | Permission / webhook | Used for |
 | --- | --- |
@@ -287,7 +287,7 @@ API and permission verification per feature is in the [GitHub API verification r
 | Realtime | Chat over WebSocket (STOMP); auto-reconnect and reload missed messages |
 | AI summary | One interface for the server's LLM connection; default is self-hosted Ollama open model (free, conversations stay in-house). Switch to a low-cost LLM API if quality falls short. On-demand (button), no recording or transcription |
 | Security | GitHub tokens encrypted on server, webhook signature verification, httpOnly cookie login, 2FA for back office, recruiter passwords one-way hashed (bcrypt) |
-| Privacy | Private org activity shown only with consent; data deleted on account deletion. Details in the [Privacy Policy](./06-privacy-policy.md) |
+| Privacy | Private org activity shown only with consent; data deleted on account deletion. Details in the [Privacy Policy](06-privacy-policy.md) |
 | Trust & safety | Block/report (chat, posts, comments, recruit posts), 1:1 message request box, recruiters can only request developers with job-seeking status on |
 | Accessibility | Respect the device's "reduce motion" setting; touch targets ≥ 44px |
 | Monitoring | Sentry for frontend and backend errors |
@@ -303,7 +303,7 @@ Phases advance by criteria, not dates.
 | 3 | Recruiting expansion | Operator company verification, talent search, formal offer box, Linker activity graph | Offer acceptance rate exceeds target |
 | 4 | Recruiting monetization | Job postings, Scout plan expansion (talent search filters, ad stats screen) | |
 
-Phase 1 scope and launch conditions are in the [MVP Definition](./03-mvp-definition.md).
+Phase 1 scope and launch conditions are in the [MVP Definition](03-mvp-definition.md).
 
 ## 11. Risks
 

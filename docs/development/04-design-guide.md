@@ -1,9 +1,11 @@
 # Linker Design Guide
 
 > Question this document answers: **Which colors, type sizes, spacing, shapes and component looks does Linker use, and how are they written in CSS?**
-> Structure and code rules are in [10 Frontend Blueprint](./10-frontend-blueprint.md); this document only covers how things look. Token values live in code at `apps/web/src/styles/tokens/` (`color.css`, `typography.css`, `layout.css`). If this document and the token files disagree, fix them together in the same change.
+> Structure and code rules are in [03 Frontend Blueprint](03-frontend-blueprint.md); this document only covers how things look. Token values live in code at `frontend/apps/web/src/styles/tokens/` (`color.css`, `typography.css`, `layout.css`). If this document and the token files disagree, fix them together in the same change.
 >
 > `MUST` and `NEVER` are followed without exception. `RECOMMENDED` needs judgment.
+
+> **Path conventions:** frontend code paths such as `apps/web/` are relative to `frontend/`; explicit `frontend/` paths are relative to the repository root.
 
 ## 0. Rules at a glance
 

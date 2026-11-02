@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** Provisional 09 WBS 23 `PostDetailController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 23 `PostDetailController` contract; replace with Orval types when OpenAPI is available. */
 export type PostAuthor = {
   id: number;
   login: string;

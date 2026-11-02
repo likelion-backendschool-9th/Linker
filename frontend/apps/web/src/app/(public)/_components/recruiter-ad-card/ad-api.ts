@@ -1,14 +1,14 @@
 import { apiFetch } from '@/lib/api/api-fetch';
 
 /**
- * `[Included]` job ads of 09 WBS 24 (blueprint ch. 15). The item carries no URL: a tap records the
+ * `[Included]` job ads of WBS 24 (blueprint ch. 15). The item carries no URL: a tap records the
  * click and returns it. Shared by 24 feed and 04's job ad sheet (blueprint §3-3).
  */
 export type RecruiterAd = {
   adId: number;
   companyName: string;
   title: string;
-  /** `JobCategory` key (08 ERD) */
+  /** `JobCategory` key (ERD) */
   jobCategory: string;
   /** `yyyy-MM-dd` */
   closesOn: string;

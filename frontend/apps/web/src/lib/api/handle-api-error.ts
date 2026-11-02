@@ -4,7 +4,7 @@ import { toast } from '@/stores/toast-store';
 import { ApiError } from './api-error';
 
 /**
- * Shared handling of the common failure codes (blueprint §5-4, 09 WBS §1-4). Browser only.
+ * Shared handling of the common failure codes (blueprint §5-4, WBS §1-4). Browser only.
  * Anything else is left to the screen that made the call.
  */
 export function handleApiError(error: unknown) {

@@ -1,4 +1,4 @@
-/** `reports.target_type` and `reports.reason` (08 ERD; 04 ch. 9 "Reports"). */
+/** `reports.target_type` and `reports.reason` (ERD; 04 ch. 9 "Reports"). */
 export const REPORT_TARGET_TYPES = [
   'USER',
   'POST',

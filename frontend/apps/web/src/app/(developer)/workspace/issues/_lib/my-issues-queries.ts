@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import type { IssueStatus } from '../../../_lib/issue-status';
 
 /**
- * Provisional 07 `WorkspaceController` method `GET /api/v1/user/me/issues` (09 WBS 07, added by C):
+ * Provisional 07 `WorkspaceController` method `GET /api/v1/user/me/issues` (WBS 07, added by C):
  * open issues assigned to me across all teams, by due date (ERD I-5). `repoName` is a proposal.
  */
 export type MyIssue = {

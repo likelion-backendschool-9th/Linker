@@ -25,7 +25,7 @@ export type IssueFilters = {
   open: boolean;
 };
 
-/** Query string for the 09 WBS list endpoints (`repo`, `status`, `assignee`, `label`, `open`). */
+/** Query string for the WBS list endpoints (`repo`, `status`, `assignee`, `label`, `open`). */
 export function issueFilterQuery(filters: IssueFilters): URLSearchParams {
   const query = new URLSearchParams();
   if (filters.repo) query.set('repo', filters.repo);

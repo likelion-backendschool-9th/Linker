@@ -1,7 +1,7 @@
 # Linker Terms of Service
 
 > Question this document answers: **What are the rights and duties of members and the company?**
-> Personal data processing is in the [Privacy Policy](./06-privacy-policy.md); detailed feature rules and the community policy (reports, sanctions, blocking) in the [Policy](./04-policy.md).
+> Personal data processing is in the [Privacy Policy](06-privacy-policy.md); detailed feature rules and the community policy (reports, sanctions, blocking) in the [Policy](04-policy.md).
 >
 > **This is an English reference translation.** The text shown to users is the Korean original; when building the terms viewer (page 03), render the Korean source document.
 
@@ -13,7 +13,7 @@
 | 2. AI feature notice | First use of AI summary, team settings | MVP (Flex teams) |
 | 3. Business Member (recruiter) Supplementary Terms | Required consent at recruiter sign-up | MVP |
 
-The "community policy" referred to in these terms is the user-facing publication of [Policy ch. 9 Reports, sanctions, blocking](./04-policy.md#9-reports-sanctions-blocking) (linked from Settings > Terms and from report/sanction notifications).
+The "community policy" referred to in these terms is the user-facing publication of [Policy ch. 9 Reports, sanctions, blocking](04-policy.md#9-reports-sanctions-blocking) (linked from Settings > Terms and from report/sanction notifications).
 
 **Notation**: `[brackets]` are values to fill in; numbers marked `(tentative)` are tentative values from the Policy.
 

@@ -1,6 +1,6 @@
 /*
  * Design token entry point. Components read tokens through var() in their *.module.css.
- * Rules for using them: frontend/11-design-guide.md.
+ * Rules for using them: docs/development/04-design-guide.md.
  */
 
 @import './tokens/color.css';

@@ -56,7 +56,7 @@ export type MockContext = {
 
 export type MockRoute = {
   method: Method;
-  /** Path as written in 09 WBS, with `:param` segments */
+  /** Path as written in WBS, with `:param` segments */
   path: string;
   only?: 'developer';
   handle: (ctx: MockContext) => unknown;
@@ -89,7 +89,7 @@ export function fail(
   throw new ApiError(status, { code, message, detail });
 }
 
-/** `{ items, nextCursor }` list convention (09 WBS §1-2): cursor is the next start index here. */
+/** `{ items, nextCursor }` list convention (WBS §1-2): cursor is the next start index here. */
 export function paginate<T>(items: T[], query: URLSearchParams, size = 20) {
   const start = Number(query.get('cursor') ?? 0) || 0;
   const next = start + size;

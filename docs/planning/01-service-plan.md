@@ -1,7 +1,7 @@
 # Linker Service Plan
 
 > Question this document answers: **How is Linker structured?**
-> Why we build it and what it should achieve is in the [PRD](./02-prd.md), first-release scope in the [MVP Definition](./03-mvp-definition.md), and detailed per-feature rules in the [Policy](./04-policy.md).
+> Why we build it and what it should achieve is in the [PRD](02-prd.md), first-release scope in the [MVP Definition](03-mvp-definition.md), and detailed per-feature rules in the [Policy](04-policy.md).
 
 ## 1. Service overview
 
@@ -19,7 +19,7 @@ In one sentence: "LinkedIn for developers, where the way you work becomes your p
 
 ## 2. User pain points and how Linker solves them
 
-Linker starts from three frustrations that developers on team projects face. Below are the scenes users actually experience and how Linker's structure solves them. Problem definitions and target metrics are in [PRD ch. 2](./02-prd.md#2-problem-definition).
+Linker starts from three frustrations that developers on team projects face. Below are the scenes users actually experience and how Linker's structure solves them. Problem definitions and target metrics are in [PRD ch. 2](02-prd.md#2-problem-definition).
 
 ### 2-1. The workspace is scattered
 
@@ -115,7 +115,7 @@ Linker consists of four areas and two foundations supporting them.
 | Foundation: Profile | Where activity from every area gathers | GitHub contribution graph, completion record, featured posts, tech stack | 1 |
 | Foundation: Trust, safety, operations | Protects the service | Report / block, operations back office | 1 |
 
-Subscriptions (Pro / Flex) are not a separate area; they extend limits and stats of the areas above. The Scout subscription lets a recruiter run one job ad in the feed and send more recruiting offers. Collaboration and connection are free (only team chat AI summary, full chat history and the project progress graph are Flex benefits), and trust indicators such as the contribution graph and completion record never change with a subscription. Plans and prices are in [PRD ch. 6](./02-prd.md#6-revenue-model); limits and payment rules in [Policy: Subscription](./04-policy.md#11-subscription).
+Subscriptions (Pro / Flex) are not a separate area; they extend limits and stats of the areas above. The Scout subscription lets a recruiter run one job ad in the feed and send more recruiting offers. Collaboration and connection are free (only team chat AI summary, full chat history and the project progress graph are Flex benefits), and trust indicators such as the contribution graph and completion record never change with a subscription. Plans and prices are in [PRD ch. 6](02-prd.md#6-revenue-model); limits and payment rules in [Policy: Subscription](04-policy.md#11-subscription).
 
 ## 4. Information architecture (IA)
 
@@ -270,7 +270,7 @@ Ads are chosen only by the job categories the developer picked; behavioral data 
 
 ### 5-8. Team chat AI summary (Flex)
 
-Summarizes existing team chat like meeting notes, with no recording or transcription. Rules are in [Policy POL-C-5](./04-policy.md#ai-chat-summary-pol-c-5).
+Summarizes existing team chat like meeting notes, with no recording or transcription. Rules are in [Policy POL-C-5](04-policy.md#ai-chat-summary-pol-c-5).
 
 1. Tap the "AI summary" button at the top of a team chat room and choose a range (since last read, today, last 24 hours, since last summary).
 2. For Flex teams (including the 7-day free trial), the server sends messages in that range to the LLM to produce a one-line summary, decisions, to-dos and open questions, shown in a summary sheet. Tapping an item jumps to the original message.
@@ -296,7 +296,7 @@ Summarizes existing team chat like meeting notes, with no recording or transcrip
 - Designed for one-handed mobile use; main buttons sit at the bottom of the screen.
 - Social (Home, Profile) and work (Workspace, team chat) are separated by color so they don't mix; Profile sits in the header instead of a bottom tab.
 - Information from GitHub (repo cards, PR notices, issues) is shown with the GitHub icon so the source is clear.
-- Error and empty-state copy follows the [Policy's UI copy guide](./04-policy.md#12-ui-copy-guide).
+- Error and empty-state copy follows the [Policy's UI copy guide](04-policy.md#12-ui-copy-guide).
 - Without logging in, users can read Home (feed, posts), Find Team (recruit posts) and profiles. Actions like like/comment/follow/apply/message, or tapping the Workspace/Chat tabs or the header's profile icon, show the "This feature is for logged-in users" sheet and return to the same screen after login (A-9, POL-A-9).
 
 ## 7. System architecture
@@ -345,7 +345,7 @@ Linker handles both login and org integration with one **GitHub App**. A GitHub 
 | Contribution graph | GitHub GraphQL contribution calendar | Fetched once a day and shown on profile |
 | Chats, posts, recruit posts, completion records | Linker | Linker DB is the source |
 
-Required permissions and webhooks are in [PRD ch. 8](./02-prd.md#8-github-integration-requirements); sync intervals and failure handling in [Policy: Issues & schedule](./04-policy.md#7-issues--schedule).
+Required permissions and webhooks are in [PRD ch. 8](02-prd.md#8-github-integration-requirements); sync intervals and failure handling in [Policy: Issues & schedule](04-policy.md#7-issues--schedule).
 
 ### 7-3. Tech stack
 
