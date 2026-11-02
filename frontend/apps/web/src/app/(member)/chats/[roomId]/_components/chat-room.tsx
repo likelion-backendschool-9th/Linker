@@ -21,6 +21,7 @@ import { useStompConnectionState, useStompSubscription } from '@/lib/realtime/us
 import { useMessageOutbox } from '../_hooks/use-message-outbox';
 import {
   markRead,
+  mergeCatchUpHistory,
   messagesKey,
   messagesOptions,
   missedMessages,
@@ -55,6 +56,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
   const lastSeen = useRef(0);
   const [catchUpError, setCatchUpError] = useState(false);
   const [largeGap, setLargeGap] = useState(false);
+  const [readPosition, setReadPosition] = useState<{ id: number } | null>(null);
   const read = useMutation({
     scope: { id: `chat-read:${viewer.login}:${roomId}` },
     mutationFn: (id: number) => markRead(roomId, id),
@@ -97,13 +99,14 @@ export function ChatRoom({ roomId }: { roomId: number }) {
   );
   const catchUp = useCallback(async () => {
     try {
+      const position = lastSeen.current || latest.current;
       const page = await missedMessages(roomId, latest.current);
       if (page.items.length > CHAT.catchUpMax) {
         setLargeGap(true);
-        client.setQueryData<InfiniteData<MessagePage>>(messagesKey(viewer.login, roomId), {
-          pages: [{ items: page.items.slice(-CHAT.catchUpMax), hasMore: true }],
-          pageParams: [null],
-        });
+        // Keep the cached read position and every returned message: truncating here
+        // loses the anchor and creates a gap that older-page pagination cannot fill.
+        client.setQueryData<InfiniteData<MessagePage>>(messagesKey(viewer.login, roomId), (data) => mergeCatchUpHistory(data, page));
+        setReadPosition({ id: position || page.items[0]!.id });
       } else page.items.forEach(receive);
       setCatchUpError(false);
     } catch {
@@ -204,6 +207,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
       <MessageTimeline
         messages={messages}
         login={viewer.login}
+        readPosition={readPosition}
         onRead={(id) => {
           if (id <= lastSeen.current || suspended) return;
           lastSeen.current = id;
