@@ -49,7 +49,7 @@ test('completed teams hand off to E and member profiles hand off to A with docum
   await page.goto('/teams/3/settings');
   await expect(page.getByRole('link', { name: '작업물 올리기' })).toHaveAttribute(
     'href',
-    '/posts/new',
+    '/posts/new?teamId=3',
   );
   await expect(page.getByRole('link', { name: '한서준 프로필 보기' })).toHaveAttribute(
     'href',
@@ -75,7 +75,7 @@ test('profile handoff closes the stats sheet before navigation and back does not
   const link = page.getByRole('link', { name: '내 프로필에서 확인' });
   await expect(link).toHaveAttribute('href', '/u/seojun-han');
   await link.click();
-  // PR #26 is not merged: this checks the URL/history contract, not profile page contents.
+  // This checks the URL/history handoff; profile page contents are owned by A.
   await expect(page).toHaveURL('/u/seojun-han');
   await page.goBack();
   await expect(page).toHaveURL('/me/stats');
@@ -87,6 +87,8 @@ test('admin reports handoff uses only A supported list filters and closes mobile
 }) => {
   await role(page, 'operator');
   await page.goto('/admin/users');
+  await page.getByRole('textbox', { name: '인증 코드', exact: true }).fill('123456');
+  await page.getByRole('button', { name: '인증하고 신고 보기', exact: true }).click();
   await page.getByRole('button', { name: /한서준/ }).click();
   const link = page.getByRole('link', { name: '처리된 신고 목록 보기' });
   await expect(link).toHaveAttribute('href', '/admin/reports?tab=reports&status=HANDLED');
@@ -109,4 +111,26 @@ test('B workspace and real PR 35 list connect through issue detail and back', as
   await expect(page).toHaveURL('/workspace/issues');
   await page.getByRole('button', { name: '뒤로', exact: true }).click();
   await expect(page).toHaveURL('/workspace');
+});
+
+test('D mock refund removes B Pro stats on entry and after a full reload', async ({ page }) => {
+  await page.goto('/me/stats');
+  await expect(page.getByRole('heading', { name: '채용 담당자 조회', exact: true })).toBeVisible();
+
+  await page.goto('/settings/subscription');
+  await page.getByRole('button', { name: '환불하기 · Pro 월간', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: '전액 환불할까요?' })
+    .getByRole('button', { name: '전액 환불하기', exact: true })
+    .click();
+  await expect(page.getByText('환불 완료', { exact: false })).toBeVisible();
+
+  await page.goto('/me/stats');
+  await expect(page.getByRole('link', { name: 'Pro로 보기', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '채용 담당자 조회', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole('link', { name: 'Pro로 보기', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '채용 담당자 조회', exact: true })).toHaveCount(0);
 });

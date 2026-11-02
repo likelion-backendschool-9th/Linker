@@ -5,8 +5,12 @@ export const collaborationLinks = {
   myIssues: '/workspace/issues' as Route,
   myStats: '/me/stats' as Route,
   handledReports: '/admin/reports?tab=reports&status=HANDLED' as Route,
-  postCreate: '/posts/new' as Route,
 };
+
+/** Page 22 uses teamId to narrow its repository list and preselect a single available repo. */
+export function teamPostCreateHref(teamId: number): Route {
+  return `/posts/new?${new URLSearchParams({ teamId: String(teamId) })}` as Route;
+}
 
 export function profileHref(login: string): Route {
   return `/u/${encodeURIComponent(login)}` as Route;

@@ -19,9 +19,9 @@ import { formatDate } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { TEAM } from '@/lib/policy';
 import {
-  collaborationLinks,
   profileHref,
   teamPlanHref,
+  teamPostCreateHref,
 } from '@/lib/navigation/collaboration-links';
 
 import { invitesOptions, membersOptions, settingsOptions } from '../_lib/settings-queries';
@@ -358,7 +358,7 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
         <div className={styles.actions}>
           {team.status === 'COMPLETED' && (
             <Button asChild variant="outline">
-              <Link href={collaborationLinks.postCreate}>작업물 올리기</Link>
+              <Link href={teamPostCreateHref(team.id)}>작업물 올리기</Link>
             </Button>
           )}
           {permissions.completeProject && (

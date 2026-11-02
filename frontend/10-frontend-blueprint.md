@@ -358,7 +358,8 @@ export function useOverlay(key: OverlayKey) {
 | 03 legal, tech tags, job categories | Next fetch cache 1 day (`revalidate: 86400`), tags `legal` (+ `generateStaticParams`), `tech-tags`, `job-categories` |
 | 28 plans (`GET /api/v1/user/plans?reason=`) | Personalized (including trial eligibility): server `cache: 'no-store'`, no shared Next cache; TanStack `staleTime 30s`, query key includes account ID and reason; invalidate after checkout/subscription changes and clear on logout/account switch |
 | 04 contribution graph | Server: Next fetch cache 1h, tag `contrib:{login}`; month navigation: TanStack `staleTime 1h` |
-| 23 README (on expand), 30 My stats (per person, no Next cache) | TanStack `staleTime 1h` |
+| 23 README (on expand), 30 My stats charts (per person, no Next cache) | TanStack `staleTime 1h` |
+| 30 stats summary (including Pro access) | TanStack `staleTime 1h`, `refetchOnMount: 'always'`; key under the existing subscription account prefix so checkout/cancel/refund invalidates it. Recheck access before showing or requesting Pro data; server `cache: 'no-store'` |
 | 11 Progress | TanStack `staleTime 60s`; invalidate on issue status change (12, 14) |
 | 17 AI summaries left, 04/33 offers left today | TanStack; invalidate after use |
 | 11 pull-to-refresh | Button disabled for remaining time (`aria-disabled` + seconds) |
