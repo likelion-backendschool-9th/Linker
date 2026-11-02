@@ -8,11 +8,59 @@ spring:
     password: ${DB_PASSWORD}
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+
+  jackson:
+    default-property-inclusion: always
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+linker:
+  session:
+    cookie-name: ${SESSION_COOKIE_NAME:linker_session}
+    same-site: Lax
+    secure: ${SESSION_COOKIE_SECURE:false}
+    domain: ${SESSION_COOKIE_DOMAIN:}
+    path: /
+    lifetime-days: 30
+  security:
+    public-read-per-minute: 60
+    enforce-origin: false
+    allowed-origins: ${ALLOWED_ORIGINS:}
+    trust-forwarded-for: false
+  storage:
+    mode: ${STORAGE_MODE:unconfigured}
+    local-dir: ${STORAGE_LOCAL_DIR:}
+  github:
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+  webhook:
+    consumer-enabled: true
+    queue-key: linker:github:webhook
