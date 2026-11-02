@@ -43,7 +43,7 @@ flowchart LR
 
 - 프론트엔드에는 A~E 담당 화면의 기본 구현과 목업 모드가 병합돼 있습니다. 화면이 있다는 것과 실제 API·외부 서비스까지 동작한다는 것은 구분합니다.
 - 백엔드는 Spring Boot 애플리케이션, JPA·PostgreSQL·Redis 연결 설정 등 기반이 있으며, 업무 컨트롤러와 실제 인증·채팅·결제 연동은 후속 구현 대상입니다.
-- Docker Compose·Nginx 실행 구성, CI, `main` 기반 이미지 빌드·자동 배포 워크플로가 있습니다. 자동 배포는 서버와 GitHub의 초기 설정을 마친 뒤 검증해야 합니다.
+- Docker Compose·Nginx 실행 구성과 CI가 있으며, 운영 문서에 `main` 기반 첫 자동 배포 성공과 외부 HTTPS 확인이 기록돼 있습니다. `dev → main` 병합이 실제 배포를 시작하며, 후속 변경도 [자동 배포 가이드](docs/operations/04-automatic-deployment.md)에 따라 확인합니다.
 - AI 요약·진행 현황 등 `[Included]` 항목은 핵심 `[Required]` 기능 이후에 진행합니다. 외부 제공자·AI 모델 등 미확정 항목은 구현 전에 팀에서 결정합니다.
 
 전체 기획 범위는 [MVP 정의](docs/planning/03-mvp-definition.md), 페이지별 완료 조건은 [페이지 TODO](docs/planning/07-page-todo.md)를 참고하세요. WBS의 **33개 페이지·40개 컨트롤러·204개 REST 엔드포인트·69개 테이블**은 설계 규모이며 현재 구현 완료 수가 아닙니다.
@@ -89,6 +89,58 @@ flowchart LR
 | E    | [#58](https://github.com/likelion-backendschool-9th/Linker/issues/58) | [#59](https://github.com/likelion-backendschool-9th/Linker/issues/59) |
 
 <!-- TEAM_ISSUES_END -->
+
+<!-- PAGE_ISSUE_INDEX_START -->
+
+담당자별 이슈는 상위 추적으로 유지하고, 실행할 작업은 **페이지별 프론트엔드 36개·백엔드 36개**로 나눴습니다. 33개 페이지 중 07의 내 이슈(C), 17의 PR(B)·AI 요약(C)을 분리한 36개 작업 범위이며 새 페이지를 추가한 것이 아닙니다. 00 공통 기반은 기존 #48·#49에서 담당자별로 관리합니다.
+
+각 세부 이슈에는 화면/도메인 체크리스트, 권한·입력 제한·예외, WBS API와 관련 테이블, 협업/상대 FE·BE 링크, 완료 검증과 근거 문서가 있습니다. `[Included]`는 핵심 `[Required]` 이후 진행합니다.
+
+<details>
+<summary>페이지별 세부 이슈 72개 보기</summary>
+
+| 페이지 | 담당 | 작업                                                | 프론트엔드                                                              | 백엔드                                                                  |
+| ------ | ---- | --------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 01     | A    | 시작 화면·GitHub 로그인                             | [#62](https://github.com/likelion-backendschool-9th/Linker/issues/62)   | [#63](https://github.com/likelion-backendschool-9th/Linker/issues/63)   |
+| 02     | A    | 온보딩·동의·기본 프로필                             | [#64](https://github.com/likelion-backendschool-9th/Linker/issues/64)   | [#65](https://github.com/likelion-backendschool-9th/Linker/issues/65)   |
+| 03     | A    | 약관·개인정보·정책 문서 뷰어                        | [#66](https://github.com/likelion-backendschool-9th/Linker/issues/66)   | [#67](https://github.com/likelion-backendschool-9th/Linker/issues/67)   |
+| 04     | A    | 프로필·팔로우·작업물·채용 담당자 마이페이지         | [#68](https://github.com/likelion-backendschool-9th/Linker/issues/68)   | [#69](https://github.com/likelion-backendschool-9th/Linker/issues/69)   |
+| 05     | A    | 프로필 수정·GitHub 다시 불러오기                    | [#70](https://github.com/likelion-backendschool-9th/Linker/issues/70)   | [#72](https://github.com/likelion-backendschool-9th/Linker/issues/72)   |
+| 06     | A    | 설정·알림 설정·차단·탈퇴                            | [#73](https://github.com/likelion-backendschool-9th/Linker/issues/73)   | [#74](https://github.com/likelion-backendschool-9th/Linker/issues/74)   |
+| 07     | B    | 워크스페이스·팀 목록·팀 전환                        | [#75](https://github.com/likelion-backendschool-9th/Linker/issues/75)   | [#76](https://github.com/likelion-backendschool-9th/Linker/issues/76)   |
+| 07-my  | C    | 내 이슈 목록 `[Included]`                           | [#77](https://github.com/likelion-backendschool-9th/Linker/issues/77)   | [#78](https://github.com/likelion-backendschool-9th/Linker/issues/78)   |
+| 08     | B    | GitHub App 설치·팀 생성 5단계                       | [#79](https://github.com/likelion-backendschool-9th/Linker/issues/79)   | [#80](https://github.com/likelion-backendschool-9th/Linker/issues/80)   |
+| 09     | B    | 팀 설정·멤버·소유권·완료 관리                       | [#81](https://github.com/likelion-backendschool-9th/Linker/issues/81)   | [#82](https://github.com/likelion-backendschool-9th/Linker/issues/82)   |
+| 10     | B    | 초대 링크 확인·팀 참여                              | [#83](https://github.com/likelion-backendschool-9th/Linker/issues/83)   | [#84](https://github.com/likelion-backendschool-9th/Linker/issues/84)   |
+| 11     | C    | 이슈 목록·필터·일정 없음·진행 현황                  | [#85](https://github.com/likelion-backendschool-9th/Linker/issues/85)   | [#86](https://github.com/likelion-backendschool-9th/Linker/issues/86)   |
+| 12     | C    | 이슈 상세·담당자/라벨/일정/상태 시트                | [#87](https://github.com/likelion-backendschool-9th/Linker/issues/87)   | [#88](https://github.com/likelion-backendschool-9th/Linker/issues/88)   |
+| 13     | C    | 이슈 작성·템플릿·생성 진행/복구                     | [#89](https://github.com/likelion-backendschool-9th/Linker/issues/89)   | [#90](https://github.com/likelion-backendschool-9th/Linker/issues/90)   |
+| 14     | C    | 상태 보드·드래그·키보드 상태 변경                   | [#91](https://github.com/likelion-backendschool-9th/Linker/issues/91)   | [#92](https://github.com/likelion-backendschool-9th/Linker/issues/92)   |
+| 15     | C    | 캘린더·기간 막대·날짜별 이슈                        | [#93](https://github.com/likelion-backendschool-9th/Linker/issues/93)   | [#94](https://github.com/likelion-backendschool-9th/Linker/issues/94)   |
+| 16     | D    | 채팅 목록·메시지 요청                               | [#95](https://github.com/likelion-backendschool-9th/Linker/issues/95)   | [#96](https://github.com/likelion-backendschool-9th/Linker/issues/96)   |
+| 17     | D    | 팀·개인 채팅·사진·메시지 메뉴·공유                  | [#97](https://github.com/likelion-backendschool-9th/Linker/issues/97)   | [#98](https://github.com/likelion-backendschool-9th/Linker/issues/98)   |
+| 17-pr  | B    | 채팅 PR 목록·시스템 메시지                          | [#99](https://github.com/likelion-backendschool-9th/Linker/issues/99)   | [#100](https://github.com/likelion-backendschool-9th/Linker/issues/100) |
+| 17-ai  | C    | Flex AI 채팅 요약·할 일→이슈 `[Included]`           | [#101](https://github.com/likelion-backendschool-9th/Linker/issues/101) | [#102](https://github.com/likelion-backendschool-9th/Linker/issues/102) |
+| 18     | D    | 알림 목록·읽음·이의 제기·Android 푸시               | [#103](https://github.com/likelion-backendschool-9th/Linker/issues/103) | [#104](https://github.com/likelion-backendschool-9th/Linker/issues/104) |
+| 19     | E    | 모집글 목록·필터·내 모집/지원                       | [#105](https://github.com/likelion-backendschool-9th/Linker/issues/105) | [#106](https://github.com/likelion-backendschool-9th/Linker/issues/106) |
+| 20     | E    | 모집글 작성·수정·마감/재개                          | [#107](https://github.com/likelion-backendschool-9th/Linker/issues/107) | [#108](https://github.com/likelion-backendschool-9th/Linker/issues/108) |
+| 21     | E    | 모집 상세·지원·지원자 검토/수락                     | [#109](https://github.com/likelion-backendschool-9th/Linker/issues/109) | [#110](https://github.com/likelion-backendschool-9th/Linker/issues/110) |
+| 22     | E    | 작업물 작성·레포/사진·초안                          | [#111](https://github.com/likelion-backendschool-9th/Linker/issues/111) | [#112](https://github.com/likelion-backendschool-9th/Linker/issues/112) |
+| 23     | E    | 작업물 상세·좋아요/댓글·유입 기록                   | [#113](https://github.com/likelion-backendschool-9th/Linker/issues/113) | [#114](https://github.com/likelion-backendschool-9th/Linker/issues/114) |
+| 24     | E    | 홈 피드·추천·광고 카드                              | [#115](https://github.com/likelion-backendschool-9th/Linker/issues/115) | [#116](https://github.com/likelion-backendschool-9th/Linker/issues/116) |
+| 25     | A    | 운영 신고·조치·이의 제기                            | [#117](https://github.com/likelion-backendschool-9th/Linker/issues/117) | [#118](https://github.com/likelion-backendschool-9th/Linker/issues/118) |
+| 26     | B    | 운영 회원·제재·이메일 열람·환불                     | [#119](https://github.com/likelion-backendschool-9th/Linker/issues/119) | [#120](https://github.com/likelion-backendschool-9th/Linker/issues/120) |
+| 27     | B    | 운영 조치 기록·기간/운영자 필터                     | [#121](https://github.com/likelion-backendschool-9th/Linker/issues/121) | [#122](https://github.com/likelion-backendschool-9th/Linker/issues/122) |
+| 28     | D    | 요금제·Toss 테스트 결제·승인 결과                   | [#123](https://github.com/likelion-backendschool-9th/Linker/issues/123) | [#124](https://github.com/likelion-backendschool-9th/Linker/issues/124) |
+| 29     | D    | 구독 관리·해지·환불·만료/유예                       | [#125](https://github.com/likelion-backendschool-9th/Linker/issues/125) | [#126](https://github.com/likelion-backendschool-9th/Linker/issues/126) |
+| 30     | B    | 내 통계·Pro 유입/채용 조회·대표 작업물 `[Included]` | [#127](https://github.com/likelion-backendschool-9th/Linker/issues/127) | [#128](https://github.com/likelion-backendschool-9th/Linker/issues/128) |
+| 31     | A    | 채용 담당자 가입·회사 이메일 인증 `[Included]`      | [#129](https://github.com/likelion-backendschool-9th/Linker/issues/129) | [#130](https://github.com/likelion-backendschool-9th/Linker/issues/130) |
+| 32     | A    | 채용 담당자 로그인·비밀번호 재설정 `[Included]`     | [#131](https://github.com/likelion-backendschool-9th/Linker/issues/131) | [#132](https://github.com/likelion-backendschool-9th/Linker/issues/132) |
+| 33     | A    | 보낸 채용 제안 목록·요약·첫 메시지 `[Included]`     | [#133](https://github.com/likelion-backendschool-9th/Linker/issues/133) | [#134](https://github.com/likelion-backendschool-9th/Linker/issues/134) |
+
+</details>
+
+<!-- PAGE_ISSUE_INDEX_END -->
 
 ## 서비스 구조
 
