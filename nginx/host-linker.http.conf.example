@@ -1,0 +1,26 @@
+# Initial HTTP configuration for /etc/nginx/sites-available/linker on the host.
+# Certbot adds HTTPS: certbot --nginx -d linker.newlecture.com --redirect
+# Do NOT overwrite an existing Certbot-managed configuration with this HTTP example.
+map $http_upgrade $linker_host_connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+server {
+    listen 80;
+    server_name linker.newlecture.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3004;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $linker_host_connection_upgrade;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_buffering off;
+    }
+}

@@ -1,5 +1,7 @@
 # Docker Compose 로컬 실행
 
+리눅스 서버 배포 준비와 실행 순서는 [배포 가이드](03-deployment.md)를 참고하세요.
+
 Nginx, Next.js 웹, Spring Boot, PostgreSQL 16, Redis 7을 함께 실행하는 로컬 구성입니다.
 Docker Engine/Desktop과 Docker Compose가 필요하며 Node·pnpm·Java는 컨테이너에서 설치합니다.
 
@@ -66,6 +68,7 @@ docker compose ps
 ```
 
 개발 설정을 지정하지 않으면 Dockerfile의 마지막 `runtime` 단계를 사용합니다. 개발 서버와 Compose Watch는 실제 공개 서버에서 사용하지 않습니다.
+리눅스 서버에서는 [배포 가이드](03-deployment.md)에 따라 `compose.yml`과 `compose.prod.yml`을 함께 지정합니다. 기본 파일만 실행하면 로컬 디버깅 포트가 다시 열립니다.
 
 | 서비스 | 로컬 주소 | 준비 상태 확인 |
 | --- | --- | --- |
@@ -75,7 +78,7 @@ docker compose ps
 | PostgreSQL | localhost:5500 | `pg_isready` |
 | Redis | localhost:6379 | `redis-cli ping` |
 
-웹에서는 현재 초기 세팅 확인 화면이 표시됩니다. Spring은 아직 API가 없어 `/`가 404를 반환하는 것이 정상입니다.
+웹에서는 구현된 프론트 화면을 제공합니다. 기본 Docker 빌드에는 목업이 없으므로 로그인·업무 기능은 실제 백엔드 구현이 필요합니다. Spring은 아직 API가 없어 `/`가 404를 반환하는 것이 정상입니다.
 Spring의 포트 검사는 API·인증·DB·Redis 기능의 통합 검증을 의미하지 않습니다.
 DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 연결을 수신한 뒤 웹을 시작합니다. Nginx는 웹·Spring이 준비된 뒤 시작합니다.
 각 호스트 포트는 `127.0.0.1`에만 열립니다. 기존 로컬 서버가 같은 포트를 쓰면 먼저 해당 서버를 중지하거나 Compose의 호스트 포트를 조정하세요.
@@ -86,7 +89,7 @@ DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 
 
 | 경로 | 전달 대상 | 현재 상태 |
 | --- | --- | --- |
-| `/`, 정적 파일 등 | Next.js `web:3000` | 초기 세팅 화면 제공 |
+| `/`, 정적 파일 등 | Next.js `web:3000` | 프론트 화면 제공 |
 | `/api/v1/*` (GitHub 웹훅 포함) | Spring `backend:8080` | 경로·쿼리·메서드·본문·쿠키를 전달. API는 후속 구현 |
 | `/api/bff/*` | Next.js `web:3000` | BFF 구현을 위한 경로 예약. 현재 404 |
 | `/ws`, `/ws/*` | Spring `backend:8080` | WebSocket Upgrade 헤더·300초 timeout 설정. STOMP 서버 구현 전에는 404 |
@@ -95,7 +98,7 @@ DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 
 `nginx/default.conf`가 위 경로를 정의합니다. 컨테이너가 재생성되어 IP가 바뀌면 Docker DNS로 다시 조회합니다.
 인증 쿠키를 JavaScript에 노출하거나 별도의 사용자 ID 헤더로 변환하지 않습니다. 실제 로그인·쿠키 발급·WebSocket 권한 검사는 아직 구현 전입니다.
 인증이 구현되면 STOMP heartbeat를 프록시 timeout보다 짧게 설정하고 실제 송수신·재연결을 검증해야 합니다.
-이 단계는 HTTP 로컬 실행용입니다. 운영 HTTPS·인증 쿠키·외부 웹훅 주소는 서버·도메인이 결정된 뒤 설정합니다.
+기본 구성은 HTTP 로컬 실행용입니다. 서버 HTTPS는 호스트 Nginx에서 종료하고, `compose.prod.yml`이 선택하는 `nginx/production.conf`에서 HTTPS 전달 정보를 유지합니다. 서버 운영 절차는 [배포 가이드](03-deployment.md)를 참고하세요.
 
 ## 환경변수와 네트워크
 
@@ -133,5 +136,5 @@ API 생성은 실행 중인 서버에 의존하므로 이미지 빌드 중 자�
 
 1. 로컬에서 다섯 서비스가 준비되고 Nginx 주소에서 웹 화면이 열리는지 확인
 2. 별도 작업 브랜치에서 BFF 구현, 세션 쿠키 전달 및 STOMP 연결 검증
-3. 개발·운영 Compose 설정 분리, 운영 로그·재시작·자원 제한 구성
-4. 서버·도메인 결정 후 HTTPS·외부 연동·백업 설정
+3. 운영에서는 `compose.prod.yml`을 함께 사용해 포트·로그·재시작·자원을 제한
+4. 운영 설정 적용 확인 후 외부 연동·백업·자동 배포 구성

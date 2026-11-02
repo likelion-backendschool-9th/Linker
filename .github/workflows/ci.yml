@@ -36,6 +36,7 @@ jobs:
             infrastructure:
               - 'compose*.yml'
               - 'nginx/**'
+              - 'scripts/verify-production-compose.py'
               - '.env.example'
               - 'frontend/Dockerfile'
               - 'frontend/.dockerignore'
@@ -121,15 +122,30 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-compose-action@v1
         with:
-          version: v5.6.0
-      - name: Validate production Compose
+          version: v2.40.3
+      - name: Validate base Compose
         run: docker compose --env-file /dev/null -f compose.yml config --quiet
+      - name: Validate production Compose and deployment invariants
+        run: python3 scripts/verify-production-compose.py
+      - uses: docker/setup-compose-action@v1
+        with:
+          version: v5.6.0
       - name: Validate development Compose
         run: docker compose --env-file /dev/null -f compose.yml -f compose.dev.yml config --quiet
       - name: Validate Nginx
         run: >-
           docker run --rm
           --mount "type=bind,src=${{ github.workspace }}/nginx/default.conf,dst=/etc/nginx/conf.d/default.conf,readonly"
+          nginx:1.28-alpine nginx -t
+      - name: Validate production Nginx
+        run: >-
+          docker run --rm
+          --mount "type=bind,src=${{ github.workspace }}/nginx/production.conf,dst=/etc/nginx/conf.d/default.conf,readonly"
+          nginx:1.28-alpine nginx -t
+      - name: Validate host Nginx example
+        run: >-
+          docker run --rm
+          --mount "type=bind,src=${{ github.workspace }}/nginx/host-linker.http.conf.example,dst=/etc/nginx/conf.d/default.conf,readonly"
           nginx:1.28-alpine nginx -t
 
   # 룰셋 필수 체크는 이거 하나만 걸면 됨
