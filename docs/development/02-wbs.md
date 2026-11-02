@@ -1,7 +1,7 @@
 # Linker WBS
 
 > Question this document answers: **Who builds which APIs and screens, and when?**
-> Page numbers and screen work come from [07 Page TODO](./07-page-todo.md), tables from [08 ERD](./08-erd.md) 7-2, and numbers and exception rules from [04 Policy](./04-policy.md); those are the sources of truth. This document groups them as "one task = one page = one controller" and adds owners and dates.
+> Page numbers and screen work come from [07 Page TODO](../planning/07-page-todo.md), tables from [01 ERD](01-erd.md) 7-2, and numbers and exception rules from [04 Policy](../planning/04-policy.md); those are the sources of truth. This document groups them as "one task = one page = one controller" and adds owners and dates.
 
 ## 0. At a glance
 
@@ -112,7 +112,7 @@ Half-day (0.5) units. "→" = morning → afternoon.
 
 | When | Flow that must run end to end | Pages needed |
 | --- | --- | --- |
-| End of D2 | 6 spikes pass (WebView GitHub login, App install return, Projects Blocked + date fields, webhook receipt, STOMP reconnect, Toss confirm/cancel) + frontend foundation "end of D2 check" ([10 frontend blueprint §1-1](../frontend/10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) | 00 |
+| End of D2 | 6 spikes pass (WebView GitHub login, App install return, Projects Blocked + date fields, webhook receipt, STOMP reconnect, Toss confirm/cancel) + frontend foundation "end of D2 check" ([03 frontend blueprint §1-1](03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) | 00 |
 | End of D5 | Login → onboarding → create team → issue list/detail (GitHub sync) → team chat | 01, 02, 08, 11, 12, 16, 17 |
 | End of D7 | Create issue → assignee notification; recruit → apply → accept → join team → project completion | 13, 18, 19–21, 09 (2nd) |
 | End of D8 | Post project → detail like/comment → 1:1 chat, Pro checkout | 22, 23, 17 1:1, 28 |
@@ -153,14 +153,14 @@ Not a page; 7 common controllers. Other pages borrow these APIs.
 **Tasks by person**
 
 - [ ] **A** Separate members from login methods, `user_type`, JWT httpOnly cookie, GitHub token encryption, `@DeveloperOnly`, user status filter (block writes while suspended), activity log, configure the 5 Security roles
-- [ ] **A** JWT claims: `sub` (member id), `typ` (`DEVELOPER`/`RECRUITER`), `adm` (is operator), `onb` (onboarding done), `st` (`ACTIVE`/`SUSPENDED`/`WITHDRAWING`). The frontend `proxy.ts` routes screens by these, so sign with an asymmetric key (RS256 etc.) and provide the public key to the frontend. Reissue the cookie on onboarding completion, suspension, unsuspension and operator assignment (so the next request sees the new values). Cookie on the parent domain so both `app.` and `api.` read it, `HttpOnly; Secure; SameSite=Lax`. Claims are only for screen routing; permissions are still checked by the server against the DB ([10 frontend blueprint](../frontend/10-frontend-blueprint.md) ch. 4 and ch. 15)
+- [ ] **A** JWT claims: `sub` (member id), `typ` (`DEVELOPER`/`RECRUITER`), `adm` (is operator), `onb` (onboarding done), `st` (`ACTIVE`/`SUSPENDED`/`WITHDRAWING`). The frontend `proxy.ts` routes screens by these, so sign with an asymmetric key (RS256 etc.) and provide the public key to the frontend. Reissue the cookie on onboarding completion, suspension, unsuspension and operator assignment (so the next request sees the new values). Cookie on the parent domain so both `app.` and `api.` read it, `HttpOnly; Secure; SameSite=Lax`. Claims are only for screen routing; permissions are still checked by the server against the DB ([03 frontend blueprint](03-frontend-blueprint.md) ch. 4 and ch. 15)
 - [ ] **A** Frontend (D1): access table `route-access.ts`, `session.ts`, access guard `proxy.ts` (Next.js 16's former middleware; guests only on read URLs, POL-A-9), 6 role route groups and group `layout.tsx`, screen frame (`PageFrame`, 3 shells, bottom tab arrays, "본문 바로가기" skip link), header "로그인" (Log in) button, suspension banner — blueprint ch. 3, ch. 4, 6-1
 - [ ] **A** Login-prompt sheet + `useRequireLogin()` hook (blocks guest actions in one place and stores `returnTo`), common handling of API 401 `LOGIN_REQUIRED`
 - [ ] **A** Server: optional-auth filter on `public` paths, guest 60/min per IP. Googlebot and Naver Yeti get a separate limit only after reverse DNS confirms they're real bots (never trust User-Agent alone)
 - [ ] **B** Register GitHub App (PRD ch. 8 permissions + Email addresses: read), webhook signature verification and queue, backend deploy (server, Postgres, Redis), smee tunnel
 - [ ] **B** Spike: App install → return via Setup URL → verify with `GET /user/installations`
 - [ ] **B** Frontend (D2): `packages/bridge` message types, web `NativeBridgeProvider`, Expo WebView shell (deep link `linker://auth`, `onMessage` handler, Android back) — blueprint ch. 11, ch. 12. App GitHub login return is aligned with A's 01
-- [ ] **B** (D10) `SitemapController` + frontend `sitemap.ts` (split by kind, cached daily), sitemap URL in `robots.ts`. Exposure scope is 04 Policy POL-A-9; frontend rules are [10 frontend blueprint](../frontend/10-frontend-blueprint.md) ch. 8
+- [ ] **B** (D10) `SitemapController` + frontend `sitemap.ts` (split by kind, cached daily), sitemap URL in `robots.ts`. Exposure scope is 04 Policy POL-A-9; frontend rules are [03 frontend blueprint](03-frontend-blueprint.md) ch. 8
 - [ ] **C** Spike: create Projects board, Status Blocked, write start/due date fields, `projects_v2_item` webhook
 - [ ] **C** Frontend (D1–D2): `policy.ts` (04 Policy numbers), formatters (KST, numbers, character counts), SSR guards (`safeStorage`, `useIsClient`), shared SEO helpers and `robots.ts`, `next/image` config + sharp, test setup (Vitest + vitest-axe, Playwright + axe, MSW) — blueprint ch. 8, ch. 10, 11-1, ch. 14
 - [ ] **D** STOMP config, auth interceptor, reconnect, `NotificationService.create()`, Redis rate limit (`@RateLimit`), `PlanLimits`

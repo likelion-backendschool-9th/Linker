@@ -1,11 +1,13 @@
 # Linker Frontend Blueprint
 
 > **What structure and rules do AI (and humans) follow when writing Linker frontend code?**
-> Sources of truth: pages and paths → [07 Page TODO](../docs/07-page-todo.md), APIs and controllers → [09 WBS](../docs/09-wbs.md), access and numbers → [04 Policy](../docs/04-policy.md). This document turns them into folder, component and code rules; **if it disagrees with a source, the source wins.** Look and feel → [11 Design Guide](./11-design-guide.md); token values → `apps/web/src/styles/tokens/`.
+> Sources of truth: pages and paths → [07 Page TODO](../planning/07-page-todo.md), APIs and controllers → [02 WBS](02-wbs.md), access and numbers → [04 Policy](../planning/04-policy.md). This document turns them into folder, component and code rules; **if it disagrees with a source, the source wins.** Look and feel → [04 Design Guide](04-design-guide.md); token values → `frontend/apps/web/src/styles/tokens/`.
 >
 > `MUST` / `NEVER` are followed without exception; `RECOMMENDED` needs judgment. Work in 07 page order (00 → 01 → … → 33); no page work before §1-1 is done. For a page: ① ch. 13 row → ② 07 checklist with the same number → ③ finish with ch. 14.
 >
 > Translation of the Korean `10-프론트엔드-청사진.md`; keep both in sync.
+
+> **Path conventions:** `apps/`, `packages/` and frontend tooling commands are relative to `frontend/`; `src/` is relative to `frontend/apps/web/`. Explicit `frontend/` paths and Compose commands are relative to the repository root. Markdown links are relative to this document.
 
 ## 0. At a glance
 | Item | Decision |
@@ -15,7 +17,7 @@
 | App | Expo + react-native-webview. Every screen is web; native handles login return, push, share, back, external links |
 | State | Server data = TanStack Query (orval hooks) · URL state (tabs, filters, overlays) = nuqs · other UI = Zustand |
 | UI | CSS Modules + CSS tokens · `radix-ui` · Motion (LazyMotion + `m`) · TanStack Virtual · dnd-kit · react-hook-form + zod · date-fns + `@date-fns/tz` |
-| Mock data | `pnpm dev:mock`: `apiFetch` answers from `src/mocks/` (one file per page, 09 WBS paths) until Spring is live (§1-2) |
+| Mock data | `pnpm dev:mock`: `apiFetch` answers from `src/mocks/` (one file per page, WBS paths) until Spring is live (§1-2) |
 | Realtime · Tests | `@stomp/stompjs` (Spring STOMP) · Vitest + Testing Library + vitest-axe, Playwright + @axe-core/playwright, MSW (orval mocks) |
 | A11y · Search | WCAG 2.2 AA, KWCAG 2.2 · metadata + OG on every page; only developer profiles, posts, recruit posts indexed (POL-A-9) |
 
@@ -32,10 +34,10 @@
 10. Numbers (character counts, limits, plan values) come from `src/lib/policy.ts` (values from 04 Policy), never hard-coded.
 11. Mobile first: base styles at 360px, widen with `@media (min-width: 600px | 1024px)` (tablet, desktop).
 12. APIs only through orval hooks/functions. Direct `fetch('/api/v1/...')` NEVER outside `src/lib/api/`.
-13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + 11 Design Guide first. No CSS-in-JS, no utility-class framework.
+13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + Design Guide first. No CSS-in-JS, no utility-class framework.
 
 ### 1-1. Foundation built before pages (the most important work)
-Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](../docs/07-page-todo.md); owners/dates: [09 WBS ch. 3](../docs/09-wbs.md).
+Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](../planning/07-page-todo.md); owners/dates: [02 WBS ch. 3](02-wbs.md).
 
 - **MUST NOT** build ad-hoc versions in page code (own sheet opening, fetch, permission branching, date formatting). Missing piece → add it to the foundation.
 - A stage starts after the previous one finishes; items in a stage may run in parallel.
@@ -68,12 +70,12 @@ Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](
 Frontend work is due before Spring is ready (target 2 Nov), so pages are built and checked against mock data. **The page code is the real code**: it calls orval hooks / `apiFetch` exactly as it will with Spring, and the mock layer answers underneath. Nothing in a page, `_lib` or component may know about mocks.
 - **On/off**: `pnpm dev:mock` (= `NEXT_PUBLIC_USE_MOCKS=true next dev`). Off by default, and the build drops all mock code when off (`next.config.ts` always defines the flag; check with `grep -r MOCK_NOT_IMPLEMENTED .next`).
 - **Where it plugs in**: only `lib/api/api-fetch.ts` (server and browser), `lib/realtime/stomp-client.ts` (no socket; an in-tab bus makes chat work), `features/image-upload/upload-image.ts` (no storage PUT), and `lib/payments/payment-widget.ts` (labelled local payment simulation, no Toss request). Each guards with `process.env.NEXT_PUBLIC_USE_MOCKS === 'true'` written out, never a shared constant, or the bundler keeps the mock chunks.
-- **Folder**: `src/mocks/` — one file per page, `pages/pNN-<name>.ts`, exporting `routes: MockRoute[]` with the **same path as 09 WBS**. Shared rows live in `fixtures/` (users, teams, issues, posts, recruits, chat, tech tags); `core/define.ts` has `get/post/put/patch/del`, `fail()`, `paginate()` and time helpers. New page → add its file to `mocks/routes.ts`.
+- **Folder**: `src/mocks/` — one file per page, `pages/pNN-<name>.ts`, exporting `routes: MockRoute[]` with the **same path as WBS**. Shared rows live in `fixtures/` (users, teams, issues, posts, recruits, chat, tech tags); `core/define.ts` has `get/post/put/patch/del`, `fail()`, `paginate()` and time helpers. New page → add its file to `mocks/routes.ts`.
 - **Permissions follow the URL prefix** like the real API: `/api/v1/user|recruiter|admin` answer a guest with 401 `LOGIN_REQUIRED` (so the login sheet path is exercised), `/recruiter` and `/admin` 403 other roles, `{ only: 'developer' }` 403 `DEVELOPER_ONLY` for recruiters.
 - **Who is logged in**: a plain cookie `linker_mock_role` = `guest | developer | newcomer (onboarding not done) | recruiter | operator`. Use the "목업 계정" switcher bottom-left, or open `/api/mock/login/<role>?returnTo=/path`. `proxy.ts` and `session.ts` read it instead of the JWT, so guards behave as in production. "GitHub로 시작" in mock mode just logs in as a developer.
 - **State**: writes (follow, like, comment, issue status/assignee/schedule, apply/accept, chat send, recruit/post create …) change in-memory data, so lists and detail screens follow. Mock payment orders and subscription cancellation/refund records are additionally kept per account in browser session storage so a payment callback or reload can re-confirm the same order. Other server and browser state each keep their own copy: a write made in the browser disappears on a full reload and server renders never see it.
 - **Errors you can trigger**: the mocks return the real error codes for the cases in 04 (`PLAN_LIMIT`, `RATE_LIMITED`, `GITHUB_PERMISSION`, `ALREADY_MEMBER`, …). Team 2 is read-only for the mock user, team 1 is Flex and team 2 free, invite codes `demo-expired` / `demo-revoked` / `demo-member` / `demo-full`, recruiter login `jihyun.song@nextlab.example` / `password1234`, email code `123456`. See the header comment of each mock file.
-- **Response shapes are provisional.** They follow the endpoint descriptions in 09 WBS, not a real OpenAPI. When the backend publishes `/v3/api-docs`: run `pnpm generate`, switch pages from hand-written types to the orval hooks, fix field-name differences in the page, and either delete that page's mock file or let orval's MSW mocks take over. Keep the mock file until the real API for that page is verified.
+- **Response shapes are provisional.** They follow the endpoint descriptions in WBS, not a real OpenAPI. When the backend publishes `/v3/api-docs`: run `pnpm generate`, switch pages from hand-written types to the orval hooks, fix field-name differences in the page, and either delete that page's mock file or let orval's MSW mocks take over. Keep the mock file until the real API for that page is verified.
 - A missing mock answers 404 `MOCK_NOT_IMPLEMENTED` and logs `[mock] no mock for …` in the console. A page that needs a field the mock lacks adds it to the mock (and its fixture), not to the page.
 - Tests: `src/mocks/mock-fetch.test.ts` checks the route table (no duplicates, permission prefixes) and the main rules. Component tests keep using MSW in `src/mocks/handlers.ts`.
 
@@ -82,10 +84,10 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 - No `packages/ui`; base components live in `apps/web/src/components/ui`.
 - `pnpm-workspace.yaml`: `onlyBuiltDependencies: [sharp, esbuild]` (pnpm 10 blocks install scripts).
 - If Metro can't resolve modules, set `node-linker=hoisted` in `.npmrc`.
-- Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [DOCKER.md](../DOCKER.md) for mode switching and dependency/environment changes.
+- Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [Docker 가이드](../operations/02-docker.md) for mode switching and dependency/environment changes.
 
 ### 2-1. orval (`packages/api`)
-- Generated from springdoc `/v3/api-docs`. Controller `@Tag` = page (09 WBS §1-3 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
+- Generated from springdoc `/v3/api-docs`. Controller `@Tag` = page (WBS §1-3 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
 - Output: react-query hooks + query options, MSW mocks, zod schemas. Never hand-edited.
 - One mutator: `apps/web/src/lib/api/api-fetch.ts` (§5-4). `pnpm --filter @linker/api generate` runs before Turborepo `build`.
 
@@ -212,10 +214,10 @@ NEVER split only because a file is long (one region of one screen stays one file
 
 ### 5-4. `api-fetch.ts` (orval mutator)
 - Works on server and browser; prefixes `url` with the API base (see container note below). Server: forwards the viewer's cookies from `next/headers` (imported only on the server). Browser: `credentials: 'include'`.
-- `!res.ok` → `throw ApiError.from(res)` (`{ code, message, detail }`, 09 WBS §1-4). 204 → `undefined`.
+- `!res.ok` → `throw ApiError.from(res)` (`{ code, message, detail }`, WBS §1-4). 204 → `undefined`.
 - Shared error handling in `query-client.ts`: `LOGIN_REQUIRED` → login sheet · `PLAN_LIMIT` → limit sheet → `/subscribe?reason=` from `detail` · `RATE_LIMITED` → "잠시 후 다시 시도해 주세요" + time left · `SUSPENDED` → banner · `GITHUB_UNAVAILABLE` → GitHub banner.
 - Cacheable public data uses separate cookie-less server functions (ch. 9).
-- Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [DOCKER.md](../DOCKER.md).
+- Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [Docker 가이드](../operations/02-docker.md).
 
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)
@@ -250,7 +252,7 @@ Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/
 All overlays are Radix `Dialog` (styled in `components/overlay/`): focus trap, `Esc`, focus return stay on. Every overlay has `DialogTitle` + `DialogDescription`. Confirm modals use `AlertDialog` with default focus on "취소".
 
 ### 6-5. Other musts
-- Contrast: text 4.5:1, large text/icons 3:1 (measured values in 11 Design Guide ch. 1).
+- Contrast: text 4.5:1, large text/icons 3:1 (measured values in Design Guide ch. 1).
 - Never remove `focus-visible` rings. Touch targets ≥ 44×44px. Never block zoom (no `maximumScale`/`userScalable: false`).
 - Drag has a button alternative: board "상태 바꾸기", photos "앞으로/뒤로"; dnd-kit `KeyboardSensor` + Korean `announcements`.
 - `<MotionConfig reducedMotion="user">`; GIFs play only on tap.
@@ -509,16 +511,16 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 - [ ] No horizontal scroll at 360px; everything works by keyboard
 - [ ] 0 axe violations (Vitest + vitest-axe, Playwright + axe)
 - [ ] Works with `pnpm dev:mock` as each role the page allows; a field the page needs is in the page's mock file (§1-2)
-- [ ] Numbers come from `policy.ts`; passes the [11 Design Guide](./11-design-guide.md) ch. 8 checklist
+- [ ] Numbers come from `policy.ts`; passes the [04 Design Guide](04-design-guide.md) ch. 8 checklist
 
 ## 15. Alignment with backend and other docs
-- **JWT claims** (09 WBS 00 A task): `sub`, `typ` (`DEVELOPER`/`RECRUITER`), `adm`, `onb`, `st` (`ACTIVE`/`SUSPENDED`/`WITHDRAWING`). Asymmetric signature (RS256 etc.); the web holds only the public key. Reissue on onboarding completion, suspension, unsuspension, operator assignment. Cookie `Domain=.<domain>`, `HttpOnly; Secure; SameSite=Lax`.
+- **JWT claims** (WBS 00 A task): `sub`, `typ` (`DEVELOPER`/`RECRUITER`), `adm`, `onb`, `st` (`ACTIVE`/`SUSPENDED`/`WITHDRAWING`). Asymmetric signature (RS256 etc.); the web holds only the public key. Reissue on onboarding completion, suspension, unsuspension, operator assignment. Cookie `Domain=.<domain>`, `HttpOnly; Secure; SameSite=Lax`.
 - **CORS**: `api.` allows `credentials: true` for the `app.` origin; the STOMP handshake uses the same cookie.
 - **orval tags**: `@Tag(name = "pNN-…")` per controller; renaming breaks frontend imports.
-- **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from 09 WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
-- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 `LoginController` (not in 09 WBS yet).
+- **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
+- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 `LoginController` (not in WBS yet).
 - **GitHub App callback URLs**: register web `/auth/callback` and app (`?client=app` or a separate URL).
-- **Search**: sitemap lists from 09 WBS 00 `SitemapController` (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
+- **Search**: sitemap lists from WBS 00 `SitemapController` (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
 - **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens`.
-- **Feed ad items** (09 WBS 24): `items` = `{ type: 'POST', … } | { type: 'AD', adId, companyName, title, jobCategory, closesOn }`. No URL in the item; tap → `POST /api/v1/user/ads/{adId}/click` returns it; open with the `features/external-link` confirm sheet.
+- **Feed ad items** (WBS 24): `items` = `{ type: 'POST', … } | { type: 'AD', adId, companyName, title, jobCategory, closesOn }`. No URL in the item; tap → `POST /api/v1/user/ads/{adId}/click` returns it; open with the `features/external-link` confirm sheet.
 - **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to 00 `UploadController` (resize, EXIF strip).

@@ -304,8 +304,8 @@ The WBS details `GET /api/v1/user/me`, `POST /api/v1/public/auth/refresh`, OAuth
 **8.5 WBS ↔ Controller ↔ Service ↔ ERD Validation**
 
 ```text
-07 TODO page/path → 09 WBS API/method/role → Spring page Controller
-                   → shared Domain Service → JPA Repository → 08 ERD table
+07 TODO page/path → WBS API/method/role → Spring page Controller
+                   → shared Domain Service → JPA Repository → ERD table
 ```
 Connect each API to its PRD feature ID, TODO page, WBS controller, and ERD tables in a traceability matrix. Compare frontend Orval calls against WBS APIs. The BFF may compose page data, but must not invent business write APIs absent from the WBS. Keep the 204 REST endpoints aligned with the WBS detailed rows and controller totals, and verify all 5 shared realtime paths across pages 16–18.
 ## 9. Authentication, Authorization, and Security
@@ -494,4 +494,4 @@ Settle BFF calls and STOMP/cookie behavior before page implementation. If BFF ex
 - Traceability: keep PRD priority, MVP required/included/excluded scope, and WBS work labels distinct; link API, page, controller, service, and ERD. ERD: 56 required + 13 included = 69 tables; Verify the WBS baseline: 40 controllers, 204 REST endpoints in both detailed rows and controller totals, and 5 shared realtime paths (1 connection endpoint + 4 STOMP destinations).
 - Verify BFF, cookies/CSRF, OAuth, direct webhook/Toss ingress, STOMP ACL/reconnect, file access, idempotency, privacy deletion/audit, vendors, and legal decisions.
 ## Appendix A. Source Document Map
-01 Service Plan: purpose, actors, flows; 02 PRD: feature IDs and priority; 03 MVP: release scope; 04 Policies: roles, limits, states; 05–06 Legal: terms and privacy; 07 TODO: screens and dependencies; 08 ERD: data model; 09 WBS: APIs and access; 10 Frontend Blueprint: Next.js, Expo, Orval; 11 README: repository and runtime assumptions.
+01 Service Plan: purpose, actors, flows; 02 PRD: feature IDs and priority; 03 MVP: release scope; 04 Policies: roles, limits, states; 05–06 Legal: terms and privacy; 07 TODO: screens and dependencies; ERD: data model; WBS: APIs and access; Frontend Blueprint: Next.js, Expo, Orval; 11 README: repository and runtime assumptions.

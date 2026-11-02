@@ -1,4 +1,4 @@
-/** Failure body from the Spring API (09 WBS §1-4). `code` drives copy and branching; `message` is the default Korean copy. */
+/** Failure body from the Spring API (WBS §1-4). `code` drives copy and branching; `message` is the default Korean copy. */
 export type ApiErrorBody = {
   code: string;
   message: string;

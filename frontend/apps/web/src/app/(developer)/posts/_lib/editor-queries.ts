@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** Provisional 09 WBS 22 `PostEditorController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 22 `PostEditorController` contract; replace with Orval types when OpenAPI is available. */
 export type EditorRepo = {
   repoId: number;
   fullName: string;
@@ -28,7 +28,7 @@ export type RepoSummary = {
   /** 0 also when the commit email isn't registered to GitHub (04 ch. 4 exceptions) */
   authorCommitCount: number;
   handledIssueCount: number;
-  /** Proposal beyond 09 WBS: my photo cap (5, Pro 10), so the picker can prompt before publishing */
+  /** Proposal beyond WBS: my photo cap (5, Pro 10), so the picker can prompt before publishing */
   photoLimit: number;
 };
 

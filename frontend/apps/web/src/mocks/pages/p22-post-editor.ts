@@ -112,7 +112,7 @@ export const routes: MockRoute[] = [
         forks: 1,
         isFork: repo.isFork,
         parentFullName: 'parentFullName' in repo ? repo.parentFullName : null,
-        // Proposal beyond 09 WBS: the viewer's photo cap (5, Pro 10) so the picker can prompt early
+        // Proposal beyond WBS: the viewer's photo cap (5, Pro 10) so the picker can prompt early
         photoLimit: PHOTO_LIMIT,
         // 0 also when the commit email isn't registered (POL-P-2 exceptions)
         authorCommitCount: repo.repoId === 12 ? 0 : 84,

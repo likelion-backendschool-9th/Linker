@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import type { RecruitFormat, RecruitGoal, RecruitRoleKey } from '@/features/recruit/recruit-labels';
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** Provisional 09 WBS 20 `RecruitEditorController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 20 `RecruitEditorController` contract; replace with Orval types when OpenAPI is available. */
 export type EditorOptions = {
   /** Teams I can link: owner / admin (POL-R-1) */
   teams: { id: number; name: string }[];

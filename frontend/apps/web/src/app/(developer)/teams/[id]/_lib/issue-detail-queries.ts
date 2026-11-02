@@ -6,7 +6,7 @@ import type { IssueAssignee, IssueLabel, IssueUser } from './issue-queries';
 import type { IssueStatus } from '../../../_lib/issue-status';
 
 /**
- * Provisional 12 `IssueDetailController` contract (09 WBS 12). Hand-written until the controller is in
+ * Provisional 12 `IssueDetailController` contract (WBS 12). Hand-written until the controller is in
  * OpenAPI; then replace with the orval `p12-issue-detail` hooks. 13, 14 and 15 borrow these.
  */
 

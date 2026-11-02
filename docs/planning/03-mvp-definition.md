@@ -1,7 +1,7 @@
 # Linker MVP Definition
 
 > Question this document answers: **How much do we build for the first release?**
-> Why each feature is needed and its completion conditions are in the [PRD](./02-prd.md), screens and flows in the [Service Plan](./01-service-plan.md), and limits and exception rules in the [Policy](./04-policy.md).
+> Why each feature is needed and its completion conditions are in the [PRD](02-prd.md), screens and flows in the [Service Plan](01-service-plan.md), and limits and exception rules in the [Policy](04-policy.md).
 
 ## 1. MVP goals
 
@@ -97,7 +97,7 @@ First users are bootcamp, club and side-project teams working between Discord an
 
 ## 6. Criteria for moving to the next phase
 
-Metric definitions follow [PRD ch. 7](./02-prd.md#7-success-metrics-kpi). Move to phase 2 when both metrics below exceed targets. Targets are set before launch.
+Metric definitions follow [PRD ch. 7](02-prd.md#7-success-metrics-kpi). Move to phase 2 when both metrics below exceed targets. Targets are set before launch.
 
 | Metric | Target |
 | --- | --- |

@@ -1,7 +1,7 @@
 # Linker Privacy Policy
 
 > Question this document answers: **How does Linker collect, use, retain and destroy members' personal data?**
-> Rights and duties of members and the company are in the [Terms of Service](./05-terms-of-service.md); feature behavior rules in the [Policy](./04-policy.md).
+> Rights and duties of members and the company are in the [Terms of Service](05-terms-of-service.md); feature behavior rules in the [Policy](04-policy.md).
 >
 > **This is an English reference translation.** The text shown to users is the Korean original; render the Korean source in the app.
 

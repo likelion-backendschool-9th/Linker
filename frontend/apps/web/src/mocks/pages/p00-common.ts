@@ -4,7 +4,7 @@ import { del, fail, get, newId, post, type MockRoute } from '../core/define';
 import { JOB_CATEGORIES, TECH_TAGS } from '../fixtures/tech';
 import { brief, DEVELOPERS, findUserById } from '../fixtures/users';
 
-/** 00 Common foundation: AuthSession, TechTag, Upload, Report, Block (09 WBS ch. 3) */
+/** 00 Common foundation: AuthSession, TechTag, Upload, Report, Block (WBS ch. 3) */
 
 // Blocked user ids for the logged-in user; starts with one so the settings list isn't empty
 const blockedIds = new Set<number>([7]);

@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import type { ApplicationStatus, RecruitSummary } from '../../_lib/recruit-list-queries';
 
-/** Provisional 09 WBS 21 `RecruitDetailController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 21 `RecruitDetailController` contract; replace with Orval types when OpenAPI is available. */
 export type RecruitDetail = RecruitSummary & {
   intro: string;
   duration: string | null;
@@ -108,7 +108,7 @@ export function applyToRecruit(recruitId: string, body: { roleId: number; messag
 /**
  * Accept → team member + team chat + notification. Fails with TEAM_REQUIRED or ROLE_FULL (409), or
  * PLAN_LIMIT for a free team at its member cap. `increaseHeadcount` ("인원 늘리고 수락") is a proposal
- * beyond 09 WBS so the headcount and the acceptance change together.
+ * beyond WBS so the headcount and the acceptance change together.
  */
 export function acceptApplication(
   recruitId: string,

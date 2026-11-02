@@ -54,7 +54,7 @@ function setBrowserRole(role: MockRole) {
   else document.cookie = `${MOCK_ROLE_COOKIE}=${role}; path=/; samesite=lax`;
 }
 
-/** Permission by URL prefix, like the real API (09 WBS §1-2) */
+/** Permission by URL prefix, like the real API (WBS §1-2) */
 function authorize(entry: Compiled, ctx: MockContext) {
   const { role, me } = ctx.viewer;
   const path = entry.route.path;

@@ -1,7 +1,7 @@
 # Linker ERD
 
 > Question this document answers: **Which tables and relationships store the MVP data?**
-> Why each feature is needed is in the [PRD](./02-prd.md), first-release scope in the [MVP Definition](./03-mvp-definition.md), and character counts, limits and state rules in the [Policy](./04-policy.md). This document expands [Service Plan 7-4 Draft data model](./01-service-plan.md#7-4-draft-data-model) to the table and column level.
+> Why each feature is needed is in the [PRD](../planning/02-prd.md), first-release scope in the [MVP Definition](../planning/03-mvp-definition.md), and character counts, limits and state rules in the [Policy](../planning/04-policy.md). This document expands [Service Plan 7-4 Draft data model](../planning/01-service-plan.md#7-4-draft-data-model) to the table and column level.
 
 ## 1. How to read
 
@@ -13,7 +13,7 @@
 | 🟡 MVP included | In phase 1, but can slip to right after launch if the schedule slips | Tables used only by MVP Definition "Included" (PRD P1) features |
 | ⚪ Later phase | Not built in the MVP | Phase 2+ features. Names only, in ch. 9 |
 
-Diagrams show only 🟢 and 🟡 tables. Table count: 🟢 56, 🟡 13, total 69 (2026-10-30 review: chat_message_mentions, report_message_snapshots, appeals, banned_github_ids, team_ownership_transfers moved to 🟢 because 07/09 build them as Required, and subscriptions, payments moved to 🟢 because subscription checkout (S-1~S-3) became Required; 2026-10-29: +2 🟡 for minimal recruiting, +1 🟡 for Flex (formerly Team) AI chat summary; 2026-10-30: +4 🟡 for feed job ads, +1 🟡 for the project progress graph in the subscription revamp).
+Diagrams show only 🟢 and 🟡 tables. Table count: 🟢 56, 🟡 13, total 69 (2026-10-30 review: chat_message_mentions, report_message_snapshots, appeals, banned_github_ids, team_ownership_transfers moved to 🟢 because Page TODO and WBS build them as Required, and subscriptions, payments moved to 🟢 because subscription checkout (S-1~S-3) became Required; 2026-10-29: +2 🟡 for minimal recruiting, +1 🟡 for Flex (formerly Team) AI chat summary; 2026-10-30: +4 🟡 for feed job ads, +1 🟡 for the project progress graph in the subscription revamp).
 
 ### Design principles
 
@@ -33,7 +33,7 @@ Diagrams show only 🟢 and 🟡 tables. Table count: 🟢 56, 🟡 13, total 69
 
 ### How roles are represented
 
-The four roles of [Policy ch. 2 "Access by role"](./04-policy.md#access-by-role) are distinguished in tables like this. No dedicated role column; the role is derived from which rows and columns exist.
+The four roles of [Policy ch. 2 "Access by role"](../planning/04-policy.md#access-by-role) are distinguished in tables like this. No dedicated role column; the role is derived from which rows and columns exist.
 
 | Role | In the DB | Login method | How the server decides |
 | --- | --- | --- | --- |
@@ -1347,7 +1347,7 @@ The same table list is split two ways. 7-1 is for milestones; 7-2 is for the WBS
 
 ### 7-1. By bundle (MVP Definition)
 
-Tables newly created in each bundle, following [MVP Definition ch. 4 Build order](./03-mvp-definition.md#4-build-order).
+Tables newly created in each bundle, following [MVP Definition ch. 4 Build order](../planning/03-mvp-definition.md#4-build-order).
 
 | Order | Bundle | New tables |
 | --- | --- | --- |
@@ -1368,7 +1368,7 @@ Reports, blocking and notifications are called by screens before bundles 6–7, 
 
 ### 7-2. By page (07 TODO)
 
-Pages 00–33 in the order of [07 Page TODO](./07-page-todo.md). **New tables** are first needed on that page, so their entity, repository and migration are created there; each of the 69 appears exactly once. **Shared tables** were already created on an earlier page. "(after NN)" means the table is created on a later page, so that feature is wired up then.
+Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New tables** are first needed on that page, so their entity, repository and migration are created there; each of the 69 appears exactly once. **Shared tables** were already created on an earlier page. "(after NN)" means the table is created on a later page, so that feature is wired up then.
 
 | # | Page | New tables | Shared tables |
 | --- | --- | --- | --- |

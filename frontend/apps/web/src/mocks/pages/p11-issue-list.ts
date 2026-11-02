@@ -12,7 +12,7 @@ import { findTeam, TEAM_MEMBERS, type MockTeam } from '../fixtures/teams';
 
 /** 11 Issue list: `IssueListController`. `issueRow` and `filterIssues` are borrowed by 14 and 15. */
 
-/** List row / board card shape (09 WBS §1-3 rule 4: DTOs belong to the page) */
+/** List row / board card shape (WBS §1-3 rule 4: DTOs belong to the page) */
 export function issueRow(item: MockIssue) {
   return {
     id: item.id,

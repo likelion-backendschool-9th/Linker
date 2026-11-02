@@ -1,13 +1,13 @@
 # Linker frontend — agent guide
 
-Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The blueprint is the full rulebook: MUST/NEVER are mandatory; RECOMMENDED requires judgment. It is not auto-imported; read the sections you need. Look and feel (colors, type, spacing, component styles) is in `11-design-guide.md`; token values are in `apps/web/src/styles/tokens/`.
+Read `../AGENTS.md` and the relevant sections of `../docs/development/03-frontend-blueprint.md`. The blueprint is the full rulebook: MUST/NEVER are mandatory; RECOMMENDED requires judgment. It is not auto-imported; read the sections you need. Look and feel (colors, type, spacing, component styles) is in `../docs/development/04-design-guide.md`; token values are in `apps/web/src/styles/tokens/`.
 
 ## Before implementing a page
 1. Blueprint ch. 13: route group, directory, controller/orval tag.
-2. `../docs/07-page-todo.md`: same page number, screen contents, scope, sheets.
-3. `../docs/04-policy.md`: ch. 2 access, feature limits/states/exceptions, ch. 12 UI copy.
-4. `../docs/02-prd.md` ch. 5: feature completion conditions.
-5. `../docs/09-wbs.md` ch. 4: controller and endpoints.
+2. `../docs/planning/07-page-todo.md`: same page number, screen contents, scope, sheets.
+3. `../docs/planning/04-policy.md`: ch. 2 access, feature limits/states/exceptions, ch. 12 UI copy.
+4. `../docs/planning/02-prd.md` ch. 5: feature completion conditions.
+5. `../docs/development/02-wbs.md` ch. 4: controller and endpoints.
 6. Complete blueprint §1-1 foundation and end-of-D2 check before page work. Add missing shared infrastructure there.
 7. Finish with blueprint ch. 14 checklist.
 
@@ -47,13 +47,13 @@ Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The
 - Use `packages/bridge` shared types, `postToNative`, `requestNative`, `NativeBridgeProvider`. JWT never crosses the bridge; native stores only `userId`/`userType`.
 - Every screen is web; native handles GitHub login return, push (Android-only MVP), sharing, back, external links.
 
-## Styling (11-design-guide.md)
+## Styling (design guide)
 - CSS Modules next to the component; read every color, size, space, and radius through `var(--token)` from `styles/tokens/`. Never a raw hex, font size, or radius in a component. Add missing values to the tokens and the guide first.
 - Text on tinted surfaces uses `--color-text-subtle-on-tint`; text on dark surfaces uses `--color-text-inverse*`. Accent is never a CTA fill. No shadows except `--shadow-segment-active`.
 
 ## Mock data (blueprint §1-2)
 - Until Spring is live, run `pnpm dev:mock`. Pages call orval/`apiFetch` as usual; `src/mocks/` answers. Pages, components and `_lib` never reference mocks, `USE_MOCKS` or `linker_mock_role`.
-- One mock file per page in `src/mocks/pages/pNN-*.ts` with the 09 WBS path; shared rows in `fixtures/`; register new files in `mocks/routes.ts`. Missing field → add it to the mock, not a fallback in the page.
+- One mock file per page in `src/mocks/pages/pNN-*.ts` with the WBS path; shared rows in `fixtures/`; register new files in `mocks/routes.ts`. Missing field → add it to the mock, not a fallback in the page.
 - Log in as a role with the "목업 계정" switcher or `/api/mock/login/<role>`. Response shapes are provisional; verify against OpenAPI once it exists.
 - Check mock code stays out of the normal build: `grep -r MOCK_NOT_IMPLEMENTED apps/web/.next` must find nothing.
 
@@ -66,4 +66,4 @@ Read `../AGENTS.md` and the relevant sections of `10-frontend-blueprint.md`. The
 - Never put private team names, issue titles, or chat text into login-only metadata/OG. Hidden/deleted/blocked content uses defaults.
 - Canonical and `og:url` exclude query parameters, including overlay/filter/share parameters.
 
-Blueprint links to `./04-policy.md`, `./07-page-todo.md`, `./09-wbs.md` resolve here under `../docs/`, not this directory.
+Blueprint links resolve relative to `docs/development/`; planning documents are in `docs/planning/`.

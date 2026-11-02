@@ -6,7 +6,7 @@ import { issueFilterQuery, type IssueFilters } from './issue-filters';
 import type { IssueStatus } from '../../../_lib/issue-status';
 
 /**
- * Provisional 11 `IssueListController` contract (09 WBS 11). Hand-written until the controller is in
+ * Provisional 11 `IssueListController` contract (WBS 11). Hand-written until the controller is in
  * OpenAPI; then replace with the orval `p11-issue-list` hooks.
  */
 
@@ -90,7 +90,7 @@ export function issueFilterOptions(teamId: string) {
 
 /**
  * Re-fetch only this screen's issues from GitHub (once a minute, 04 ch. 7 "Sync"): the current tab
- * and filters go along as the query. The `view` + filter query is a proposal beyond 09 WBS 11.
+ * and filters go along as the query. The `view` + filter query is a proposal beyond WBS 11.
  */
 export function refreshIssues(teamId: string, view: IssueListView, filters: IssueFilters) {
   const query = view === 'all' ? issueFilterQuery(filters) : new URLSearchParams();

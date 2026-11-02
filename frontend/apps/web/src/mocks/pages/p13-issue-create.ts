@@ -6,7 +6,7 @@ import { brief, ME } from '../fixtures/users';
 /**
  * 13 Create issue: `IssueCreateController`. Creation is 202 + a job that finishes after a few polls.
  * The repo-scoped `issue-create/repos`, `repos/:repoId/assignee-candidates` and `repos/:repoId/label-options`
- * are a proposal beyond 09 WBS 13: 12's options need an issue id, and GitHub takes assignees and labels per repo.
+ * are a proposal beyond WBS 13: 12's options need an issue id, and GitHub takes assignees and labels per repo.
  */
 
 type Source = 'REPO' | 'ORG' | 'DEFAULT';

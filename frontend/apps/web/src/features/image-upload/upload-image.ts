@@ -2,7 +2,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import { IMAGE } from '@/lib/policy';
 
 /**
- * Presigned upload (09 WBS 00 UploadController, E):
+ * Presigned upload (WBS 00 UploadController, E):
  * `POST /api/v1/user/uploads` → PUT the file to `uploadUrl` → `POST /uploads/{fileId}/complete`.
  * Request/response shapes are hand-written until the controller is in OpenAPI; swap to orval then.
  */

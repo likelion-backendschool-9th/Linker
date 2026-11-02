@@ -1,5 +1,5 @@
 /**
- * Every number the screens show or validate, copied from docs/04-policy.md.
+ * Every number the screens show or validate, copied from docs/planning/04-policy.md.
  * When the policy changes, edit only this file (CLAUDE.md "Keep the docs consistent").
  * The server enforces the same values (`PlanLimits`, server config); these are for UI and form checks.
  */
@@ -129,5 +129,5 @@ export const SUBSCRIPTION_PRICE = {
 /** Policy ch. 11 payment and expiry rules. */
 export const SUBSCRIPTION_RULES = { refundWithinDays: 7, flexGraceDays: 30 } as const;
 
-/** 07 TODO 30 / 09 WBS 30: displayed analytics periods. */
+/** Page TODO 30 / WBS 30: displayed analytics periods. */
 export const STATS = { trendDays: 30, recruiterWeeks: 8 } as const;

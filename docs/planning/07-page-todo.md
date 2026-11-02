@@ -1,7 +1,7 @@
 # Linker Page-by-Page TODO
 
 > Question this document answers: **Which pages do we actually build in the MVP, what goes into each, and in what order?**
-> Reasons and completion conditions are in the [PRD](./02-prd.md), scope in the [MVP Definition](./03-mvp-definition.md), and numbers and exception rules in the [Policy](./04-policy.md) (the source). Numbers here are copies for convenience; update them when the Policy changes.
+> Reasons and completion conditions are in the [PRD](02-prd.md), scope in the [MVP Definition](03-mvp-definition.md), and numbers and exception rules in the [Policy](04-policy.md) (the source). Numbers here are copies for convenience; update them when the Policy changes.
 >
 > **UI copy in quotes is kept in Korean** (the app's language); use it as-is. English glosses are in parentheses where helpful.
 
@@ -77,7 +77,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Frontend**
 
-> Foundation used by every page, so built before any page. Build order and the "end-of-D2 check" list are in the [10 frontend blueprint §1-1](../frontend/10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work); code rules in the blueprint chapter noted in parentheses.
+> Foundation used by every page, so built before any page. Build order and the "end-of-D2 check" list are in the [03 frontend blueprint §1-1](../development/03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work); code rules in the blueprint chapter noted in parentheses.
 
 - [ ] pnpm monorepo, Next.js App Router, CSS Modules + design tokens + `radix-ui`, orval-generated API hooks, TanStack Query, Zustand, nuqs setup
 - [ ] One API call function (`api-fetch.ts`, works on server and browser) and common handling of failure codes (`LOGIN_REQUIRED`, `PLAN_LIMIT`, `RATE_LIMITED`, `SUSPENDED`, `GITHUB_UNAVAILABLE`) (blueprint 5-4)
@@ -89,9 +89,9 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Common metadata function, `robots.ts`, search exposure table; `next/image` config + install sharp (blueprint ch. 8, 10). Root OG defaults (Linker + one-line intro + `/og-default.png`); content-based OG only on 23, 21, 04 (developers) and 10. Strip `?from=share` from canonical and `og:url`
 - [ ] Web↔app bridge (`packages/bridge`, `NativeBridgeProvider`): Android back, GitHub login return, share, push permission (blueprint ch. 11, 12)
 - [ ] Test setup: Vitest + vitest-axe, Playwright + axe, MSW (orval mocks) (blueprint ch. 14)
-- [ ] Mock data mode for frontend work before the backend is live: `pnpm dev:mock`, one mock file per page with the 09 WBS endpoints, role switcher (guest / developer / recruiter / operator) (blueprint §1-2)
+- [ ] Mock data mode for frontend work before the backend is live: `pnpm dev:mock`, one mock file per page with the WBS endpoints, role switcher (guest / developer / recruiter / operator) (blueprint §1-2)
 - [ ] App layout: 4 bottom tabs (Home / Find Team / Workspace / Chat), top header (bell + unread count + profile icon; "로그인" button and "설정" icon in their place for guests). Keep the tab list as an array switchable by member type (recruiter: Home / Chat, after 31)
-- [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](./04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/u/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
+- [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/u/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
 - [ ] Common components: bottom sheet, confirm modal, toast, empty state, error state, skeleton
 - [ ] `error.tsx` (unexpected error, retry), `not-found.tsx` ("삭제되었거나 볼 수 없는 콘텐츠예요" — deleted or unavailable content). Replace the screen map's "error" and "unavailable content" pages
 - [ ] Common banners: offline ("인터넷 연결이 끊겼어요…"), GitHub unstable ("최신 정보가 아닐 수 있어요"), suspended ("N월 N일까지 이용이 제한됐어요 · 이의 제기하기")
@@ -808,7 +808,7 @@ Recruiters get only three new pages: sign-up (31), login (32) and the sent offer
 
 ## 11. Proposed 2-week assignment
 
-Assumes each of the 5 people owns both frontend and server for their pages. If roles are split into frontend/backend, let us know and we'll re-split accordingly. With A taking recruiting (31–33), 26 users, 27 action log and 30 my stats moved to B; 04 profile pass 2 stays with A, the owner of 04. [09 WBS](./09-wbs.md) is the source for day-by-day assignment. Recruiter-side `(after 31)` items on existing pages are added by that page's owner after 31 is done.
+Assumes each of the 5 people owns both frontend and server for their pages. If roles are split into frontend/backend, let us know and we'll re-split accordingly. With A taking recruiting (31–33), 26 users, 27 action log and 30 my stats moved to B; 04 profile pass 2 stays with A, the owner of 04. [02 WBS](../development/02-wbs.md) is the source for day-by-day assignment. Recruiter-side `(after 31)` items on existing pages are added by that page's owner after 31 is done.
 
 | Owner | Week 1 | Week 2 |
 | --- | --- | --- |
@@ -820,7 +820,7 @@ Assumes each of the 5 people owns both frontend and server for their pages. If r
 
 | Days | Goal |
 | --- | --- |
-| Days 1–2 | 00 common foundation and the 6 risky-area spikes. The frontend foundation "end-of-D2 check" ([10 frontend blueprint §1-1](../frontend/10-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) must pass before page work starts |
+| Days 1–2 | 00 common foundation and the 6 risky-area spikes. The frontend foundation "end-of-D2 check" ([03 frontend blueprint §1-1](../development/03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) must pass before page work starts |
 | Days 3–5 | Week-1 pages. End of day 5: verify "login → create team → issue list/detail (GitHub sync) → team chat" (create issue 13 on days 6–7) |
 | Days 6–8 | Week-2 pages. End of day 8: verify "recruit → apply → accept → join team → complete project → publish post" |
 | Day 9 | Connect ops, subscription, recruiting; tidy remaining `[Included]` items |

@@ -18,11 +18,11 @@
 
 ## 2. 검토 문서와 판단 기준
 
-루트의 `AGENTS.md`, `CLAUDE.md`, `SETUP.md`, `DOCKER.md`, GitHub 이슈·PR 템플릿, `frontend/AGENTS.md`, `frontend/CLAUDE.md`, `frontend/apps/web/AGENTS.md`, 기획 문서 01–09, 프론트 문서 10–11, 백엔드 청사진을 검토했다. `CLAUDE.md`는 같은 폴더의 `AGENTS.md`를 가져오는 파일이다. 백엔드 폴더에는 별도 `AGENTS.md`/`CLAUDE.md`가 없다.
+루트의 `AGENTS.md`, `CLAUDE.md`, [설정 가이드](../../operations/01-setup.md), [Docker 가이드](../../operations/02-docker.md), GitHub 이슈·PR 템플릿, `frontend/AGENTS.md`, `frontend/CLAUDE.md`, `frontend/apps/web/AGENTS.md`, 기획 문서, ERD·WBS, 프론트 청사진·디자인 가이드, 백엔드 청사진을 검토했다. `CLAUDE.md`는 같은 폴더의 `AGENTS.md`를 가져오는 파일이다. 백엔드 폴더에는 별도 `AGENTS.md`/`CLAUDE.md`가 없다.
 
 ### 2.1 전체 문서 검토 범위
 
-숨김 경로와 ignore 대상까지 목록을 대조했다. 의존성·Git 내부·빌드 산출물을 제외한 프로젝트 문서는 아래 23개 Markdown이며, 같은 범위에서 PDF·Word·별도 텍스트 문서는 발견되지 않았다. 이 수치는 작성 시점의 목록이다.
+숨김 경로와 ignore 대상까지 목록을 대조했다. 의존성·Git 내부·빌드 산출물을 제외한 프로젝트 문서는 아래 23개 Markdown이며, 같은 범위에서 PDF·Word·별도 텍스트 문서는 발견되지 않았다. 이 수치는 작성 시점의 목록이다. 아래 표의 위치·이름은 문서 이동 전 기록이며, 현재 실행 안내는 `docs/operations/`, 공통 설계는 `docs/development/`, 기획은 `docs/planning/`에 있다.
 
 | 위치 | 파일 | 개수 |
 | --- | --- | --- |
@@ -38,17 +38,17 @@
 
 | 기준 문서 | 이번 구현에서 확인할 내용 |
 | --- | --- |
-| [서비스 기획](../docs/01-service-plan.md) | GitHub 조직 연결 → 협업 → 완료 → 작업물 게시 흐름 |
-| [PRD](../docs/02-prd.md) §5 | T-1~4, C-3, O-3·5, S-4·10의 완료 조건 |
-| [MVP](../docs/03-mvp-definition.md) | Required 우선, Included의 후순위와 출시 조건 구분 |
-| [정책](../docs/04-policy.md) §2·6·7·8·9·10·11·12 | 역할·권한·한도·팀 상태·운영 조치·한국어 문구의 기준 |
-| [이용약관](../docs/05-terms-of-service.md), [개인정보](../docs/06-privacy-policy.md) | 팀 삭제와 GitHub 데이터 구분, 운영자 이메일 마스킹, 통계의 신원 비공개 |
-| [페이지 TODO](../docs/07-page-todo.md) 00·07–10·17·25–30 | URL, 화면 구성, 구현 순서, 시트 위치 |
-| [ERD](../docs/08-erd.md) §3-4·3-5·3-6·3-8·3-9, §4·5 | 팀·초대·완료·PR·운영 상태와 enum |
-| [WBS](../docs/09-wbs.md) §0·3·4·6 | 담당 경계, API 경로·메서드·차용 관계 |
-| [프론트 청사진](./10-frontend-blueprint.md) | 기반 검증, 라우트 그룹, 데이터 계층, 접근성, 오버레이, SEO |
-| [디자인 가이드](./11-design-guide.md) | 기존 화면과 동일한 토큰·타입·간격·컴포넌트 |
-| [백엔드 청사진](../backend/11-backend-blueprint.en.md) | 서버 책임과 제안 사항 구분, 미확정 계약 확인 |
+| [서비스 기획](../../planning/01-service-plan.md) | GitHub 조직 연결 → 협업 → 완료 → 작업물 게시 흐름 |
+| [PRD](../../planning/02-prd.md) §5 | T-1~4, C-3, O-3·5, S-4·10의 완료 조건 |
+| [MVP](../../planning/03-mvp-definition.md) | Required 우선, Included의 후순위와 출시 조건 구분 |
+| [정책](../../planning/04-policy.md) §2·6·7·8·9·10·11·12 | 역할·권한·한도·팀 상태·운영 조치·한국어 문구의 기준 |
+| [이용약관](../../planning/05-terms-of-service.md), [개인정보](../../planning/06-privacy-policy.md) | 팀 삭제와 GitHub 데이터 구분, 운영자 이메일 마스킹, 통계의 신원 비공개 |
+| [페이지 TODO](../../planning/07-page-todo.md) 00·07–10·17·25–30 | URL, 화면 구성, 구현 순서, 시트 위치 |
+| [ERD](../01-erd.md) §3-4·3-5·3-6·3-8·3-9, §4·5 | 팀·초대·완료·PR·운영 상태와 enum |
+| [WBS](../02-wbs.md) §0·3·4·6 | 담당 경계, API 경로·메서드·차용 관계 |
+| [프론트 청사진](../03-frontend-blueprint.md) | 기반 검증, 라우트 그룹, 데이터 계층, 접근성, 오버레이, SEO |
+| [디자인 가이드](../04-design-guide.md) | 기존 화면과 동일한 토큰·타입·간격·컴포넌트 |
+| [백엔드 청사진](../05-backend-blueprint.md) | 서버 책임과 제안 사항 구분, 미확정 계약 확인 |
 
 충돌은 문서별 권한에 따라 판단한다. 정책의 숫자·권한, TODO의 URL·화면, WBS의 엔드포인트가 우선이다. 백엔드 청사진의 BFF 구조는 **제안**이며, 현재 `apiFetch`와 Nginx의 `/api/v1/*` 흐름을 이번 작업에서 BFF로 바꾸지 않는다. JWT는 httpOnly 쿠키에 유지하고 GitHub 토큰·JWT를 프론트나 브리지로 전달하지 않는다.
 
@@ -121,7 +121,7 @@
 ## 5. 구현 시작 전 선행 확인
 
 - [ ] 기반 00의 D2 체크를 실제 실행한다: 랜드마크/axe, guest `/workspace` 로그인 유도와 복귀, guest `/admin` 404, 시트 닫기/뒤로가기, 세션 조회, Android 하드웨어 뒤로가기.
-- [ ] 로컬 실행 환경을 준비하고 `pnpm dev:mock`을 사용한다. 기존 `.env`는 덮어쓰지 않는다. Docker가 필요하면 `DOCKER.md`의 개발 모드를 따른다.
+- [ ] 로컬 실행 환경을 준비하고 `pnpm dev:mock`을 사용한다. 기존 `.env`는 덮어쓰지 않는다. Docker가 필요하면 [Docker 가이드](../../operations/02-docker.md)의 개발 모드를 따른다.
 - [ ] 실제 코드 작성 전 설치된 Next.js 16의 `node_modules/next/dist/docs/`에서 관련 라우팅·metadata·서버/클라이언트 규칙을 읽는다.
 - [ ] 인증·온보딩·25 운영 진입이 기준 브랜치에 통합됐는지 재확인한다. 없는 화면에 대해 임시 인증 우회나 B 전용 운영 로그인 페이지를 만들지 않는다.
 - [ ] 아래 목업과 계약 누락을 먼저 정리한다. 문서의 API 경로를 유지하고 페이지에서 목업 여부를 분기하지 않는다.
@@ -449,7 +449,7 @@ frontend/apps/web/src/
 - `/workspace`에 내 이슈 진입 영역과 정확한 링크를 추가했다. C의 목록·정렬·상태 표현·조회 코드는 B가 다시 구현하지 않는다. 팀 목록 오류가 C의 진입 링크나 내 통계 링크까지 숨기지 않도록 팀 조회 영역을 분리했다.
 - 작업 브랜치의 기준 커밋에는 C의 목적지 코드가 없었다. 링크가 로컬에서 404로 남지 않도록 **이미 병합된 PR #35의 변경분을 현재 `feat/b-frontend-ui` 작업 파일에 그대로 적용**했다. 원본 23개 변경 파일의 blob hash가 일치함을 확인했다. 여기에는 C의 이슈 상태 모듈 이동, 관련 import, 내 이슈 페이지·테스트·접근 규칙·`repoName` 목업 필드가 포함된다.
 - 이 의존성 반영은 `dev` 전환/pull/수정, 팀원 브랜치 수정, Git merge/cherry-pick으로 진행하지 않았다. 처음 시도한 격리 사본은 최종 검증 근거로 쓰지 않으며, **현재 작업 브랜치의 실제 페이지**에서 이동을 검증했다.
-- URL은 기존 07의 하위 경로이며 새 기능 번호·컨트롤러·엔드포인트를 추가하지 않는다. `docs/04-policy.md`, `docs/07-page-todo.md`, `docs/09-wbs.md`, 청사진 §13에 두 경로와 담당 경계를 맞췄다. 이 문서들은 한국어 원문과 별도 관리되는 번역이므로 **한국어 원본에도 해당 경로·연결 내용의 동기화가 필요하다.**
+- URL은 기존 07의 하위 경로이며 새 기능 번호·컨트롤러·엔드포인트를 추가하지 않는다. `docs/planning/04-policy.md`, `docs/planning/07-page-todo.md`, `docs/development/02-wbs.md`, 청사진 §13에 두 경로와 담당 경계를 맞췄다. 이 문서들은 한국어 원문과 별도 관리되는 번역이므로 **한국어 원본에도 해당 경로·연결 내용의 동기화가 필요하다.**
 
 ### 협업 연결표
 

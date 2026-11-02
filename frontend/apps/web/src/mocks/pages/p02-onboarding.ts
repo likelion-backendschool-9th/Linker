@@ -21,7 +21,7 @@ export const routes: MockRoute[] = [
   })),
   post('/api/v1/user/onboarding/agreements', () => undefined),
   put('/api/v1/user/onboarding/profile', ({ setMockRole }) => {
-    // Finishing onboarding re-issues the cookie with onb = true (09 WBS 00 A tasks)
+    // Finishing onboarding re-issues the cookie with onb = true (WBS 00 A tasks)
     setMockRole('developer');
     return undefined;
   }),
