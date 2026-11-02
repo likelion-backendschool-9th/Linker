@@ -1,4 +1,4 @@
-import { orderedMessages, type RoomMessage } from './room-api';
+import { mergeCatchUpHistory, orderedMessages, type RoomMessage } from './room-api';
 
 const message = (id: number, text: string): RoomMessage => ({
   id,
@@ -23,4 +23,17 @@ it('keeps message order and the newest version when REST and realtime pages over
     { id: 2, text: 'edited' },
     { id: 3, text: 'new' },
   ]);
+});
+
+it('keeps the read anchor and all 501 missed messages with the oldest history cursor', () => {
+  const result = mergeCatchUpHistory({
+    pages: [{ items: [message(10, 'last read')], hasMore: true }], pageParams: [null],
+  }, {
+    items: Array.from({ length: 501 }, (_, index) => message(index + 11, 'missed')),
+    hasMore: false,
+  });
+  expect(result.pages[0]!.items).toHaveLength(502);
+  expect(result.pages[0]!.items[0]!.id).toBe(10);
+  expect(result.pages[0]!.items.at(-1)!.id).toBe(511);
+  expect(result.pages[0]!.hasMore).toBe(true);
 });

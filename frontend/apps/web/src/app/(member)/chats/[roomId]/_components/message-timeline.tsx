@@ -11,11 +11,17 @@ import type { RoomMessage } from '../_lib/room-api';
 import { ChatMessage } from './chat-message';
 import styles from './chat-room.module.css';
 
-type Props = { messages: RoomMessage[]; login: string | null; onRead: (id: number) => void };
+type Props = {
+  messages: RoomMessage[];
+  login: string | null;
+  onRead: (id: number) => void;
+  readPosition?: { id: number } | null;
+};
 
-export function MessageTimeline({ messages, login, onRead }: Props) {
+export function MessageTimeline({ messages, login, onRead, readPosition }: Props) {
   'use no memo'; // TanStack Virtual exposes a mutable virtualizer.
   const root = useRef<HTMLDivElement>(null);
+  const restoredPosition = useRef<Props['readPosition']>(null);
   const prior = useRef<{
     first: number | undefined;
     last: number | undefined;
@@ -45,7 +51,14 @@ export function MessageTimeline({ messages, login, onRead }: Props) {
     const previous = prior.current;
     const element = root.current;
     if (!element || (messages.length && !renderedCount)) return;
-    if (previous && previous.first !== first && previous.last === last) {
+    if (readPosition && restoredPosition.current !== readPosition) {
+      const index = messages.findIndex((message) => message.id >= readPosition.id);
+      if (index >= 0) {
+        restoredPosition.current = readPosition;
+        setAtBottom(false);
+        virtualizer.scrollToIndex(index, { align: 'start' });
+      }
+    } else if (previous && previous.first !== first && previous.last === last) {
       element.scrollTop += Math.max(0, totalSize - previous.size);
     } else if (!previous || (atBottom && (previous.last !== last || previous.size !== totalSize))) {
       const offset = Math.max(0, totalSize - element.clientHeight);
@@ -53,7 +66,7 @@ export function MessageTimeline({ messages, login, onRead }: Props) {
       virtualizer.scrollToOffset(offset);
     }
     prior.current = { first, last, size: totalSize };
-  }, [first, last, totalSize, renderedCount, messages.length, atBottom, virtualizer]);
+  }, [first, last, totalSize, renderedCount, messages.length, atBottom, virtualizer, messages, readPosition]);
 
   // Only rows intersecting the message viewport while the document is visible count as read.
   useEffect(() => {
@@ -62,16 +75,27 @@ export function MessageTimeline({ messages, login, onRead }: Props) {
       (entries) => {
         if (document.visibilityState !== 'visible') return;
         const ids = entries
-          .filter((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5)
+          .filter((entry) => {
+            const viewportHeight = entry.rootBounds?.height ?? entry.boundingClientRect.height;
+            const requiredHeight = Math.min(entry.boundingClientRect.height, viewportHeight) / 2;
+            return entry.isIntersecting && entry.intersectionRect.height >= requiredHeight;
+          })
           .map((entry) => Number((entry.target as HTMLElement).dataset.messageId));
         const newest = Math.max(0, ...ids);
         if (newest) readHandler.current(newest);
       },
-      { root: root.current, threshold: [0.5] },
+      { root: root.current, threshold: [0, 0.5] },
     );
     const observe = () =>
       root.current?.querySelectorAll('[data-message-id]').forEach((node) => observer.observe(node));
     observe();
+    const element = root.current;
+    // Tall rows may never cross the fixed ratio threshold as they scroll.
+    const onScroll = () => {
+      observer.disconnect();
+      observe();
+    };
+    element.addEventListener('scroll', onScroll, { passive: true });
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         observer.disconnect();
@@ -81,6 +105,7 @@ export function MessageTimeline({ messages, login, onRead }: Props) {
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       observer.disconnect();
+      element.removeEventListener('scroll', onScroll);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [visibleKeys, overlay]);

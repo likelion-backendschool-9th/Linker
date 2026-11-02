@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions, type InfiniteData } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
@@ -83,4 +83,18 @@ export function orderedMessages(pages: MessagePage[]): RoomMessage[] {
   for (const page of [...pages].reverse())
     for (const message of page.items) unique.set(message.id, message);
   return [...unique.values()].sort((a, b) => a.id - b.id);
+}
+
+/** Preserve the read anchor, caught-up messages and the oldest history cursor together. */
+export function mergeCatchUpHistory(
+  history: InfiniteData<MessagePage> | undefined,
+  incoming: MessagePage,
+): InfiniteData<MessagePage> {
+  return {
+    pages: [{
+      items: orderedMessages([incoming, ...(history?.pages ?? [])]),
+      hasMore: history?.pages.at(-1)?.hasMore ?? false,
+    }],
+    pageParams: [null],
+  };
 }
