@@ -1,0 +1,11 @@
+{
+  "ssh_host": "cloud.newlecture.com",
+  "ssh_port": 22,
+  "ssh_user": "linker",
+  "db_container": "linker-db",
+  "db_network": "linker_default",
+  "db_name": "linker",
+  "db_user": "linker",
+  "db_port": 5432,
+  "local_port": 15432
+}

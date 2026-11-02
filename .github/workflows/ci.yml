@@ -41,6 +41,10 @@ jobs:
               - 'compose*.yml'
               - 'nginx/**'
               - 'scripts/verify-production-compose.py'
+              - 'scripts/remote_db.py'
+              - 'scripts/tests/**'
+              - 'config/remote-db.json'
+              - '.env.remote-db.example'
               - 'deploy/**'
               - '.env.example'
               - 'frontend/Dockerfile'
@@ -137,6 +141,8 @@ jobs:
         run: |
           bash -n deploy/apply.sh deploy/ship.sh
           python3 -m unittest discover -s deploy/tests -v
+      - name: Validate shared remote database helper
+        run: python3 -m unittest discover -s scripts/tests -v
       - uses: docker/setup-compose-action@v1
         with:
           version: v5.6.0

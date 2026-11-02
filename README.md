@@ -255,5 +255,6 @@ pnpm build
 | [백엔드 청사진](docs/development/05-backend-blueprint.md)                                                         | 서버 도메인·보안·트랜잭션·연동 설계와 미확정 제안 |
 | [저장소 설정](docs/operations/01-setup.md) · [Docker](docs/operations/02-docker.md)                               | 개발 환경·CI·로컬 컨테이너 실행                   |
 | [서버 운영](docs/operations/03-deployment.md) · [자동 배포](docs/operations/04-automatic-deployment.md)           | 운영 구성·HTTPS·main 배포 초기 설정과 절차        |
+| [서버 DB 접속](docs/operations/05-database-access.md) | SSH 터널·Windows/WSL 구분·DB 연결 및 오류 확인 |
 
 README는 프로젝트의 입구입니다. 상세 수치·권한은 정책, 화면은 페이지 TODO, API·담당은 WBS, 데이터 구조는 ERD를 우선합니다.

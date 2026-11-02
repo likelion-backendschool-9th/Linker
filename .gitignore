@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.remote-db.example
 
 # ===== Accidental repo-root installs (workspaces live in frontend/, backend/) =====
 /node_modules/
@@ -47,3 +48,5 @@ backend/src/main/resources/application-local.yml
 /releases/
 /.deployment-state/
 deploy/tests/__pycache__/
+scripts/tests/__pycache__/
+scripts/__pycache__/
