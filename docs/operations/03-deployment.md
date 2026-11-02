@@ -1,86 +1,66 @@
-# 서버 배포·운영
+# 서버 운영
 
-기준일: 2026-11-02 · 서버 계정: `linker` · 경로: `~/Linker`
+기준일: 2026-11-02 · **수동 배포·운영 설정 적용·첫 자동 배포 완료**
 
-## 현재 상태
+## 접속과 구성
 
-- 접속 주소: **https://linker.newlecture.com/** — 외부 브라우저 접속·HTTPS 200 확인 완료.
-- Docker 29.1.3 / Compose 2.40.3 / Buildx 0.30.1, 다섯 서비스 실행 확인 완료.
-- 아래 운영 설정은 이번에 추가한 파일이다. **서버에 내려받고 적용하기 전까지 기존 구성으로 동작한다.**
-- 실제 로그인·업무 API·WebSocket·결제 연동, DB 백업 자동화, `main` 자동 배포는 후속 작업이다.
+| 항목 | 현재 값 |
+| --- | --- |
+| 서비스 | https://linker.newlecture.com/ |
+| SSH | `ssh linker@cloud.newlecture.com` (22번) |
+| 서버 경로 | `/home/linker/Linker` |
+| 내부 진입점 | `127.0.0.1:3004` |
+| 실행 도구 | Docker 29.1.3 / Compose 2.40.3 / Buildx 0.30.1 |
 
 ```text
-브라우저 HTTPS → 호스트 Nginx :443 → 127.0.0.1:3004
+브라우저 HTTPS → 호스트 Nginx :443 → 내부 3004
 → Docker Nginx → Next.js / Spring Boot → PostgreSQL·Redis
 ```
 
-## 운영 설정
+## 완료한 작업
 
-`compose.yml`에 `compose.prod.yml`을 함께 지정한다. Compose 2.24.4 이상 필요(서버 2.40.3 사용 가능).
+- `linker` 계정과 서버 `.env` 준비, 다섯 컨테이너 healthy 확인.
+- 호스트 Nginx·Certbot 구성, 외부 HTTPS 200 및 브라우저 접속 확인.
+- 운영 Compose 적용: 직접 디버깅 포트 제거, 3004만 loopback에 연결.
+- 자동 재시작(`unless-stopped`), 서비스별 로그 순환(10MB × 3), CPU·메모리 상한 적용.
+- 기존 DB·Redis 볼륨 유지 및 HTTPS 정보 전달 구성.
+- **첫 Actions 자동 배포 성공:** [실행 결과](https://github.com/likelion-backendschool-9th/Linker/actions/runs/41412487884), 배포 커밋 `5ac46fb`.
 
-| 항목 | 설정 |
-| --- | --- |
-| 호스트 포트 | Nginx의 `127.0.0.1:3004`만 사용, 다른 서비스는 Docker 내부에서 통신 |
-| 재시작 | `unless-stopped`: 비정상 종료·호스트 재시작 후 복구, 명시적으로 중지한 컨테이너는 제외 |
-| 로그 | 서비스별 파일당 10MB, 최대 3개로 순환 |
-| CPU / 메모리 상한 | DB 1코어/1GiB, Redis 0.5코어/256MiB, 백엔드 1코어/1GiB, 웹 1코어/768MiB, Nginx 0.5코어/128MiB |
-| 데이터 | 기존 프로젝트의 PostgreSQL·Redis 볼륨 유지 |
-| HTTPS 정보 | 운영 Nginx가 호스트의 `X-Forwarded-Proto: https`를 웹·API·WebSocket으로 전달 |
+## 앞으로 배포하는 방법
 
-자원 제한은 실행 중 컨테이너에 적용되며 빌드에는 적용되지 않는다. 초기 상한이므로 실제 사용량과 OOM 여부를 보고 조정한다.
-DB·Redis의 호스트 포트를 닫아도 내부 연결은 유지된다. DB가 필요하면 `compose exec db`를 사용한다.
+**작업 PR → dev 검증 → dev를 main에 병합 → 자동 배포** 순서다.
+서버에서 별도 `git pull`·이미지 빌드·Compose 재실행은 필요 없다.
+배포 진행·재실행 방법은 [자동 배포](./04-automatic-deployment.md)를 참고한다.
 
-## 서버에 적용
+서버 `.env`·DB 비밀번호·인증서는 그대로 유지한다. `.env`는 `chmod 600 .env`로 보호하고 Git에 올리지 않는다.
+앱 이미지는 GHCR에서 받으며, 활성 설정은 `releases/{SHA}`에 보관한다.
+기존 루트에서 `compose up --build`를 실행하면 자동 배포된 버전을 덮어쓸 수 있으므로 사용하지 않는다.
 
-**변경사항이 dev에 병합된 뒤** 리눅스 서버에서 실행한다. 현재 수동 배포 기준 브랜치는 `dev`이며, 이후 자동 배포는 `main`을 사용할 예정이다.
+## 상태 확인·로그
 
-```bash
-cd ~/Linker
-git status --short --branch
-git pull --ff-only origin dev
-```
-
-작업 파일 변경이 없고 `dev` 브랜치인지 확인한다. `.env`는 기존 파일을 유지한다.
-
-| 환경변수 | 값 |
-| --- | --- |
-| `PROXY_PORT` | `3004` |
-| `DB_PASSWORD` | 현재 DB를 생성할 때 사용한 비밀번호 유지 |
-| `DB_URL`, `DB_USERNAME` | Compose가 내부 DB 주소·사용자로 지정 |
-| `NEXT_PUBLIC_IMAGE_HOST` | 이미지 저장소 연결 시 입력 |
-| `NEXT_PUBLIC_TOSS_CLIENT_KEY` | Toss 공개 테스트 클라이언트 키만 입력 |
-
-`.env` 권한은 `chmod 600 .env`로 제한한다. 비밀값을 커밋하거나 공유하지 않는다.
-
-DB에 데이터가 있다면 먼저 백업한다(서버 계정 홈에 보관).
+리눅스 서버에서 실행한다.
 
 ```bash
-install -d -m 700 ~/linker-backups
-(umask 077; sudo docker compose exec -T db pg_dump -U linker -d linker -Fc > ~/linker-backups/linker-$(date +%Y%m%d-%H%M%S).dump)
-```
+# 실행 상태·활성 배포 경로·자원 사용
+sudo docker ps --filter label=com.docker.compose.project=linker
+cat ~/Linker/.deployment-state/active
+sudo docker stats --no-stream
 
-구성 검사 후 운영 모드로 전환한다. **컨테이너 재생성 중 잠깐 중단될 수 있다.**
+# 실제 실행 중인 앱 로그
+sudo docker logs --tail=100 linker-web-1
+sudo docker logs --tail=100 linker-backend-1
+sudo docker logs --tail=100 linker-proxy-1
 
-```bash
-sudo docker compose -f compose.yml -f compose.prod.yml config --quiet
-sudo docker compose -f compose.yml -f compose.prod.yml up -d --build --wait --wait-timeout 240
-sudo docker compose -f compose.yml -f compose.prod.yml ps
+# 외부 HTTPS 응답
 curl -I https://linker.newlecture.com/
 ```
 
-기존 `~/Linker`에서 같은 프로젝트 이름으로 실행해야 기존 볼륨을 사용한다. `-p`나 `COMPOSE_PROJECT_NAME`을 임의로 바꾸지 않는다.
-실패하면 반복 실행하거나 볼륨을 지우지 말고 아래 로그를 확인한다.
+포트 표시에 `3000/tcp`, `8080/tcp`만 있는 것은 내부 포트다. 호스트 연결은 `127.0.0.1:3004->80/tcp`만 유지한다.
 
-## 호스트 Nginx·인증서
+## 인증서·DB 관리
 
-- 실제 설정: `/etc/nginx/sites-available/linker` → `sites-enabled/linker`.
-- 인증서는 호스트의 Certbot에서 관리한다. Docker에 인증서 복사 불필요.
-- 초기 설정 예시: [host-linker.http.conf.example](../../nginx/host-linker.http.conf.example). **현재 Certbot이 적용한 HTTPS 설정을 이 HTTP 예시로 덮어쓰지 않는다.**
-- 호스트는 `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`를 직접 설정해야 한다. 기존 설정의 `X-Forwarded-Proto $scheme`을 유지한다.
-- 운영 컨테이너는 호스트가 전달한 헤더를 신뢰한다. 3004를 외부에 공개하지 않는다.
-- 공용 Nginx의 다른 팀 파일과 기본 설정은 변경하지 않는다.
-
-검사·갱신 테스트(최초 적용 및 인증서 설정 변경 후):
+호스트 Nginx 설정은 `/etc/nginx/sites-available/linker`, 인증서는 호스트 Certbot이 관리한다.
+다른 팀의 설정은 변경하지 않는다. [초기 HTTP 예시](../../nginx/host-linker.http.conf.example)로 현재 HTTPS 설정을 덮어쓰지 않는다.
 
 ```bash
 sudo nginx -t
@@ -88,28 +68,18 @@ sudo certbot renew --cert-name linker.newlecture.com --dry-run
 systemctl list-timers --all | grep certbot
 ```
 
-인증서 이름이 다르면 `sudo certbot certificates`로 확인한다. 갱신 테스트 성공과 정기 실행 타이머를 모두 확인한다.
-
-## 자주 쓰는 명령
+HTTPS 발급·접속은 확인했으며, **갱신 테스트와 타이머 동작은 별도로 확인**한다.
+DB 백업이 필요하면 서버 계정 홈에 저장한다.
 
 ```bash
-cd ~/Linker
-# 실행 상태·자원 사용
-sudo docker compose -f compose.yml -f compose.prod.yml ps
-sudo docker stats --no-stream
-
-# 로그·컨테이너 Nginx 검사
-sudo docker compose -f compose.yml -f compose.prod.yml logs --tail=100 proxy web backend
-sudo docker compose -f compose.yml -f compose.prod.yml exec proxy nginx -t
-
-# 종료: DB·Redis 볼륨 유지
-sudo docker compose -f compose.yml -f compose.prod.yml down
+install -d -m 700 ~/linker-backups
+(umask 077; sudo docker exec linker-db pg_dump -U linker -d linker -Fc > ~/linker-backups/linker-$(date +%Y%m%d-%H%M%S).dump)
 ```
 
-운영에서는 항상 두 Compose 파일을 함께 지정한다. 개발용 `compose.dev.yml`, `--watch`, 데이터 삭제 옵션 `down -v`는 사용하지 않는다.
+`down -v`는 데이터를 삭제한다. DB 비밀번호 변경·스키마 변경·복구는 별도 절차로 진행한다.
 
-## 다음 작업
+## 남은 작업
 
-1. 이 설정을 서버에 적용하고 HTTPS·포트 제거·자원 사용 확인.
-2. 백엔드 구현에 맞춰 BFF 인증·쿠키·API·WebSocket 검증. 현재 `/api/v1/*`는 Spring으로 직접 전달한다.
-3. [자동 배포 안내](./04-automatic-deployment.md)에 따라 SSH 키·권한·GitHub 항목을 준비한 뒤 `main` 자동 배포를 활성화.
+- 실제 로그인·API·WebSocket·결제 기능 연동 검증. 배포 성공이 기능 완성을 의미하지 않는다.
+- DB 백업·복구 자동화와 운영 자원 사용량 점검.
+- 블루·그린 무중단 배포는 아직 미구현. 현재 교체 중 잠깐 중단될 수 있다.

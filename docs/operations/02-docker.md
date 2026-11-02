@@ -68,7 +68,7 @@ docker compose ps
 ```
 
 개발 설정을 지정하지 않으면 Dockerfile의 마지막 `runtime` 단계를 사용합니다. 개발 서버와 Compose Watch는 실제 공개 서버에서 사용하지 않습니다.
-리눅스 서버에서는 [배포 가이드](03-deployment.md)에 따라 `compose.yml`과 `compose.prod.yml`을 함께 지정합니다. 기본 파일만 실행하면 로컬 디버깅 포트가 다시 열립니다.
+서버 초기 수동 구성에서는 `compose.yml`과 `compose.prod.yml`을 함께 지정합니다. **현재 서버는 자동 배포로 운영 중이므로 수동 재빌드하지 않습니다.** 서버 명령은 [서버 운영](03-deployment.md), 배포 절차는 [자동 배포](04-automatic-deployment.md)를 참고하세요. 기본 파일만 실행하면 로컬 디버깅 포트가 다시 열립니다.
 
 | 서비스 | 로컬 주소 | 준비 상태 확인 |
 | --- | --- | --- |
