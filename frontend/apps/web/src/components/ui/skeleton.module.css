@@ -14,6 +14,10 @@
   border-radius: var(--radius-md);
 }
 
+.static {
+  animation: none;
+}
+
 .line {
   height: var(--font-size-body);
   border-radius: var(--radius-full);

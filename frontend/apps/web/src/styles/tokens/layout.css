@@ -41,6 +41,8 @@
   --icon-size: 24px;
   --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
+  --size-loading-inline: 20px; /* Thinking Orb's compact Composing preset */
+  --size-loading-block: 64px; /* inside an existing large placeholder */
 
   /* Layers: page chrome < overlays < toasts */
   --z-chrome: 10;

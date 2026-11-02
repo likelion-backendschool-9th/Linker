@@ -1,0 +1,56 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  vertical-align: middle;
+}
+
+.region {
+  position: relative;
+}
+
+/* The existing placeholder DOM, sizes and gaps stay in normal flow. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.region [data-skeleton-block] {
+  animation: none;
+}
+
+.orb {
+  display: inline-block;
+  position: relative;
+  flex: none;
+  inline-size: var(--size-loading-inline);
+  block-size: var(--size-loading-inline);
+}
+
+.block {
+  inline-size: var(--size-loading-block);
+  block-size: var(--size-loading-block);
+}
+
+.inline,
+.inherit {
+  color: inherit;
+}
+
+.inverse {
+  color: var(--color-on-primary);
+}
+
+.danger {
+  color: var(--color-status-error);
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  border: 1px dotted currentColor;
+  border-radius: var(--radius-full);
+}

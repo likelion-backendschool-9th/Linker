@@ -168,6 +168,9 @@ importers:
       shiki:
         specifier: ^4.5.0
         version: 4.5.0
+      thinking-orbs:
+        specifier: 0.3.2
+        version: 0.3.2(react@19.3.0)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -6139,6 +6142,11 @@ packages:
     resolution: {integrity: sha512-bWnjSNscmuI+GJze6ZupnHP8G/cTcsJF+bXCeQknk2SHQsgbNJnLrqiH9jZ2W4STPVXH2mDKKRX3iwPhc9Cn/Q==}
     engines: {node: '>=10'}
     hasBin: true
+
+  thinking-orbs@0.3.2:
+    resolution: {integrity: sha512-QZFeBaPEzqhjiZoXy961EvDgaXk2WgXacF3Rbz+Sj5IfzDzBvTC86vdREUHniBffYibJFKSwbfllxLUdI/Xv6g==}
+    peerDependencies:
+      react: '>=18.0.0'
 
   throat@5.0.0:
     resolution: {integrity: sha512-fcwX4mndzpLQKBS1DVYhGAcYaYt7vsHNIvQV+WXMvnow5cgjPphq5CaayLaGsjRdSCKZFNGt7/GYAuXaNOiYCA==}
@@ -13547,6 +13555,10 @@ snapshots:
       acorn: 8.19.0
       commander: 2.20.3
       source-map-support: 0.5.21
+
+  thinking-orbs@0.3.2(react@19.3.0):
+    dependencies:
+      react: 19.3.0
 
   throat@5.0.0: {}
 
