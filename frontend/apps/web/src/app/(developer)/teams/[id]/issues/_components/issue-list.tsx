@@ -166,13 +166,16 @@ export function IssueList({ teamId }: { teamId: string }) {
         </p>
       )}
 
+      <p role="status" className="sr-only">
+        {issues.isPending ? '이슈를 불러오고 있어요.' : ''}
+      </p>
       <section
         aria-label={`${VIEW_LABELS[view]} 이슈 목록`}
         aria-busy={issues.isPending}
         className={styles.content}
       >
         {issues.isPending ? (
-          <LoadingIndicator label="이슈를 불러오고 있어요." variant="block">
+          <LoadingIndicator label="이슈를 불러오고 있어요." variant="block" announce={false}>
             <Skeleton count={4} />
           </LoadingIndicator>
         ) : issues.isError && !issues.data ? (

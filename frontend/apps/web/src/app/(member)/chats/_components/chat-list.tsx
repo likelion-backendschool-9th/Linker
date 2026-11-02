@@ -107,13 +107,16 @@ export function ChatList() {
       {mutationError && (
         <ErrorState title="요청을 처리하지 못했어요" description="잠시 후 다시 시도해 주세요." />
       )}
+      <p role="status" className="sr-only">
+        {rooms.isPending ? '채팅 목록을 불러오고 있어요.' : ''}
+      </p>
       <section
         aria-label={`${LABELS[tab]} 채팅 목록`}
         aria-busy={rooms.isPending}
         className={styles.content}
       >
         {rooms.isPending ? (
-          <LoadingIndicator label="채팅 목록을 불러오고 있어요." variant="block">
+          <LoadingIndicator label="채팅 목록을 불러오고 있어요." variant="block" announce={false}>
             <Skeleton count={3} />
           </LoadingIndicator>
         ) : rooms.isError && !rooms.data ? (

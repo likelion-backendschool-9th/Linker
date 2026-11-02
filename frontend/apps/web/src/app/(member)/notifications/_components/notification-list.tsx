@@ -129,9 +129,12 @@ export function NotificationList() {
           }}
         />
       )}
+      <p role="status" className="sr-only">
+        {list.isPending ? '알림을 불러오고 있어요.' : ''}
+      </p>
       <section aria-label="알림 목록" aria-busy={list.isPending}>
         {list.isPending ? (
-          <LoadingIndicator label="알림을 불러오고 있어요." variant="block">
+          <LoadingIndicator label="알림을 불러오고 있어요." variant="block" announce={false}>
             <Skeleton count={3} />
           </LoadingIndicator>
         ) : list.isError && !list.data ? (

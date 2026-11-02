@@ -102,7 +102,44 @@ test('Composing paints in both presets and remains static for reduced motion', a
   await page.waitForTimeout(150);
   expect(await pixels(compact)).toEqual(a);
   expect(await pixels(large)).toEqual(b);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect.poll(async () => (await pixels(compact)).hash).not.toBe(a.hash);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForTimeout(120);
+  const stopped = await pixels(compact);
+  await page.waitForTimeout(150);
+  expect(await pixels(compact)).toEqual(stopped);
   await expect(page.getByRole('img')).toHaveCount(0);
+});
+
+test('unmount stops the Canvas loop and repeated pending transitions leave no stale canvas', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await instrument(page);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto(fixture);
+  const pendingCanvas = page.locator('[data-fixture-button="primary"] canvas');
+  await page.locator('[data-toggle]').click();
+  await expect(pendingCanvas).toBeVisible();
+  const detached = await pendingCanvas.elementHandle();
+  if (!detached) throw new Error('Pending action did not render its canvas');
+  const frames = () => detached.evaluate((canvas) => Number(canvas.dataset.frames));
+  await expect.poll(frames).toBeGreaterThan(2);
+  await page.locator('[data-toggle]').click();
+  await expect(pendingCanvas).toHaveCount(0);
+  await page.waitForTimeout(120);
+  const stopped = await frames();
+  for (let cycle = 0; cycle < 3; cycle++) {
+    await page.locator('[data-toggle]').click();
+    await expect(pendingCanvas).toBeVisible();
+    await page.locator('[data-toggle]').click();
+    await expect(pendingCanvas).toHaveCount(0);
+  }
+  expect(await frames()).toBe(stopped);
+  await detached.dispose();
+  expect(errors).toEqual([]);
 });
 
 test('the real Canvas loop pauses offscreen, for hidden tabs and for WebView background', async ({

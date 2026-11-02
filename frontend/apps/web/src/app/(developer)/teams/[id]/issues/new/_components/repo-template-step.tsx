@@ -129,6 +129,9 @@ export function RepoTemplateStep({
         )}
       </fieldset>
 
+      {repo !== null && templates.isPending && (
+        <p role="status" className="sr-only">불러오는 중…</p>
+      )}
       {repo !== null && (
         <fieldset
           className={styles.fieldset}
@@ -145,7 +148,7 @@ export function RepoTemplateStep({
               onRetry={() => void templates.refetch()}
             />
           ) : templates.isPending ? (
-            <LoadingIndicator label="불러오는 중…" labelHidden variant="inline">
+            <LoadingIndicator label="불러오는 중…" labelHidden variant="inline" announce={false}>
               <Skeleton variant="line" count={3} />
             </LoadingIndicator>
           ) : (

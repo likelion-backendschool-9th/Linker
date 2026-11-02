@@ -306,14 +306,11 @@ function PagedList<T extends { id: number }>({
 
   if (query.isPending) {
     return (
-      <div aria-busy="true">
-        <p role="status" className="sr-only">
-          {label}을 불러오고 있어요.
-        </p>
-        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
+      <LoadingIndicator label={`${label}을 불러오고 있어요.`} labelHidden variant="block">
+        <div aria-busy="true">
           <Skeleton count={3} />
-        </LoadingIndicator>
-      </div>
+        </div>
+      </LoadingIndicator>
     );
   }
   if (query.isError && !query.data) return <ErrorState onRetry={() => void query.refetch()} />;
