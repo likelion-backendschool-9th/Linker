@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
+import { subscriptionKeys } from '@/features/subscription/subscription-api';
 import { STATS } from '@/lib/policy';
 
 export type StatsSummary = {
@@ -27,9 +28,13 @@ const staleTime = 60 * 60 * 1000;
 
 export function statsSummaryOptions(login: string | null) {
   return queryOptions({
-    queryKey: ['stats', login, 'summary'],
-    queryFn: ({ signal }) => apiFetch<StatsSummary>('/api/v1/user/me/stats/summary', { signal }),
+    // D already invalidates this account prefix after checkout, cancellation and refund.
+    queryKey: [...subscriptionKeys.account(login), 'stats-summary'],
+    queryFn: ({ signal }) =>
+      apiFetch<StatsSummary>('/api/v1/user/me/stats/summary', { signal, cache: 'no-store' }),
     staleTime,
+    // Refresh entitlements on entry, including after a payment callback/full reload.
+    refetchOnMount: 'always',
   });
 }
 export function postStatsOptions(login: string | null) {

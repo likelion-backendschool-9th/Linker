@@ -41,14 +41,14 @@ export function StatsView() {
   const summary = useQuery(statsSummaryOptions(viewer.login));
   const posts = useQuery({
     ...postStatsOptions(viewer.login),
-    enabled: summary.data?.isPro === true,
+    enabled: summary.data?.isPro === true && !summary.isFetching,
   });
   const recruiters = useQuery({
     ...recruiterViewsOptions(viewer.login),
-    enabled: summary.data?.isPro === true,
+    enabled: summary.data?.isPro === true && !summary.isFetching,
   });
   const [postId, setPost] = useQueryState('post', parseAsString);
-  if (summary.isPending) return <Skeleton variant="card" count={3} />;
+  if (summary.isPending || summary.isFetching) return <Skeleton variant="card" count={3} />;
   if (summary.isError) return <ErrorState onRetry={() => void summary.refetch()} />;
   const selected =
     summary.data.items.find((p) => String(p.postId) === postId) ?? summary.data.items[0];
