@@ -1,0 +1,41 @@
+.content {
+  display: grid;
+  gap: var(--space-lg);
+  width: min(100%, var(--content-max-width));
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) var(--space-xxl);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+}
+
+.section h2 { margin: 0; color: var(--color-text-heading); font-size: var(--font-size-section-title); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); min-height: var(--touch-target-min); }
+.rowInfo { display: grid; gap: var(--space-xxs); }
+.label { color: var(--color-text-heading); font-weight: var(--font-weight-semibold); }
+.description, .value { color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: var(--line-height-caption); }
+.form { display: grid; gap: var(--space-sm); }
+.field { display: grid; gap: var(--space-xxs); }
+.field label { color: var(--color-text-heading); font-weight: var(--font-weight-semibold); }
+.field input { width: 100%; min-height: var(--control-height); padding: 0 var(--space-sm); border: 1px solid var(--color-hairline); border-radius: var(--radius-sm); background: var(--color-canvas); color: var(--color-text-heading); font: inherit; }
+.field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+.error { color: var(--color-status-error); font-size: var(--font-size-caption); }
+.links { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-md); }
+.link { min-height: var(--touch-target-min); display: inline-flex; align-items: center; color: var(--color-text-heading); text-decoration: underline; }
+.toggle { width: var(--touch-target-min); height: var(--touch-target-min); border: 1px solid var(--color-hairline); border-radius: var(--radius-full); background: var(--color-canvas-soft); color: var(--color-text-heading); }
+.toggle[aria-pressed='true'] { background: var(--color-primary); color: var(--color-on-primary); }
+.danger { color: var(--color-status-error); }
+.teamList { margin: var(--space-xs) 0 0; padding-left: var(--space-lg); color: var(--color-text-heading); }
+.blockList { display: grid; gap: var(--space-sm); margin: 0; padding: 0; list-style: none; }
+.blockItem { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); min-height: var(--touch-target-min); }
+
+@media (min-width: 600px) {
+  .content { padding-top: var(--space-md); }
+  .section { padding: var(--space-lg); }
+}

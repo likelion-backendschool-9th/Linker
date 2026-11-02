@@ -1,4 +1,4 @@
-import { Settings, UserRound } from 'lucide-react';
+import { LogIn, UserRound } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -45,10 +45,10 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
           {role === 'guest' ? (
             <>
               <HeaderLoginButton className={`${styles.iconButton} ${styles.mobileOnly}`}>
-                <Settings aria-hidden />
-                <span className="sr-only">설정</span>
+                <LogIn aria-hidden />
+                <span className="sr-only">로그인</span>
               </HeaderLoginButton>
-              <HeaderLoginButton className={styles.softPillButton}>설정</HeaderLoginButton>
+              <HeaderLoginButton className={styles.softPillButton}>로그인</HeaderLoginButton>
               <HeaderLoginButton className={styles.ctaButton}>무료로 시작하기</HeaderLoginButton>
             </>
           ) : (
