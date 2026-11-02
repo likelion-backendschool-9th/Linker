@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import styles from '@/features/teams/team-ui.module.css';
@@ -203,9 +202,7 @@ export function TeamSettingsActionSheet({
           <>
             <p>현재 보드: {team.board.name}</p>
             {boards.isPending ? (
-              <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-                <Skeleton />
-              </LoadingIndicator>
+              <Skeleton />
             ) : boards.isError ? (
               <ErrorState onRetry={() => void boards.refetch()} />
             ) : (

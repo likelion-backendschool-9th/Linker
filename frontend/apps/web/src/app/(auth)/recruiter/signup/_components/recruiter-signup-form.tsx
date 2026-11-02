@@ -199,26 +199,14 @@ export function RecruiterSignupForm() {
           <input id="company-email" type="email" autoComplete="email" {...form.register('email', { onChange: updateEmail })} aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'company-email-error' : undefined} />
         </Field>
         <div className={styles.actionRow}>
-          <Button
-            variant="outline"
-            onClick={sendCode}
-            disabled={requestCode.isPending || resendSeconds > 0}
-            pending={requestCode.isPending}
-            pendingLabel="보내는 중…"
-          >{codeSent ? resendSeconds > 0 ? `인증 코드 다시 받기 (${resendSeconds}초)` : '인증 코드 다시 받기' : '인증 코드 받기'}</Button>
+          <Button variant="outline" onClick={sendCode} disabled={requestCode.isPending || resendSeconds > 0}>{requestCode.isPending ? '보내는 중…' : codeSent ? resendSeconds > 0 ? `인증 코드 다시 받기 (${resendSeconds}초)` : '인증 코드 다시 받기' : '인증 코드 받기'}</Button>
         </div>
         {codeSent && <>
           <p className={styles.description}>인증 코드는 {validMinutes}분 동안 유효해요.</p>
           <Field id="verification-code" label="인증 코드" error={form.formState.errors.code?.message}>
             <input id="verification-code" inputMode="numeric" autoComplete="one-time-code" maxLength={RECRUITER.emailCode.length} {...form.register('code')} aria-invalid={Boolean(form.formState.errors.code)} aria-describedby={form.formState.errors.code ? 'verification-code-error' : undefined} />
           </Field>
-          <Button
-            block
-            onClick={checkCode}
-            disabled={verifyCode.isPending}
-            pending={verifyCode.isPending}
-            pendingLabel="확인 중…"
-          >이메일 인증하기</Button>
+          <Button block onClick={checkCode} disabled={verifyCode.isPending}>{verifyCode.isPending ? '확인 중…' : '이메일 인증하기'}</Button>
         </>}
         <Button variant="soft" onClick={() => { setApiError(null); setStep(1); }}>이전</Button>
       </div>}
@@ -235,13 +223,7 @@ export function RecruiterSignupForm() {
         {apiError && <ApiErrorNotice error={apiError} />}
         <div className={styles.actionRow}>
           <Button type="button" variant="soft" onClick={() => { setApiError(null); setStep(2); }}>이전</Button>
-          <Button
-            type="submit"
-            disabled={signup.isPending}
-            aria-busy={signup.isPending}
-            pending={signup.isPending}
-            pendingLabel="가입 중…"
-          >회원가입 완료</Button>
+          <Button type="submit" disabled={signup.isPending} aria-busy={signup.isPending}>{signup.isPending ? '가입 중…' : '회원가입 완료'}</Button>
         </div>
       </form>}
 

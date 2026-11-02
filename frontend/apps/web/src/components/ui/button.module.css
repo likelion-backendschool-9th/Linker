@@ -1,5 +1,4 @@
 .button {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -43,19 +42,4 @@
 
 .block {
   width: 100%;
-}
-
-.pendingContent {
-  display: inline-flex;
-  align-items: center;
-  gap: inherit;
-  opacity: 0;
-}
-
-.pendingOrb {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
 }

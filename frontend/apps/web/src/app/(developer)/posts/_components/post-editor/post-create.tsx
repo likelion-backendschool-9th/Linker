@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet';
 import { useDraft } from '@/features/draft-restore/use-draft';
@@ -82,9 +81,10 @@ export function PostCreate() {
       </ol>
 
       {leaving ? (
-        <LoadingIndicator label="올린 게시물로 이동하고 있어요." variant="block">
+        <div aria-busy="true">
+          <p role="status">올린 게시물로 이동하고 있어요.</p>
           <Skeleton count={2} />
-        </LoadingIndicator>
+        </div>
       ) : step === 1 ? (
         <RepoStep
           teamId={nav.teamId}
@@ -146,9 +146,10 @@ function ContentStep({ repoId, restored, onChangeRepo, onSaved }: ContentStepPro
 
   if (summary.isPending) {
     return (
-      <LoadingIndicator label="레포 정보를 불러오고 있어요." variant="block">
+      <div aria-busy="true">
+        <p role="status">레포 정보를 불러오고 있어요.</p>
         <Skeleton count={3} />
-      </LoadingIndicator>
+      </div>
     );
   }
   if (summary.isError) {

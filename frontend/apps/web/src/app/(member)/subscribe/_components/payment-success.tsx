@@ -15,7 +15,6 @@ import { formatWon } from '@/lib/format/number';
 import { formatDate } from '@/lib/format/time';
 
 import styles from './subscription.module.css';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 export function PaymentSuccess({ payment }: { payment: PaymentReturn | null }) {
   const started = useRef(false);
@@ -51,7 +50,7 @@ export function PaymentSuccess({ payment }: { payment: PaymentReturn | null }) {
         onRetry={() => approval.mutate(payment)}
       />
     );
-  if (!approval.data) return <p role="status"><LoadingIndicator label="서버에서 결제 승인을 확인하고 있어요." announce={false} /></p>;
+  if (!approval.data) return <p role="status">서버에서 결제 승인을 확인하고 있어요.</p>;
   if (approval.data.status !== 'ACTIVE')
     return (
       <ErrorState title="결제 승인이 완료되지 않았어요" onRetry={() => approval.mutate(payment)} />

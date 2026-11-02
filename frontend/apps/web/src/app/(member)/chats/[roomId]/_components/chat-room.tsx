@@ -12,7 +12,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { chatKeys, unreadSummaryOptions } from '@/features/chat/chat-queries';
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -133,9 +132,10 @@ export function ChatRoom({ roomId }: { roomId: number }) {
 
   if (info.isPending || history.isPending)
     return (
-      <LoadingIndicator label="대화를 불러오고 있어요." variant="block">
+      <div aria-busy="true">
+        <p role="status">대화를 불러오고 있어요.</p>
         <Skeleton count={3} />
-      </LoadingIndicator>
+      </div>
     );
   if (info.isError || !info.data)
     return (
@@ -197,10 +197,8 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           onClick={() => {
             void history.fetchNextPage();
           }}
-          pending={history.isFetchingNextPage}
-          pendingLabel="불러오는 중…"
         >
-          이전 대화 불러오기
+          {history.isFetchingNextPage ? '불러오는 중…' : '이전 대화 불러오기'}
         </Button>
       )}
       <MessageTimeline

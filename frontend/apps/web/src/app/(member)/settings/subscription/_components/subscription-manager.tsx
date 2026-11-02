@@ -17,7 +17,6 @@ import { formatDate } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 import styles from './subscription-manager.module.css';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 export function SubscriptionManager() {
   const { login } = useViewer();
@@ -59,7 +58,7 @@ export function SubscriptionManager() {
       <section aria-labelledby="subscriptions-title">
         <h2 id="subscriptions-title">현재 구독</h2>
         {subs.isPending ? (
-          <p role="status"><LoadingIndicator label="구독을 불러오고 있어요." announce={false} /></p>
+          <p role="status">구독을 불러오고 있어요.</p>
         ) : subs.isError ? (
           <ErrorState description={subs.error.message} onRetry={() => void subs.refetch()} />
         ) : !subs.data.items.length ? (
@@ -137,7 +136,7 @@ export function SubscriptionManager() {
         <h2 id="payments-title">결제 내역</h2>
         <p>결제 후 7일 이내이고 혜택을 사용하지 않았다면 전액 환불할 수 있어요.</p>
         {payments.isPending ? (
-          <p role="status"><LoadingIndicator label="결제 내역을 불러오고 있어요." announce={false} /></p>
+          <p role="status">결제 내역을 불러오고 있어요.</p>
         ) : payments.isError ? (
           <ErrorState
             description={payments.error.message}
@@ -182,13 +181,8 @@ export function SubscriptionManager() {
           <>
             <p>{selectedSub.teamName ?? selectedSub.name}</p>
             {action.isError && <p role="alert">{action.error.message}</p>}
-            <Button
-              disabled={action.isPending}
-              onClick={() => submit('cancel', selectedSub.id)}
-              pending={action.isPending}
-              pendingLabel="처리 중이에요"
-            >
-              해지 예약하기
+            <Button disabled={action.isPending} onClick={() => submit('cancel', selectedSub.id)}>
+              {action.isPending ? '처리 중이에요' : '해지 예약하기'}
             </Button>
           </>
         ) : (
@@ -209,10 +203,8 @@ export function SubscriptionManager() {
             <Button
               disabled={action.isPending}
               onClick={() => submit('refund', selectedPayment.id)}
-              pending={action.isPending}
-              pendingLabel="처리 중이에요"
             >
-              전액 환불하기
+              {action.isPending ? '처리 중이에요' : '전액 환불하기'}
             </Button>
           </>
         ) : (

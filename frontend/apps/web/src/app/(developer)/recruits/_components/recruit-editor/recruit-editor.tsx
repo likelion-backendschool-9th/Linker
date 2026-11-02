@@ -13,7 +13,6 @@ import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { CharCounter } from '@/components/ui/char-counter';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet';
 import { useDraft } from '@/features/draft-restore/use-draft';
@@ -64,9 +63,10 @@ export function RecruitEditor(props: RecruitEditorProps) {
 
   if (options.isPending || (props.mode === 'edit' && editForm.isPending)) {
     return (
-      <LoadingIndicator label="작성 화면을 불러오고 있어요." variant="block">
+      <div aria-busy="true">
+        <p role="status">작성 화면을 불러오고 있어요.</p>
         <Skeleton count={3} />
-      </LoadingIndicator>
+      </div>
     );
   }
   if (options.isError) return <ErrorState onRetry={() => void options.refetch()} />;
@@ -476,14 +476,8 @@ function EditorForm({ options, editForm, ...props }: EditorFormProps) {
 
         <div className={styles.submitBar}>
           {/* Stays pressable at the cap: the server's PLAN_LIMIT reopens the limit sheet */}
-          <Button
-            type="submit"
-            block
-            aria-disabled={save.isPending}
-            pending={save.isPending}
-            pendingLabel="저장하는 중…"
-          >
-            {creating ? '모집 글 올리기' : '수정 완료'}
+          <Button type="submit" block aria-disabled={save.isPending}>
+            {save.isPending ? '저장하는 중…' : creating ? '모집 글 올리기' : '수정 완료'}
           </Button>
         </div>
       </form>

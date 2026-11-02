@@ -24,8 +24,6 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 - Limits and plan values come from `src/lib/policy.ts`, sourced from Policy; never hard-code them.
 
 ## Accessible, mobile-first UI
-- Loading/Suspense/initial query waits use `@/components/ui/loading-indicator`; keep the existing frame, placeholder geometry and Korean text. Vendor/adapter imports outside the shared entry point are restricted. See blueprint §5-5 and the Design Guide loading contract.
-- Actual native action buttons opt into `Button pending` (with stable action children and optional `pendingLabel`); never infer pending from disabled or use it on `asChild` links. Preserve real progress, optimistic reactions and non-loading statuses.
 - Follow WCAG 2.2 AA / KWCAG 2.2 and blueprint ch. 6. Use `PageFrame` for one header/main/main-menu nav, exactly one h1, ordered headings, and “본문 바로가기”; label additional navs.
 - Actions use buttons; navigation uses Link. Never `div onClick`. Follow §6-2 semantics (`ul > li > article`, `<time>`, etc.).
 - Inputs need visible labels; errors use `aria-invalid` + `aria-describedby`; focus first invalid field after failed submission.

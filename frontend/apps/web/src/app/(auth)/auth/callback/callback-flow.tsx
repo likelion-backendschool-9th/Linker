@@ -12,7 +12,6 @@ import { safeReturnTo } from '@/lib/auth/return-to';
 import { toast } from '@/stores/toast-store';
 
 import styles from './callback-flow.module.css';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 type CallbackResult = { isNew: boolean; restored: boolean; returnTo: string };
 
@@ -84,7 +83,7 @@ export function CallbackFlow({
       >
         <h1 id="callback-title">{pending ? '로그인을 확인하고 있어요' : '로그인할 수 없어요'}</h1>
         {pending ? (
-          <p role="status"><LoadingIndicator label="잠시만 기다려 주세요." announce={false} /></p>
+          <p role="status">잠시만 기다려 주세요.</p>
         ) : (
           <>
             <p className={styles.error} role="alert">

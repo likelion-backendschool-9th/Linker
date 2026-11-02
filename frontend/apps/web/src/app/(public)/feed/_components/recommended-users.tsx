@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { toast } from '@/stores/toast-store';
@@ -20,9 +19,7 @@ export function RecommendedUsers() {
   const viewer = useViewer();
   const users = useQuery(recommendedUsersOptions(viewer.login));
 
-  if (users.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-    <Skeleton count={2} />
-  </LoadingIndicator>;
+  if (users.isPending) return <Skeleton count={2} />;
   // The empty-state copy above already says what to do; nothing more to show on failure
   if (users.isError || users.data.items.length === 0) return null;
 

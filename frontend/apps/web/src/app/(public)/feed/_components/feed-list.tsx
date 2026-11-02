@@ -11,7 +11,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -68,9 +67,12 @@ export function FeedList() {
       )}
 
       {feed.isPending ? (
-        <LoadingIndicator label="피드를 불러오고 있어요." variant="block" labelHidden>
+        <div aria-busy="true">
+          <p role="status" className="sr-only">
+            피드를 불러오고 있어요.
+          </p>
           <Skeleton count={3} />
-        </LoadingIndicator>
+        </div>
       ) : feed.isError && !feed.data ? (
         <ErrorState onRetry={() => void feed.refetch()} />
       ) : items.length === 0 ? (
@@ -224,15 +226,8 @@ function VirtualLanes({
       </ul>
       {loadError && <ErrorState title="피드를 더 불러오지 못했어요" onRetry={onRetry} />}
       {hasMore && (
-        <Button
-          variant="soft"
-          block
-          disabled={loadingMore}
-          onClick={onLoadMore}
-          pending={loadingMore}
-          pendingLabel="불러오는 중…"
-        >
-          더 보기
+        <Button variant="soft" block disabled={loadingMore} onClick={onLoadMore}>
+          {loadingMore ? '불러오는 중…' : '더 보기'}
         </Button>
       )}
     </>

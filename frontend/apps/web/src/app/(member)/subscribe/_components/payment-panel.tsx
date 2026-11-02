@@ -11,7 +11,6 @@ import { formatWon } from '@/lib/format/number';
 import { mountPaymentWidget, type PaymentWidget } from '@/lib/payments/payment-widget';
 
 import styles from './subscription.module.css';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 export function PaymentPanel({ order, onBack }: { order: CheckoutOrder; onBack: () => void }) {
   const router = useRouter();
@@ -69,7 +68,7 @@ export function PaymentPanel({ order, onBack }: { order: CheckoutOrder; onBack: 
       <p className={styles.notice}>테스트 결제라 실제로 돈이 나가지 않아요</p>
       <div id="subscription-methods" className={styles.widget} />
       <div id="subscription-agreement" className={styles.widget} />
-      {!ready && !error && <p role="status"><LoadingIndicator label="결제 화면을 준비하고 있어요." announce={false} /></p>}
+      {!ready && !error && <p role="status">결제 화면을 준비하고 있어요.</p>}
       {error && (
         <ErrorState
           title="결제를 진행하지 못했어요"
@@ -94,10 +93,8 @@ export function PaymentPanel({ order, onBack }: { order: CheckoutOrder; onBack: 
           onClick={() => {
             void pay();
           }}
-          pending={pending}
-          pendingLabel="결제 요청 중…"
         >
-          결제하기
+          {pending ? '결제 요청 중…' : '결제하기'}
         </Button>
       </div>
     </section>

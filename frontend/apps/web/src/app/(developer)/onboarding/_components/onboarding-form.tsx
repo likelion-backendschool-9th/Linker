@@ -238,10 +238,8 @@ export function OnboardingForm({
             onClick={continueToProfile}
             disabled={pending}
             aria-busy={pending}
-            pending={pending}
-            pendingLabel="저장 중…"
           >
-            다음
+            {pending ? '저장 중…' : '다음'}
           </Button>
         </fieldset>
       ) : (
@@ -327,14 +325,8 @@ export function OnboardingForm({
             >
               이전
             </Button>
-            <Button
-              type="submit"
-              disabled={pending}
-              aria-busy={pending}
-              pending={pending}
-              pendingLabel="저장 중…"
-            >
-              완료
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending ? '저장 중…' : '완료'}
             </Button>
           </div>
         </section>

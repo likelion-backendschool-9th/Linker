@@ -111,13 +111,7 @@ export function ReportSheet() {
             </div>
           )}
 
-          <Button
-            type="submit"
-            block
-            className={styles.submit}
-            aria-disabled={report.isPending}
-            pending={report.isPending}
-          >
+          <Button type="submit" block className={styles.submit} aria-disabled={report.isPending}>
             신고하기
           </Button>
         </form>

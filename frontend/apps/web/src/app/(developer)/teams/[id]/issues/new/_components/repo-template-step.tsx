@@ -9,7 +9,6 @@ import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { createReposOptions, templatesOptions, type TemplateSummary } from '../_lib/create-queries';
@@ -50,9 +49,10 @@ export function RepoTemplateStep({
 
   if (repos.isPending) {
     return (
-      <LoadingIndicator label="레포를 불러오고 있어요." variant="inline">
+      <div aria-busy="true">
+        <p role="status">레포를 불러오고 있어요.</p>
         <Skeleton variant="line" count={2} />
-      </LoadingIndicator>
+      </div>
     );
   }
   if (repos.isError) return <ErrorState onRetry={() => void repos.refetch()} />;
@@ -129,9 +129,6 @@ export function RepoTemplateStep({
         )}
       </fieldset>
 
-      {repo !== null && templates.isPending && (
-        <p role="status" className="sr-only">불러오는 중…</p>
-      )}
       {repo !== null && (
         <fieldset
           className={styles.fieldset}
@@ -148,9 +145,7 @@ export function RepoTemplateStep({
               onRetry={() => void templates.refetch()}
             />
           ) : templates.isPending ? (
-            <LoadingIndicator label="불러오는 중…" labelHidden variant="inline" announce={false}>
-              <Skeleton variant="line" count={3} />
-            </LoadingIndicator>
+            <Skeleton variant="line" count={3} />
           ) : (
             groups.map((group) => (
               <div key={group.title} className={styles.group}>

@@ -147,13 +147,8 @@ function ApplyForm({ recruit, overlay }: { recruit: RecruitDetail; overlay: Over
         <Button variant="outline" onClick={() => overlay.close()}>
           취소
         </Button>
-        <Button
-          type="submit"
-          aria-disabled={apply.isPending}
-          pending={apply.isPending}
-          pendingLabel="보내는 중…"
-        >
-          지원하기
+        <Button type="submit" aria-disabled={apply.isPending}>
+          {apply.isPending ? '보내는 중…' : '지원하기'}
         </Button>
       </div>
     </form>

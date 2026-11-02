@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { CharCounter } from '@/components/ui/char-counter';
 import { ErrorState } from '@/components/ui/error-state';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { ApiError } from '@/lib/api/api-error';
@@ -92,9 +91,7 @@ export function CommentSection({ post, canWrite }: CommentSectionProps) {
       )}
 
       {comments.isPending ? (
-        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-          <Skeleton count={2} />
-        </LoadingIndicator>
+        <Skeleton count={2} />
       ) : comments.isError ? (
         <ErrorState title="댓글을 불러오지 못했어요" onRetry={() => void comments.refetch()} />
       ) : threads.length === 0 ? (
@@ -290,13 +287,8 @@ function Composer({ post, textarea, replyTo, onCancelReply, onDone }: ComposerPr
         )}
         <div className={styles.composerActions}>
           <CharCounter id={`${id}-count`} count={count} max={POST.commentMax} />
-          <Button
-            type="submit"
-            aria-disabled={write.isPending}
-            pending={write.isPending}
-            pendingLabel="등록 중…"
-          >
-            등록
+          <Button type="submit" aria-disabled={write.isPending}>
+            {write.isPending ? '등록 중…' : '등록'}
           </Button>
         </div>
       </div>
@@ -367,7 +359,7 @@ function EditForm({
           <Button variant="outline" onClick={onDone}>
             취소
           </Button>
-          <Button type="submit" aria-disabled={save.isPending} pending={save.isPending} >
+          <Button type="submit" aria-disabled={save.isPending}>
             저장
           </Button>
         </div>

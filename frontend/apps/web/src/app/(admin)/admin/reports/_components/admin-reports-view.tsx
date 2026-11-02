@@ -8,7 +8,6 @@ import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -174,9 +173,7 @@ export function AdminReportsView() {
               <option value="newest">최신순</option><option value="oldest">오래된 순</option>
             </select></label>
           </div>
-          {listQuery.isPending ? <LoadingIndicator label="불러오는 중…" variant="block" labelHidden className={styles.loading}>
-            <Skeleton variant="card" count={4} />
-          </LoadingIndicator>
+          {listQuery.isPending ? <div className={styles.loading}><Skeleton variant="card" count={4} /></div>
             : listQuery.error ? <ErrorState title="신고 목록을 불러오지 못했어요" description={listQuery.error.message} onRetry={() => void listQuery.refetch()} />
               : visibleCases.length === 0 ? <EmptyState title="확인할 신고가 없어요" description={search ? '검색어를 바꾸거나 필터를 조정해 보세요.' : '조건에 맞는 신고가 접수되면 여기에 표시돼요.'} />
                 : <div className={styles.columns}>
@@ -189,9 +186,7 @@ export function AdminReportsView() {
                   </div>
                   <aside className={styles.detail} aria-label="신고 상세">
                     {selectedId === null ? <EmptyState title="신고를 선택해 주세요" description="목록에서 항목을 선택하면 상세 내용이 표시돼요." />
-                      : detailQuery.isPending ? <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-                        <Skeleton variant="card" count={3} />
-                      </LoadingIndicator>
+                      : detailQuery.isPending ? <Skeleton variant="card" count={3} />
                         : detailQuery.error ? <ErrorState title="상세 내용을 불러오지 못했어요" description={detailQuery.error.message} onRetry={() => void detailQuery.refetch()} />
                           : detail ? <>
                             <div className={styles.detailHeading}><div><p className={styles.eyebrow}>신고 #{detail.id}</p><h2>{TARGET_LABEL[detail.targetType]} 신고</h2></div><span className={detail.overdue ? styles.overdue : styles.badge}>{detail.overdue ? '처리 기한 초과' : STATUS_LABEL[detail.status]}</span></div>
@@ -217,9 +212,7 @@ export function AdminReportsView() {
                 </div>}
         </>
       ) : (
-        appealsQuery.isPending ? <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-          <Skeleton variant="card" count={3} />
-        </LoadingIndicator>
+        appealsQuery.isPending ? <Skeleton variant="card" count={3} />
           : appealsQuery.error ? <ErrorState title="이의 제기를 불러오지 못했어요" description={appealsQuery.error.message} onRetry={() => void appealsQuery.refetch()} />
             : appealsQuery.data?.items.length ? <div className={styles.appeals}>{appealsQuery.data.items.map((item) => <article key={item.id} className={styles.appealCard}>
               <div><p className={styles.eyebrow}>이의 제기 #{item.id} · 신고 #{item.caseId}</p><h2>{item.user.name} (@{item.user.login})</h2><p>{item.reason}</p><time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time></div>

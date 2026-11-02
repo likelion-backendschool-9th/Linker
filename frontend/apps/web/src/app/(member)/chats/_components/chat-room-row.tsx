@@ -9,15 +9,9 @@ import type { ChatRoom } from '@/features/chat/chat-queries';
 
 import styles from './chat-list.module.css';
 
-type Props = {
-  room: ChatRoom;
-  disabled: boolean;
-  accepting?: boolean;
-  onAccept: () => void;
-  onDelete: () => void;
-};
+type Props = { room: ChatRoom; disabled: boolean; onAccept: () => void; onDelete: () => void };
 
-export function ChatRoomRow({ room, disabled, accepting = false, onAccept, onDelete }: Props) {
+export function ChatRoomRow({ room, disabled, onAccept, onDelete }: Props) {
   const received = room.kind === 'REQUEST' && room.requestDirection === 'RECEIVED';
   return (
     <article className={styles.room}>
@@ -69,13 +63,7 @@ export function ChatRoomRow({ room, disabled, accepting = false, onAccept, onDel
           >
             삭제
           </Button>
-          <Button
-            disabled={disabled}
-            pending={accepting}
-            pendingLabel="수락하는 중…"
-            onClick={onAccept}
-            aria-label={`${room.title} 요청 수락`}
-          >
+          <Button disabled={disabled} onClick={onAccept} aria-label={`${room.title} 요청 수락`}>
             수락
           </Button>
         </div>

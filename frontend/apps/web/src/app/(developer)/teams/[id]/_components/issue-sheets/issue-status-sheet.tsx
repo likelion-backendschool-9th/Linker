@@ -94,8 +94,8 @@ function StatusForm({ value, onSave, onDone }: IssueStatusSheetProps & { onDone:
         </p>
       )}
       <div className={styles.actions}>
-        <Button type="submit" aria-disabled={pending} pending={pending} pendingLabel="저장하는 중…" >
-          저장
+        <Button type="submit" aria-disabled={pending}>
+          {pending ? '저장하는 중…' : '저장'}
         </Button>
       </div>
     </form>

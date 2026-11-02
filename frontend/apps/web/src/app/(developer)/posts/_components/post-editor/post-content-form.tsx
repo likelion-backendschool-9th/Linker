@@ -484,14 +484,8 @@ export function PostContentForm({
         )}
 
         <div className={styles.submitBar}>
-          <Button
-            type="submit"
-            block
-            aria-disabled={save.isPending}
-            pending={save.isPending}
-            pendingLabel="저장하는 중…"
-          >
-            {creating ? '게시하기' : '수정 완료'}
+          <Button type="submit" block aria-disabled={save.isPending}>
+            {save.isPending ? '저장하는 중…' : creating ? '게시하기' : '수정 완료'}
           </Button>
         </div>
       </form>

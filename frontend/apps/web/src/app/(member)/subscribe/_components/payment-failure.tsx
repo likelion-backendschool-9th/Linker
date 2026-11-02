@@ -9,7 +9,6 @@ import { ErrorState } from '@/components/ui/error-state';
 import { recordPaymentFailure } from '@/features/subscription/subscription-api';
 
 import styles from './subscription.module.css';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 export function PaymentFailure({
   orderId,
@@ -34,7 +33,7 @@ export function PaymentFailure({
     <section className={styles.checkout}>
       <h2 className={styles.heading}>결제를 완료하지 못했어요</h2>
       <p>{message}</p>
-      {failure.isPending && <p role="status"><LoadingIndicator label="결제 상태를 확인하고 있어요." announce={false} /></p>}
+      {failure.isPending && <p role="status">결제 상태를 확인하고 있어요.</p>}
       {failure.isError && (
         <ErrorState title="결제 상태를 기록하지 못했어요" onRetry={() => failure.mutate()} />
       )}

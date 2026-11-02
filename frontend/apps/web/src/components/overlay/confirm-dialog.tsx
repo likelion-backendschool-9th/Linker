@@ -47,8 +47,6 @@ export function ConfirmDialog({
             <Button
               variant={destructive ? 'danger' : 'primary'}
               aria-disabled={pending}
-              pending={pending}
-              pendingLabel={confirmLabel}
               onClick={() => !pending && onConfirm()}
             >
               {confirmLabel}

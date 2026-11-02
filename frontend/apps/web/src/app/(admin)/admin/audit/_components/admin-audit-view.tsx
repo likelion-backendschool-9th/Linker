@@ -7,7 +7,6 @@ import { parseAsString, useQueryStates } from 'nuqs';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { formatDate, todayKst, toKstIso } from '@/lib/format/time';
@@ -165,9 +164,7 @@ export function AdminAuditView() {
         <ErrorState title="필터를 불러오지 못했어요" onRetry={() => void options.refetch()} />
       )}
       {logs.isPending && !invalid ? (
-        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-          <Skeleton variant="card" />
-        </LoadingIndicator>
+        <Skeleton variant="card" />
       ) : logs.isError && !logs.data ? (
         <ErrorState onRetry={() => void logs.refetch()} />
       ) : invalid || !rows.length ? (
@@ -217,10 +214,8 @@ export function AdminAuditView() {
           variant="outline"
           disabled={logs.isFetchingNextPage}
           onClick={() => void logs.fetchNextPage()}
-          pending={logs.isFetchingNextPage}
-          pendingLabel="불러오는 중…"
         >
-          더 보기
+          {logs.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
         </Button>
       )}
     </div>

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet';
 import { useDraft } from '@/features/draft-restore/use-draft';
@@ -52,9 +51,10 @@ export function PostEdit({ postId }: { postId: string }) {
 
   if (editForm.isPending) {
     return (
-      <LoadingIndicator label="게시물을 불러오고 있어요." variant="block">
+      <div aria-busy="true">
+        <p role="status">게시물을 불러오고 있어요.</p>
         <Skeleton count={3} />
-      </LoadingIndicator>
+      </div>
     );
   }
   if (editForm.isError) return <ErrorState onRetry={() => void editForm.refetch()} />;

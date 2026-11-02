@@ -46,7 +46,6 @@ export function AcceptedPanel({ result, applicantId, applicantName }: AcceptedPa
             onClick={() => {
               if (!invite.isPending && !invite.isSuccess) invite.mutate();
             }}
-            pending={invite.isPending}
           >
             {invite.isSuccess ? '초대를 보냈어요' : 'GitHub 조직 초대'}
           </Button>

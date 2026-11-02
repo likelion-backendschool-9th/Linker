@@ -69,14 +69,7 @@ export function RecruiterResetFlow({ token }: { token: string }) {
         </div>
         {apiError && <p className={styles.errorBox} role="alert">{apiError}</p>}
         {requestSent && <p className={styles.description} role="status">등록된 이메일이라면 재설정 링크를 보냈어요. 계정이 등록되어 있는지는 알려 드릴 수 없어요.</p>}
-        <Button
-          block
-          type="submit"
-          disabled={request.isPending}
-          aria-busy={request.isPending}
-          pending={request.isPending}
-          pendingLabel="요청 중…"
-        >{requestSent ? '재설정 링크 다시 요청' : '재설정 링크 받기'}</Button>
+        <Button block type="submit" disabled={request.isPending} aria-busy={request.isPending}>{request.isPending ? '요청 중…' : requestSent ? '재설정 링크 다시 요청' : '재설정 링크 받기'}</Button>
       </form>}
 
       {Boolean(token) && tokenStatus.isPending && <div className={styles.form} role="status"><h2 className={styles.heading}>재설정 링크 확인 중</h2><p className={styles.description}>잠시만 기다려 주세요.</p></div>}
@@ -96,14 +89,7 @@ export function RecruiterResetFlow({ token }: { token: string }) {
         <PasswordField id="reset-password-confirm" label="새 비밀번호 확인" error={passwordForm.formState.errors.confirmPassword?.message} register={passwordForm.register('confirmPassword')} />
         <p className={styles.description}>비밀번호는 영문과 숫자를 포함해 {RECRUITER.password.min}~{RECRUITER.password.max}자로 입력해 주세요.</p>
         {apiError && <p className={styles.errorBox} role="alert">{apiError}</p>}
-        <Button
-          block
-          type="submit"
-          disabled={reset.isPending}
-          aria-busy={reset.isPending}
-          pending={reset.isPending}
-          pendingLabel="저장 중…"
-        >비밀번호 재설정</Button>
+        <Button block type="submit" disabled={reset.isPending} aria-busy={reset.isPending}>{reset.isPending ? '저장 중…' : '비밀번호 재설정'}</Button>
       </form>}
 
       <p className={styles.footer}><Link href="/recruiter/login">로그인으로 돌아가기</Link></p>

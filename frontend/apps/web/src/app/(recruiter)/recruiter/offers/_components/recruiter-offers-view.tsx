@@ -14,7 +14,6 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import type { Offer, OfferCounts, OfferFirstMessage, OfferStatus, OffersResponse } from '../_lib/offer-types';
 import { OFFER_STATUSES } from '../_lib/offer-types';
 import styles from './recruiter-offers.module.css';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 const statusLabels: Record<OfferStatus, string> = {
   TALKING: '대화 중',
@@ -105,7 +104,7 @@ export function RecruiterOffersView({
           </nav>
 
           {offers.isPending ? (
-            <section className={styles.loading} role="status" aria-live="polite"><LoadingIndicator label="목록을 불러오는 중이에요." announce={false} /></section>
+            <section className={styles.loading} role="status" aria-live="polite">목록을 불러오는 중이에요.</section>
           ) : total === 0 ? (
             <section className={styles.empty} aria-labelledby="offers-empty-title">
               <h2 id="offers-empty-title">아직 보낸 채용 제안이 없어요</h2>
@@ -130,7 +129,7 @@ export function RecruiterOffersView({
       <OverlaySheet overlay={messageSheet} title="보낸 메시지" description="채용 제안에서 처음 보낸 메시지예요.">
         <div className={styles.sheetContent}>
           {firstMessage.isPending ? (
-            <p className={styles.loading} role="status"><LoadingIndicator label="메시지를 불러오는 중이에요." announce={false} /></p>
+            <p className={styles.loading} role="status">메시지를 불러오는 중이에요.</p>
           ) : firstMessage.isError ? (
             <div className={styles.error} role="alert">
               <p className={styles.errorText}>{firstMessage.error instanceof Error ? firstMessage.error.message : '메시지를 불러오지 못했어요.'}</p>

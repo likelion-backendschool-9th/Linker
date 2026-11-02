@@ -7,7 +7,6 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   createCheckout,
@@ -46,9 +45,10 @@ export function PlanSelector({ reason }: { reason: string }) {
   const checkout = useMutation({ mutationFn: createCheckout, onSuccess: setOrder });
   if (plans.isPending)
     return (
-      <LoadingIndicator label="요금제를 불러오고 있어요." variant="block">
+      <div aria-busy="true">
+        <p role="status">요금제를 불러오고 있어요.</p>
         <Skeleton count={3} />
-      </LoadingIndicator>
+      </div>
     );
   if (plans.isError)
     return (
@@ -155,7 +155,7 @@ export function PlanSelector({ reason }: { reason: string }) {
                         </p>
                       )}
                       {teams.isPending ? (
-                        <p role="status"><LoadingIndicator label="결제할 팀을 확인하고 있어요." announce={false} /></p>
+                        <p role="status">결제할 팀을 확인하고 있어요.</p>
                       ) : teams.isError ? (
                         <ErrorState
                           title="팀 목록을 불러오지 못했어요"
@@ -221,13 +221,13 @@ export function PlanSelector({ reason }: { reason: string }) {
                         checkout.mutate({
                           planKey: plan.key as 'PRO' | 'FLEX' | 'SCOUT',
                           billing: yearly ? 'YEARLY' : 'MONTHLY',
-                          ...(plan.key === 'FLEX' && selectedTeam ? { teamId: selectedTeam.teamId } : {}),
+                          ...(plan.key === 'FLEX' && selectedTeam
+                            ? { teamId: selectedTeam.teamId }
+                            : {}),
                         })
                       }
-                      pending={checkout.isPending && checkout.variables?.planKey === plan.key}
-                      pendingLabel="주문 준비 중…"
                     >
-                      {`${plan.name} 결제 준비`}
+                      {checkout.isPending ? '주문 준비 중…' : `${plan.name} 결제 준비`}
                     </Button>
                   )}
                 </article>

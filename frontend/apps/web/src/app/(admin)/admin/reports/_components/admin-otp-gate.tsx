@@ -70,13 +70,8 @@ export function AdminOtpGate({ children }: { children: ReactNode }) {
             {verify.error instanceof Error ? verify.error.message : '인증 코드를 확인해 주세요.'}
           </p>
         )}
-        <Button
-          type="submit"
-          disabled={verify.isPending || code.length !== 6}
-          pending={verify.isPending}
-          pendingLabel="확인 중…"
-        >
-          인증하고 신고 보기
+        <Button type="submit" disabled={verify.isPending || code.length !== 6}>
+          {verify.isPending ? '확인 중…' : '인증하고 신고 보기'}
         </Button>
       </form>
       <p className={styles.otpNote}>

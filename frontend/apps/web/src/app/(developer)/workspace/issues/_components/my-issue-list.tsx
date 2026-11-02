@@ -6,7 +6,6 @@ import Link from 'next/link';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format/time';
 
@@ -21,9 +20,7 @@ import styles from './my-issue-list.module.css';
 export function MyIssueList() {
   const issues = useQuery(myIssuesOptions());
 
-  if (issues.isPending) return <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-    <Skeleton count={3} />
-  </LoadingIndicator>;
+  if (issues.isPending) return <Skeleton count={3} />;
   if (issues.isError) return <ErrorState onRetry={() => void issues.refetch()} />;
 
   const items = issues.data.items;

@@ -10,7 +10,6 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -129,9 +128,7 @@ export function AdminUsersView() {
         </Button>
       </div>
       {users.isPending ? (
-        <LoadingIndicator label="불러오는 중…" labelHidden variant="block">
-          <Skeleton variant="card" count={3} />
-        </LoadingIndicator>
+        <Skeleton variant="card" count={3} />
       ) : users.isError && !users.data ? (
         <ErrorState onRetry={() => void users.refetch()} />
       ) : (
@@ -207,10 +204,8 @@ export function AdminUsersView() {
           variant="outline"
           disabled={users.isFetchingNextPage}
           onClick={() => void users.fetchNextPage()}
-          pending={users.isFetchingNextPage}
-          pendingLabel="불러오는 중…"
         >
-          더 보기
+          {users.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
         </Button>
       )}
       {!desktop && (

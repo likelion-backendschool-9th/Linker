@@ -40,7 +40,6 @@ export function RoomInfoSheet({
           aria-pressed={room.muted}
           disabled={disabled || mute.isPending}
           onClick={() => mute.mutate()}
-          pending={mute.isPending}
         >
           {room.muted ? '알림 켜기' : '알림 끄기'}
         </Button>
