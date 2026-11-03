@@ -6,6 +6,7 @@ import { cache } from 'react';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 
+import { viewerFromMember } from './jwt-claims';
 import { SESSION_COOKIE } from './read-role';
 import { GUEST, type UserStatus, type Viewer } from './route-access';
 
@@ -38,7 +39,10 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
 export function viewerFromSession(session: Session | null): Viewer {
   if (!session) return GUEST;
-  const role =
-    session.userType === 'RECRUITER' ? 'recruiter' : session.isAdmin ? 'operator' : 'developer';
-  return { role, onboarded: session.onboarded, status: session.status };
+  return viewerFromMember({
+    userType: session.userType,
+    isAdmin: session.isAdmin,
+    onboarded: session.onboarded,
+    status: session.status,
+  });
 }

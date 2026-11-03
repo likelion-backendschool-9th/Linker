@@ -2,6 +2,7 @@ import { importSPKI, jwtVerify } from 'jose';
 
 import { USE_MOCKS } from '@/lib/mock-mode';
 
+import { viewerFromJwtClaims, type JwtClaims } from './jwt-claims';
 import { MOCK_ROLE_COOKIE, parseMockRole, viewerFromMockRole } from './mock-viewer';
 import { GUEST, type Viewer } from './route-access';
 
@@ -36,13 +37,6 @@ function publicKey(): Promise<CryptoKey> | undefined {
   return keyPromise;
 }
 
-type SessionClaims = {
-  typ?: 'DEVELOPER' | 'RECRUITER';
-  adm?: boolean;
-  onb?: boolean;
-  st?: Viewer['status'];
-};
-
 export async function readCookieViewer(token: string | undefined): Promise<CookieViewer> {
   if (USE_MOCKS) return { kind: 'viewer', viewer: viewerFromMockRole(parseMockRole(token)) };
   if (!token) return { kind: 'viewer', viewer: GUEST };
@@ -50,14 +44,10 @@ export async function readCookieViewer(token: string | undefined): Promise<Cooki
   const key = publicKey();
   if (!isCompactJwt(token) || !key) return { kind: 'opaque' };
   try {
-    const { payload } = await jwtVerify<SessionClaims>(token, await key, {
+    const { payload } = await jwtVerify<JwtClaims>(token, await key, {
       algorithms: [ALGORITHM],
     });
-    const role = payload.typ === 'RECRUITER' ? 'recruiter' : payload.adm ? 'operator' : 'developer';
-    return {
-      kind: 'viewer',
-      viewer: { role, onboarded: payload.onb ?? true, status: payload.st ?? 'ACTIVE' },
-    };
+    return { kind: 'viewer', viewer: viewerFromJwtClaims(payload) };
   } catch {
     // Expired or tampered: treat as a guest; the API answers LOGIN_REQUIRED where it matters
     return { kind: 'viewer', viewer: GUEST };
