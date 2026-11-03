@@ -5,7 +5,7 @@
 - Five-person, two-week MVP: mobile-first web + Expo WebView development build; no store release. Toss Payments is test mode only.
 - UI language is Korean. Use documented UI copy verbatim.
 - `frontend/`: pnpm/Turborepo, Next.js 16 web, Expo shell, generated API and bridge packages. Read `frontend/AGENTS.md` before frontend work.
-- `backend/`: Spring Boot/Gradle, Security, JPA, PostgreSQL, Redis, WebSocket/STOMP, springdoc. Read a local `AGENTS.md` or `CLAUDE.md` if present.
+- `backend/`: Spring Boot/Gradle, Security, JPA, PostgreSQL, Redis, WebSocket/STOMP, springdoc. Package layout is `docs/development/05-backend-blueprint.md` §6. Read a local `AGENTS.md` or `CLAUDE.md` if present.
 - `CLAUDE.md` files only import the same-folder `AGENTS.md` (`@AGENTS.md`). Put all guidance in `AGENTS.md`, not `CLAUDE.md`.
 
 ## Work areas (WBS ch. 0)
@@ -34,13 +34,15 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 | `docs/planning/05-terms-of-service.md`, `docs/planning/06-privacy-policy.md` | Legal wording |
 | `docs/planning/07-page-todo.md` | Pages, URLs, screen contents |
 | `docs/development/01-erd.md` | Tables, columns, enums |
-| `docs/development/02-wbs.md` | Endpoints, controllers, ownership, schedule |
+| `docs/development/02-wbs.md` | Endpoints, controllers, ownership, permissions, schedule |
+| `docs/development/05-backend-blueprint.md` | Backend architecture, Java packages, layer rules, migration. Korean reading copy: `05-backend-blueprint.ko.md` |
 | `docs/development/03-frontend-blueprint.md` | Frontend implementation rules; Policy, Page TODO and WBS take precedence |
 | `docs/development/04-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/src/styles/tokens/` |
 
 - Search for the relevant page number, feature, table, or controller instead of reading every document.
 - `[Required]` is essential; `[Included]` may be deferred in the order in WBS ch. 6.
 - Complete foundation page 00 before page work; follow pages 01–33. Page and controller ownership are the same (WBS ch. 0).
+- Page numbers identify work. They are not Java package names. One page keeps one owning controller. Services, repositories, and entities are shared by business responsibility and are not split one-to-one with pages or roles (WBS §1-3, backend blueprint §6).
 - Guest, Developer, Recruiter, Operator access follows Policy ch. 2. Team owner/admin/member permissions are separate (ch. 6).
 
 ## Fixed decisions
@@ -49,6 +51,16 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 - JWT stays in an httpOnly parent-domain cookie; never expose it to JavaScript or the native bridge.
 - Index only developer profiles, posts, and recruitment posts; everything else is `noindex`.
 - Backend hosting, email provider, and AI summary model remain open decisions: ask the user before selecting them.
+
+## Backend packages
+Follow `docs/development/05-backend-blueprint.md` §6. WBS §1-3 owns the API contract; the blueprint owns the packages.
+
+- Base package: `com.linker.backend`. Layers: `controller`, `service`, `repository`, `entity`, `dto`, plus `integration`, `async`, and `global`.
+- Group controllers by caller role: `common`, `public`, `user`, `recruiter`, `admin`. The seven foundation controllers stay in `controller.common`. A page controller whose WBS permissions use more than one caller group goes in `controller.multi` and maps each method with its own role prefix.
+- Do not add `api/common`, numbered page packages (`p01_login`), or a `domain` package that holds controllers, entities, and repositories together. Do not give each page or role its own copy of a service, repository, or entity.
+- Put request and response DTOs under `dto`, using `request` and `response` subpackages when a capability has both. Do not place them beside controllers, and do not return entities from controllers.
+- Keep HTTP paths, permissions, OpenAPI `@Tag` names (for example `p11-issue-list`), and STOMP destinations when classes move. A Java package does not define a URL.
+- File placement is blueprint §4. Keep `global.error`. Do not add `global.exception`, `global.response`, or `service.support`.
 
 ## Keep code and documents consistent
 - Table/column/enum changes: update ERD diagrams, notes, enum list, page mapping, counts, and WBS page tables.
