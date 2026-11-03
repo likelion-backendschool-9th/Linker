@@ -1,11 +1,14 @@
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { CHAT } from '@/lib/policy';
 
+import type { ChatReferences } from './chat-reference-types';
+
 export type PendingMessage = {
   clientMessageId: string;
   text: string;
   /** Optional for compatibility with text-only drafts saved before image support. */
   images?: UploadedImage[];
+  references?: ChatReferences;
   createdAt: string;
   status: 'queued' | 'sending' | 'failed';
 };

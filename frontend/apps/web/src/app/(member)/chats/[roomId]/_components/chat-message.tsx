@@ -8,6 +8,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import styles from './chat-room.module.css';
 import { MessageReadStatus } from './message-read-status';
+import { IssueMessageCards } from './issue-message-cards';
 import { PrEventCard } from './pr-event-card';
 
 type Props = { message: RoomMessage; mine: boolean; kind: RoomInfo['kind']; onUnread?: (id: number) => void; onPhoto?: (id: number, index: number) => void; onMenu?: (id: number) => void };
@@ -58,9 +59,7 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
                 ))}
               </div>
             )}
-            {message.type === 'ISSUE_CARD' && (
-              <p className={styles.card}>이슈 · {String(message.payload?.title ?? '이슈 카드')}</p>
-            )}
+            {!!message.payload?.issueCards?.length && <IssueMessageCards cards={message.payload.issueCards} />}
             {message.type === 'SHARE_CARD' && (
               <p className={styles.card}>
                 공유 · {String(message.payload?.title ?? '공유한 항목')}

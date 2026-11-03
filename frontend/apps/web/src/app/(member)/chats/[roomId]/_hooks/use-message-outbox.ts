@@ -15,6 +15,9 @@ export function useMessageOutbox(roomId: number, login: string | null) {
         publish(`/app/chat-rooms/${roomId}/messages`, {
           clientMessageId: item.clientMessageId,
           text: item.text,
+          mentionedUserIds: item.references?.mentionedUserIds ?? [],
+          mentionAll: item.references?.mentionAll ?? false,
+          issueRefs: item.references?.issueRefs ?? [],
           fileIds: item.images?.map((image) => image.fileId) ?? [],
         }),
       ),

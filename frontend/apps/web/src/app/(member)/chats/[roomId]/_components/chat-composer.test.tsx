@@ -1,8 +1,10 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { uploadImage } from '@/features/image-upload/upload-image';
 import { CHAT, IMAGE } from '@/lib/policy';
+
+import { renderWithProviders as render } from '@/test/render-with-providers';
 
 import { ChatComposer } from './chat-composer';
 

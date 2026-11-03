@@ -1,3 +1,5 @@
+import { validateChatReferences } from './fixtures/chat-references';
+import type { ChatReferences } from '@/app/(member)/chats/[roomId]/_lib/chat-reference-types';
 import { recordRead, withReadState } from './fixtures/chat-reads';
 import { MOCK_ROLE_COOKIE, parseMockRole } from '@/lib/auth/mock-viewer';
 import { UPLOADED_IMAGES } from './fixtures/uploads';
@@ -25,7 +27,7 @@ export function publish(destination: string, body: unknown): boolean {
   const match = SEND.exec(destination);
   if (!match) return false;
   const roomId = Number(match[1]);
-  const payload = body as { clientMessageId?: string; text?: string; fileIds?: string[] };
+  const payload = body as { clientMessageId?: string; text?: string; fileIds?: string[] } & Partial<ChatReferences>;
   const cookie = document.cookie.match(new RegExp(`(?:^|; )${MOCK_ROLE_COOKIE}=([^;]*)`));
   const viewer = buildViewer(parseMockRole(cookie?.[1]));
   const room = findRoom(String(roomId));
@@ -35,6 +37,8 @@ export function publish(destination: string, body: unknown): boolean {
   if (!Array.isArray(fileIds) || fileIds.length > CHAT.imagesPerSend ||
     fileIds.some((id) => !UPLOADED_IMAGES.has(id))) return false;
   if ((!payload.text?.trim() && !fileIds.length) || countChars(payload.text ?? '') > CHAT.messageMax) return false;
+  const references = validateChatReferences(roomId, viewer.me.id, payload.text ?? '', payload);
+  if (!references) return false;
   const existing =
     payload.clientMessageId &&
     MESSAGES.find(
@@ -50,10 +54,10 @@ export function publish(destination: string, body: unknown): boolean {
     roomId,
     sender: brief(viewer.me),
     clientMessageId: payload.clientMessageId,
-    type: fileIds.length ? 'IMAGE' : 'TEXT',
+    type: fileIds.length ? 'IMAGE' : references.issueRefs.length ? 'ISSUE_CARD' : 'TEXT',
     text: payload.text ?? null,
     imageUrls: fileIds.map((id) => UPLOADED_IMAGES.get(id)!),
-    payload: null,
+    payload: references,
     createdAt: new Date().toISOString(),
     editedAt: null,
     deletedAt: null,

@@ -1,3 +1,4 @@
+import { resolveIssueCard } from '../fixtures/chat-references';
 import { recordRead, unreadMembers, withReadState } from '../fixtures/chat-reads';
 import { messageActions } from '@/app/(member)/chats/[roomId]/_lib/message-actions';
 import { countChars, normalizeLineBreaks } from '@/lib/format/text';
@@ -5,7 +6,6 @@ import { CHAT, PLAN_LIMITS } from '@/lib/policy';
 import { emit } from '../realtime-bus';
 import { daysAgo, del, fail, get, newId, patch, post, type MockRoute, type MockContext } from '../core/define';
 import { findRoom, MESSAGES, ROOMS, UNREAD } from '../fixtures/chat';
-import { ISSUES } from '../fixtures/issues';
 import { POSTS } from '../fixtures/posts';
 import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
@@ -159,17 +159,11 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/chat-rooms/:roomId/mention-candidates', ({ params }) => ({
     items: (TEAM_MEMBERS[roomOr404(params.roomId!).teamId ?? 0] ?? []).map((m) => m.user),
   })),
-  get('/api/v1/user/chat-rooms/:roomId/issue-cards', ({ params, query }) => {
-    const room = roomOr404(params.roomId!);
-    const number = Number(query.get('number'));
-    const issue = ISSUES.find((i) => i.teamId === room.teamId && i.number === number);
-    if (!issue) fail(404, 'NOT_FOUND', '이슈를 찾지 못했어요');
-    return {
-      number: issue.number,
-      repoName: issue.repoName,
-      title: issue.title,
-      status: issue.status,
-    };
+  get('/api/v1/user/chat-rooms/:roomId/issue-cards', ({ params, query, viewer }) => {
+    const room = roomOr404(params.roomId);
+    const card = resolveIssueCard(room.id, Number(query.get('number')), Number(query.get('repoId')), viewer.me!.id);
+    if (!card) fail(404, 'NOT_FOUND', '이슈를 찾지 못했어요');
+    return card;
   }),
   get('/api/v1/user/chat-rooms/:roomId/link-preview', ({ query }) => ({
     url: query.get('url'),

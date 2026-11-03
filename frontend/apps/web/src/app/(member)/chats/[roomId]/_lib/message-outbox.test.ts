@@ -81,3 +81,14 @@ it('preserves uploaded images through automatic retry, restore and manual retry'
   expect(restoredSend).toHaveBeenCalledWith(expect.objectContaining({ text: '', images: [image], clientMessageId: message.clientMessageId }));
   restored.dispose();
 });
+
+it('retains mentions and repository-qualified issue references through retries', () => {
+  const send = vi.fn<(item: PendingMessage) => boolean>(() => false);
+  const outbox = new MessageOutbox(send, { ackTimeoutMs: 10, retryDelayMs: 5 });
+  const references = { mentionedUserIds: [2], mentionAll: true, issueRefs: [{ number: 15, repoId: 11 }] };
+  outbox.enqueue({ ...message, text: '@doyun @전체 #15', references });
+  vi.runAllTimers();
+  expect(send).toHaveBeenCalledTimes(CHAT.autoRetries + 1);
+  expect(send.mock.calls.every(([item]) => item.clientMessageId === message.clientMessageId && JSON.stringify(item.references) === JSON.stringify(references))).toBe(true);
+  outbox.dispose();
+});
