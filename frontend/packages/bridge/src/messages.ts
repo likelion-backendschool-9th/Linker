@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { internalPath } from './paths';
+
 /**
  * Web ↔ app message contract (blueprint §11-2). Both sides import these types and schemas.
  * The JWT never crosses the bridge; the app keeps only `userId` / `userType`.
@@ -11,7 +13,7 @@ export const BRIDGE_SOURCE = 'linker';
 const id = z.string().min(1);
 
 export const sessionSchema = z.object({
-  userId: z.number(),
+  userId: z.number().int().positive(),
   userType: z.enum(['DEVELOPER', 'RECRUITER']),
 });
 
@@ -19,7 +21,11 @@ export const webToNativeSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('READY') }),
   z.object({ type: z.literal('BACK_RESULT'), id, handled: z.boolean() }),
   z.object({ type: z.literal('EXIT_APP') }),
-  z.object({ type: z.literal('AUTH_GITHUB_START'), id, authorizeUrl: z.url() }),
+  z.object({
+    type: z.literal('AUTH_GITHUB_START'),
+    id,
+    authorizeUrl: z.url({ protocol: /^https$/ }),
+  }),
   z.object({ type: z.literal('AUTH_SESSION_SAVE'), session: sessionSchema }),
   z.object({ type: z.literal('AUTH_SESSION_CLEAR') }),
   z.object({
@@ -37,20 +43,27 @@ export const webToNativeSchema = z.discriminatedUnion('type', [
 export const nativeToWebSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('BACK_PRESSED'), id }),
   // ok: true carries `payload`, ok: false carries `error` (e.g. 'cancelled', 'timeout')
-  z.object({
-    type: z.literal('RESULT'),
-    id,
-    ok: z.boolean(),
-    payload: z.unknown().optional(),
-    error: z.string().optional(),
-  }),
+  z
+    .object({
+      type: z.literal('RESULT'),
+      id,
+      ok: z.boolean(),
+      payload: z.unknown().optional(),
+      error: z.string().optional(),
+    })
+    .refine((msg) => (msg.ok ? msg.error === undefined : Boolean(msg.error)), {
+      message: 'Failed results need an error; successful results cannot carry one',
+    }),
   z.object({
     type: z.literal('PUSH_TOKEN'),
-    token: z.string(),
+    token: z.string().min(1),
     platform: z.enum(['ios', 'android']),
   }),
   // Same-origin path only: starts with `/`, never `//` or `/\`
-  z.object({ type: z.literal('DEEP_LINK'), path: z.string().regex(/^\/(?![/\\])/) }),
+  z.object({
+    type: z.literal('DEEP_LINK'),
+    path: z.string().refine((path) => internalPath(path) !== null),
+  }),
   z.object({ type: z.literal('APP_STATE'), state: z.enum(['active', 'background']) }),
 ]);
 

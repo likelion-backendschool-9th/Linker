@@ -16,6 +16,7 @@ export default async function AuthCallbackPage({ searchParams }: PageProps<'/aut
       state={first(query.state) ?? ''}
       returnTo={first(query.returnTo) ?? '/feed'}
       errorCode={first(query.error) ?? ''}
+      client={first(query.client) ?? 'web'}
     />
   );
 }

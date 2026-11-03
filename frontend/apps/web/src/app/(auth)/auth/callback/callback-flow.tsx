@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { AUTH_REDIRECT_URL } from '@linker/bridge';
 import type { Route } from 'next';
 import { useEffect, useRef, useState } from 'react';
 
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { ApiError } from '@/lib/api/api-error';
 import { safeReturnTo } from '@/lib/auth/return-to';
+import { isInApp } from '@/lib/bridge/native';
 import { toast } from '@/stores/toast-store';
 
 import styles from './callback-flow.module.css';
@@ -20,11 +22,13 @@ export function CallbackFlow({
   state,
   returnTo,
   errorCode,
+  client = 'web',
 }: {
   code: string;
   state: string;
   returnTo: string;
   errorCode: string;
+  client?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +39,16 @@ export function CallbackFlow({
     let active = true;
 
     async function completeLogin() {
+      // The system browser hands the code back. Only the WebView exchanges it and receives the cookie.
+      if (client === 'app' && !isInApp() && state && (code || errorCode)) {
+        const url = new URL(AUTH_REDIRECT_URL);
+        url.searchParams.set('state', state);
+        if (code) url.searchParams.set('code', code);
+        if (errorCode) url.searchParams.set('error', errorCode);
+        url.searchParams.set('returnTo', safeReturnTo(returnTo));
+        window.location.replace(url.toString());
+        return;
+      }
       if (errorCode || !code || !state) {
         setError('로그인을 완료하지 못했어요. 다시 시도해 주세요.');
         setPending(false);
@@ -54,6 +68,7 @@ export function CallbackFlow({
         if (!active) return;
         if (result.restored) toast('계정을 복구했어요.');
         router.replace((result.isNew ? '/onboarding' : safeReturnTo(result.returnTo)) as Route);
+        router.refresh();
       } catch (cause) {
         if (!active) return;
         const message =
@@ -69,7 +84,7 @@ export function CallbackFlow({
     return () => {
       active = false;
     };
-  }, [code, errorCode, returnTo, router, state]);
+  }, [client, code, errorCode, returnTo, router, state]);
 
   return (
     <>

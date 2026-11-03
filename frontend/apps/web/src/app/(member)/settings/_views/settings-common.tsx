@@ -14,6 +14,8 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
+import { endNativeSession } from '@/lib/bridge/native-session';
+import { isInApp, requestNative } from '@/lib/bridge/native';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
@@ -62,12 +64,18 @@ export function SettingsCommon({
   });
 
   const pushSave = useMutation({
-    mutationFn: (pushEnabled: boolean) =>
-      apiFetch<{ pushEnabled: boolean }>('/api/v1/user/me/settings/notifications', {
+    mutationFn: async (pushEnabled: boolean) => {
+      if (pushEnabled && isInApp()) {
+        const result = await requestNative({ type: 'PUSH_PERMISSION_REQUEST' }, { timeoutMs: 0 });
+        if (!result.ok || !z.object({ status: z.literal('granted') }).safeParse(result.payload).success)
+          throw new Error('push-permission-required');
+      }
+      return apiFetch<{ pushEnabled: boolean }>('/api/v1/user/me/settings/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pushEnabled }),
-      }),
+      });
+    },
     onSuccess: (saved) => {
       setPushEnabled(saved.pushEnabled);
       toast('푸시 알림 설정을 저장했어요.');
@@ -77,7 +85,8 @@ export function SettingsCommon({
   });
 
   const logout = useMutation({
-    mutationFn: () => apiFetch<void>('/api/v1/user/auth/logout', { method: 'POST' }),
+    mutationFn: () =>
+      endNativeSession(() => apiFetch<void>('/api/v1/user/auth/logout', { method: 'POST' })),
     onSuccess: async () => {
       await queryClient.clear();
       logoutOverlay.close();
@@ -98,7 +107,10 @@ export function SettingsCommon({
   });
 
   const withdrawal = useMutation({
-    mutationFn: () => apiFetch<{ deletesOn: string }>('/api/v1/user/me/withdrawal', { method: 'POST' }),
+    mutationFn: () =>
+      endNativeSession(() =>
+        apiFetch<{ deletesOn: string }>('/api/v1/user/me/withdrawal', { method: 'POST' }),
+      ),
     onSuccess: async (result) => {
       await queryClient.clear();
       withdrawalConfirm.close();

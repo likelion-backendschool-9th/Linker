@@ -131,6 +131,7 @@ export function RecruiterSignupForm() {
     onSuccess: (result) => {
       toast(`채용 담당자 계정 @${result.login}을 만들었어요.`);
       router.replace('/feed');
+      router.refresh();
     },
     onError: (error) => setApiError(errorInfo(error, '회원가입을 완료하지 못했어요. 다시 시도해 주세요.')),
   });

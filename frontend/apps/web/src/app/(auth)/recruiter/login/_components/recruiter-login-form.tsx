@@ -36,6 +36,7 @@ export function RecruiterLoginForm({ returnTo }: { returnTo: string }) {
     onSuccess: (result) => {
       setApiError(null);
       router.replace(safeReturnTo(result.returnTo) as Route);
+      router.refresh();
     },
     onError: (error) => setApiError(error instanceof ApiError ? error.message : '로그인하지 못했어요. 잠시 후 다시 시도해 주세요.'),
   });

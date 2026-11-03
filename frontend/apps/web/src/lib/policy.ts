@@ -6,6 +6,9 @@
 
 const MB = 1024 * 1024;
 
+/** WBS 00 / frontend blueprint §8-1: maximum URLs in each sitemap. */
+export const SITEMAP = { pageSize: 50_000 } as const;
+
 /** 04 ch. 2 "Input and display" */
 export const INPUT = {
   maxConsecutiveLineBreaks: 2,
