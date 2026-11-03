@@ -156,6 +156,116 @@ describe('native bridge handlers', () => {
     expect(context.send).not.toHaveBeenCalled();
   });
 
+  it('finishes an older session save before clearing it, without delaying hardware back', async () => {
+    let finishSave!: () => void;
+    vi.mocked(SecureStore.setItemAsync).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishSave = resolve;
+      }),
+    );
+    const dispatch = createDispatcher(context);
+    const saving = dispatch(
+      event({
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 7, userType: 'DEVELOPER' },
+      }),
+    );
+    await vi.waitFor(() => expect(SecureStore.setItemAsync).toHaveBeenCalledOnce());
+    const clearing = dispatch(event({ type: 'AUTH_SESSION_CLEAR' }));
+    await dispatch(event({ type: 'BACK_RESULT', id: 'back-during-save', handled: true }));
+    expect(context.onBackResult).toHaveBeenCalledWith('back-during-save', true);
+    expect(SecureStore.deleteItemAsync).not.toHaveBeenCalled();
+    finishSave();
+    await Promise.all([saving, clearing]);
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledOnce();
+    expect(context.send).not.toHaveBeenCalled();
+  });
+
+  it('drops a late push-token response from a session cleared during token lookup', async () => {
+    let finishToken!: (token: Notifications.ExpoPushToken) => void;
+    vi.mocked(Notifications.getExpoPushTokenAsync).mockReturnValueOnce(
+      new Promise<Notifications.ExpoPushToken>((resolve) => {
+        finishToken = resolve;
+      }),
+    );
+    const dispatch = createDispatcher(context);
+    const saving = dispatch(
+      event({
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 7, userType: 'DEVELOPER' },
+      }),
+    );
+    await vi.waitFor(() => expect(Notifications.getExpoPushTokenAsync).toHaveBeenCalledOnce());
+    await dispatch(event({ type: 'AUTH_SESSION_CLEAR' }));
+    finishToken({ type: 'expo', data: 'ExpoPushToken[old-session]' });
+    await saving;
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledOnce();
+    expect(context.send).not.toHaveBeenCalled();
+  });
+
+  it('keeps account-switch writes ordered even when the WebView recreates its dispatcher', async () => {
+    let finishSave!: () => void;
+    vi.mocked(SecureStore.setItemAsync).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishSave = resolve;
+      }),
+    );
+    const oldSave = createDispatcher(context)(
+      event({
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 7, userType: 'DEVELOPER' },
+      }),
+    );
+    await vi.waitFor(() => expect(SecureStore.setItemAsync).toHaveBeenCalledOnce());
+    const newSave = createDispatcher(context)(
+      event({
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 8, userType: 'RECRUITER' },
+      }),
+    );
+    expect(SecureStore.setItemAsync).toHaveBeenCalledOnce();
+    finishSave();
+    await Promise.all([oldSave, newSave]);
+    expect(SecureStore.setItemAsync).toHaveBeenNthCalledWith(
+      2,
+      'linker.session',
+      JSON.stringify({ userId: 8, userType: 'RECRUITER' }),
+    );
+    expect(context.send).toHaveBeenCalledExactlyOnceWith({
+      type: 'PUSH_TOKEN',
+      token: 'ExpoPushToken[test]',
+      platform: 'android',
+    });
+  });
+
+  it('still applies a new session after an older SecureStore write fails', async () => {
+    vi.mocked(SecureStore.setItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
+    const dispatch = createDispatcher(context);
+    await dispatch(
+      event({
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 7, userType: 'DEVELOPER' },
+      }),
+    );
+    await dispatch(event({ type: 'AUTH_SESSION_CLEAR' }));
+    await dispatch(
+      event({
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 8, userType: 'RECRUITER' },
+      }),
+    );
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledOnce();
+    expect(SecureStore.setItemAsync).toHaveBeenLastCalledWith(
+      'linker.session',
+      JSON.stringify({ userId: 8, userType: 'RECRUITER' }),
+    );
+    expect(context.send).toHaveBeenCalledExactlyOnceWith({
+      type: 'PUSH_TOKEN',
+      token: 'ExpoPushToken[test]',
+      platform: 'android',
+    });
+  });
+
   it('creates the Android channel before permission and returns an Expo token', async () => {
     await createDispatcher(context)(event({ type: 'PUSH_PERMISSION_REQUEST', id: 'push1' }));
     expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith('default', {
