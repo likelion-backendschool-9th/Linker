@@ -236,7 +236,7 @@ Follow the WBS page order. Five people and two weeks are planning assumptions. N
 Tests prove the WBS contract: 401/403 by role, team role, optional-auth public reads, OAuth state, accept and webhook races, STOMP ACL, entitlement, and withdrawal of tokens. Sandbox checks of GitHub and Toss are separate from unit tests. Do not require tests for features excluded from the MVP.
 Deploy checks, still open: host, domain, region, TLS, webhook URLs, `/ws` upgrade and sticky sessions, backups, secrets, migration rollback, and redaction. Sentry is a candidate, not a decision. Keep Toss test keys off production.
 ## 9. Checks
-40 controllers, 204 REST endpoints, 5 realtime paths, 69 tables. Packages in Section 4. HTTP paths, permissions, `@Tag`, and STOMP destinations unchanged.
+40 controllers, 205 REST endpoints, 5 realtime paths, 69 tables. Packages in Section 4. HTTP paths, permissions, `@Tag`, and STOMP destinations unchanged.
 ## 10. Unresolved
 
 | Item | Still open |
