@@ -8,7 +8,8 @@ public record LinkerProperties(
 		Security security,
 		Storage storage,
 		Github github,
-		Webhook webhook
+		Webhook webhook,
+		Payment payment
 ) {
 
 	public record Session(
@@ -36,5 +37,16 @@ public record LinkerProperties(
 	}
 
 	public record Webhook(boolean consumerEnabled, String queueKey) {
+	}
+
+	/**
+	 * Toss Payments. Secret key is server-only; leave blank to keep the unconfigured gateway.
+	 * Test keys start with {@code test_sk} / {@code test_ck}.
+	 */
+	public record Payment(
+			String secretKey,
+			String clientKey,
+			String baseUrl
+	) {
 	}
 }

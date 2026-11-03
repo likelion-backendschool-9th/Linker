@@ -4,7 +4,7 @@ import java.time.ZoneId;
 
 /**
  * Policy numbers used by the common foundation and D chat/notification/subscription contracts.
- * Prices stay with later payment steps; safety caps not in the policy are named at the call site.
+ * Safety caps not in the policy are named at the call site.
  */
 public final class PlanLimits {
 
@@ -46,6 +46,26 @@ public final class PlanLimits {
 	/** Marketing opt-in notifications use a tighter evening start. */
 	public static final int MARKETING_QUIET_HOURS_START_HOUR = 21;
 
+	/** Policy ch. 11 / To-be-decided — tentative KRW prices (server is source of truth). */
+	public static final int PRO_MONTHLY_KRW = 2_900;
+	public static final int FLEX_BASE_MONTHLY_KRW = 7_900;
+	public static final int FLEX_EXTRA_SEAT_KRW = 1_900;
+	public static final int FLEX_INCLUDED_SEATS = 6;
+	public static final int SCOUT_MONTHLY_KRW = 14_900;
+	public static final int SUBSCRIPTION_TRIAL_DAYS = 7;
+	public static final int PAYMENT_REFUND_WITHIN_DAYS = 7;
+	public static final int PAYMENT_FAILURE_GRACE_DAYS = 7;
+	public static final int FLEX_POST_EXPIRY_GRACE_DAYS = 30;
+
 	private PlanLimits() {
+	}
+
+	/** Flex monthly amount for headcount on the billing date (no mid-period pro-rate). */
+	public static int flexMonthlyAmount(int seats) {
+		if (seats < 1) {
+			throw new IllegalArgumentException("seats must be >= 1");
+		}
+		int extra = Math.max(0, seats - FLEX_INCLUDED_SEATS);
+		return FLEX_BASE_MONTHLY_KRW + (extra * FLEX_EXTRA_SEAT_KRW);
 	}
 }

@@ -64,3 +64,7 @@ linker:
   webhook:
     consumer-enabled: true
     queue-key: linker:github:webhook
+  payment:
+    secret-key: ${TOSS_SECRET_KEY:}
+    client-key: ${TOSS_CLIENT_KEY:}
+    base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}

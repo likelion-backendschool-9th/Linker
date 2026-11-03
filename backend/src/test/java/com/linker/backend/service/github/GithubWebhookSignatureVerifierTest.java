@@ -49,7 +49,8 @@ class GithubWebhookSignatureVerifierTest {
 				new LinkerProperties.Security(60, false, "", false),
 				new LinkerProperties.Storage("local", ""),
 				new LinkerProperties.Github(secret),
-				new LinkerProperties.Webhook(false, "linker:github:webhook")
+				new LinkerProperties.Webhook(false, "linker:github:webhook"),
+				new LinkerProperties.Payment("", "", "https://api.tosspayments.com")
 		));
 	}
 }
