@@ -2,7 +2,7 @@ import { daysFromNow, del, fail, get, newId, patch, post, type MockRoute } from 
 import { findTeam, TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 import { SUBSCRIPTION_PRICE, PLAN_LIMITS } from '@/lib/policy';
 
-/** 09 Team settings & members: `TeamSettingsController` */
+/** 09 Team settings & members: `TeamController / GithubController` */
 
 type InviteLink = { id: number; code: string; expiresAt: string; createdBy: string };
 const inviteLinks: Record<number, InviteLink[]> = {

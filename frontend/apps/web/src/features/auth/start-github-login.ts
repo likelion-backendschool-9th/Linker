@@ -3,7 +3,7 @@ import { isInApp, postToNative } from '@/lib/bridge/native';
 
 /**
  * "GitHub로 시작" from anywhere (login sheet, 01 start screen).
- * `GET /api/v1/public/auth/github/authorize-url` belongs to 01 LoginController; this hand-written call and
+ * `GET /api/v1/public/auth/github/authorize-url` belongs to AuthController (page 01); this hand-written call and
  * its response type are replaced by the orval p01 function once the controller is in OpenAPI.
  * In the app, the system browser does the login and comes back via `linker://auth` (blueprint §11-3).
  */

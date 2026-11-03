@@ -11,7 +11,7 @@ import { boardOptions } from './_lib/board-queries';
 
 export const metadata = buildMetadata({ title: '상태 보드' });
 
-/** 14 Status board (07 TODO 14, `BoardController`) */
+/** 14 Status board (07 TODO 14, `IssueController`) */
 export default async function BoardPage({ params, searchParams }: PageProps<'/teams/[id]/board'>) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const client = getQueryClient();

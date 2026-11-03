@@ -1,7 +1,7 @@
 import { get, post, put, type MockRoute } from '../core/define';
 import { ME } from '../fixtures/users';
 
-/** 02 Onboarding: `OnboardingController` (terms → profile) */
+/** 02 Onboarding: `AccountController` (terms → profile) */
 export const routes: MockRoute[] = [
   get('/api/v1/user/onboarding', ({ viewer }) => ({
     done: viewer.onboarded,

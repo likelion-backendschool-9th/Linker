@@ -6,7 +6,7 @@ import { issueFilterQuery, type IssueFilters } from './issue-filters';
 import type { IssueStatus } from '../../../_lib/issue-status';
 
 /**
- * Provisional 11 `IssueListController` contract (WBS 11). Hand-written until the controller is in
+ * Provisional 11 IssueController contract (WBS 11). Hand-written until the controller is in
  * OpenAPI; then replace with the orval `p11-issue-list` hooks.
  */
 

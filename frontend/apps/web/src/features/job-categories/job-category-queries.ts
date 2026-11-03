@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** Provisional 00 `TechTagController` job categories (ERD `JobCategory`); public and fixed */
+/** Provisional CatalogController job categories (ERD `JobCategory`); public and fixed */
 export type JobCategory = { key: string; label: string };
 
 export function jobCategoriesOptions() {

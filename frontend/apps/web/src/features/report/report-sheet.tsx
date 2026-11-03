@@ -31,7 +31,7 @@ type ReportForm = z.infer<typeof schema>;
  * Report: choose a reason (+ text for "기타"). Mounted once in providers; open with
  * `useOverlay('report').open(reportTargetId(type, id))`. The reported item disappears for the reporter
  * right away (04 ch. 9), so active queries refetch afterwards.
- * `POST /api/v1/user/reports` (00 ReportController) — swap to the orval hook when it is generated.
+ * `POST /api/v1/user/reports` (ModerationController) — swap to the orval hook when it is generated.
  */
 export function ReportSheet() {
   const overlay = useOverlay('report');

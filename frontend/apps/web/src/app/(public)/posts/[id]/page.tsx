@@ -49,7 +49,7 @@ export async function generateMetadata({
   });
 }
 
-/** 23 Project post detail (07 TODO 23, `PostDetailController`) */
+/** 23 Project post detail (07 TODO 23, PostController) */
 export default async function PostDetailPage({ params, searchParams }: PageProps<'/posts/[id]'>) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const post = await loadPost(id, fromParam(query.from));

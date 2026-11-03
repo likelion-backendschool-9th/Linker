@@ -2,7 +2,7 @@ import { fail, get, newId, post, put, type MockRoute } from '../core/define';
 import { findPost, POSTS, type MockPost, type MockRepoCard } from '../fixtures/posts';
 import { brief, ME } from '../fixtures/users';
 
-/** 22 Write/edit project post: `PostEditorController`. One post per repo (POL-P-1). */
+/** 22 Write/edit project post: `PostController`. One post per repo (POL-P-1). */
 
 const PHOTO_LIMIT = 5; // Pro 10
 

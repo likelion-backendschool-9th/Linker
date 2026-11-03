@@ -87,7 +87,7 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 - Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [Docker 가이드](../operations/02-docker.md) for mode switching and dependency/environment changes.
 
 ### 2-1. orval (`packages/api`)
-- Generated from springdoc `/v3/api-docs`. Controller `@Tag` = page (WBS §1-3 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
+- Generated from springdoc `/v3/api-docs`. Preserve each endpoint’s original page `@Tag` at method level when system controllers combine pages (WBS §2 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
 - Output: react-query hooks + query options, MSW mocks, zod schemas. Never hand-edited.
 - One mutator: `apps/web/src/lib/api/api-fetch.ts` (§5-4). `pnpm --filter @linker/api generate` runs before Turborepo `build`.
 
@@ -459,37 +459,37 @@ Web and app share these types and zod schemas. Envelope: `{ v: BRIDGE_VERSION (1
 
 ## 13. Folder structure double-check
 ### 13-1. All 33 pages
-Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Access: Guest / Developer / Recruiter / Operator ("prompt" = login-prompt sheet).
+Matched against 07 paths, 04 access table and WBS system controllers; no new URLs. Access: Guest / Developer / Recruiter / Operator ("prompt" = login-prompt sheet). The controller column is the owning **system** controller; keep method-level OpenAPI tags as the page slug (`pNN-…`).
 
-| # | Path (07) | Group | Access (04) | Controller (09) · tag |
+| # | Path (07) | Group | Access (04) | System controller · tag |
 | --- | --- | --- | --- | --- |
-| 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | LoginController · p01 |
-| 02 | `/onboarding` | (developer) | × / ○ / × / ○ | OnboardingController · p02 |
+| 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | AuthController · p01 |
+| 02 | `/onboarding` | (developer) | × / ○ / × / ○ | AccountController · p02 |
 | 03 | `/legal/[slug]` | (public) | ○ everyone | LegalController · p03 |
-| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | ProfileController · p04 |
-| 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | ProfileEditController · p05 |
-| 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | SettingsController · p06 |
-| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
-| 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | TeamCreateController · p08 |
-| 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | TeamSettingsController · p09 |
-| 10 | `/invite/[code]` | (public) | slim landing / ○ / × message / ○ | InviteController · p10 |
-| 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | IssueList, IssueDetail, IssueCreate, Board, CalendarController · p11–p15 |
-| 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | ChatListController · p16 |
-| 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | ChatRoomController · p17 |
-| 18 | `/notifications` | (member) | prompt / ○ / ○ / ○ | NotificationController · p18 |
-| 19 | `/recruits` | (public) | view / ○ / view / ○ | RecruitListController · p19 |
-| 20 | `/recruits/new`, `/recruits/[id]/edit` | (developer) | prompt / ○ / × / ○ | RecruitEditorController · p20 |
-| 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | RecruitDetailController · p21 |
-| 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | PostEditorController · p22 |
-| 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PostDetailController · p23 |
-| 24 | `/feed` | (public) | view / ○ / view / ○ | FeedController · p24 |
-| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | AdminReport, AdminUser, AdminAuditController · p25–p27 |
-| 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | SubscribeController · p28 |
-| 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | SubscriptionManageController · p29 |
+| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController (+ Post / Recruitment / RecruiterAd / Chat as borrowed) · p04 |
+| 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | AccountController · p05 |
+| 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | AccountController, AuthController, NotificationController · p06 |
+| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | TeamController, IssueController · p07 |
+| 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | TeamController, GithubController · p08 |
+| 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | TeamController, GithubController · p09 |
+| 10 | `/invite/[code]` | (public) | slim landing / ○ / × message / ○ | TeamController · p10 |
+| 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | IssueController · p11–p15 |
+| 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | ChatController · p16 |
+| 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | ChatController (+ Github / Issue as borrowed) · p17 |
+| 18 | `/notifications` | (member) | prompt / ○ / ○ / ○ | NotificationController, ModerationController · p18 |
+| 19 | `/recruits` | (public) | view / ○ / view / ○ | RecruitmentController · p19 |
+| 20 | `/recruits/new`, `/recruits/[id]/edit` | (developer) | prompt / ○ / × / ○ | RecruitmentController · p20 |
+| 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | RecruitmentController · p21 |
+| 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | PostController · p22 |
+| 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PostController · p23 |
+| 24 | `/feed` | (public) | view / ○ / view / ○ | PostController · p24 |
+| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | AdminController · p25–p27 |
+| 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | SubscriptionController · p28 |
+| 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | SubscriptionController · p29 |
 | 30 | `/me/stats` | (developer) | prompt / ○ / × / ○ | StatsController · p30 |
-| 31 | `/recruiter/signup` | (auth) | ○ / × / →feed / × | RecruiterSignupController · p31 |
-| 32 | `/recruiter/login`, `/recruiter/reset` | (auth) | ○ / × / →feed / × | RecruiterLoginController · p32 |
-| 33 | `/recruiter/offers` | (recruiter) | × / × / ○ / × ※3 | RecruiterOfferController · p33 |
+| 31 | `/recruiter/signup` | (auth) | ○ / × / →feed / × | AuthController · p31 |
+| 32 | `/recruiter/login`, `/recruiter/reset` | (auth) | ○ / × / →feed / × | AuthController · p32 |
+| 33 | `/recruiter/offers` | (recruiter) | × / × / ○ / × ※3 | ChatController · p33 |
 
 - ※1 Guest "×" = login-prompt sheet + `returnTo` (04 Policy aligned 2026-10-29); logged-in "×" → `/feed`.
 - ※2 The admin OTP gate is inside `(admin)/admin/layout.tsx`, no separate URL.
@@ -518,7 +518,7 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 - **CORS**: `api.` allows `credentials: true` for the `app.` origin; the STOMP handshake uses the same cookie.
 - **orval tags**: `@Tag(name = "pNN-…")` per controller; renaming breaks frontend imports.
 - **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
-- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 `LoginController` (not in WBS yet).
+- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 AuthController (not in WBS yet).
 - **GitHub App callback URLs**: register web `/auth/callback` and app (`?client=app` or a separate URL).
 - **Search**: sitemap lists from WBS 00 `SitemapController` (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
 - **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens`.

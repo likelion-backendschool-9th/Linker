@@ -2,7 +2,7 @@ import { daysAgo, fail, get, hoursAgo, post, type MockRoute } from '../core/defi
 import { brief, DEVELOPERS } from '../fixtures/users';
 import { addAuditLog } from './p27-admin-audit';
 
-/** 25 Ops: reports: `AdminReportController` (handle within 2 business days, POL ch. 9) */
+/** 25 Ops: reports: `AdminController` (handle within 2 business days, POL ch. 9) */
 
 const [, doyun, seoyeon, minjae, hayun, , taeyang] = DEVELOPERS;
 

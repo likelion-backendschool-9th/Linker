@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import { recruitFilterQuery, type RecruitFilters } from './recruit-filters';
 
-/** Provisional WBS 19 `RecruitListController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 19 RecruitmentController (list) contract; replace with Orval types when OpenAPI is available. */
 export type RecruitSummary = {
   id: number;
   title: string;

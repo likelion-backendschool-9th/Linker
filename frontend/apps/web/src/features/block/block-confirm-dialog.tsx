@@ -17,7 +17,7 @@ type BlockConfirmDialogProps = {
 /**
  * Block confirm (04 ch. 9 "Blocking"). Mount on screens with a block action and open with
  * `useOverlay('block').open(String(userId))`. The other person isn't notified.
- * `POST /api/v1/user/blocks` (00 BlockController) — swap to the orval hook when it is generated.
+ * `POST /api/v1/user/blocks` (ModerationController) — swap to the orval hook when it is generated.
  */
 export function BlockConfirmDialog({ userId, name, onBlocked }: BlockConfirmDialogProps) {
   const overlay = useOverlay('block');

@@ -2,7 +2,7 @@ import { dateOnly, del, get, paginate, post, type MockRoute } from '../core/defi
 import { POSTS, postCard } from '../fixtures/posts';
 import { brief, OTHERS } from '../fixtures/users';
 
-/** 24 Home feed: `FeedController`. Ad items follow docs/development/03-frontend-blueprint.md ch. 15 (`type: 'AD'`). */
+/** 24 Home feed: `PostController`. Ad items follow docs/development/03-frontend-blueprint.md ch. 15 (`type: 'AD'`). */
 
 type WhyShown = string | null;
 

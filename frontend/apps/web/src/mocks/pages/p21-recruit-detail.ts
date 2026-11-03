@@ -5,7 +5,7 @@ import { APPLICATIONS, findRecruit, recruitCard, type MockApplication } from '..
 import { TEAMS } from '../fixtures/teams';
 import { brief, ME, findUserById } from '../fixtures/users';
 
-/** 21 Recruit post detail: `RecruitDetailController` (apply and manage applicants) */
+/** 21 Recruit post detail: `RecruitmentController` (apply and manage applicants) */
 
 function recruitOr404(id: string) {
   const item = findRecruit(id);

@@ -1,7 +1,7 @@
 import { daysAgo, get, patch, post, type MockRoute } from '../core/define';
 import { ME, RECRUITER } from '../fixtures/users';
 
-/** 05 Edit profile: `ProfileEditController` */
+/** 05 Edit profile: `AccountController` */
 
 const form = {
   name: ME.name,

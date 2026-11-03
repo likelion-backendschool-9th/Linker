@@ -11,7 +11,7 @@ import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
 
 /**
- * 17 Chat room: `ChatRoomController` (REST). Live sending/receiving is `lib/realtime` (mock-realtime.ts),
+ * 17 Chat room: `ChatController` (REST). Live sending/receiving is `lib/realtime` (mock-realtime.ts),
  * which appends to the same MESSAGES list.
  */
 

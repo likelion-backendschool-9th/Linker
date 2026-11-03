@@ -9,7 +9,7 @@ import { createReposOptions } from './_lib/create-queries';
 
 export const metadata = buildMetadata({ title: '이슈 작성' });
 
-/** 13 Create issue (07 TODO 13, `IssueCreateController`): step 1 repo + template → step 2 content */
+/** 13 Create issue (07 TODO 13, `IssueController`): step 1 repo + template → step 2 content */
 export default async function IssueCreatePage({ params }: PageProps<'/teams/[id]/issues/new'>) {
   const { id } = await params;
   const client = getQueryClient();
