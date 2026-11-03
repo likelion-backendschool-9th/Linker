@@ -50,3 +50,23 @@ it('clears memory even when delete fails', async () => {
   await unregisterPushToken();
   expect(getRegisteredPushToken()).toBeNull();
 });
+
+it('finishes an in-flight registration before unregistering on logout', async () => {
+  let finish!: () => void;
+  fetchMock.mockReturnValueOnce(
+    new Promise<void>((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const registering = registerPushToken('expo-pending', 'android');
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  const unregistering = unregisterPushToken();
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  finish();
+  await registering;
+  await unregistering;
+  expect(fetchMock).toHaveBeenLastCalledWith('/api/v1/user/push-tokens/expo-pending', {
+    method: 'DELETE',
+  });
+  expect(getRegisteredPushToken()).toBeNull();
+});

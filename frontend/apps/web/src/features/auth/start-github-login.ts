@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch';
-import { isInApp, postToNative } from '@/lib/bridge/native';
+import { isInApp, requestNative } from '@/lib/bridge/native';
 
 /**
  * "GitHub로 시작" from anywhere (login sheet, 01 start screen).
@@ -13,9 +13,24 @@ export async function startGithubLogin(returnTo: string) {
   const { authorizeUrl } = await apiFetch<{ authorizeUrl: string }>(
     `/api/v1/public/auth/github/authorize-url?${query}`,
   );
+  if (typeof authorizeUrl !== 'string' || !authorizeUrl.trim())
+    throw new Error('invalid-authorize-url');
+  const destination = new URL(authorizeUrl, window.location.origin);
+  if (destination.username || destination.password) throw new Error('invalid-authorize-url');
+  // Same-origin sign-in destinations keep the current cookie context. This also supports the
+  // existing mock API response without making a page or component aware of mock mode.
+  if (destination.origin === window.location.origin) {
+    window.location.assign(destination.href);
+    return;
+  }
+  if (destination.protocol !== 'https:') throw new Error('invalid-authorize-url');
   if (client === 'app') {
-    postToNative({ type: 'AUTH_GITHUB_START', id: crypto.randomUUID(), authorizeUrl });
+    const result = await requestNative(
+      { type: 'AUTH_GITHUB_START', authorizeUrl: destination.href },
+      { timeoutMs: 0 },
+    );
+    if (!result.ok) throw new Error(result.error);
   } else {
-    window.location.assign(authorizeUrl);
+    window.location.assign(destination.href);
   }
 }

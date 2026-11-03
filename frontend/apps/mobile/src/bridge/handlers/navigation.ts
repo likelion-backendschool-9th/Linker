@@ -1,4 +1,4 @@
-import { BackHandler } from 'react-native';
+import { BackHandler, Platform } from 'react-native';
 
 import type { Handler } from '../context';
 
@@ -9,5 +9,5 @@ export const backResult: Handler<'BACK_RESULT'> = (msg, ctx) =>
 
 /** Android only; iOS apps can't exit themselves (blueprint §12-3). */
 export const exitApp: Handler<'EXIT_APP'> = () => {
-  BackHandler.exitApp();
+  if (Platform.OS === 'android') BackHandler.exitApp();
 };

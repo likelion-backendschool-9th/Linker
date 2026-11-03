@@ -116,13 +116,16 @@ export async function mockFetch<T>(url: string, init: RequestInit = {}): Promise
     params,
     query: parsed.searchParams,
     body,
-    viewer: buildViewer(await readRoleCookie()),
+    viewer: buildViewer(init.credentials === 'omit' ? 'guest' : await readRoleCookie()),
     setMockRole: setBrowserRole,
   };
   authorize(entry, ctx);
 
   const result = await entry.route.handle(ctx);
-  if (entry.route.path === '/api/v1/admin/otp/verify' && (result as { verified?: boolean } | undefined)?.verified) {
+  if (
+    entry.route.path === '/api/v1/admin/otp/verify' &&
+    (result as { verified?: boolean } | undefined)?.verified
+  ) {
     adminOtpLastActiveAt = Date.now();
   }
   // Callers must not mutate fixtures, and server → client props must be serializable

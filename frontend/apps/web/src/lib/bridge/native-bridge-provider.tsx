@@ -1,6 +1,7 @@
 'use client';
 
 import { focusManager } from '@tanstack/react-query';
+import type { BridgeSession } from '@linker/bridge';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
@@ -13,7 +14,13 @@ import { ensureConnected } from '@/lib/realtime/stomp-client';
 import { isInApp, onNativeMessage, postToNative } from './native';
 
 /** Handles app → web messages (blueprint §11-3). Does nothing in a plain browser. */
-export function NativeBridgeProvider({ children }: { children: ReactNode }) {
+export function NativeBridgeProvider({
+  children,
+  session,
+}: {
+  children: ReactNode;
+  session: BridgeSession | null;
+}) {
   const router = useRouter();
   const activeOverlay = useActiveOverlay();
   // The listener is registered once; read the latest overlay state through a ref
@@ -36,8 +43,8 @@ export function NativeBridgeProvider({ children }: { children: ReactNode }) {
           router.push(safeReturnTo(msg.path) as Route);
           break;
         case 'APP_STATE':
+          focusManager.setFocused(msg.state === 'active');
           if (msg.state === 'active') {
-            focusManager.setFocused(true);
             ensureConnected();
           }
           break;
@@ -54,6 +61,17 @@ export function NativeBridgeProvider({ children }: { children: ReactNode }) {
     postToNative({ type: 'READY' });
     return unsubscribe;
   }, [router]);
+
+  const userId = session?.userId;
+  const userType = session?.userType;
+  useEffect(() => {
+    if (!isInApp()) return;
+    postToNative(
+      userId && userType
+        ? { type: 'AUTH_SESSION_SAVE', session: { userId, userType } }
+        : { type: 'AUTH_SESSION_CLEAR' },
+    );
+  }, [userId, userType]);
 
   return children;
 }
