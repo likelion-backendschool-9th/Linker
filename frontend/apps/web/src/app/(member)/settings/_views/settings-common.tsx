@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { useOverlay } from '@/lib/navigation/use-overlay';
+import { disconnect } from '@/lib/realtime/stomp-client';
 import { toast } from '@/stores/toast-store';
 
 import type { SettingsData, WithdrawalCheck } from '../_lib/settings-types';
@@ -79,6 +80,7 @@ export function SettingsCommon({
   const logout = useMutation({
     mutationFn: () => apiFetch<void>('/api/v1/user/auth/logout', { method: 'POST' }),
     onSuccess: async () => {
+      await disconnect();
       await queryClient.clear();
       logoutOverlay.close();
       router.replace('/');
@@ -100,6 +102,7 @@ export function SettingsCommon({
   const withdrawal = useMutation({
     mutationFn: () => apiFetch<{ deletesOn: string }>('/api/v1/user/me/withdrawal', { method: 'POST' }),
     onSuccess: async (result) => {
+      await disconnect();
       await queryClient.clear();
       withdrawalConfirm.close();
       withdrawalSheet.close();
