@@ -3,7 +3,7 @@ import { MESSAGES, ROOMS, UNREAD, type MockMessage, type MockRoom } from '../fix
 import { brief, DEVELOPERS, RECRUITER } from '../fixtures/users';
 
 /**
- * 33 Sent offers list: `RecruiterOfferController`. A recruiting offer is a 1:1 chat request (04 POL-H-3),
+ * 33 Sent offers list: `ChatController`. A recruiting offer is a 1:1 chat request (04 POL-H-3),
  * so each offer owns a room; rooms 30+ belong to the recruiter and are hidden from developers (see p16).
  */
 

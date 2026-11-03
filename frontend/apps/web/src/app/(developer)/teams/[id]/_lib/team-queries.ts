@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** Provisional 07 `WorkspaceController` contract (`GET /api/v1/user/me/teams`); switch to Orval with OpenAPI. */
+/** Provisional 07 `TeamController` contract (`GET /api/v1/user/me/teams`); switch to Orval with OpenAPI. */
 export type MyTeam = {
   id: number;
   name: string;

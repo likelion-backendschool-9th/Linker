@@ -1,7 +1,7 @@
 import { apiFetch } from '@/lib/api/api-fetch';
 
 /**
- * Close / reopen / delete of WBS 20 `RecruitEditorController`, borrowed by 21's author menu.
+ * Close / reopen / delete of WBS 20 `RecruitmentController`, borrowed by 21's author menu.
  * Here because 20 (`(developer)`) and 21 (`(public)`) are different route groups (blueprint §3-1).
  */
 

@@ -1,7 +1,7 @@
 import { fail, get, post, type MockRoute } from '../core/define';
 
 /**
- * 32 Recruiter login & password reset: `RecruiterLoginController`.
+ * 32 Recruiter login & password reset: `AuthController`.
  * Login: `jihyun.song@nextlab.example` / `password1234`. Reset link token `valid-token` works; `expired-token` doesn't.
  */
 

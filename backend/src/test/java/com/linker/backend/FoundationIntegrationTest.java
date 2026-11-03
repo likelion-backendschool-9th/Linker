@@ -18,24 +18,24 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 
-import com.linker.backend.domain.account.Admin;
-import com.linker.backend.domain.account.AdminRepository;
-import com.linker.backend.domain.account.AdminRole;
-import com.linker.backend.domain.account.SessionService;
-import com.linker.backend.domain.account.User;
-import com.linker.backend.domain.account.UserRepository;
-import com.linker.backend.domain.account.UserStatus;
-import com.linker.backend.domain.account.UserType;
-import com.linker.backend.domain.github.GithubWebhookDelivery;
-import com.linker.backend.domain.github.GithubWebhookDeliveryRepository;
-import com.linker.backend.domain.github.GithubWebhookHandler;
-import com.linker.backend.domain.github.GithubWebhookService;
-import com.linker.backend.domain.github.WebhookStatus;
-import com.linker.backend.domain.moderation.ReportCaseRepository;
-import com.linker.backend.domain.moderation.UserBlockRepository;
+import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.account.UserStatus;
+import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.github.GithubWebhookDelivery;
+import com.linker.backend.entity.github.WebhookStatus;
+import com.linker.backend.entity.moderation.Admin;
+import com.linker.backend.entity.moderation.AdminRole;
 import com.linker.backend.global.security.DeveloperOnly;
 import com.linker.backend.global.security.TeamRole;
 import com.linker.backend.integration.storage.LocalObjectStorage;
+import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
+import com.linker.backend.repository.moderation.AdminRepository;
+import com.linker.backend.repository.moderation.ReportCaseRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.service.auth.SessionService;
+import com.linker.backend.service.github.GithubWebhookHandler;
+import com.linker.backend.service.github.GithubWebhookService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,9 +55,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc

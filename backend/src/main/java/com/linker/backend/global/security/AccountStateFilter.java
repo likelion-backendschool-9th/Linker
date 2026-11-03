@@ -2,7 +2,7 @@ package com.linker.backend.global.security;
 
 import java.io.IOException;
 
-import com.linker.backend.domain.account.UserStatus;
+import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.global.error.ErrorResponseWriter;
 
 import jakarta.servlet.FilterChain;

@@ -1,7 +1,7 @@
 import { daysAgo, get, hoursAgo, newId, type MockRoute } from '../core/define';
 import { todayKst } from '@/lib/format/time';
 
-/** 27 Ops: action log: `AdminAuditController` (who, when, what, why; PRD O-5) */
+/** 27 Ops: action log: `AdminController` (who, when, what, why; PRD O-5) */
 
 type AuditLog = {
   id: number;

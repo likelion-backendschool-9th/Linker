@@ -7,7 +7,7 @@ import type { IssueLabel } from '../../../_lib/issue-queries';
 import type { IssueStatus } from '../../../../../_lib/issue-status';
 
 /**
- * Provisional 13 `IssueCreateController` contract (WBS 13). Hand-written until it's in OpenAPI.
+ * Provisional 13 `IssueController` contract (WBS 13). Hand-written until it's in OpenAPI.
  * `issue-create/repos` and the two `repos/{repoId}/…` options are a proposal beyond WBS: 12's options
  * need an issue id that doesn't exist yet, and GitHub takes assignees and labels per repo (POL-I-2).
  */

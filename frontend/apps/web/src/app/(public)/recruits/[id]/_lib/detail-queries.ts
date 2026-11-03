@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import type { ApplicationStatus, RecruitSummary } from '../../_lib/recruit-list-queries';
 
-/** Provisional WBS 21 `RecruitDetailController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 21 `RecruitmentController` contract; replace with Orval types when OpenAPI is available. */
 export type RecruitDetail = RecruitSummary & {
   intro: string;
   duration: string | null;

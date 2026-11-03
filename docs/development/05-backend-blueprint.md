@@ -1,255 +1,277 @@
-# Linker Backend Blueprint (English)
-> Korean reading copy: [05-backend-blueprint.ko.md](05-backend-blueprint.ko.md). Keep the two files the same. This English file is the copy agents follow.
-> WBS ([02-wbs.md](02-wbs.md)) owns scope, controller ownership, HTTP paths, methods, permissions, and schedule. ERD ([01-erd.md](01-erd.md)) owns tables. Policy ([04-policy.md](../planning/04-policy.md)) owns limits and states. This blueprint owns architecture and the `com.linker.backend` package layout. A package move does not change an API contract. `[Confirmed]` is stated in a planning document; `[Proposal]` is an implementation recommendation; `[Unresolved]` is still open. Legal texts are drafts.
-> Other sources: [01 Service Plan](../planning/01-service-plan.md), [02 PRD](../planning/02-prd.md), [03 MVP](../planning/03-mvp-definition.md), [05 Terms](../planning/05-terms-of-service.md), [06 Privacy](../planning/06-privacy-policy.md), [07 Page TODO](../planning/07-page-todo.md), [03 Frontend Blueprint](03-frontend-blueprint.md).
-## 1. Principles
-Linker connects team discovery, GitHub collaboration, portfolio posts, and recruiter offers. Spring Boot is the authority for auth, ownership, team role, limits, state, subscriptions, and transactions. The BFF forwards requests and cookies; it does not own rules or the database. GitHub is the source of truth for orgs, repos, issues, and PRs. Linker owns accounts, teams, applications, chat, posts, subscriptions, and moderation. Do not add post-MVP features or tables. Policy is the source for numbers. Do not hold a DB transaction open across an external call; use idempotency, sync-job state, and webhook dedup. Do not log tokens, passwords, message bodies, or email addresses.
-One page has one owning controller. Page numbers are work ids, not Java packages. Services, repositories, and entities are shared by capability. Do not copy them per page or per role.
-Labels: WBS `[Required]`/`[Included]` are schedule marks. PRD `P0`–`P3` are feature priority. ERD `🟢`/`🟡` are MVP-required / MVP-included tables. They are not the same scale. MVP Required is the flow that breaks without it; Included may slip. WBS can mark a work item `[Included]` even when the MVP demo still wants it (Scout ads). The product owner decides the launch gate.
-## 2. Actors and areas
+# Linker Backend Blueprint
 
-| Actor | Source | MVP access |
-|---|---|---|
-| Guest | No session; `public` | Read profiles, posts, recruit posts, feed. Writes require login. Search indexing follows POL-A-9. |
-| Developer | GitHub; `user_type=DEVELOPER` | Profile, teams, issues, chat, subscriptions, job-seeking. |
-| Recruiter | Company email + password; `RECRUITER` | Public reads, offers when job status allows, Scout ads. |
-| Operator | Developer + `admins` + OTP | Reports, sanctions, audit. Lead: permanent ban, reversal, appeal review. |
-| GitHub / Toss / email / push / storage | Server credentials | Identity and issue source of truth; test payments; recruiter mail; Android push; image bytes. |
-`public` is not guest-only. A cookie on the same read API adds like, follow, and application state. Recruiter profiles are `noindex`.
+> 기준일: 2026-11-03 · **시스템별 WBS의 백엔드 구현 기준**
+>
+> [WBS](02-wbs.md)는 API·권한·담당·일정, [기존 ERD](01-erd.md)는 데이터, [Policy](../planning/04-policy.md)는 숫자·상태·예외·문구를 소유한다. 이 문서는 계층·Java 패키지·트랜잭션·연동과 코드 이행 기준을 정의한다. 시스템별 WBS에 대응하는 공식 백엔드 기준이며, 문서 작성이 클래스 이동이나 기능 구현 완료를 뜻하지 않는다.
 
-| Area | Pages | Feature IDs |
-|---|---|---|
-| Account, profile, legal | 01–06, 00 session/tags | A-1–A-6, A-9, H-4 |
-| GitHub and teams | 07–10 | T-1–T-4 |
-| Issues | 11–15 | I-1–I-5, T-7 included |
-| Chat, notifications | 16–18 | C-1–C-5, C-7, N-1 |
-| Recruit | 19–21 | R-1–R-4 |
-| Posts, feed | 22–24 | P-1–P-5, P-7 |
-| Moderation | 25–27 | O-1–O-5 |
-| Subscription, stats | 28–30 | S-1–S-10 |
-| Recruiter | 31–33, 04–05 ads | H-1, H-3, H-5, H-7–H-9 |
-| Files | 00 upload | shared |
-There is no separate Project domain and no company-verification API. Completion uses `team_completions` and `completion_records`. Recruiting uses `recruit_posts` and `applications`.
-MVP required: A-1–A-3, A-5, A-9, H-4; P-1, P-2, P-4, P-5; R-1–R-4; T-1–T-4; I-1–I-4; C-1, C-3, C-4, N-1; O-1–O-3, O-5; S-1–S-3. Included: A-4, A-6; P-3, P-7; I-5; C-2, C-5, C-7; O-4; S-4–S-10; H-1, H-3, H-5, H-7–H-9. Later: A-7, A-8, P-6, P-8, P-9, R-5, T-5, T-6, I-6–I-8, N-2, C-6, H-2, H-6, and Phase 4 ad analytics.
-## 3. Runtime
-Browser and Expo WebView share the Next.js UI. `[Proposal]` Browser HTTP goes to same-origin `/api/bff/...`, then Spring. RSC uses a server-only adapter with the request cookie, not its own Route Handler. Webhooks and Toss confirmation go straight to Spring. `/ws` is upgraded to Spring STOMP; a one-time STOMP ticket is not in the WBS. File bytes go to storage with a presigned URL; Spring checks permission and completion. The frontend blueprint still calls Spring via `API_BASE_URL`. BFF adoption is `[Unresolved]` (Section 10).
-Spring owns the 69 tables in PostgreSQL. Redis holds rate limits, the webhook queue, STOMP session state, and ad counters, not durable truth. Object storage holds image bytes; `uploaded_files` holds metadata. Provider and region are undecided. Do not expose the Spring origin or secrets to the browser.
-## 4. Packages
-Base package `com.linker.backend` (Gradle `group` stays `com.linker`). Processing path: Controller → Service → Repository. Entity and DTO are representations, not extra layers. `integration`, `async`, and `global` stay. Do not recreate `api.common`, `api.pNN_*`, or a `domain` package that mixes layers. This document does not move Java files.
+**표기:** `[기준]`은 채택한 계약, `[현재]`는 저장소에서 확인한 구현, `[미정]`은 선택 또는 보완이 필요한 항목이다. 문서상 목표를 현재 구현으로 오인하지 않는다.
 
-| Layer | Does | Does not |
-|---|---|---|
-| `controller` | Validate HTTP, apply the WBS permission, call services, map the response | Business rules, queries, returning entities |
-| `service` | Rules and coordination, including the use-case transaction | Servlet types, a copy of the same rule per page or role |
-| `repository` | Persistence for one entity | Business decisions, a second repository for the same table |
-| `entity` | One class per ERD table, plus enums that are not tables | API JSON |
-| `dto` | Request and response contracts | JPA, placement under `controller` |
+## 1. 설계 원칙
 
-Target tree. A class that is not in the repository yet is created with its page. The seven foundation controllers, `SessionService`, `UploadService`, `ReportService`, `BlockService`, `GithubWebhookService`, `SitemapService`, and the entities named in the move map below already exist under `api.common` or `domain`.
+- Linker의 흐름은 **팀 탐색 → GitHub 팀 협업 → 완주·작업물 → 네트워크·채용 제안**이다. 범위는 [PRD](../planning/02-prd.md)·[MVP](../planning/03-mvp-definition.md)·[페이지 TODO](../planning/07-page-todo.md)를 따른다.
+- **페이지는 화면·담당 단위, 시스템은 API 책임 단위**다. 대표 HTTP 컨트롤러 18개가 33개 페이지와 기반 00의 API를 제공한다. 화면 수에 맞춰 클래스를 만들지 않는다.
+- Spring이 인증·권한·한도·상태·결제·트랜잭션의 최종 판단자다. 프론트 접근 가드와 향후 BFF는 이를 대신하지 않는다.
+- GitHub는 조직·저장소·이슈·PR의 원본이다. Linker DB는 동기화된 캐시를 제공하며 채팅·지원·작업물·구독·신고는 직접 관리한다.
+- Controller → Service → Repository의 세 계층을 유지한다. Entity·DTO는 데이터 표현이며 추가 처리 계층이 아니다. 같은 규칙·테이블을 역할별로 복제하지 않는다.
+- Required/Included, PRD 우선순위, ERD의 필수/포함 표시는 서로 다른 분류다. Included의 지연 허용과 실제 출시 데모 조건은 MVP 기준으로 판단한다.
+- 기존 ERD의 **69개 테이블**을 유지한다. 컨트롤러 통합을 위해 새 테이블·컬럼·상태를 추가하지 않는다. 데이터 모델 변경은 ERD·Policy·마이그레이션을 별도로 변경한다.
+
+## 2. 현재 구현과 목표
+
+| 항목 | 현재 저장소 | 적용할 기준·남은 작업 |
+| --- | --- | --- |
+| 프로젝트 | backend 단일 Gradle 프로젝트, Java 21·Spring Boot 4.1.2 | 기존 빌드 설정 유지. 이 문서는 버전 업그레이드 지시가 아님 |
+| 패키지 | 기존 기반 코드를 controller/service/repository/entity/dto로 이동 완료 | 새 기능도 §4 계층에 구현. integration·async·global 유지 |
+| HTTP | Auth·Catalog·Upload·Moderation·Github·Sitemap 6개 컨트롤러, 기존 12개 REST. 신고·차단 통합 | WBS의 18개 시스템으로 확장. 205개는 전체 설계 계약이며 구현 수가 아님 |
+| DB | V1__step0_foundation.sql에 12개 테이블 생성 정의 | ERD 69개와 구분. 서버 적용 여부는 이 문서에서 확인하지 않음 |
+| 세션 | 랜덤 비밀 토큰 쿠키, DB에는 SHA-256 해시. SessionService/SessionAuthenticationFilter 사용 | 문서상 JWT 목표와 차이가 있음. 토큰 전환 없이 JWT 구현 완료로 표시하지 않음 |
+| STOMP·OpenAPI | WebSocket/STOMP 의존성·`/ws` 쿠키 핸드셰이크·SEND/SUBSCRIBE 가드 골격 있음. springdoc 없음 | OpenAPI 태그는 HTTP 컨트롤러 추가 시 적용. 채팅 영속·브로드캐스트는 page 16–17 |
+| 파일 | ObjectStorage 인터페이스와 local/unconfigured 구현 | 객체 저장소 업체 미정. 로컬 구현이 원격 presign과 동일하다고 가정하지 않음 |
+| 알림·제한 | NotificationService·RateLimit 관련 작업이 워킹트리에 있음 | 기존 작업을 보존. 미커밋 코드를 공용 브랜치 완료 상태로 표시하지 않음 |
+| 운영 구성 | Compose·Nginx·main 배포 workflow와 운영 문서 존재 | §3 및 운영 문서 사용. 실제 서버 상태를 새로 확인한 결과는 아님 |
+
+현재 구현을 설명하는 표는 작성 시점의 기록이다. 미래 클래스·어댑터 예시를 이미 존재하는 파일로 해석하지 않는다.
+
+## 3. 실행·배포·외부 경계
 
 ```text
-backend/
-├─ build.gradle, settings.gradle, gradlew, gradle/wrapper/
-├─ src/main/java/com/linker/backend/
-│  ├─ BackendApplication.java
-│  ├─ controller/                 # caller role. One owning controller per WBS page.
-│  │  ├─ common/AuthSessionController.java, TechTagController.java
-│  │  │        UploadController.java, ReportController.java, BlockController.java
-│  │  │        GithubWebhookController.java, SitemapController.java
-│  │  ├─ public/LoginController.java, LegalController.java
-│  │  │        RecruiterSignupController.java, RecruiterLoginController.java
-│  │  ├─ user/OnboardingController.java, WorkspaceController.java
-│  │  │      TeamCreateController.java, TeamSettingsController.java
-│  │  │      IssueListController.java, IssueDetailController.java, IssueCreateController.java
-│  │  │      BoardController.java, CalendarController.java
-│  │  │      ChatListController.java, NotificationController.java
-│  │  │      RecruitEditorController.java, PostEditorController.java
-│  │  │      SubscribeController.java, SubscriptionManageController.java, StatsController.java
-│  │  ├─ recruiter/RecruiterOfferController.java
-│  │  ├─ admin/AdminReportController.java, AdminUserController.java, AdminAuditController.java
-│  │  └─ multi/ProfileController.java, ProfileEditController.java, SettingsController.java
-│  │           InviteController.java, ChatRoomController.java
-│  │           RecruitListController.java, RecruitDetailController.java
-│  │           PostDetailController.java, FeedController.java
-│  ├─ service/                    # capability, shared by every role that needs it
-│  │  ├─ auth/SessionService.java, GithubLoginService.java, RecruiterAuthService.java
-│  │  ├─ account/AccountService.java, AgreementService.java
-│  │  ├─ profile/ProfileService.java, FollowService.java, StatsService.java
-│  │  ├─ legal/LegalDocumentService.java
-│  │  ├─ github/GithubWebhookService.java, GithubInstallationService.java
-│  │  ├─ team/TeamService.java, TeamMembershipService.java, InviteService.java
-│  │  ├─ issue/IssueService.java, IssueSyncService.java
-│  │  ├─ chat/ChatRoomService.java, ChatMessageService.java
-│  │  │       ChatRequestService.java, ChatSummaryService.java
-│  │  ├─ notification/NotificationService.java
-│  │  ├─ recruit/RecruitPostService.java, ApplicationService.java
-│  │  ├─ post/PostService.java, CommentService.java
-│  │  ├─ feed/FeedService.java
-│  │  ├─ moderation/ReportService.java, BlockService.java, SanctionService.java, AuditService.java
-│  │  ├─ subscription/SubscriptionService.java, PaymentService.java, EntitlementService.java
-│  │  ├─ recruiter/RecruiterAccountService.java, RecruiterAdService.java
-│  │  ├─ file/UploadService.java
-│  │  └─ sitemap/SitemapService.java
-│  ├─ repository/                 # one interface per entity; same subpackages as entity
-│  │  ├─ account/UserRepository.java, AuthIdentityRepository.java, UserSessionRepository.java
-│  │  ├─ profile/TechTagRepository.java, FollowRepository.java
-│  │  ├─ team/TeamRepository.java, TeamMemberRepository.java
-│  │  ├─ issue/IssueRepository.java, IssueSyncJobRepository.java
-│  │  ├─ chat/ChatRoomRepository.java, ChatMessageRepository.java
-│  │  ├─ recruit/RecruitPostRepository.java, ApplicationRepository.java
-│  │  ├─ post/PostRepository.java, CommentRepository.java
-│  │  ├─ moderation/ReportRepository.java, UserBlockRepository.java, AdminActionRepository.java
-│  │  ├─ subscription/SubscriptionRepository.java, PaymentRepository.java
-│  │  ├─ recruiter/RecruiterAdRepository.java
-│  │  ├─ file/UploadedFileRepository.java
-│  │  ├─ github/GithubWebhookDeliveryRepository.java
-│  │  └─ notification/NotificationRepository.java
-│  ├─ entity/                     # one class per table; enums live in the same package
-│  │  ├─ account/User.java, UserStatus.java, AuthIdentity.java, GithubToken.java, UserSession.java
-│  │  ├─ profile/TechTag.java, Follow.java, JobCategory.java
-│  │  ├─ team/Team.java, TeamMember.java
-│  │  ├─ issue/Issue.java, IssueSyncJob.java
-│  │  ├─ chat/ChatRoom.java, ChatMessage.java
-│  │  ├─ recruit/RecruitPost.java, Application.java
-│  │  ├─ post/Post.java, Comment.java
-│  │  ├─ moderation/Report.java, UserBlock.java, Admin.java, AdminRole.java
-│  │  ├─ subscription/Subscription.java, Payment.java
-│  │  ├─ recruiter/RecruiterProfile.java, RecruiterAd.java
-│  │  ├─ file/UploadedFile.java, UploadPurpose.java
-│  │  ├─ github/GithubWebhookDelivery.java, WebhookStatus.java
-│  │  └─ notification/Notification.java, PushToken.java
-│  ├─ dto/
-│  │  ├─ common/CursorPage.java
-│  │  ├─ auth/response/MeResponse.java
-│  │  ├─ profile/request/UpdateProfileRequest.java
-│  │  │         response/TechTagResponse.java, PublicProfileResponse.java
-│  │  ├─ file/request/CreateUploadRequest.java
-│  │  │      response/CreateUploadResponse.java, CompleteUploadResponse.java
-│  │  ├─ moderation/request/CreateReportRequest.java, CreateBlockRequest.java
-│  │  │             response/BlockView.java
-│  │  └─ sitemap/SitemapItem.java
-│  ├─ integration/
-│  │  ├─ storage/ObjectStorage.java          # exists
-│  │  └─ github/, payment/, mail/, push/, ai/ # create with that adapter
-│  ├─ async/
-│  │  ├─ webhook/GithubWebhookConsumer.java  # exists
-│  │  └─ schedule/                           # one component per Section 7 job
-│  └─ global/
-│     ├─ config/AppConfig.java, PlanLimits.java
-│     ├─ error/GlobalExceptionHandler.java, ApiException.java, ApiErrorBody.java
-│     ├─ jpa/BaseTimeEntity.java
-│     └─ security/SecurityConfig.java, CurrentUser.java, DeveloperOnly.java, TeamRole.java
-├─ src/main/resources/application.yml, db/migration/, legal/
-└─ src/test/java/com/linker/backend/
-   ├─ FoundationIntegrationTest.java
-   ├─ controller/common/AuthSessionControllerTest.java
-   ├─ controller/public/LoginControllerTest.java
-   ├─ controller/user/IssueListControllerTest.java
-   ├─ controller/multi/ProfileControllerTest.java
-   ├─ controller/admin/AdminReportControllerTest.java
-   ├─ controller/recruiter/RecruiterOfferControllerTest.java
-   ├─ service/issue/IssueServiceTest.java
-   ├─ service/recruit/ApplicationServiceTest.java
-   ├─ repository/account/UserRepositoryTest.java
-   └─ global/error/GlobalExceptionHandlerTest.java
+브라우저 / Expo WebView
+  → 호스트 Nginx(HTTPS)
+  → Compose proxy(127.0.0.1:3004)
+      ├─ /              → Next.js web:3000
+      ├─ /api/v1/       → Spring backend:8080
+      ├─ /ws            → Spring WebSocket/STOMP 업그레이드(쿠키 인증 골격)
+      └─ /api/bff/      → Next.js(예약 경로, BFF 구현 완료 아님)
+Spring → PostgreSQL / Redis / 외부 연동 어댑터
 ```
-`service.support`, `global.exception`, `global.response`, and `controller.webhook` are not packages. Profile, admin, and recruiter screens share `UserRepository`. Failures use `global.error`. Success bodies have no wrapper. `controller.common` is the seven foundation HTTP controllers. Security filters stay in `global.security`. Other request and response types follow the same `dto/<capability>/request|response` shape and are added with the endpoint. Other repositories follow the entity package of their table.
-**Controller placement.** Use the WBS Permission and the `/api/v1/{role}` prefix. `@DeveloperOnly` and `@TeamRole` do not add a caller group. A page whose methods use more than one of `public`, `user`, `recruiter`, and `admin` goes in `controller.multi` and puts only `@RequestMapping("/api/v1")` on the class (pages 04, 05, 06, 10, 17, 19, 21, 23, 24). `AuthSessionController` also mixes `user` and `public` but stays in `common`. `RecruiterSignupController` and `RecruiterLoginController` are entirely `public`, so they stay in `controller.public`. `RecruiterOfferController` is `controller.recruiter`. The package name is not a security rule.
-`@Tag` stays the frontend page slug (`p11-issue-list`, and the other `pNN-…` mock names). The seven foundation controllers share `p00-common`. Current Java has no `@Tag` yet; the first annotations use these names. STOMP stays on `ChatRoomController`: `/ws`, `/app/chat-rooms/{roomId}/messages`, `/topic/chat-rooms/{roomId}`, `/user/queue/notifications`, `/user/queue/chat-rooms`. Do not prefix those destinations with `/api/v1`.
 
-| Pkg | Controller | Page | Owner | Service |
-|---|---|---|---|---|
-| common | `AuthSessionController` | 00 | A | `SessionService` |
-| common | `TechTagController` | 00 | A | `ProfileService` |
-| common | `UploadController` | 00 | E | `UploadService` |
-| common | `ReportController` | 00 | E | `ReportService` |
-| common | `BlockController` | 00 | E | `BlockService` |
-| common | `GithubWebhookController` | 00 | B | `GithubWebhookService` |
-| common | `SitemapController` | 00 | B | `SitemapService` |
-| public | `LoginController` | 01 | A | `GithubLoginService` |
-| user | `OnboardingController` | 02 | A | `AccountService`, `AgreementService`, `ProfileService` |
-| public | `LegalController` | 03 | A | `LegalDocumentService` |
-| multi | `ProfileController` | 04 | A | `ProfileService`, `FollowService`, `RecruiterAdService` |
-| multi | `ProfileEditController` | 05 | A | `ProfileService`, `RecruiterAccountService` |
-| multi | `SettingsController` | 06 | A | `AccountService`, `SessionService` |
-| user | `WorkspaceController` | 07 | B | `TeamService`, `IssueService` |
-| user | `TeamCreateController` | 08 | B | `TeamService`, `GithubInstallationService` |
-| user | `TeamSettingsController` | 09 | B | `TeamService`, `TeamMembershipService` |
-| multi | `InviteController` | 10 | B | `InviteService` |
-| user | `IssueListController` | 11 | C | `IssueService` |
-| user | `IssueDetailController` | 12 | C | `IssueService`, `IssueSyncService` |
-| user | `IssueCreateController` | 13 | C | `IssueSyncService` |
-| user | `BoardController` | 14 | C | `IssueService` (status change is the page-12 API) |
-| user | `CalendarController` | 15 | C | `IssueService` |
-| user | `ChatListController` | 16 | D | `ChatRoomService`, `ChatRequestService` |
-| multi | `ChatRoomController` | 17 | D | `ChatRoomService`, `ChatMessageService`, `ChatRequestService`, `ChatSummaryService` |
-| user | `NotificationController` | 18 | D | `NotificationService` |
-| multi | `RecruitListController` | 19 | E | `RecruitPostService`, `ApplicationService` |
-| user | `RecruitEditorController` | 20 | E | `RecruitPostService` |
-| multi | `RecruitDetailController` | 21 | E | `ApplicationService` |
-| user | `PostEditorController` | 22 | E | `PostService` |
-| multi | `PostDetailController` | 23 | E | `PostService`, `CommentService` |
-| multi | `FeedController` | 24 | E | `FeedService`, `RecruiterAdService` |
-| admin | `AdminReportController` | 25 | A | `ReportService`, `SanctionService` |
-| admin | `AdminUserController` | 26 | B | `SanctionService` |
-| admin | `AdminAuditController` | 27 | B | `AuditService` |
-| user | `SubscribeController` | 28 | D | `SubscriptionService`, `PaymentService` |
-| user | `SubscriptionManageController` | 29 | D | `SubscriptionService`, `PaymentService` |
-| user | `StatsController` | 30 | B | `StatsService`, `EntitlementService` |
-| public | `RecruiterSignupController` | 31 | A | `RecruiterAccountService`, `AgreementService`, `SessionService` |
-| public | `RecruiterLoginController` | 32 | A | `RecruiterAuthService` |
-| recruiter | `RecruiterOfferController` | 33 | A | `ChatRequestService` |
-40 controllers. REST totals in WBS §5 sum to 204 (12 foundation rows + 192 page rows). Counts are unchanged by this layout.
-Shared pages keep the owner above. C adds `GET /api/v1/user/me/issues` on B's `WorkspaceController` (B reviews) and the AI summary on D's `ChatRoomController` (D reviews). B adds PR system messages on 17. E's accept transaction calls B's team membership and D's chat membership. Share actions call D's share-card API. 04, including recruiter screens, stays with A. 26, 27, and 30 stay with B.
-**Services.** One `UserRepository` serves every role. Do not add `service.user.UsersService` or `service.admin.UsersService`. `PlanLimits` stays in `global.config`; `EntitlementService` reads it. `NotificationService.create()` is the only writer of `notifications`. Offer rows are chat rooms with `request_kind = RECRUITING`, read and written by `ChatRequestService`. `ApplicationService.accept` is the transaction for application state, headcount, team member, team-chat member, and notification. The GitHub org invite stays the page-09 endpoint and runs after commit.
-**Entities.** One entity and one repository per ERD table. Package assignment: `account` users, auth_identities, github_tokens, user_sessions, user_agreements; `profile` tech_tags, user_tech_tags, username_redirects, contribution_days, follows, pinned_posts, profile_visits, user_job_categories; `file` uploaded_files; `github` github_installations, github_repos, github_webhook_deliveries; `team` teams, team_members, team_repos, team_invite_links, github_org_invitations, team_ownership_transfers, team_project_boards, board_status_mappings, team_completions, completion_records; `issue` issues, issue_assignees, issue_labels, issue_sync_jobs, pull_requests, team_progress_snapshots; `chat` chat_rooms, chat_room_members, chat_messages, chat_message_images, chat_message_mentions, ai_chat_summaries; `notification` notifications, push_tokens; `recruit` recruit_posts, recruit_roles, recruit_post_tags, applications; `post` posts, post_images, post_demo_links, post_tags, post_likes, comments, post_views; `feed` feed_seen_posts; `moderation` user_blocks, reports, report_cases, report_message_snapshots, sanctions, appeals, banned_github_ids, admins, admin_actions; `subscription` subscriptions, payments; `recruiter` recruiter_profiles, email_verifications, recruiter_ads, ad_hides, ad_daily_stats. That is 69. Enums that already exist (`UserStatus`, `UserType`, `JobSeekingStatus`, `AuthProvider`, `JobCategory`, `AdminRole`, `UploadPurpose`, `ReportReason`, `WebhookStatus`) stay beside those entities. `JobCategory` is not a table.
-**DTOs.** Use `dto.<capability>.request` and `.response` when a capability has both. Legal and sitemap responses may sit directly in `dto.legal` and `dto.sitemap`. `dto.common.CursorPage` is the shared `{items, nextCursor}` shape. Name types by operation (`UpdateProfileRequest`). One public read API uses one response with optional member fields. Do not pre-create a DTO for every endpoint, and do not invent fields the WBS does not support.
-**Repository root (actual).** `backend/` is one Gradle project (`build.gradle`, `settings.gradle`, `gradlew`, `Dockerfile`). Resources today: `application.yml` and `db/migration/V1__step0_foundation.sql`. Add `resources/legal/` with the page-03 slugs when that page is built. `BackendApplication` exists. Code today still lives under `api.common` and `domain`. Move map, without changing URLs or tags: the seven foundation controllers → `controller.common`; their request/response types → `dto`; `SessionService` → `service.auth`; onboarding helpers → `service.account`; `Notification` → `entity.notification`; `TechTag` and `JobCategory` → `entity.profile`; `Admin` → `entity.moderation`; file, github, moderation, and sitemap services → the matching `service` package; `SitemapItem` and `BlockView` → `dto`; `integration`, `async`, and `global` stay. Classes already present include those seven controllers, `SessionService`, `UploadService`, `ImageInspector`, `ReportService`, `BlockService`, `GithubWebhookService`, `SitemapService`, and entities `User`, `AuthIdentity`, `GithubToken`, `UserSession`, `TechTag`, `UploadedFile`, `GithubWebhookDelivery`, `Notification`, `UserBlock`, `Report`, `ReportCase`, `Admin`. Anything else in the table above is created with that page.
-Tests mirror the same packages. Existing tests: `FoundationIntegrationTest`, `global.error.GlobalExceptionHandlerTest`, `ImageInspectorTest`, `GithubWebhookSignatureVerifierTest`. Add `*ControllerTest` for HTTP status and permission, `*ServiceTest` for the rule and transaction, and `*RepositoryTest` for one entity. `ApplicationServiceTest` covers accept. `UserRepositoryTest` covers `users` for every role.
-## 5. Data
-[01 ERD](01-erd.md) Sections 3–5 are authoritative: **56 🟢 + 13 🟡 = 69 tables**. PostgreSQL, `bigint identity`, `timestamptz`, string enums. Soft-delete user content with `deleted_at`; moderation visibility is separate (`VISIBLE`, `UNDER_REVIEW`, `HIDDEN`). GitHub values are caches keyed by GitHub id and `updated_at`. Linker posts, messages, applications, subscriptions, and moderation are not caches. Store UTC; apply KST only where policy says so. Do not add indexes the ERD does not justify.
-Unique constraints to enforce from the ERD: provider identity, username, active team member, one team per installation, `(repo_id, issue_number)`, one post per author and repo, reactions and follows, `dm_key`, `client_message_id`, webhook delivery id, payment order, one ad per recruiter. Accept of the last seat is a conditional update in one transaction. Messages dedup on `client_message_id + sender_id`. Ads store daily aggregates only; Redis counters roll into `ad_daily_stats`. Per-viewer impressions are not a table.
-Outside the database: Redis for limits, ad counters, and a 1-hour README cache; device drafts (7 days, not on the server); image bytes in object storage; encrypted GitHub tokens deleted on withdrawal. Draft retention, still subject to legal review: 30-day withdrawal grace; posts removed from the service immediately; team chat kept while the team exists, withdrawn author shown as a deleted user; DMs removed after both leave; reports about 1 year; payments follow a statutory period after review; AI results 7 days unless shared as a chat card. Banned-GitHub-id duration `[N years]` is unresolved.
-## 6. HTTP API
-WBS paths stay `/api/v1/{role}/{resources}`. `webhook` is an external ingress, not a person. The prefix does not grant access.
+- `[현재]` production.conf는 /api/v1을 Spring으로 직접 전달한다. 브라우저는 같은 origin을 사용하며 서버 요청은 API_INTERNAL_URL을 사용할 수 있다. 인증이 필요한 서버 요청은 현재 요청의 쿠키를 명시적으로 전달한다.
+- `[미정]` BFF 도입은 별도 결정이다. 도입하더라도 HTTP·쿠키 전달 계층이며 DB·업무 규칙을 소유하지 않는다. WBS의 Spring API 계약을 자동 변경하지 않는다.
+- `[현재]` compose.prod.yml은 DB·Redis·backend·web의 호스트 포트를 제거하고 proxy만 loopback 3004에 공개한다. main 배포 workflow는 CI → GHCR 이미지 → SSH 적용을 구성한다. dev 변경은 자동 운영 배포가 아니다.
+- PostgreSQL은 영속 원본, Redis는 제한·큐·캐시·카운터다. Redis만으로 결제·채팅·알림의 영속 사실을 보장하지 않는다. 단일 서버 STOMP에 Redis 세션 분산이 이미 구현됐다고 가정하지 않는다.
+- 파일 바이트는 ObjectStorage, 메타데이터는 uploaded_files에 둔다. 업체·리전·법률상 처리자 범위는 별도 결정한다.
+- 실행·배포·원격 DB 접속은 [Setup](../operations/01-setup.md)·[Docker](../operations/02-docker.md)·[배포](../operations/03-deployment.md)·[자동 배포](../operations/04-automatic-deployment.md), scripts/remote_db.py를 따른다. 시크릿·개인 키·실제 비밀번호는 문서/로그에 쓰지 않는다.
 
-| Role | Rule |
-|---|---|
-| `public` | `permitAll` plus optional auth. Guest read limit 60/min per IP. |
-| `user` | `authenticated`. Developer-only writes use `@DeveloperOnly`. |
-| `recruiter` | `RECRUITER` account state. |
-| `admin` | `admins` row, OTP, lead vs operator where the WBS says so. |
-| `webhook` | GitHub signature, no session. |
-`/api/v1/user/teams/{teamId}/...` uses `@TeamRole(MEMBER\|ADMIN\|OWNER)`. PRO/FLEX vs SCOUT is checked in the subscription service. Lists use `?cursor=&size=20` → `{items, nextCursor}`. Success is the body, 201 on create, 202 when async. Errors are `{code, message, detail}`: `LOGIN_REQUIRED`, `UNAUTHORIZED`, `DEVELOPER_ONLY`, `TEAM_ROLE_REQUIRED`, `BLOCKED_RELATION`, `RATE_LIMITED`, `PLAN_LIMIT`, `GITHUB_UNAVAILABLE`, `GITHUB_PERMISSION`, `SUSPENDED`. Do not invent per-route status codes the WBS does not give. A borrowed endpoint stays on its owning controller and `@Tag`.
-Representative paths, not the full contract: `GET /api/v1/user/me`, `POST /api/v1/public/auth/refresh`, `POST /api/v1/user/uploads`, `GET /api/v1/public/users/{login}`, `/api/v1/user/teams/{teamId}/issues`, `/api/v1/user/chat-rooms/{roomId}/messages`, `GET /api/v1/public/feed`, `POST /api/v1/user/payments/confirm`, `GET /api/v1/recruiter/offers`, `POST /api/v1/recruiter/chat-requests`, `POST /api/v1/webhook/github`.
-## 7. Behavior
-**Auth.** Developers: GitHub OAuth with PKCE, one-time `state`, allowlisted `returnTo`. Recruiters: company-domain code (no free-mail providers), BCrypt password, reset codes hashed, short TTL, no account enumeration. `user_sessions` are the refresh sessions; 30-day sliding persistence is the policy draft. Access-token lifetime, rotation, reuse detection, and host-only vs parent-domain cookie are `[Unresolved]`. Frontend proposes `HttpOnly; Secure; SameSite=Lax` and claims `sub`, `typ`, `adm`, `onb`, `st`. Check order: session, account state, user type, team role, resource owner, GitHub permission, entitlement. `proxy.ts` does not replace Spring. Suspended users may only log in, view, appeal, or withdraw as policy allows. CSRF or a strict Origin check covers cookie writes. Encrypt GitHub tokens. Operators see report snapshots (10 messages of context), not arbitrary chats, and every sensitive read is audited.
-**GitHub.** App installation tokens and user tokens are separate. Webhooks (`issues`, `pull_request`, `projects_v2_item`, `organization`, `installation`) are signature-checked, stored by delivery id, and processed on `async.webhook`. Re-query the installation from GitHub; do not trust the callback payload. Issues are created on GitHub first; `issue_sync_jobs` records the follow-up Projects steps. Stale events lose to a newer `updated_at`. App removal follows POL-T-3 (read-only, then archive after 30 days). Personal Projects are out of scope. Issue attachments are Linker file links, not a GitHub upload. PR chat events are opened, review requested, merged, and closed only. Screen reads use the cache. Projects v2 date and Blocked fields are a D1–D2 spike, still `[Unresolved]`.
-**Chat and notifications.** PostgreSQL is the source of truth; STOMP only delivers. Persist, then broadcast. Reconnect fills gaps with REST. Block periods stay after unblock and hide DMs (team chat is exempt). Direct chat is immediate for mutual follows or the same team; otherwise it is a request with a 30-day expiry. Recruiter offers use `RECRUITING`. Edits and deletes last 24 hours. `NotificationService` writes the in-app row; push is async, Android only for MVP, and quiet hours apply to non-chat alerts. An outbox table is a `[Proposal]`, not an ERD table. Flex AI summary is on demand, excludes deleted, hidden, image, and blocked messages, returns 202 when slow, keeps the result 7 days for the requester, and shares it only as an explicit card. `LlmClient` hides the model. Do not send chat text to an external model until the provider is chosen, and do not auto-create issues from a summary.
-**Subscription and ads.** Free, Pro, Flex, and Scout. The plans response is `Cache-Control: private, no-store` because trial eligibility is personal. The server sets price and owner; Toss confirm rechecks amount; entitlement flips once. Test mode and no real charges are `[Confirmed]`. Trial, billing key, and monthly renewal versus a one-time charge plus expiry are `[Unresolved]`. Prices in policy are mostly tentative. Recruiter email-domain check is not corporate verification. Offers require job status `OPEN` or `OFFERS_ONLY` and do not reveal contact details. One ad per recruiter, shown only to logged-in developers with a matching interest. The feed item has no URL; the click API returns it. `ad_daily_stats` is a daily aggregate.
-**Files.** Presign → direct upload → complete. Check type and size, sniff MIME, resize the long edge to 2,048px, strip EXIF, and keep GIF to the first frame. Public files and chat files use different access rules. Storage vendor, region, and backup purge are `[Unresolved]`.
-**Privacy.** Record consent version and time in `user_agreements`; optional consent does not block basic use. Do not store card numbers. Report evidence is the reported message plus limited context. Withdrawal, chat retention, processors, and cross-border transfer stay in Section 10 until legal review.
-**Transactions.** Accept-application, message send, issue-sync job row, webhook delivery insert, Toss payment plus subscription, upload completion, and an admin action plus its audit row each commit in one DB transaction. External calls follow. Idempotency keys and unique constraints cover retries.
-**Jobs** (ERD Section 6; confirm cron and timezone before coding): webhook consume and backfill, `issue_sync_jobs` retry, progress snapshots at 00:00 KST, push delivery, subscription and offer expiry, content and account purge, sanction expiry, daily ad aggregation, AI-summary purge after 7 days. Jobs must be safe to rerun.
-## 8. Implementation order
-Follow the WBS page order. Five people and two weeks are planning assumptions. New classes use Section 4. Settle BFF and cookie behavior before page work. Included features do not block the P0 path. Order: 00 foundation → 01–06 account → 07–10 teams → 11–15 issues → 16–18 chat → 19–21 recruit → 22–24 posts → 25–27 moderation → 28–30 payments → 31–33 recruiters and the 04/05/17/24 surfaces they share.
-Tests prove the WBS contract: 401/403 by role, team role, optional-auth public reads, OAuth state, accept and webhook races, STOMP ACL, entitlement, and withdrawal of tokens. Sandbox checks of GitHub and Toss are separate from unit tests. Do not require tests for features excluded from the MVP.
-Deploy checks, still open: host, domain, region, TLS, webhook URLs, `/ws` upgrade and sticky sessions, backups, secrets, migration rollback, and redaction. Sentry is a candidate, not a decision. Keep Toss test keys off production.
-## 9. Checks
-40 controllers, 205 REST endpoints, 5 realtime paths, 69 tables. Packages in Section 4. HTTP paths, permissions, `@Tag`, and STOMP destinations unchanged.
-## 10. Unresolved
+## 4. Java 패키지와 클래스 책임
 
-| Item | Still open |
-|---|---|
-| Launch gate | MVP demo wants Scout ads and some Included items; WBS defers Included first. Decide H-5/H-7–9, C-5, T-7, share cards, S-4–10. |
-| BFF | Frontend calls Spring directly. Adopting `/api/bff` changes cookies, CORS, and Orval. |
-| Sessions | httpOnly cookie and 30-day refresh are set. JWT vs opaque, rotation, and cookie domain are not. |
-| GitHub Projects | Start/due/Blocked fields, free-org limits, and reinstall after app removal. |
-| Toss | Test mode is set. Trial and billing-key renewal vs one-time charge plus expiry is not. Prices are mostly tentative. |
-| Retention | Team-chat vs withdrawal, DM purge, report evidence, banned GitHub id `[N years]`, payment statutory period. |
-| Processors | Host, email, storage, analytics, error, and AI vendors, regions, and transfer basis. |
-| Ads | Redis counter loss and whether a reported ad is refunded. No per-viewer rows. |
-| Files | Object-storage vendor, region, and who proxies large bodies. |
-| Stats formulas | Completion rate denominator; what counts as a profile view. |
-| AI | Ollama capacity vs an external model, training use, and the notice text. |
-Realtime paths and the 204-endpoint total are resolved in the WBS. Do not reopen them when moving packages.
+기본 패키지는 **com.linker.backend**, Gradle group은 기존 com.linker를 유지한다. 디렉터리와 HTTP 역할 prefix는 별개다.
+
+### 4-1. 계층
+
+| 계층 | 책임 | 금지 |
+| --- | --- | --- |
+| controller | HTTP 입력 검증·권한 선언·서비스 호출·응답 조립 | 비즈니스 규칙·직접 쿼리·Entity 응답 |
+| service | 업무 규칙·유스케이스·트랜잭션·공유 동작 | Servlet 종속·역할/화면별 동일 규칙 복제 |
+| repository | Entity 저장·조회·필요한 projection | 권한·요금제 결정·같은 테이블의 역할별 저장소 |
+| entity | ERD의 영속 상태·관계·enum·상태 변경 | API JSON 계약으로 직접 사용 |
+| dto | 입력·출력 계약, 공통 커서 형태 | JPA Entity·컨트롤러 옆의 DTO 배치 |
+| integration | GitHub·PG·메일·푸시·스토리지·AI 어댑터 | 외부 응답을 검증 없이 업무 상태로 확정 |
+| async | 커밋 이후 전달·소비·배치 진입점 | 컨트롤러 호출·업무 규칙의 별도 복제 |
+| global | 설정·보안·JPA 공통·오류 | 기능별 서비스의 잡동사니 저장소 |
+
+### 4-2. 목표 트리
+
+아래 서비스·DTO는 대표 예시다. 필요한 기능과 함께 추가하며 빈 클래스·디렉터리를 일괄 생성하지 않는다.
+
+```text
+com.linker.backend
+├─ BackendApplication
+├─ controller
+│  ├─ open          CatalogController, LegalController, SitemapController
+│  ├─ user          UploadController, IssueController, NotificationController,
+│  │                ModerationController, StatsController
+│  ├─ admin         AdminController
+│  └─ multi         AuthController, AccountController, GithubController,
+│                   TeamController, ChatController, RecruitmentController,
+│                   PostController, SubscriptionController, RecruiterAdController
+├─ service
+│  ├─ auth          SessionService, GithubLoginService, RecruiterAuthService
+│  ├─ account       AccountService, AgreementService, RecruiterAccountService
+│  ├─ profile       ProfileService, FollowService, StatsService
+│  ├─ catalog       CatalogService
+│  ├─ legal         LegalDocumentService
+│  ├─ file          UploadService, ImageInspector
+│  ├─ github        GithubInstallationService, GithubWebhookService, PullRequestService
+│  ├─ team          TeamService, TeamMembershipService, InviteService, CompletionService
+│  ├─ issue         IssueService, IssueSyncService, ProgressService
+│  ├─ chat          ChatRoomService, ChatMessageService, ChatReadService,
+│  │                ChatRequestService, ChatShareService, ChatSummaryService
+│  ├─ notification  NotificationService, NotificationDeliverySchedule
+│  ├─ recruit       RecruitPostService, ApplicationService
+│  ├─ post          PostService, CommentService
+│  ├─ feed          FeedService
+│  ├─ moderation    ReportService, BlockService, SanctionService, AppealService, AuditService
+│  ├─ subscription  SubscriptionService, PaymentService, EntitlementService
+│  ├─ recruiter     RecruiterAdService
+│  └─ sitemap       SitemapService, SitemapSource
+├─ repository       account/, profile/, team/, issue/, chat/, notification/,
+│                   recruit/, post/, moderation/, subscription/, recruiter/, file/, github/
+├─ entity           위와 같은 업무별 하위 패키지: 테이블 책임별 Entity·enum, 역할별 복제 없음
+├─ dto              common/, auth/, account/, profile/, catalog/, legal/, file/,
+│                   github/, team/, issue/, chat/, notification/, recruit/,
+│                   post/, moderation/, admin/, subscription/, stats/, recruiter/, sitemap/
+├─ integration      github/, payment/, mail/, push/, storage/, ai/
+├─ async            webhook/, schedule/, notification/
+└─ global
+   ├─ config        AppConfig, PlanLimits, LinkerProperties
+   ├─ error         ApiException, ApiErrorBody, GlobalExceptionHandler, ErrorResponseWriter
+   ├─ security      SecurityConfig, CurrentUser, AuthenticatedUser, SessionCookies,
+   │                SessionAuthenticationFilter, DeveloperOnly, TeamRole,
+   │                RateLimit, RedisRateLimiter, OriginCheckFilter, ...
+   └─ jpa           BaseTimeEntity
+```
+
+- controller.open은 HTTP public 그룹의 Java 배치명이다. **public은 Java 예약어**이므로 패키지명으로 사용하지 않는다. open 패키지에 있다고 인증이 해제되는 것은 아니다.
+- controller.multi는 public/user/recruiter/admin 또는 user/webhook처럼 호출 경계가 섞인 시스템이다. 권한은 메서드와 보안 필터가 결정한다. 고정된 controller.common 7개 규칙은 폐지한다.
+- 세부 Repository·Entity 배치는 기존 ERD/Blueprint의 데이터 책임을 유지한다. 컨트롤러를 합쳐도 UserRepository를 시스템별로 복사하지 않는다. 다중 테이블 조회는 DTO projection·공유 조회 서비스를 사용할 수 있다.
+- DTO는 dto/{업무}/request와 response를 사용한다. 단순 응답만 있는 catalog/legal/sitemap은 해당 dto 하위에 둘 수 있다. 내부 명령 타입은 service의 해당 업무에 둔다.
+- global.error를 유지한다. global.exception·global.response·service.support·번호 페이지 패키지·계층이 섞인 domain·api.common을 새로 만들지 않는다.
+- 리소스는 application.yml·db/migration/·필요 시 legal/, 테스트는 src/test/java 아래 동일 패키지를 따른다.
+
+### 4-3. 컨트롤러 대응과 협업
+
+| 컨트롤러 | 패키지 | 시스템 주담당 | REST | 대표 서비스 |
+| --- | --- | --- | ---: | --- |
+| AuthController | multi | A | 13 | Session·GithubLogin·RecruiterAuth |
+| AccountController | multi | A | 18 | Account·Agreement·Profile·Follow |
+| CatalogController | open | A | 2 | Catalog |
+| LegalController | open | A | 2 | LegalDocument |
+| UploadController | user | E | 2 | Upload |
+| GithubController | multi | B | 5 | Installation·Webhook·PullRequest |
+| TeamController | multi | B | 29 | Team·Membership·Invite·Completion |
+| IssueController | user | C | 22 | Issue·IssueSync·Progress |
+| ChatController | multi | D | 27 | Room·Message·Read·Request·Share·Summary |
+| NotificationController | user | D | 7 | Notification |
+| RecruitmentController | multi | E | 17 | RecruitPost·Application |
+| PostController | multi | E | 21 | Post·Comment·Feed |
+| ModerationController | user | E | 5 | Report·Block·Appeal |
+| AdminController | admin | A | 13 | Report·Sanction·Appeal·Audit·Auth |
+| SubscriptionController | multi | D | 11 | Subscription·Payment·Entitlement |
+| StatsController | user | B | 3 | Stats·Entitlement |
+| RecruiterAdController | multi | A | 7 | RecruiterAd·Entitlement |
+| SitemapController | open | B | 1 | Sitemap |
+| 합계 | | | 205 | |
+
+WBS의 메서드 구현자와 시스템 주담당은 다르다. A의 보낸 제안 API는 ChatController, D의 이슈 카드 조회는 IssueController, D의 이의 제기 접수는 ModerationController에 구현한다. B는 운영 회원/감사와 운영 환불, C는 내 이슈·AI를 맡는다. 주담당은 해당 계약을 검토하며 기존 페이지 업무를 전부 인수하지 않는다.
+
+## 5. HTTP·보안·OpenAPI·STOMP
+
+### 5-1. HTTP와 권한
+
+전체 계약은 [WBS §4](02-wbs.md#4-시스템별-작업과-rest-계약)의 **205개**다. 경로·메서드·쿼리·동작·권한은 보존하며 반환 필드를 임의로 추가하지 않는다.
+
+| 호출자 | 기본 기준 | 추가 확인 |
+| --- | --- | --- |
+| public | 비로그인 허용·선택적 인증 | 회원 필드·차단·공개 가능 여부, 게스트 제한 |
+| user | 로그인 회원 | 개발자 전용 동작·회원 상태·대상 소유권 |
+| recruiter | RECRUITER 회원 | 제안 자격·차단·구직 상태·Scout 한도 |
+| admin | 개발자 + admins + 운영 인증 | 리드 권한·재심자 분리·민감 열람 사유/감사 |
+| webhook | GitHub 서명 | delivery 중복·설치/이벤트 유효성, 세션 인증으로 대체 금지 |
+
+팀 권한·방 참가자·작성자·GitHub repo write·요금제는 독립 조건이다. 메서드별로 모두 확인한다. 혼합 클래스는 /api/v1에서 시작하고 메서드에 역할 prefix를 둔다. 서비스에서도 중요한 리소스 조건을 검증한다.
+
+응답: wrapper 없는 본문, 생성 201·비동기 202·커서 {items, nextCursor}. 실패는 global.error의 {code, message, detail}. LOGIN_REQUIRED·DEVELOPER_ONLY·TEAM_ROLE_REQUIRED·BLOCKED_RELATION·RATE_LIMITED·PLAN_LIMIT·GITHUB_UNAVAILABLE 등 기존 오류 코드와 문구를 유지한다.
+
+개인화 요금제는 Cache-Control: private, no-store. 프론트 서버 no-store와 계정별 쿼리를 함께 적용한다. public 경로의 선택적 인증 응답도 회원별 필드가 있으면 공개 캐시에 혼합하지 않는다.
+
+### 5-2. 세션·회원 상태
+
+- `[기준]` 토큰은 httpOnly 쿠키로 전달하고 JavaScript·네이티브 브리지·로그에 노출하지 않는다. 인증 정보는 사용자별 요청에서만 전파한다.
+- `[현재]` SessionService는 랜덤 토큰 원문을 쿠키로, 해시를 user_sessions에 저장한다. 운영 OTP 시각과 admins 여부를 권한 판정에 사용한다.
+- `[목표 차이]` 기존 AGENTS·프론트 문서는 JWT·라우팅 claims·부모 도메인 쿠키를 목표로 한다. 현재 구현은 JWT가 아니며 cookie domain은 설정값이다. JWT 도입·claims·회전·기존 세션 전환은 별도 구현 과제다. 이 문서로 opaque 세션을 최종 채택하지 않는다.
+- 세션 기간·정지/탈퇴 상태·복구는 Policy를 따른다. proxy.ts는 UX 가드이며 서버 권한 확인을 대체하지 않는다. 운영 기능의 존재 숨김·404 등 화면 정책도 유지한다.
+- 쿠키 기반 쓰기는 Origin/CSRF 방어가 필요하다. 현재 enforce-origin 기본 false는 운영 준비 완료를 뜻하지 않는다. 신뢰 프록시·허용 origin·Secure·domain은 실행 환경과 함께 설정한다.
+- GitHub 로그인 state·returnTo·토큰, 회사 이메일 코드/비밀번호 재설정·실패 제한은 기존 WBS·Policy를 따른다. 가입 시 외부 토큰과 비밀번호는 암호화/해시로 구분해 저장한다.
+
+### 5-3. OpenAPI
+
+컨트롤러 클래스 통합과 문서 태그는 별개다. 기존 p00-common·pNN-page 태그를 **원래 API 소속 페이지에 따라 메서드별로** 유지한다. operationId·DTO·생성 클라이언트도 보존한다. 모든 페이지 태그를 통합 클래스에 붙여 Orval 출력을 중복시키지 않는다. 실제 태그가 없는 메서드는 기존 프론트 page slug에 맞춰 추가한다.
+
+### 5-4. 실시간
+
+| 구분 | 경로 | 책임 |
+| --- | --- | --- |
+| 연결 | /ws | WebSocket 설정·쿠키 인증 |
+| SEND | /app/chat-rooms/{roomId}/messages | ChatController @MessageMapping |
+| SUBSCRIBE | /topic/chat-rooms/{roomId} | 메시지·편집·삭제·읽음 |
+| SUBSCRIBE | /user/queue/chat-rooms | 목록·미확인 요약 |
+| SUBSCRIBE | /user/queue/notifications | 개인 알림·배지 |
+
+연결뿐 아니라 SEND·SUBSCRIBE 때도 참여 자격과 개인 채널 소유권을 확인한다. 메시지는 DB 저장 후 커밋된 사실을 발행하며 재연결은 REST로 누락을 보충한다. STOMP는 메시지 영속 원본이 아니다. /api/v1 prefix나 별도 티켓 API를 추가하지 않는다.
+
+## 6. 데이터·서비스·외부 연동
+
+### 6-1. 데이터 기준
+
+기존 ERD의 **필수 56 + 포함 13 = 69개 테이블**을 사용한다. bigint identity, timestamptz, 문자열 enum, BaseTimeEntity 공통 시각을 유지한다. visibility와 deleted_at은 분리하고 GitHub 캐시는 외부 ID·updated_at 기준으로 갱신한다. 화면/역할에 따른 같은 데이터의 중복 Entity·테이블을 만들지 않는다.
+
+V1은 이미 존재하는 기반이다. 적용된 SQL을 재작성하거나 DB를 초기화하지 않는다. 스키마 변경은 ERD·WBS 참조·추가 마이그레이션을 함께 관리한다. 현재 ddl-auto=validate·Flyway 사용을 유지한다. DB 밖의 작성 초안·Redis 캐시·파일 바이트는 ERD가 정한 위치를 따른다.
+
+### 6-2. 트랜잭션과 재시도
+
+- 모집 수락은 지원 상태·정원·팀 멤버·채팅 참가자·인앱 알림의 한 업무 단위다. Team/Chat/Notification 서비스를 재사용하고 마지막 자리의 경쟁을 제어한다. GitHub 초대는 기존 별도 API다.
+- 메시지 저장과 관련 상태, 신고와 증거, 운영 조치와 감사, 승인 결과와 구독 혜택은 각각 일관된 DB 단위로 처리한다. client_message_id+sender_id, delivery_id, order_id/payment_key 등 기존 중복 방지 키를 사용한다.
+- PG·GitHub·푸시·객체 저장소 호출을 DB 트랜잭션에 원자적으로 포함됐다고 가정하지 않는다. 필요한 요청 상태를 저장하고 외부 결과를 확인한 뒤 DB에 반영한다. 외부 성공·DB 실패나 응답 유실을 재조회·멱등 처리로 복구한다.
+- 알림·웹훅·동기화의 영속 상태와 Redis 신호를 구분한다. 새 outbox 테이블은 기존 ERD에 없으므로 이 문서에서 자동 도입하지 않는다. 추가가 필요하면 별도 데이터 모델 변경으로 다룬다.
+
+### 6-3. 기능별 기준
+
+| 영역 | 유지할 핵심 규칙 |
+| --- | --- |
+| GitHub | App 설치 토큰과 사용자 토큰 분리. 설치 반환 검증·웹훅 서명/중복·주기 동기화·최신 updated_at 우선. PR 채팅은 opened/review requested/merged/closed |
+| 팀·초대 | 실제 팀 권한과 org owner 구분. 초대 notify는 TEAM_INVITE와 /invite/{code}. 인앱/외부 초대는 같은 코드와 랜딩 사용 |
+| 이슈 | 생성/변경의 GitHub 권한, issue_sync_jobs로 후속 작업 상태. 보드·캘린더는 이슈 데이터 재사용. 내 이슈는 소속 팀 하나로 제한 |
+| 채팅 | 팀/개인 요청, 발신자+client_message_id 중복 방지, 동일 방 읽음 포인터. 차단 기간 DM은 해제 후에도 표시 규칙 유지, 팀 채팅 예외. 수정·삭제 조건은 각각 Policy 기준 |
+| 알림 | NotificationService.create가 인앱 생성 진입점. 업무의 알림 행과 전달 시각·읽음·푸시 상태 구분. 푸시 끄기는 인앱 기록 제거가 아님. 조용한 시간·Android 범위 유지 |
+| AI | 요청자만 조회, Flex·팀 설정·범위/개수·보존 한도 확인. 숨김/삭제/사진/차단 대상 제외. 공유는 명시적 카드, 자동 이슈 생성 금지. 모델 선정 전 외부 전송 금지 |
+| 구독 | 서버 금액·계정 종류·결제 대상 검증 후 승인/혜택 적용. 단건+만료 기반과 체험·갱신 포함 범위를 구분. 해지·환불·유예·기존 콘텐츠 유지 기준은 Policy |
+| 광고 | Scout·관심 직군·하루 빈도·허용 URL·숨김/차단/만료 확인. 일별 합계만 저장하며 열람자 식별 목록 제공 금지 |
+| 파일 | 발급→업로드→완료, 소유권·형식/MIME·용량·EXIF·리사이즈 확인. GIF 미리보기와 재생 정책 준수. 공개 파일과 채팅 파일의 접근 권한 구분 |
+| 신고·운영 | 신고 당시 원문과 앞뒤 각 10개 이내 증거. 운영자에게 임의 대화 조회 권한 부여 금지. 제재·재심·민감 열람은 사유와 감사 기록 유지 |
+| 개인정보 | 동의 버전·시각, 탈퇴 익명화·토큰 폐기, 목적별 보존 기준. 카드번호·비밀번호·토큰·메일 주소·메시지 본문을 로그에 남기지 않음 |
+
+### 6-4. 배치
+
+웹훅 소비/누락 보완, 이슈 동기화 재시도, 진행 스냅샷, 알림/푸시 전달, 구독·요청·광고 만료, 계정/콘텐츠 정리, 제재 만료, 일별 광고 집계, AI 만료는 async 아래에 진입점을 둔다. 업무 서비스·기존 상태를 재사용하고 중복 실행 가능성을 고려한다. 주기·시간대·기간은 ERD와 Policy를 따른다.
+
+## 7. 기반 코드 정리 결과와 후속 구현
+
+기반 코드의 아래 이동을 반영했다. 향후 추가 기능은 §4의 동일 계층 규칙을 따른다.
+
+| 이전 위치·기능 | 현재 위치 |
+| --- | --- |
+| api.common.auth.AuthSessionController | controller.multi.AuthController에 기반 세션 API 통합 |
+| api.common.tag.TechTagController | controller.open.CatalogController |
+| api.common.upload.UploadController | controller.user.UploadController |
+| api.common.report.ReportController, block.BlockController | controller.user.ModerationController |
+| api.common.webhook.GithubWebhookController | controller.multi.GithubController의 서명 검증 진입점 |
+| api.common.sitemap.SitemapController | controller.open.SitemapController |
+| domain.account의 세션/온보딩 서비스 | service.auth / service.account |
+| domain.account.Notification·알림 서비스/보조 타입 | entity.notification / service.notification |
+| domain.account의 회원/인증 Entity·Repository | entity.account / repository.account |
+| TechTag·JobCategory·관련 Repository | entity.profile / repository.profile |
+| Admin·AdminRole·관련 Repository | entity.moderation / repository.moderation |
+| domain.file/github/moderation/sitemap | service·entity·repository·dto의 같은 업무별 위치 |
+| 요청/응답·BlockView·SitemapItem | dto의 해당 업무별 위치 |
+| integration·async·global.error/security/config/jpa | 유지, 변경된 import·주입·테스트만 연결 |
+
+1. 기존 12개 HTTP 경로·응답·권한과 12개 Entity의 JPA 매핑을 유지했다. 아직 없는 기능은 담당 일정에 맞춰 새 구조에 구현한다.
+2. 기반 컨트롤러·DTO·서비스·Entity·Repository·관련 테스트를 이동했다. CatalogService를 통해 목록을 조회하고, SQL 삽입 보조 컴포넌트는 repository.moderation에 둔다. 같은 경로를 이전/새 컨트롤러에 중복 등록하지 않는다.
+3. 진행 중인 NotificationService·RateLimit 변경을 보존하고 import·주입·테스트를 새 패키지에 맞췄다. Notification 생성 팩터리는 서비스 계층에서 호출할 수 있게 공개했다. 기능 정리와 무관한 로직 변경은 섞지 않는다.
+4. WBS의 페이지 담당·시스템 검토·205개 계약을 유지한다. 패키지 이동으로 DB 테이블명·컬럼명·Flyway 이력을 바꾸지 않는다.
+
+## 8. 확인 범위와 미확정 항목
+
+문서 정합성은 18개 HTTP 컨트롤러·205개 REST·5개 실시간 경로·69개 테이블 기준이다. 코드 이행 시 기존 빌드와 필요한 HTTP 권한·업무 트랜잭션·STOMP 접근·중복 처리 검사를 적용한다. 아직 없는 기능의 완료를 문서 수량으로 판단하지 않는다.
+
+| 항목 | 남은 결정·차이 |
+| --- | --- |
+| 출시 범위 | Included지만 데모에 필요한 채용 담당자·광고·AI·공유 등의 출시 조건 합의 |
+| 세션 | JWT 문서 목표와 현재 랜덤 토큰 구현의 차이, 회전·수명·claims·쿠키 설정 |
+| BFF | 예약 경로 이후 실제 도입 여부와 쿠키/서버 요청/Orval 변경 |
+| 외부 연동 | GitHub Projects 필드·권한/재설치. Toss confirm/cancel HTTP 클라이언트(`integration.payment`) 스파이크 있음. 구독 테이블·checkout REST·체험/갱신 범위는 page 28–29 |
+| 처리자·AI·스토리지 | 업체·리전·모델·용량·전송/보존 조건. 기존 예시에 나온 업체를 자동 채택하지 않음 |
+| 개인정보·환불 | 미확정 보존 기간·혜택 사용 증빙과 법률 초안의 확정 절차 |
+| 운영 | 현재 구성이 있는 것과 실제 운영 설정/백업/복구/인증 준비가 완료된 것은 구분 |
+
+추가 기능·업체·스키마 변경은 관련 기준 문서부터 합의한다. 외부에서 관리하는 한국어 원본에는 이번 시스템별 컨트롤러와 구현 기준 변경을 함께 반영한다.

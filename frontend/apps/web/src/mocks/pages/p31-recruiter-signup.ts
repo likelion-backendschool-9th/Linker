@@ -1,7 +1,7 @@
 import { fail, post, type MockRoute } from '../core/define';
 
 /**
- * 31 Recruiter sign-up: `RecruiterSignupController`. Email code is always `123456`.
+ * 31 Recruiter sign-up: `AuthController`. Email code is always `123456`.
  * Try `someone@gmail.com` (free domain) and `taken@nextlab.example` (already registered).
  */
 

@@ -46,7 +46,7 @@ type SessionClaims = {
 export async function readCookieViewer(token: string | undefined): Promise<CookieViewer> {
   if (USE_MOCKS) return { kind: 'viewer', viewer: viewerFromMockRole(parseMockRole(token)) };
   if (!token) return { kind: 'viewer', viewer: GUEST };
-  // Opaque session (current AuthSessionController). Layouts resolve the member with GET /me.
+  // Opaque session (current AuthController). Layouts resolve the member with GET /me.
   const key = publicKey();
   if (!isCompactJwt(token) || !key) return { kind: 'opaque' };
   try {

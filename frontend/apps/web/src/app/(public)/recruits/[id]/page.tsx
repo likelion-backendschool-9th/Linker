@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps<'/recruits/[id]'>):
   });
 }
 
-/** 21 Recruit post detail (07 TODO 21, `RecruitDetailController`) */
+/** 21 Recruit post detail (07 TODO 21, `RecruitmentController`) */
 export default async function RecruitDetailPage({ params }: PageProps<'/recruits/[id]'>) {
   const { id } = await params;
   const { recruit } = await loadRecruit(id);

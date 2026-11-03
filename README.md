@@ -46,7 +46,7 @@ flowchart LR
 - Docker Compose·Nginx 실행 구성과 CI가 있으며, 운영 문서에 `main` 기반 첫 자동 배포 성공과 외부 HTTPS 확인이 기록돼 있습니다. `dev → main` 병합이 실제 배포를 시작하며, 후속 변경도 [자동 배포 가이드](docs/operations/04-automatic-deployment.md)에 따라 확인합니다.
 - AI 요약·진행 현황 등 `[Included]` 항목은 핵심 `[Required]` 기능 이후에 진행합니다. 외부 제공자·AI 모델 등 미확정 항목은 구현 전에 팀에서 결정합니다.
 
-전체 기획 범위는 [MVP 정의](docs/planning/03-mvp-definition.md), 페이지별 완료 조건은 [페이지 TODO](docs/planning/07-page-todo.md)를 참고하세요. WBS의 **33개 페이지·40개 컨트롤러·204개 REST 엔드포인트·69개 테이블**은 설계 규모이며 현재 구현 완료 수가 아닙니다.
+전체 기획 범위는 [MVP 정의](docs/planning/03-mvp-definition.md), 페이지별 완료 조건은 [페이지 TODO](docs/planning/07-page-todo.md)를 참고하세요. WBS의 **33개 페이지·18개 시스템 컨트롤러·205개 REST 엔드포인트·69개 테이블**은 설계 규모이며 현재 구현 완료 수가 아닙니다.
 
 ## 팀 구성과 담당 범위
 

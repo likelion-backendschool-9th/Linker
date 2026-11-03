@@ -9,7 +9,7 @@ import { brief, DEVELOPERS, findUserById } from '../fixtures/users';
 import { POSTS } from '../fixtures/posts';
 import { RECRUITS } from '../fixtures/recruits';
 
-/** 00 Common foundation: AuthSession, TechTag, Upload, Report, Block (WBS ch. 3) */
+/** 00 foundation mocks: Auth / Catalog / Upload / Moderation (+ Github webhook / Sitemap as added) */
 
 // Blocked user ids for the logged-in user; starts with one so the settings list isn't empty
 const blockedIds = new Set<number>([7]);

@@ -19,7 +19,7 @@ type TabHeaderProps = {
   role: Role;
   /** Member's GitHub login, for the desktop profile link. Null for guests. */
   login?: string | null;
-  /** Shows the unread dot on the desktop 알람 button (18 NotificationController). */
+  /** Shows the unread dot on the desktop 알람 button (NotificationController). */
   hasUnread?: boolean;
 };
 

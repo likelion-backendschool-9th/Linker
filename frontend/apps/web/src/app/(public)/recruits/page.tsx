@@ -16,7 +16,7 @@ import {
 
 export const metadata = buildMetadata({ title: '팀 찾기', path: '/recruits', indexable: true });
 
-/** 19 Recruit post list (07 TODO 19, `RecruitListController`) */
+/** 19 Recruit post list (07 TODO 19, RecruitmentController) */
 export default async function RecruitsPage({ searchParams }: PageProps<'/recruits'>) {
   const [session, query] = await Promise.all([getSession(), searchParams]);
   const { tab, ...filters } = loadRecruitParams(query);

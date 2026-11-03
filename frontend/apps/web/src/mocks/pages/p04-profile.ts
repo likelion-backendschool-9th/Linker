@@ -14,7 +14,7 @@ import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 import { ALL_USERS, brief, findUser, ME, type MockUser } from '../fixtures/users';
 import { isBlocked } from './p00-common';
 
-/** 04 Profile: `ProfileController` (+ recruiter job ad, `[Included]`) */
+/** 04 Profile: `AccountController` (+ recruiter job ad, `[Included]`) */
 
 const following = new Set<number>([2, 4]);
 let pinnedPostIds: number[] = [1];

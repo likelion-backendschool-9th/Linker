@@ -13,7 +13,7 @@ import { parseIssueView } from './_lib/issue-view';
 // No team name in the title: team pages are private (frontend AGENTS.md "SEO and privacy")
 export const metadata = buildMetadata({ title: '이슈' });
 
-/** 11 Issue list (07 TODO 11, `IssueListController`) */
+/** 11 Issue list (07 TODO 11, IssueController) */
 export default async function IssueListPage({
   params,
   searchParams,

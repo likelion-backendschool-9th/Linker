@@ -15,7 +15,7 @@ import {
 import type { MockViewer } from '../core/viewer';
 import { emit } from '../realtime-bus';
 
-/** 18 Notifications: `NotificationController` */
+/** 18 Notifications: `NotificationController` (+ appeal on ModerationController) */
 
 type Notification = {
   id: number;

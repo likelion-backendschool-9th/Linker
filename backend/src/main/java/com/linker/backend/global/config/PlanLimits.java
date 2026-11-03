@@ -1,10 +1,14 @@
 package com.linker.backend.global.config;
 
+import java.time.ZoneId;
+
 /**
- * Policy numbers used by the common foundation. Prices and plan benefits stay with later steps.
- * Safety caps that are not in the policy are named separately at the call site.
+ * Policy numbers used by the common foundation and D chat/notification/subscription contracts.
+ * Safety caps not in the policy are named at the call site.
  */
 public final class PlanLimits {
+
+	public static final ZoneId APP_ZONE = ZoneId.of("Asia/Seoul");
 
 	public static final int IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 	public static final int IMAGE_LONG_SIDE = 2048;
@@ -17,6 +21,51 @@ public final class PlanLimits {
 	/** Reject decoded images larger than this on either side before they are resized. */
 	public static final int IMAGE_MAX_SOURCE_SIDE = 8_192;
 
+	/** Policy ch. 2 / ch. 8 — chat send rate and message shape. */
+	public static final int CHAT_SENDS_PER_SECOND = 5;
+	public static final int CHAT_MESSAGE_MAX_CHARS = 2_000;
+	public static final int CHAT_IMAGES_PER_SEND = 10;
+	public static final int CHAT_EDIT_WITHIN_HOURS = 24;
+	public static final int CHAT_OFFER_MESSAGE_MAX_CHARS = 1_000;
+	public static final int CHAT_CATCH_UP_MAX = 500;
+	public static final int CHAT_AUTO_RETRIES = 3;
+
+	/** Policy ch. 11 — free team history window (Flex = unlimited). */
+	public static final int TEAM_CHAT_HISTORY_DAYS_FREE = 60;
+
+	/** Policy ch. 11 — recruiting offer daily caps. */
+	public static final int RECRUITING_OFFERS_PER_DAY_FREE = 10;
+	public static final int RECRUITING_OFFERS_PER_DAY_SCOUT = 50;
+
+	/** Policy ch. 11 — Flex AI summary daily cap per person (KST). */
+	public static final int AI_SUMMARY_PER_DAY_FLEX = 10;
+
+	/** POL-N-1 quiet hours (KST). Non-chat held from start hour until end hour. */
+	public static final int QUIET_HOURS_START_HOUR = 22;
+	public static final int QUIET_HOURS_END_HOUR = 8;
+	/** Marketing opt-in notifications use a tighter evening start. */
+	public static final int MARKETING_QUIET_HOURS_START_HOUR = 21;
+
+	/** Policy ch. 11 / To-be-decided — tentative KRW prices (server is source of truth). */
+	public static final int PRO_MONTHLY_KRW = 2_900;
+	public static final int FLEX_BASE_MONTHLY_KRW = 7_900;
+	public static final int FLEX_EXTRA_SEAT_KRW = 1_900;
+	public static final int FLEX_INCLUDED_SEATS = 6;
+	public static final int SCOUT_MONTHLY_KRW = 14_900;
+	public static final int SUBSCRIPTION_TRIAL_DAYS = 7;
+	public static final int PAYMENT_REFUND_WITHIN_DAYS = 7;
+	public static final int PAYMENT_FAILURE_GRACE_DAYS = 7;
+	public static final int FLEX_POST_EXPIRY_GRACE_DAYS = 30;
+
 	private PlanLimits() {
+	}
+
+	/** Flex monthly amount for headcount on the billing date (no mid-period pro-rate). */
+	public static int flexMonthlyAmount(int seats) {
+		if (seats < 1) {
+			throw new IllegalArgumentException("seats must be >= 1");
+		}
+		int extra = Math.max(0, seats - FLEX_INCLUDED_SEATS);
+		return FLEX_BASE_MONTHLY_KRW + (extra * FLEX_EXTRA_SEAT_KRW);
 	}
 }

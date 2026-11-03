@@ -2,7 +2,7 @@ import { del, fail, get, paginate, post, type MockRoute } from '../core/define';
 import { findRoom, lastMessage, ROOMS, UNREAD, type MockRoom } from '../fixtures/chat';
 import { isRecruiterRoom } from './p33-recruiter-offers';
 
-/** 16 Chat list: `ChatListController`. Recruiters see only the rooms from their offers (04 ch. 2). */
+/** 16 Chat list: `ChatController`. Recruiters see only the rooms from their offers (04 ch. 2). */
 
 const mineFor = (role: string) =>
   ROOMS.filter((room) =>

@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import type { RecruiterAd } from '../../_components/recruiter-ad-card/ad-api';
 
-/** Provisional WBS 24 `FeedController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 24 PostController (feed) contract; replace with Orval types when OpenAPI is available. */
 export type FeedPost = {
   id: number;
   author: {
