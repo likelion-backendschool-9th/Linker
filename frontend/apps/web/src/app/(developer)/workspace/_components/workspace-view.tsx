@@ -16,7 +16,6 @@ import styles from '@/features/teams/team-ui.module.css';
 import { TEAM } from '@/lib/policy';
 import { collaborationLinks } from '@/lib/navigation/collaboration-links';
 
-import { MyIssueList } from '../issues/_components/my-issue-list';
 import { myTeamsOptions } from '../../teams/[id]/_lib/team-queries';
 
 const FILTERS = ['all', 'ACTIVE', 'COMPLETED', 'READ_ONLY', 'ARCHIVED'] as const;
@@ -37,7 +36,7 @@ export function WorkspaceView() {
       >
         <div className={styles.heading}>
           <h2 id="workspace-issues-title" className={styles.title}>
-            오늘 확인할 일
+            내 이슈
           </h2>
           <Button asChild variant="outline">
             <Link href={collaborationLinks.myIssues}>
@@ -46,8 +45,9 @@ export function WorkspaceView() {
             </Link>
           </Button>
         </div>
-        <p className={styles.description}>오늘 마감인 이슈만 보여요. 전체 배정 이슈는 전체 보기에서 확인해요.</p>
-        <MyIssueList due="today" />
+        <p className={styles.description}>
+          모든 팀에서 나에게 배정된 이슈를 마감일 순으로 확인해요.
+        </p>
       </section>
       <div className={styles.actions}>
         <Button asChild variant="soft">

@@ -102,15 +102,6 @@ export const ISSUES: MockIssue[] = [
     startDate: dateOnly(1),
     dueDate: dateOnly(5),
   }),
-  issue(1, 11, 'linker-web', {
-    number: 19,
-    title: '워크스페이스 오늘 마감 카드',
-    status: 'IN_PROGRESS',
-    assignees: [me],
-    labels: [label('feature')],
-    startDate: dateOnly(-1),
-    dueDate: dateOnly(0),
-  }),
   issue(1, 12, 'linker-api', {
     number: 7,
     title: 'JWT 쿠키 발급 및 갱신',
