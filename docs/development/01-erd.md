@@ -1343,7 +1343,7 @@ Used when planning backend batch tasks in the WBS.
 
 ## 7. MVP build order and tables
 
-The same table list is split two ways. 7-1 is for milestones; 7-2 is for the WBS where one page = one task.
+The same table list is split two ways. 7-1 is for milestones; 7-2 is for WBS page work and shows the page that first needs each table, not table ownership.
 
 ### 7-1. By bundle (MVP Definition)
 
@@ -1368,13 +1368,13 @@ Reports, blocking and notifications are called by screens before bundles 6–7, 
 
 ### 7-2. By page (07 TODO)
 
-Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New tables** are first needed on that page, so their entity, repository and migration are created there; each of the 69 appears exactly once. **Shared tables** were already created on an earlier page. "(after NN)" means the table is created on a later page, so that feature is wired up then.
+Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New tables** are first needed on that page, so their migration is first added there; each of the 69 appears exactly once. Entities and repositories still go in the shared business packages of the [backend blueprint §4](05-backend-blueprint.md#4-java-패키지와-클래스-책임), not in per-page copies. **Shared tables** were already created on an earlier page. "(after NN)" means the table is created on a later page, so that feature is wired up then.
 
 | # | Page | New tables | Shared tables |
 | --- | --- | --- | --- |
-| 00 | Common foundation | users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks (blocking periods), report_cases, reports, github_webhook_deliveries, admins (seed) | — |
+| 00 | Common foundation | users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks (blocking periods), report_cases, reports, github_webhook_deliveries, admins (seed), tech_tags (seed) | — |
 | 01 | Start & login | banned_github_ids | users, auth_identities, github_tokens, user_sessions |
-| 02 | Onboarding | user_agreements, tech_tags (seed), user_tech_tags | users |
+| 02 | Onboarding | user_agreements, user_tech_tags | users, tech_tags |
 | 03 | Legal documents | None (static docs) | — |
 | 04 | Profile | follows, 🟡 contribution_days, 🟡 username_redirects, 🟡 pinned_posts (2nd pass), 🟡 profile_visits (2nd pass), 🟡 recruiter_ads (recruiter side, after 31 and 28) | users, user_tech_tags, user_blocks, notifications, completion_records (after 09), posts (after 22), team_members (after 08), recruiter_profiles (after 31), subscriptions (after 28) |
 | 05 | Profile edit | 🟡 user_job_categories | users, user_tech_tags, tech_tags, recruiter_profiles (after 31) |

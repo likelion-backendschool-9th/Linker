@@ -252,7 +252,7 @@
 | 00 | B | POST | `/api/v1/webhook/github` | Verify signature → save `github_webhook_deliveries` → Redis queue | webhook |
 | 08 | B | GET | `/api/v1/user/team-setup/install-url` | GitHub App install URL + `state` | user · developers only |
 | 08 | B | POST | `/api/v1/user/team-setup/installations/verify` | Don't trust the return values; verify via `GET /user/installations` → installed / requested from owner / org already linked | user · developers only |
-| 09 | B | POST | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation` | GitHub org invite (org owner only, daily limit error) | team MEMBER + org owner |
+| 09 | B | POST | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation` | GitHub org invite (team owner who is also a GitHub org owner, daily limit error) | team OWNER + org owner |
 | 17 | B | GET | `/api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR sheet (open, merged) | team MEMBER |
 
 ### 4-7. 팀·초대·완주 — `TeamController`
@@ -596,7 +596,7 @@ B의 PR 자동 게시와 C의 AI 공유는 Chat 서비스를 사용한다. 목�
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Borrowed: `GET /api/v1/public/tech-tags`, `GET /api/v1/public/legal-documents/{slug}` (03)
-- Tables: new user_agreements, tech_tags (seed), user_tech_tags · shared users
+- Tables: new user_agreements, user_tech_tags · shared users, tech_tags (seed, created in 00)
 - [ ] Server: store GitHub verified email (not shown), tech stack seed
 - [ ] Frontend: stepped (terms → profile), resume where left off, tech stack sheet (max 10), job-seeking status picker component (reused in 05)
 

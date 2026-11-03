@@ -351,7 +351,7 @@ Required permissions and webhooks are in [PRD ch. 8](02-prd.md#8-github-integrat
 
 | Area | Choice | Reason |
 | --- | --- | --- |
-| Monorepo | pnpm + Turborepo | Frontend only (backend is a separate Gradle repo) |
+| Monorepo | pnpm + Turborepo | Frontend only (`frontend/`); the backend is a Gradle project in `backend/` of the same repository |
 | Web | Next.js (App Router) | Profile/post share links, desktop browser support |
 | App shell | React Native (Expo) WebView | One web UI; native only for push, login, photo picking |
 | Server state | TanStack Query | Server data cache |
