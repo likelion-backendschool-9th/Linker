@@ -747,9 +747,9 @@ erDiagram
   notifications {
     bigint id PK
     bigint user_id FK
-    varchar notification_type "CHAT, ISSUE_ASSIGNED, DUE_SOON, APPLICATION, ..."
+    varchar notification_type "CHAT, ISSUE_ASSIGNED, DUE_SOON, APPLICATION, TEAM_INVITE, ..."
     bigint actor_id FK "nullable"
-    varchar target_type "POST, COMMENT, ISSUE, ROOM, APPLICATION, ..."
+    varchar target_type "POST, COMMENT, ISSUE, ROOM, APPLICATION, INVITE, ..."
     bigint target_id
     varchar link_path "screen to open on tap"
     jsonb payload "display text inputs"
@@ -1382,7 +1382,7 @@ Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New
 | 07 | Workspace home | None | teams, team_members (after 08), issues, issue_assignees (after 11) |
 | 08 | Create team | github_installations, github_repos, teams, team_members, team_repos, team_project_boards, board_status_mappings, chat_rooms, chat_room_members | github_tokens, github_webhook_deliveries |
 | 09 | Team settings & members | team_invite_links, github_org_invitations, team_completions, completion_records, team_ownership_transfers | teams, team_members, team_repos, github_repos, team_project_boards, board_status_mappings, chat_room_members, notifications, subscriptions (after 28) |
-| 10 | Accept invite | None | team_invite_links, teams, team_members, chat_room_members |
+| 10 | Accept invite | None | team_invite_links, teams, team_members, chat_room_members, notifications (TEAM_INVITE from 09) |
 | 11 | Issue list | issues, issue_assignees, issue_labels, 🟡 team_progress_snapshots | subscriptions (after 28), teams, team_repos, github_repos, board_status_mappings, github_webhook_deliveries |
 | 12 | Issue detail | issue_sync_jobs | issues, issue_assignees, issue_labels, team_members, notifications |
 | 13 | Create issue | None | issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens |

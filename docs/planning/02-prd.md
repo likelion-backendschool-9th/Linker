@@ -134,7 +134,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | ID | Requirement | Completion condition | Problem | Phase | Priority |
 | --- | --- | --- | --- | --- | --- |
 | T-1 | Create team | Choose org on the GitHub App install screen; after install and return, server verifies installation and creates the team. Guide to GitHub's create-org if there's no org | PP-1 | 1 | P0 |
-| T-2 | Invite members | Linker invite link; owner also sends GitHub org invite at the same time | PP-1, PP-2 | 1 | P0 |
+| T-2 | Invite members | Linker invite link for external join (`/invite/[code]`); logged-in developers can also get a team-invite notification that opens the same URL; owner may send GitHub org invite at the same time | PP-1, PP-2 | 1 | P0 |
 | T-3 | Choose repos to link | Choose among repos where the app is installed | PP-1 | 1 | P0 |
 | T-4 | Mark project complete | Reflected in members' completion records; prompt to post the project | PP-2, PP-3 | 1 | P0 |
 | T-5 | Commit activity | See per-member commit/PR activity in team repos on the team screen | PP-1 | 2 | P2 |
@@ -162,7 +162,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | C-2 | Share issue cards | Send issues as cards in chat, tap to open detail; turn a message into an issue | PP-1 | 1 | P1 |
 | C-3 | Auto-post PRs | PR opened / review requested / merged posted as system messages in team chat; PR list tab | PP-1 | 1 | P0 |
 | C-4 | 1:1 chat | Start from profile/post; message-request box unless mutual follow or same team; block/report. A recruiter's first message appears in requests as "Recruiting offer" (H-3) | PP-3 | 1 | P0 |
-| N-1 | Push notifications | Chat, assignment, 1 day before due, application/accept, comments/follows. Tap to open the relevant screen. In-app notification list plus Android app push (iOS excluded because it needs a paid Apple developer account). Push on/off in settings | Common | 1 | P0 |
+| N-1 | Push notifications | Chat, assignment, 1 day before due, application/accept, comments/follows, team invite (opens `/invite/[code]`). Tap to open the relevant screen. In-app notification list plus Android app push (iOS excluded because it needs a paid Apple developer account). Push on/off in settings | Common | 1 | P0 |
 | C-5 | AI chat summary (minutes) | **Flex teams only** (including the 7-day free trial). A button in the team chat room summarizes messages since last read into minutes (one-line summary, decisions, to-dos, open questions); "Share to chat" posts to the team; to-dos become issues after review. Free teams see a Flex prompt | PP-1 | 1 | P1 |
 | C-7 | Linker link card | If a chat message contains a Linker post, recruit post or profile URL, show it as a card read from the server DB (same look as cards sent via P-7) instead of an external OG preview. Deletion, hiding, blocks and private state are reflected immediately. Shown without the mutual-follow condition in 1:1 chat | PP-3 | 1 | P1 |
 | N-2 | Detailed notification settings & web push | Per-type settings, browser push | Common | 2 | P2 |
