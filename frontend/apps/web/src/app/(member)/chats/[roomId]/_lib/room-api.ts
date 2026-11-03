@@ -98,3 +98,17 @@ export function mergeCatchUpHistory(
     pageParams: [null],
   };
 }
+
+export function editMessage(roomId: number, messageId: number, text: string) {
+  return apiFetch<RoomMessage>(`/api/v1/user/chat-rooms/${roomId}/messages/${messageId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+}
+
+export function deleteMessage(roomId: number, messageId: number) {
+  return apiFetch<void>(`/api/v1/user/chat-rooms/${roomId}/messages/${messageId}`, {
+    method: 'DELETE',
+  });
+}

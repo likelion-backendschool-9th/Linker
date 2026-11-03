@@ -15,6 +15,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { chatKeys, unreadSummaryOptions } from '@/features/chat/chat-queries';
 import { useViewer } from '@/lib/auth/viewer-context';
+import { useOverlay } from '@/lib/navigation/use-overlay';
 import { CHAT } from '@/lib/policy';
 import { useStompConnectionState, useStompSubscription } from '@/lib/realtime/use-stomp';
 
@@ -32,6 +33,7 @@ import {
 } from '../_lib/room-api';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
+import { MessageActions } from './message-actions';
 import { MessageTimeline } from './message-timeline';
 import { RoomInfoSheet } from './room-info-sheet';
 import { PullRequestSheet } from './pull-request-sheet';
@@ -46,6 +48,7 @@ const CONNECTION = {
 
 export function ChatRoom({ roomId }: { roomId: number }) {
   const viewer = useViewer();
+  const messageMenu = useOverlay('chat-message');
   const client = useQueryClient();
   const info = useQuery(roomInfoOptions(viewer.login, roomId));
   const history = useInfiniteQuery(messagesOptions(viewer.login, roomId));
@@ -208,12 +211,14 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         messages={messages}
         login={viewer.login}
         readPosition={readPosition}
+        onMenu={(id) => messageMenu.open(String(id))}
         onRead={(id) => {
           if (id <= lastSeen.current || suspended) return;
           lastSeen.current = id;
           read.mutate(id);
         }}
       />
+      <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />
       {read.isError && (
         <div role="alert">
           <p>읽음 상태를 저장하지 못했어요.</p>

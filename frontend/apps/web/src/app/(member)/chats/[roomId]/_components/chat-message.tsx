@@ -1,4 +1,7 @@
+import { Button } from '@/components/ui/button';
+
 import Image from 'next/image';
+import { MoreHorizontal } from 'lucide-react';
 
 import { RelativeTime } from '@/components/ui/relative-time';
 
@@ -6,9 +9,9 @@ import type { RoomMessage } from '../_lib/room-api';
 import styles from './chat-room.module.css';
 import { PrEventCard } from './pr-event-card';
 
-type Props = { message: RoomMessage; mine: boolean };
+type Props = { message: RoomMessage; mine: boolean; onMenu?: (id: number) => void };
 
-export function ChatMessage({ message, mine }: Props) {
+export function ChatMessage({ message, mine, onMenu }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const hidden = message.visibility === 'HIDDEN' || message.visibility === 'UNDER_REVIEW';
   return (
@@ -66,6 +69,11 @@ export function ChatMessage({ message, mine }: Props) {
         <RelativeTime value={message.createdAt} />
         {message.editedAt && !message.deletedAt && ' · 수정됨'}
       </p>
+      {!system && !hidden && !message.deletedAt && onMenu && (
+        <Button variant="soft" aria-label={`${message.sender?.name ?? '탈퇴한 사용자'} 메시지 메뉴`} onClick={() => onMenu(message.id)}>
+          <MoreHorizontal aria-hidden />
+        </Button>
+      )}
     </article>
   );
 }
