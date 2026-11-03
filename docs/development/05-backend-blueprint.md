@@ -25,7 +25,7 @@
 | HTTP | Auth·Catalog·Upload·Moderation·Github·Sitemap 6개 컨트롤러, 기존 12개 REST. 신고·차단 통합 | WBS의 18개 시스템으로 확장. 205개는 전체 설계 계약이며 구현 수가 아님 |
 | DB | V1__step0_foundation.sql에 12개 테이블 생성 정의 | ERD 69개와 구분. 서버 적용 여부는 이 문서에서 확인하지 않음 |
 | 세션 | 랜덤 비밀 토큰 쿠키, DB에는 SHA-256 해시. SessionService/SessionAuthenticationFilter 사용 | 문서상 JWT 목표와 차이가 있음. 토큰 전환 없이 JWT 구현 완료로 표시하지 않음 |
-| STOMP·OpenAPI | 현재 build.gradle에 WebSocket/STOMP·springdoc 의존성 없음 | 해당 기능 구현 시 Boot 호환 의존성·인증/구독 규칙·태그 적용 필요 |
+| STOMP·OpenAPI | WebSocket/STOMP 의존성·`/ws` 쿠키 핸드셰이크·SEND/SUBSCRIBE 가드 골격 있음. springdoc 없음 | OpenAPI 태그는 HTTP 컨트롤러 추가 시 적용. 채팅 영속·브로드캐스트는 page 16–17 |
 | 파일 | ObjectStorage 인터페이스와 local/unconfigured 구현 | 객체 저장소 업체 미정. 로컬 구현이 원격 presign과 동일하다고 가정하지 않음 |
 | 알림·제한 | NotificationService·RateLimit 관련 작업이 워킹트리에 있음 | 기존 작업을 보존. 미커밋 코드를 공용 브랜치 완료 상태로 표시하지 않음 |
 | 운영 구성 | Compose·Nginx·main 배포 workflow와 운영 문서 존재 | §3 및 운영 문서 사용. 실제 서버 상태를 새로 확인한 결과는 아님 |
@@ -40,7 +40,7 @@
   → Compose proxy(127.0.0.1:3004)
       ├─ /              → Next.js web:3000
       ├─ /api/v1/       → Spring backend:8080
-      ├─ /ws            → Spring WebSocket/STOMP 업그레이드(구현 대상)
+      ├─ /ws            → Spring WebSocket/STOMP 업그레이드(쿠키 인증 골격)
       └─ /api/bff/      → Next.js(예약 경로, BFF 구현 완료 아님)
 Spring → PostgreSQL / Redis / 외부 연동 어댑터
 ```
