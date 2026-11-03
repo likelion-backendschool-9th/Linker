@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-
 import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import styles from './chat-room.module.css';
 
@@ -21,8 +19,8 @@ export function MessageReadStatus({ message, kind, mine, onUnread }: Props) {
     return mine ? <p className={styles.meta}>{message.unreadCount === 0 ? '읽음' : '안 읽음'}</p> : null;
   }
   return message.unreadCount > 0 ? (
-    <Button variant="soft" aria-label={`안 읽은 사람 ${message.unreadCount}명`} onClick={() => onUnread?.(message.id)}>
-      안 읽음 {message.unreadCount}명
-    </Button>
-  ) : <p className={styles.meta}>모두 읽음</p>;
+    <button type="button" className={styles.unreadCount} aria-label={`안 읽은 사람 ${message.unreadCount}명`} onClick={() => onUnread?.(message.id)}>
+      {message.unreadCount}
+    </button>
+  ) : null;
 }
