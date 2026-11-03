@@ -23,6 +23,7 @@ describe('SessionClaimSync', () => {
     refresh.mockReset();
     vi.mocked(apiFetch).mockReset();
     vi.mocked(useRouter).mockReturnValue({
+      bfcacheId: 'test',
       push: vi.fn(),
       replace: vi.fn(),
       back: vi.fn(),
