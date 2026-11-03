@@ -18,6 +18,7 @@ export const OVERLAY_KEYS = [
   'recruiter-offer-message',
   'admin-report-action',
   'chat-info',
+  'chat-photo',
   'chat-message',
   'chat-message-edit',
   'chat-message-delete',

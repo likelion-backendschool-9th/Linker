@@ -9,9 +9,9 @@ import type { RoomMessage } from '../_lib/room-api';
 import styles from './chat-room.module.css';
 import { PrEventCard } from './pr-event-card';
 
-type Props = { message: RoomMessage; mine: boolean; onMenu?: (id: number) => void };
+type Props = { message: RoomMessage; mine: boolean; onPhoto?: (id: number, index: number) => void; onMenu?: (id: number) => void };
 
-export function ChatMessage({ message, mine, onMenu }: Props) {
+export function ChatMessage({ message, mine, onMenu, onPhoto }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const hidden = message.visibility === 'HIDDEN' || message.visibility === 'UNDER_REVIEW';
   return (
@@ -40,14 +40,20 @@ export function ChatMessage({ message, mine, onMenu }: Props) {
             {!!message.imageUrls.length && (
               <div className={styles.images}>
                 {message.imageUrls.map((url, index) => (
-                  <div className={styles.image} key={`${url}-${index}`}>
+                  <button
+                    type="button"
+                    className={`${styles.image} ${styles.imageButton}`}
+                    key={`${url}-${index}`}
+                    aria-label={`채팅 이미지 ${index + 1} 크게 보기`}
+                    onClick={() => onPhoto?.(message.id, index)}
+                  >
                     <Image
                       src={url}
                       alt={`채팅 이미지 ${index + 1}`}
                       fill
                       sizes="(max-width: 600px) 50vw, 320px"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

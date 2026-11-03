@@ -1,4 +1,5 @@
 import { MOCK_ROLE_COOKIE, parseMockRole } from '@/lib/auth/mock-viewer';
+import { UPLOADED_IMAGES } from './fixtures/uploads';
 import { CHAT } from '@/lib/policy';
 import { countChars } from '@/lib/format/text';
 import { buildViewer } from './core/viewer';
@@ -23,13 +24,16 @@ export function publish(destination: string, body: unknown): boolean {
   const match = SEND.exec(destination);
   if (!match) return false;
   const roomId = Number(match[1]);
-  const payload = body as { clientMessageId?: string; text?: string; imageUrls?: string[] };
+  const payload = body as { clientMessageId?: string; text?: string; fileIds?: string[] };
   const cookie = document.cookie.match(new RegExp(`(?:^|; )${MOCK_ROLE_COOKIE}=([^;]*)`));
   const viewer = buildViewer(parseMockRole(cookie?.[1]));
   const room = findRoom(String(roomId));
   if (!viewer.me || !room || room.kind === 'REQUEST') return false;
   if (room.teamId && findTeam(room.teamId)?.status !== 'ACTIVE') return false;
-  if (!payload.text?.trim() || countChars(payload.text) > CHAT.messageMax) return false;
+  const fileIds = payload.fileIds ?? [];
+  if (!Array.isArray(fileIds) || fileIds.length > CHAT.imagesPerSend ||
+    fileIds.some((id) => !UPLOADED_IMAGES.has(id))) return false;
+  if ((!payload.text?.trim() && !fileIds.length) || countChars(payload.text ?? '') > CHAT.messageMax) return false;
   const existing =
     payload.clientMessageId &&
     MESSAGES.find(
@@ -45,9 +49,9 @@ export function publish(destination: string, body: unknown): boolean {
     roomId,
     sender: brief(viewer.me),
     clientMessageId: payload.clientMessageId,
-    type: payload.imageUrls?.length ? 'IMAGE' : 'TEXT',
+    type: fileIds.length ? 'IMAGE' : 'TEXT',
     text: payload.text ?? null,
-    imageUrls: payload.imageUrls ?? [],
+    imageUrls: fileIds.map((id) => UPLOADED_IMAGES.get(id)!),
     payload: null,
     createdAt: new Date().toISOString(),
     editedAt: null,

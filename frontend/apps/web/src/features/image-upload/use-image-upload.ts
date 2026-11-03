@@ -81,7 +81,8 @@ export function useImageUpload(max: number, { initial = [], onOverflow }: ImageU
         progress: 0,
       });
     }
-    setItems((current) => [...current, ...accepted]);
+    itemsRef.current = [...itemsRef.current, ...accepted];
+    setItems(itemsRef.current);
     accepted.forEach((item) => start(item.key, item.file!));
   }
 
@@ -93,7 +94,8 @@ export function useImageUpload(max: number, { initial = [], onOverflow }: ImageU
   function remove(key: string) {
     const item = itemsRef.current.find((candidate) => candidate.key === key);
     if (item?.file) URL.revokeObjectURL(item.previewUrl);
-    setItems((current) => current.filter((candidate) => candidate.key !== key));
+    itemsRef.current = itemsRef.current.filter((candidate) => candidate.key !== key);
+    setItems(itemsRef.current);
   }
 
   /** Button alternative to dragging (blueprint §6-5): -1 = 앞으로, +1 = 뒤로. The first is the cover. */
@@ -111,7 +113,8 @@ export function useImageUpload(max: number, { initial = [], onOverflow }: ImageU
   /** Replace everything with already uploaded photos (restoring a draft) */
   function reset(images: UploadedImage[]) {
     itemsRef.current.forEach((item) => item.file && URL.revokeObjectURL(item.previewUrl));
-    setItems(images.map(fromUploaded));
+    itemsRef.current = images.map(fromUploaded);
+    setItems(itemsRef.current);
   }
 
   useEffect(

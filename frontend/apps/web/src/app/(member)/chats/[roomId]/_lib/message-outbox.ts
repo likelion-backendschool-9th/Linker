@@ -1,8 +1,11 @@
+import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { CHAT } from '@/lib/policy';
 
 export type PendingMessage = {
   clientMessageId: string;
   text: string;
+  /** Optional for compatibility with text-only drafts saved before image support. */
+  images?: UploadedImage[];
   createdAt: string;
   status: 'queued' | 'sending' | 'failed';
 };
