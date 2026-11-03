@@ -1,4 +1,4 @@
-const clients: Array<{
+type MockClient = {
   connected: boolean;
   active: boolean;
   onConnect?: () => void;
@@ -6,7 +6,15 @@ const clients: Array<{
   publish: ReturnType<typeof vi.fn>;
   activate: ReturnType<typeof vi.fn>;
   deactivate: ReturnType<typeof vi.fn>;
-}> = [];
+};
+
+const clients: MockClient[] = [];
+
+function latestClient(): MockClient {
+  const client = clients.at(-1);
+  expect(client).toBeDefined();
+  return client!;
+}
 
 vi.mock('@stomp/stompjs', () => ({
   Client: class {
@@ -28,7 +36,7 @@ vi.mock('@stomp/stompjs', () => ({
       this.connected = false;
     });
     constructor() {
-      clients.push(this as (typeof clients)[number]);
+      clients.push(this as MockClient);
     }
   },
 }));
@@ -60,12 +68,13 @@ it('subscribes when connected and removes the registry entry on cleanup', async 
   const unsubscribe = subscribe({ destination: '/topic/chat-rooms/1', onMessage });
   await flushConnect();
 
+  const client = latestClient();
   expect(getConnectionState()).toBe('connected');
   expect(clients).toHaveLength(1);
-  expect(clients[0].subscribe).toHaveBeenCalledTimes(1);
-  expect(clients[0].subscribe).toHaveBeenCalledWith('/topic/chat-rooms/1', expect.any(Function));
+  expect(client.subscribe).toHaveBeenCalledTimes(1);
+  expect(client.subscribe).toHaveBeenCalledWith('/topic/chat-rooms/1', expect.any(Function));
 
-  const sub = clients[0].subscribe.mock.results[0]?.value as { unsubscribe: ReturnType<typeof vi.fn> };
+  const sub = client.subscribe.mock.results[0]?.value as { unsubscribe: ReturnType<typeof vi.fn> };
   unsubscribe();
   expect(sub.unsubscribe).toHaveBeenCalled();
 });
@@ -77,7 +86,7 @@ it('publishes only while connected', async () => {
   subscribe({ destination: '/topic/chat-rooms/1', onMessage: vi.fn() });
   await flushConnect();
   expect(publish('/app/chat-rooms/1/messages', { text: 'hi' })).toBe(true);
-  expect(clients[0].publish).toHaveBeenCalledWith({
+  expect(latestClient().publish).toHaveBeenCalledWith({
     destination: '/app/chat-rooms/1/messages',
     body: JSON.stringify({ text: 'hi' }),
   });
@@ -96,11 +105,12 @@ it('resubscribes and calls onResubscribe after reconnect', async () => {
   });
   await flushConnect();
 
-  expect(clients[0].subscribe).toHaveBeenCalledTimes(1);
+  const client = latestClient();
+  expect(client.subscribe).toHaveBeenCalledTimes(1);
   expect(onResubscribe).not.toHaveBeenCalled();
 
-  clients[0].onConnect?.();
-  expect(clients[0].subscribe).toHaveBeenCalledTimes(2);
+  client.onConnect?.();
+  expect(client.subscribe).toHaveBeenCalledTimes(2);
   expect(onResubscribe).toHaveBeenCalledTimes(1);
 });
 
@@ -110,9 +120,10 @@ it('disconnect clears state to idle so the next subscribe opens a new client', a
   await flushConnect();
   expect(getConnectionState()).toBe('connected');
 
+  const first = latestClient();
   await disconnect();
   expect(getConnectionState()).toBe('idle');
-  expect(clients[0].deactivate).toHaveBeenCalled();
+  expect(first.deactivate).toHaveBeenCalled();
 
   subscribe({ destination: '/topic/chat-rooms/2', onMessage: vi.fn() });
   await flushConnect();

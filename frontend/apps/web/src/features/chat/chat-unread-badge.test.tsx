@@ -7,7 +7,13 @@ import { ViewerProvider } from '@/lib/auth/viewer-context';
 import { ChatUnreadBadge } from './chat-unread-badge';
 import { chatKeys } from './chat-queries';
 
-const subscribe = vi.fn(() => vi.fn());
+type SubscribeEntry = {
+  destination: string;
+  onMessage: () => void;
+  onResubscribe?: () => void;
+};
+
+const subscribe = vi.fn<(entry: SubscribeEntry) => void>();
 
 vi.mock('@/lib/realtime/use-stomp', () => ({
   useStompSubscription: (
@@ -59,10 +65,8 @@ it('does not subscribe for guests', () => {
 
 it('invalidates the whole chat account cache on message and resubscribe', () => {
   const { invalidate } = renderBadge('yunsu');
-  const entry = subscribe.mock.calls[0]?.[0] as {
-    onMessage: () => void;
-    onResubscribe?: () => void;
-  };
+  expect(subscribe).toHaveBeenCalled();
+  const entry = subscribe.mock.calls[0]![0];
 
   act(() => entry.onMessage());
   act(() => entry.onResubscribe?.());

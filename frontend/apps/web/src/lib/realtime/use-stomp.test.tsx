@@ -2,10 +2,16 @@ import { act, renderHook } from '@testing-library/react';
 
 import { useStompSubscription } from './use-stomp';
 
-const subscribe = vi.fn(() => vi.fn());
+type SubscribeEntry = {
+  destination: string;
+  onMessage: (body: unknown) => void;
+  onResubscribe?: () => void;
+};
+
+const subscribe = vi.fn<(entry: SubscribeEntry) => () => void>();
 
 vi.mock('./stomp-client', () => ({
-  subscribe: (...args: unknown[]) => subscribe(...args),
+  subscribe: (entry: SubscribeEntry) => subscribe(entry),
   getConnectionState: () => 'idle' as const,
   onConnectionStateChange: () => () => {},
 }));
@@ -43,7 +49,8 @@ it('forwards onResubscribe from the registry callback', () => {
   const onResubscribe = vi.fn();
   renderHook(() => useStompSubscription('/topic/a', vi.fn(), { onResubscribe }));
 
-  const entry = subscribe.mock.calls[0]?.[0] as { onResubscribe?: () => void };
+  expect(subscribe).toHaveBeenCalled();
+  const entry = subscribe.mock.calls[0]![0];
   act(() => entry.onResubscribe?.());
   expect(onResubscribe).toHaveBeenCalledTimes(1);
 });
