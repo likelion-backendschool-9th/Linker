@@ -1,8 +1,11 @@
-import { mergeCatchUpHistory, orderedMessages, type RoomMessage } from './room-api';
+import { QueryClient } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/api/api-fetch';
+
+import { messagesOptions, messagesKey, mergeCatchUpHistory, orderedMessages, type RoomMessage } from './room-api';
 
 const message = (id: number, text: string): RoomMessage => ({
   id,
-  roomId: 1,
+  roomId: 1, unreadCount: 0,
   sender: null,
   type: 'TEXT',
   text,
@@ -36,4 +39,19 @@ it('keeps the read anchor and all 501 missed messages with the oldest history cu
   expect(result.pages[0]!.items[0]!.id).toBe(10);
   expect(result.pages[0]!.items.at(-1)!.id).toBe(511);
   expect(result.pages[0]!.hasMore).toBe(true);
+});
+
+vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
+it('keeps a large catch-up batch and its last-read anchor when read metadata is refreshed', async () => {
+  const client = new QueryClient();
+  const items = Array.from({ length: 501 }, (_, index) => message(index + 10, '대화'));
+  client.setQueryData(messagesKey('me', 1), { pages: [{ items, hasMore: true }], pageParams: [null] });
+  vi.mocked(apiFetch).mockResolvedValue({ items: items.map((item) => ({ ...item, unreadCount: 1 })), hasMore: false });
+  const result = await client.fetchInfiniteQuery(messagesOptions('me', 1));
+  expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/chat-rooms/1/messages?after=9', expect.anything());
+  expect(result.pages[0]!.items).toHaveLength(501);
+  expect(result.pages[0]!.items[0]!.id).toBe(10);
+  expect(result.pages[0]!.items[0]!.unreadCount).toBe(1);
+  expect(result.pages[0]!.hasMore).toBe(true);
+  client.clear();
 });

@@ -1,3 +1,4 @@
+import { recordRead, withReadState } from './fixtures/chat-reads';
 import { MOCK_ROLE_COOKIE, parseMockRole } from '@/lib/auth/mock-viewer';
 import { UPLOADED_IMAGES } from './fixtures/uploads';
 import { CHAT } from '@/lib/policy';
@@ -41,7 +42,7 @@ export function publish(destination: string, body: unknown): boolean {
         item.clientMessageId === payload.clientMessageId && item.sender?.id === viewer.me!.id,
     );
   if (existing) {
-    emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: existing });
+    emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: withReadState(existing) });
     return true;
   }
   const message: MockMessage = {
@@ -58,7 +59,7 @@ export function publish(destination: string, body: unknown): boolean {
     deletedAt: null,
   };
   MESSAGES.push(message);
-  emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message });
+  emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: withReadState(message) });
   emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId });
 
   // A teammate answers a moment later so the receive path is easy to see
@@ -66,7 +67,7 @@ export function publish(destination: string, body: unknown): boolean {
     const reply: MockMessage = {
       id: nextMessageId(),
       roomId,
-      sender: { ...brief(ME), id: 2, login: 'doyun-lee', name: '이도윤' },
+      sender: room.counterpart ?? { ...brief(ME), id: 2, login: 'doyun-lee', name: '이도윤' },
       type: 'TEXT',
       text: '확인했어요!',
       imageUrls: [],
@@ -77,7 +78,9 @@ export function publish(destination: string, body: unknown): boolean {
     };
     MESSAGES.push(reply);
     UNREAD[roomId] = (UNREAD[roomId] ?? 0) + 1;
-    emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: reply });
+    recordRead(roomId, reply.sender!.id, message.id);
+    emit(`/topic/chat-rooms/${roomId}`, { event: 'READ', roomId });
+    emit(`/topic/chat-rooms/${roomId}`, { event: 'MESSAGE', message: withReadState(reply) });
     emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId });
     addChatNotification(viewer, roomId, room.title, `이도윤: ${reply.text}`);
   }, 1200);

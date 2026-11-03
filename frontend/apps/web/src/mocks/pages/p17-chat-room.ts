@@ -1,3 +1,4 @@
+import { recordRead, unreadMembers, withReadState } from '../fixtures/chat-reads';
 import { messageActions } from '@/app/(member)/chats/[roomId]/_lib/message-actions';
 import { countChars, normalizeLineBreaks } from '@/lib/format/text';
 import { CHAT, PLAN_LIMITS } from '@/lib/policy';
@@ -28,7 +29,7 @@ function editableMessage(params: MockContext['params'], viewer: MockContext['vie
   if (!message) fail(404, 'NOT_FOUND', '메시지를 찾지 못했어요');
   const team = room.teamId ? findTeam(room.teamId) : undefined;
   const disabled = room.kind === 'REQUEST' || !!(team && ['READ_ONLY', 'ARCHIVED'].includes(team.status));
-  return { message, allowed: messageActions(message, viewer.me?.login ?? null, team?.myRole ?? null, disabled, Date.now()) };
+  return { message, allowed: messageActions(withReadState(message), viewer.me?.login ?? null, team?.myRole ?? null, disabled, Date.now()) };
 }
 
 export const routes: MockRoute[] = [
@@ -68,18 +69,30 @@ export const routes: MockRoute[] = [
     ).sort((a, b) => a.id - b.id);
     const before = query.get('before');
     const after = query.get('after');
-    if (after) return { items: all.filter((m) => m.id > Number(after)), hasMore: false };
+    if (after) return { items: all.filter((m) => m.id > Number(after)).map(withReadState), hasMore: false };
     const older = before ? all.filter((m) => m.id < Number(before)) : all;
-    return { items: older.slice(-PAGE), hasMore: older.length > PAGE };
+    return { items: older.slice(-PAGE).map(withReadState), hasMore: older.length > PAGE };
   }),
-  post('/api/v1/user/chat-rooms/:roomId/read', ({ params }) => {
-    UNREAD[Number(params.roomId)] = 0;
-    emit('/user/queue/chat-rooms', { event: 'READ', roomId: Number(params.roomId) });
+  post('/api/v1/user/chat-rooms/:roomId/read', ({ params, body, viewer }) => {
+    const room = roomOr404(params.roomId);
+    const id = Number(body.lastReadMessageId);
+    if (!Number.isSafeInteger(id) || !MESSAGES.some((item) => item.roomId === room.id && item.id === id)) {
+      fail(404, 'NOT_FOUND', '메시지를 찾지 못했어요');
+    }
+    recordRead(room.id, viewer.me!.id, id);
+    UNREAD[room.id] = 0;
+    emit(`/topic/chat-rooms/${room.id}`, { event: 'READ', roomId: room.id });
+    emit('/user/queue/chat-rooms', { event: 'READ', roomId: room.id });
     return undefined;
   }),
-  get('/api/v1/user/chat-rooms/:roomId/messages/:messageId/unread-members', ({ params }) => ({
-    items: (TEAM_MEMBERS[roomOr404(params.roomId!).teamId ?? 0] ?? []).slice(2).map((m) => m.user),
-  })),
+  get('/api/v1/user/chat-rooms/:roomId/messages/:messageId/unread-members', ({ params }) => {
+    const room = roomOr404(params.roomId);
+    const message = MESSAGES.find((item) => item.roomId === room.id && item.id === Number(params.messageId));
+    if (!message || !room.teamId || message.deletedAt || message.type === 'SYSTEM' || message.type === 'PR_EVENT') {
+      fail(404, 'NOT_FOUND', '읽음 상태를 확인할 수 없는 메시지예요');
+    }
+    return { items: unreadMembers(message) };
+  }),
   patch('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params, body, viewer }) => {
     const { message, allowed } = editableMessage(params, viewer);
     if (!allowed.edit) fail(403, 'FORBIDDEN', '이 메시지를 수정할 수 없어요');
@@ -89,8 +102,8 @@ export const routes: MockRoute[] = [
     }
     message.text = text;
     message.editedAt = new Date().toISOString();
-    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message });
-    return message;
+    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message: withReadState(message) });
+    return withReadState(message);
   }),
   del('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params, viewer }) => {
     const { message, allowed } = editableMessage(params, viewer);
@@ -98,7 +111,7 @@ export const routes: MockRoute[] = [
     message.deletedAt = new Date().toISOString();
     message.text = null;
     message.imageUrls = [];
-    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message });
+    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message: withReadState(message) });
     return undefined;
   }),
   patch('/api/v1/user/chat-rooms/:roomId/notification', ({ params, body }) => {
@@ -203,7 +216,7 @@ export const routes: MockRoute[] = [
       deletedAt: null,
     };
     MESSAGES.push(message);
-    return message;
+    return withReadState(message);
   }),
   post(
     '/api/v1/user/chat-rooms/direct',
@@ -258,7 +271,7 @@ export const routes: MockRoute[] = [
       deletedAt: null,
     };
     MESSAGES.push(message);
-    return message;
+    return withReadState(message);
   }),
 
   // `[Included]` Recruiting offer (recruiter → developer). 1,000 chars, no photos (POL-H-3)

@@ -7,7 +7,7 @@ import type { RoomMessage } from '../_lib/room-api';
 import { ChatPhotoViewer } from './chat-photo-viewer';
 
 const message: RoomMessage = {
-  id: 100, roomId: 1, sender: null, type: 'IMAGE', text: null,
+  id: 100, roomId: 1, unreadCount: 0, sender: null, type: 'IMAGE', text: null,
   imageUrls: ['/mock/cover-1.svg', '/mock/cover-2.svg'], payload: null,
   createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null,
 };
