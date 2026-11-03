@@ -3,6 +3,8 @@ import { infiniteQueryOptions, queryOptions, type InfiniteData } from '@tanstack
 import { CHAT } from '@/lib/policy';
 import { apiFetch } from '@/lib/api/api-fetch';
 
+import type { ChatIssueCard } from './chat-reference-types';
+
 /** Provisional WBS 17 DTOs; replace with generated Orval contracts once Spring publishes OpenAPI. */
 export type ChatMember = { id: number; login: string; name: string; avatarUrl: string };
 export type RoomInfo = {
@@ -31,7 +33,7 @@ export type RoomMessage = {
   type: 'TEXT' | 'IMAGE' | 'ISSUE_CARD' | 'PR_EVENT' | 'SYSTEM' | 'AI_SUMMARY' | 'SHARE_CARD';
   text: string | null;
   imageUrls: string[];
-  payload: Record<string, unknown> | null;
+  payload: (Record<string, unknown> & { issueCards?: ChatIssueCard[] }) | null;
   createdAt: string;
   editedAt: string | null;
   deletedAt: string | null;

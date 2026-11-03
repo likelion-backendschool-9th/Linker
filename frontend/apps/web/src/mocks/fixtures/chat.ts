@@ -195,10 +195,7 @@ export const MESSAGES: MockMessage[] = [
     type: 'ISSUE_CARD',
     text: '#15 이거 오늘 끝낼 수 있을 것 같아요',
     payload: {
-      issueNumber: 15,
-      repoName: 'linker-web',
-      title: '피드 카드 컴포넌트',
-      status: 'IN_PROGRESS',
+      issueRefs: [{ number: 15, repoId: 11 }],
     },
     createdAt: hoursAgo(6),
   }),

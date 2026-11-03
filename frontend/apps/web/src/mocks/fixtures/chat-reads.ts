@@ -1,3 +1,4 @@
+import { withChatReferences } from './chat-references';
 import { findRoom, type MockMessage } from './chat';
 import { TEAM_MEMBERS } from './teams';
 import { brief, ME } from './users';
@@ -25,5 +26,5 @@ export function unreadMembers(message: MockMessage) {
 }
 
 export function withReadState(message: MockMessage) {
-  return { ...message, unreadCount: unreadMembers(message).length };
+  return { ...message, payload: withChatReferences(message), unreadCount: unreadMembers(message).length };
 }

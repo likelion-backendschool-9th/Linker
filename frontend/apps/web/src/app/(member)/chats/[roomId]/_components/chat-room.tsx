@@ -271,12 +271,15 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         <>
           {readOnly && <p role="status">지금은 대화를 읽을 수만 있어요.</p>}
           <ChatComposer
+            room={room}
+            login={viewer.login}
             disabled={readOnly}
-            onSend={({ text, images }) =>
+            onSend={({ text, images, references }) =>
               outbox.enqueue({
                 clientMessageId: crypto.randomUUID(),
                 text,
                 images,
+                references,
                 createdAt: new Date().toISOString(),
               })
             }
