@@ -1156,7 +1156,7 @@ erDiagram
 | deleted_at | Set when deleted on GitHub. Issue cards in chat show "삭제된 이슈" (Deleted issue) |
 
 - Indexes: `(team_id, due_date)` calendar, `(team_id, board_status)` status board, `(repo_id, number)` UK.
-- "My issues" (I-5) = `issue_assignees.user_id = me` + `due_date` ascending.
+- "My issues" (I-5) = `issue_assignees.user_id = me` + selected `team_id` + `due_date` ascending. Default team = my `team_members` row with the latest `joined_at` (prefer non-archived).
 
 **issue_assignees**: Stores GitHub assignees as-is and links `user_id` if that GitHub user is a Linker member. If an assignee leaves the team, the row stays and the UI shows "팀 밖 사용자" (Outside the team).
 
