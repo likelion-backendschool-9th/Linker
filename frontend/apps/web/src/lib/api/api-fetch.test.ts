@@ -4,7 +4,9 @@ import { ApiError } from './api-error';
 import { apiFetch } from './api-fetch';
 
 vi.mock('next/headers', () => ({
-  cookies: vi.fn(async () => ({ toString: () => 'session=1' })),
+  cookies: vi.fn(async () => ({
+    toString: (): string => 'session=1',
+  })),
 }));
 
 vi.mock('@/mocks/mock-fetch', () => ({
@@ -27,7 +29,9 @@ describe('apiFetch', () => {
 
   it('prefixes the public base and sends cookies in the browser', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://public.example');
-    const fetchMock = vi.fn(async () => jsonResponse({ type: 'DEVELOPER' }));
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ type: 'DEVELOPER' }),
+    );
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(apiFetch('/api/v1/user/me')).resolves.toEqual({ type: 'DEVELOPER' });
@@ -36,15 +40,17 @@ describe('apiFetch', () => {
       'http://public.example/api/v1/user/me',
       expect.objectContaining({ credentials: 'include' }),
     );
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(new Headers(init.headers).has('cookie')).toBe(false);
+    const init = fetchMock.mock.calls[0]?.[1];
+    expect(new Headers(init?.headers).has('cookie')).toBe(false);
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('uses the internal base and forwards the request cookies on the server', async () => {
     vi.stubEnv('API_INTERNAL_URL', 'http://backend:8080');
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://public.example');
-    const fetchMock = vi.fn(async () => jsonResponse({ type: 'DEVELOPER' }));
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ type: 'DEVELOPER' }),
+    );
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal('window', undefined);
 
@@ -54,8 +60,8 @@ describe('apiFetch', () => {
       'http://backend:8080/api/v1/user/me',
       expect.objectContaining({ credentials: undefined }),
     );
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(new Headers(init.headers).get('cookie')).toBe('session=1');
+    const init = fetchMock.mock.calls[0]?.[1];
+    expect(new Headers(init?.headers).get('cookie')).toBe('session=1');
   });
 
   it('returns undefined for 204 and throws ApiError for a failure body', async () => {
