@@ -16,6 +16,9 @@ test-results/
 playwright-report/
 blob-report/
 
+# orval pipeline check writes here only when ORVAL_PIPELINE_OUT is unset
+packages/api/pipeline-out/
+
 # Expo
 .expo/
 expo-env.d.ts

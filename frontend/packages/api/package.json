@@ -8,7 +8,8 @@
   },
   "scripts": {
     "generate": "orval --config ./orval.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/check-client-pipeline.mjs"
   },
   "dependencies": {
     "@faker-js/faker": "^10.6.0",
