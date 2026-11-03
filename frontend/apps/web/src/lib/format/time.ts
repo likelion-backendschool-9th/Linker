@@ -38,3 +38,9 @@ export function todayKst(now: Date = new Date()): string {
 export function daysUntil(date: string, now: Date = new Date()): number {
   return Math.round((Date.parse(date) - Date.parse(todayKst(now))) / (24 * 60 * 60 * 1000));
 }
+
+/** Fixed chat sent time, e.g. "오후 3:12". Date dividers supply the calendar date. */
+export function formatMessageTime(value: Date | string | number): string {
+  const date = toKst(value);
+  return `${date.getHours() < 12 ? '오전' : '오후'} ${format(date, 'h:mm')}`;
+}

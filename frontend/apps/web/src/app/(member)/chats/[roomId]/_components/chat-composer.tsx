@@ -1,7 +1,11 @@
 'use client';
 
+import { Plus, ImagePlus } from 'lucide-react';
+
 import { useRef, useState, type FormEvent } from 'react';
 
+import { OverlaySheet } from '@/components/overlay/overlay-sheet';
+import { useOverlay } from '@/lib/navigation/use-overlay';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/features/image-upload/image-uploader';
 import { useImageUpload } from '@/features/image-upload/use-image-upload';
@@ -25,6 +29,7 @@ type Props = {
 
 export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
   const uploader = useImageUpload(CHAT.imagesPerSend);
+  const attachments = useOverlay('chat-attachments');
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -42,29 +47,50 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
   }
   return (
     <form onSubmit={submit} className={styles.composer}>
-      <label htmlFor="chat-message" className={styles.label}>
+      <label htmlFor="chat-message" className="sr-only">
         메시지
       </label>
-      <textarea
-        ref={input}
-        id="chat-message"
-        value={text}
-        rows={2}
-        disabled={disabled}
-        aria-invalid={tooLong}
-        aria-describedby="chat-character-count"
-        onChange={(event) => { setText(event.target.value); setCaret(event.target.selectionStart); }}
-        onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
-        aria-controls={references.active ? 'chat-mention-suggestions' : undefined}
-        onKeyDown={(event) => {
-          if (!event.nativeEvent.isComposing && event.key === 'ArrowDown' && references.active) {
-            const first = document.querySelector<HTMLButtonElement>('#chat-mention-suggestions button');
-            if (first) { event.preventDefault(); first.focus(); }
-          }
-        }}
-        placeholder="메시지를 입력해 주세요"
-        className={styles.input}
-      />
+      <div className={styles.composerBar}>
+        <OverlaySheet
+          overlay={attachments}
+          title="사진 첨부"
+          description="사진을 선택하고 업로드 상태를 확인해 주세요."
+          trigger={<Button variant="outline" disabled={disabled} aria-label="첨부 기능 열기" className={styles.attachmentToggle}><Plus aria-hidden /></Button>}
+        >
+          <fieldset disabled={disabled} className={styles.attachments}>
+            <legend className="sr-only">사진 첨부</legend>
+            <ImageUploader uploader={uploader} label="채팅 사진" />
+            <p className={styles.meta}>사진은 {CHAT.imagesPerSend}장까지, 한 장에 {IMAGE.maxBytes / (1024 * 1024)}MB까지 보낼 수 있어요.</p>
+            {!uploader.allDone && <p role="status">사진을 모두 올린 뒤 보낼 수 있어요. 실패한 사진은 다시 올리거나 빼 주세요.</p>}
+          </fieldset>
+          <Button variant="outline" onClick={attachments.close}>첨부 완료</Button>
+        </OverlaySheet>
+        <textarea
+          ref={input}
+          id="chat-message"
+          value={text}
+          rows={1}
+          disabled={disabled}
+          aria-invalid={tooLong}
+          aria-describedby="chat-character-count"
+          onChange={(event) => { setText(event.target.value); setCaret(event.target.selectionStart); }}
+          onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
+          aria-controls={references.active ? 'chat-mention-suggestions' : undefined}
+          onKeyDown={(event) => {
+            if (!event.nativeEvent.isComposing && event.key === 'ArrowDown' && references.active) {
+              const first = document.querySelector<HTMLButtonElement>('#chat-mention-suggestions button');
+              if (first) { event.preventDefault(); first.focus(); }
+            }
+          }}
+          placeholder="메시지를 입력해 주세요"
+          className={styles.input}
+        />
+        <Button type="submit" disabled={disabled || (!normalized && !uploader.items.length) || tooLong || !uploader.allDone || references.blocked}>보내기</Button>
+      </div>
+      {!!uploader.items.length && <button type="button" className={styles.attachmentSummary} disabled={disabled} onClick={() => attachments.open()}>
+        <ImagePlus aria-hidden />
+        사진 {uploader.items.length}장 · {uploader.items.some((item) => item.status === 'failed') ? '다시 올리기 필요' : uploader.allDone ? '전송 준비 완료' : '업로드 중'}
+      </button>}
       {references.team && <ChatReferenceTools control={references} onMention={(login) => {
         if (!references.active) return;
         const next = `${text.slice(0, references.active.start)}@${login} ${text.slice(references.active.end)}`;
@@ -73,22 +99,11 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
         setCaret(position);
         requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(position, position); });
       }} />}
-      <fieldset disabled={disabled} className={styles.attachments}>
-        <legend className="sr-only">사진 첨부</legend>
-        <ImageUploader uploader={uploader} label="채팅 사진" />
-        <p className={styles.meta}>
-          사진은 {CHAT.imagesPerSend}장까지, 한 장에 {IMAGE.maxBytes / (1024 * 1024)}MB까지 보낼 수 있어요.
-        </p>
-        {!uploader.allDone && <p role="status">사진을 모두 올린 뒤 보낼 수 있어요. 실패한 사진은 다시 올리거나 빼 주세요.</p>}
-      </fieldset>
       <div className={styles.composeActions}>
         <p id="chat-character-count" className={tooLong ? styles.error : styles.meta}>
           {count.toLocaleString('ko-KR')} / {CHAT.messageMax.toLocaleString('ko-KR')}자
           {tooLong && ' · 글자 수를 줄여 주세요.'}
         </p>
-        <Button type="submit" disabled={disabled || (!normalized && !uploader.items.length) || tooLong || !uploader.allDone || references.blocked}>
-          보내기
-        </Button>
       </div>
     </form>
   );

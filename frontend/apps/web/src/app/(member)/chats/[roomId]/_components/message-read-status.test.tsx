@@ -8,7 +8,9 @@ const message: RoomMessage = { id: 1, roomId: 1, unreadCount: 2, sender: null, t
 it('shows the team unread count and opens its message-specific list', async () => {
   const onUnread = vi.fn();
   render(<MessageReadStatus message={message} kind="TEAM" mine={false} onUnread={onUnread} />);
-  await userEvent.click(screen.getByRole('button', { name: '안 읽은 사람 2명' }));
+  const count = screen.getByRole('button', { name: '안 읽은 사람 2명' });
+  expect(count).toHaveTextContent(/^2$/);
+  await userEvent.click(count);
   expect(onUnread).toHaveBeenCalledWith(1);
 });
 it('switches own direct message from unread to read after the server count changes', () => {

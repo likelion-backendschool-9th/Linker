@@ -2,6 +2,7 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { uploadImage } from '@/features/image-upload/upload-image';
+import { resetOverlayHistory } from '@/lib/navigation/use-overlay';
 import { CHAT, IMAGE } from '@/lib/policy';
 
 import { renderWithProviders as render } from '@/test/render-with-providers';
@@ -14,6 +15,7 @@ vi.mock('@/features/image-upload/upload-image', async (importOriginal) => ({
 }));
 const upload = vi.mocked(uploadImage);
 beforeEach(() => {
+  resetOverlayHistory();
   upload.mockReset();
   vi.stubGlobal('URL', class extends URL {
     static createObjectURL = vi.fn(() => 'blob:preview');
@@ -26,6 +28,7 @@ const photo = (name = 'photo.png') => new File(['photo'], name, { type: 'image/p
 it('sends normalized non-empty text once and clears the input', async () => {
   const send = vi.fn();
   render(<ChatComposer disabled={false} onSend={send} />);
+  expect(screen.queryByLabelText('채팅 사진')).not.toBeInTheDocument();
   const input = screen.getByRole('textbox', { name: '메시지' });
   await userEvent.type(input, '안녕하세요');
   await userEvent.click(screen.getByRole('button', { name: '보내기' }));
@@ -37,7 +40,8 @@ it('blocks writes while read-only', () => {
   render(<ChatComposer disabled onSend={vi.fn()} />);
   expect(screen.getByRole('textbox', { name: '메시지' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '보내기' })).toBeDisabled();
-  expect(screen.getByLabelText('채팅 사진')).toBeDisabled();
+  expect(screen.getByRole('button', { name: '첨부 기능 열기' })).toBeDisabled();
+  expect(screen.queryByLabelText('채팅 사진')).not.toBeInTheDocument();
 });
 
 it('counts emoji as one character and rejects text over the policy maximum', async () => {
@@ -57,13 +61,21 @@ it('waits for upload completion, then sends photos without text and clears the p
   const send = vi.fn();
   const user = userEvent.setup();
   render(<ChatComposer disabled={false} onSend={send} />);
+  await user.click(screen.getByRole('button', { name: '첨부 기능 열기' }));
   await user.upload(screen.getByLabelText('채팅 사진'), photo());
-  expect(screen.getByRole('button', { name: '보내기' })).toBeDisabled();
+  expect(screen.getByText('보내기')).toBeDisabled();
   const image = { fileId: 'file-1', url: '/mock/cover-1.svg' };
+  // Nuqs' memory adapter does not emulate browser back; use the URL-entered close path.
+  resetOverlayHistory();
+  await user.click(screen.getByRole('button', { name: '첨부 완료' }));
+  expect(await screen.findByRole('button', { name: '사진 1장 · 업로드 중' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '보내기' })).toBeDisabled();
   await act(async () => finish(image));
+  expect(await screen.findByRole('button', { name: '사진 1장 · 전송 준비 완료' })).toBeVisible();
   await user.click(screen.getByRole('button', { name: '보내기' }));
   expect(send).toHaveBeenCalledExactlyOnceWith({ text: '', images: [image] });
   expect(screen.queryByAltText('선택한 사진 1')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '사진 1장 · 전송 준비 완료' })).not.toBeInTheDocument();
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
 });
 it('keeps text and failed photos, and allows upload retry before sending', async () => {
@@ -71,11 +83,14 @@ it('keeps text and failed photos, and allows upload retry before sending', async
   const user = userEvent.setup();
   render(<ChatComposer disabled={false} onSend={vi.fn()} />);
   await user.type(screen.getByRole('textbox', { name: '메시지' }), '사진 설명');
+  await user.click(screen.getByRole('button', { name: '첨부 기능 열기' }));
   await user.upload(screen.getByLabelText('채팅 사진'), photo());
   await screen.findByRole('button', { name: '다시 올리기' });
-  expect(screen.getByRole('button', { name: '보내기' })).toBeDisabled();
-  expect(screen.getByRole('textbox', { name: '메시지' })).toHaveValue('사진 설명');
+  expect(screen.getByText('보내기')).toBeDisabled();
+  expect(screen.getByLabelText('메시지', { selector: 'textarea' })).toHaveValue('사진 설명');
   await user.click(screen.getByRole('button', { name: '다시 올리기' }));
+  resetOverlayHistory();
+  await user.click(screen.getByRole('button', { name: '첨부 완료' }));
   await waitFor(() => expect(screen.getByRole('button', { name: '보내기' })).toBeEnabled());
   expect(upload).toHaveBeenCalledTimes(2);
 });
@@ -83,6 +98,7 @@ it('caps a send at ten photos and rejects files exceeding ten MB', async () => {
   upload.mockReturnValue(new Promise(() => {}));
   const user = userEvent.setup();
   render(<ChatComposer disabled={false} onSend={vi.fn()} />);
+  await user.click(screen.getByRole('button', { name: '첨부 기능 열기' }));
   const oversized = photo('large.png');
   Object.defineProperty(oversized, 'size', { value: IMAGE.maxBytes + 1 });
   await user.upload(screen.getByLabelText('채팅 사진'), oversized);
