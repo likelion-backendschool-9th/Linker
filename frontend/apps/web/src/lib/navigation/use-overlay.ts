@@ -52,10 +52,17 @@ export function useOverlay(key: OverlayKey) {
   const isOpen = overlay === key;
 
   function open(id?: string, options: { returnTo?: string } = {}) {
-    if (isOpen && (id ?? null) === oid) return;
+    const nextId = id ?? null;
+    // Login can already be open (proxy redirect) when a tab asks for a different returnTo.
+    if (isOpen && nextId === oid) {
+      if (options.returnTo && options.returnTo !== returnTo) {
+        void set({ overlay: key, oid: nextId, returnTo: options.returnTo }, { history: 'replace' });
+      }
+      return;
+    }
     const history = overlay ? 'replace' : 'push';
     if (history === 'push') pushedByApp = true;
-    void set({ overlay: key, oid: id ?? null, returnTo: options.returnTo ?? null }, { history });
+    void set({ overlay: key, oid: nextId, returnTo: options.returnTo ?? null }, { history });
   }
 
   function close() {

@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
@@ -10,6 +11,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { TechTagPicker } from '@/features/profile/tech-tag-picker';
 import { JobStatusPicker } from '@/features/profile/job-status-picker';
+import { useAccountSessionRefresh } from '@/features/auth/use-account-session-refresh';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { ApiError } from '@/lib/api/api-error';
 import { PROFILE } from '@/lib/policy';
@@ -64,6 +66,7 @@ export function OnboardingForm({
   techStackMax: number;
 }) {
   const router = useRouter();
+  const refreshSession = useAccountSessionRefresh();
   const [step, setStep] = useState<'AGREEMENTS' | 'PROFILE'>(
     initial.step === 'AGREEMENTS' ? 'AGREEMENTS' : 'PROFILE',
   );
@@ -164,7 +167,14 @@ export function OnboardingForm({
       <section className={styles.complete} aria-live="polite">
         <h2>프로필 설정이 완료됐어요</h2>
         <p>이제 Linker에서 프로젝트와 팀을 둘러볼 수 있어요.</p>
-        <Button onClick={() => router.replace('/feed')}>피드로 이동</Button>
+        <Button
+          onClick={() => {
+            refreshSession();
+            router.replace('/feed' as Route);
+          }}
+        >
+          피드로 이동
+        </Button>
       </section>
     );
   }

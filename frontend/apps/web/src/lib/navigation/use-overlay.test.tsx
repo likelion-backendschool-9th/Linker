@@ -71,6 +71,28 @@ describe('useOverlay', () => {
     back.mockRestore();
   });
 
+  it('replaces returnTo when the login sheet is already open', async () => {
+    function LoginHarness() {
+      const login = useOverlay('login');
+      return (
+        <>
+          <button onClick={() => login.open(undefined, { returnTo: '/workspace' })}>workspace</button>
+          <button onClick={() => login.open(undefined, { returnTo: '/chats' })}>chats</button>
+          <p>{login.returnTo ?? 'none'}</p>
+        </>
+      );
+    }
+
+    const updates: UrlUpdateEvent[] = [];
+    renderWithProviders(<LoginHarness />, { onUrlUpdate: (event) => updates.push(event) });
+    await userEvent.click(screen.getByText('workspace'));
+    expect(screen.getByText('/workspace')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('chats'));
+    expect(screen.getByText('/chats')).toBeInTheDocument();
+    expect(updates.at(-1)?.options.history).toBe('replace');
+    expect(updates.at(-1)?.searchParams.get('returnTo')).toBe('/chats');
+  });
+
   it('does nothing when reopening the same overlay with the same oid', async () => {
     const updates: UrlUpdateEvent[] = [];
     renderWithProviders(<Harness />, {

@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { saveNativeSession } from '@/features/auth/sync-native-session';
+import { useAccountSessionRefresh } from '@/features/auth/use-account-session-refresh';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { safeReturnTo } from '@/lib/auth/return-to';
@@ -26,6 +27,7 @@ type LoginResponse = { restored: boolean; returnTo: string };
 
 export function RecruiterLoginForm({ returnTo }: { returnTo: string }) {
   const router = useRouter();
+  const refreshSession = useAccountSessionRefresh();
   const [apiError, setApiError] = useState<string | null>(null);
   const form = useForm<LoginValues>({ resolver: zodResolver(schema), mode: 'onSubmit', shouldFocusError: true, defaultValues: { email: '', password: '' } });
   const login = useMutation({
@@ -41,8 +43,8 @@ export function RecruiterLoginForm({ returnTo }: { returnTo: string }) {
       } catch {
         // Web login still succeeds if the native session sync fails.
       }
+      refreshSession();
       router.replace(safeReturnTo(result.returnTo) as Route);
-      router.refresh();
     },
     onError: (error) => setApiError(error instanceof ApiError ? error.message : '로그인하지 못했어요. 잠시 후 다시 시도해 주세요.'),
   });

@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { saveNativeSession } from '@/features/auth/sync-native-session';
+import { useAccountSessionRefresh } from '@/features/auth/use-account-session-refresh';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { RECRUITER } from '@/lib/policy';
@@ -62,6 +63,7 @@ const defaultValues: FormValues = {
 
 export function RecruiterSignupForm() {
   const router = useRouter();
+  const refreshSession = useAccountSessionRefresh();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [codeSent, setCodeSent] = useState(false);
   const [signupToken, setSignupToken] = useState<string | null>(null);
@@ -136,8 +138,8 @@ export function RecruiterSignupForm() {
       } catch {
         // Web signup still succeeds if the native session sync fails.
       }
+      refreshSession();
       router.replace('/feed');
-      router.refresh();
     },
     onError: (error) => setApiError(errorInfo(error, '회원가입을 완료하지 못했어요. 다시 시도해 주세요.')),
   });

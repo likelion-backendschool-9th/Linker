@@ -7,9 +7,10 @@ import { OnboardingForm } from './onboarding-form';
 
 const apiFetch = vi.fn();
 const replace = vi.fn();
+const refresh = vi.fn();
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, refresh }) }));
 
 const initial = {
   done: false,
@@ -30,6 +31,7 @@ describe('OnboardingForm', () => {
   beforeEach(() => {
     apiFetch.mockReset();
     replace.mockReset();
+    refresh.mockReset();
     apiFetch.mockResolvedValue(undefined);
   });
 
@@ -72,5 +74,6 @@ describe('OnboardingForm', () => {
     expect(screen.getByRole('heading', { name: '프로필 설정이 완료됐어요' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '피드로 이동' }));
     expect(replace).toHaveBeenCalledWith('/feed');
+    expect(refresh).toHaveBeenCalledOnce();
   });
 });
