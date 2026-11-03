@@ -5,6 +5,7 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 
+import { registerPushToken } from '@/features/notifications/push-tokens';
 import { safeReturnTo } from '@/lib/auth/return-to';
 import { useActiveOverlay } from '@/lib/navigation/use-overlay';
 import { ensureConnected } from '@/lib/realtime/stomp-client';
@@ -41,7 +42,9 @@ export function NativeBridgeProvider({ children }: { children: ReactNode }) {
           }
           break;
         case 'PUSH_TOKEN':
-          // Registered with POST /api/v1/user/push-tokens by page 18 (D) once that API exists
+          void registerPushToken(msg.token, msg.platform).catch(() => {
+            // Keep listening; a later login or permission grant can retry.
+          });
           break;
         case 'RESULT':
           // Answered through requestNative()
