@@ -1,0 +1,47 @@
+# Pipeline fixture only. Not the Linker API.
+openapi: 3.0.3
+info:
+  title: client-pipeline
+  version: 0.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: p00-common
+paths:
+  /api/v1/user/me:
+    get:
+      tags: [p00-common]
+      operationId: getMe
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMember'
+  /api/v1/user/blocks:
+    post:
+      tags: [p00-common]
+      operationId: createBlock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  type: integer
+                  format: int64
+      responses:
+        '204':
+          description: opened
+components:
+  schemas:
+    SessionMember:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string

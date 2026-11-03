@@ -270,17 +270,21 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: T-1, I-5 · Needs first: 01 · Merged: my team list + my issues → one page
 > First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07, with the same controller and access rules.
+> **2026-11-03**: My issues are no longer a cross-team dump. The user picks one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at`).
+> **2026-11-03 (home preview)**: `/workspace` shows a **short preview** of those issues (UI-limited; roughly a few rows — not a fixed count), ordered by due urgency. The full selected-team list lives on `/workspace/issues` via “내 이슈 전체 보기”. Team-wide issues (everyone’s) remain on 11.
 
-- [ ] My teams: grouped active / completed / read-only / archived; team card (org avatar, team name, member count, status)
+- [ ] My teams: grouped active / completed / read-only / archived; team card (org avatar, team name, member count, status) → tap opens **11** (`/teams/[id]/issues`) for that team’s full issue list
 - [ ] "팀 만들기" (create team) button → 08
 - [ ] No teams: "팀 만들기" + "팀 찾으러 가기" (go find a team, 19)
-- [ ] `[Included]` My issues: issues assigned to me across all teams by due date, overdue in red, team name shown, tap → 12. Empty: "배정된 이슈가 없어요"
-- [ ] “내 이슈 전체 보기” → `/workspace/issues`; its back fallback is `/workspace`. B owns the entry link; C owns the list and data query.
-- [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15)
+- [ ] `[Included]` My issues on `/workspace` (preview): team picker; changing the team reloads the preview. Short preview of open issues assigned to me in the selected team (UI-limited; not a hard N). Sort by due urgency: overdue first (oldest due first), then soonest due date, then no due date last. Overdue in red. Tap → 12. Empty: "배정된 이슈가 없어요"
+- [ ] Default selected team = the one I joined most recently (`team_members.joined_at` desc). Prefer non-archived; if every membership is archived, fall back to the newest archived. Keep the choice in the URL (`teamId`, nuqs) so back/refresh keeps it
+- [ ] “내 이슈 전체 보기” → `/workspace/issues?teamId=` (same team; **full** list of my assigned issues in that team, same sort, no preview cap); back fallback `/workspace`. B owns the entry link; C owns preview, full list, team picker and data query
+- [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15). Distinct from the 07 my-issues team picker: switcher navigates into a team; the picker only filters the my-issues list
 
 **Policy & exceptions**
 
 - [ ] Max 10 teams per person (archived excluded); beyond that, show that creating teams / accepting invites isn't possible
+- [ ] Picking a `teamId` I'm not in → treat as missing filter and fall back to the default team (do not 404 the page)
 
 ### 08. Create team `[Required]` · `/teams/new`, `/teams/new/callback`
 
@@ -863,7 +867,7 @@ Screen-map MVP pages not kept as separate pages here, and where their features w
 | Account management, blocked users, delete account | Sections and sheets in 06 settings | Only a few items |
 | Appeal (user), usage restriction notice | 00 suspension banner + 18's appeal sheet | Viewing is allowed while suspended, so no reason to block the whole screen |
 | Unavailable content, error screen | 00 `not-found.tsx`, `error.tsx` | Framework default files |
-| My team list, my issues | 07 workspace home | One tab landing screen |
+| My team list, my issues (per selected team; default = most recently joined) | 07 workspace home | One tab landing screen |
 | Create team: start, install check, board link | 08 one stepper page | Consecutive wizard |
 | Team home | Removed; 11 issue list is the team's first screen | Summary info overlaps other tabs |
 | Team members, invite, linked repo management, team plan | Sections in 09 team settings | Management screens for owner/admin only |

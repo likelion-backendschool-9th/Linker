@@ -149,7 +149,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | I-2 | Set assignees and labels | Applied to the GitHub issue immediately. If no repo write permission, disable buttons + explain why | PP-1 | 1 | P0 |
 | I-3 | Start date, due date, status | Stored in the team's linked GitHub Projects board fields; values changed on GitHub are reflected | PP-1 | 1 | P0 |
 | I-4 | Calendar & status board | Calendar (month/week, assignee filter, overdue highlight); status board (Todo / In Progress / Blocked / Done) with drag to change status | PP-1 | 1 | P0 |
-| I-5 | My issues list | Issues assigned to me, sorted by due date | PP-1 | 1 | P1 |
+| I-5 | My issues list | Pick one of my teams (default: most recently joined); show issues assigned to me in that team only, sorted by due date. Changing the team updates the list | PP-1 | 1 | P1 |
 | I-6 | Sub-issues | Split work into GitHub sub-issues and see progress | PP-1 | 2 | P2 |
 | I-7 | Drag scheduling | Drag an issue on the calendar to change dates, reflected on GitHub | PP-1 | 2 | P2 |
 | I-8 | Issue form attachments | Attach images/files when creating issues | PP-1 | 2 | P2 |
