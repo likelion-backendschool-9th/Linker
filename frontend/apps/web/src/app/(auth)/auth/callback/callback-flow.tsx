@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { SkipLink } from '@/components/layout/skip-link';
 import { Button } from '@/components/ui/button';
+import { saveNativeSession } from '@/features/auth/sync-native-session';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { ApiError } from '@/lib/api/api-error';
 import { safeReturnTo } from '@/lib/auth/return-to';
@@ -53,6 +54,11 @@ export function CallbackFlow({
         const result = await callbackRequest.current;
         if (!active) return;
         if (result.restored) toast('계정을 복구했어요.');
+        try {
+          await saveNativeSession();
+        } catch {
+          // Web login still succeeds if the native session sync fails.
+        }
         router.replace((result.isNew ? '/onboarding' : safeReturnTo(result.returnTo)) as Route);
       } catch (cause) {
         if (!active) return;
