@@ -62,3 +62,22 @@ it('manual retry reuses the ID and restored pending messages require user action
   vi.runAllTimers();
   expect(outbox.getSnapshot()).toEqual([]);
 });
+
+it('preserves uploaded images through automatic retry, restore and manual retry', () => {
+  const send = vi.fn<(item: PendingMessage) => boolean>(() => false);
+  const outbox = new MessageOutbox(send, { ackTimeoutMs: 10, retryDelayMs: 5 });
+  const image = { fileId: 'uploaded-1', url: '/mock/cover-1.svg' };
+  outbox.enqueue({ ...message, text: '', images: [image] });
+  vi.runAllTimers();
+  expect(send).toHaveBeenCalledTimes(CHAT.autoRetries + 1);
+  expect(send.mock.calls.every(([item]) => item.clientMessageId === message.clientMessageId && item.images?.[0]?.fileId === image.fileId)).toBe(true);
+  const saved = JSON.parse(JSON.stringify(outbox.getSnapshot())) as PendingMessage[];
+  outbox.dispose();
+  const restoredSend = vi.fn(() => true);
+  const restored = new MessageOutbox(restoredSend);
+  restored.restore(saved);
+  restored.retry(message.clientMessageId);
+  vi.advanceTimersByTime(0);
+  expect(restoredSend).toHaveBeenCalledWith(expect.objectContaining({ text: '', images: [image], clientMessageId: message.clientMessageId }));
+  restored.dispose();
+});

@@ -15,11 +15,12 @@ type Props = {
   messages: RoomMessage[];
   login: string | null;
   onRead: (id: number) => void;
+  onPhoto?: (id: number, index: number) => void;
   onMenu?: (id: number) => void;
   readPosition?: { id: number } | null;
 };
 
-export function MessageTimeline({ messages, login, onRead, readPosition, onMenu }: Props) {
+export function MessageTimeline({ messages, login, onRead, readPosition, onMenu, onPhoto }: Props) {
   'use no memo'; // TanStack Virtual exposes a mutable virtualizer.
   const root = useRef<HTMLDivElement>(null);
   const restoredPosition = useRef<Props['readPosition']>(null);
@@ -149,7 +150,7 @@ export function MessageTimeline({ messages, login, onRead, readPosition, onMenu 
                     <time dateTime={date}>{formatDate(message.createdAt)}</time>
                   </p>
                 )}
-                <ChatMessage message={message} mine={message.sender?.login === login} onMenu={onMenu} />
+                <ChatMessage message={message} mine={message.sender?.login === login} onMenu={onMenu} onPhoto={onPhoto} />
               </div>
             );
           })}

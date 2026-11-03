@@ -31,6 +31,7 @@ import {
   type MessagePage,
   type RoomMessage,
 } from '../_lib/room-api';
+import { ChatPhotoViewer } from './chat-photo-viewer';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
 import { MessageActions } from './message-actions';
@@ -49,6 +50,7 @@ const CONNECTION = {
 export function ChatRoom({ roomId }: { roomId: number }) {
   const viewer = useViewer();
   const messageMenu = useOverlay('chat-message');
+  const photoViewer = useOverlay('chat-photo');
   const client = useQueryClient();
   const info = useQuery(roomInfoOptions(viewer.login, roomId));
   const history = useInfiniteQuery(messagesOptions(viewer.login, roomId));
@@ -211,6 +213,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         messages={messages}
         login={viewer.login}
         readPosition={readPosition}
+        onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
         onMenu={(id) => messageMenu.open(String(id))}
         onRead={(id) => {
           if (id <= lastSeen.current || suspended) return;
@@ -218,6 +221,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           read.mutate(id);
         }}
       />
+      <ChatPhotoViewer messages={messages} />
       <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />
       {read.isError && (
         <div role="alert">
@@ -257,10 +261,11 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           {readOnly && <p role="status">지금은 대화를 읽을 수만 있어요.</p>}
           <ChatComposer
             disabled={readOnly}
-            onSend={(text) =>
+            onSend={({ text, images }) =>
               outbox.enqueue({
                 clientMessageId: crypto.randomUUID(),
                 text,
+                images,
                 createdAt: new Date().toISOString(),
               })
             }
