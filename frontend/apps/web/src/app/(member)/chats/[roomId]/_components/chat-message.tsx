@@ -5,13 +5,14 @@ import { MoreHorizontal } from 'lucide-react';
 
 import { RelativeTime } from '@/components/ui/relative-time';
 
-import type { RoomMessage } from '../_lib/room-api';
+import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import styles from './chat-room.module.css';
+import { MessageReadStatus } from './message-read-status';
 import { PrEventCard } from './pr-event-card';
 
-type Props = { message: RoomMessage; mine: boolean; onPhoto?: (id: number, index: number) => void; onMenu?: (id: number) => void };
+type Props = { message: RoomMessage; mine: boolean; kind: RoomInfo['kind']; onUnread?: (id: number) => void; onPhoto?: (id: number, index: number) => void; onMenu?: (id: number) => void };
 
-export function ChatMessage({ message, mine, onMenu, onPhoto }: Props) {
+export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const hidden = message.visibility === 'HIDDEN' || message.visibility === 'UNDER_REVIEW';
   return (
@@ -75,6 +76,7 @@ export function ChatMessage({ message, mine, onMenu, onPhoto }: Props) {
         <RelativeTime value={message.createdAt} />
         {message.editedAt && !message.deletedAt && ' · 수정됨'}
       </p>
+      <MessageReadStatus message={message} kind={kind} mine={mine} onUnread={onUnread} />
       {!system && !hidden && !message.deletedAt && onMenu && (
         <Button variant="soft" aria-label={`${message.sender?.name ?? '탈퇴한 사용자'} 메시지 메뉴`} onClick={() => onMenu(message.id)}>
           <MoreHorizontal aria-hidden />

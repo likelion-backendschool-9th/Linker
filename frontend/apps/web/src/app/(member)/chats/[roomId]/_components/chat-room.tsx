@@ -22,6 +22,7 @@ import { useStompConnectionState, useStompSubscription } from '@/lib/realtime/us
 import { useMessageOutbox } from '../_hooks/use-message-outbox';
 import {
   markRead,
+  unreadMembersKey,
   mergeCatchUpHistory,
   messagesKey,
   messagesOptions,
@@ -35,6 +36,7 @@ import { ChatPhotoViewer } from './chat-photo-viewer';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
 import { MessageActions } from './message-actions';
+import { UnreadMembersSheet } from './unread-members-sheet';
 import { MessageTimeline } from './message-timeline';
 import { RoomInfoSheet } from './room-info-sheet';
 import { PullRequestSheet } from './pull-request-sheet';
@@ -51,6 +53,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
   const viewer = useViewer();
   const messageMenu = useOverlay('chat-message');
   const photoViewer = useOverlay('chat-photo');
+  const unreadMembers = useOverlay('chat-unread');
   const client = useQueryClient();
   const info = useQuery(roomInfoOptions(viewer.login, roomId));
   const history = useInfiniteQuery(messagesOptions(viewer.login, roomId));
@@ -68,6 +71,8 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     retry: 1,
     onSuccess: async () => {
       await Promise.all([
+        client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) }),
+        client.invalidateQueries({ queryKey: unreadMembersKey(viewer.login, roomId) }),
         client.invalidateQueries({ queryKey: unreadSummaryOptions(viewer.login).queryKey }),
         client.invalidateQueries({ queryKey: [...chatKeys.account(viewer.login), 'rooms'] }),
       ]);
@@ -129,7 +134,10 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     `/topic/chat-rooms/${roomId}`,
     (event) => {
       if (event.event === 'MESSAGE' && event.message) receive(event.message);
-      else void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+      else {
+        void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+        void client.invalidateQueries({ queryKey: unreadMembersKey(viewer.login, roomId) });
+      }
     },
     {
       onResubscribe: () => {
@@ -210,6 +218,8 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         </Button>
       )}
       <MessageTimeline
+        kind={room.kind}
+        onUnread={(id) => unreadMembers.open(String(id))}
         messages={messages}
         login={viewer.login}
         readPosition={readPosition}
@@ -221,6 +231,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           read.mutate(id);
         }}
       />
+      <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
       <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />
       {read.isError && (

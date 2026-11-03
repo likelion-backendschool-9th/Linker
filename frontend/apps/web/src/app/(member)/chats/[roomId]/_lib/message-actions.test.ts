@@ -5,7 +5,7 @@ import type { RoomMessage } from './room-api';
 
 const now = Date.parse('2026-11-03T03:00:00Z');
 const message: RoomMessage = {
-  id: 1, roomId: 1, sender: { id: 1, login: 'me', name: '나', avatarUrl: '' },
+  id: 1, roomId: 1, unreadCount: 0, sender: { id: 1, login: 'me', name: '나', avatarUrl: '' },
   type: 'TEXT', text: '메시지', imageUrls: [], payload: null,
   createdAt: new Date(now - 1000).toISOString(), editedAt: null, deletedAt: null,
 };
