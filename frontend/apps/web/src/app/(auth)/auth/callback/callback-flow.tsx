@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SkipLink } from '@/components/layout/skip-link';
 import { Button } from '@/components/ui/button';
 import { saveNativeSession } from '@/features/auth/sync-native-session';
+import { useAccountSessionRefresh } from '@/features/auth/use-account-session-refresh';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { ApiError } from '@/lib/api/api-error';
 import { safeReturnTo } from '@/lib/auth/return-to';
@@ -32,6 +33,7 @@ export function CallbackFlow({
   client?: string;
 }) {
   const router = useRouter();
+  const refreshSession = useAccountSessionRefresh();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(true);
   const callbackRequest = useRef<Promise<CallbackResult> | null>(null);
@@ -73,8 +75,8 @@ export function CallbackFlow({
         } catch {
           // Web login still succeeds if the native session sync fails.
         }
+        refreshSession();
         router.replace((result.isNew ? '/onboarding' : safeReturnTo(result.returnTo)) as Route);
-        router.refresh();
       } catch (cause) {
         if (!active) return;
         const message =
@@ -90,7 +92,7 @@ export function CallbackFlow({
     return () => {
       active = false;
     };
-  }, [client, code, errorCode, returnTo, router, state]);
+  }, [client, code, errorCode, refreshSession, returnTo, router, state]);
 
   return (
     <>

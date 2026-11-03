@@ -1,7 +1,7 @@
 'use client';
 
 import type { Route } from 'next';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
@@ -31,12 +31,15 @@ export function LoginPromptSheet() {
   const [pending, setPending] = useState(false);
   const loginRequestedAt = useAppSignalStore((state) => state.loginRequestedAt);
   const { open } = overlay;
+  const handledLoginAt = useRef(0);
 
   useEffect(() => {
-    if (loginRequestedAt) open();
-    // Only a new LOGIN_REQUIRED opens the sheet, not re-renders
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loginRequestedAt]);
+    if (!loginRequestedAt || handledLoginAt.current === loginRequestedAt) return;
+    handledLoginAt.current = loginRequestedAt;
+    // Keep a returnTo already stored by the proxy or a tab; otherwise come back to this page.
+    const existing = new URLSearchParams(window.location.search).get('returnTo');
+    open(undefined, { returnTo: safeReturnTo(existing, currentLocation()) });
+  }, [loginRequestedAt, open]);
 
   const returnTo = () => safeReturnTo(overlay.returnTo ?? currentLocation());
 

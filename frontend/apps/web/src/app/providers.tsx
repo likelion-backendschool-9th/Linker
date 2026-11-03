@@ -9,6 +9,7 @@ import type { ReactNode } from 'react';
 import { OverlayRoot } from '@/components/overlay/overlay-root';
 import { Toaster } from '@/components/ui/toaster';
 import { LoginPromptSheet } from '@/features/auth/login-prompt-sheet';
+import { SessionClaimSync } from '@/features/auth/session-claim-sync';
 import { ExternalLinkSheet } from '@/features/external-link/external-link-sheet';
 import { MockRoleSwitcher } from '@/features/mock/mock-role-switcher';
 import { NotificationRealtime } from '@/features/notifications/notification-realtime';
@@ -39,6 +40,7 @@ export function Providers({
               <NativeBridgeProvider session={nativeSession}>
                 {children}
                 <NotificationRealtime />
+                <SessionClaimSync />
                 <OverlayRoot />
                 <LoginPromptSheet />
                 <PlanLimitSheet />
