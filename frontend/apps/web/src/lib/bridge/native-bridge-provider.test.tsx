@@ -4,17 +4,16 @@ import { act } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 
 import { ensureConnected } from '@/lib/realtime/stomp-client';
+import { registerPushToken } from '@/features/notifications/push-tokens';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { NativeBridgeProvider } from './native-bridge-provider';
-import { registerNativePushToken, syncNativeSession } from './native-session';
 
 const overlay = vi.hoisted(() => ({ overlay: null as string | null, close: vi.fn() }));
 vi.mock('@/lib/navigation/use-overlay', () => ({ useActiveOverlay: () => overlay }));
 vi.mock('@/lib/realtime/stomp-client', () => ({ ensureConnected: vi.fn() }));
-vi.mock('./native-session', () => ({
-  syncNativeSession: vi.fn(),
-  registerNativePushToken: vi.fn(async () => {}),
+vi.mock('@/features/notifications/push-tokens', () => ({
+  registerPushToken: vi.fn(async () => {}),
 }));
 
 describe('native message routing', () => {
@@ -71,10 +70,13 @@ describe('native message routing', () => {
         page
       </NativeBridgeProvider>,
     );
-    expect(syncNativeSession).toHaveBeenCalledWith({ userId: 1, userType: 'DEVELOPER' });
+    expect(send.mock.calls.map(([raw]) => JSON.parse(raw).msg)).toContainEqual({
+      type: 'AUTH_SESSION_SAVE',
+      session: { userId: 1, userType: 'DEVELOPER' },
+    });
     const token = { type: 'PUSH_TOKEN', token: 'ExpoPushToken[t]', platform: 'android' } as const;
     receive(token);
-    expect(registerNativePushToken).toHaveBeenCalledWith(token);
+    expect(registerPushToken).toHaveBeenCalledWith(token.token, token.platform);
   });
 
   it('resets query focus in the background and reconnects on resume', () => {

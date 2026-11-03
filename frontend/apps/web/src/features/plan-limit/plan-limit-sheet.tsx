@@ -33,11 +33,12 @@ export function PlanLimitSheet() {
     >
       <Button
         block
-        onClick={() =>
+        onClick={() => {
+          useAppSignalStore.setState({ planLimit: null });
           overlay.closeThen(
             (reason ? `/subscribe?reason=${encodeURIComponent(reason)}` : '/subscribe') as Route,
-          )
-        }
+          );
+        }}
       >
         구독 알아보기
       </Button>

@@ -25,8 +25,10 @@ export const authSessionSave: Handler<'AUTH_SESSION_SAVE'> = async (msg, ctx) =>
   await sendPushTokenIfGranted(ctx);
 };
 
-/** Logout: drop the ids and hand the web the token so the server deletes it (DELETE /push-tokens/{token}). */
-export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async (_msg, ctx) => {
+/**
+ * Logout: drop the stored ids. The web deletes the Expo token (DELETE /push-tokens/{token})
+ * before sending CLEAR, so we must not re-register here.
+ */
+export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async () => {
   await clearSession();
-  await sendPushTokenIfGranted(ctx);
 };

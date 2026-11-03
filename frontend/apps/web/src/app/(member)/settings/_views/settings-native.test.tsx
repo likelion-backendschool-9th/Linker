@@ -99,4 +99,35 @@ describe('Android push permission from settings', () => {
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     expect(apiFetch).not.toHaveBeenCalled();
   });
+
+  it('preserves D’s preference fallback if native push setup is not available', async () => {
+    const send = vi.fn();
+    window.ReactNativeWebView = { postMessage: send };
+    renderWithProviders(
+      <SettingsCommon login="test" settings={settings}>
+        {null}
+      </SettingsCommon>,
+    );
+    const toggle = screen.getByRole('button', { name: '푸시 알림 꺼짐' });
+    fireEvent.click(toggle);
+    await waitFor(() => expect(send).toHaveBeenCalledOnce());
+    const { msg } = JSON.parse(send.mock.calls[0]![0]);
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: encodeEnvelope({
+            type: 'RESULT',
+            id: msg.id,
+            ok: false,
+            error: 'push-not-configured',
+          }),
+        }),
+      );
+    });
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-pressed', 'true'));
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/v1/user/me/settings/notifications',
+      expect.anything(),
+    );
+  });
 });

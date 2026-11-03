@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { saveNativeSession } from '@/features/auth/sync-native-session';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { safeReturnTo } from '@/lib/auth/return-to';
@@ -33,8 +34,13 @@ export function RecruiterLoginForm({ returnTo }: { returnTo: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: values.email.trim(), password: values.password, returnTo: safeReturnTo(returnTo) }),
     }),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setApiError(null);
+      try {
+        await saveNativeSession();
+      } catch {
+        // Web login still succeeds if the native session sync fails.
+      }
       router.replace(safeReturnTo(result.returnTo) as Route);
       router.refresh();
     },

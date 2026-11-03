@@ -6,13 +6,12 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 
+import { registerPushToken } from '@/features/notifications/push-tokens';
 import { safeReturnTo } from '@/lib/auth/return-to';
 import { useActiveOverlay } from '@/lib/navigation/use-overlay';
 import { ensureConnected } from '@/lib/realtime/stomp-client';
-import { toast } from '@/stores/toast-store';
 
 import { isInApp, onNativeMessage, postToNative } from './native';
-import { registerNativePushToken, syncNativeSession } from './native-session';
 
 /** Handles app → web messages (blueprint §11-3). Does nothing in a plain browser. */
 export function NativeBridgeProvider({
@@ -50,8 +49,8 @@ export function NativeBridgeProvider({
           }
           break;
         case 'PUSH_TOKEN':
-          void registerNativePushToken(msg).catch(() => {
-            toast('푸시 알림을 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' });
+          void registerPushToken(msg.token, msg.platform).catch(() => {
+            // Keep listening; a later login or permission grant can retry.
           });
           break;
         case 'RESULT':
@@ -66,7 +65,12 @@ export function NativeBridgeProvider({
   const userId = session?.userId;
   const userType = session?.userType;
   useEffect(() => {
-    if (isInApp()) syncNativeSession(userId && userType ? { userId, userType } : null);
+    if (!isInApp()) return;
+    postToNative(
+      userId && userType
+        ? { type: 'AUTH_SESSION_SAVE', session: { userId, userType } }
+        : { type: 'AUTH_SESSION_CLEAR' },
+    );
   }, [userId, userType]);
 
   return children;

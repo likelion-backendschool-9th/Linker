@@ -20,7 +20,11 @@ it('exchanges once in the WebView and refreshes server session data after login'
     prefetch: vi.fn(),
   };
   vi.mocked(useRouter).mockReturnValue(router);
-  vi.mocked(apiFetch).mockResolvedValue({ isNew: false, restored: false, returnTo: '/workspace' });
+  vi.mocked(apiFetch).mockImplementation(async (url) =>
+    url === '/api/v1/user/me'
+      ? { userId: 1, userType: 'DEVELOPER' }
+      : { isNew: false, restored: false, returnTo: '/workspace' },
+  );
   window.ReactNativeWebView = { postMessage: vi.fn() };
   try {
     renderWithProviders(
@@ -29,7 +33,10 @@ it('exchanges once in the WebView and refreshes server session data after login'
       </StrictMode>,
     );
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/workspace'));
-    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(apiFetch).mock.calls.filter(([url]) => url.endsWith('/auth/github/callback')),
+    ).toHaveLength(1);
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/me');
     expect(router.refresh).toHaveBeenCalledOnce();
   } finally {
     delete window.ReactNativeWebView;

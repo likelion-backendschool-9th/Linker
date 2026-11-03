@@ -10,6 +10,7 @@ const order = {
   teamId: null,
 };
 afterEach(() => vi.unstubAllEnvs());
+
 it.each(['', 'live_key'])(
   'rejects non-test widget configuration before loading Toss: %s',
   async (key) => {
@@ -24,3 +25,16 @@ it.each(['', 'live_key'])(
     ).rejects.toMatchObject({ code: 'PAYMENT_UNAVAILABLE' });
   },
 );
+
+it('mounts the mock widget under NEXT_PUBLIC_USE_MOCKS', async () => {
+  vi.stubEnv('NEXT_PUBLIC_USE_MOCKS', 'true');
+  document.body.innerHTML = '<div id="methods"></div><div id="agreement"></div>';
+  const widget = await mountPaymentWidget(
+    order,
+    { methods: '#methods', agreement: '#agreement' },
+    new AbortController().signal,
+  );
+  expect(widget.requestPayment).toEqual(expect.any(Function));
+  expect(widget.destroy).toEqual(expect.any(Function));
+  await widget.destroy();
+});

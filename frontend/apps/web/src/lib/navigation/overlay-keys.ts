@@ -42,7 +42,6 @@ export const OVERLAY_KEYS = [
   'stats-featured',
   'recruit-filter',
   'application-cancel',
-  'tech-tags',
   'recruit-status',
   'recruit-menu',
   'recruit-apply',

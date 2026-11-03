@@ -150,8 +150,10 @@ describe('native bridge handlers', () => {
       token: 'ExpoPushToken[test]',
       platform: 'android',
     });
+    vi.mocked(context.send).mockClear();
     await createDispatcher(context)(event({ type: 'AUTH_SESSION_CLEAR' }));
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('linker.session');
+    expect(context.send).not.toHaveBeenCalled();
   });
 
   it('creates the Android channel before permission and returns an Expo token', async () => {
