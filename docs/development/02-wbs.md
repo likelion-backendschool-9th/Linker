@@ -13,13 +13,13 @@
 
 ### The five owners
 
-| Owner | Area | Pages |
-| --- | --- | --- |
-| A | Accounts & recruiting | 01, 02, 03, 04, 05, 06, 25, 31, 32, 33 |
-| B | GitHub, teams, ops | 07, 08, 09, 10, 26, 27, 30 + PR posting in 17 |
-| C | Issues | 11, 12, 13, 14, 15 + my issues in 07 + AI summary (Flex) in 17 + progress card (Flex) in 11 |
-| D | Chat, notifications, subscription | 16, 17, 18, 28, 29 |
-| E | Find Team & project posts | 19, 20, 21, 22, 23, 24 |
+| Owner | Area                              | Pages                                                                                       |
+| ----- | --------------------------------- | ------------------------------------------------------------------------------------------- |
+| A     | Accounts & recruiting             | 01, 02, 03, 04, 05, 06, 25, 31, 32, 33                                                      |
+| B     | GitHub, teams, ops                | 07, 08, 09, 10, 26, 27, 30 + PR posting in 17                                               |
+| C     | Issues                            | 11, 12, 13, 14, 15 + my issues in 07 + AI summary (Flex) in 17 + progress card (Flex) in 11 |
+| D     | Chat, notifications, subscription | 16, 17, 18, 28, 29                                                                          |
+| E     | Find Team & project posts         | 19, 20, 21, 22, 23, 24                                                                      |
 
 Changes from the initial 07 TODO assignment: 26 Ops: users moved from A, and 30 My stats from E, to B (A and E were each half a day to a day over). 04 second pass stays with A, the 04 controller owner. 07 TODO ch. 11 was updated to match.
 
@@ -29,15 +29,20 @@ Changes from the initial 07 TODO assignment: 26 Ops: users moved from A, and 30 
 
 ### 1-1. URL shape: `/api/v1/{role}/{resources}`
 
-**The role is "who may call this API".** There are only five, based on login method and member type, so that one role = one access rule line in Spring Security.
+HTTP endpoints use this URL shape independently of Java package names. Preserve the caller groups listed below: `public`, `user`, `recruiter`, and `admin`; `webhook` is a dedicated external-system ingress namespace rather than a human role. The path prefix does not grant access by itself: authentication, account type, team membership, and resource permissions must be enforced by the backend. Review actual controller mappings against this WBS during the layer migration; do not rename an already conforming URL just to mirror a new package path.
 
-| Role | Who calls | Security rule | Example |
-| --- | --- | --- | --- |
-| `public` | Anyone, including logged-out. Read APIs of read screens (feed, posts, recruit posts, profiles) live here | `permitAll()` + optional auth (read as member if cookie present) + 60/min per IP (verified search engine bots get a separate limit) | `/api/v1/public/posts/{postId}` |
-| `user` | Every logged-in member (developers + recruiters) | `authenticated()` | `/api/v1/user/posts/{postId}` |
-| `recruiter` | Recruiters only (`user_type = RECRUITER`) | `hasRole("RECRUITER")` | `/api/v1/recruiter/offers` |
-| `admin` | Operators only (`admins` table) | `hasRole("ADMIN")` | `/api/v1/admin/report-cases` |
-| `webhook` | GitHub (signature verified) | `permitAll()` + signature filter | `/api/v1/webhook/github` |
+**The path namespace identifies the caller group.**
+`public`, `user`, `recruiter`, and `admin` identify human caller
+groups. `webhook` is reserved for external-system callbacks.
+Backend security checks enforce the access rules listed below.
+
+| Role        | Who calls                                                                                                | Security rule                                                                                                                       | Example                         |
+| ----------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `public`    | Anyone, including logged-out. Read APIs of read screens (feed, posts, recruit posts, profiles) live here | `permitAll()` + optional auth (read as member if cookie present) + 60/min per IP (verified search engine bots get a separate limit) | `/api/v1/public/posts/{postId}` |
+| `user`      | Every logged-in member (developers + recruiters)                                                         | `authenticated()`                                                                                                                   | `/api/v1/user/posts/{postId}`   |
+| `recruiter` | Recruiters only (`user_type = RECRUITER`)                                                                | `hasRole("RECRUITER")`                                                                                                              | `/api/v1/recruiter/offers`      |
+| `admin`     | Operators only (`admins` table)                                                                          | `hasRole("ADMIN")`                                                                                                                  | `/api/v1/admin/report-cases`    |
+| `webhook`   | GitHub (signature verified)                                                                              | `permitAll()` + signature filter                                                                                                    | `/api/v1/webhook/github`        |
 
 **Mapping the four roles to URL roles**: from Policy ch. 2 "Access by role": guest → `public`, developer → `user` + `@DeveloperOnly`, recruiter → `user` + `recruiter`, operator → `admin` (developer account + `admins` row + OTP). How they're represented in the DB is in ERD ch. 1 "How roles are represented". Per-page access is defined by the Policy table; the controllers' permission column follows it.
 
@@ -56,30 +61,17 @@ Two permissions the role can't express are checked with annotations, not URLs:
 - IDs are Linker ids. GitHub numbers (issue numbers, etc.) are never in URLs, because numbers collide across repos (07 TODO page 12 URL also changed to `[issueId]`).
 - Lists use cursors: `?cursor=&size=20` → `{ items, nextCursor }`.
 
-### 1-3. Page–controller 1:1 rules
+### 1-3. Page ownership, controllers, and implementation reference
 
-1. **One page = one `@RestController`.** Named `{Page}Controller` (e.g. `IssueListController`), package with page number like `api.p11_issuelist`, so screen → code is immediate.
-2. **Each endpoint has exactly one owning page.** If another page needs the same feature, it **borrows** the owner page's API instead of making a new one (e.g. board 14 drag calls issue detail 12's status API). Listed under "Borrowed APIs" in this document.
-3. **Logic goes in domain services, not controllers.** Controllers only validate the request → call services → assemble the screen response. Services in domain packages (`domain.issue`, `domain.chat` …) such as `IssueService`, `ChatService`, `NotificationService` are shared by several page controllers. Entities and repositories also live in domain packages.
-4. **Response DTOs belong to the page.** The same issue needs different fields as a list row (11) and a board card (14), so DTOs are separate. A screen change then doesn't break another page's response.
-5. **STOMP goes in the same controller.** Chat room (17) `@MessageMapping` methods live in `ChatRoomController` (`@RestController` is a `@Controller`, so it can hold both).
-6. **orval tag = controller name.** Put springdoc `@Tag(name = "p11-issue-list")` on each controller; orval then generates a hook file per page, so on the frontend "the APIs this page calls" sit in one file.
+1. **One page = one owning controller.** Keep the documented page-to-controller mapping (e.g. page 11 owns `IssueListController`). Page numbers identify work items in this WBS; do not use them as Java package prefixes. An endpoint reused by another page remains owned by its original controller.
+2. **Use the Backend Blueprint for package structure.** The agreed implementation uses three layers: Controller → Service → Repository. Entities and DTOs are separate data representations, not additional processing layers. The base package is `com.linker.backend`. The Blueprint defines the `controller`, `service`, `repository`, `entity`, and `dto` packages and supporting infrastructure. Group controllers by caller role, retaining one owning controller per page. Do not recreate the previous `api/common`, numbered page packages, or `domain`-based placement rules from this WBS. See [05 Backend Blueprint](05-backend-blueprint.md) for concrete package paths and migration details.
+3. **Keep responsibilities separate.** Controllers validate HTTP input, invoke services, and assemble responses. Services contain business rules and coordinate operations. Repositories handle persistence. Reuse services across page controllers where needed; page ownership does not require a separate service, entity, or repository for every page. A role-based controller package does not require duplicate entities or tables for the same resource.
+4. **Request and response DTOs follow the layer structure.** Keep page-specific request/response contracts where appropriate, but place DTOs under the Blueprint's `dto` structure, not beside controllers in numbered page packages. Services, entities, and repositories follow their respective layer packages.
+5. **HTTP paths and Java packages are different contracts.** HTTP endpoints follow `/api/v1/{role}/{resources}` as defined in sections 1-1 and 1-2. A Java package does not define an HTTP route; controller mappings do. Confirm mappings and security match the WBS after moving classes. The Blueprint specifies the controller subpackages; this WBS does not require `api/v1` directories in the Java source tree.
+6. **Preserve existing OpenAPI tags during package migration.** Java package names and OpenAPI tags are separate. Keep existing tags such as `@Tag(name = "p11-issue-list")` so the frontend's orval integration does not change merely because classes move. Any later tag rename must be coordinated with the frontend and regenerated clients.
+7. **Keep STOMP contracts separate from HTTP path rules.** Chat room (17) keeps its documented `@MessageMapping` ownership and STOMP destinations. The HTTP URL rule does not rename STOMP destinations.
 
-```
-backend/src/main/java/com/linker/backend
-├── BackendApplication.java
-├── api                  # per-page controllers + request/response DTOs (1:1)
-│   ├── common           # 00: 7 common controllers
-│   ├── p01_login
-│   ├── p11_issuelist
-│   └── ...
-├── domain               # domain services, entities, repositories (shared across pages)
-│   ├── user, team, github, issue, chat, notification
-│   └── recruit, post, feed, moderation, billing, recruiter
-└── global               # security, exceptions, annotations (@DeveloperOnly, @TeamRole), config (PlanLimits)
-```
-
-The base package is `com.linker.backend`, matching the existing `BackendApplication`. Keep application packages below this base so Spring's default component and JPA scanning includes them. For example, page 11 uses `com.linker.backend.api.p11_issuelist`. Gradle's `group = 'com.linker'` is a separate build identifier and remains unchanged.
+**Document responsibility:** This WBS owns scope, page/controller ownership, endpoint contracts, permissions, schedule, and completion criteria. The Backend Blueprint owns architecture, package structure, and code migration. Update contradictory instructions in the Blueprint and `AGENTS.md` alongside this change before implementing the new structure. Existing endpoint definitions and API totals remain unchanged by this package-structure revision.
 
 ### 1-4. Common responses
 
@@ -95,29 +87,29 @@ The base package is `com.linker.backend`, matching the existing `BackendApplicat
 
 Half-day (0.5) units. "→" = morning → afternoon.
 
-| Day | A Accounts & recruiting | B GitHub, teams, ops | C Issues | D Chat, notif., subscription | E Find Team & posts |
-| --- | --- | --- | --- | --- | --- |
-| D1 | 00 auth, session, permissions → access table, `proxy.ts`, screen frame | 00 GitHub App, webhooks, deploy | 00 Projects spike → frontend `policy.ts`, formatters, SEO, image config | 00 STOMP, Redis | 00 monorepo, orval, API fetch function → `useOverlay` |
-| D2 | 00 login-prompt sheet → 03 legal | 00 install callback spike → app bridge, Expo shell | 00 issue cache design → test setup (axe, MSW) | 00 NotificationService → STOMP client | 00 common sheets, uploader → report, block |
-| D3 | 01 start/login | 07 → 08 | 11 | 16 → 17 | 19 |
-| D4 | 02 → 06 | 08 | 11 → 12 | 17 | 20 |
-| D5 | 04 (1st pass) | 09 (1st) → 10 | 12 | 17 | 21 |
-| D6 | 05 → 25 | 09 (2nd) | 13 | 18 | 21 → 22 |
-| D7 | 25 → 31 | 09 (2nd) → 17 PR posting | 13 | 17 1:1 & recruiting offers | 22 |
-| D8 | 31 → 04 (2nd) | 26 | 14 | 28 | 23 |
-| D9 | 32 → 33 | 27 → 30 | 15 → 07 my issues | 28 → 29 | 24 |
-| D10 | 04/05 recruiter side + `[Included]` job ad server, sheet, job categories → demo, bugs | 00 sitemap API, `sitemap.ts` → sync hardening, demo | 17 AI summary (Flex) → `[Included]` 11 progress card → demo, bugs | `[Included]` 28/29 Scout plan → `[Included]` share sheet (00), 17 share cards and link cards → demo, bugs | `[Included]` 24 job ad card, close, hide → wire share buttons on 23/21/04 → demo, bugs |
+| Day | A Accounts & recruiting                                                               | B GitHub, teams, ops                                | C Issues                                                                | D Chat, notif., subscription                                                                              | E Find Team & posts                                                                    |
+| --- | ------------------------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| D1  | 00 auth, session, permissions → access table, `proxy.ts`, screen frame                | 00 GitHub App, webhooks, deploy                     | 00 Projects spike → frontend `policy.ts`, formatters, SEO, image config | 00 STOMP, Redis                                                                                           | 00 monorepo, orval, API fetch function → `useOverlay`                                  |
+| D2  | 00 login-prompt sheet → 03 legal                                                      | 00 install callback spike → app bridge, Expo shell  | 00 issue cache design → test setup (axe, MSW)                           | 00 NotificationService → STOMP client                                                                     | 00 common sheets, uploader → report, block                                             |
+| D3  | 01 start/login                                                                        | 07 → 08                                             | 11                                                                      | 16 → 17                                                                                                   | 19                                                                                     |
+| D4  | 02 → 06                                                                               | 08                                                  | 11 → 12                                                                 | 17                                                                                                        | 20                                                                                     |
+| D5  | 04 (1st pass)                                                                         | 09 (1st) → 10                                       | 12                                                                      | 17                                                                                                        | 21                                                                                     |
+| D6  | 05 → 25                                                                               | 09 (2nd)                                            | 13                                                                      | 18                                                                                                        | 21 → 22                                                                                |
+| D7  | 25 → 31                                                                               | 09 (2nd) → 17 PR posting                            | 13                                                                      | 17 1:1 & recruiting offers                                                                                | 22                                                                                     |
+| D8  | 31 → 04 (2nd)                                                                         | 26                                                  | 14                                                                      | 28                                                                                                        | 23                                                                                     |
+| D9  | 32 → 33                                                                               | 27 → 30                                             | 15 → 07 my issues                                                       | 28 → 29                                                                                                   | 24                                                                                     |
+| D10 | 04/05 recruiter side + `[Included]` job ad server, sheet, job categories → demo, bugs | 00 sitemap API, `sitemap.ts` → sync hardening, demo | 17 AI summary (Flex) → `[Included]` 11 progress card → demo, bugs       | `[Included]` 28/29 Scout plan → `[Included]` share sheet (00), 17 share cards and link cards → demo, bugs | `[Included]` 24 job ad card, close, hide → wire share buttons on 23/21/04 → demo, bugs |
 
 ### 2-2. Integration checks (milestones)
 
-| When | Flow that must run end to end | Pages needed |
-| --- | --- | --- |
-| End of D2 | 6 spikes pass (WebView GitHub login, App install return, Projects Blocked + date fields, webhook receipt, STOMP reconnect, Toss confirm/cancel) + frontend foundation "end of D2 check" ([03 frontend blueprint §1-1](03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) | 00 |
-| End of D5 | Login → onboarding → create team → issue list/detail (GitHub sync) → team chat | 01, 02, 08, 11, 12, 16, 17 |
-| End of D7 | Create issue → assignee notification; recruit → apply → accept → join team → project completion | 13, 18, 19–21, 09 (2nd) |
-| End of D8 | Post project → detail like/comment → 1:1 chat, Pro checkout | 22, 23, 17 1:1, 28 |
-| End of D9 | Feed; report → hide → action log; pay → cancel; recruiter sign-up → recruiting offer → sent offers list | 24–29, 31–33 |
-| D10 | Whole 07 TODO demo checklist (including logged-out shared link → login prompt → return, `[Included]` Scout payment → job ad → feed showing → external posting, close, hide, `[Included]` post share → team chat room card, Flex progress card), mobile browsers and WebView app | All |
+| When      | Flow that must run end to end                                                                                                                                                                                                                                                                              | Pages needed               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| End of D2 | 6 spikes pass (WebView GitHub login, App install return, Projects Blocked + date fields, webhook receipt, STOMP reconnect, Toss confirm/cancel) + frontend foundation "end of D2 check" ([03 frontend blueprint §1-1](03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work)) | 00                         |
+| End of D5 | Login → onboarding → create team → issue list/detail (GitHub sync) → team chat                                                                                                                                                                                                                             | 01, 02, 08, 11, 12, 16, 17 |
+| End of D7 | Create issue → assignee notification; recruit → apply → accept → join team → project completion                                                                                                                                                                                                            | 13, 18, 19–21, 09 (2nd)    |
+| End of D8 | Post project → detail like/comment → 1:1 chat, Pro checkout                                                                                                                                                                                                                                                | 22, 23, 17 1:1, 28         |
+| End of D9 | Feed; report → hide → action log; pay → cancel; recruiter sign-up → recruiting offer → sent offers list                                                                                                                                                                                                    | 24–29, 31–33               |
+| D10       | Whole 07 TODO demo checklist (including logged-out shared link → login prompt → return, `[Included]` Scout payment → job ad → feed showing → external posting, close, hide, `[Included]` post share → team chat room card, Flex progress card), mobile browsers and WebView app                            | All                        |
 
 ### 2-3. Heavy dependencies
 
@@ -133,20 +125,20 @@ Half-day (0.5) units. "→" = morning → afternoon.
 
 Not a page; 7 common controllers. Other pages borrow these APIs.
 
-| Controller | Owner | Method | Path | Does | Permission |
-| --- | --- | --- | --- | --- | --- |
-| `AuthSessionController` | A | GET | `/api/v1/user/me` | Session member (type, status, onboarding step, suspension info) | user |
-| | | POST | `/api/v1/public/auth/refresh` | Extend session cookie | public |
-| `TechTagController` | A | GET | `/api/v1/public/tech-tags` | Tech stack tag list (sheets in 02, 05, 19, 20, 22) | public |
-| | | GET | `/api/v1/public/job-categories` | `[Included]` Job category list (05 job categories of interest, 04 job ad sheet) | public |
-| `UploadController` | E | POST | `/api/v1/user/uploads` | Issue presigned upload URL (type, 10MB check) | user |
-| | | POST | `/api/v1/user/uploads/{fileId}/complete` | Upload complete → resize, strip EXIF | user |
-| `ReportController` | E | POST | `/api/v1/user/reports` | Report (target type, id, reason; for chat, copy 10 before/after) | user |
-| `BlockController` | E | GET | `/api/v1/user/me/blocks` | Blocked users list (06) | user |
-| | | POST | `/api/v1/user/blocks` | Open a blocking period (idempotent while active) | user |
-| | | DELETE | `/api/v1/user/blocks/{userId}` | Close the active blocking period; retain history for DM filtering | user |
-| `GithubWebhookController` | B | POST | `/api/v1/webhook/github` | Verify signature → save `github_webhook_deliveries` → Redis queue | webhook |
-| `SitemapController` | B | GET | `/api/v1/public/sitemap/{kind}?page=` | Search-indexable list (`kind` = `posts` / `recruits` / `users`, 50k per page, only id, URL values, updated time). Excludes hidden, deleted, suspended, pending withdrawal and recruiters; recruit posts only while open (04 Policy POL-A-9) | public |
+| Controller                | Owner | Method | Path                                     | Does                                                                                                                                                                                                                                        | Permission |
+| ------------------------- | ----- | ------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `AuthSessionController`   | A     | GET    | `/api/v1/user/me`                        | Session member (type, status, onboarding step, suspension info)                                                                                                                                                                             | user       |
+|                           |       | POST   | `/api/v1/public/auth/refresh`            | Extend session cookie                                                                                                                                                                                                                       | public     |
+| `TechTagController`       | A     | GET    | `/api/v1/public/tech-tags`               | Tech stack tag list (sheets in 02, 05, 19, 20, 22)                                                                                                                                                                                          | public     |
+|                           |       | GET    | `/api/v1/public/job-categories`          | `[Included]` Job category list (05 job categories of interest, 04 job ad sheet)                                                                                                                                                             | public     |
+| `UploadController`        | E     | POST   | `/api/v1/user/uploads`                   | Issue presigned upload URL (type, 10MB check)                                                                                                                                                                                               | user       |
+|                           |       | POST   | `/api/v1/user/uploads/{fileId}/complete` | Upload complete → resize, strip EXIF                                                                                                                                                                                                        | user       |
+| `ReportController`        | E     | POST   | `/api/v1/user/reports`                   | Report (target type, id, reason; for chat, copy 10 before/after)                                                                                                                                                                            | user       |
+| `BlockController`         | E     | GET    | `/api/v1/user/me/blocks`                 | Blocked users list (06)                                                                                                                                                                                                                     | user       |
+|                           |       | POST   | `/api/v1/user/blocks`                    | Open a blocking period (idempotent while active)                                                                                                                                                                                            | user       |
+|                           |       | DELETE | `/api/v1/user/blocks/{userId}`           | Close the active blocking period; retain history for DM filtering                                                                                                                                                                           | user       |
+| `GithubWebhookController` | B     | POST   | `/api/v1/webhook/github`                 | Verify signature → save `github_webhook_deliveries` → Redis queue                                                                                                                                                                           | webhook    |
+| `SitemapController`       | B     | GET    | `/api/v1/public/sitemap/{kind}?page=`    | Search-indexable list (`kind` = `posts` / `recruits` / `users`, 50k per page, only id, URL values, updated time). Excludes hidden, deleted, suspended, pending withdrawal and recruiters; recruit posts only while open (04 Policy POL-A-9) | public     |
 
 **Tables (new)**: users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks, report_cases, reports, github_webhook_deliveries, admins (seed)
 
@@ -182,16 +174,16 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 01. Start / login `[Required]` · `/`, `/auth/callback`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D3 (1 day) | 00 | A-1 |
+| Owner | Schedule   | Prereq | Basis |
+| ----- | ---------- | ------ | ----- |
+| A     | D3 (1 day) | 00     | A-1   |
 
 **`LoginController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/auth/github/authorize-url` | GitHub authorize URL + issue `state` (`client=web\|app`, `returnTo`) | public |
-| POST | `/api/v1/public/auth/github/callback` | Exchange code → find/create member, refresh username → cookie. Response `{ isNew, restored, returnTo }` | public |
+| Method | Path                                       | Does                                                                                                    | Permission |
+| ------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ---------- |
+| GET    | `/api/v1/public/auth/github/authorize-url` | GitHub authorize URL + issue `state` (`client=web\|app`, `returnTo`)                                    | public     |
+| POST   | `/api/v1/public/auth/github/callback`      | Exchange code → find/create member, refresh username → cookie. Response `{ isNew, restored, returnTo }` | public     |
 
 - Borrowed: `GET /api/v1/user/me` (if logged in, go to `/feed`)
 - Tables: new banned_github_ids · shared users, auth_identities, github_tokens, user_sessions
@@ -200,18 +192,18 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 02. Onboarding `[Required]` · `/onboarding`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D4 morning (0.5 day) | 01 | A-1, A-2, A-3, H-4 |
+| Owner | Schedule             | Prereq | Basis              |
+| ----- | -------------------- | ------ | ------------------ |
+| A     | D4 morning (0.5 day) | 01     | A-1, A-2, A-3, H-4 |
 
 **`OnboardingController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/onboarding` | Remaining steps + defaults loaded from GitHub | user |
-| POST | `/api/v1/user/onboarding/agreements` | Age 14+, terms, privacy (required), marketing (optional) consent; store terms version | user |
-| PUT | `/api/v1/user/onboarding/profile` | Save name, bio, blog, tech stack, looking for team, job-seeking status, then finish onboarding | user |
-| PUT | `/api/v1/user/onboarding/email` | `[Included]` Entered only when no email came from GitHub | user |
+| Method | Path                                 | Does                                                                                           | Permission |
+| ------ | ------------------------------------ | ---------------------------------------------------------------------------------------------- | ---------- |
+| GET    | `/api/v1/user/onboarding`            | Remaining steps + defaults loaded from GitHub                                                  | user       |
+| POST   | `/api/v1/user/onboarding/agreements` | Age 14+, terms, privacy (required), marketing (optional) consent; store terms version          | user       |
+| PUT    | `/api/v1/user/onboarding/profile`    | Save name, bio, blog, tech stack, looking for team, job-seeking status, then finish onboarding | user       |
+| PUT    | `/api/v1/user/onboarding/email`      | `[Included]` Entered only when no email came from GitHub                                       | user       |
 
 - Borrowed: `GET /api/v1/public/tech-tags`, `GET /api/v1/public/legal-documents/{slug}` (03)
 - Tables: new user_agreements, tech_tags (seed), user_tech_tags · shared users
@@ -220,42 +212,42 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 03. Legal documents `[Required]` · `/legal/[slug]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D2 afternoon (0.5 day) | 00 | MVP launch condition |
+| Owner | Schedule               | Prereq | Basis                |
+| ----- | ---------------------- | ------ | -------------------- |
+| A     | D2 afternoon (0.5 day) | 00     | MVP launch condition |
 
 **`LegalController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/legal-documents` | Document list and current versions | public |
-| GET | `/api/v1/public/legal-documents/{slug}` | `terms`, `privacy`, `community`, `recruiter-terms` body (Markdown), version, effective date | public |
+| Method | Path                                    | Does                                                                                        | Permission |
+| ------ | --------------------------------------- | ------------------------------------------------------------------------------------------- | ---------- |
+| GET    | `/api/v1/public/legal-documents`        | Document list and current versions                                                          | public     |
+| GET    | `/api/v1/public/legal-documents/{slug}` | `terms`, `privacy`, `community`, `recruiter-terms` body (Markdown), version, effective date | public     |
 
 - Tables: none (documents are server resource files; version compared at consent)
 - [ ] Frontend: Markdown rendering, table of contents, effective date and version, contact email link
 
 ### 04. Profile `[Required]` · `/u/[login]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | 1st pass D5 (1 day), 2nd pass D8 afternoon (0.5 day), recruiter side D10 morning (incl. job ad sheet) | 02; 2nd pass 22; recruiter side 31; job ad 28 | A-2, A-4, A-5, A-6, P-5, P-7, C-4, H-7, S-10 |
+| Owner | Schedule                                                                                              | Prereq                                        | Basis                                        |
+| ----- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------- |
+| A     | 1st pass D5 (1 day), 2nd pass D8 afternoon (0.5 day), recruiter side D10 morning (incl. job ad sheet) | 02; 2nd pass 22; recruiter side 31; job ad 28 | A-2, A-4, A-5, A-6, P-5, P-7, C-4, H-7, S-10 |
 
 **`ProfileController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/users/{login}` | Header (layout per member type), completion record, new username if changed. If logged in: follow relation, block check; "제안만 받기" (Offers only) shown to recruiters only | public |
-| GET | `/api/v1/user/users/{login}/followers` | Followers sheet (people list, so login only) | user |
-| GET | `/api/v1/user/users/{login}/followings` | Following sheet | user |
-| POST | `/api/v1/user/users/{login}/follow` | Follow (200/day, notification) | user · developers only |
-| DELETE | `/api/v1/user/users/{login}/follow` | Unfollow | user · developers only |
-| GET | `/api/v1/public/users/{login}/contributions?month=` | `[Included]` One month of contribution graph + as-of time | public |
-| GET | `/api/v1/public/users/{login}/posts` | 2nd pass: project posts (pinned first) | public |
-| GET | `/api/v1/public/users/{login}/teams` | 2nd pass: teams (active, completed) | public |
-| PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: pin featured posts and order (free 1, Pro 5) | user · developers only |
-| GET | `/api/v1/recruiter/me/ad` | `[Included]` My job ad (status, subscription state). Empty if none | recruiter |
-| PUT | `/api/v1/recruiter/me/ad` | `[Included]` Register/edit job ad (job category, title, URL, closing date). Allowed-domain URL check, Scout subscription check, 10/day | recruiter |
-| PATCH | `/api/v1/recruiter/me/ad/status` | `[Included]` Turn showing on/off (ACTIVE ↔ PAUSED) | recruiter |
+| Method | Path                                                | Does                                                                                                                                                                          | Permission             |
+| ------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/public/users/{login}`                      | Header (layout per member type), completion record, new username if changed. If logged in: follow relation, block check; "제안만 받기" (Offers only) shown to recruiters only | public                 |
+| GET    | `/api/v1/user/users/{login}/followers`              | Followers sheet (people list, so login only)                                                                                                                                  | user                   |
+| GET    | `/api/v1/user/users/{login}/followings`             | Following sheet                                                                                                                                                               | user                   |
+| POST   | `/api/v1/user/users/{login}/follow`                 | Follow (200/day, notification)                                                                                                                                                | user · developers only |
+| DELETE | `/api/v1/user/users/{login}/follow`                 | Unfollow                                                                                                                                                                      | user · developers only |
+| GET    | `/api/v1/public/users/{login}/contributions?month=` | `[Included]` One month of contribution graph + as-of time                                                                                                                     | public                 |
+| GET    | `/api/v1/public/users/{login}/posts`                | 2nd pass: project posts (pinned first)                                                                                                                                        | public                 |
+| GET    | `/api/v1/public/users/{login}/teams`                | 2nd pass: teams (active, completed)                                                                                                                                           | public                 |
+| PUT    | `/api/v1/user/me/pinned-posts`                      | 2nd pass `[Included]`: pin featured posts and order (free 1, Pro 5)                                                                                                           | user · developers only |
+| GET    | `/api/v1/recruiter/me/ad`                           | `[Included]` My job ad (status, subscription state). Empty if none                                                                                                            | recruiter              |
+| PUT    | `/api/v1/recruiter/me/ad`                           | `[Included]` Register/edit job ad (job category, title, URL, closing date). Allowed-domain URL check, Scout subscription check, 10/day                                        | recruiter              |
+| PATCH  | `/api/v1/recruiter/me/ad/status`                    | `[Included]` Turn showing on/off (ACTIVE ↔ PAUSED)                                                                                                                            | recruiter              |
 
 - Borrowed: block/report (00), "메시지" (Message) / "채용 제안 보내기" (Send recruiting offer) → `POST /api/v1/user/chat-rooms/direct` / `POST /api/v1/recruiter/chat-requests` (17), recruiter my page summary → `GET /api/v1/recruiter/offers/summary` (33)
 - Tables: new follows, 🟡 contribution_days, 🟡 username_redirects, 🟡 pinned_posts (2nd pass), 🟡 profile_visits (2nd pass), 🟡 recruiter_ads (recruiter side) · shared users, user_tech_tags, user_blocks, notifications, completion_records, posts, team_members, recruiter_profiles (after 31)
@@ -268,18 +260,18 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 05. Edit profile `[Required]` · `/settings/profile`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D6 morning (0.5 day), recruiter edit and job categories D10 morning | 04; recruiter edit 31 | A-2, A-3, H-4, H-8 |
+| Owner | Schedule                                                            | Prereq                | Basis              |
+| ----- | ------------------------------------------------------------------- | --------------------- | ------------------ |
+| A     | D6 morning (0.5 day), recruiter edit and job categories D10 morning | 04; recruiter edit 31 | A-2, A-3, H-4, H-8 |
 
 **`ProfileEditController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/me/profile` | Edit form values | user |
-| PATCH | `/api/v1/user/me/profile` | Name, bio, blog, tech stack, looking for team, job-seeking status, `[Included]` job categories of interest (max 3) | user · developers only |
-| POST | `/api/v1/user/me/profile/github-sync` | Reload from GitHub | user · developers only |
-| PATCH | `/api/v1/recruiter/me/profile` | `[Included]` Recruiter name, company, job title, website (after 31) | recruiter |
+| Method | Path                                  | Does                                                                                                               | Permission             |
+| ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| GET    | `/api/v1/user/me/profile`             | Edit form values                                                                                                   | user                   |
+| PATCH  | `/api/v1/user/me/profile`             | Name, bio, blog, tech stack, looking for team, job-seeking status, `[Included]` job categories of interest (max 3) | user · developers only |
+| POST   | `/api/v1/user/me/profile/github-sync` | Reload from GitHub                                                                                                 | user · developers only |
+| PATCH  | `/api/v1/recruiter/me/profile`        | `[Included]` Recruiter name, company, job title, website (after 31)                                                | recruiter              |
 
 - Tables: new 🟡 user_job_categories · shared users, user_tech_tags, tech_tags, recruiter_profiles (after 31)
 - [ ] Server: turn off looking-for-team after 30 days inactive, job-seeking status OFF after 90 days inactive + notify on next visit (same scheduler)
@@ -287,21 +279,21 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 06. Settings `[Required]` · `/settings`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | Logout D1, rest D4 afternoon (0.5 day), recruiter section included in 32 (D9) | 01 | POL-A, POL-N-1 |
+| Owner | Schedule                                                                      | Prereq | Basis          |
+| ----- | ----------------------------------------------------------------------------- | ------ | -------------- |
+| A     | Logout D1, rest D4 afternoon (0.5 day), recruiter section included in 32 (D9) | 01     | POL-A, POL-N-1 |
 
 **`SettingsController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/me/settings` | Linked GitHub, notification email, push on/off, current plan summary | user |
-| PATCH | `/api/v1/user/me/settings/notifications` | Push on/off (`users.push_enabled`; off stops push only) | user |
-| PATCH | `/api/v1/user/me/email` | Change notification email | user |
-| POST | `/api/v1/user/auth/logout` | Log out (delete session) | user |
-| GET | `/api/v1/user/me/withdrawal-check` | Teams I own (must transfer or delete before next step) | user |
-| POST | `/api/v1/user/me/withdrawal` | Pending withdrawal (deleted after 30 days) | user |
-| PATCH | `/api/v1/recruiter/me/password` | `[Included]` Recruiter password change → end other sessions (after 32) | recruiter |
+| Method | Path                                     | Does                                                                   | Permission |
+| ------ | ---------------------------------------- | ---------------------------------------------------------------------- | ---------- |
+| GET    | `/api/v1/user/me/settings`               | Linked GitHub, notification email, push on/off, current plan summary   | user       |
+| PATCH  | `/api/v1/user/me/settings/notifications` | Push on/off (`users.push_enabled`; off stops push only)                | user       |
+| PATCH  | `/api/v1/user/me/email`                  | Change notification email                                              | user       |
+| POST   | `/api/v1/user/auth/logout`               | Log out (delete session)                                               | user       |
+| GET    | `/api/v1/user/me/withdrawal-check`       | Teams I own (must transfer or delete before next step)                 | user       |
+| POST   | `/api/v1/user/me/withdrawal`             | Pending withdrawal (deleted after 30 days)                             | user       |
+| PATCH  | `/api/v1/recruiter/me/password`          | `[Included]` Recruiter password change → end other sessions (after 32) | recruiter  |
 
 - Borrowed: block list / unblock (00 `BlockController`), owner transfer / team delete (09)
 - Tables: new none · shared users, user_agreements, user_blocks, user_sessions, team_members, subscriptions (after 28)
@@ -312,16 +304,16 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 07. Workspace home `[Required]` · `/workspace`, `/workspace/issues`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B (my issues: C) | D3 morning (0.5 day), my issues D9 afternoon (C) | 01 | T-1, I-5 |
+| Owner            | Schedule                                         | Prereq | Basis    |
+| ---------------- | ------------------------------------------------ | ------ | -------- |
+| B (my issues: C) | D3 morning (0.5 day), my issues D9 afternoon (C) | 01     | T-1, I-5 |
 
 **`WorkspaceController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/me/teams` | My teams (grouped active / completed / read-only / archived), includes `joinedAt` for default team pick; also used by the team switcher sheet and 07 my-issues team picker | user · developers only |
-| GET | `/api/v1/user/me/issues?teamId=` | `[Included]` Issues assigned to me **in that team only**, by due date (added by C on D9). `teamId` required and must be a team I belong to; otherwise 400 | user · developers only |
+| Method | Path                            | Does                                                                                                                                                                            | Permission             |
+| ------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/user/me/teams`         | My teams (grouped active / completed / read-only / archived), includes `joinedAt` for default team pick; also used by the team switcher sheet and 07 my-issues team picker      | user · developers only |
+| GET    | `/api/v1/user/me/issues?teamId=` | `[Included]` Issues assigned to me **in that team only**, by due date (added by C on D9). `teamId` required and must be a team I belong to; otherwise 400                        | user · developers only |
 
 - Tables: new none · shared teams, team_members, issues, issue_assignees
 - [ ] Frontend: team cards, empty state ("팀 만들기" (Create team) + "팀 찾으러 가기" (Find a team)), team switcher sheet (header of 11–15), 10-team limit notice
@@ -331,23 +323,23 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 08. Create team `[Required]` · `/teams/new`, `/teams/new/callback`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B | D3 afternoon–D4 (1.5 days) | 07, 00 spike | T-1, T-3, POL-T-1, POL-I-1 |
+| Owner | Schedule                   | Prereq       | Basis                      |
+| ----- | -------------------------- | ------------ | -------------------------- |
+| B     | D3 afternoon–D4 (1.5 days) | 07, 00 spike | T-1, T-3, POL-T-1, POL-I-1 |
 
 **`TeamCreateController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/team-setup/install-url` | GitHub App install URL + `state` | user · developers only |
-| POST | `/api/v1/user/team-setup/installations/verify` | Don't trust the return values; verify via `GET /user/installations` → installed / requested from owner / org already linked | user · developers only |
-| POST | `/api/v1/user/teams` | Create team + team chat room + register owner | user · developers only |
-| GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on | team OWNER |
-| PUT | `/api/v1/user/teams/{teamId}/setup/repos` | Set initial linked repos | team OWNER |
-| GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns) | team OWNER/ADMIN |
-| POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields) or use existing board + status mapping | team OWNER/ADMIN |
-| GET | `/api/v1/user/teams/{teamId}/setup/permission-check` | Whether org base repo permission is read | team OWNER |
-| POST | `/api/v1/user/teams/{teamId}/setup/complete` | Queue first full sync (issues, PRs, org members) | team OWNER |
+| Method | Path                                                 | Does                                                                                                                        | Permission             |
+| ------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/user/team-setup/install-url`                | GitHub App install URL + `state`                                                                                            | user · developers only |
+| POST   | `/api/v1/user/team-setup/installations/verify`       | Don't trust the return values; verify via `GET /user/installations` → installed / requested from owner / org already linked | user · developers only |
+| POST   | `/api/v1/user/teams`                                 | Create team + team chat room + register owner                                                                               | user · developers only |
+| GET    | `/api/v1/user/teams/{teamId}/setup/repos`            | Repos the app is installed on                                                                                               | team OWNER             |
+| PUT    | `/api/v1/user/teams/{teamId}/setup/repos`            | Set initial linked repos                                                                                                    | team OWNER             |
+| GET    | `/api/v1/user/teams/{teamId}/setup/boards`           | `[Included]` Preview existing org boards (name, card count, status columns)                                                 | team OWNER/ADMIN       |
+| POST   | `/api/v1/user/teams/{teamId}/setup/board`            | Create new "Linker" board (4 statuses + date fields) or use existing board + status mapping                                 | team OWNER/ADMIN       |
+| GET    | `/api/v1/user/teams/{teamId}/setup/permission-check` | Whether org base repo permission is read                                                                                    | team OWNER             |
+| POST   | `/api/v1/user/teams/{teamId}/setup/complete`         | Queue first full sync (issues, PRs, org members)                                                                            | team OWNER             |
 
 - Tables: new github_installations, github_repos, teams, team_members, team_repos, team_project_boards, board_status_mappings, chat_rooms, chat_room_members · shared github_tokens, github_webhook_deliveries
 - [ ] Server: handlers (consumers of the 00 webhook queue) for `installation` webhook (app removed → read-only, archived after 30 days) and `organization` webhook (member sync)
@@ -355,32 +347,32 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 09. Team settings & members `[Required]` · `/teams/[id]/settings`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B | 1st pass D5 morning (0.5 day), 2nd pass D6–D7 morning (1.5 days) | 08 | T-2, T-3, T-4 |
+| Owner | Schedule                                                         | Prereq | Basis         |
+| ----- | ---------------------------------------------------------------- | ------ | ------------- |
+| B     | 1st pass D5 morning (0.5 day), 2nd pass D6–D7 morning (1.5 days) | 08     | T-2, T-3, T-4 |
 
 **`TeamSettingsController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/teams/{teamId}/settings` | Team info, my role, which buttons are allowed, plan, board | team MEMBER |
-| GET | `/api/v1/user/teams/{teamId}/members` | Members, roles, GitHub org status, "N/6" | team MEMBER |
-| GET | `/api/v1/user/teams/{teamId}/invite-links` | Valid invite links | team ADMIN |
-| POST | `/api/v1/user/teams/{teamId}/invite-links` | Create invite link (7 days) | team ADMIN |
-| DELETE | `/api/v1/user/teams/{teamId}/invite-links/{linkId}` | Revoke invite link | team ADMIN |
-| POST | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation` | GitHub org invite (org owner only, daily limit error) | team MEMBER + org owner |
-| POST | `/api/v1/user/teams/{teamId}/repos` | Add linked repo | team ADMIN |
-| DELETE | `/api/v1/user/teams/{teamId}/repos/{repoId}` | Remove linked repo | team ADMIN |
-| PATCH | `/api/v1/user/teams/{teamId}` | 2nd pass: name, description | team ADMIN |
-| PATCH | `/api/v1/user/teams/{teamId}/members/{userId}/role` | 2nd pass: change role | team OWNER |
-| DELETE | `/api/v1/user/teams/{teamId}/members/{userId}` | 2nd pass: remove member (admins can remove members only) | team ADMIN |
-| DELETE | `/api/v1/user/teams/{teamId}/members/me` | 2nd pass: leave team (not owner) | team MEMBER |
-| POST | `/api/v1/user/teams/{teamId}/ownership-transfers` | 2nd pass: request owner transfer | team OWNER |
-| POST | `/api/v1/user/teams/{teamId}/ownership-transfers/{transferId}/accept` | 2nd pass: recipient accepts | team MEMBER (recipient) |
-| POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "작업물 올리기" (Post your project) notification to members | team OWNER/ADMIN |
-| DELETE | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: revert within 7 days | team OWNER/ADMIN |
-| POST | `/api/v1/user/teams/{teamId}/archive` | 2nd pass: archive | team OWNER |
-| DELETE | `/api/v1/user/teams/{teamId}` | 2nd pass: delete (confirm team name) | team OWNER |
+| Method | Path                                                                  | Does                                                                                     | Permission              |
+| ------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------- |
+| GET    | `/api/v1/user/teams/{teamId}/settings`                                | Team info, my role, which buttons are allowed, plan, board                               | team MEMBER             |
+| GET    | `/api/v1/user/teams/{teamId}/members`                                 | Members, roles, GitHub org status, "N/6"                                                 | team MEMBER             |
+| GET    | `/api/v1/user/teams/{teamId}/invite-links`                            | Valid invite links                                                                       | team ADMIN              |
+| POST   | `/api/v1/user/teams/{teamId}/invite-links`                            | Create invite link (7 days)                                                              | team ADMIN              |
+| DELETE | `/api/v1/user/teams/{teamId}/invite-links/{linkId}`                   | Revoke invite link                                                                       | team ADMIN              |
+| POST   | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation`      | GitHub org invite (org owner only, daily limit error)                                    | team MEMBER + org owner |
+| POST   | `/api/v1/user/teams/{teamId}/repos`                                   | Add linked repo                                                                          | team ADMIN              |
+| DELETE | `/api/v1/user/teams/{teamId}/repos/{repoId}`                          | Remove linked repo                                                                       | team ADMIN              |
+| PATCH  | `/api/v1/user/teams/{teamId}`                                         | 2nd pass: name, description                                                              | team ADMIN              |
+| PATCH  | `/api/v1/user/teams/{teamId}/members/{userId}/role`                   | 2nd pass: change role                                                                    | team OWNER              |
+| DELETE | `/api/v1/user/teams/{teamId}/members/{userId}`                        | 2nd pass: remove member (admins can remove members only)                                 | team ADMIN              |
+| DELETE | `/api/v1/user/teams/{teamId}/members/me`                              | 2nd pass: leave team (not owner)                                                         | team MEMBER             |
+| POST   | `/api/v1/user/teams/{teamId}/ownership-transfers`                     | 2nd pass: request owner transfer                                                         | team OWNER              |
+| POST   | `/api/v1/user/teams/{teamId}/ownership-transfers/{transferId}/accept` | 2nd pass: recipient accepts                                                              | team MEMBER (recipient) |
+| POST   | `/api/v1/user/teams/{teamId}/completion`                              | 2nd pass: complete project → "작업물 올리기" (Post your project) notification to members | team OWNER/ADMIN        |
+| DELETE | `/api/v1/user/teams/{teamId}/completion`                              | 2nd pass: revert within 7 days                                                           | team OWNER/ADMIN        |
+| POST   | `/api/v1/user/teams/{teamId}/archive`                                 | 2nd pass: archive                                                                        | team OWNER              |
+| DELETE | `/api/v1/user/teams/{teamId}`                                         | 2nd pass: delete (confirm team name)                                                     | team OWNER              |
 
 - Borrowed: board change `[Included]` → 08's `setup/boards`, `setup/board`. Team plan → 28
 - Tables: new team_invite_links, github_org_invitations, team_completions, completion_records, team_ownership_transfers · shared teams, team_members, team_repos, github_repos, team_project_boards, board_status_mappings, chat_room_members, notifications, subscriptions (after 28)
@@ -389,16 +381,16 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 10. Accept invite `[Required]` · `/invite/[code]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B | D5 afternoon (0.5 day) | 09 | T-2 |
+| Owner | Schedule               | Prereq | Basis |
+| ----- | ---------------------- | ------ | ----- |
+| B     | D5 afternoon (0.5 day) | 09     | T-2   |
 
 **`InviteController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/invites/{code}` | Team preview + link status (expired, revoked) | public |
-| POST | `/api/v1/user/invites/{code}/accept` | Add team member + join team chat. Already a member, member limit, over 10 teams returned as codes | user · developers only |
+| Method | Path                                 | Does                                                                                              | Permission             |
+| ------ | ------------------------------------ | ------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/public/invites/{code}`      | Team preview + link status (expired, revoked)                                                     | public                 |
+| POST   | `/api/v1/user/invites/{code}/accept` | Add team member + join team chat. Already a member, member limit, over 10 teams returned as codes | user · developers only |
 
 - Tables: new none · shared team_invite_links, teams, team_members, chat_room_members
 - [ ] Frontend: guest → login → onboarding → return via `returnTo`, screen per status, GitHub org invite guide after accepting, go to 11, `generateMetadata` ("OO 팀 초대", team description, org avatar, `noindex`, blueprint 8-3)
@@ -407,20 +399,20 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 11. Issue list `[Required]` · `/teams/[id]/issues`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| C | D3–D4 morning (1.5 days) | 08 | I-2, I-3, T-7, S-9 |
+| Owner | Schedule                 | Prereq | Basis              |
+| ----- | ------------------------ | ------ | ------------------ |
+| C     | D3–D4 morning (1.5 days) | 08     | I-2, I-3, T-7, S-9 |
 
 **`IssueListController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/teams/{teamId}/issues` | Filters: repo, status, assignee, label, open; cursor | team MEMBER |
-| GET | `/api/v1/user/teams/{teamId}/issues/unscheduled` | "일정 없음" (Unscheduled) tab (not on board or no due date) | team MEMBER |
-| GET | `/api/v1/user/teams/{teamId}/issue-filters` | Filter sheet options (repos, labels, members) — also used by 14 and 15 | team MEMBER |
-| POST | `/api/v1/user/teams/{teamId}/issues/refresh` | Pull to refresh (once per minute) | team MEMBER |
-| POST | `/api/v1/user/teams/{teamId}/issues/{issueId}/project-item` | "프로젝트에 추가" (Add to project) | team MEMBER + repo write |
-| GET | `/api/v1/user/teams/{teamId}/progress?days=14` | `[Included]` Progress card: completion rate, 4 status counts, last 14 days of snapshots + today, open issues per assignee, overdue and due within 3 days. Free teams get 403 `PLAN_LIMIT` (after 28) | team MEMBER · Flex |
+| Method | Path                                                        | Does                                                                                                                                                                                                 | Permission               |
+| ------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| GET    | `/api/v1/user/teams/{teamId}/issues`                        | Filters: repo, status, assignee, label, open; cursor                                                                                                                                                 | team MEMBER              |
+| GET    | `/api/v1/user/teams/{teamId}/issues/unscheduled`            | "일정 없음" (Unscheduled) tab (not on board or no due date)                                                                                                                                          | team MEMBER              |
+| GET    | `/api/v1/user/teams/{teamId}/issue-filters`                 | Filter sheet options (repos, labels, members) — also used by 14 and 15                                                                                                                               | team MEMBER              |
+| POST   | `/api/v1/user/teams/{teamId}/issues/refresh`                | Pull to refresh (once per minute)                                                                                                                                                                    | team MEMBER              |
+| POST   | `/api/v1/user/teams/{teamId}/issues/{issueId}/project-item` | "프로젝트에 추가" (Add to project)                                                                                                                                                                   | team MEMBER + repo write |
+| GET    | `/api/v1/user/teams/{teamId}/progress?days=14`              | `[Included]` Progress card: completion rate, 4 status counts, last 14 days of snapshots + today, open issues per assignee, overdue and due within 3 days. Free teams get 403 `PLAN_LIMIT` (after 28) | team MEMBER · Flex       |
 
 - Tables: new issues, issue_assignees, issue_labels, 🟡 team_progress_snapshots · shared teams, team_repos, github_repos, board_status_mappings, github_webhook_deliveries, subscriptions (after 28)
 - [ ] Server: first full sync with installation token, `issues` and `projects_v2_item` webhook handlers, sync every 15 min for active teams / daily otherwise, later value wins
@@ -430,22 +422,22 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 12. Issue detail `[Required]` · `/teams/[id]/issues/[issueId]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| C | D4 afternoon–D5 (1.5 days) | 11 | I-2, I-3, C-2 |
+| Owner | Schedule                   | Prereq | Basis         |
+| ----- | -------------------------- | ------ | ------------- |
+| C     | D4 afternoon–D5 (1.5 days) | 11     | I-2, I-3, C-2 |
 
 **`IssueDetailController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/teams/{teamId}/issues/{issueId}` | Body (sanitized Markdown), assignees, labels, dates, status, my write permission, deleted/moved state | team MEMBER |
-| GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/assignee-candidates` | Assignee sheet (members with repo access who accepted the org invite) | team MEMBER |
-| PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/assignees` | Assignees (max 10) → check GitHub response → notify | team MEMBER + repo write |
-| GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/label-options` | Label sheet | team MEMBER |
-| PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/labels` | Labels | team MEMBER + repo write |
-| PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/schedule` | Start and due date (start ≤ due) | team MEMBER + repo write |
-| PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/status` | Todo / In Progress / Blocked / Done (Done = close; reverting reopens) — borrowed by 14 | team MEMBER + repo write |
-| GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/sub-issues` | `[Included]` Sub-issue progress | team MEMBER |
+| Method | Path                                                               | Does                                                                                                  | Permission               |
+| ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------ |
+| GET    | `/api/v1/user/teams/{teamId}/issues/{issueId}`                     | Body (sanitized Markdown), assignees, labels, dates, status, my write permission, deleted/moved state | team MEMBER              |
+| GET    | `/api/v1/user/teams/{teamId}/issues/{issueId}/assignee-candidates` | Assignee sheet (members with repo access who accepted the org invite)                                 | team MEMBER              |
+| PUT    | `/api/v1/user/teams/{teamId}/issues/{issueId}/assignees`           | Assignees (max 10) → check GitHub response → notify                                                   | team MEMBER + repo write |
+| GET    | `/api/v1/user/teams/{teamId}/issues/{issueId}/label-options`       | Label sheet                                                                                           | team MEMBER              |
+| PUT    | `/api/v1/user/teams/{teamId}/issues/{issueId}/labels`              | Labels                                                                                                | team MEMBER + repo write |
+| PUT    | `/api/v1/user/teams/{teamId}/issues/{issueId}/schedule`            | Start and due date (start ≤ due)                                                                      | team MEMBER + repo write |
+| PUT    | `/api/v1/user/teams/{teamId}/issues/{issueId}/status`              | Todo / In Progress / Blocked / Done (Done = close; reverting reopens) — borrowed by 14                | team MEMBER + repo write |
+| GET    | `/api/v1/user/teams/{teamId}/issues/{issueId}/sub-issues`          | `[Included]` Sub-issue progress                                                                       | team MEMBER              |
 
 - Borrowed: "채팅에 공유" (Share to chat) `[Included]` → 17's send message (issue card type)
 - Tables: new issue_sync_jobs · shared issues, issue_assignees, issue_labels, team_members, notifications
@@ -454,18 +446,18 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 13. Create issue `[Required]` · `/teams/[id]/issues/new`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| C | D6–D7 (2 days) | 12 | I-1, POL-I-1 |
+| Owner | Schedule       | Prereq | Basis        |
+| ----- | -------------- | ------ | ------------ |
+| C     | D6–D7 (2 days) | 12     | I-1, POL-I-1 |
 
 **`IssueCreateController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/teams/{teamId}/issue-templates?repoId=` | Repo templates → org `.github` templates → 3 defaults | team MEMBER |
-| GET | `/api/v1/user/teams/{teamId}/issue-templates/{templateKey}?repoId=` | Parsed template (Markdown body or issue form field list + default labels/assignees); falls back to default template on failure | team MEMBER |
-| POST | `/api/v1/user/teams/{teamId}/issues` | Create issue → add to project → dates → status, in order; 202 + jobId (100/day) | team MEMBER + repo write |
-| GET | `/api/v1/user/teams/{teamId}/issue-sync-jobs/{jobId}` | Creation progress, failed step | team MEMBER |
+| Method | Path                                                                | Does                                                                                                                           | Permission               |
+| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| GET    | `/api/v1/user/teams/{teamId}/issue-templates?repoId=`               | Repo templates → org `.github` templates → 3 defaults                                                                          | team MEMBER              |
+| GET    | `/api/v1/user/teams/{teamId}/issue-templates/{templateKey}?repoId=` | Parsed template (Markdown body or issue form field list + default labels/assignees); falls back to default template on failure | team MEMBER              |
+| POST   | `/api/v1/user/teams/{teamId}/issues`                                | Create issue → add to project → dates → status, in order; 202 + jobId (100/day)                                                | team MEMBER + repo write |
+| GET    | `/api/v1/user/teams/{teamId}/issue-sync-jobs/{jobId}`               | Creation progress, failed step                                                                                                 | team MEMBER              |
 
 - Borrowed: 12's assignee and label option APIs, 11's `issue-filters` (repo list)
 - Tables: new none · shared issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens
@@ -474,15 +466,15 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 14. Status board `[Required]` · `/teams/[id]/board`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| C | D8 (1 day) | 12 | I-4 |
+| Owner | Schedule   | Prereq | Basis |
+| ----- | ---------- | ------ | ----- |
+| C     | D8 (1 day) | 12     | I-4   |
 
 **`BoardController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/teams/{teamId}/board` | Cards in 4 columns + "기타" (Other) column (same filters as 11) | team MEMBER |
+| Method | Path                                | Does                                                            | Permission  |
+| ------ | ----------------------------------- | --------------------------------------------------------------- | ----------- |
+| GET    | `/api/v1/user/teams/{teamId}/board` | Cards in 4 columns + "기타" (Other) column (same filters as 11) | team MEMBER |
 
 - Borrowed: status change → 12's `PUT .../issues/{issueId}/status`, filter options → 11's `issue-filters`
 - Tables: new none · shared issues, board_status_mappings, issue_sync_jobs
@@ -490,15 +482,15 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 15. Calendar `[Required]` · `/teams/[id]/calendar`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| C | D9 morning (0.5 day) | 12 | I-4, N-1 |
+| Owner | Schedule             | Prereq | Basis    |
+| ----- | -------------------- | ------ | -------- |
+| C     | D9 morning (0.5 day) | 12     | I-4, N-1 |
 
 **`CalendarController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/teams/{teamId}/calendar?from=&to=&assignee=` | Issues in range (start/due dates, KST) | team MEMBER |
+| Method | Path                                                       | Does                                   | Permission  |
+| ------ | ---------------------------------------------------------- | -------------------------------------- | ----------- |
+| GET    | `/api/v1/user/teams/{teamId}/calendar?from=&to=&assignee=` | Issues in range (start/due dates, KST) | team MEMBER |
 
 - Tables: new none · shared issues, issue_assignees, notifications
 - [ ] Server: 9 AM scheduler notifying assignees the day before the due date
@@ -508,18 +500,18 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 16. Chat list `[Required]` · `/chats`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| D | D3 morning (0.5 day) | 08 | C-1, C-4 |
+| Owner | Schedule             | Prereq | Basis    |
+| ----- | -------------------- | ------ | -------- |
+| D     | D3 morning (0.5 day) | 08     | C-1, C-4 |
 
 **`ChatListController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/chat-rooms?tab=TEAM\|DIRECT\|REQUEST` | Room list (last message, unread count, muted), excluding blocked users | user |
-| GET | `/api/v1/user/chat-rooms/unread-summary` | Unread count per tab, received request count (bottom tab badge) | user |
-| POST | `/api/v1/user/chat-requests/{roomId}/accept` | Accept message request — also borrowed by the top of 17 | user |
-| DELETE | `/api/v1/user/chat-requests/{roomId}` | Delete request (reject, sender not notified, blocks re-request for 30 days) | user |
+| Method | Path                                                | Does                                                                        | Permission |
+| ------ | --------------------------------------------------- | --------------------------------------------------------------------------- | ---------- |
+| GET    | `/api/v1/user/chat-rooms?tab=TEAM\|DIRECT\|REQUEST` | Room list (last message, unread count, muted), excluding blocked users      | user       |
+| GET    | `/api/v1/user/chat-rooms/unread-summary`            | Unread count per tab, received request count (bottom tab badge)             | user       |
+| POST   | `/api/v1/user/chat-requests/{roomId}/accept`        | Accept message request — also borrowed by the top of 17                     | user       |
+| DELETE | `/api/v1/user/chat-requests/{roomId}`               | Delete request (reject, sender not notified, blocks re-request for 30 days) | user       |
 
 - STOMP: subscribe server → `/user/queue/chat-rooms` (list updates)
 - Tables: new none · shared chat_rooms, chat_room_members, user_blocks, recruiter_profiles (after 31)
@@ -527,45 +519,45 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 17. Chat room (team & 1:1) `[Required]` · `/chats/[roomId]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
+| Owner                            | Schedule                                                                                                                                                                                                                                                                   | Prereq     | Basis                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------ |
 | D (PR posting: B, AI summary: C) | Team chat D3 afternoon–D5 (2.5 days), 1:1 & recruiting offers D7 (1 day), PR posting D7 afternoon (B), `[Included]` AI summary D10 morning (C, 0.5 day + Ollama setup by B on D9), `[Included]` share sheet, share cards, link cards D10 afternoon (D, server and screens) | 16, 12, 28 | C-1, C-2, C-3, C-4, C-5, C-7, P-7, S-6, S-8, H-3 |
 
 **`ChatRoomController`** (REST + `@MessageMapping`)
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/chat-rooms/{roomId}` | Room info, members, my notification setting, request status | room participant |
-| GET | `/api/v1/user/chat-rooms/{roomId}/messages?before=&after=` | Infinite load upward, missed messages after reconnect, handles 500+ | room participant |
-| POST | `/api/v1/user/chat-rooms/{roomId}/read` | Last read message | room participant |
-| GET | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}/unread-members` | Unread-by sheet (team) | room participant |
-| PATCH | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}` | Edit (within 24 hours) | author |
-| DELETE | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}` | Delete (team owner/admin can delete others') | author / team ADMIN |
-| PATCH | `/api/v1/user/chat-rooms/{roomId}/notification` | Mute | room participant |
-| DELETE | `/api/v1/user/chat-rooms/{roomId}/members/me` | Leave 1:1 chat | room participant |
-| GET | `/api/v1/user/chat-rooms/{roomId}/images` | `[Included]` Photo gallery | room participant |
-| GET | `/api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR sheet (open, merged) | team MEMBER |
-| GET | `/api/v1/user/chat-rooms/{roomId}/mention-candidates` | @mention autocomplete | team MEMBER |
-| GET | `/api/v1/user/chat-rooms/{roomId}/issue-cards?number=&repoId=` | #issue number → card (title only without permission) | team MEMBER |
-| GET | `/api/v1/user/chat-rooms/{roomId}/link-preview?url=` | `[Included]` First external link preview (1:1 only for mutual follows; server fetches OG tags). Linker URLs skip OG; the server turns them into `payload.linkerCard` when saving the message | room participant |
-| GET | `/api/v1/user/chat-rooms/{roomId}/search?q=` | `[Included]` Team chat search (free 60 days, Flex full history). The message list also doesn't return messages older than 60 days for free teams (30-day grace after Flex ends) | team MEMBER |
-| GET | `/api/v1/user/me/share-targets?q=` | `[Included]` Chat room list for the share sheet (my team rooms + open 1:1 rooms, most recent first, excluding pending requests, blocks, read-only and archived teams) | user |
-| POST | `/api/v1/user/chat-rooms/{roomId}/share-cards` | `[Included]` Share to chat room: `{targetType: POST / RECRUIT_POST / PROFILE, targetId}` → `SHARE_CARD` message + STOMP send (10/min, 100/day) | room participant |
-| POST | `/api/v1/user/chat-rooms/direct` | Start 1:1 chat: room if mutual follow / same team, otherwise request | user · developers only |
-| POST | `/api/v1/user/chat-rooms/{roomId}/ai-summaries` | `[Included]` Create AI summary (range; checks Flex (incl. trial), team setting on, 10/person/day; free teams get 403 `PLAN_LIMIT` → Flex prompt sheet; 202 if over 30 s) | team MEMBER · Flex |
-| GET | `/api/v1/user/chat-rooms/{roomId}/ai-summaries/{summaryId}` | `[Included]` Summary result (own only, 7 days) — borrowed by 13 to prefill from action items | requester |
-| POST | `/api/v1/user/chat-rooms/{roomId}/ai-summaries/{summaryId}/share` | `[Included]` Share to chat → `AI_SUMMARY` card message | requester |
-| POST | `/api/v1/recruiter/chat-requests` | `[Included]` Recruiting offer request (`request_kind = RECRUITING`, 1,000 chars, no photos, 10/day or 50 with Scout; rejected if job-seeking is OFF, or if a request to the same developer is pending or was rejected within 30 days) | recruiter |
+| Method | Path                                                                   | Does                                                                                                                                                                                                                                  | Permission             |
+| ------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/user/chat-rooms/{roomId}`                                     | Room info, members, my notification setting, request status                                                                                                                                                                           | room participant       |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/messages?before=&after=`             | Infinite load upward, missed messages after reconnect, handles 500+                                                                                                                                                                   | room participant       |
+| POST   | `/api/v1/user/chat-rooms/{roomId}/read`                                | Last read message                                                                                                                                                                                                                     | room participant       |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}/unread-members` | Unread-by sheet (team)                                                                                                                                                                                                                | room participant       |
+| PATCH  | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}`                | Edit (within 24 hours)                                                                                                                                                                                                                | author                 |
+| DELETE | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}`                | Delete (team owner/admin can delete others')                                                                                                                                                                                          | author / team ADMIN    |
+| PATCH  | `/api/v1/user/chat-rooms/{roomId}/notification`                        | Mute                                                                                                                                                                                                                                  | room participant       |
+| DELETE | `/api/v1/user/chat-rooms/{roomId}/members/me`                          | Leave 1:1 chat                                                                                                                                                                                                                        | room participant       |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/images`                              | `[Included]` Photo gallery                                                                                                                                                                                                            | room participant       |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/pull-requests?state=`                | PR sheet (open, merged)                                                                                                                                                                                                               | team MEMBER            |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/mention-candidates`                  | @mention autocomplete                                                                                                                                                                                                                 | team MEMBER            |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/issue-cards?number=&repoId=`         | #issue number → card (title only without permission)                                                                                                                                                                                  | team MEMBER            |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/link-preview?url=`                   | `[Included]` First external link preview (1:1 only for mutual follows; server fetches OG tags). Linker URLs skip OG; the server turns them into `payload.linkerCard` when saving the message                                          | room participant       |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/search?q=`                           | `[Included]` Team chat search (free 60 days, Flex full history). The message list also doesn't return messages older than 60 days for free teams (30-day grace after Flex ends)                                                       | team MEMBER            |
+| GET    | `/api/v1/user/me/share-targets?q=`                                     | `[Included]` Chat room list for the share sheet (my team rooms + open 1:1 rooms, most recent first, excluding pending requests, blocks, read-only and archived teams)                                                                 | user                   |
+| POST   | `/api/v1/user/chat-rooms/{roomId}/share-cards`                         | `[Included]` Share to chat room: `{targetType: POST / RECRUIT_POST / PROFILE, targetId}` → `SHARE_CARD` message + STOMP send (10/min, 100/day)                                                                                        | room participant       |
+| POST   | `/api/v1/user/chat-rooms/direct`                                       | Start 1:1 chat: room if mutual follow / same team, otherwise request                                                                                                                                                                  | user · developers only |
+| POST   | `/api/v1/user/chat-rooms/{roomId}/ai-summaries`                        | `[Included]` Create AI summary (range; checks Flex (incl. trial), team setting on, 10/person/day; free teams get 403 `PLAN_LIMIT` → Flex prompt sheet; 202 if over 30 s)                                                              | team MEMBER · Flex     |
+| GET    | `/api/v1/user/chat-rooms/{roomId}/ai-summaries/{summaryId}`            | `[Included]` Summary result (own only, 7 days) — borrowed by 13 to prefill from action items                                                                                                                                          | requester              |
+| POST   | `/api/v1/user/chat-rooms/{roomId}/ai-summaries/{summaryId}/share`      | `[Included]` Share to chat → `AI_SUMMARY` card message                                                                                                                                                                                | requester              |
+| POST   | `/api/v1/recruiter/chat-requests`                                      | `[Included]` Recruiting offer request (`request_kind = RECRUITING`, 1,000 chars, no photos, 10/day or 50 with Scout; rejected if job-seeking is OFF, or if a request to the same developer is pending or was rejected within 30 days) | recruiter              |
 
 **Shared realtime paths (16–18)**: the overview counts 5 paths: 1 WebSocket connection endpoint + 1 STOMP SEND destination + 3 SUBSCRIBE destinations. `/ws` is the connection endpoint, not a STOMP frame destination. The list-update subscription belongs to 16; the notification subscription is shared with 18.
 
-| STOMP | Destination / connection endpoint | Does |
-| --- | --- | --- |
-| CONNECT | `/ws` | Cookie auth |
-| SEND | `/app/chat-rooms/{roomId}/messages` | Send message (text 2,000 chars, 10 photo fileIds, issue card, 5 per second) |
-| SUBSCRIBE | `/topic/chat-rooms/{roomId}` | New message, edit, delete, read |
-| SUBSCRIBE | `/user/queue/notifications` | Notification badge (shared with 18) |
-| SUBSCRIBE | `/user/queue/chat-rooms` | Chat list and unread summary updates (owned by 16) |
+| STOMP     | Destination / connection endpoint   | Does                                                                        |
+| --------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| CONNECT   | `/ws`                               | Cookie auth                                                                 |
+| SEND      | `/app/chat-rooms/{roomId}/messages` | Send message (text 2,000 chars, 10 photo fileIds, issue card, 5 per second) |
+| SUBSCRIBE | `/topic/chat-rooms/{roomId}`        | New message, edit, delete, read                                             |
+| SUBSCRIBE | `/user/queue/notifications`         | Notification badge (shared with 18)                                         |
+| SUBSCRIBE | `/user/queue/chat-rooms`            | Chat list and unread summary updates (owned by 16)                          |
 
 - Borrowed: photo upload (00), message report (00 `ReportController`, copy 10 before/after), accept/delete request (16), "이슈로 만들기" (Make an issue) → 13
 - Tables: new chat_messages, chat_message_images, pull_requests, chat_message_mentions, report_message_snapshots, 🟡 ai_chat_summaries (after 28) · shared chat_rooms, chat_room_members, uploaded_files, issues, follows, team_members, user_blocks, report_cases, reports, notifications, subscriptions (after 28), recruiter_profiles (after 31)
@@ -578,21 +570,21 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 18. Notifications `[Required]` · `/notifications`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| D | D6 (1 day) | 12, 17 | N-1, POL-N-1 |
+| Owner | Schedule   | Prereq | Basis        |
+| ----- | ---------- | ------ | ------------ |
+| D     | D6 (1 day) | 12, 17 | N-1, POL-N-1 |
 
 **`NotificationController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/notifications` | Notification list (with target URL) | user |
-| GET | `/api/v1/user/notifications/unread-count` | Header bell badge | user |
-| PATCH | `/api/v1/user/notifications/{notificationId}/read` | Mark read | user |
-| POST | `/api/v1/user/notifications/read-all` | Mark all read | user |
-| POST | `/api/v1/user/appeals` | Appeal a sanction (once) | user |
-| POST | `/api/v1/user/push-tokens` | Register Expo push token (Android app) | user |
-| DELETE | `/api/v1/user/push-tokens/{token}` | Delete token (logout) | user |
+| Method | Path                                               | Does                                   | Permission |
+| ------ | -------------------------------------------------- | -------------------------------------- | ---------- |
+| GET    | `/api/v1/user/notifications`                       | Notification list (with target URL)    | user       |
+| GET    | `/api/v1/user/notifications/unread-count`          | Header bell badge                      | user       |
+| PATCH  | `/api/v1/user/notifications/{notificationId}/read` | Mark read                              | user       |
+| POST   | `/api/v1/user/notifications/read-all`              | Mark all read                          | user       |
+| POST   | `/api/v1/user/appeals`                             | Appeal a sanction (once)               | user       |
+| POST   | `/api/v1/user/push-tokens`                         | Register Expo push token (Android app) | user       |
+| DELETE | `/api/v1/user/push-tokens/{token}`                 | Delete token (logout)                  | user       |
 
 - Tables: new push_tokens · shared notifications, users, appeals (after 25 — A creates the table in 25; the appeal API is wired on D7)
 - [ ] Server: non-chat notifications between 10 PM and 8 AM batched and sent in the morning, Expo push sending (Android; skipped while `push_enabled` is off)
@@ -602,39 +594,39 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 19. Recruit post list `[Required]` · `/recruits`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| E | D3 (1 day) | 04 | R-2, R-3 |
+| Owner | Schedule   | Prereq | Basis    |
+| ----- | ---------- | ------ | -------- |
+| E     | D3 (1 day) | 04     | R-2, R-3 |
 
 **`RecruitListController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/recruits?role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; excludes blocked relations if logged in | public |
-| GET | `/api/v1/user/me/recruits` | My recruit posts tab | user · developers only |
-| GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
-| DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
+| Method | Path                                              | Does                                                                        | Permission             |
+| ------ | ------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/public/recruits?role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; excludes blocked relations if logged in | public                 |
+| GET    | `/api/v1/user/me/recruits`                        | My recruit posts tab                                                        | user · developers only |
+| GET    | `/api/v1/user/me/applications?status=`            | My applications tab (in review, accepted, rejected, expired)                | user · developers only |
+| DELETE | `/api/v1/user/me/applications/{applicationId}`    | Cancel an in-review application — also borrowed by 21                       | user · developers only |
 
 - Tables: new recruit_posts, recruit_roles, recruit_post_tags · shared tech_tags, user_blocks, applications (after 21)
 - [ ] Frontend: 3 tabs (guests see only the All tab; "모집 글 쓰기" (Write recruit post) → login prompt), card (remaining headcount per role, D-day), filter sheet (nuqs), infinite scroll, empty-result copy
 
 ### 20. Write/edit recruit post `[Required]` · `/recruits/new`, `/recruits/[id]/edit`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| E | D4 (1 day) | 19 | R-1, S-5 |
+| Owner | Schedule   | Prereq | Basis    |
+| ----- | ---------- | ------ | -------- |
+| E     | D4 (1 day) | 19     | R-1, S-5 |
 
 **`RecruitEditorController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
-| POST | `/api/v1/user/recruits` | Create (5/day, concurrent 3 / Pro 10) | user · developers only |
-| GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
-| PUT | `/api/v1/user/recruits/{recruitId}` | Edit | author |
-| POST | `/api/v1/user/recruits/{recruitId}/close` | Close — also borrowed by 21's menu | author |
-| POST | `/api/v1/user/recruits/{recruitId}/reopen` | Reopen | author |
-| DELETE | `/api/v1/user/recruits/{recruitId}` | Delete (expire pending applications + notify) | author |
+| Method | Path                                          | Does                                                                      | Permission             |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/user/recruit-editor/options`         | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
+| POST   | `/api/v1/user/recruits`                       | Create (5/day, concurrent 3 / Pro 10)                                     | user · developers only |
+| GET    | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts        | author                 |
+| PUT    | `/api/v1/user/recruits/{recruitId}`           | Edit                                                                      | author                 |
+| POST   | `/api/v1/user/recruits/{recruitId}/close`     | Close — also borrowed by 21's menu                                        | author                 |
+| POST   | `/api/v1/user/recruits/{recruitId}/reopen`    | Reopen                                                                    | author                 |
+| DELETE | `/api/v1/user/recruits/{recruitId}`           | Delete (expire pending applications + notify)                             | author                 |
 
 - Tables: new none · shared recruit_posts, recruit_roles, recruit_post_tags, teams, team_members, subscriptions (after 28)
 - [ ] Server: scheduler that auto-closes when deadline passes or headcount is full
@@ -642,20 +634,20 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 21. Recruit post detail (apply & manage applicants) `[Required]` · `/recruits/[id]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| E | D5–D6 morning (1.5 days) | 20, 08, 17 | R-3, R-4, P-7 |
+| Owner | Schedule                 | Prereq     | Basis         |
+| ----- | ------------------------ | ---------- | ------------- |
+| E     | D5–D6 morning (1.5 days) | 20, 08, 17 | R-3, R-4, P-7 |
 
 **`RecruitDetailController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/recruits/{recruitId}` | Body, remaining headcount per role, author card. If logged in: my application status, whether already a team member, whether I'm the author | public |
-| POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role + 300 chars, 20/day, one re-apply) | user · developers only |
-| GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants tab (days left until 14-day expiry) | author |
-| GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | Application sheet (stack, contribution graph, posts, completion record, message) | author |
-| POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Accept → team member + team chat + notification. No team, role full, team limit returned as codes | author |
-| POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy) | author |
+| Method | Path                                                                    | Does                                                                                                                                        | Permission             |
+| ------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/public/recruits/{recruitId}`                                   | Body, remaining headcount per role, author card. If logged in: my application status, whether already a team member, whether I'm the author | public                 |
+| POST   | `/api/v1/user/recruits/{recruitId}/applications`                        | Apply (1 role + 300 chars, 20/day, one re-apply)                                                                                            | user · developers only |
+| GET    | `/api/v1/user/recruits/{recruitId}/applications?roleId=`                | Applicants tab (days left until 14-day expiry)                                                                                              | author                 |
+| GET    | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}`        | Application sheet (stack, contribution graph, posts, completion record, message)                                                            | author                 |
+| POST   | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Accept → team member + team chat + notification. No team, role full, team limit returned as codes                                           | author                 |
+| POST   | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy)                                                                                         | author                 |
 
 - Borrowed: GitHub org invite → 09's `members/{userId}/github-invitation`, cancel application → 19, close/delete → 20, report → 00
 - Tables: new applications · shared recruit_posts, recruit_roles, users, user_tech_tags, contribution_days, completion_records, posts (after 22), team_members, chat_room_members, github_org_invitations, notifications, reports
@@ -666,19 +658,19 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 22. Write/edit project post `[Required]` · `/posts/new`, `/posts/[id]/edit`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| E | D6 afternoon–D7 (1.5 days) | 04 | P-1, P-2 |
+| Owner | Schedule                   | Prereq | Basis    |
+| ----- | -------------------------- | ------ | -------- |
+| E     | D6 afternoon–D7 (1.5 days) | 04     | P-1, P-2 |
 
 **`PostEditorController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team | user · developers only |
-| GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
-| POST | `/api/v1/user/posts` | Publish (10/day, photos 5 / Pro 10) | user · developers only |
-| GET | `/api/v1/user/posts/{postId}/edit-form` | Edit form values | author |
-| PUT | `/api/v1/user/posts/{postId}` | Edit ("수정됨" (Edited)) | author |
+| Method | Path                                              | Does                                                                                                          | Permission             |
+| ------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/user/post-editor/repos?q=&teamId=`       | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team | user · developers only |
+| GET    | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker                     | user · developers only |
+| POST   | `/api/v1/user/posts`                              | Publish (10/day, photos 5 / Pro 10)                                                                           | user · developers only |
+| GET    | `/api/v1/user/posts/{postId}/edit-form`           | Edit form values                                                                                              | author                 |
+| PUT    | `/api/v1/user/posts/{postId}`                     | Edit ("수정됨" (Edited))                                                                                      | author                 |
 
 - Borrowed: photo upload (00), tech tags (00), limit notice → 28
 - Tables: new posts, post_images, post_demo_links, post_tags · shared github_repos, uploaded_files, tech_tags, issues, team_members, subscriptions (after 28)
@@ -686,25 +678,25 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 23. Project post detail `[Required]` · `/posts/[id]`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| E | D8 (1 day) | 22 | P-3, P-5, P-7, S-4 |
+| Owner | Schedule   | Prereq | Basis              |
+| ----- | ---------- | ------ | ------------------ |
+| E     | D8 (1 day) | 22     | P-3, P-5, P-7, S-4 |
 
 **`PostDetailController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/posts/{postId}?from=` | Post (repo state, commit/issue counts, like count, "검토 중" (Under review) to the author if hidden). If logged in: my like, view logging (traffic source: feed, profile, recruit post, chat share, external link `from=share`) | public |
-| GET | `/api/v1/public/posts/{postId}/readme` | `[Included]` README (1-hour cache, sanitized), expand logged if logged in | public |
-| POST | `/api/v1/user/posts/{postId}/likes` | Like (notification) | user · developers only |
-| DELETE | `/api/v1/user/posts/{postId}/likes` | Unlike | user · developers only |
-| GET | `/api/v1/user/posts/{postId}/likes` | Likers sheet (people list, so login only) | user |
-| GET | `/api/v1/public/posts/{postId}/comments` | Comments and one-level replies | public |
-| POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars, 10/min and 300/day, notification) | user · developers only |
-| PATCH | `/api/v1/user/posts/{postId}/comments/{commentId}` | Edit comment | comment author |
-| DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment ("삭제된 댓글입니다" if it has replies) | comment author / post owner |
-| DELETE | `/api/v1/user/posts/{postId}` | Delete post | author |
-| GET | `/api/v1/public/posts/{postId}/same-repo-posts` | Other posts for this repo | public |
+| Method | Path                                               | Does                                                                                                                                                                                                                            | Permission                  |
+| ------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| GET    | `/api/v1/public/posts/{postId}?from=`              | Post (repo state, commit/issue counts, like count, "검토 중" (Under review) to the author if hidden). If logged in: my like, view logging (traffic source: feed, profile, recruit post, chat share, external link `from=share`) | public                      |
+| GET    | `/api/v1/public/posts/{postId}/readme`             | `[Included]` README (1-hour cache, sanitized), expand logged if logged in                                                                                                                                                       | public                      |
+| POST   | `/api/v1/user/posts/{postId}/likes`                | Like (notification)                                                                                                                                                                                                             | user · developers only      |
+| DELETE | `/api/v1/user/posts/{postId}/likes`                | Unlike                                                                                                                                                                                                                          | user · developers only      |
+| GET    | `/api/v1/user/posts/{postId}/likes`                | Likers sheet (people list, so login only)                                                                                                                                                                                       | user                        |
+| GET    | `/api/v1/public/posts/{postId}/comments`           | Comments and one-level replies                                                                                                                                                                                                  | public                      |
+| POST   | `/api/v1/user/posts/{postId}/comments`             | Write comment (500 chars, 10/min and 300/day, notification)                                                                                                                                                                     | user · developers only      |
+| PATCH  | `/api/v1/user/posts/{postId}/comments/{commentId}` | Edit comment                                                                                                                                                                                                                    | comment author              |
+| DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment ("삭제된 댓글입니다" if it has replies)                                                                                                                                                                          | comment author / post owner |
+| DELETE | `/api/v1/user/posts/{postId}`                      | Delete post                                                                                                                                                                                                                     | author                      |
+| GET    | `/api/v1/public/posts/{postId}/same-repo-posts`    | Other posts for this repo                                                                                                                                                                                                       | public                      |
 
 - Borrowed: report (00), "채용 제안 보내기" (Send recruiting offer) → 17's `POST /api/v1/recruiter/chat-requests`, edit → 22
 - Tables: new post_likes, comments, 🟡 post_views · shared posts, post_images, github_repos, users, notifications, reports, user_blocks
@@ -712,21 +704,21 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 24. Home feed `[Required]` · `/feed`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| E | D9 (1 day), job ad card D10 morning | 23; job ad needs the 04 job ad sheet | P-4, H-9 |
+| Owner | Schedule                            | Prereq                               | Basis    |
+| ----- | ----------------------------------- | ------------------------------------ | -------- |
+| E     | D9 (1 day), job ad card D10 morning | 23; job ad needs the 04 job ad sheet | P-4, H-9 |
 
 **`FeedController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/public/feed?cursor=&offersOnly=` | Guests: this week's popular + newest only. Logged in: 1 recommendation per 4 following posts, one-line "why shown", max 2 in a row from the same author. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers) | public |
-| POST | `/api/v1/user/feed/seen` | Log posts shown on screen (to exclude from recommendations) | user |
-| GET | `/api/v1/user/feed/recommended-users` | Empty feed: 5 developers by my tech stack | user |
-| POST | `/api/v1/user/ads/{adId}/click` | `[Included]` Record click → return posting URL (frontend opens it via the external link sheet) | user · developers only |
-| POST | `/api/v1/user/ads/{adId}/dismiss` | `[Included]` X close (7 days) | user · developers only |
-| DELETE | `/api/v1/user/ads/{adId}/dismiss` | `[Included]` Undo close (toast) | user · developers only |
-| POST | `/api/v1/user/ads/{adId}/hide` | `[Included]` Hide this ad (permanent) | user · developers only |
+| Method | Path                                      | Does                                                                                                                                                                                                                                    | Permission             |
+| ------ | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/public/feed?cursor=&offersOnly=` | Guests: this week's popular + newest only. Logged in: 1 recommendation per 4 following posts, one-line "why shown", max 2 in a row from the same author. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers) | public                 |
+| POST   | `/api/v1/user/feed/seen`                  | Log posts shown on screen (to exclude from recommendations)                                                                                                                                                                             | user                   |
+| GET    | `/api/v1/user/feed/recommended-users`     | Empty feed: 5 developers by my tech stack                                                                                                                                                                                               | user                   |
+| POST   | `/api/v1/user/ads/{adId}/click`           | `[Included]` Record click → return posting URL (frontend opens it via the external link sheet)                                                                                                                                          | user · developers only |
+| POST   | `/api/v1/user/ads/{adId}/dismiss`         | `[Included]` X close (7 days)                                                                                                                                                                                                           | user · developers only |
+| DELETE | `/api/v1/user/ads/{adId}/dismiss`         | `[Included]` Undo close (toast)                                                                                                                                                                                                         | user · developers only |
+| POST   | `/api/v1/user/ads/{adId}/hide`            | `[Included]` Hide this ad (permanent)                                                                                                                                                                                                   | user · developers only |
 
 - Borrowed: follow → 04, like → 23, ad report → 00 `ReportController` (target RECRUITER_AD)
 - Tables: new feed_seen_posts, 🟡 ad_hides, 🟡 ad_daily_stats · shared posts, post_likes, comments, follows, users, user_tech_tags, post_tags, user_blocks, user_job_categories, recruiter_ads, subscriptions
@@ -739,20 +731,20 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 25. Ops: reports `[Required]` · `/admin/reports`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D6 afternoon–D7 morning (1 day) | 00, 23 | O-1, O-2, O-4 |
+| Owner | Schedule                        | Prereq | Basis         |
+| ----- | ------------------------------- | ------ | ------------- |
+| A     | D6 afternoon–D7 morning (1 day) | 00, 23 | O-1, O-2, O-4 |
 
 **`AdminReportController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (`[Included]` incl. RECRUITER_AD), flag over 2 business days | admin |
-| GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat | admin |
-| POST | `/api/v1/admin/report-cases/{caseId}/actions` | Hide / delete (reason required) / dismiss / restore → notify author and reporters | admin |
-| GET | `/api/v1/admin/appeals?status=` | Appeals list | admin |
-| POST | `/api/v1/admin/appeals/{appealId}/decision` | Accept (restore + delete record) / reject. Only an operator other than the original handler | admin |
-| POST | `/api/v1/admin/otp/verify` | `[Included]` OTP 2FA | admin |
+| Method | Path                                                      | Does                                                                                                   | Permission |
+| ------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------- |
+| GET    | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (`[Included]` incl. RECRUITER_AD), flag over 2 business days | admin      |
+| GET    | `/api/v1/admin/report-cases/{caseId}`                     | Report reasons, content, the copied 10 before/after for chat                                           | admin      |
+| POST   | `/api/v1/admin/report-cases/{caseId}/actions`             | Hide / delete (reason required) / dismiss / restore → notify author and reporters                      | admin      |
+| GET    | `/api/v1/admin/appeals?status=`                           | Appeals list                                                                                           | admin      |
+| POST   | `/api/v1/admin/appeals/{appealId}/decision`               | Accept (restore + delete record) / reject. Only an operator other than the original handler            | admin      |
+| POST   | `/api/v1/admin/otp/verify`                                | `[Included]` OTP 2FA                                                                                   | admin      |
 
 - Tables: new sanctions, admin_actions, appeals (18's appeal API is wired on D7) · shared report_cases, reports, report_message_snapshots, posts, comments, recruit_posts, chat_messages, users, admins, notifications, recruiter_ads (after D10)
 - [ ] Server `[Included]`: job ad report detail (company, title, job category, closing date, URL host); hide action = `recruiter_ads.status = HIDDEN` + notify the recruiter
@@ -761,20 +753,20 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 26. Ops: users `[Required]` · `/admin/users`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B | D8 (1 day) | 25 | O-3 |
+| Owner | Schedule   | Prereq | Basis |
+| ----- | ---------- | ------ | ----- |
+| B     | D8 (1 day) | 25     | O-3   |
 
 **`AdminUserController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/admin/users?q=&status=&userType=&needsReview=` | Search, status and member type, "확인 필요" (Needs review: 3× limits) | admin |
-| GET | `/api/v1/admin/users/{userId}` | Basic info (email masked), sanction and report history, subscription and payments; for recruiters: company, domain, job title, 30-day offers sent and accepted | admin |
-| POST | `/api/v1/admin/users/{userId}/sanctions` | Sanction (warning → 7 days → 30 days → permanent by lead), reason required, notify | admin |
-| DELETE | `/api/v1/admin/users/{userId}/sanctions/{sanctionId}` | Lift sanction (lead) | admin (lead) |
-| POST | `/api/v1/admin/users/{userId}/email-reveal` | Reveal full email after entering a reason (logged) | admin |
-| POST | `/api/v1/admin/payments/{paymentId}/refund` | `[Included]` Refund (Toss payment cancel) | admin |
+| Method | Path                                                    | Does                                                                                                                                                           | Permission   |
+| ------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| GET    | `/api/v1/admin/users?q=&status=&userType=&needsReview=` | Search, status and member type, "확인 필요" (Needs review: 3× limits)                                                                                          | admin        |
+| GET    | `/api/v1/admin/users/{userId}`                          | Basic info (email masked), sanction and report history, subscription and payments; for recruiters: company, domain, job title, 30-day offers sent and accepted | admin        |
+| POST   | `/api/v1/admin/users/{userId}/sanctions`                | Sanction (warning → 7 days → 30 days → permanent by lead), reason required, notify                                                                             | admin        |
+| DELETE | `/api/v1/admin/users/{userId}/sanctions/{sanctionId}`   | Lift sanction (lead)                                                                                                                                           | admin (lead) |
+| POST   | `/api/v1/admin/users/{userId}/email-reveal`             | Reveal full email after entering a reason (logged)                                                                                                             | admin        |
+| POST   | `/api/v1/admin/payments/{paymentId}/refund`             | `[Included]` Refund (Toss payment cancel)                                                                                                                      | admin        |
 
 - Tables: new none · shared users, sanctions, banned_github_ids, report_cases, admin_actions, subscriptions, payments (after 28), recruiter_profiles (after 31), recruiter_ads (after D10)
 - [ ] Server: allowed actions while suspended (login, view, appeal, withdraw), reset step after 1 year without violations, permanent ban → `banned_github_ids`, `[Included]` suspending a recruiter hides their job ad immediately (HIDDEN; stays hidden after the suspension ends until an operator lifts it, 04 policy ch. 3 "Job ads")
@@ -782,16 +774,16 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 27. Ops: action log `[Required]` · `/admin/audit`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B | D9 morning (0.5 day) | 25, 26 | O-5 |
+| Owner | Schedule             | Prereq | Basis |
+| ----- | -------------------- | ------ | ----- |
+| B     | D9 morning (0.5 day) | 25, 26 | O-5   |
 
 **`AdminAuditController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/admin/audit-logs?adminId=&actionType=&from=&to=` | Who, when, what, why | admin |
-| GET | `/api/v1/admin/audit-logs/filters` | Operator and action type options | admin |
+| Method | Path                                                      | Does                             | Permission |
+| ------ | --------------------------------------------------------- | -------------------------------- | ---------- |
+| GET    | `/api/v1/admin/audit-logs?adminId=&actionType=&from=&to=` | Who, when, what, why             | admin      |
+| GET    | `/api/v1/admin/audit-logs/filters`                        | Operator and action type options | admin      |
 
 - Tables: new none · shared admin_actions, admins
 - [ ] Server: `admin_actions` is append-only (no update/delete API; DB grants INSERT and SELECT only)
@@ -801,19 +793,19 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 28. Plans & checkout `[Required]` · `/subscribe`, `/subscribe/success`, `/subscribe/fail`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| D | D8–D9 morning (1.5 days), Scout D10 morning | 04, 09, 17, 20, 22 | S-1, S-3, S-7, H-5 |
+| Owner | Schedule                                    | Prereq             | Basis              |
+| ----- | ------------------------------------------- | ------------------ | ------------------ |
+| D     | D8–D9 morning (1.5 days), Scout D10 morning | 04, 09, 17, 20, 22 | S-1, S-3, S-7, H-5 |
 
 **`SubscribeController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/plans?reason=` | Developers: Free / Pro / Flex; recruiters: `[Included]` Scout only. Monthly and yearly prices (Flex and Scout monthly only), entry reason, free trial eligibility. Personalized response: `Cache-Control: private, no-store`; frontend server `no-store`, no shared Next cache | user |
-| GET | `/api/v1/user/plans/team-candidates` | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price (₩7,900 up to 6, ₩1,900 per member from the 7th) | user · developers only |
-| POST | `/api/v1/user/payments/checkout` | Create order (orderId, amount, customerKey). Checks plan matches member type | user |
-| POST | `/api/v1/user/payments/confirm` | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day) | user |
-| POST | `/api/v1/user/payments/{orderId}/fail` | Record failure return | user |
+| Method | Path                                   | Does                                                                                                                                                                                                                                                                           | Permission             |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| GET    | `/api/v1/user/plans?reason=`           | Developers: Free / Pro / Flex; recruiters: `[Included]` Scout only. Monthly and yearly prices (Flex and Scout monthly only), entry reason, free trial eligibility. Personalized response: `Cache-Control: private, no-store`; frontend server `no-store`, no shared Next cache | user                   |
+| GET    | `/api/v1/user/plans/team-candidates`   | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price (₩7,900 up to 6, ₩1,900 per member from the 7th)                                                                                                                                    | user · developers only |
+| POST   | `/api/v1/user/payments/checkout`       | Create order (orderId, amount, customerKey). Checks plan matches member type                                                                                                                                                                                                   | user                   |
+| POST   | `/api/v1/user/payments/confirm`        | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day)                                                                                                                                    | user                   |
+| POST   | `/api/v1/user/payments/{orderId}/fail` | Record failure return                                                                                                                                                                                                                                                          | user                   |
 
 - Tables: new subscriptions, payments · shared users, teams, team_members, notifications
 - [ ] Server: compare amount with server order value, `[Included]` 7-day free trial + reminder the day before, `[Included]` billing key (first version: one-time payment + expiry date)
@@ -821,19 +813,19 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 29. Manage subscription `[Required]` · `/settings/subscription`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| D | D9 afternoon (0.5 day) | 28 | S-2 |
+| Owner | Schedule               | Prereq | Basis |
+| ----- | ---------------------- | ------ | ----- |
+| D     | D9 afternoon (0.5 day) | 28     | S-2   |
 
 **`SubscriptionManageController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/me/subscriptions` | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, next Flex headcount and amount | user |
-| GET | `/api/v1/user/me/payments` | Payment history | user |
-| POST | `/api/v1/user/me/subscriptions/{subscriptionId}/cancel` | Cancel (kept until period end) | user |
-| POST | `/api/v1/user/me/payments/{paymentId}/refund` | Refund (within 7 days + benefits unused) | user |
-| POST | `/api/v1/user/me/subscriptions/{subscriptionId}/billing-owner` | `[Included]` Hand over Flex billing owner | user · developers only |
+| Method | Path                                                           | Does                                                                                                                                | Permission             |
+| ------ | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/api/v1/user/me/subscriptions`                                | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, next Flex headcount and amount | user                   |
+| GET    | `/api/v1/user/me/payments`                                     | Payment history                                                                                                                     | user                   |
+| POST   | `/api/v1/user/me/subscriptions/{subscriptionId}/cancel`        | Cancel (kept until period end)                                                                                                      | user                   |
+| POST   | `/api/v1/user/me/payments/{paymentId}/refund`                  | Refund (within 7 days + benefits unused)                                                                                            | user                   |
+| POST   | `/api/v1/user/me/subscriptions/{subscriptionId}/billing-owner` | `[Included]` Hand over Flex billing owner                                                                                           | user · developers only |
 
 - Tables: new none · shared subscriptions, payments, recruiter_ads (after 04 job ad)
 - [ ] Server: expiry → free scheduler (existing content stays; free limits apply to new writes; when Scout ends the job ad becomes ENDED and offers drop to 10), `[Included]` 7-day grace after payment failure
@@ -842,17 +834,17 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 30. My stats `[Included]` · `/me/stats`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| B | D9 afternoon (0.5 day) | 04, 23, 28 | S-4, S-10 |
+| Owner | Schedule               | Prereq     | Basis     |
+| ----- | ---------------------- | ---------- | --------- |
+| B     | D9 afternoon (0.5 day) | 04, 23, 28 | S-4, S-10 |
 
 **`StatsController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/user/me/stats/summary` | Free: likes, comments and views per post | user · developers only |
-| GET | `/api/v1/user/me/stats/recruiter-views?weeks=8` | Pro: recruiter view count (this week, by week). Count only, never who | user · developers only · Pro |
-| GET | `/api/v1/user/me/stats/posts?days=30` | Pro: per-post views by traffic source, 30-day trend, README expands | user · developers only · Pro |
+| Method | Path                                            | Does                                                                  | Permission                   |
+| ------ | ----------------------------------------------- | --------------------------------------------------------------------- | ---------------------------- |
+| GET    | `/api/v1/user/me/stats/summary`                 | Free: likes, comments and views per post                              | user · developers only       |
+| GET    | `/api/v1/user/me/stats/recruiter-views?weeks=8` | Pro: recruiter view count (this week, by week). Count only, never who | user · developers only · Pro |
+| GET    | `/api/v1/user/me/stats/posts?days=30`           | Pro: per-post views by traffic source, 30-day trend, README expands   | user · developers only · Pro |
 
 - Tables: new none · shared profile_visits, post_views, posts, post_likes, comments, subscriptions
 - [ ] Frontend: free area + blurred Pro area ("Pro로 보기" (View with Pro) → 28), traffic source bars and 30-day trend chart (summary sentence + "표로 보기"), "대표 작업물로 고정" (pin as featured) shortcut
@@ -861,17 +853,17 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 31. Recruiter sign-up `[Included]` · `/recruiter/signup`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D7 afternoon–D8 morning (1 day) | 03, 04, 06 | H-1, POL-H-1 |
+| Owner | Schedule                        | Prereq     | Basis        |
+| ----- | ------------------------------- | ---------- | ------------ |
+| A     | D7 afternoon–D8 morning (1 day) | 03, 04, 06 | H-1, POL-H-1 |
 
 **`RecruiterSignupController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| POST | `/api/v1/public/recruiter-signup/email-codes` | Check company email (reject free domains and existing accounts) → send 6-digit code (once per minute) | public |
-| POST | `/api/v1/public/recruiter-signup/email-codes/verify` | Verify code (10 min; new code after 5 wrong) → sign-up token | public |
-| POST | `/api/v1/public/recruiter-signup` | Sign-up token + password, name, company, job title, website, consents → create in one transaction + login cookie | public |
+| Method | Path                                                 | Does                                                                                                             | Permission |
+| ------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------- |
+| POST   | `/api/v1/public/recruiter-signup/email-codes`        | Check company email (reject free domains and existing accounts) → send 6-digit code (once per minute)            | public     |
+| POST   | `/api/v1/public/recruiter-signup/email-codes/verify` | Verify code (10 min; new code after 5 wrong) → sign-up token                                                     | public     |
+| POST   | `/api/v1/public/recruiter-signup`                    | Sign-up token + password, name, company, job title, website, consents → create in one transaction + login cookie | public     |
 
 - Borrowed: `recruiter-terms` document (03)
 - Tables: new 🟡 recruiter_profiles, 🟡 email_verifications · shared users (user_type, job_seeking_status), auth_identities, user_agreements, user_sessions
@@ -881,18 +873,18 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 32. Recruiter login & password reset `[Included]` · `/recruiter/login`, `/recruiter/reset`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D9 morning (0.5 day) | 31 | H-1 |
+| Owner | Schedule             | Prereq | Basis |
+| ----- | -------------------- | ------ | ----- |
+| A     | D9 morning (0.5 day) | 31     | H-1   |
 
 **`RecruiterLoginController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| POST | `/api/v1/public/recruiter-auth/login` | Email + password (10-min lock after 5 failures), restore if pending withdrawal | public |
-| POST | `/api/v1/public/recruiter-auth/password-reset-requests` | Send reset link (same response whether or not registered) | public |
-| GET | `/api/v1/public/recruiter-auth/password-reset/{token}` | Whether link is valid (30 min, single use) | public |
-| POST | `/api/v1/public/recruiter-auth/password-reset` | New password → end all other sessions | public |
+| Method | Path                                                    | Does                                                                           | Permission |
+| ------ | ------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------- |
+| POST   | `/api/v1/public/recruiter-auth/login`                   | Email + password (10-min lock after 5 failures), restore if pending withdrawal | public     |
+| POST   | `/api/v1/public/recruiter-auth/password-reset-requests` | Send reset link (same response whether or not registered)                      | public     |
+| GET    | `/api/v1/public/recruiter-auth/password-reset/{token}`  | Whether link is valid (30 min, single use)                                     | public     |
+| POST   | `/api/v1/public/recruiter-auth/password-reset`          | New password → end all other sessions                                          | public     |
 
 - Borrowed: password change is 06's `PATCH /api/v1/recruiter/me/password`
 - Tables: new none · shared auth_identities, email_verifications, user_sessions, users, recruiter_profiles, user_blocks
@@ -900,18 +892,18 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ### 33. Sent offers list `[Included]` · `/recruiter/offers`
 
-| Owner | Schedule | Prereq | Basis |
-| --- | --- | --- | --- |
-| A | D9 afternoon (0.5 day) | 31, 17 | H-3 |
+| Owner | Schedule               | Prereq | Basis |
+| ----- | ---------------------- | ------ | ----- |
+| A     | D9 afternoon (0.5 day) | 31, 17 | H-3   |
 
 **`RecruiterOfferController`**
 
-| Method | Path | Does | Permission |
-| --- | --- | --- | --- |
-| GET | `/api/v1/recruiter/offers?status=TALKING\|WAITING\|NO_RESPONSE` | Sent offers (rejected shows WAITING for 30 days, then NO_RESPONSE — rejection is never in the response) | recruiter |
-| GET | `/api/v1/recruiter/offers/counts` | Count per tab | recruiter |
-| GET | `/api/v1/recruiter/offers/summary` | My page summary (in conversation, awaiting reply, offers left today N/10, Scout N/50, latest 3) — borrowed by 04 | recruiter |
-| GET | `/api/v1/recruiter/offers/{roomId}/first-message` | Sheet with the first message I sent | recruiter |
+| Method | Path                                                            | Does                                                                                                             | Permission |
+| ------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------- |
+| GET    | `/api/v1/recruiter/offers?status=TALKING\|WAITING\|NO_RESPONSE` | Sent offers (rejected shows WAITING for 30 days, then NO_RESPONSE — rejection is never in the response)          | recruiter  |
+| GET    | `/api/v1/recruiter/offers/counts`                               | Count per tab                                                                                                    | recruiter  |
+| GET    | `/api/v1/recruiter/offers/summary`                              | My page summary (in conversation, awaiting reply, offers left today N/10, Scout N/50, latest 3) — borrowed by 04 | recruiter  |
+| GET    | `/api/v1/recruiter/offers/{roomId}/first-message`               | Sheet with the first message I sent                                                                              | recruiter  |
 
 - Tables: new none · shared chat_rooms (request_kind = RECRUITING), chat_messages, users, user_tech_tags, user_blocks
 - [ ] Frontend: tabs (nuqs), row (first 3 stack tags, job-seeking badge, first message one line), "대화 열기" (Open chat) → 17 when in conversation, "볼 수 없는 사용자" (Unavailable user) for blocked/withdrawn, empty state
@@ -920,54 +912,54 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 ## 5. Controller list
 
-| # | Controller | Owner | Role | Endpoints |
-| --- | --- | --- | --- | --- |
-| 00 | `AuthSessionController`, `TechTagController`, `UploadController`, `ReportController`, `BlockController`, `GithubWebhookController`, `SitemapController` | A, A, E, E, E, B, B | user · public · webhook | 12 |
-| 01 | `LoginController` | A | public | 2 |
-| 02 | `OnboardingController` | A | user | 4 |
-| 03 | `LegalController` | A | public | 2 |
-| 04 | `ProfileController` | A | public · user · recruiter | 12 |
-| 05 | `ProfileEditController` | A | user · recruiter | 4 |
-| 06 | `SettingsController` | A | user · recruiter | 7 |
-| 07 | `WorkspaceController` | B | user | 2 |
-| 08 | `TeamCreateController` | B | user | 9 |
-| 09 | `TeamSettingsController` | B | user | 18 |
-| 10 | `InviteController` | B | public · user | 2 |
-| 11 | `IssueListController` | C | user | 6 |
-| 12 | `IssueDetailController` | C | user | 8 |
-| 13 | `IssueCreateController` | C | user | 4 |
-| 14 | `BoardController` | C | user | 1 |
-| 15 | `CalendarController` | C | user | 1 |
-| 16 | `ChatListController` | D | user | 4 + 1 STOMP subscription |
-| 17 | `ChatRoomController` | D | user · recruiter + STOMP | 21 + 4 realtime paths (plus 16's list-update subscription; 5 shared paths total) |
-| 18 | `NotificationController` | D | user | 7 |
-| 19 | `RecruitListController` | E | public · user | 4 |
-| 20 | `RecruitEditorController` | E | user | 7 |
-| 21 | `RecruitDetailController` | E | public · user | 6 |
-| 22 | `PostEditorController` | E | user | 5 |
-| 23 | `PostDetailController` | E | public · user | 11 |
-| 24 | `FeedController` | E | public · user | 7 |
-| 25 | `AdminReportController` | A | admin | 6 |
-| 26 | `AdminUserController` | B | admin | 6 |
-| 27 | `AdminAuditController` | B | admin | 2 |
-| 28 | `SubscribeController` | D | user (developers and recruiters) | 5 |
-| 29 | `SubscriptionManageController` | D | user (developers and recruiters) | 5 |
-| 30 | `StatsController` | B | user | 3 |
-| 31 | `RecruiterSignupController` | A | public | 3 |
-| 32 | `RecruiterLoginController` | A | public | 4 |
-| 33 | `RecruiterOfferController` | A | recruiter | 4 |
+| #   | Controller                                                                                                                                              | Owner               | Role                             | Endpoints                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------------- | -------------------------------------------------------------------------------- |
+| 00  | `AuthSessionController`, `TechTagController`, `UploadController`, `ReportController`, `BlockController`, `GithubWebhookController`, `SitemapController` | A, A, E, E, E, B, B | user · public · webhook          | 12                                                                               |
+| 01  | `LoginController`                                                                                                                                       | A                   | public                           | 2                                                                                |
+| 02  | `OnboardingController`                                                                                                                                  | A                   | user                             | 4                                                                                |
+| 03  | `LegalController`                                                                                                                                       | A                   | public                           | 2                                                                                |
+| 04  | `ProfileController`                                                                                                                                     | A                   | public · user · recruiter        | 12                                                                               |
+| 05  | `ProfileEditController`                                                                                                                                 | A                   | user · recruiter                 | 4                                                                                |
+| 06  | `SettingsController`                                                                                                                                    | A                   | user · recruiter                 | 7                                                                                |
+| 07  | `WorkspaceController`                                                                                                                                   | B                   | user                             | 2                                                                                |
+| 08  | `TeamCreateController`                                                                                                                                  | B                   | user                             | 9                                                                                |
+| 09  | `TeamSettingsController`                                                                                                                                | B                   | user                             | 18                                                                               |
+| 10  | `InviteController`                                                                                                                                      | B                   | public · user                    | 2                                                                                |
+| 11  | `IssueListController`                                                                                                                                   | C                   | user                             | 6                                                                                |
+| 12  | `IssueDetailController`                                                                                                                                 | C                   | user                             | 8                                                                                |
+| 13  | `IssueCreateController`                                                                                                                                 | C                   | user                             | 4                                                                                |
+| 14  | `BoardController`                                                                                                                                       | C                   | user                             | 1                                                                                |
+| 15  | `CalendarController`                                                                                                                                    | C                   | user                             | 1                                                                                |
+| 16  | `ChatListController`                                                                                                                                    | D                   | user                             | 4 + 1 STOMP subscription                                                         |
+| 17  | `ChatRoomController`                                                                                                                                    | D                   | user · recruiter + STOMP         | 21 + 4 realtime paths (plus 16's list-update subscription; 5 shared paths total) |
+| 18  | `NotificationController`                                                                                                                                | D                   | user                             | 7                                                                                |
+| 19  | `RecruitListController`                                                                                                                                 | E                   | public · user                    | 4                                                                                |
+| 20  | `RecruitEditorController`                                                                                                                               | E                   | user                             | 7                                                                                |
+| 21  | `RecruitDetailController`                                                                                                                               | E                   | public · user                    | 6                                                                                |
+| 22  | `PostEditorController`                                                                                                                                  | E                   | user                             | 5                                                                                |
+| 23  | `PostDetailController`                                                                                                                                  | E                   | public · user                    | 11                                                                               |
+| 24  | `FeedController`                                                                                                                                        | E                   | public · user                    | 7                                                                                |
+| 25  | `AdminReportController`                                                                                                                                 | A                   | admin                            | 6                                                                                |
+| 26  | `AdminUserController`                                                                                                                                   | B                   | admin                            | 6                                                                                |
+| 27  | `AdminAuditController`                                                                                                                                  | B                   | admin                            | 2                                                                                |
+| 28  | `SubscribeController`                                                                                                                                   | D                   | user (developers and recruiters) | 5                                                                                |
+| 29  | `SubscriptionManageController`                                                                                                                          | D                   | user (developers and recruiters) | 5                                                                                |
+| 30  | `StatsController`                                                                                                                                       | B                   | user                             | 3                                                                                |
+| 31  | `RecruiterSignupController`                                                                                                                             | A                   | public                           | 3                                                                                |
+| 32  | `RecruiterLoginController`                                                                                                                              | A                   | public                           | 4                                                                                |
+| 33  | `RecruiterOfferController`                                                                                                                              | A                   | recruiter                        | 4                                                                                |
 
 Controllers mixing more than one role on one page (04, 05, 06, 10, 17, 19, 21, 23, 24) put only `@RequestMapping("/api/v1")` on the class and start each method path with the role. Others may put `/api/v1/{role}` on the class.
 
 ## 6. Risks and deferral order
 
-| Risk | Signal | Response |
-| --- | --- | --- |
-| GitHub App install or Projects fields blocked in the spike | By end of D2, install return or Blocked status doesn't work | 08 step 4 offers only "새로 만들기" (Create new); Blocked as a separate single-select field (07 TODO 00) |
-| 17 team chat not done by D5 | D5 integration check fails | Move photo attachments and unread-by sheet to D7; 21 accept does only chat join first |
-| An owner slips a day or more | 1 day behind the day table | Defer `[Included]` first: job ads (the ad items on 04, 05, 24, 25, 28, 29) → 30 → share sheet, share cards, link cards (00, 17) → 11 progress card → 17 AI summary → 31–33 (keep job-seeking status) → 08 existing board → 25 OTP → 24 2nd-degree → 04 contribution graph |
-| Toss confirm fails | D8 checkout → no confirmation | One-time payment + expiry only; billing key and trial after launch |
-| Controller 1:1 duplicates logic | Two similar queries in code review | Lift into a domain service called by both controllers (rule 3 in 1-3) |
+| Risk                                                       | Signal                                                      | Response                                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub App install or Projects fields blocked in the spike | By end of D2, install return or Blocked status doesn't work | 08 step 4 offers only "새로 만들기" (Create new); Blocked as a separate single-select field (07 TODO 00)                                                                                                                                                                  |
+| 17 team chat not done by D5                                | D5 integration check fails                                  | Move photo attachments and unread-by sheet to D7; 21 accept does only chat join first                                                                                                                                                                                     |
+| An owner slips a day or more                               | 1 day behind the day table                                  | Defer `[Included]` first: job ads (the ad items on 04, 05, 24, 25, 28, 29) → 30 → share sheet, share cards, link cards (00, 17) → 11 progress card → 17 AI summary → 31–33 (keep job-seeking status) → 08 existing board → 25 OTP → 24 2nd-degree → 04 contribution graph |
+| Toss confirm fails                                         | D8 checkout → no confirmation                               | One-time payment + expiry only; billing key and trial after launch                                                                                                                                                                                                        |
+| Controller 1:1 duplicates logic                            | Two similar queries in code review                          | Lift into a domain service called by both controllers (rule 3 in 1-3)                                                                                                                                                                                                     |
 
 ## 7. To be decided
 

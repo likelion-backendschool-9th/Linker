@@ -1,3 +1,4 @@
+import { UPLOADED_IMAGES } from '../fixtures/uploads';
 import type { Session } from '@/lib/auth/session';
 
 import { del, fail, get, newId, post, type MockRoute } from '../core/define';
@@ -34,10 +35,11 @@ export const routes: MockRoute[] = [
     const fileId = String(newId());
     return { fileId, uploadUrl: `mock://upload/${fileId}` };
   }),
-  post('/api/v1/user/uploads/:fileId/complete', ({ params }) => ({
-    fileId: params.fileId,
-    url: `/mock/cover-${(Number(params.fileId) % 3) + 1}.svg`,
-  })),
+  post('/api/v1/user/uploads/:fileId/complete', ({ params }) => {
+    const url = `/mock/cover-${(Number(params.fileId) % 3) + 1}.svg`;
+    UPLOADED_IMAGES.set(params.fileId, url);
+    return { fileId: params.fileId, url };
+  }),
 
   post('/api/v1/user/reports', () => undefined),
 

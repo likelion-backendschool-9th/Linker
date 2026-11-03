@@ -7,18 +7,22 @@ import { Button } from '@/components/ui/button';
 import { useActiveOverlay } from '@/lib/navigation/use-overlay';
 import { formatDate, toKstIso } from '@/lib/format/time';
 
-import type { RoomMessage } from '../_lib/room-api';
+import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import { ChatMessage } from './chat-message';
 import styles from './chat-room.module.css';
 
 type Props = {
   messages: RoomMessage[];
+  kind: RoomInfo['kind'];
+  onUnread?: (id: number) => void;
   login: string | null;
   onRead: (id: number) => void;
+  onPhoto?: (id: number, index: number) => void;
+  onMenu?: (id: number) => void;
   readPosition?: { id: number } | null;
 };
 
-export function MessageTimeline({ messages, login, onRead, readPosition }: Props) {
+export function MessageTimeline({ messages, kind, onUnread, login, onRead, readPosition, onMenu, onPhoto }: Props) {
   'use no memo'; // TanStack Virtual exposes a mutable virtualizer.
   const root = useRef<HTMLDivElement>(null);
   const restoredPosition = useRef<Props['readPosition']>(null);
@@ -148,7 +152,7 @@ export function MessageTimeline({ messages, login, onRead, readPosition }: Props
                     <time dateTime={date}>{formatDate(message.createdAt)}</time>
                   </p>
                 )}
-                <ChatMessage message={message} mine={message.sender?.login === login} />
+                <ChatMessage kind={kind} onUnread={onUnread} message={message} mine={message.sender?.login === login} onMenu={onMenu} onPhoto={onPhoto} />
               </div>
             );
           })}

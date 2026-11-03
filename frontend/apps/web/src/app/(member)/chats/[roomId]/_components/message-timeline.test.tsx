@@ -16,7 +16,7 @@ vi.mock('@tanstack/react-virtual', () => ({
 vi.mock('@/lib/navigation/use-overlay', () => ({ useActiveOverlay: () => ({ overlay: null }) }));
 vi.mock('./chat-message', () => ({ ChatMessage: () => <p>대화</p> }));
 const message = (id: number): RoomMessage => ({
-  id, roomId: 1, sender: null, type: 'TEXT', text: '긴 메시지', imageUrls: [], payload: null,
+  id, roomId: 1, unreadCount: 0, sender: null, type: 'TEXT', text: '긴 메시지', imageUrls: [], payload: null,
   createdAt: '2026-11-01T00:00:00Z', editedAt: null, deletedAt: null,
 });
 let notify: IntersectionObserverCallback;
@@ -32,7 +32,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 it('marks a tall message read when it fills half the viewport, despite its low intersection ratio', () => {
   const onRead = vi.fn();
-  const { container } = render(<MessageTimeline messages={[message(1)]} login="me" onRead={onRead} />);
+  const { container } = render(<MessageTimeline kind="TEAM" messages={[message(1)]} login="me" onRead={onRead} />);
   const target = container.querySelector('[data-message-id]')!;
   const entry = {
     target, isIntersecting: true, intersectionRatio: 0.15,
@@ -47,9 +47,9 @@ it('marks a tall message read when it fills half the viewport, despite its low i
 
 it('restores the read position after a large catch-up instead of jumping to the latest message', () => {
   const messages = Array.from({ length: 601 }, (_, index) => message(index + 1));
-  const { rerender } = render(<MessageTimeline messages={[messages[0]!]} login="me" onRead={vi.fn()} />);
+  const { rerender } = render(<MessageTimeline kind="TEAM" messages={[messages[0]!]} login="me" onRead={vi.fn()} />);
   scrollToOffset.mockClear();
-  rerender(<MessageTimeline messages={messages} login="me" onRead={vi.fn()} readPosition={{ id: 1 }} />);
+  rerender(<MessageTimeline kind="TEAM" messages={messages} login="me" onRead={vi.fn()} readPosition={{ id: 1 }} />);
   expect(scrollToIndex).toHaveBeenCalledWith(0, { align: 'start' });
   expect(scrollToOffset).not.toHaveBeenCalled();
 });

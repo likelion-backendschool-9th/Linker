@@ -1,6 +1,9 @@
 import { infiniteQueryOptions, queryOptions, type InfiniteData } from '@tanstack/react-query';
 
+import { CHAT } from '@/lib/policy';
 import { apiFetch } from '@/lib/api/api-fetch';
+
+import type { ChatIssueCard } from './chat-reference-types';
 
 /** Provisional WBS 17 DTOs; replace with generated Orval contracts once Spring publishes OpenAPI. */
 export type ChatMember = { id: number; login: string; name: string; avatarUrl: string };
@@ -23,12 +26,14 @@ export type RoomInfo = {
 export type RoomMessage = {
   id: number;
   roomId: number;
+  /** Other current participants who have not read this message (server-calculated). */
+  unreadCount: number;
   clientMessageId?: string;
   sender: ChatMember | null;
   type: 'TEXT' | 'IMAGE' | 'ISSUE_CARD' | 'PR_EVENT' | 'SYSTEM' | 'AI_SUMMARY' | 'SHARE_CARD';
   text: string | null;
   imageUrls: string[];
-  payload: Record<string, unknown> | null;
+  payload: (Record<string, unknown> & { issueCards?: ChatIssueCard[] }) | null;
   createdAt: string;
   editedAt: string | null;
   deletedAt: string | null;
@@ -51,11 +56,22 @@ export function messagesOptions(login: string | null, id: number) {
     staleTime: 0,
     queryKey: messagesKey(login, id),
     initialPageParam: null as number | null,
-    queryFn: ({ pageParam, signal }) =>
-      apiFetch<MessagePage>(
+    queryFn: async ({ pageParam, signal, client }) => {
+      const previous = client.getQueryData<InfiniteData<MessagePage>>(messagesKey(login, id))?.pages[0];
+      // A large reconnect batch also contains the last-read anchor. Refetching only
+      // the default latest page on READ would discard it and move the viewport.
+      if (pageParam === null && previous && previous.items.length > CHAT.catchUpMax) {
+        const after = Math.max(0, previous.items[0]!.id - 1);
+        const page = await apiFetch<MessagePage>(
+          `/api/v1/user/chat-rooms/${id}/messages?after=${after}`, { signal },
+        );
+        return { ...page, hasMore: previous.hasMore };
+      }
+      return apiFetch<MessagePage>(
         `/api/v1/user/chat-rooms/${id}/messages${pageParam === null ? '' : `?before=${pageParam}`}`,
         { signal },
-      ),
+      );
+    },
     getNextPageParam: (page) => (page.hasMore ? page.items[0]?.id : undefined),
   });
 }
@@ -97,4 +113,33 @@ export function mergeCatchUpHistory(
     }],
     pageParams: [null],
   };
+}
+
+export function editMessage(roomId: number, messageId: number, text: string) {
+  return apiFetch<RoomMessage>(`/api/v1/user/chat-rooms/${roomId}/messages/${messageId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+}
+
+export function deleteMessage(roomId: number, messageId: number) {
+  return apiFetch<void>(`/api/v1/user/chat-rooms/${roomId}/messages/${messageId}`, {
+    method: 'DELETE',
+  });
+}
+
+export const unreadMembersKey = (login: string | null, roomId: number) =>
+  [...roomKey(login, roomId), 'unread-members'] as const;
+
+export function unreadMembersOptions(login: string | null, roomId: number, messageId: number | null) {
+  return queryOptions({
+    queryKey: [...unreadMembersKey(login, roomId), messageId],
+    staleTime: 0,
+    enabled: messageId !== null,
+    queryFn: ({ signal }) => apiFetch<{ items: ChatMember[] }>(
+      `/api/v1/user/chat-rooms/${roomId}/messages/${messageId}/unread-members`,
+      { signal, cache: 'no-store' },
+    ),
+  });
 }

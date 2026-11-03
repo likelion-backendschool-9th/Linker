@@ -15,12 +15,14 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { chatKeys, unreadSummaryOptions } from '@/features/chat/chat-queries';
 import { useViewer } from '@/lib/auth/viewer-context';
+import { useOverlay } from '@/lib/navigation/use-overlay';
 import { CHAT } from '@/lib/policy';
 import { useStompConnectionState, useStompSubscription } from '@/lib/realtime/use-stomp';
 
 import { useMessageOutbox } from '../_hooks/use-message-outbox';
 import {
   markRead,
+  unreadMembersKey,
   mergeCatchUpHistory,
   messagesKey,
   messagesOptions,
@@ -30,8 +32,11 @@ import {
   type MessagePage,
   type RoomMessage,
 } from '../_lib/room-api';
+import { ChatPhotoViewer } from './chat-photo-viewer';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
+import { MessageActions } from './message-actions';
+import { UnreadMembersSheet } from './unread-members-sheet';
 import { MessageTimeline } from './message-timeline';
 import { RoomInfoSheet } from './room-info-sheet';
 import { PullRequestSheet } from './pull-request-sheet';
@@ -46,6 +51,9 @@ const CONNECTION = {
 
 export function ChatRoom({ roomId }: { roomId: number }) {
   const viewer = useViewer();
+  const messageMenu = useOverlay('chat-message');
+  const photoViewer = useOverlay('chat-photo');
+  const unreadMembers = useOverlay('chat-unread');
   const client = useQueryClient();
   const info = useQuery(roomInfoOptions(viewer.login, roomId));
   const history = useInfiniteQuery(messagesOptions(viewer.login, roomId));
@@ -63,6 +71,8 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     retry: 1,
     onSuccess: async () => {
       await Promise.all([
+        client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) }),
+        client.invalidateQueries({ queryKey: unreadMembersKey(viewer.login, roomId) }),
         client.invalidateQueries({ queryKey: unreadSummaryOptions(viewer.login).queryKey }),
         client.invalidateQueries({ queryKey: [...chatKeys.account(viewer.login), 'rooms'] }),
       ]);
@@ -124,7 +134,10 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     `/topic/chat-rooms/${roomId}`,
     (event) => {
       if (event.event === 'MESSAGE' && event.message) receive(event.message);
-      else void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+      else {
+        void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+        void client.invalidateQueries({ queryKey: unreadMembersKey(viewer.login, roomId) });
+      }
     },
     {
       onResubscribe: () => {
@@ -205,15 +218,22 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         </Button>
       )}
       <MessageTimeline
+        kind={room.kind}
+        onUnread={(id) => unreadMembers.open(String(id))}
         messages={messages}
         login={viewer.login}
         readPosition={readPosition}
+        onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
+        onMenu={(id) => messageMenu.open(String(id))}
         onRead={(id) => {
           if (id <= lastSeen.current || suspended) return;
           lastSeen.current = id;
           read.mutate(id);
         }}
       />
+      <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
+      <ChatPhotoViewer messages={messages} />
+      <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />
       {read.isError && (
         <div role="alert">
           <p>읽음 상태를 저장하지 못했어요.</p>
@@ -251,11 +271,15 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         <>
           {readOnly && <p role="status">지금은 대화를 읽을 수만 있어요.</p>}
           <ChatComposer
+            room={room}
+            login={viewer.login}
             disabled={readOnly}
-            onSend={(text) =>
+            onSend={({ text, images, references }) =>
               outbox.enqueue({
                 clientMessageId: crypto.randomUUID(),
                 text,
+                images,
+                references,
                 createdAt: new Date().toISOString(),
               })
             }
