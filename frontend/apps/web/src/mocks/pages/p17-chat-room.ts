@@ -1,6 +1,8 @@
-import { PLAN_LIMITS } from '@/lib/policy';
+import { messageActions } from '@/app/(member)/chats/[roomId]/_lib/message-actions';
+import { countChars, normalizeLineBreaks } from '@/lib/format/text';
+import { CHAT, PLAN_LIMITS } from '@/lib/policy';
 import { emit } from '../realtime-bus';
-import { daysAgo, del, fail, get, newId, patch, post, type MockRoute } from '../core/define';
+import { daysAgo, del, fail, get, newId, patch, post, type MockRoute, type MockContext } from '../core/define';
 import { findRoom, MESSAGES, ROOMS, UNREAD } from '../fixtures/chat';
 import { ISSUES } from '../fixtures/issues';
 import { POSTS } from '../fixtures/posts';
@@ -18,6 +20,15 @@ function roomOr404(id: string) {
   const room = findRoom(id);
   if (!room) fail(404, 'NOT_FOUND', '삭제되었거나 볼 수 없는 콘텐츠예요');
   return room;
+}
+
+function editableMessage(params: MockContext['params'], viewer: MockContext['viewer']) {
+  const room = roomOr404(params.roomId);
+  const message = MESSAGES.find((item) => item.id === Number(params.messageId) && item.roomId === room.id);
+  if (!message) fail(404, 'NOT_FOUND', '메시지를 찾지 못했어요');
+  const team = room.teamId ? findTeam(room.teamId) : undefined;
+  const disabled = room.kind === 'REQUEST' || !!(team && ['READ_ONLY', 'ARCHIVED'].includes(team.status));
+  return { message, allowed: messageActions(message, viewer.me?.login ?? null, team?.myRole ?? null, disabled, Date.now()) };
 }
 
 export const routes: MockRoute[] = [
@@ -69,20 +80,25 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/chat-rooms/:roomId/messages/:messageId/unread-members', ({ params }) => ({
     items: (TEAM_MEMBERS[roomOr404(params.roomId!).teamId ?? 0] ?? []).slice(2).map((m) => m.user),
   })),
-  patch('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params, body }) => {
-    const message = MESSAGES.find((m) => m.id === Number(params.messageId));
-    if (!message) fail(404, 'NOT_FOUND', '메시지를 찾지 못했어요');
-    message.text = String(body.text ?? message.text);
+  patch('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params, body, viewer }) => {
+    const { message, allowed } = editableMessage(params, viewer);
+    if (!allowed.edit) fail(403, 'FORBIDDEN', '이 메시지를 수정할 수 없어요');
+    const text = normalizeLineBreaks(String(body.text ?? '')).trim();
+    if (!countChars(text) || countChars(text) > CHAT.messageMax) {
+      fail(400, 'INVALID_TEXT', '메시지 글자 수를 확인해 주세요');
+    }
+    message.text = text;
     message.editedAt = new Date().toISOString();
+    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message });
     return message;
   }),
-  del('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params }) => {
-    const message = MESSAGES.find((m) => m.id === Number(params.messageId));
-    if (message) {
-      message.deletedAt = new Date().toISOString();
-      message.text = null;
-      message.imageUrls = [];
-    }
+  del('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params, viewer }) => {
+    const { message, allowed } = editableMessage(params, viewer);
+    if (!allowed.delete) fail(403, 'FORBIDDEN', '이 메시지를 삭제할 수 없어요');
+    message.deletedAt = new Date().toISOString();
+    message.text = null;
+    message.imageUrls = [];
+    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message });
     return undefined;
   }),
   patch('/api/v1/user/chat-rooms/:roomId/notification', ({ params, body }) => {
