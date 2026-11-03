@@ -125,7 +125,7 @@ export function LinkerWebView() {
       onNavigationStateChange={(state) => {
         canGoBack.current = state.canGoBack;
       }}
-      onLoadStart={navigation.onLoadStart}
+      onLoadStart={({ nativeEvent }) => navigation.onLoadStart(nativeEvent.loading)}
       onError={() => {
         navigation.onLoadStart();
         setFailed(true);

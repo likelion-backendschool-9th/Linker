@@ -25,6 +25,14 @@ describe('WebView READY and incoming destinations', () => {
     expect(replace).toHaveBeenCalledOnce();
   });
 
+  it('keeps the web ready after an Android SPA history event so a warm login return can load', () => {
+    const { navigation, replace } = setup();
+    navigation.onReady();
+    navigation.onLoadStart(false);
+    navigation.loadPath('/auth/callback?code=warm&state=s');
+    expect(replace).toHaveBeenCalledExactlyOnceWith('/auth/callback?code=warm&state=s');
+  });
+
   it('queues the latest notification while loading and flushes it just once', () => {
     const { navigation, send } = setup();
     navigation.openPath('/chats/1');

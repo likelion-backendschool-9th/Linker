@@ -32,8 +32,9 @@ export function createWebNavigation(actions: WebNavigationActions) {
       if (ready) actions.send({ type: 'DEEP_LINK', path });
       else heldPath = path; // The latest notification tap is the intended destination.
     },
-    onLoadStart() {
-      ready = false;
+    onLoadStart(loading = true) {
+      // Android also emits this event for SPA history updates, after the web is already ready.
+      if (loading) ready = false;
     },
     onReady() {
       ready = true;
