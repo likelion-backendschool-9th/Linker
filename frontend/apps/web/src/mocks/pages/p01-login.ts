@@ -1,7 +1,7 @@
 import { get, post, type MockRoute } from '../core/define';
 
 /**
- * 01 Start / login: `LoginController`.
+ * 01 Start / login: `AuthController`.
  * The mock authorize URL goes straight to the mock login route (it sets the role cookie and redirects to
  * `returnTo`), so the real "GitHub → /auth/callback" hop is skipped. `/auth/callback` still works if opened.
  */

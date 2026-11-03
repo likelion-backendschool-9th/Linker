@@ -2,7 +2,7 @@ import { del, fail, get, paginate, type MockRoute } from '../core/define';
 import { APPLICATIONS, RECRUITS, recruitCard } from '../fixtures/recruits';
 import { ME } from '../fixtures/users';
 
-/** 19 Recruit post list: `RecruitListController` */
+/** 19 Recruit post list: `RecruitmentController` */
 
 export const routes: MockRoute[] = [
   // Open posts only; filters role (RecruitRoleKey) / tech / mode (online, offline, hybrid) / sort (NEWEST, DEADLINE)

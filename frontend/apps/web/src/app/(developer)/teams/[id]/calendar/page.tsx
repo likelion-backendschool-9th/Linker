@@ -15,7 +15,7 @@ import {
 
 export const metadata = buildMetadata({ title: '캘린더' });
 
-/** 15 Calendar (07 TODO 15, `CalendarController`) */
+/** 15 Calendar (07 TODO 15, `IssueController`) */
 export default async function CalendarPage({
   params,
   searchParams,

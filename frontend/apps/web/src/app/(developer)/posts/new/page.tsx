@@ -13,7 +13,7 @@ export const metadata = buildMetadata({ title: '게시물 쓰기' });
 
 const loadNav = createLoader({ step: parseAsInteger, repo: parseAsInteger, teamId: parseAsString });
 
-/** 22 Write project post (07 TODO 22, `PostEditorController`): step 1 repo → step 2 content */
+/** 22 Write project post (07 TODO 22, `PostController`): step 1 repo → step 2 content */
 export default async function PostNewPage({ searchParams }: PageProps<'/posts/new'>) {
   const [session, query] = await Promise.all([getSession(), searchParams]);
   const login = session?.login ?? null;

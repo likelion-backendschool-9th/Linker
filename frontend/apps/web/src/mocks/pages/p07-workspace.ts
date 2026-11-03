@@ -3,7 +3,7 @@ import { ISSUES, isOverdue } from '../fixtures/issues';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 import { ME } from '../fixtures/users';
 
-/** 07 Workspace home: `WorkspaceController` */
+/** 07 Workspace home: `TeamController / IssueController` */
 
 export const routes: MockRoute[] = [
   get(

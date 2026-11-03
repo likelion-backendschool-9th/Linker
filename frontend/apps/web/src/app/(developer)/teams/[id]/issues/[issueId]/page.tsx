@@ -13,7 +13,7 @@ import { IssueDetailView } from './_components/issue-detail-view';
 // No issue title in metadata: team pages are private (frontend AGENTS.md "SEO and privacy")
 export const metadata = buildMetadata({ title: '이슈 상세' });
 
-/** 12 Issue detail (07 TODO 12, `IssueDetailController`). `[issueId]` is the Linker issue id. */
+/** 12 Issue detail (07 TODO 12, `IssueController`). `[issueId]` is the Linker issue id. */
 export default async function IssueDetailPage({
   params,
 }: PageProps<'/teams/[id]/issues/[issueId]'>) {

@@ -7,7 +7,7 @@ import { todayKst } from '@/lib/format/time';
 import type { IssueRow } from '../../_lib/issue-queries';
 import { CALENDAR_VIEWS, isDay, visibleWeeks, type CalendarView } from './calendar-grid';
 
-/** Provisional 15 `CalendarController` contract (WBS 15) */
+/** Provisional 15 `IssueController` contract (WBS 15) */
 export type CalendarResponse = { from: string; to: string; items: IssueRow[] };
 
 /** `?view=month|week&date=yyyy-MM-dd`; `assignee` is 11's filter parameter */

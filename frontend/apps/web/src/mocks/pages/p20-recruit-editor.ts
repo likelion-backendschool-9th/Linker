@@ -5,7 +5,7 @@ import { RECRUITS, type MockRecruit } from '../fixtures/recruits';
 import { TEAMS } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
 
-/** 20 Write/edit recruit post: `RecruitEditorController` */
+/** 20 Write/edit recruit post: `RecruitmentController` */
 
 const OPEN_LIMIT = 3; // Pro 10 (04 POL-R-1)
 

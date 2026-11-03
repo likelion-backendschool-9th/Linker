@@ -2,7 +2,7 @@ import { fail, get, put, type MockRoute } from '../core/define';
 import { findIssue, isOverdue, LABELS, type IssueStatus } from '../fixtures/issues';
 import { TEAM_MEMBERS } from '../fixtures/teams';
 
-/** 12 Issue detail: `IssueDetailController`. Writes change the in-memory issue, so the board and list follow. */
+/** 12 Issue detail: `IssueController`. Writes change the in-memory issue, so the board and list follow. */
 
 function issueOr404(teamId: string, issueId: string) {
   const issue = findIssue(teamId, issueId);

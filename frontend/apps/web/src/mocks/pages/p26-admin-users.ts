@@ -2,7 +2,7 @@ import { daysAgo, del, fail, get, newId, post, type MockRoute } from '../core/de
 import { ALL_USERS, brief, findUserById } from '../fixtures/users';
 import { addAuditLog } from './p27-admin-audit';
 
-/** 26 Ops: users: `AdminUserController`. Email is masked unless a reason is entered (POL ch. 10). */
+/** 26 Ops: users: `AdminController`. Email is masked unless a reason is entered (POL ch. 10). */
 
 type Sanction = {
   id: number;

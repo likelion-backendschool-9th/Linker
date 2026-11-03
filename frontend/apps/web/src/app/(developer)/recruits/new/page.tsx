@@ -10,7 +10,7 @@ import { editorOptions } from '../_lib/editor-queries';
 
 export const metadata = buildMetadata({ title: '모집 글 쓰기' });
 
-/** 20 Write recruit post (07 TODO 20, `RecruitEditorController`) */
+/** 20 Write recruit post (07 TODO 20, `RecruitmentController`) */
 export default async function RecruitNewPage() {
   const session = await getSession();
   const client = getQueryClient();

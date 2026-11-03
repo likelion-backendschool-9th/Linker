@@ -11,7 +11,7 @@ import { feedOptions } from './_lib/feed-queries';
 
 export const metadata: Metadata = buildMetadata({ title: '홈', path: '/feed', indexable: true });
 
-/** 24 Home feed (07 TODO 24, `FeedController`) */
+/** 24 Home feed (07 TODO 24, PostController) */
 export default async function FeedPage({ searchParams }: PageProps<'/feed'>) {
   const [session, query] = await Promise.all([getSession(), searchParams]);
   const { role } = viewerFromSession(session);

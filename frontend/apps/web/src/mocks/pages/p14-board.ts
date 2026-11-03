@@ -3,7 +3,7 @@ import { STATUS_LABELS, type IssueStatus } from '../fixtures/issues';
 import { findTeam } from '../fixtures/teams';
 import { filterIssues, issueRow } from './p11-issue-list';
 
-/** 14 Status board: `BoardController`. Moves go through 12's status API. */
+/** 14 Status board: `IssueController`. Moves go through 12's status API. */
 
 const COLUMNS: IssueStatus[] = ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER'];
 

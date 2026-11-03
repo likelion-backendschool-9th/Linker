@@ -2,7 +2,7 @@ import { get, type MockRoute } from '../core/define';
 import { ISSUES } from '../fixtures/issues';
 import { issueRow } from './p11-issue-list';
 
-/** 15 Calendar: `CalendarController`. Issues without a due date are left out (they live under "일정 없음"). */
+/** 15 Calendar: `IssueController`. Issues without a due date are left out (they live under "일정 없음"). */
 
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/calendar', ({ params, query }) => {

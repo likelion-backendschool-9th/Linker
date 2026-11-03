@@ -2,7 +2,7 @@ package com.linker.backend.global.security;
 
 import java.io.IOException;
 
-import com.linker.backend.domain.account.SessionService;
+import com.linker.backend.service.auth.SessionService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

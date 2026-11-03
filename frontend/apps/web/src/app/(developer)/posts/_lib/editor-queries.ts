@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** Provisional WBS 22 `PostEditorController` contract; replace with Orval types when OpenAPI is available. */
+/** Provisional WBS 22 `PostController` contract; replace with Orval types when OpenAPI is available. */
 export type EditorRepo = {
   repoId: number;
   fullName: string;

@@ -2,7 +2,7 @@ import { fail, get, patch, post, type MockRoute } from '../core/define';
 import { TEAMS } from '../fixtures/teams';
 import { ME, RECRUITER } from '../fixtures/users';
 
-/** 06 Settings: `SettingsController` */
+/** 06 Settings: `AccountController / AuthController / NotificationController` */
 
 const settings = { pushEnabled: true, notificationEmail: ME.email };
 

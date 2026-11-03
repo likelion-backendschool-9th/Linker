@@ -1,7 +1,7 @@
 import { fail, get, newId, post, put, type MockRoute } from '../core/define';
 import { TEAMS, findTeam } from '../fixtures/teams';
 
-/** 08 Create team: `TeamCreateController` (5 steps: install → verify → repos → board → complete) */
+/** 08 Create team: `TeamController / GithubController` (5 steps: install → verify → repos → board → complete) */
 
 const orgs = [
   { id: 501, login: 'my-new-org', avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=96' },

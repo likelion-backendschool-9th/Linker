@@ -5,7 +5,7 @@ import { state } from '../fixtures/subscriptions';
 import { fail, get, newId, post, type MockRoute } from '../core/define';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 
-/** 28 Plans & checkout: `SubscribeController`. Toss test mode only; the mock confirms every order. */
+/** 28 Plans & checkout: `SubscriptionController`. Toss test mode only; the mock confirms every order. */
 
 const developerPlans = [
   {

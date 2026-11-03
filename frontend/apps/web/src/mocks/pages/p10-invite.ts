@@ -2,7 +2,7 @@ import { fail, get, post, type MockRoute } from '../core/define';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 
 /**
- * 10 Accept invite: `InviteController`.
+ * 10 Accept invite: `TeamController`.
  * Codes to try: `demo-valid` (default), `demo-expired`, `demo-revoked`, `demo-member` (already a member),
  * `demo-full` (member limit), `demo-limit` (10 teams).
  */

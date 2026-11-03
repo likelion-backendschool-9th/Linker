@@ -12,7 +12,7 @@ import {
 import { findPost, POSTS, postCard } from '../fixtures/posts';
 import { brief, DEVELOPERS, ME, OTHERS } from '../fixtures/users';
 
-/** 23 Project post detail: `PostDetailController` */
+/** 23 Project post detail: `PostController` */
 
 const [, doyun, seoyeon, , hayun] = DEVELOPERS;
 const liked = new Set<number>([2]);

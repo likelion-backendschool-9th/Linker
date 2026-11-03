@@ -1,4 +1,4 @@
-/** 00 `TechTagController`: tag list and job categories (04 ch. 3 "Job ads") */
+/** CatalogController: tag list and job categories (04 ch. 3 "Job ads") */
 
 export const TECH_TAGS = [
   'TypeScript',
