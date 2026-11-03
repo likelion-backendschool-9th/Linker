@@ -1,9 +1,13 @@
 import { UPLOADED_IMAGES } from '../fixtures/uploads';
 import type { Session } from '@/lib/auth/session';
+import { SITEMAP } from '@/lib/policy';
+import type { SitemapItem } from '@/lib/seo/sitemap';
 
 import { del, fail, get, newId, post, type MockRoute } from '../core/define';
 import { JOB_CATEGORIES, TECH_TAGS } from '../fixtures/tech';
 import { brief, DEVELOPERS, findUserById } from '../fixtures/users';
+import { POSTS } from '../fixtures/posts';
+import { RECRUITS } from '../fixtures/recruits';
 
 /** 00 Common foundation: AuthSession, TechTag, Upload, Report, Block (WBS ch. 3) */
 
@@ -62,9 +66,42 @@ export const routes: MockRoute[] = [
     return undefined;
   }),
 
-  // Search-indexable lists (B, D10): ids only
-  get('/api/v1/public/sitemap/:kind', ({ params }) => ({
-    kind: params.kind,
-    items: [{ id: 1, updatedAt: new Date().toISOString() }],
-  })),
+  // WBS 00: the same kind/page/items contract as Spring, including URLs and empty trailing pages.
+  get('/api/v1/public/sitemap/:kind', ({ params, query }) => {
+    const page = Number(query.get('page') ?? '1');
+    if (!Number.isInteger(page) || page < 1 || page > 10_000)
+      fail(400, 'VALIDATION_ERROR', '페이지 값이 올바르지 않아요');
+    let items: SitemapItem[];
+    switch (params.kind) {
+      case 'users':
+        items = DEVELOPERS.map((user) => ({
+          id: user.id,
+          url: `/u/${encodeURIComponent(user.login)}`,
+          updatedAt: user.joinedAt,
+        }));
+        break;
+      case 'posts':
+        items = POSTS.filter((post) => post.visibility === 'VISIBLE').map((post) => ({
+          id: post.id,
+          url: `/posts/${post.id}`,
+          updatedAt: post.editedAt ?? post.createdAt,
+        }));
+        break;
+      case 'recruits':
+        items = RECRUITS.filter((post) => post.status === 'OPEN').map((post) => ({
+          id: post.id,
+          url: `/recruits/${post.id}`,
+          updatedAt: post.createdAt,
+        }));
+        break;
+      default:
+        return fail(400, 'VALIDATION_ERROR', '지원하지 않는 sitemap 종류예요');
+    }
+    const start = (page - 1) * SITEMAP.pageSize;
+    return {
+      kind: params.kind,
+      page,
+      items: items.sort((a, b) => a.id - b.id).slice(start, start + SITEMAP.pageSize),
+    };
+  }),
 ];

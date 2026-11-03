@@ -10,6 +10,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { saveNativeSession } from '@/features/auth/sync-native-session';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { RECRUITER } from '@/lib/policy';
@@ -128,9 +129,15 @@ export function RecruiterSignupForm() {
         },
       }),
     }),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       toast(`채용 담당자 계정 @${result.login}을 만들었어요.`);
+      try {
+        await saveNativeSession();
+      } catch {
+        // Web signup still succeeds if the native session sync fails.
+      }
       router.replace('/feed');
+      router.refresh();
     },
     onError: (error) => setApiError(errorInfo(error, '회원가입을 완료하지 못했어요. 다시 시도해 주세요.')),
   });

@@ -1,3 +1,4 @@
+import { authCallbackPath } from '@linker/bridge';
 import * as WebBrowser from 'expo-web-browser';
 
 import { AUTH_REDIRECT_URL } from '@/lib/config';
@@ -5,13 +6,6 @@ import { clearSession, saveSession } from '@/lib/secure-store';
 
 import type { Handler } from '../context';
 import { sendPushTokenIfGranted } from './push';
-
-/** `linker://auth?code&state` → the web callback screen, which exchanges the code itself. */
-export function authCallbackPath(url: string): string | null {
-  if (!url.startsWith(AUTH_REDIRECT_URL)) return null;
-  const query = url.split('?')[1];
-  return query ? `/auth/callback?${query}` : null;
-}
 
 /** GitHub login in the system browser, back through the deep link (blueprint §12-3). */
 export const authGithubStart: Handler<'AUTH_GITHUB_START'> = async (msg, ctx) => {
@@ -31,8 +25,10 @@ export const authSessionSave: Handler<'AUTH_SESSION_SAVE'> = async (msg, ctx) =>
   await sendPushTokenIfGranted(ctx);
 };
 
-/** Logout: drop the ids and hand the web the token so the server deletes it (DELETE /push-tokens/{token}). */
-export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async (_msg, ctx) => {
+/**
+ * Logout: drop the stored ids. The web deletes the Expo token (DELETE /push-tokens/{token})
+ * before sending CLEAR, so we must not re-register here.
+ */
+export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async () => {
   await clearSession();
-  await sendPushTokenIfGranted(ctx);
 };

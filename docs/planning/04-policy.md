@@ -72,7 +72,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 07 | Workspace home / my issues (`/workspace`, `/workspace/issues`) | Prompt | ○ | × | Same as developer |
 | 08 | Create team | Prompt | ○ | × | Same as developer |
 | 09 | Team settings & members | × | Per team role (ch. 6) | × | Same as developer |
-| 10 | Accept invite | View team preview, accept = prompt | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |
+| 10 | Accept invite | View slim landing (logo + join CTAs); accept / GitHub start = login | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |
 | 11–15 | Issue list/detail/create, board, calendar | × | Team members only; writes need repo write permission (ch. 7). The progress card above the issue list is Flex teams only (POL-T-7) | × | Same as developer |
 | 16 | Chat list | Prompt | ○ team / 1:1 / requests | ○ 1:1 tab only | Same as developer |
 | 17 | Chat room | × | ○ team & 1:1 | ○ 1:1 only; conversations start only via request | Same as developer |
@@ -227,7 +227,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 
 | Category | Details |
 | --- | --- |
-| Can read | Home feed (popular this week and latest; "why shown" only "이번 주 인기" / "새로 올라온 작업물"), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, team preview of invite links |
+| Can read | Home feed (popular this week and latest; "why shown" only "이번 주 인기" / "새로 올라온 작업물"), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, invite landing (`/invite/[code]`: logo + join CTAs only) |
 | Login required to see | Follower/following lists, list of likers (people lists are easy to scrape), "Open to offers" (recruiters only), applicant list (author only) |
 | Login-prompt sheet | Like, write comment, follow, apply, message/recruiting offer, report, block, write post/recruit post buttons; bottom tabs Workspace, Chat; the header's profile icon (my profile); notifications in the header |
 | Sheet copy | "로그인한 사용자만 쓸 수 있는 기능이에요" (this feature is for logged-in users) + "GitHub로 시작" (start with GitHub) + small link "채용 담당자 로그인" (recruiter login). After login, returns to the screen being viewed (does not perform the attempted action) |
@@ -358,7 +358,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | Policy | Details |
 | --- | --- |
 | POL-T-1 Create team | 1 GitHub org = 1 Linker team. "Create team" goes to the GitHub App install screen to choose an org and install; back in Linker, the server must re-verify the installation with the user token before creation completes (the installation id in the return URL can be forged, so it's never trusted as-is). If no org, send to GitHub's create-org page and back (orgs can't be created via API). If not the org owner, guide to "request install from owner" (GitHub emails the owner). If the org's default repo permission is read, tell the owner "팀원이 이슈에 담당자·라벨을 정하려면 쓰기 권한이 필요해요" (members need write permission to set assignees/labels) with a GitHub settings link. Team size: Free 6, Flex no limit |
-| POL-T-2 Invites | Linker invite links valid 7 days, revocable by owner/admin. GitHub org invites follow GitHub rules (accepted on GitHub, daily send limit) |
+| POL-T-2 Invites | Linker invite links valid 7 days, revocable by owner/admin. GitHub org invites follow GitHub rules (accepted on GitHub, daily send limit). **Entry**: external open of `/invite/[code]` always shows the slim accept landing (10). **In-app**: when owner/admin notifies a Linker developer of an invite, create a `TEAM_INVITE` notification (18) whose tap opens the same `/invite/[code]`. Accept landing is slim: Linker logo, "팀에 합류하기", "GitHub로 빠르게 시작하기" only — no team detail preview and no dedicated status screens. Expired/revoked, already a member, free-team member limit, and over-10-teams failures use toast or one-line copy from API error codes |
 | Org member sync | People removed from the GitHub org are detected via the organization webhook (member_removed), automatically removed from the Linker team, and they and the owner are notified. Removing someone in Linker does not remove them from the GitHub org; the owner is only informed |
 | Leaving / removal | Members can leave anytime. Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
 | App uninstall | If the Linker app is removed from the org, the team becomes read-only and the owner is told to reinstall. Archived after 30 days |
@@ -451,7 +451,7 @@ Flex teams get a "진행 현황" (Progress) card at the top of the issue tab. It
 | POL-C-4 Starting 1:1 chat | Direct conversation if mutual follow or same team. Otherwise only one first message goes to "메시지 요청함" (message requests); the conversation opens only on acceptance. Recruiters have no follows/teams, so always go to requests (see "Recruiting offer messages") |
 | Chat retention | Team chat kept while the team exists. 1:1 chat deleted when both leave |
 | Team chat search & scroll-back | Keyword search in team chat rooms. Free teams can search and scroll back only through the last 60 days (older messages are hidden, not deleted, and reappear with Flex). Flex teams: all history. Deleted/hidden messages not searchable. 1:1 chat search excluded from MVP |
-| POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers) |
+| POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers), team invite (`TEAM_INVITE` → `/invite/[code]`) |
 | POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
 | Muting | MVP: mute per chat room and the "푸시 알림" (Push notifications) on/off switch in settings only. Turning push off stops push only; the in-app notification list keeps filling. Per-type settings in phase 2 |
 | Push devices | Only the Android app (development build) receives push. iOS app push needs a paid Apple developer account, so it is out of the MVP; browser web push is phase 2 (N-2) |
@@ -715,6 +715,10 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Job ad closed | 광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기 |
 | Job ad hidden | 이 광고는 다시 보이지 않아요. |
 | AI summary used up | 오늘은 AI 요약을 다 썼어요(10/10). 내일 다시 쓸 수 있어요. |
+| Invite join | 팀에 합류하기 |
+| Invite GitHub start | GitHub로 빠르게 시작하기 |
+| Invite developer-only | 개발자 계정만 팀에 참여할 수 있어요. |
+| Team invite notification | ○○ 팀에 초대됐어요. · 확인하기 |
 
 ## 13. Policies for later-phase features
 

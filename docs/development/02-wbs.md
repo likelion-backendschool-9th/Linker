@@ -8,7 +8,7 @@
 - **Assumptions**: 5 people, 2 weeks (10 weekdays, D1–D10), two repos: Spring Boot backend (Gradle) and Next.js frontend (pnpm monorepo), Toss Payments test mode, no store release.
 - **Work unit**: pages 00–33 of the 07 TODO. One backend controller per page (1:1). Only 00 common foundation is not a page, so it has 7 common controllers.
 - **Ownership**: one person owns both frontend and backend of their pages (07 TODO ch. 11 assumption), so "controller owner = page owner". If roles split into frontend/backend, two people pair on a page and the controller owner becomes the backend person.
-- **Size**: 40 controllers (33 pages + 7 common), 204 REST endpoints, 5 realtime paths (1 WebSocket connection endpoint + 4 STOMP destinations), 69 tables (2026-10-30: feed job ads added 8 endpoints and 4 tables. The same day's subscription revamp added 3 endpoints for the progress graph and share cards, removed the recruit post bump endpoint, and added 1 table. No new controller).
+- **Size**: 40 controllers (33 pages + 7 common), 205 REST endpoints, 5 realtime paths (1 WebSocket connection endpoint + 4 STOMP destinations), 69 tables (2026-10-30: feed job ads added 8 endpoints and 4 tables. The same day's subscription revamp added 3 endpoints for the progress graph and share cards, removed the recruit post bump endpoint, and added 1 table. No new controller. 2026-11-03: team-invite notify endpoint +1).
 - **Marks**: `[Required]` / `[Included]` are the same as the 07 TODO. `[Included]` is the first to be deferred if the schedule slips.
 
 ### The five owners
@@ -359,6 +359,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 | GET    | `/api/v1/user/teams/{teamId}/members`                                 | Members, roles, GitHub org status, "N/6"                                                 | team MEMBER             |
 | GET    | `/api/v1/user/teams/{teamId}/invite-links`                            | Valid invite links                                                                       | team ADMIN              |
 | POST   | `/api/v1/user/teams/{teamId}/invite-links`                            | Create invite link (7 days)                                                              | team ADMIN              |
+| POST   | `/api/v1/user/teams/{teamId}/invite-links/{linkId}/notify`            | Notify a Linker developer (@handle) → `TEAM_INVITE` notification to `/invite/{code}`   | team ADMIN              |
 | DELETE | `/api/v1/user/teams/{teamId}/invite-links/{linkId}`                   | Revoke invite link                                                                       | team ADMIN              |
 | POST   | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation`      | GitHub org invite (org owner only, daily limit error)                                    | team MEMBER + org owner |
 | POST   | `/api/v1/user/teams/{teamId}/repos`                                   | Add linked repo                                                                          | team ADMIN              |
@@ -377,7 +378,8 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 - Borrowed: board change `[Included]` → 08's `setup/boards`, `setup/board`. Team plan → 28
 - Tables: new team_invite_links, github_org_invitations, team_completions, completion_records, team_ownership_transfers · shared teams, team_members, team_repos, github_repos, team_project_boards, board_status_mappings, chat_room_members, notifications, subscriptions (after 28)
 - [ ] Server: completion record calculation (14+ days membership, confirmed after 7 days), auto-remove from team when removed from org + notify, removed members can't apply for 7 days, member limit (`PlanLimits`)
-- [ ] Frontend: sections, hide/disable per permission table, invite sharing (Web Share API, copy), confirm sheets, read-only team notice
+- [ ] Frontend: sections, hide/disable per permission table, invite sharing (Web Share API, copy), notify Linker developer (@handle) → `TEAM_INVITE` notification with `/invite/[code]`, confirm sheets, read-only team notice
+- [ ] Server: on notify-Linker-developer, `NotificationService.create()` type `TEAM_INVITE`, `link_path` `/invite/{code}` (borrowed list read by 18)
 
 ### 10. Accept invite `[Required]` · `/invite/[code]`
 
@@ -389,11 +391,11 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 | Method | Path                                 | Does                                                                                              | Permission             |
 | ------ | ------------------------------------ | ------------------------------------------------------------------------------------------------- | ---------------------- |
-| GET    | `/api/v1/public/invites/{code}`      | Team preview + link status (expired, revoked)                                                     | public                 |
-| POST   | `/api/v1/user/invites/{code}/accept` | Add team member + join team chat. Already a member, member limit, over 10 teams returned as codes | user · developers only |
+| GET    | `/api/v1/public/invites/{code}`      | Link status (valid / expired / revoked). Payload may include team id for accept; UI does not render a team detail preview | public                 |
+| POST   | `/api/v1/user/invites/{code}/accept` | Add team member + join team chat. Already a member, member limit, over 10 teams returned as codes                          | user · developers only |
 
-- Tables: new none · shared team_invite_links, teams, team_members, chat_room_members
-- [ ] Frontend: guest → login → onboarding → return via `returnTo`, screen per status, GitHub org invite guide after accepting, go to 11, `generateMetadata` ("OO 팀 초대", team description, org avatar, `noindex`, blueprint 8-3)
+- Tables: new none · shared team_invite_links, teams, team_members, chat_room_members, notifications (created from 09 for in-app invites)
+- [ ] Frontend: slim landing — Linker logo, "팀에 합류하기", "GitHub로 빠르게 시작하기". **External** open of this URL always lands here; **in-app** `TEAM_INVITE` from 18 also opens this URL. Guest join/GitHub start → login → onboarding → `returnTo` this URL. Accept failures → toast / one-line error (no status pages). Success → 11. Static title "팀 초대", default OG, `noindex` (blueprint 8-3)
 
 ## 4-3. Issues and schedule
 
@@ -588,7 +590,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 
 - Tables: new push_tokens · shared notifications, users, appeals (after 25 — A creates the table in 25; the appeal API is wired on D7)
 - [ ] Server: non-chat notifications between 10 PM and 8 AM batched and sent in the morning, Expo push sending (Android; skipped while `push_enabled` is off)
-- [ ] Frontend: list, navigation, read state, live bell badge, appeal sheet, push permission prompt (Android app; iOS out of MVP)
+- [ ] Frontend: list (incl. `TEAM_INVITE` → `/invite/[code]`), navigation, read state, live bell badge, appeal sheet, push permission prompt (Android app; iOS out of MVP)
 
 ## 4-5. Find Team
 
@@ -923,7 +925,7 @@ Each page follows the same order: owner, schedule, prerequisites → controller 
 | 06  | `SettingsController`                                                                                                                                    | A                   | user · recruiter                 | 7                                                                                |
 | 07  | `WorkspaceController`                                                                                                                                   | B                   | user                             | 2                                                                                |
 | 08  | `TeamCreateController`                                                                                                                                  | B                   | user                             | 9                                                                                |
-| 09  | `TeamSettingsController`                                                                                                                                | B                   | user                             | 18                                                                               |
+| 09  | `TeamSettingsController`                                                                                                                                | B                   | user                             | 19                                                                               |
 | 10  | `InviteController`                                                                                                                                      | B                   | public · user                    | 2                                                                                |
 | 11  | `IssueListController`                                                                                                                                   | C                   | user                             | 6                                                                                |
 | 12  | `IssueDetailController`                                                                                                                                 | C                   | user                             | 8                                                                                |

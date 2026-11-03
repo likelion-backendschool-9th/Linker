@@ -12,9 +12,12 @@ import { z } from 'zod';
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import { Button } from '@/components/ui/button';
+import { clearNativeSession, unregisterNativePushToken } from '@/features/auth/sync-native-session';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
+import { isInApp, requestNative } from '@/lib/bridge/native';
 import { useOverlay } from '@/lib/navigation/use-overlay';
+import { disconnect } from '@/lib/realtime/stomp-client';
 import { toast } from '@/stores/toast-store';
 
 import type { SettingsData, WithdrawalCheck } from '../_lib/settings-types';
@@ -40,6 +43,7 @@ export function SettingsCommon({
   const blocksOverlay = useOverlay('settings-blocks');
   const [ownedTeams, setOwnedTeams] = useState<WithdrawalCheck['ownedTeams']>([]);
   const [pushEnabled, setPushEnabled] = useState(settings.pushEnabled);
+  const [requestingPush, setRequestingPush] = useState(false);
   const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
   const form = useForm<EmailValues>({
     resolver: zodResolver(emailSchema),
@@ -76,9 +80,46 @@ export function SettingsCommon({
     onError: (error) => toast(errorMessage(error, '푸시 알림 설정을 저장하지 못했어요.'), { tone: 'alert' }),
   });
 
+  async function togglePush() {
+    if (requestingPush || pushSave.isPending) return;
+    setRequestingPush(true);
+    try {
+      const next = !pushEnabled;
+      if (next && isInApp()) {
+        try {
+          const result = await requestNative({ type: 'PUSH_PERMISSION_REQUEST' }, { timeoutMs: 0 });
+          const status =
+            result.ok && result.payload && typeof result.payload === 'object'
+              ? (result.payload as { status?: string }).status
+              : undefined;
+          if (status === 'denied') {
+            toast('푸시 권한을 허용해야 Android 알림을 받을 수 있어요.', {
+              tone: 'alert',
+            });
+            return;
+          }
+        } catch {
+          // Preference can still be saved; the token may arrive on a later grant.
+        }
+      } else if (next && !isInApp()) {
+        toast('푸시는 Android 앱에서만 받을 수 있어요.');
+      }
+      await pushSave.mutateAsync(next);
+    } catch {
+      // pushSave.onError displays the existing settings error.
+    } finally {
+      setRequestingPush(false);
+    }
+  }
+
   const logout = useMutation({
-    mutationFn: () => apiFetch<void>('/api/v1/user/auth/logout', { method: 'POST' }),
+    mutationFn: async () => {
+      await unregisterNativePushToken();
+      await apiFetch<void>('/api/v1/user/auth/logout', { method: 'POST' });
+    },
     onSuccess: async () => {
+      clearNativeSession();
+      await disconnect();
       await queryClient.clear();
       logoutOverlay.close();
       router.replace('/');
@@ -98,8 +139,13 @@ export function SettingsCommon({
   });
 
   const withdrawal = useMutation({
-    mutationFn: () => apiFetch<{ deletesOn: string }>('/api/v1/user/me/withdrawal', { method: 'POST' }),
+    mutationFn: async () => {
+      await unregisterNativePushToken();
+      return apiFetch<{ deletesOn: string }>('/api/v1/user/me/withdrawal', { method: 'POST' });
+    },
     onSuccess: async (result) => {
+      clearNativeSession();
+      await disconnect();
       await queryClient.clear();
       withdrawalConfirm.close();
       withdrawalSheet.close();
@@ -143,7 +189,7 @@ export function SettingsCommon({
         <h2 id="notification-heading">알림</h2>
         <div className={styles.row}>
           <div className={styles.rowInfo}><span className={styles.label}>푸시 알림</span><span className={styles.description}>끄면 푸시만 중단되고 앱 내 알림은 계속 쌓여요. 푸시는 Android 앱에서만 받을 수 있어요.</span></div>
-          <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} disabled={pushSave.isPending} onClick={() => pushSave.mutate(!pushEnabled)}>{pushSave.isPending ? '…' : pushEnabled ? '켜짐' : '꺼짐'}</button>
+          <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} disabled={requestingPush || pushSave.isPending} aria-busy={requestingPush || pushSave.isPending} onClick={() => void togglePush()}>{pushSave.isPending ? '…' : pushEnabled ? '켜짐' : '꺼짐'}</button>
         </div>
       </section>
 

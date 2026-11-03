@@ -86,7 +86,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Page frame `PageFrame`: one `header`, `main` and bottom `nav` per page, one `h1`, "본문 바로가기" (skip to content) (blueprint 6-1)
 - [ ] Sheet/modal open-close `useOverlay()`: one URL param (`overlay`), push a history entry only on first open, closing pops that entry → back navigation never traps. Top-bar back `useAppBack()` (blueprint ch. 7)
 - [ ] Policy number constants `policy.ts`, dates in KST (`@date-fns/tz`), browser API guards (`safeStorage`, `useIsClient`) (blueprint 11-1)
-- [ ] Common metadata function, `robots.ts`, search exposure table; `next/image` config + install sharp (blueprint ch. 8, 10). Root OG defaults (Linker + one-line intro + `/og-default.png`); content-based OG only on 23, 21, 04 (developers) and 10. Strip `?from=share` from canonical and `og:url`
+- [ ] Common metadata function, `robots.ts`, search exposure table; `next/image` config + install sharp (blueprint ch. 8, 10). Root OG defaults (Linker + one-line intro + `/og-default.png`); content-based OG only on 23, 21, 04 (developers). Strip `?from=share` from canonical and `og:url`
 - [ ] Web↔app bridge (`packages/bridge`, `NativeBridgeProvider`): Android back, GitHub login return, share, push permission (blueprint ch. 11, 12)
 - [ ] Test setup: Vitest + vitest-axe, Playwright + axe, MSW (orval mocks) (blueprint ch. 14)
 - [ ] Mock data mode for frontend work before the backend is live: `pnpm dev:mock`, one mock file per page with the WBS endpoints, role switcher (guest / developer / recruiter / operator) (blueprint §1-2)
@@ -332,7 +332,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **Pass 1 (needed to test issues and chat)**
 
 - [ ] Member list: role (owner / admin / member), GitHub org status (member / invited / not a member), count "N/6"
-- [ ] Create (7-day valid) / revoke / share (Web Share API, copy) invite links
+- [ ] Create (7-day valid) / revoke / share (Web Share API, copy) invite links — external recipients open `/invite/[code]` (10)
+- [ ] Notify a Linker developer of an invite (pick by @handle / GitHub login who already has a developer account): create `TEAM_INVITE` notification with `link_path` `/invite/[code]` so they see it in 18 without needing the external link. Same invite code as the shareable URL
 - [ ] Send GitHub org invite: enabled only for GitHub org owners, otherwise disabled + reason. Error copy for daily send limit
 - [ ] Add/remove linked repos (owner, admin)
 - [ ] Hide/disable buttons per permission table (owner / admin / member)
@@ -359,14 +360,22 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 ### 10. Accept invite `[Required]` · `/invite/[code]`
 
-> Basis: T-2 · Needs first: 09
+> Basis: T-2, POL-T-2, POL-N-1 · Needs first: 09
+> Thin landing (Discord-style join). No team detail preview and no dedicated status screens.
+>
+> **Two entry paths**: (1) **External** — opening the shared `/invite/[code]` URL (Kakao, Discord, browser) always shows this page. (2) **In-app** — a logged-in developer who was invited sees a team-invite notification in 18; tapping it opens this same URL. Accept always happens here (or via the same accept API).
 
-- [ ] Team preview (org avatar, team name, member count, inviter)
-- [ ] Accept → add as team member + join team chat → go to team issues (11)
-- [ ] If not logged in: login → onboarding → back to this page (`returnTo`)
-- [ ] Status screens: expired/revoked link, already a member, team at member limit, over 10 teams
-- [ ] After accepting: "GitHub 조직 초대를 수락해야 이슈 담당자가 될 수 있어요" (accept the GitHub org invite to become assignable)
-- [ ] `generateMetadata` ("OO 팀 초대" (Invite to team OO), team description, org avatar), `noindex` (blueprint 8-3)
+**Screen (guest and logged-in share the same layout)**
+
+- [ ] Linker logo
+- [ ] Primary: "팀에 합류하기" — logged-in developer: accept → add as team member + join team chat → team issues (11). Guest: start GitHub login with `returnTo` this invite URL (same destination as the button below)
+- [ ] Secondary: "GitHub로 빠르게 시작하기" — GitHub login with `returnTo` this invite URL; after login/onboarding return here so they can join
+- [ ] Recruiter: keep showing the landing; accept/GitHub start blocked with "개발자 계정만 팀에 참여할 수 있어요"
+
+**Errors & metadata**
+
+- [ ] Expired/revoked link, already a member, team at member limit, over 10 teams → toast or one-line error from accept API codes (no separate status pages). Already a member may go straight to 11
+- [ ] Static metadata title "팀 초대", root default OG, `noindex` (not content-based OG; blueprint 8-3)
 
 ---
 
@@ -533,8 +542,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
-- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, sanctions
-- [ ] Tap → navigate to the screen + mark read; "모두 읽음" (mark all read)
+- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
+- [ ] Tap → navigate to the screen + mark read; "모두 읽음" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
 - [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning

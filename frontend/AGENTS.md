@@ -62,7 +62,7 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 
 ## SEO and privacy
 - Every page needs a unique title via `buildMetadata()` in `metadata`/`generateMetadata`. Default `noindex`; only blueprint §8-1 pages use `indexable: true`.
-- Content previews only for post detail (23), recruit detail (21), developer profile (04), invite (10); otherwise root default (Linker + intro + `/og-default.png`).
+- Content previews only for post detail (23), recruit detail (21), developer profile (04); invite (10) and everything else use the root default (Linker + intro + `/og-default.png`).
 - Never put private team names, issue titles, or chat text into login-only metadata/OG. Hidden/deleted/blocked content uses defaults.
 - Canonical and `og:url` exclude query parameters, including overlay/filter/share parameters.
 

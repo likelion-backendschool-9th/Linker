@@ -48,7 +48,12 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="ko">
       <body>
-        <Providers viewer={viewer}>{children}</Providers>
+        <Providers
+          viewer={viewer}
+          nativeSession={session ? { userId: session.userId, userType: session.userType } : null}
+        >
+          {children}
+        </Providers>
       </body>
     </html>
   );

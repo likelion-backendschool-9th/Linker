@@ -1,6 +1,7 @@
 'use client';
 
 import { QueryClientProvider } from '@tanstack/react-query';
+import type { BridgeSession } from '@linker/bridge';
 import { domAnimation, LazyMotion, MotionConfig } from 'motion/react';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactNode } from 'react';
@@ -18,7 +19,15 @@ import { ViewerProvider, type ClientViewer } from '@/lib/auth/viewer-context';
 import { NativeBridgeProvider } from '@/lib/bridge/native-bridge-provider';
 
 /** App-wide clients plus the overlays any screen can open (login, limit, external link, report). */
-export function Providers({ viewer, children }: { viewer: ClientViewer; children: ReactNode }) {
+export function Providers({
+  viewer,
+  children,
+  nativeSession = null,
+}: {
+  viewer: ClientViewer;
+  children: ReactNode;
+  nativeSession?: BridgeSession | null;
+}) {
   const queryClient = getQueryClient();
 
   return (
@@ -27,7 +36,7 @@ export function Providers({ viewer, children }: { viewer: ClientViewer; children
         <ViewerProvider viewer={viewer}>
           <LazyMotion features={domAnimation} strict>
             <MotionConfig reducedMotion="user">
-              <NativeBridgeProvider>
+              <NativeBridgeProvider session={nativeSession}>
                 {children}
                 <NotificationRealtime />
                 <OverlayRoot />

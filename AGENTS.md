@@ -67,7 +67,7 @@ Follow `docs/development/05-backend-blueprint.md` §6. WBS §1-3 owns the API co
 - Endpoint changes: update WBS page definitions, controller counts, and totals. Each endpoint has one owning page; others borrow it.
 - Page/URL/screen changes: update TODO and page list, WBS, Policy access matrix, and blueprint ch. 13.
 - Number/rule changes: update Policy first, then TODO and code. Centralize values in `frontend/apps/web/src/lib/policy.ts` and backend `PlanLimits`/server config, never DB or scattered literals.
-- Keep documented totals consistent (baseline: 33 pages, 40 controllers, 204 REST endpoints, 5 STOMP destinations, 69 tables).
+- Keep documented totals consistent (baseline: 33 pages, 40 controllers, 205 REST endpoints, 5 STOMP destinations, 69 tables).
 - `docs/` translates Korean originals maintained outside this repo. Report doc changes so the user can update those originals.
 
 ## Git workflow

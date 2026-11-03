@@ -9,6 +9,7 @@ import styles from '@/features/teams/team-ui.module.css';
 export function InviteLinkActions({ code }: { code: string }) {
   const [notice, setNotice] = useState('');
   const [manualUrl, setManualUrl] = useState('');
+  const [sharing, setSharing] = useState(false);
   const url = () => new URL(`/invite/${encodeURIComponent(code)}`, window.location.origin).href;
   async function copy() {
     try {
@@ -20,10 +21,15 @@ export function InviteLinkActions({ code }: { code: string }) {
     }
   }
   async function share() {
+    if (sharing) return;
+    setSharing(true);
     setNotice('');
     try {
       if (isInApp()) {
-        const result = await requestNative({ type: 'SHARE', title: 'Linker 팀 초대', url: url() });
+        const result = await requestNative(
+          { type: 'SHARE', title: 'Linker 팀 초대', url: url() },
+          { timeoutMs: 0 },
+        );
         if (!result.ok) setNotice('공유하지 못했어요. 링크 복사를 이용해 주세요.');
       } else if (navigator.share) await navigator.share({ title: 'Linker 팀 초대', url: url() });
       else await copy();
@@ -35,12 +41,14 @@ export function InviteLinkActions({ code }: { code: string }) {
         error.name === 'AbortError'
       ))
         setNotice('공유하지 못했어요. 링크 복사를 이용해 주세요.');
+    } finally {
+      setSharing(false);
     }
   }
   return (
     <div className={styles.section}>
       <div className={styles.actions}>
-        <Button variant="soft" onClick={() => void share()}>
+        <Button variant="soft" disabled={sharing} aria-busy={sharing} onClick={() => void share()}>
           공유
         </Button>
         <Button variant="outline" onClick={() => void copy()}>

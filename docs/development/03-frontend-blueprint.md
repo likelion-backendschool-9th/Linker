@@ -174,7 +174,7 @@ Don't split the URL; `page.tsx` reads the session and picks a view. If only butt
 | 28, 29 | none | Server returns only that type's plans (Pro·Flex / Scout) |
 | 16 `/chats` | none | Tab array per role (recruiters: personal only) |
 | 24 `/feed` | none | Only the top toggle ("제안 받는 개발자만") and write button differ by role; ad cards arrive only for logged-in developers, so no role branch: render `RecruiterAdCard` when `item.type === 'AD'` |
-| 10 `/invite/[code]` | none | Accept area only: guest → login prompt, recruiter → "개발자 계정만 팀에 참여할 수 있어요" |
+| 10 `/invite/[code]` | none | Slim landing (logo + "팀에 합류하기" + "GitHub로 빠르게 시작하기"); guest → GitHub login with `returnTo`, recruiter → "개발자 계정만 팀에 참여할 수 있어요" |
 
 ### 4-5. Guest actions: `useRequireLogin()`
 Every "login prompt" cell in POL-A-9 uses this hook: for guests it opens the login-prompt sheet and returns `false` (`onClick={() => requireLogin() && like.mutate(...)}`).
@@ -344,11 +344,11 @@ export function useOverlay(key: OverlayKey) {
 | 04 developer | `generateMetadata` | "Name (@login) · top 3 stack" | Bio 160 chars, else "완주 N회 · 작업물 N개" | `opengraph-image.tsx` |
 | 19, 24 (04 recruiter: all default) | static | "팀 찾기", "홈" | fixed | default |
 | 03 | `generateMetadata` + `generateStaticParams` | Document name | Effective date | none |
-| 10 | `generateMetadata` | "OO 팀 초대" | Team intro | Org avatar |
+| 10 | static | "팀 초대" | fixed / default | default |
 | Logged-in screens | static title only | "채팅", "이슈" … | default | default |
 | Admin | static title | "운영 · 신고 처리" | none | none |
 
-- Content previews only on 23, 21, 04 (developer) and 10. Login-only screens NEVER put team names, issue titles or chat text into title/OG. Hidden/deleted/blocked content uses defaults.
+- Content previews only on 23, 21, 04 (developer). Invite (10) uses the root default OG — no team name, intro, or org avatar in metadata. Login-only screens NEVER put team names, issue titles or chat text into title/OG. Hidden/deleted/blocked content uses defaults.
 - All metadata goes through `buildMetadata({ title, description, image, path, indexable })` (`lib/seo/metadata.ts`), which strips `overlay`, `oid` and filters from canonical.
 - JSON-LD on indexed pages: profile `ProfilePage` + `Person` (`sameAs` GitHub, blog); post `CreativeWork` (`author`, `image`, `datePublished`, `codeRepository`); recruit posts are not jobs, so `CreativeWork`, not `JobPosting`. `<script type="application/ld+json">` rendered in a server component, every `<` in JSON strings replaced with the escape sequence backslash-u003c.
 - Indexed pages render their full body on the server without cookies (logged-in-only info is added on the client).
@@ -472,7 +472,7 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 | 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
 | 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | TeamCreateController · p08 |
 | 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | TeamSettingsController · p09 |
-| 10 | `/invite/[code]` | (public) | preview / ○ / × message / ○ | InviteController · p10 |
+| 10 | `/invite/[code]` | (public) | slim landing / ○ / × message / ○ | InviteController · p10 |
 | 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | IssueList, IssueDetail, IssueCreate, Board, CalendarController · p11–p15 |
 | 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | ChatListController · p16 |
 | 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | ChatRoomController · p17 |
