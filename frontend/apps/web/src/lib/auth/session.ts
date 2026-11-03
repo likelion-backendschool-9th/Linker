@@ -10,7 +10,8 @@ import { SESSION_COOKIE } from './read-role';
 import { GUEST, type UserStatus, type Viewer } from './route-access';
 
 /**
- * `GET /api/v1/user/me` (WBS 00, AuthSessionController).
+ * `GET /api/v1/user/me` (WBS 00, AuthSessionController `MeResponse`).
+ * `isAdmin` is the admins-row flag. The 30-minute operator OTP gate stays in the admin layout.
  * Hand-written until the controller is in OpenAPI; then replace with the orval type and function.
  */
 export type Session = {
