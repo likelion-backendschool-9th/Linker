@@ -23,12 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/user")
-public class ModerationController {
+public class UserModerationController {
 
 	private final BlockService blocks;
 	private final ReportService reports;
 
-	public ModerationController(BlockService blocks, ReportService reports) {
+	public UserModerationController(BlockService blocks, ReportService reports) {
 		this.blocks = blocks;
 		this.reports = reports;
 	}

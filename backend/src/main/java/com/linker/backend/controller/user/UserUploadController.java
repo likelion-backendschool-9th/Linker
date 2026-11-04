@@ -18,11 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/user")
-public class UploadController {
+public class UserUploadController {
 
 	private final UploadService uploads;
 
-	public UploadController(UploadService uploads) {
+	public UserUploadController(UploadService uploads) {
 		this.uploads = uploads;
 	}
 

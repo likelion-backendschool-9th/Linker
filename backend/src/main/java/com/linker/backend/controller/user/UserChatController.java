@@ -1,4 +1,4 @@
-package com.linker.backend.controller.multi;
+package com.linker.backend.controller.user;
 
 import java.security.Principal;
 import java.util.Map;
@@ -13,15 +13,15 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
 /**
- * System ChatController (WBS S09). STOMP SEND lands here; REST endpoints are added with pages 16–17.
+ * UserChatController (WBS S09). Common STOMP SEND lands here; REST endpoints are added with pages 16–17.
  * Persistence and broadcast come after chat tables exist — this mapping only enforces auth/room access.
  */
 @Controller
-public class ChatController {
+public class UserChatController {
 
 	private final ChatRoomAccess chatRooms;
 
-	public ChatController(ChatRoomAccess chatRooms) {
+	public UserChatController(ChatRoomAccess chatRooms) {
 		this.chatRooms = chatRooms;
 	}
 

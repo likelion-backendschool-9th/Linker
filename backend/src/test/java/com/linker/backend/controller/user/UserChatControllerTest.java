@@ -1,4 +1,4 @@
-package com.linker.backend.controller.multi;
+package com.linker.backend.controller.user;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -12,9 +12,9 @@ import com.linker.backend.global.security.AuthenticatedUser;
 
 import org.junit.jupiter.api.Test;
 
-class ChatControllerTest {
+class UserChatControllerTest {
 
-	private final ChatController controller = new ChatController((userId, roomId) -> userId == 7L && roomId == 10L);
+	private final UserChatController controller = new UserChatController((userId, roomId) -> userId == 7L && roomId == 10L);
 
 	@Test
 	void rejectsForeignRoom() {
