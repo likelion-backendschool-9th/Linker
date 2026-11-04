@@ -18,6 +18,11 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.service.user.UserNotificationService;
+import com.linker.backend.service.recruiter.RecruiterNotificationService;
+import com.linker.backend.service.admin.AdminNotificationService;
+import com.linker.backend.entity.notification.Notification;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
@@ -41,6 +46,10 @@ import com.linker.backend.service.user.UserModerationService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -110,6 +119,28 @@ class FoundationIntegrationTest {
 	@Autowired
 	private GithubWebhookService webhooks;
 
+
+	@Autowired
+	private UserNotificationService userNotifications;
+	@Autowired
+	private RecruiterNotificationService recruiterNotifications;
+	@Autowired
+	private AdminNotificationService adminNotifications;
+	@Autowired
+	private PlatformTransactionManager transactionManager;
+
+	enum NotificationProducer { USER, RECRUITER, ADMIN }
+
+	private Notification createNotification(NotificationProducer role, long recipientId, long actorId) {
+		CreateNotificationCommand command = new CreateNotificationCommand(
+				recipientId, "TEAM_INVITE", actorId, "TEAM", 7L, "/invite/demo", "{\"source\":\"integration\"}", "team:7");
+		return switch (role) {
+			case USER -> userNotifications.create(command);
+			case RECRUITER -> recruiterNotifications.create(command);
+			case ADMIN -> adminNotifications.create(command);
+		};
+	}
+
 	@BeforeEach
 	void clean() {
 		jdbc.execute("""
@@ -132,6 +163,36 @@ class FoundationIntegrationTest {
 			redis.delete(rateKeys);
 		}
 		redis.delete("linker:github:webhook");
+	}
+
+
+	@ParameterizedTest
+	@EnumSource(NotificationProducer.class)
+	void roleNotificationServicesPersistIntoTheSameSchema(NotificationProducer role) {
+		User recipient = saveUser("recipient", UserType.RECRUITER);
+		User actor = saveUser("actor", UserType.DEVELOPER);
+		Notification saved = createNotification(role, recipient.getId(), actor.getId());
+		assertThat(saved.getId()).isNotNull();
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM notifications", Long.class)).isEqualTo(1L);
+		assertThat(jdbc.queryForObject("SELECT user_id FROM notifications WHERE id=?", Long.class, saved.getId()))
+				.isEqualTo(recipient.getId());
+		assertThat(jdbc.queryForObject("SELECT actor_id FROM notifications WHERE id=?", Long.class, saved.getId()))
+				.isEqualTo(actor.getId());
+		assertThat(jdbc.queryForObject("SELECT payload ->> 'source' FROM notifications WHERE id=?", String.class, saved.getId()))
+				.isEqualTo("integration");
+	}
+
+	@ParameterizedTest
+	@EnumSource(NotificationProducer.class)
+	void notificationRollsBackWithTheProducingUseCase(NotificationProducer role) {
+		User recipient = saveUser("recipient", UserType.DEVELOPER);
+		User actor = saveUser("actor", UserType.DEVELOPER);
+		new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+			createNotification(role, recipient.getId(), actor.getId());
+			assertThat(jdbc.queryForObject("SELECT count(*) FROM notifications", Long.class)).isEqualTo(1L);
+			status.setRollbackOnly();
+		});
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM notifications", Long.class)).isZero();
 	}
 
 	@Test

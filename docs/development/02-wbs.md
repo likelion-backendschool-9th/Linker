@@ -11,14 +11,14 @@
 | 항목 | 이전 기준 | 현재 기준 |
 | --- | --- | --- |
 | 화면 | 33개 + 공통 기반 00 | 유지 |
-| HTTP 컨트롤러 | 40개: 페이지 33 + 공통 7 | 업무 시스템별 대표 18개 |
+| HTTP 컨트롤러 | 40개: 페이지 33 + 공통 7 | 역할별 29개. 업무 시스템은 18개 유지 |
 | REST API | **205개** | 한 API를 정확히 한 시스템에 배정 |
 | 실시간 경로 | WebSocket 1 + SEND 1 + SUBSCRIBE 3 | 5개 유지, REST 합계와 별도 |
 | DB | 기존 ERD의 69개 테이블 | 테이블·컬럼·enum 변경 없음 |
 | 일정 | 5명·10개 작업일 D1~D10 | 기존 계획 유지, 실제 달력·진척률과 구분 |
 | 범위 | Required / Included | 우선순위와 세부 기능 구분 유지 |
 
-18개는 현재 WBS의 대표 진입점 수이며 장기적으로 고정된 목표는 아니다. 서비스는 유스케이스별로 나눌 수 있고 여러 화면이 같은 시스템 API를 사용한다. 페이지나 역할 때문에 엔티티·저장소·서비스를 복제하지 않는다. 단일 Spring 애플리케이션을 유지한다.
+18개는 업무 시스템 수이고 실제 역할별 HTTP 컨트롤러는 29개다. 아래 시스템 추적명과 페이지의 API 소속 표기는 업무 책임을 설명하며 실제 Java 클래스 목록은 청사진 §4를 따른다. 공통 기능이어도 서비스는 Public/User/Recruiter/Admin 분류별로 구현한다. Entity·Repository·DTO·정책 상수는 공유할 수 있다. 단일 Spring 애플리케이션을 유지한다.
 
 ### 기준 문서
 
@@ -31,7 +31,7 @@
 
 ### 최신 변경 반영
 
-- 09의 POST /api/v1/user/teams/{teamId}/invite-links/{linkId}/notify를 포함해 **205개 REST**다. Team은 NotificationService로 TEAM_INVITE와 link_path=/invite/{code}를 생성한다. 읽기는 18의 기존 API를 사용한다.
+- 09의 POST /api/v1/user/teams/{teamId}/invite-links/{linkId}/notify를 포함해 **205개 REST**다. UserTeamService는 UserNotificationService.create로 TEAM_INVITE와 link_path=/invite/{code}를 생성한다. 읽기는 18의 기존 API를 사용한다.
 - 28 요금제는 체험 자격을 포함한 개인화 응답이다. 서버 Cache-Control: private, no-store, 프론트 서버 no-store·계정별 TanStack Query를 유지한다.
 - 07의 /workspace/issues는 소속 팀 하나로 한정하며 joinedAt 기본 선택·/workspace 복귀 계약을 유지한다.
 - 차단 해제는 user_blocks의 기간을 삭제하지 않으며 과거 DM 표시 판단에 활용한다.
@@ -58,9 +58,9 @@
 - API는 한 컨트롤러에만 등록한다. 다른 화면은 기존 API를 재사용한다. 복합 동작은 서비스를 조합하며 컨트롤러끼리 HTTP 호출하지 않는다.
 - 공통 파일 변경은 작은 PR로 나누고 시스템 주담당과 해당 기능 담당자가 함께 검토한다. 한 페이지가 끝났다는 이유만으로 시스템 전체가 완료됐다고 표시하지 않는다.
 
-### 1-3. 시스템 목록
+### 1-3. 업무 시스템 목록
 
-| ID | 시스템 | 대표 컨트롤러 | 시스템 주담당 | REST | API 출처 페이지 |
+| ID | 시스템 | 업무 추적명(실제 역할별 클래스는 청사진 §4) | 시스템 주담당 | REST | API 출처 페이지 |
 | --- | --- | --- | --- | ---: | --- |
 | S01 | 인증·세션 | `AuthController` | A | 13 | 00, 01, 06, 31, 32 |
 | S02 | 계정·프로필·관계 | `AccountController` | A | 18 | 02, 04, 05, 06 |
@@ -80,17 +80,19 @@
 | S16 | 개인 통계 | `StatsController` | B | 3 | 30 |
 | S17 | 채용 광고 | `RecruiterAdController` | A | 7 | 04, 24 |
 | S18 | 검색 색인 | `SitemapController` | B | 1 | 00 |
-| 합계 | 18개 시스템 | 18개 대표 컨트롤러 | | 205 | 00~33 |
+| 합계 | 18개 시스템 | 실제 HTTP 컨트롤러 29개 | | 205 | 00~33 |
 
-회원 신고·차단은 Moderation, 운영 조치는 Admin으로 구분하되 같은 업무 서비스를 재사용한다. 운영자 환불은 Subscription의 admin 메서드로 둔다. 기능 자체의 책임과 운영 권한 경계를 함께 고려한 구분이다.
+회원 신고·차단은 UserModerationService, 운영 조치는 AdminService에서 각각 처리하며 데이터 계층을 공유한다. 운영 환불은 AdminSubscriptionController → AdminSubscriptionService로 배치한다. 중립 공용 서비스나 다른 역할의 서비스를 경유하지 않는다.
 
 ## 2. API·구현 규칙
 
+서비스 생성은 [AGENTS의 필수 규칙](../../AGENTS.md#mandatory-backend-service-generation-rule)과 [청사진 §4](05-backend-blueprint.md#4-controller--service-11)를 따른다. 과거 세부 작업의 NotificationService·공용 서비스 표기는 중립 클래스 생성 지시가 아니라 현재 역할별 계약으로 읽는다. API 계약·담당·한도는 그대로 유지한다.
+
 1. HTTP 경로는 /api/v1/{public|user|recruiter|admin}/{resources}, webhook은 GitHub 외부 입력 경로다. Java 패키지나 클래스명이 URL을 결정하지 않는다.
 2. public은 비로그인 읽기·선택적 인증, user는 로그인 회원이다. 개발자 전용 동작의 @DeveloperOnly, 팀 API의 @TeamRole, 작성자·방 참가자·저장소 권한을 각각 보존한다. 운영 권한으로 타인의 대화·팀에 접근하지 않는다.
-3. 여러 호출자 그룹이 섞인 클래스는 @RequestMapping("/api/v1")와 메서드별 역할 경로·권한을 사용한다. 단일 역할 클래스는 역할 prefix를 사용할 수 있다. 클래스 전체에 admin 권한을 붙여 일반 회원 API를 막지 않는다.
-4. Controller → Service → Repository, com.linker.backend와 Blueprint의 레이어를 유지한다. 서비스·저장소·엔티티는 업무별 공유, DTO는 dto 아래에 둔다. 페이지 번호 패키지나 domain 혼합 배치로 되돌리지 않는다.
-5. 공개(Public*) 컨트롤러는 `controller` 루트에 둔다. `public` / `public_` / `open` / `multi` 패키지는 쓰지 않는다. 로그인·채용·운영 API는 `controller.user` / `controller.recruiter` / `controller.admin`에 둔다. GitHub 웹훅 HTTP 진입은 `integration.github`에 둔다. 컨트롤러마다 같은 분류의 대응 진입 서비스를 두되, 빈 진입 서비스·빈 컨트롤러를 한꺼번에 만들지 않는다. 공통 기반도 해당 시스템으로 통합하며 고정된 common 7개 규칙을 폐지한다. 구체적인 클래스 배치는 백엔드 Blueprint §3–§4를 따른다.
+3. 컨트롤러는 public 루트 또는 user/recruiter/admin으로 나누고 원래 HTTP 역할 경로를 유지한다. 클래스가 폴더와 같은 권한을 자동 부여하지 않는다. user 전체를 개발자 전용이나 admin 전용으로 막지 않는다.
+4. Controller → Service → Repository, com.linker.backend와 Blueprint의 레이어를 유지한다. 서비스는 공통 기능도 역할별 이름·폴더에서 각각 구현한다. 저장소·Entity·DTO·정책 상수는 업무별로 공유할 수 있고 DTO는 dto 아래에 둔다. 페이지 번호 패키지나 domain 혼합 배치로 되돌리지 않는다.
+5. 공개(Public*) 컨트롤러는 `controller` 루트에 둔다. `public` / `public_` / `open` / `multi` 패키지는 쓰지 않는다. 로그인·채용·운영 API는 `controller.user` / `controller.recruiter` / `controller.admin`에 둔다. GitHub 웹훅 HTTP 진입은 `integration.github`에 둔다. 컨트롤러마다 같은 분류의 대응 진입 서비스를 둔다. 0단계 내부 역할 서비스는 실제 기능과 함께 컨트롤러 없이 추가할 수 있다. 빈 진입 서비스·빈 컨트롤러는 만들지 않는다. 공통 기반도 해당 시스템으로 통합하며 고정된 common 7개 규칙을 폐지한다. 구체적인 클래스 배치는 백엔드 Blueprint §3–§4를 따른다.
 6. 기존 pNN OpenAPI 태그는 메서드별로 보존한다. 통합한 모든 태그를 클래스 전체에 붙이지 않는다. 태그 개편·Orval 재생성은 별도 합의다.
 7. 메서드·경로·쿼리·권한·동작은 4장 원문 계약을 따른다. 클래스 통합을 이유로 API를 추가·병합하거나 권한을 넓히지 않는다.
 8. ID는 Linker ID, 목록은 cursor/size와 {items, nextCursor}. 성공은 wrapper 없이 응답, 생성 201·비동기 접수 202, 오류는 {code, message, detail}. 기존 코드·한국어 문구를 유지한다.
@@ -120,7 +122,7 @@
 
 ### 3-2. 공통 기반 00 — D1~D2
 
-00은 화면이나 별도 CommonController가 아니다. 기존 12개 REST를 Auth·Catalog·Upload·Moderation·Github·Sitemap에 배정하고 공통 서비스·프론트 도구는 그대로 공유한다.
+00은 화면이나 별도 CommonController가 아니다. 기존 12개 REST를 Auth·Catalog·Upload·Moderation·Github·Sitemap에 배정하고 역할별 서비스 생성 규칙을 적용한다. 프론트 도구·DTO·데이터 계약은 공유한다.
 
 | 담당 | 산출물 |
 | --- | --- |
@@ -153,7 +155,7 @@
 
 - **범위:** GitHub 로그인, 회사 이메일 가입·로그인·비밀번호, 세션·로그아웃
 - **주요 참조 데이터:** users, auth_identities, github_tokens, user_sessions, email_verifications. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 가입·복구·재발급·로그아웃이 동일한 세션 규칙을 따른다. 운영 OTP API는 Admin이 인증 서비스를 재사용한다.
+- **완료 기준:** 가입·복구·재발급·로그아웃이 동일한 세션 규칙을 따른다. 운영 OTP는 AdminService에서 운영 인증을 처리하고 세션 데이터 계약·보안 기반을 따른다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -261,7 +263,7 @@
 
 - **범위:** 팀·멤버·역할·저장소/보드 연결·초대·오너 이전·완주
 - **주요 참조 데이터:** teams, team_members, team_repos, team_invite_links, team_project_boards, board_status_mappings, team_ownership_transfers, team_completions, completion_records. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 팀 권한·정원·완주 기준을 유지한다. 초대 알림은 TEAM_INVITE와 /invite/{code}로 NotificationService를 사용한다.
+- **완료 기준:** 팀 권한·정원·완주 기준을 유지한다. 초대 알림은 TEAM_INVITE와 /invite/{code}로 UserNotificationService.create를 사용한다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -368,11 +370,13 @@
 
 ### 4-10. 알림·푸시 — `NotificationController`
 
+**0단계 생성 계약 복원:** UserNotificationService·RecruiterNotificationService·AdminNotificationService가 각각 `create(CreateNotificationCommand)`를 제공한다. 접두사는 생성 업무의 접근 경계이며 수신자 계정 종류가 아니다. 입력 DTO·Entity·Repository·정책 상수는 공유하고 서비스는 다른 역할을 호출하지 않는다. 기존 작업 목록의 NotificationService 표기는 이 역할별 계약으로 읽는다. 목록/읽음/푸시 API는 페이지 18에서 구현하며 이번 복원은 REST 205개·테이블 69개를 늘리지 않는다.
+
 **시스템 주담당:** D · **REST:** 7개
 
 - **범위:** 인앱 목록·읽음·배지·기기 토큰·푸시 설정
 - **주요 참조 데이터:** notifications, push_tokens; 설정 원본 users.push_enabled. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 공통 NotificationService와 STOMP·Android 푸시를 제공한다. 초대 코드 연결을 유지하며 이의 제기는 Moderation 소속이다.
+- **완료 기준:** 역할별 알림 생성 계약과 STOMP·Android 푸시를 제공한다. 초대 코드 연결을 유지하며 이의 제기는 Moderation 소속이다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -418,7 +422,7 @@
 
 - **범위:** 게시물·README·댓글·좋아요·피드·프로필 작업물·대표 고정
 - **주요 참조 데이터:** posts, post_images, post_demo_links, post_tags, post_likes, comments, pinned_posts, feed_seen_posts. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 공개 읽기·회원 쓰기·작성자 권한·차단·숨김·추천 규칙을 유지하고 광고/통계 서비스를 재사용한다.
+- **완료 기준:** 공개 읽기·회원 쓰기·작성자 권한·차단·숨김·추천 규칙을 유지한다. 동일 접근 분류의 광고/통계 서비스를 호출하고 데이터 계약을 공유한다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -560,7 +564,7 @@
 | SUBSCRIBE | /user/queue/chat-rooms | D: 16 목록·미확인 요약 |
 | SUBSCRIBE | /user/queue/notifications | D: 알림·배지, 18 공유 |
 
-B의 PR 자동 게시와 C의 AI 공유는 Chat 서비스를 사용한다. 목적지를 추가하지 않으며 참여 자격·개인 구독 권한을 서버에서 제한한다.
+B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채팅 서비스를 사용한다. 목적지를 추가하지 않으며 참여 자격·개인 구독 권한을 서버에서 제한한다.
 
 ## 5. 페이지별 작업·일정·참조
 
@@ -1175,7 +1179,7 @@ B의 PR 자동 게시와 C의 AI 공유는 Chat 서비스를 사용한다. 목�
 
 ## 7. 적용·이행 범위
 
-- 문서 기준은 **18개 시스템별 컨트롤러·205개 REST·5개 실시간 경로·69개 기존 테이블**이다. 현재 기반 코드는 계층 정리를 반영했지만 전체 18개 시스템이 구현된 상태는 아니다.
+- 문서 기준은 **업무 시스템 18개·역할별 HTTP 컨트롤러 29개·205개 REST·5개 실시간 경로·69개 기존 테이블**이다. 현재 기반 코드는 계층 정리를 반영했지만 전체 18개 시스템·29개 HTTP 컨트롤러가 구현된 상태는 아니다.
 - 페이지 담당·메서드 구현자는 1·4·5장을 따른다. 공유 파일의 기본 검토자는 시스템 주담당이다.
 - 기존 클래스는 점진적으로 통합한다. URL·DTO·OpenAPI 태그·권한·STOMP·DB를 유지하고 진행 중인 인증·업로드·신고·알림 작업을 보존한다.
 - Java 배치와 현재 구현/목표의 차이는 [백엔드 Blueprint](05-backend-blueprint.md)가 소유한다. 페이지별 컨트롤러 규칙은 시스템별 규칙으로 대체됐다.
