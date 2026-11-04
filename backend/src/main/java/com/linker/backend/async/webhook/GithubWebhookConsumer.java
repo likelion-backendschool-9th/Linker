@@ -1,6 +1,6 @@
 package com.linker.backend.async.webhook;
 
-import com.linker.backend.service.github.GithubWebhookService;
+import com.linker.backend.integration.github.GithubWebhookService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

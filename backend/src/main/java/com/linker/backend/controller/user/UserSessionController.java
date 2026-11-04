@@ -2,7 +2,7 @@ package com.linker.backend.controller.user;
 
 import com.linker.backend.dto.auth.response.MeResponse;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.service.account.OnboardingStatus;
+import com.linker.backend.service.user.UserSessionService;
 
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -15,23 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user")
 public class UserSessionController {
 
-	private final OnboardingStatus onboarding;
+	private final UserSessionService sessions;
 
-	public UserSessionController(OnboardingStatus onboarding) {
-		this.onboarding = onboarding;
+	public UserSessionController(UserSessionService sessions) {
+		this.sessions = sessions;
 	}
 
 	@GetMapping("/me")
 	public ResponseEntity<MeResponse> me(@AuthenticationPrincipal AuthenticatedUser user) {
-		MeResponse body = new MeResponse(
-				user.userId(),
-				user.login(),
-				user.userType().name(),
-				user.adminRegistered(),
-				user.status().name(),
-				onboarding.isOnboarded(user.userId()),
-				user.suspendedUntil()
-		);
-		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(sessions.me(user));
 	}
 }

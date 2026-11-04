@@ -5,7 +5,7 @@ import com.linker.backend.dto.file.response.CompleteUploadResponse;
 import com.linker.backend.dto.file.response.CreateUploadResponse;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.service.file.UploadService;
+import com.linker.backend.service.user.UserUploadService;
 
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user")
 public class UserUploadController {
 
-	private final UploadService uploads;
+	private final UserUploadService uploads;
 
-	public UserUploadController(UploadService uploads) {
+	public UserUploadController(UserUploadService uploads) {
 		this.uploads = uploads;
 	}
 
@@ -31,7 +31,7 @@ public class UserUploadController {
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@RequestBody CreateUploadRequest request
 	) {
-		UploadService.CreatedUpload created = uploads.create(
+		UserUploadService.CreatedUpload created = uploads.create(
 				user,
 				request.type(),
 				request.purpose(),
@@ -49,7 +49,7 @@ public class UserUploadController {
 			@PathVariable String fileId
 	) {
 		long id = parseId(fileId);
-		UploadService.CompletedUpload completed = uploads.complete(user, id);
+		UserUploadService.CompletedUpload completed = uploads.complete(user, id);
 		return ResponseEntity.ok()
 				.cacheControl(CacheControl.noStore())
 				.body(new CompleteUploadResponse(completed.fileId(), completed.url()));

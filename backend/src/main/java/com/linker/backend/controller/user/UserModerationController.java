@@ -7,8 +7,7 @@ import com.linker.backend.dto.moderation.request.CreateReportRequest;
 import com.linker.backend.dto.moderation.response.BlockView;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.service.moderation.BlockService;
-import com.linker.backend.service.moderation.ReportService;
+import com.linker.backend.service.user.UserModerationService;
 
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -25,17 +24,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user")
 public class UserModerationController {
 
-	private final BlockService blocks;
-	private final ReportService reports;
+	private final UserModerationService moderation;
 
-	public UserModerationController(BlockService blocks, ReportService reports) {
-		this.blocks = blocks;
-		this.reports = reports;
+	public UserModerationController(UserModerationService moderation) {
+		this.moderation = moderation;
 	}
 
 	@GetMapping("/me/blocks")
 	public ResponseEntity<List<BlockView>> list(@AuthenticationPrincipal AuthenticatedUser user) {
-		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(blocks.listActive(user.userId()));
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(moderation.listBlocks(user.userId()));
 	}
 
 	@PostMapping("/blocks")
@@ -43,19 +40,19 @@ public class UserModerationController {
 		if (request.userId() == null) {
 			throw new ApiException(400, "VALIDATION_ERROR", "차단할 사용자를 확인해 주세요");
 		}
-		blocks.block(user.userId(), request.userId());
+		moderation.block(user.userId(), request.userId());
 		return ResponseEntity.noContent().build();
 	}
 
 	@DeleteMapping("/blocks/{userId}")
 	public ResponseEntity<Void> unblock(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long userId) {
-		blocks.unblock(user.userId(), userId);
+		moderation.unblock(user.userId(), userId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/reports")
 	public ResponseEntity<Void> report(@AuthenticationPrincipal AuthenticatedUser user, @RequestBody CreateReportRequest request) {
-		reports.report(user.userId(), request.targetType(), request.targetId(), request.reason(), request.detail());
+		moderation.report(user.userId(), request.targetType(), request.targetId(), request.reason(), request.detail());
 		return ResponseEntity.noContent().build();
 	}
 }

@@ -180,7 +180,7 @@
 - [x] D1 오전 api-fetch/orval/Providers
 - [x] overlay + 공통 시트 + 업로더
 - [x] 신고/차단 API·필터·기간 모델
-- [x] D와 차단 계약 freeze → `docs/development/plans/e-block-contract-freeze.md`, `BlockService.hidesDirectMessage`
+- [x] D와 차단 계약 freeze → `docs/development/plans/e-block-contract-freeze.md`, `UserModerationService.hidesDirectMessage`
 - [ ] Vercel 배포 파이프 초안
 
 ### A 이슈 체크
