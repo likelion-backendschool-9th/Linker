@@ -33,10 +33,10 @@ import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
-import com.linker.backend.service.auth.SessionService;
-import com.linker.backend.service.github.GithubWebhookHandler;
-import com.linker.backend.service.github.GithubWebhookService;
-import com.linker.backend.service.moderation.BlockService;
+import com.linker.backend.service.PublicAuthService;
+import com.linker.backend.integration.github.GithubWebhookHandler;
+import com.linker.backend.integration.github.GithubWebhookService;
+import com.linker.backend.service.user.UserModerationService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +94,7 @@ class FoundationIntegrationTest {
 	@Autowired
 	private UserRepository users;
 	@Autowired
-	private SessionService sessions;
+	private PublicAuthService sessions;
 	@Autowired
 	private AdminRepository admins;
 	@Autowired
@@ -102,7 +102,7 @@ class FoundationIntegrationTest {
 	@Autowired
 	private UserBlockRepository blocks;
 	@Autowired
-	private BlockService blockService;
+	private UserModerationService blockService;
 	@Autowired
 	private ReportCaseRepository reportCases;
 	@Autowired
@@ -168,7 +168,7 @@ class FoundationIntegrationTest {
 	void operatorApiStaysClosedUntilTheSessionIsOtpVerified() throws Exception {
 		User user = saveUser("ops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
-		SessionService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
 				.andExpect(status().isForbidden())

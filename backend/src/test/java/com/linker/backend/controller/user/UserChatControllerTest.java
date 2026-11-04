@@ -9,12 +9,15 @@ import com.linker.backend.entity.account.UserType;
 import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.realtime.StompPrincipal;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.service.user.UserChatService;
 
 import org.junit.jupiter.api.Test;
 
 class UserChatControllerTest {
 
-	private final UserChatController controller = new UserChatController((userId, roomId) -> userId == 7L && roomId == 10L);
+	private final UserChatController controller = new UserChatController(
+			new UserChatService((userId, roomId) -> userId == 7L && roomId == 10L)
+	);
 
 	@Test
 	void rejectsForeignRoom() {

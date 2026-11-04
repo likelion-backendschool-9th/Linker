@@ -18,7 +18,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * In-app notification row. Only {@code NotificationService.create} inserts rows;
+ * In-app notification row. Inserts go through the future notification paired entry service;
  * push delivery is handled asynchronously by a later worker.
  */
 @Entity
