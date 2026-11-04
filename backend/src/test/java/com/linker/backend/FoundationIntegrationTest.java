@@ -36,6 +36,7 @@ import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.service.auth.SessionService;
 import com.linker.backend.service.github.GithubWebhookHandler;
 import com.linker.backend.service.github.GithubWebhookService;
+import com.linker.backend.service.moderation.BlockService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +101,8 @@ class FoundationIntegrationTest {
 	private LocalObjectStorage storage;
 	@Autowired
 	private UserBlockRepository blocks;
+	@Autowired
+	private BlockService blockService;
 	@Autowired
 	private ReportCaseRepository reportCases;
 	@Autowired
@@ -317,6 +320,30 @@ class FoundationIntegrationTest {
 				.andExpect(status().isNoContent());
 		assertThat(blocks.count()).isEqualTo(2);
 		assertThat(blocks.findByBlockerIdAndBlockedIdAndUnblockedAtIsNull(blocker.getId(), blocked.getId())).isPresent();
+	}
+
+	@Test
+	void closedBlockPeriodsStillHideDirectMessagesForD() throws Exception {
+		User blocker = saveUser("viewer", UserType.DEVELOPER);
+		User blocked = saveUser("sender", UserType.DEVELOPER);
+		String token = sessions.issue(blocker, "JUnit", "127.0.0.1").rawToken();
+		String body = "{\"userId\":" + blocked.getId() + "}";
+
+		mockMvc.perform(post("/api/v1/user/blocks").cookie(cookie(token)).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isNoContent());
+
+		Instant duringBlock = Instant.now();
+		assertThat(blockService.hidesDirectMessage(blocker.getId(), blocked.getId(), duringBlock)).isTrue();
+		assertThat(blockService.blockedEitherWay(blocker.getId(), blocked.getId())).isTrue();
+
+		mockMvc.perform(delete("/api/v1/user/blocks/" + blocked.getId()).cookie(cookie(token)))
+				.andExpect(status().isNoContent());
+
+		Instant afterUnblock = Instant.now().plusSeconds(2);
+		assertThat(blockService.hidesDirectMessage(blocker.getId(), blocked.getId(), duringBlock)).isTrue();
+		assertThat(blockService.hidesDirectMessage(blocker.getId(), blocked.getId(), afterUnblock)).isFalse();
+		assertThat(blockService.blockedEitherWay(blocker.getId(), blocked.getId())).isFalse();
+		assertThat(blockService.hidesDirectMessage(blocked.getId(), blocker.getId(), duringBlock)).isFalse();
 	}
 
 	@Test

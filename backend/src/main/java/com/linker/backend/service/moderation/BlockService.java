@@ -15,6 +15,19 @@ import com.linker.backend.repository.moderation.UserBlockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * D2 freeze — {@code user_blocks} period contract for D (1:1 DM filter).
+ *
+ * <ul>
+ *   <li>{@code POST /blocks} opens a period ({@code unblocked_at = null}); active pair is idempotent.</li>
+ *   <li>{@code DELETE /blocks/{id}} closes the active period (sets {@code unblocked_at}); never deletes the row.</li>
+ *   <li>Re-block after close inserts a new period; closed periods stay for history.</li>
+ *   <li>DM visibility uses recipient-owned periods only: hide when
+ *       {@code sender} is {@code blocked_id} and {@code message.created_at ∈ [created_at, unblocked_at)}.</li>
+ *   <li>Team chat is exempt — callers must not use {@link #hidesDirectMessage} for team rooms.</li>
+ *   <li>{@link #blockedEitherWay} is for current access (list/apply/start chat), not history.</li>
+ * </ul>
+ */
 @Service
 public class BlockService {
 
@@ -68,5 +81,17 @@ public class BlockService {
 	public boolean blockedEitherWay(long firstUserId, long secondUserId) {
 		return blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(firstUserId, secondUserId)
 				|| blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(secondUserId, firstUserId);
+	}
+
+	/**
+	 * Whether a 1:1 message from {@code senderId} at {@code messageCreatedAt} must stay invisible
+	 * to {@code viewerId}. Uses every period the viewer owns (active and closed).
+	 */
+	@Transactional(readOnly = true)
+	public boolean hidesDirectMessage(long viewerId, long senderId, Instant messageCreatedAt) {
+		if (viewerId == senderId || messageCreatedAt == null) {
+			return false;
+		}
+		return blocks.existsCovering(viewerId, senderId, messageCreatedAt);
 	}
 }
