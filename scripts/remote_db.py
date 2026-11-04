@@ -29,7 +29,7 @@ def session_keys_from_dotenv():
     values = {}
     if not path.exists():
         return values
-    for number, line in enumerate(path.read_text().splitlines(), 1):
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue

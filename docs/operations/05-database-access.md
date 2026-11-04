@@ -46,18 +46,18 @@ DB 도구만 사용하는 `tunnel` 모드에는 Redis가 필요 없다.
 Docker Engine/Desktop을 실행한 뒤 다음 명령을 사용한다.
 
 ```bash
-DB_PASSWORD=redis-only-placeholder docker compose --env-file /dev/null -f compose.yml up -d --wait redis
-DB_PASSWORD=redis-only-placeholder docker compose --env-file /dev/null -f compose.yml exec redis redis-cli ping
+DB_PASSWORD=redis-only-placeholder JWT_PRIVATE_KEY=unused JWT_PUBLIC_KEY=unused docker compose --env-file /dev/null -f compose.yml up -d --wait redis
+DB_PASSWORD=redis-only-placeholder JWT_PRIVATE_KEY=unused JWT_PUBLIC_KEY=unused docker compose --env-file /dev/null -f compose.yml exec redis redis-cli ping
 ```
 
-`PONG`이 나오면 준비됐다. Compose는 Redis만 실행해도 전체 파일의 `DB_PASSWORD`를 검사하므로 위 명령에만 임시 값을 전달한다.
+`PONG`이 나오면 준비됐다. Compose는 Redis만 실행해도 전체 파일의 `DB_PASSWORD`, `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`를 검사하므로 위 명령에만 임시 값을 전달한다.
 이 명령은 Redis만 실행하며 DB·백엔드를 시작하거나 공용 DB 비밀번호를 바꾸지 않는다. 임시 값을 전역 `export`하지 않는다.
 루트 `.env`와 무관하게 실행하도록 `--env-file /dev/null`을 사용하며, `.env.remote-db`를 Compose에 전달하거나 셸에서 `source`할 필요가 없다.
 
 Redis 종료가 필요하면 다른 작업이 사용 중인지 확인한 뒤 해당 서비스만 중지한다. 데이터 볼륨은 유지한다.
 
 ```bash
-DB_PASSWORD=redis-only-placeholder docker compose --env-file /dev/null -f compose.yml stop redis
+DB_PASSWORD=redis-only-placeholder JWT_PRIVATE_KEY=unused JWT_PUBLIC_KEY=unused docker compose --env-file /dev/null -f compose.yml stop redis
 ```
 
 ## 매일 실행: 둘 중 하나 선택
