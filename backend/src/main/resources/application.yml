@@ -61,6 +61,8 @@ linker:
     local-dir: ${STORAGE_LOCAL_DIR:}
   github:
     webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+    projects:
+      consumer-enabled: ${GITHUB_PROJECTS_CONSUMER_ENABLED:false}
   webhook:
     consumer-enabled: true
     queue-key: linker:github:webhook
