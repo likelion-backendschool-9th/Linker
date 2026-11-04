@@ -137,8 +137,9 @@ psql 종료는 `\q`다. 터널/백엔드를 종료하려면 해당 실행 터미
 | `BACKEND_PORT` → Spring `SERVER_PORT` | `8080` |
 | 자동 테이블 생성·SQL 초기화 | `ddl-auto=none`, `spring.sql.init.mode=never`로 실행 |
 | Flyway | 기존 Spring 설정 유지. 현재 `enabled=true`로 미적용 마이그레이션 자동 적용 |
+| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | 프로세스 환경. 없으면 루트 `.env`의 같은 키 |
 
-스크립트는 `.env.remote-db`를 읽고 같은 이름의 프로세스 환경변수가 있으면 우선한다. 루트 `.env`는 읽지 않는다.
+스크립트는 `.env.remote-db`를 읽고 같은 이름의 프로세스 환경변수가 있으면 우선한다. DB 접속에는 루트 `.env`를 쓰지 않는다. 세션 JWT 키만, 프로세스 환경에 없을 때 루트 `.env`에서 백엔드로 넘긴다.
 Redis는 자동 실행·종료하지 않는다. 위 로컬 Redis 준비 절차를 사용한다.
 IDE에서 직접 Spring을 실행할 때는 `tunnel` 모드를 유지하고 위 DB·Redis 설정과 자동 DDL·SQL 초기화 설정을 IDE에 별도로 지정한다.
 

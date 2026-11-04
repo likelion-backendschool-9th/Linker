@@ -59,6 +59,11 @@ public class UserSession extends BaseTimeEntity {
 		this.expiresAt = expiresAt;
 	}
 
+	public void rotate(String refreshTokenHash, Instant expiresAt) {
+		this.refreshTokenHash = refreshTokenHash;
+		this.expiresAt = expiresAt;
+	}
+
 	public void markOtpVerified(Instant when) {
 		this.otpVerifiedAt = when;
 	}

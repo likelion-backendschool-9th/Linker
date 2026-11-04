@@ -26,6 +26,9 @@ import com.linker.backend.entity.github.WebhookStatus;
 import com.linker.backend.entity.moderation.Admin;
 import com.linker.backend.entity.moderation.AdminRole;
 import com.linker.backend.global.security.DeveloperOnly;
+import com.linker.backend.global.security.JwtSessionTokens;
+import com.linker.backend.global.security.RsaMaterial;
+import com.linker.backend.global.security.SessionClaims;
 import com.linker.backend.global.security.TeamRole;
 import com.linker.backend.integration.storage.LocalObjectStorage;
 import com.linker.backend.repository.account.UserRepository;
@@ -52,6 +55,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -65,6 +69,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers
 @Import({FoundationIntegrationTest.SecurityProbeController.class, FoundationIntegrationTest.WebhookTestConfig.class})
 class FoundationIntegrationTest {
+
+	private static final RsaMaterial KEYS = RsaMaterial.generate();
 
 	@Container
 	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
@@ -81,6 +87,8 @@ class FoundationIntegrationTest {
 		registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
 		registry.add("linker.storage.mode", () -> "local");
 		registry.add("linker.github.webhook-secret", () -> "test-webhook-secret");
+		registry.add("linker.session.jwt-private-key", KEYS::privatePem);
+		registry.add("linker.session.jwt-public-key", KEYS::publicPem);
 		registry.add("linker.webhook.consumer-enabled", () -> "false");
 		registry.add("spring.jpa.show-sql", () -> "false");
 	}
@@ -95,6 +103,8 @@ class FoundationIntegrationTest {
 	private UserRepository users;
 	@Autowired
 	private PublicAuthService sessions;
+	@Autowired
+	private JwtSessionTokens tokens;
 	@Autowired
 	private AdminRepository admins;
 	@Autowired
@@ -140,6 +150,12 @@ class FoundationIntegrationTest {
 		user.changeDisplayName("옥토");
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
 		String token = sessions.issue(user, "JUnit", "127.0.0.1").rawToken();
+		SessionClaims claims = tokens.verify(token).orElseThrow();
+		assertThat(claims.subject()).isEqualTo(Long.toString(user.getId()));
+		assertThat(claims.memberType()).isEqualTo("DEVELOPER");
+		assertThat(claims.operator()).isTrue();
+		assertThat(claims.onboarded()).isFalse();
+		assertThat(claims.status()).isEqualTo("ACTIVE");
 
 		mockMvc.perform(get("/api/v1/user/me"))
 				.andExpect(status().isUnauthorized())
@@ -155,9 +171,16 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.onboarded").value(false))
 				.andExpect(jsonPath("$.suspendedUntil").value(org.hamcrest.Matchers.nullValue()));
 
-		mockMvc.perform(post("/api/v1/public/auth/refresh").cookie(cookie(token)))
+		MvcResult refreshed = mockMvc.perform(post("/api/v1/public/auth/refresh").cookie(cookie(token)))
 				.andExpect(status().isNoContent())
-				.andExpect(header().exists("Set-Cookie"));
+				.andExpect(header().exists("Set-Cookie"))
+				.andReturn();
+		String renewed = cookieValue(refreshed.getResponse().getHeader("Set-Cookie"));
+		assertThat(renewed).isNotEqualTo(token);
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(renewed)))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(token)))
+				.andExpect(status().isUnauthorized());
 
 		mockMvc.perform(post("/api/v1/public/auth/refresh"))
 				.andExpect(status().isUnauthorized())
@@ -187,6 +210,15 @@ class FoundationIntegrationTest {
 		User recruiter = saveUser("recruiter", UserType.RECRUITER);
 		String developerToken = sessions.issue(developer, "JUnit", "127.0.0.1").rawToken();
 		String recruiterToken = sessions.issue(recruiter, "JUnit", "127.0.0.1").rawToken();
+		assertThat(tokens.verify(recruiterToken).orElseThrow().memberType()).isEqualTo("RECRUITER");
+
+		String forged = tokens.sign(
+				new SessionClaims(Long.toString(developer.getId()), "RECRUITER", false, false, "ACTIVE"),
+				java.time.Instant.now().plusSeconds(60)
+		);
+		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(forged)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_REQUIRED"));
 
 		mockMvc.perform(post("/api/v1/user/security-probes/developer").cookie(cookie(recruiterToken)))
 				.andExpect(status().isForbidden())
@@ -217,6 +249,30 @@ class FoundationIntegrationTest {
 						.cookie(cookie(token))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"userId\":" + other.getId() + "}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("SUSPENDED"));
+	}
+
+	@Test
+	void suspensionRewritesTheSessionJwt() throws Exception {
+		User user = saveUser("later-paused", UserType.DEVELOPER);
+		String token = sessions.issue(user, "JUnit", "127.0.0.1").rawToken();
+		user.suspendUntil(Instant.now().plusSeconds(3600));
+		users.saveAndFlush(user);
+
+		MvcResult result = mockMvc.perform(get("/api/v1/user/me").cookie(cookie(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("SUSPENDED"))
+				.andExpect(header().exists("Set-Cookie"))
+				.andReturn();
+		String renewed = cookieValue(result.getResponse().getHeader("Set-Cookie"));
+		assertThat(tokens.verify(renewed).orElseThrow().status()).isEqualTo("SUSPENDED");
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(token)))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(post("/api/v1/user/blocks")
+						.cookie(cookie(renewed))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"userId\":1}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("SUSPENDED"));
 	}
@@ -512,6 +568,13 @@ class FoundationIntegrationTest {
 
 	private Cookie cookie(String token) {
 		return new Cookie("linker_session", token);
+	}
+
+	private static String cookieValue(String setCookie) {
+		String prefix = "linker_session=";
+		int start = setCookie.indexOf(prefix);
+		int end = setCookie.indexOf(';', start);
+		return setCookie.substring(start + prefix.length(), end < 0 ? setCookie.length() : end);
 	}
 
 	private byte[] png(int width, int height) throws Exception {

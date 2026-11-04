@@ -35,8 +35,8 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
 				AuthenticatedUser user = authenticated.user();
 				var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 				SecurityContextHolder.getContext().setAuthentication(authentication);
-				if (authenticated.cookieRewritten()) {
-					response.addHeader(HttpHeaders.SET_COOKIE, cookies.write(token));
+				if (authenticated.renewedToken() != null) {
+					response.addHeader(HttpHeaders.SET_COOKIE, cookies.write(authenticated.renewedToken()));
 				}
 			});
 		}

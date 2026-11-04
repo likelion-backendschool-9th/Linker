@@ -3,10 +3,8 @@ package com.linker.backend.service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 
@@ -17,6 +15,8 @@ import com.linker.backend.entity.account.UserType;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.global.security.JwtSessionTokens;
+import com.linker.backend.global.security.SessionClaims;
 import com.linker.backend.repository.account.UserSessionRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 
@@ -25,41 +25,41 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.PublicAuthController}.
- * Also owns cookie-session issue/authenticate for the security filter and later login flows.
+ * The httpOnly cookie is an RS256 JWT. Only its SHA-256 hash is stored.
+ * Screen claims do not grant access; the session row does.
  */
 @Service
 public class PublicAuthService {
 
 	private static final Duration EXTEND_WHEN_WITHIN = Duration.ofDays(1);
-	private static final int MAX_TOKEN_LENGTH = 256;
+	private static final int MAX_TOKEN_LENGTH = 4096;
 
 	private final UserSessionRepository sessions;
 	private final AdminRepository admins;
-	private final SecureRandom random = new SecureRandom();
+	private final JwtSessionTokens tokens;
 
-	public PublicAuthService(UserSessionRepository sessions, AdminRepository admins) {
+	public PublicAuthService(UserSessionRepository sessions, AdminRepository admins, JwtSessionTokens tokens) {
 		this.sessions = sessions;
 		this.admins = admins;
+		this.tokens = tokens;
 	}
 
-	public void refresh(String rawToken) {
-		extendNow(rawToken);
+	@Transactional
+	public String refresh(String rawToken) {
+		return rotate(rawToken, Instant.now().plus(Duration.ofDays(PlanLimits.SESSION_DAYS)));
 	}
 
 	@Transactional
 	public IssuedSession issue(User user, String userAgent, String ip) {
-		String raw = newToken();
 		Instant expiresAt = Instant.now().plus(Duration.ofDays(PlanLimits.SESSION_DAYS));
+		String raw = tokens.sign(claims(user), expiresAt);
 		UserSession session = sessions.save(UserSession.issue(user, hash(raw), trim(userAgent, 512), trim(ip, 64), expiresAt));
 		return new IssuedSession(raw, session.getId());
 	}
 
 	@Transactional
 	public Optional<AuthenticatedSession> authenticate(String rawToken, boolean slideExpiry) {
-		if (rawToken == null || rawToken.isBlank() || rawToken.length() > MAX_TOKEN_LENGTH) {
-			return Optional.empty();
-		}
-		Optional<UserSession> found = sessions.findActive(hash(rawToken), Instant.now());
+		Optional<UserSession> found = active(rawToken);
 		if (found.isEmpty()) {
 			return Optional.empty();
 		}
@@ -68,32 +68,45 @@ public class PublicAuthService {
 		if (user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null) {
 			return Optional.empty();
 		}
-		boolean rewritten = false;
+		SessionClaims current = claims(user);
+		Optional<SessionClaims> presented = tokens.verify(rawToken);
+		Instant expiresAt = session.getExpiresAt();
+		boolean extend = false;
 		if (slideExpiry) {
 			Instant target = Instant.now().plus(Duration.ofDays(PlanLimits.SESSION_DAYS));
 			if (session.getExpiresAt().isBefore(target.minus(EXTEND_WHEN_WITHIN))) {
-				session.extendTo(target);
+				expiresAt = target;
 				user.touch(Instant.now());
-				rewritten = true;
+				extend = true;
 			}
 		}
-		return Optional.of(new AuthenticatedSession(toPrincipal(session, user), rewritten));
+		String renewed = null;
+		boolean stale = presented.isEmpty() || !presented.get().equals(current);
+		if (slideExpiry && (extend || stale)) {
+			renewed = tokens.sign(current, expiresAt);
+			session.rotate(hash(renewed), expiresAt);
+		}
+		return Optional.of(new AuthenticatedSession(toPrincipal(session, user), renewed));
 	}
 
-	@Transactional
-	public void extendNow(String rawToken) {
-		if (rawToken == null || rawToken.isBlank() || rawToken.length() > MAX_TOKEN_LENGTH) {
-			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
-		}
-		UserSession session = sessions.findActive(hash(rawToken), Instant.now())
+	private String rotate(String rawToken, Instant expiresAt) {
+		UserSession session = active(rawToken)
 				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
 		User user = session.getUser();
 		if (user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null) {
 			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
 		}
-		Instant now = Instant.now();
-		session.extendTo(now.plus(Duration.ofDays(PlanLimits.SESSION_DAYS)));
-		user.touch(now);
+		String renewed = tokens.sign(claims(user), expiresAt);
+		session.rotate(hash(renewed), expiresAt);
+		user.touch(Instant.now());
+		return renewed;
+	}
+
+	private Optional<UserSession> active(String rawToken) {
+		if (rawToken == null || rawToken.isBlank() || rawToken.length() > MAX_TOKEN_LENGTH || tokens.verify(rawToken).isEmpty()) {
+			return Optional.empty();
+		}
+		return sessions.findActive(hash(rawToken), Instant.now());
 	}
 
 	/**
@@ -114,8 +127,16 @@ public class PublicAuthService {
 		sessions.findActive(hash(rawToken), Instant.now()).ifPresent(session -> session.revoke(Instant.now()));
 	}
 
+	private SessionClaims claims(User user) {
+		return SessionClaims.of(user, adminRegistered(user));
+	}
+
+	private boolean adminRegistered(User user) {
+		return user.getUserType() == UserType.DEVELOPER && admins.existsForUser(user.getId());
+	}
+
 	private AuthenticatedUser toPrincipal(UserSession session, User user) {
-		boolean adminRegistered = user.getUserType() == UserType.DEVELOPER && admins.existsForUser(user.getId());
+		boolean adminRegistered = adminRegistered(user);
 		boolean operatorAuthorized = adminRegistered
 				&& session.getOtpVerifiedAt() != null
 				&& session.getOtpVerifiedAt().plus(Duration.ofMinutes(PlanLimits.ADMIN_OTP_IDLE_MINUTES)).isAfter(Instant.now());
@@ -127,14 +148,9 @@ public class PublicAuthService {
 				user.getSuspendedUntil(),
 				adminRegistered,
 				operatorAuthorized,
+				SessionClaims.onboarded(user),
 				session.getId()
 		);
-	}
-
-	private String newToken() {
-		byte[] bytes = new byte[32];
-		random.nextBytes(bytes);
-		return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
 	}
 
 	static String hash(String raw) {
@@ -158,6 +174,6 @@ public class PublicAuthService {
 	public record IssuedSession(String rawToken, long sessionId) {
 	}
 
-	public record AuthenticatedSession(AuthenticatedUser user, boolean cookieRewritten) {
+	public record AuthenticatedSession(AuthenticatedUser user, String renewedToken) {
 	}
 }

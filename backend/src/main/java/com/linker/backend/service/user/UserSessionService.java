@@ -21,7 +21,7 @@ public class UserSessionService {
 				user.userType().name(),
 				user.adminRegistered(),
 				user.status().name(),
-				false,
+				user.onboarded(),
 				user.suspendedUntil()
 		);
 	}
