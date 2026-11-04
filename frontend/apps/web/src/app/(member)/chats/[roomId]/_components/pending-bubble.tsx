@@ -16,26 +16,29 @@ export function PendingBubble({
 }) {
   return (
     <article className={`${styles.message} ${styles.mine}`} aria-label="보내는 메시지">
-      <p className={styles.author}>나</p>
-      <div className={`${styles.bubble} ${styles.pending}`}>
-        {item.text && <p className={styles.text}>{item.text}</p>}
-        {!!item.images?.length && (
-          <div className={styles.images}>
-            {item.images.map((image, index) => (
-              <div className={styles.image} key={image.fileId}>
-                <Image src={image.url} alt={`전송 대기 사진 ${index + 1}`} fill sizes="(max-width: 600px) 50vw, 320px" />
-              </div>
-            ))}
-          </div>
-        )}
+      <div className={styles.messageRow}>
+        <div className={`${styles.bubble} ${styles.pending}`}>
+          {item.text && <p className={styles.text}>{item.text}</p>}
+          {!!item.images?.length && (
+            <div className={styles.images}>
+              {item.images.map((image, index) => (
+                <div className={styles.image} key={image.fileId}>
+                  <Image src={image.url} alt={`전송 대기 사진 ${index + 1}`} fill sizes="(max-width: 600px) 50vw, 320px" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className={styles.messageMeta}>
+          <p className={styles.meta} role="status">
+            {item.status === 'failed'
+              ? '보내지 못했어요.'
+              : item.status === 'queued'
+                ? '전송 대기 중…'
+                : '보내는 중…'}
+          </p>
+        </div>
       </div>
-      <p className={styles.meta} role="status">
-        {item.status === 'failed'
-          ? '보내지 못했어요.'
-          : item.status === 'queued'
-            ? '전송 대기 중…'
-            : '보내는 중…'}
-      </p>
       {item.status === 'failed' && (
         <div className={styles.actions}>
           <Button variant="outline" onClick={onRetry}>

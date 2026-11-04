@@ -38,6 +38,7 @@ import { PendingBubble } from './pending-bubble';
 import { MessageActions } from './message-actions';
 import { UnreadMembersSheet } from './unread-members-sheet';
 import { MessageTimeline } from './message-timeline';
+import { ChatRoomMenu } from './chat-room-menu';
 import { RoomInfoSheet } from './room-info-sheet';
 import { PullRequestSheet } from './pull-request-sheet';
 import styles from './chat-room.module.css';
@@ -181,6 +182,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         <p className={styles.meta} role="status">
           {CONNECTION[connection]}
         </p>
+        <ChatRoomMenu room={room} />
         <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
         {room.team && <PullRequestSheet roomId={roomId} login={viewer.login} />}
       </div>
