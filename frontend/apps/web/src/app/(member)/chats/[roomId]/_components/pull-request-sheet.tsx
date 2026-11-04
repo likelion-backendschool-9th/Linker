@@ -43,70 +43,64 @@ export function PullRequestSheet({ roomId, login }: { roomId: number; login: str
     staleTime: 0,
   });
   return (
-    <>
-      <Button variant="soft" onClick={() => overlay.open()}>
-        <GitPullRequest aria-hidden />
-        PR 목록
-      </Button>
-      <OverlaySheet
-        overlay={overlay}
-        title="Pull requests"
-        description="팀에 연결된 레포의 PR을 확인해요."
-      >
-        <div className={styles.stack}>
-          <div className={styles.tabs} role="group" aria-label="PR 상태">
-            <button
-              type="button"
-              aria-pressed={state === 'open'}
-              onClick={() => void setState('open')}
-            >
-              열림
-            </button>
-            <button
-              type="button"
-              aria-pressed={state === 'merged'}
-              onClick={() => void setState('merged')}
-            >
-              병합됨
-            </button>
-          </div>
-          {query.isPending ? (
-            <Skeleton count={3} />
-          ) : query.isError ? (
-            <ErrorState onRetry={() => void query.refetch()} />
-          ) : query.data.items.length ? (
-            <ul>
-              {query.data.items.map((pr) => (
-                <li key={pr.url} className={styles.item}>
-                  <div className={styles.row}>
-                    {pr.state === 'merged' ? (
-                      <GitMerge aria-hidden />
-                    ) : (
-                      <GitPullRequest aria-hidden />
-                    )}
-                    <div className={styles.body}>
-                      <p className={styles.title}>{pr.title}</p>
-                      <p className={styles.meta}>
-                        {new URL(pr.url).pathname.split('/').slice(1, 3).join('/')} · #{pr.number} ·{' '}
-                        {pr.author}
-                      </p>
-                      <span className={styles.meta}>
-                        {pr.state === 'merged' ? '병합됨' : '열림'}
-                      </span>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={() => external(pr.url)}>
-                    <GitHubMark />
-                    GitHub에서 열기<span className="sr-only"> · {pr.title}</span>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState title={state === 'open' ? '열린 PR이 없어요.' : '병합된 PR이 없어요.'} />
-          )}
+    <OverlaySheet
+      overlay={overlay}
+      title="Pull requests"
+      description="팀에 연결된 레포의 PR을 확인해요."
+    >
+      <div className={styles.stack}>
+        <div className={styles.tabs} role="group" aria-label="PR 상태">
+          <button
+            type="button"
+            aria-pressed={state === 'open'}
+            onClick={() => void setState('open')}
+          >
+            열림
+          </button>
+          <button
+            type="button"
+            aria-pressed={state === 'merged'}
+            onClick={() => void setState('merged')}
+          >
+            병합됨
+          </button>
         </div>
-      </OverlaySheet>
-    </>
+        {query.isPending ? (
+          <Skeleton count={3} />
+        ) : query.isError ? (
+          <ErrorState onRetry={() => void query.refetch()} />
+        ) : query.data.items.length ? (
+          <ul>
+            {query.data.items.map((pr) => (
+              <li key={pr.url} className={styles.item}>
+                <div className={styles.row}>
+                  {pr.state === 'merged' ? (
+                    <GitMerge aria-hidden />
+                  ) : (
+                    <GitPullRequest aria-hidden />
+                  )}
+                  <div className={styles.body}>
+                    <p className={styles.title}>{pr.title}</p>
+                    <p className={styles.meta}>
+                      {new URL(pr.url).pathname.split('/').slice(1, 3).join('/')} · #{pr.number} ·{' '}
+                      {pr.author}
+                    </p>
+                    <span className={styles.meta}>
+                      {pr.state === 'merged' ? '병합됨' : '열림'}
+                    </span>
+                  </div>
+                </div>
+                <Button variant="outline" onClick={() => external(pr.url)}>
+                  <GitHubMark />
+                  GitHub에서 열기<span className="sr-only"> · {pr.title}</span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState title={state === 'open' ? '열린 PR이 없어요.' : '병합된 PR이 없어요.'} />
+        )}
+      </div>
+    </OverlaySheet>
   );
 }

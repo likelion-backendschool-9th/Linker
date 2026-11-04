@@ -30,33 +30,28 @@ export function RoomInfoSheet({
     },
   });
   return (
-    <>
-      <Button variant="outline" onClick={() => overlay.open(String(room.id))}>
-        방 정보
+    <OverlaySheet overlay={overlay} title="채팅방 정보" description={room.title}>
+      <Button
+        variant="soft"
+        aria-pressed={room.muted}
+        disabled={disabled || mute.isPending}
+        onClick={() => mute.mutate()}
+      >
+        {room.muted ? '알림 켜기' : '알림 끄기'}
       </Button>
-      <OverlaySheet overlay={overlay} title="채팅방 정보" description={room.title}>
-        <Button
-          variant="soft"
-          aria-pressed={room.muted}
-          disabled={disabled || mute.isPending}
-          onClick={() => mute.mutate()}
-        >
-          {room.muted ? '알림 켜기' : '알림 끄기'}
-        </Button>
-        {mute.isError && (
-          <ErrorState title="알림 설정을 바꾸지 못했어요" onRetry={() => mute.mutate()} />
-        )}
-        <h2 className={styles.sectionTitle}>참여자</h2>
-        <ul>
-          {room.members
-            .filter((member) => member !== null)
-            .map((member) => (
-              <li key={member.id} className={styles.member}>
-                {member.name}
-              </li>
-            ))}
-        </ul>
-      </OverlaySheet>
-    </>
+      {mute.isError && (
+        <ErrorState title="알림 설정을 바꾸지 못했어요" onRetry={() => mute.mutate()} />
+      )}
+      <h2 className={styles.sectionTitle}>참여자</h2>
+      <ul>
+        {room.members
+          .filter((member) => member !== null)
+          .map((member) => (
+            <li key={member.id} className={styles.member}>
+              {member.name}
+            </li>
+          ))}
+      </ul>
+    </OverlaySheet>
   );
 }
