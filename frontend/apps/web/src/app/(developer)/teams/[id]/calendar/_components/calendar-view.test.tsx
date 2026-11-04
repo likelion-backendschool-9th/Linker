@@ -4,11 +4,16 @@ import type { UrlUpdateEvent } from 'nuqs/adapters/testing';
 import { axe } from 'vitest-axe';
 
 import { apiFetch } from '@/lib/api/api-fetch';
+import { todayKst } from '@/lib/format/time';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { CalendarView } from './calendar-view';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
+vi.mock('@/lib/format/time', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/format/time')>()),
+  todayKst: vi.fn(),
+}));
 const fetchMock = vi.mocked(apiFetch);
 
 const row = (id: number, title: string, startDate: string | null, dueDate: string, extra = {}) => ({
@@ -30,6 +35,8 @@ const row = (id: number, title: string, startDate: string | null, dueDate: strin
 });
 
 beforeEach(() => {
+  // Match the calendar fixture, independently of the runner's real date and timezone.
+  vi.mocked(todayKst).mockReturnValue('2026-11-15');
   fetchMock.mockReset();
   fetchMock.mockImplementation(async (url) => {
     if (url.includes('/issue-filters')) {
@@ -70,6 +77,27 @@ it('is a table of date buttons named "11월 4일 수요일, 이슈 2개", access
   expect(await axe(container)).toHaveNoViolations();
   // axe over a whole month of date buttons: fine alone, over 5s on a busy CI runner
 }, 15_000);
+
+it.each([
+  ['2026-11-04', /^11월 ?4 ?일 수요일, 이슈 2개, 오늘$/],
+  ['2026-11-10', /^11월 ?10 ?일 화요일, 이슈 없음, 오늘$/],
+])('marks only the fixed KST date %s as today in its accessible name', async (today, name) => {
+  vi.mocked(todayKst).mockReturnValue(today);
+  const { container } = renderWithProviders(<CalendarView teamId="1" />, {
+    viewer: { role: 'developer', login: 'me' },
+    searchParams: '?date=2026-11-15',
+  });
+  const button = await screen.findByRole('button', { name });
+  expect(button.closest('td')).toHaveAttribute('aria-current', 'date');
+  expect(container.querySelectorAll('td[aria-current="date"]')).toHaveLength(1);
+  const otherDay = await screen.findByRole('button', {
+    name:
+      today === '2026-11-04'
+        ? /^11월 ?10 ?일 화요일, 이슈 없음$/
+        : /^11월 ?4 ?일 수요일, 이슈 2개$/,
+  });
+  expect(otherDay.closest('td')).not.toHaveAttribute('aria-current');
+});
 
 it("opens the day sheet with that day's issues, each linking to 12", async () => {
   const updates: UrlUpdateEvent[] = [];
