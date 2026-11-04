@@ -46,4 +46,19 @@ describe('bridge envelope', () => {
       ),
     ).toBeNull();
   });
+
+  it('keeps only userId and userType when a session message carries a token', () => {
+    const raw = JSON.stringify({
+      v: 1,
+      source: 'linker',
+      msg: {
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 7, userType: 'RECRUITER', token: 'compact.jwt.value' },
+      },
+    });
+    expect(decodeWebToNative(raw)).toEqual({
+      type: 'AUTH_SESSION_SAVE',
+      session: { userId: 7, userType: 'RECRUITER' },
+    });
+  });
 });

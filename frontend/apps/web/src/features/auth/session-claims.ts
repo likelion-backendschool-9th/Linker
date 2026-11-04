@@ -1,3 +1,4 @@
+import { viewerFromMember } from '@/lib/auth/jwt-claims';
 import type { ClientViewer } from '@/lib/auth/viewer-context';
 import type { UserStatus } from '@/lib/auth/route-access';
 
@@ -11,11 +12,15 @@ export type AccountClaims = {
 
 /** True when the layout's viewer already matches the latest `/me` claims. */
 export function accountClaimsMatch(viewer: ClientViewer, claims: AccountClaims): boolean {
-  const role =
-    claims.userType === 'RECRUITER' ? 'recruiter' : claims.isAdmin ? 'operator' : 'developer';
+  const member = viewerFromMember({
+    userType: claims.userType,
+    isAdmin: claims.isAdmin,
+    onboarded: true,
+    status: claims.status,
+  });
   return (
-    viewer.role === role &&
-    viewer.status === claims.status &&
+    viewer.role === member.role &&
+    viewer.status === member.status &&
     viewer.suspendedUntil === claims.suspendedUntil
   );
 }
