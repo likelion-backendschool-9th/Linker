@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import { registerPushToken } from '@/features/notifications/push-tokens';
+import { syncNativeSession } from '@/features/auth/sync-native-session';
 import { safeReturnTo } from '@/lib/auth/return-to';
 import { useActiveOverlay } from '@/lib/navigation/use-overlay';
 import { ensureConnected } from '@/lib/realtime/stomp-client';
@@ -66,11 +67,7 @@ export function NativeBridgeProvider({
   const userType = session?.userType;
   useEffect(() => {
     if (!isInApp()) return;
-    postToNative(
-      userId && userType
-        ? { type: 'AUTH_SESSION_SAVE', session: { userId, userType } }
-        : { type: 'AUTH_SESSION_CLEAR' },
-    );
+    syncNativeSession(userId && userType ? { userId, userType } : null);
   }, [userId, userType]);
 
   return children;

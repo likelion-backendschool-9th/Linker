@@ -25,6 +25,31 @@ describe('WebView READY and incoming destinations', () => {
     expect(replace).toHaveBeenCalledOnce();
   });
 
+  it('ignores a delayed duplicate from an earlier login after another account logs in', () => {
+    const { navigation, replace } = setup();
+    navigation.onReady();
+    navigation.loadPath('/auth/callback?code=old&state=s1');
+    navigation.onReady();
+    navigation.loadPath('/auth/callback?code=new&state=s2');
+    navigation.onReady();
+    navigation.loadPath('/auth/callback?code=old&state=s1');
+    expect(replace).toHaveBeenCalledTimes(2);
+    expect(replace).toHaveBeenLastCalledWith('/auth/callback?code=new&state=s2');
+  });
+
+  it.each([
+    '/auth/callback?state=s&code=c',
+    '/auth/callback?code=c&state=s&returnTo=%2Fworkspace',
+    '/auth/callback?code=c&state=s&returnTo=%2Fsettings',
+  ])('does not exchange the same code/state again with a different callback URL: %s', (path) => {
+    const { navigation, replace } = setup();
+    navigation.onReady();
+    navigation.loadPath('/auth/callback?code=c&state=s');
+    navigation.onReady();
+    navigation.loadPath(path);
+    expect(replace).toHaveBeenCalledExactlyOnceWith('/auth/callback?code=c&state=s');
+  });
+
   it('keeps the web ready after an Android SPA history event so a warm login return can load', () => {
     const { navigation, replace } = setup();
     navigation.onReady();

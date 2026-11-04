@@ -5,21 +5,32 @@ type WebNavigationActions = {
   replace: (path: string) => void;
 };
 
+function callbackKey(path: string): string {
+  const url = new URL(path, 'https://linker.invalid');
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  // The browser handoff may add returnTo; it is still the same one-use authorization code.
+  return url.pathname === '/auth/callback' && code && state ? JSON.stringify([code, state]) : path;
+}
+
 /** Keep arrivals until READY, and load a given OAuth callback only once across both Expo callbacks. */
 export function createWebNavigation(actions: WebNavigationActions) {
   let ready = false;
   let heldAuthPath: string | null = null;
-  let lastAuthPath: string | null = null;
+  // A delayed Linking event can replay an older callback after a newer login.
+  const loadedCallbacks = new Set<string>();
   let heldPath: string | null = null;
 
   function loadPath(value: string) {
     const path = internalPath(value);
-    if (!path || path === lastAuthPath) return;
+    if (!path) return;
+    const key = callbackKey(path);
+    if (loadedCallbacks.has(key)) return;
     if (!ready) {
       heldAuthPath = path;
       return;
     }
-    lastAuthPath = path;
+    loadedCallbacks.add(key);
     ready = false;
     actions.replace(path);
   }
