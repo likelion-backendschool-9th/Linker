@@ -8,6 +8,7 @@
 | --- | --- |
 | 서비스 | https://linker.newlecture.com/ |
 | SSH | `ssh linker@cloud.newlecture.com` (22번) |
+| 서버 위치 | 서울 — 강사님 제공 공용 서버(2026-11-04 사용자 확인) |
 | 서버 경로 | `/home/linker/Linker` |
 | 내부 진입점 | `127.0.0.1:3004` |
 | 실행 도구 | Docker 29.1.3 / Compose 2.40.3 / Buildx 0.30.1 |

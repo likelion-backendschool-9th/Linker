@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""WSL/Linux helper for the team's shared remote PostgreSQL. Standard library only."""
+"""macOS/WSL/Linux helper for the team's shared PostgreSQL and local Redis."""
 
 import argparse
 import getpass
@@ -44,7 +44,10 @@ def personal_settings(path):
 
 
 def port(value):
-    number = int(value)
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        raise ValueError("포트는 1~65535 범위의 정수여야 해요.") from None
     if not 1 <= number <= 65535:
         raise ValueError("포트는 1~65535 범위여야 해요.")
     return number
@@ -85,12 +88,12 @@ def discover_ip(common, command, target):
     return str(address)
 
 
-def ensure_free_port(local_port):
+def ensure_free_port(local_port, setting="LOCAL_DB_PORT"):
     with socket.socket() as listener:
         try:
             listener.bind(("127.0.0.1", local_port))
         except OSError as error:
-            raise ValueError(f"로컬 {local_port} 포트가 사용 중이에요. 기존 터널을 닫거나 LOCAL_DB_PORT를 바꿔 주세요.") from error
+            raise ValueError(f"로컬 {local_port} 포트가 사용 중이에요. 기존 실행을 종료하거나 {setting}를 바꿔 주세요.") from error
 
 
 def wait_for_postgres(tunnel, local_port, timeout=90):
@@ -110,6 +113,20 @@ def wait_for_postgres(tunnel, local_port, timeout=90):
     raise ValueError("터널 뒤의 PostgreSQL 응답을 확인하지 못했어요. 서버 DB 상태·네트워크를 확인해 주세요.")
 
 
+def check_redis(host, redis_port):
+    """Read-only PING check; a listening TCP port alone is not Redis readiness."""
+    try:
+        with socket.create_connection((host, redis_port), timeout=3) as connection:
+            connection.settimeout(3)
+            connection.sendall(b'*1\r\n$4\r\nPING\r\n')
+            with connection.makefile('rb') as reply:
+                response = reply.readline(8)
+    except OSError:
+        raise ValueError("Redis에 연결하지 못했어요. 로컬 Redis 실행과 REDIS_HOST·REDIS_PORT를 확인해 주세요.") from None
+    if response != b'+PONG\r\n':
+        raise ValueError("Redis PONG 응답을 확인하지 못했어요. 인증 없는 로컬 Redis와 REDIS_HOST·REDIS_PORT를 확인해 주세요.")
+
+
 def backend_environment(common, personal, local_port, password):
     environment = dict(os.environ)
     environment.update({
@@ -119,7 +136,7 @@ def backend_environment(common, personal, local_port, password):
         "REDIS_HOST": personal.get("REDIS_HOST", "127.0.0.1"),
         "REDIS_PORT": str(port(personal.get("REDIS_PORT", 6379))),
         "SERVER_PORT": str(port(personal.get("BACKEND_PORT", 8080))),
-        # A local development startup must not recreate or seed the shared DB.
+        # Disable Hibernate DDL / SQL init; Flyway still follows Spring configuration.
         "SPRING_JPA_HIBERNATE_DDL_AUTO": "none",
         "SPRING_SQL_INIT_MODE": "never",
     })
@@ -137,23 +154,30 @@ def stop_process(process):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="팀 공통 서버 DB 접속 (WSL/Linux)")
+    parser = argparse.ArgumentParser(description="팀 공통 서버 DB 접속 (macOS/WSL/Linux)")
     parser.add_argument("mode", choices=["tunnel", "backend"], help="DB 도구용 터널 / 터널과 백엔드 함께 실행")
     args = parser.parse_args()
     if os.name != "posix" or not shutil.which("ssh"):
-        parser.error("WSL/Linux 터미널과 OpenSSH가 필요해요.")
+        parser.error("macOS·WSL/Linux 터미널과 OpenSSH가 필요해요.")
     common = json.loads((ROOT / "config/remote-db.json").read_text())
     personal = personal_settings(ROOT / ".env.remote-db")
     local_port = port(personal.get("LOCAL_DB_PORT", common["local_port"]))
     ensure_free_port(local_port)
     command, target = ssh_command(common, personal)
-    password = None
+    backend_env = None
     if args.mode == "backend":
+        if not shutil.which("java"):
+            raise ValueError("백엔드 실행에는 Java 21이 필요해요.")
+        backend_port = port(personal.get("BACKEND_PORT", 8080))
+        if backend_port == local_port:
+            raise ValueError("LOCAL_DB_PORT와 BACKEND_PORT는 서로 다른 포트여야 해요.")
+        ensure_free_port(backend_port, "BACKEND_PORT")
+        check_redis(personal.get("REDIS_HOST", "127.0.0.1"), port(personal.get("REDIS_PORT", 6379)))
+        print("Redis PONG 응답을 확인했어요.", flush=True)
         password = personal.get("DB_PASSWORD") or getpass.getpass("서버 DB 비밀번호: ")
         if not password:
             raise ValueError("DB 비밀번호를 입력해 주세요.")
-        if not shutil.which("java"):
-            raise ValueError("백엔드 실행에는 Java 21이 필요해요.")
+        backend_env = backend_environment(common, personal, local_port, password)
     print("서버 DB의 현재 IP를 확인합니다. SSH 인증이 필요할 수 있어요.", flush=True)
     address = discover_ip(common, command, target)
     forward = f"127.0.0.1:{local_port}:{address}:{port(common['db_port'])}"
@@ -169,7 +193,7 @@ def main():
         # No password in command arguments or console output.
         backend = subprocess.Popen(
             ["bash", "./gradlew", "--no-daemon", "bootRun"], cwd=ROOT / "backend",
-            env=backend_environment(common, personal, local_port, password),
+            env=backend_env,
         )
         while backend.poll() is None:
             if tunnel.poll() is not None:
