@@ -66,6 +66,7 @@ public class UserModerationService {
 				.toList();
 	}
 
+	@Transactional
 	public void block(long blockerId, long blockedId) {
 		if (blockerId == blockedId) {
 			throw new ApiException(400, "VALIDATION_ERROR", "자기 자신은 차단할 수 없어요");
@@ -128,11 +129,14 @@ public class UserModerationService {
 		reportCase.changeReporterCount(count);
 		if (count >= PlanLimits.REPORT_AUTO_HIDE_REPORTERS && reportCase.getAutoHiddenAt() == null) {
 			reportCase.markAutoHidden(Instant.now());
-			// Target hide + chat message snapshots land with later pages.
+			// Target content visibility (UNDER_REVIEW) lands with posts/chat pages that own the rows.
 		}
+		// Chat ±PlanLimits.REPORT_CHAT_CONTEXT_MESSAGES snapshots need chat_messages +
+		// report_message_snapshots (ERD page 17). Admin action/result notifications are page 25.
 	}
 
 	private long resolveTargetUserId(ReportTargetType type, long targetId) {
+		// Non-USER targets resolve once their owning tables exist (posts, chat, ads).
 		if (type != ReportTargetType.USER) {
 			throw new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요");
 		}

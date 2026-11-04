@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,7 +36,6 @@ import com.linker.backend.global.security.JwtSessionTokens;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.global.security.SessionClaims;
 import com.linker.backend.global.security.TeamRole;
-import com.linker.backend.integration.storage.LocalObjectStorage;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
@@ -116,8 +116,6 @@ class FoundationIntegrationTest {
 	private JwtSessionTokens tokens;
 	@Autowired
 	private AdminRepository admins;
-	@Autowired
-	private LocalObjectStorage storage;
 	@Autowired
 	private UserBlockRepository blocks;
 	@Autowired
@@ -380,19 +378,31 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.uploadUrl").exists())
 				.andReturn().getResponse().getContentAsString();
 		String fileId = created.replaceAll(".*\"fileId\"\\s*:\\s*\"(\\d+)\".*", "$1");
-		String key = "uploads/" + owner.getId() + "/" + storageKey(created);
+		String uploadUrl = created.replaceAll(".*\"uploadUrl\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+		assertThat(uploadUrl).isEqualTo("/api/v1/user/uploads/" + fileId + "/content");
 
 		mockMvc.perform(post("/api/v1/user/uploads/" + fileId + "/complete").cookie(cookie(ownerToken)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("STATE_CONFLICT"));
 
-		storage.stage(key, png);
+		mockMvc.perform(put(uploadUrl)
+						.cookie(cookie(strangerToken))
+						.contentType(MediaType.IMAGE_PNG)
+						.content(png))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(put(uploadUrl)
+						.cookie(cookie(ownerToken))
+						.contentType(MediaType.IMAGE_PNG)
+						.content(png))
+				.andExpect(status().isNoContent());
 		mockMvc.perform(post("/api/v1/user/uploads/" + fileId + "/complete").cookie(cookie(strangerToken)))
 				.andExpect(status().isNotFound());
-		mockMvc.perform(post("/api/v1/user/uploads/" + fileId + "/complete").cookie(cookie(ownerToken)))
+		String completed = mockMvc.perform(post("/api/v1/user/uploads/" + fileId + "/complete").cookie(cookie(ownerToken)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.fileId").value(fileId))
-				.andExpect(jsonPath("$.url").value("local://" + key));
+				.andReturn().getResponse().getContentAsString();
+		assertThat(completed.replaceAll(".*\"url\"\\s*:\\s*\"([^\"]+)\".*", "$1"))
+				.startsWith("local://uploads/" + owner.getId() + "/");
 	}
 
 	@Test
@@ -643,16 +653,6 @@ class FoundationIntegrationTest {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ImageIO.write(image, "png", output);
 		return output.toByteArray();
-	}
-
-	private String storageKey(String json) {
-		String marker = "local-upload://uploads/";
-		int start = json.indexOf(marker);
-		assertThat(start).isGreaterThan(-1);
-		String rest = json.substring(start + "local-upload://uploads/".length());
-		int slash = rest.indexOf('/');
-		int end = rest.indexOf('"');
-		return rest.substring(slash + 1, end);
 	}
 
 	private String sign(byte[] body) throws Exception {
