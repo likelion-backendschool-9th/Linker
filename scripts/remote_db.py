@@ -20,6 +20,29 @@ PERSONAL_KEYS = {
     "DB_PASSWORD", "DB_USERNAME", "SSH_USER", "SSH_KEY_FILE", "LOCAL_DB_PORT",
     "REDIS_HOST", "REDIS_PORT", "BACKEND_PORT",
 }
+SESSION_ENV_KEYS = ("JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY")
+
+
+def session_keys_from_dotenv():
+    """Copy only the session JWT PEMs from the repo-root .env. Other keys stay untouched."""
+    path = ROOT / ".env"
+    values = {}
+    if not path.exists():
+        return values
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key, value = key.strip(), value.strip()
+        if key not in SESSION_ENV_KEYS:
+            continue
+        if value[:1] in {"'", '"'}:
+            if len(value) < 2 or value[-1] != value[0]:
+                raise ValueError(f".env:{number}: 따옴표를 확인해 주세요.")
+            value = value[1:-1]
+        values[key] = value
+    return values
 
 
 def personal_settings(path):
@@ -140,6 +163,8 @@ def backend_environment(common, personal, local_port, password):
         "SPRING_JPA_HIBERNATE_DDL_AUTO": "none",
         "SPRING_SQL_INIT_MODE": "never",
     })
+    for key, value in session_keys_from_dotenv().items():
+        environment.setdefault(key, value)
     return environment
 
 

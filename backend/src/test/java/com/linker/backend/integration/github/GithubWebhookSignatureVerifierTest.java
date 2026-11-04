@@ -45,7 +45,7 @@ class GithubWebhookSignatureVerifierTest {
 
 	private static GithubWebhookSignatureVerifier verifier(String secret) {
 		return new GithubWebhookSignatureVerifier(new LinkerProperties(
-				new LinkerProperties.Session("linker_session", "Lax", false, "", "/", 30),
+				new LinkerProperties.Session("linker_session", "Lax", false, "", "/", 30, "", ""),
 				new LinkerProperties.Security(60, false, "", false),
 				new LinkerProperties.Storage("local", ""),
 				new LinkerProperties.Github(secret),

@@ -27,8 +27,8 @@ public class PublicAuthController {
 	@PostMapping("/auth/refresh")
 	public ResponseEntity<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
 		String token = cookies.read(request);
-		auth.refresh(token);
-		response.addHeader(HttpHeaders.SET_COOKIE, cookies.write(token));
+		String renewed = auth.refresh(token);
+		response.addHeader(HttpHeaders.SET_COOKIE, cookies.write(renewed));
 		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
 	}
 }

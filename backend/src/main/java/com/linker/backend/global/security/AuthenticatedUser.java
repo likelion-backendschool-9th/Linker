@@ -20,6 +20,7 @@ public record AuthenticatedUser(
 		Instant suspendedUntil,
 		boolean adminRegistered,
 		boolean operatorAuthorized,
+		boolean onboarded,
 		long sessionId
 ) implements UserDetails {
 

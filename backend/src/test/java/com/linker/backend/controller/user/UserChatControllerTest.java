@@ -49,6 +49,7 @@ class UserChatControllerTest {
 				null,
 				false,
 				false,
+				false,
 				11L
 		));
 	}

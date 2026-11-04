@@ -37,6 +37,8 @@ services:
       DB_USERNAME: linker
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       REDIS_HOST: redis
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?JWT_PUBLIC_KEY is required}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -60,8 +62,14 @@ services:
         NEXT_PUBLIC_API_BASE_URL: ""
         NEXT_PUBLIC_IMAGE_HOST: ${NEXT_PUBLIC_IMAGE_HOST:-}
         NEXT_PUBLIC_TOSS_CLIENT_KEY: ${NEXT_PUBLIC_TOSS_CLIENT_KEY:-}
+        JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+        JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
+        SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
     environment:
       API_INTERNAL_URL: http://backend:8080
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

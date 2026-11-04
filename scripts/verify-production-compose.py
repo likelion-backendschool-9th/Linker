@@ -18,7 +18,15 @@ def configuration(*files):
     result = subprocess.run(
         command,
         cwd=ROOT,
-        env={**os.environ, "DB_PASSWORD": "compose-validation-only", "PROXY_PORT": "3004", "IMAGE_PREFIX": "ghcr.io/example/linker", "IMAGE_TAG": "a" * 40},
+        env={
+            **os.environ,
+            "DB_PASSWORD": "compose-validation-only",
+            "JWT_PRIVATE_KEY": "compose-validation-only",
+            "JWT_PUBLIC_KEY": "compose-validation-only",
+            "PROXY_PORT": "3004",
+            "IMAGE_PREFIX": "ghcr.io/example/linker",
+            "IMAGE_TAG": "a" * 40,
+        },
         check=True,
         capture_output=True,
         text=True,

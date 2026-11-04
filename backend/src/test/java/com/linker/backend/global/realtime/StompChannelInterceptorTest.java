@@ -33,6 +33,7 @@ class StompChannelInterceptorTest {
 				null,
 				false,
 				false,
+				false,
 				11L
 		);
 	}

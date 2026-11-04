@@ -18,7 +18,9 @@ public record LinkerProperties(
 			boolean secure,
 			String domain,
 			String path,
-			int lifetimeDays
+			int lifetimeDays,
+			String jwtPrivateKey,
+			String jwtPublicKey
 	) {
 	}
 
