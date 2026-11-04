@@ -497,6 +497,22 @@ Matched against 07 paths, 04 access table and WBS system controllers; no new URL
 - Same URL prefix may span groups (`/recruits`, `/posts`, `/recruiter`). 28 and 29 are in `(member)` because recruiters pay for Scout (2026-10-30).
 
 ## 14. Page completion checklist (before a PR)
+
+### Foundation test harness (C, Stage 3)
+
+Run from `frontend/`:
+
+```bash
+pnpm --filter web test
+pnpm --filter web e2e:foundation
+```
+
+Vitest uses jsdom, Testing Library, the global `toHaveNoViolations` matcher and MSW from `vitest.setup.ts`. Add test-specific HTTP responses with `server.use()` from `src/mocks/server`; cleanup and `resetHandlers()` run after every test. Unhandled network frames fail the test (`onUnhandledFrame: 'error'` in installed MSW 3). `src/test/test-harness.test.tsx` verifies interception through the shared API transport, handler isolation, unhandled-request rejection and axe detection. Continue importing limits and formatters from the existing policy/format modules.
+
+`e2e:foundation` runs the existing foundation and C policy/SEO specs with Playwright + axe at the mobile 360px viewport. It starts its own mock-mode Next server on localhost:3138 and refuses to reuse another server. Stop any Next dev process using the same web checkout first, because Next's dev lock is shared across ports. Install Chromium once with `pnpm --filter web exec playwright install chromium` when needed. Browser axe includes contrast checks; jsdom axe cannot validate visual contrast.
+
+MSW handles Vitest requests; browser/SSR mock mode uses the existing `src/mocks/mock-fetch` route layer. These runs verify frontend behavior with fixtures. Shared role/session/provider and production API contracts remain owned by their existing maintainers. B/C backend integration is tracked as follow-up work.
+
 - [ ] Group and URL from ch. 13; a rule exists in `route-access.ts`
 - [ ] No `'use client'` in `page.tsx`/`layout.tsx`; client components only at leaves
 - [ ] Every split component has a §5-3 reason
