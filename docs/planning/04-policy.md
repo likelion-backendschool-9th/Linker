@@ -312,7 +312,7 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-3 Apply | Choose one role, message ≤ 300 chars. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship |
 | POL-R-3 Application | Profile (tech stack, graph, posts, completion record) attached automatically |
 | POL-R-4 Handling | Author accepts/rejects. Auto-expires after 14 days unhandled, with notification to applicant |
-| POL-R-4 After accept | Added as team member, joins team chat. If the author is an org owner, show a GitHub org invite button (not sent automatically) |
+| POL-R-4 After accept | Added as team member, joins team chat. If the author is the team owner and a GitHub org owner, show a GitHub org invite button (not sent automatically) |
 | POL-R-4 Reject | Rejection reason optional. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
 
 ### Application status
@@ -348,7 +348,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | Delete team, transfer ownership | O | X | X |
 | Add/remove linked repos | O | O | X |
 | Create Linker invite link | O | O | X |
-| Send GitHub org invite | Only if GitHub org owner | Only if GitHub org owner | X |
+| Send GitHub org invite | Only if GitHub org owner | X | X |
 | Remove members, change roles | O | Members only | X |
 | Write team recruit posts, handle applications | O | O | X |
 | Create/assign/change status of issues | GitHub permission | GitHub permission | GitHub permission |

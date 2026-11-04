@@ -466,7 +466,7 @@ Matched against 07 paths, 04 access table and WBS system controllers; no new URL
 | 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | AuthController · p01 |
 | 02 | `/onboarding` | (developer) | × / ○ / × / ○ | AccountController · p02 |
 | 03 | `/legal/[slug]` | (public) | ○ everyone | LegalController · p03 |
-| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController (+ Post / Recruitment / RecruiterAd / Chat as borrowed) · p04 |
+| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController, PostController, TeamController, RecruiterAdController (+ Chat as borrowed) · p04 |
 | 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | AccountController · p05 |
 | 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | AccountController, AuthController, NotificationController · p06 |
 | 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | TeamController, IssueController · p07 |
@@ -482,8 +482,8 @@ Matched against 07 paths, 04 access table and WBS system controllers; no new URL
 | 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | RecruitmentController · p21 |
 | 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | PostController · p22 |
 | 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PostController · p23 |
-| 24 | `/feed` | (public) | view / ○ / view / ○ | PostController · p24 |
-| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | AdminController · p25–p27 |
+| 24 | `/feed` | (public) | view / ○ / view / ○ | PostController, RecruiterAdController · p24 |
+| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | AdminController (+ SubscriptionController for 26 refund) · p25–p27 |
 | 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | SubscriptionController · p28 |
 | 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | SubscriptionController · p29 |
 | 30 | `/me/stats` | (developer) | prompt / ○ / × / ○ | StatsController · p30 |
@@ -518,9 +518,9 @@ Matched against 07 paths, 04 access table and WBS system controllers; no new URL
 - **CORS**: `api.` allows `credentials: true` for the `app.` origin; the STOMP handshake uses the same cookie.
 - **orval tags**: `@Tag(name = "pNN-…")` per controller; renaming breaks frontend imports.
 - **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
-- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 AuthController (not in WBS yet).
+- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to `AuthController` (S01, page 01; not in WBS yet).
 - **GitHub App callback URLs**: register web `/auth/callback` and app (`?client=app` or a separate URL).
-- **Search**: sitemap lists from WBS 00 `SitemapController` (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
+- **Search**: sitemap lists from `SitemapController` (WBS S18, foundation 00) (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
 - **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens`.
 - **Feed ad items** (WBS 24): `items` = `{ type: 'POST', … } | { type: 'AD', adId, companyName, title, jobCategory, closesOn }`. No URL in the item; tap → `POST /api/v1/user/ads/{adId}/click` returns it; open with the `features/external-link` confirm sheet.
-- **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to 00 `UploadController` (resize, EXIF strip).
+- **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to `UploadController` (WBS S05, foundation 00; resize, EXIF strip).

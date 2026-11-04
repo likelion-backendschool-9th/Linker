@@ -269,7 +269,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 ### 07. Workspace home `[Required]` · `/workspace`, `/workspace/issues`
 
 > Basis: T-1, I-5 · Needs first: 01 · Merged: my team list + my issues → one page
-> First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07, with the same controller and access rules.
+> First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07 with the same access rules; the team list uses `TeamController` and My issues uses `IssueController` (WBS §4-7, §4-8).
 > **2026-11-03**: My issues are no longer a cross-team dump. The user picks one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at`).
 > **2026-11-03 (home preview)**: `/workspace` shows a **short preview** of those issues (UI-limited; roughly a few rows — not a fixed count), ordered by due urgency. The full selected-team list lives on `/workspace/issues` via “내 이슈 전체 보기”. Team-wide issues (everyone’s) remain on 11.
 
@@ -334,7 +334,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Member list: role (owner / admin / member), GitHub org status (member / invited / not a member), count "N/6"
 - [ ] Create (7-day valid) / revoke / share (Web Share API, copy) invite links — external recipients open `/invite/[code]` (10)
 - [ ] Notify a Linker developer of an invite (pick by @handle / GitHub login who already has a developer account): create `TEAM_INVITE` notification with `link_path` `/invite/[code]` so they see it in 18 without needing the external link. Same invite code as the shareable URL
-- [ ] Send GitHub org invite: enabled only for GitHub org owners, otherwise disabled + reason. Error copy for daily send limit
+- [ ] Send GitHub org invite: enabled only for the team owner who is also a GitHub org owner, otherwise disabled + reason. Error copy for daily send limit
 - [ ] Add/remove linked repos (owner, admin)
 - [ ] Hide/disable buttons per permission table (owner / admin / member)
 
@@ -596,7 +596,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] "지원자 N" (applicants N) tab: applicant cards per role, days left until 14-day auto-expiry
 - [ ] (sheet) Application: tech stack, graph, posts, completion record, message, "프로필 전체 보기" (full profile, 04)
-- [ ] Accept: add team member + join team chat + accept notification. If the author is the org owner, a "GitHub 조직 초대" button (not sent automatically)
+- [ ] Accept: add team member + join team chat + accept notification. If the author is the team owner and a GitHub org owner, a "GitHub 조직 초대" button (not sent automatically)
 - [ ] Accept exceptions: no team → "팀 먼저 만들기" (create a team first) sheet (application stays pending); role full → "인원 늘리고 수락"; free team at member limit (6) → reason + Flex prompt
 - [ ] Reject: (sheet) optional reason; applicant only sees the fixed copy
 - [ ] Accept/reject still possible after closing; edit / close / delete menu

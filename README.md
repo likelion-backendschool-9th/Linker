@@ -90,6 +90,8 @@ flowchart LR
 
 <!-- TEAM_ISSUES_END -->
 
+> 아래 이슈 본문의 `WBS 컨트롤러:`와 `LoginController`·`IssueListController` 같은 컨트롤러명은 #156 이전의 페이지별 컨트롤러 표기입니다. API 소속 시스템 컨트롤러와 경로·권한은 [WBS](docs/development/02-wbs.md) §4·§5를 따릅니다.
+
 <!-- PAGE_ISSUE_INDEX_START -->
 
 담당자별 이슈는 상위 추적으로 유지하고, 실행할 작업은 **페이지별 프론트엔드 36개·백엔드 36개**로 나눴습니다. 33개 페이지 중 07의 내 이슈(C), 17의 PR(B)·AI 요약(C)을 분리한 36개 작업 범위이며 새 페이지를 추가한 것이 아닙니다. 00 공통 기반은 기존 #48·#49에서 담당자별로 관리합니다.
