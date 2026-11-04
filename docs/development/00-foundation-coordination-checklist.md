@@ -1,5 +1,7 @@
 ﻿# 00 공통 기반 (D1–D2) — A~E 조율 체크리스트
 
+> 알림 생성 계약(2026-11-04): 아래 NotificationService 표기는 현재 `UserNotificationService` / `RecruiterNotificationService` / `AdminNotificationService`의 `create(CreateNotificationCommand)`로 대체한다. DTO는 dto.notification.request, 서비스는 service의 해당 역할 폴더다. 수신자 종류와 생성 서비스 역할은 별개이며 기존 DB·알림 정책을 유지한다.
+
 > 근거: [02 WBS ch. 3](02-wbs.md), [03 frontend blueprint §1-1](03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work), [07 page-todo 00](../planning/07-page-todo.md)  
 > 원칙: **계약을 먼저 연 쪽에 맞춘다.** 페이지 작업은 D2 체크·6 스파이크 통과 후.
 

@@ -1,5 +1,11 @@
 # Linker — agent guide
 
+## Agent entry point (Codex / Cursor)
+- This root `AGENTS.md` is the single source for agent working rules. Before backend changes, also read `docs/development/05-backend-blueprint.md` §3–§4 for architecture and examples. WBS owns work/API contracts, not an alternative service layout.
+- Cursor's `.cursor/rules/project-guide.mdc` points here. `CLAUDE.md` only imports this file; do not maintain separate copies of these rules there.
+- Local notes and proposals are historical/context snapshots, not architecture authority. If `.local-notes/agents/README.md` exists, read it and the active-work/handoff notes before editing; they are local-only and do not replace repository rules.
+- If a document still suggests neutral shared business services or contradicts the mandatory service rule below, apply the current rule and report/correct that stale reference. Do not infer a new design from an old example.
+
 ## Project and scope
 - Developer platform for team recruitment, GitHub collaboration, project posts, and recruiter offers via chat.
 - Five-person, two-week MVP: mobile-first web + Expo WebView development build; no store release. Toss Payments is test mode only.
@@ -42,7 +48,7 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 - Search for the relevant page number, feature, table, or controller instead of reading every document.
 - `[Required]` is essential; `[Included]` may be deferred in the order in WBS ch. 6.
 - Complete foundation page 00 before page work; follow pages 01–33. Page ownership stays with A–E; system maintainers and method implementers are defined separately (WBS §1 and §4).
-- Page numbers identify screen work, not Java packages or controller boundaries. One business system owns each endpoint; multiple pages may share a controller class. Services, repositories, and entities are shared by business responsibility, not copied per page or access group (WBS §1–2 and §4, backend blueprint §3–§4).
+- Page numbers identify screen work, not Java packages or controller boundaries. One business system owns each endpoint; multiple pages may share a controller class. Repositories and entities stay shared by business responsibility; service classes use access-group names and placement, even when their capabilities overlap (WBS §1–2 and §4, backend blueprint §3–§4).
 - Guest, Developer, Recruiter, Operator access follows Policy ch. 2. Team owner/admin/member permissions are separate (ch. 6). HTTP access groups (`public` / `user` / `recruiter` / `admin`) are URL and Security paths, not four copies of each business package.
 
 ## Fixed decisions
@@ -59,11 +65,19 @@ Follow `docs/development/05-backend-blueprint.md` §3–§4. WBS §4 owns endpoi
 - Keep **18 business systems** (WBS S01–S18). Place **Public*** HTTP controllers at `controller` root (no `public` / `public_` package). Place the rest under `controller.user`, `controller.recruiter`, or `controller.admin` as mapped in blueprint §4 (**29** controller classes). Pair each controller with a same-group entry service when adding real endpoints (`PublicAuthService`, `service.user.UserChatService`, …). Class name prefixes (`Public*`, `User*`, `Recruiter*`, `Admin*`) avoid bean-name collisions.
 - `controller.user` means **authenticated accounts**, not developers only. Shared login APIs (notifications, uploads, chat, subscription) stay here; developer-only rules use method-level checks (for example `@DeveloperOnly`), not a developer-only package. Recruiter-only and operator-only actions go in `recruiter` and `admin`.
 - Put `GithubWebhookController` (and its webhook service) under `integration.github`, not a fifth human access group and not `controller` root. Do not add `controller.multi`, `controller.open`, `controller.public_`, `controller.auth`, `controller.member`, or `/member` URLs. Login, refresh, password, and OTP endpoints live on their access-group controllers.
-- Do not create empty controllers or empty paired entry services (PAS) in bulk (for example scaffolding all 29 `*Service` shells). Move or add classes with real endpoints only, in the same change. Foundation endpoints join their owning systems. Do not add a `service.common` package to the default tree.
+- Do not create empty controllers or empty paired entry services (PAS) in bulk (for example scaffolding all 29 `*Service` shells). Move or add paired services with real endpoint work; an internal stage-00 role service may be added with a real use case without inventing a controller. Foundation endpoints join their owning systems. Do not add a `service.common` package to the default tree.
 - Do not add `api/common`, numbered page packages (`p01_login`), or a `domain` package that holds controllers, entities, and repositories together. Do not give each page or access group its own copy of a repository or entity.
 - Put request and response DTOs under `dto`, using `request` and `response` subpackages when a capability has both. Do not place them beside controllers, and do not return entities from controllers.
 - Keep HTTP paths, permissions, OpenAPI `@Tag` names (for example `p11-issue-list`), and STOMP destinations when classes move. A Java package does not define a URL. Place the common STOMP SEND on `UserChatController`.
 - File placement is backend blueprint §3–§4. Keep `global.error`. Do not add `global.exception`, `global.response`, or `service.support`.
+
+## Mandatory backend service generation rule
+- **Even when functionality is common, create separate access-group service classes.** Public APIs use `service.PublicXService`; logged-in APIs use `service.user.UserXService`; recruiter/admin use `service.recruiter.RecruiterXService` / `service.admin.AdminXService`. `user` still includes shared authenticated APIs; it is not developer-only.
+- A controller calls its same-group paired entry service (Controller → Service, same name stem). Internal stage-00 use cases may have a real role-specific service before any HTTP controller exists; do not create an empty controller to satisfy the pairing.
+- Do not consolidate role business implementations in a neutral `XService`, a shared business base class, `service.common` / `service.shared`, or another role's service. Same-group services may call same-group services for real internal use cases.
+- **Allowed to share:** DTO/command contracts, entities, repositories, policy constants and technical infrastructure/adapters (for example `PaymentGateway` and GitHub HTTP clients). Shared infrastructure must not become a hidden neutral business service. Keep limits in Policy/PlanLimits and test equivalent cases across role implementations.
+- Concrete example: UserNotificationService / RecruiterNotificationService / AdminNotificationService each implements create; no neutral NotificationService or cross-role delegation. Share CreateNotificationCommand, NotificationTypes, NotificationRepository and Notification Entity.
+- GitHub webhook is the documented external-ingress exception: controller and service stay in `integration.github`. Do not create unused Public/Recruiter/Admin service copies, new API routes, tables or access rights just to complete a role matrix.
 
 ## Keep code and documents consistent
 - Table/column/enum changes: update ERD diagrams, notes, enum list, page mapping, counts, and WBS page tables.

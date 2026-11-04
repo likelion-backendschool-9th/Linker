@@ -1,26 +1,26 @@
 # Linker Backend Blueprint — Public Controllers at Root, Controller/Service 1:1
 
 
-> 2026-11-04 · Public controllers at `controller` root; paired entry services; GitHub webhook under `integration.github`.
-> Local Korean draft (same rules): [`.local-notes/backend/fix/BACKEND_BLUEPRINT.ko.md`](../../.local-notes/backend/fix/BACKEND_BLUEPRINT.ko.md). Prior official draft: [`.local-notes/backend/old/05-backend-blueprint_old.md`](../../.local-notes/backend/old/05-backend-blueprint_old.md).
-
+> 2026-11-04 · Official architecture. Start from [AGENTS.md](../../AGENTS.md), then §3–§4 here. Public controllers/services are at root; business services remain role-specific even for common capabilities; GitHub webhook lives in integration.github.
+>
+> Local notes and translated drafts may be absent or outdated. They are supplementary snapshots, not the source of current generation rules.
 
 ## 1. Sources and scope
 
 | Source | Owns |
 | --- | --- |
-| [Local folder proposal](../../.local-notes/backend/fix/BACKEND_FOLDER_STRUCTURE_FOUR_ROLES.md) | Target controller/service placement and all 205 API assignments |
-| [Local WBS PDF](<../../.local-notes/backend/fix/03-linker-wbs-schedule - 03-linker-wbs-schedule.csv.pdf>) | S01–S18 work, implementers, dates, collaboration and schedule flags |
+| This blueprint §3–§4 | Current package placement, controller/service inventory and mandatory role-service rules |
+| Local WBS PDF, when available | Supplementary date/collaboration snapshot; not required for architecture rules |
 | [Official WBS](02-wbs.md) | API behavior, permissions, pages and work contracts |
 | [Policy](../planning/04-policy.md) | Numbers, roles, states, exceptions and UI copy |
 | [Existing ERD](01-erd.md) | Tables, columns and relationships |
 | [MVP](../planning/03-mvp-definition.md) | Required/Included scope and launch conditions |
 
-**Target:** 18 business systems, **29 HTTP controllers + 29 paired entry services**, 205 REST endpoints, 5 realtime paths, 69 tables (56 required + 13 included), and 33 pages plus foundation 00. Controller count ≠ business-system count. These are design totals, not implementation progress.
+**Target:** 18 business systems, **29 HTTP controllers + 29 planned paired entry services**, 205 REST endpoints, 5 realtime paths, 69 tables (56 required + 13 included), and 33 pages plus foundation 00. Controller count ≠ business-system count. These are design totals, not implementation progress; implemented internal role services may exist in addition to the planned controller pairs.
 
 AGENTS follows this layout. Implemented controllers already use paired entry services under `service` / `service.user`; helpers for those features live in the same access packages (not legacy `service.catalog`-style folders).
 
-**Forbidden:** creating the full set of empty paired entry services (PAS) or empty controllers “for structure” (for example scaffolding all 29 `Public*Service` / `User*Service` classes with no endpoints). Add a paired entry service only when that controller gains a real use case in the same change.
+**Forbidden:** creating the full set of empty paired entry services (PAS) or empty controllers “for structure” (for example scaffolding all 29 `Public*Service` / `User*Service` classes with no endpoints). Add a paired entry service with real endpoint work; a role-specific internal stage-00 service may be added with its actual use case without creating a controller. Neither case permits empty scaffolding.
 
 
 ## 2. Architecture and layer boundaries
@@ -32,7 +32,7 @@ Keep `com.linker.backend`, Java 21 and the existing Gradle project. The inspecte
 | Layer | Responsibility | Avoid |
 | --- | --- | --- |
 | controller | HTTP validation, access declarations, calls to the paired entry service, DTO responses | Direct repository queries, business-rule copies, entity responses |
-| service | Access-boundary use cases (paired entry) and shared business components | Servlet coupling; copying the same rule per role |
+| service | Access-group-specific use cases and role-named service classes | Servlet coupling; borrowing a different role’s service or neutral shared business service |
 | repository | Persistence and query projections | Pricing or access-policy decisions |
 | entity | ERD state, relationships and state changes | Acting as API JSON contracts |
 | dto | Actual request/response contracts | JPA mappings; duplicate types only because roles differ |
@@ -78,27 +78,29 @@ com.linker.backend/
 - **`public` is an HTTP access label only.** Do not create a Java package named `public` or `public_`. Public controllers and their paired services live at the `controller` / `service` **roots**. Keep the HTTP prefix `/api/v1/public`.
 - `user` means **authenticated accounts**, not developers only. Notifications, uploads, chat and subscription may serve developers and recruiters. Apply `@DeveloperOnly` (and team/resource checks) at method level. Never make the whole `user` package developer-only.
 - `recruiter` holds recruiter-only actions; `admin` holds operator actions. An operator is a developer with `admins` permissions and follows normal developer rules outside admin APIs.
-- Do not add `controller.member`, a member account role, `/member` URLs, or `controller.auth`. Login, refresh, password and OTP stay on their access-group controllers; shared auth helpers may live under shared components once agreed.
+- Do not add `controller.member`, a member account role, `/member` URLs, or `controller.auth`. Login, refresh, password and OTP stay on their access-group controllers; authentication service classes follow the same access-group naming rule; DTOs, repositories and entities remain shared.
 - **GitHub webhook** lives under `integration.github` (not a fifth human access group and not `controller` root). It still accepts `POST /api/v1/webhook/github`, verifies signatures and delivery IDs, then hands off to async/business processing.
 - Repositories/entities stay **business-owned**, not role-owned. DTOs follow business request/response packages.
 
 
 ## 4. Controller ↔ service 1:1
 
-**1:1 means each HTTP controller calls one paired entry service** (rename `Controller` → `Service` in the same access group). It does **not** forbid that entry service from calling shared business components (for example payment, chat persistence, notification create).
+**1:1 means each HTTP controller calls its same-group paired entry service.** Services with overlapping capabilities still use role-specific classes (`UserXService`, `RecruiterXService`, `AdminXService`). Do not route them through a neutral shared `XService` or through another role’s service. Repositories, entities, input contracts and policy constants remain shared.
 
 ```text
-UserSubscriptionController  → UserSubscriptionService  ┐
-                                                       ├→ shared payment work → PaymentGateway
-AdminSubscriptionController → AdminSubscriptionService ┘
+UserSubscriptionController  → UserSubscriptionService  → PaymentGateway
+AdminSubscriptionController → AdminSubscriptionService → PaymentGateway
 ```
 
-- Controllers own input, auth declarations and responses; paired services own that access boundary’s use case.
-- Controllers must not call each other or “borrow” another role’s entry service to share behavior—extract shared work instead.
-- Do not copy payment cancel, message persist, notification create or permission rules per role. Keep transaction and idempotency boundaries.
-- Do not copy the same rule per role; reuse shared business logic behind the paired entry services. The final package home for that shared logic is a separate team decision.
-- **Do not generate empty controllers or empty paired entry services (PAS) in bulk.** No skeleton `PublicAuthService`, `UserChatService`, etc. without a real endpoint/use case in the same PR. Prefer calling an existing business service from the controller until the paired entry service is introduced with feature work.
-
+- The authoritative generation rule is in [AGENTS.md](../../AGENTS.md#mandatory-backend-service-generation-rule). Public/role business services must be independently named and implemented even when capabilities overlap. Do not use neutral shared business base classes or another role’s service. Same-group internal services may collaborate.
+- Shared DTOs/entities/repositories, policy constants and technical adapters are allowed; they are not shared business-service implementations.
+- Add role services only with real work, never empty placeholders for all planned controllers.
+- Keep access checks and business transactions explicit. When rules repeat across roles, cover all implementations with the same policy cases so they cannot silently diverge.
+- Notification creation is a stage-00 internal use case, so it does not require an empty notification controller or a new REST API. The implemented producers are `service.user.UserNotificationService`, `service.recruiter.RecruiterNotificationService`, and `service.admin.AdminNotificationService`.
+- Each exposes `create(dto.notification.request.CreateNotificationCommand)`, validates recipient/optional actor, calculates quiet hours from PlanLimits, and saves through the existing NotificationRepository in the caller’s transaction.
+- The service prefix identifies the producing use-case boundary, **not the recipient’s account type**. Services are internal and do not grant permission by name; callers verify their original use-case permissions before constructing the command.
+- There is no PublicNotificationService: anonymous notification creation has no existing use case. No controller shells, new tables, REST paths, push sends or STOMP publishes are added by the restore.
+- `NotificationTypes` holds shared string identifiers, not a new database enum. Quiet-hours calculation is private to each role service. CHAT bypasses quiet hours; non-chat waits 22:00–08:00 KST, MARKETING 21:00–08:00. Marketing consent and other production eligibility stay with the caller; a type string alone does not authorize marketing.
 
 ### Inventory (summary)
 
@@ -127,7 +129,7 @@ Keep each API’s method, path, query, permission, DTO, status, error code, page
 | Operator OTP | AdminController | Logged-in registered operator candidate; permit pre-OTP verification |
 | Shared notifications/uploads/chat | User* controllers | Login plus owner, participant and account-state checks |
 | Teams/issues/recruit writing | User* controllers | Developer, team/resource and GitHub permissions |
-| Member payments / operator refunds | UserSubscription / AdminSubscription | Same shared payment path; distinct payer/target and admin checks |
+| Account payments / operator refunds | UserSubscription / AdminSubscription | Separate role implementations; shared PaymentGateway/repositories; distinct payer/target and admin checks |
 
 Apply authorization in `global.security` and services. Package names do not grant access. Operator privileges never bypass ordinary team/chat membership.
 
@@ -136,7 +138,7 @@ JWT remains the documented AGENTS target; the inspected code uses a random cooki
 Responses keep unwrapped success bodies, cursor `{items, nextCursor}`, create/async statuses and `global.error` `{code, message, detail}`. Do not expose entities. Preserve per-endpoint `p00`/`pNN` OpenAPI tags at method level when classes split.
 
 
-## 6. Realtime and shared business rules
+## 6. Realtime and consistent role-specific business rules
 
 | Kind | Path |
 | --- | --- |
@@ -146,15 +148,15 @@ Responses keep unwrapped success bodies, cursor `{items, nextCursor}`, create/as
 | SUBSCRIBE | `/user/queue/chat-rooms` |
 | SUBSCRIBE | `/user/queue/notifications` |
 
-Place the single common SEND on `UserChatController` → `UserChatService` → shared message handling. Recruiter offers reuse the same chat persistence path. Authenticate CONNECT; authorize SEND/SUBSCRIBE; protect personal queues. Persist, commit, then publish; reconnect catches up via REST. Do not add destinations or a ticket API. These five paths are separate from the 205 REST endpoints.
+Place the single STOMP SEND on `UserChatController` → `UserChatService`. Recruiter offer actions use `RecruiterChatService`; role services implement their own business handling against the same chat data model/repositories, not a shared neutral ChatMessageService. Authenticate CONNECT; authorize SEND/SUBSCRIBE; protect personal queues. Persist, commit, then publish; reconnect catches up via REST. Do not add destinations or a ticket API. These five paths are separate from the 205 REST endpoints.
 
 | Business | Shared rule |
 | --- | --- |
-| Recruitment acceptance | Coordinate application, headcount, team membership, chat membership and in-app notification; GitHub org invite stays separate |
+| Recruitment acceptance | UserRecruitmentService coordinates same-group team/chat/notification services and the transaction; GitHub org invite stays separate |
 | GitHub/issues | Distinct user vs installation tokens; verify signatures; dedupe delivery IDs; refresh caches; reconcile misses |
 | Chat | Dedupe by sender/client message ID; consistent read pointers; block-period/leave/hidden rules; team-chat exception per Policy |
-| Notifications | Shared `NotificationService.create`; TEAM_INVITE → `/invite/{code}` |
-| Payments | Server verifies price/account/target and PG results; same shared path for user and admin operations |
+| Notifications | Role-specific User/Recruiter/AdminNotificationService.create with shared command/data; TEAM_INVITE → `/invite/{code}`. Creation joins the producing transaction; no external delivery here |
+| Payments | UserSubscriptionService and AdminSubscriptionService each verify their use case and PG result; share technical PaymentGateway and data contracts, not a neutral PaymentService |
 | Moderation / files / AI·ads·stats | Preserve Policy limits, snapshots, retention and privacy |
 
 Do not hold a DB transaction open across a provider call. PostgreSQL is durable truth; Redis is queue/cache/rate-limit infrastructure. Keep the 69-table ERD and Flyway history; folder moves alone must not change schema or Nginx `/api` routing.
@@ -184,7 +186,7 @@ Inspected layout after this adoption: Public controllers/services at `controller
 ## 9. Migration and unresolved decisions
 
 1. Done for existing classes: Public* → `controller` root (no `public_`); webhook → `integration.github` with webhook service; paired entry services for the controllers that already exist. Routes unchanged.
-2. Add paired entry services only with real endpoints in the same change; never bulk-scaffold empty PAS. Keep reusing shared business logic without role copies.
+2. Add paired entry services only with real endpoints in the same change; never bulk-scaffold empty PAS. Use role-named services for real use cases and keep shared DTO/repository/entity contracts.
 3. Keep routes, permissions, DTOs, OpenAPI tags and STOMP destinations stable. Never register old and new controllers on the same path.
 4. Verify build, security, transactions and STOMP after moves.
 
