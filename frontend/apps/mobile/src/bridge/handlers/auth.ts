@@ -7,6 +7,17 @@ import { clearSession, saveSession } from '@/lib/secure-store';
 import type { Handler } from '../context';
 import { sendPushTokenIfGranted } from './push';
 
+// Shared across dispatcher instances: WebView rerenders must not reorder SecureStore writes.
+let pendingSessionWrite: Promise<void> = Promise.resolve();
+let sessionRevision = 0;
+
+function updateSession(write: () => Promise<void>) {
+  const revision = ++sessionRevision;
+  const pending = pendingSessionWrite.catch(() => {}).then(write);
+  pendingSessionWrite = pending;
+  return { revision, pending };
+}
+
 /** GitHub login in the system browser, back through the deep link (blueprint §12-3). */
 export const authGithubStart: Handler<'AUTH_GITHUB_START'> = async (msg, ctx) => {
   const result = await WebBrowser.openAuthSessionAsync(msg.authorizeUrl, AUTH_REDIRECT_URL);
@@ -21,8 +32,17 @@ export const authGithubStart: Handler<'AUTH_GITHUB_START'> = async (msg, ctx) =>
 
 /** Login: keep the ids and hand the push token to the web again so it registers for this member. */
 export const authSessionSave: Handler<'AUTH_SESSION_SAVE'> = async (msg, ctx) => {
-  await saveSession(msg.session);
-  await sendPushTokenIfGranted(ctx);
+  const { revision, pending } = updateSession(() => saveSession(msg.session));
+  await pending;
+  if (revision !== sessionRevision) return;
+  // Permission/token lookup can outlive a logout or account switch. Keep D's web registration
+  // contract, but never deliver an old session's automatic token response to the current web.
+  await sendPushTokenIfGranted({
+    ...ctx,
+    send: (message) => {
+      if (revision === sessionRevision) ctx.send(message);
+    },
+  });
 };
 
 /**
@@ -30,5 +50,5 @@ export const authSessionSave: Handler<'AUTH_SESSION_SAVE'> = async (msg, ctx) =>
  * before sending CLEAR, so we must not re-register here.
  */
 export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async () => {
-  await clearSession();
+  await updateSession(clearSession).pending;
 };
