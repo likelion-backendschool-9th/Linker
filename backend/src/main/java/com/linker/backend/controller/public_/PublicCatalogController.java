@@ -1,4 +1,4 @@
-package com.linker.backend.controller.open;
+package com.linker.backend.controller.public_;
 
 import java.time.Duration;
 import java.util.List;
@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/public")
-public class CatalogController {
+public class PublicCatalogController {
 
 	private final CatalogService catalog;
 
-	public CatalogController(CatalogService catalog) {
+	public PublicCatalogController(CatalogService catalog) {
 		this.catalog = catalog;
 	}
 

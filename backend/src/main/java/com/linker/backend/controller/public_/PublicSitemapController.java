@@ -1,4 +1,4 @@
-package com.linker.backend.controller.open;
+package com.linker.backend.controller.public_;
 
 import com.linker.backend.service.sitemap.SitemapService;
 
@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/public")
-public class SitemapController {
+public class PublicSitemapController {
 
 	private final SitemapService sitemaps;
 
-	public SitemapController(SitemapService sitemaps) {
+	public PublicSitemapController(SitemapService sitemaps) {
 		this.sitemaps = sitemaps;
 	}
 

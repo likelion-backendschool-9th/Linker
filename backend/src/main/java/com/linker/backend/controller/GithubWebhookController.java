@@ -1,4 +1,4 @@
-package com.linker.backend.controller.multi;
+package com.linker.backend.controller;
 
 import com.linker.backend.service.github.GithubWebhookService;
 
@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
-public class GithubController {
+public class GithubWebhookController {
 
 	private final GithubWebhookService webhooks;
 
-	public GithubController(GithubWebhookService webhooks) {
+	public GithubWebhookController(GithubWebhookService webhooks) {
 		this.webhooks = webhooks;
 	}
 
