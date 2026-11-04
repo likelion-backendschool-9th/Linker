@@ -2,7 +2,12 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import { isInApp, postToNative } from '@/lib/bridge/native';
 import { unregisterPushToken } from '@/features/notifications/push-tokens';
 
-import { clearNativeSession, saveNativeSession, unregisterNativePushToken } from './sync-native-session';
+import {
+  clearNativeSession,
+  saveNativeSession,
+  syncNativeSession,
+  unregisterNativePushToken,
+} from './sync-native-session';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
 vi.mock('@/lib/bridge/native', () => ({
@@ -47,4 +52,64 @@ it('unregisters the push token and clears the native session separately', async 
   expect(unregister).toHaveBeenCalled();
   clearNativeSession();
   expect(post).toHaveBeenCalledWith({ type: 'AUTH_SESSION_CLEAR' });
+});
+
+it('does not restore a logged-out account when an older /me request finishes late', async () => {
+  inApp.mockReturnValue(true);
+  let finish!: (session: { userId: number; userType: 'DEVELOPER' }) => void;
+  fetchMock.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const saving = saveNativeSession();
+  clearNativeSession();
+  finish({ userId: 7, userType: 'DEVELOPER' });
+  await saving;
+  expect(post.mock.calls).toEqual([[{ type: 'AUTH_SESSION_CLEAR' }]]);
+});
+
+it('keeps the newer account when two session lookups finish in reverse order', async () => {
+  inApp.mockReturnValue(true);
+  let finishOld!: (session: { userId: number; userType: 'DEVELOPER' }) => void;
+  fetchMock.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finishOld = resolve;
+    }),
+  );
+  const oldSave = saveNativeSession();
+  fetchMock.mockResolvedValueOnce({ userId: 8, userType: 'RECRUITER' });
+  await saveNativeSession();
+  finishOld({ userId: 7, userType: 'DEVELOPER' });
+  await oldSave;
+  expect(post.mock.calls).toEqual([
+    [
+      {
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 8, userType: 'RECRUITER' },
+      },
+    ],
+  ]);
+});
+
+it('lets a Provider session update supersede an older login lookup', async () => {
+  inApp.mockReturnValue(true);
+  let finish!: (session: { userId: number; userType: 'DEVELOPER' }) => void;
+  fetchMock.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const saving = saveNativeSession();
+  syncNativeSession({ userId: 8, userType: 'RECRUITER' });
+  finish({ userId: 7, userType: 'DEVELOPER' });
+  await saving;
+  expect(post.mock.calls).toEqual([
+    [
+      {
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 8, userType: 'RECRUITER' },
+      },
+    ],
+  ]);
 });

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { WebToNative } from '@linker/bridge';
+import { encodeEnvelope, type NativeToWeb, type WebToNative } from '@linker/bridge';
 
 declare global {
   interface Window {
@@ -8,7 +8,20 @@ declare global {
 }
 
 const upstream = `http://localhost:${process.env.LINKER_CONTRACT_API_PORT}`;
-type Call = { method: string; path: string; hasCookie: boolean; query: Record<string, string> };
+type Call = {
+  method: string;
+  path: string;
+  hasCookie: boolean;
+  query: Record<string, string>;
+  body?: Record<string, unknown>;
+};
+
+async function receive(page: Page, msg: NativeToWeb) {
+  await page.evaluate(
+    (data) => window.dispatchEvent(new MessageEvent('message', { data })),
+    encodeEnvelope(msg),
+  );
+}
 
 async function prepareApp(page: Page) {
   await page.addInitScript(() => {
@@ -19,8 +32,8 @@ async function prepareApp(page: Page) {
   });
 }
 
-async function beginLogin(page: Page) {
-  await page.goto('/workspace?tab=active');
+async function beginLogin(page: Page, returnTo = '/workspace?tab=active') {
+  await page.goto(returnTo);
   await page.getByRole('button', { name: 'GitHub로 시작', exact: true }).click();
   await expect
     .poll(() => page.evaluate(() => window.contractMessages ?? []))
@@ -91,6 +104,100 @@ test('A sends a new developer to onboarding after the same native callback', asy
   await page.goto(`/auth/callback?code=contract-code&state=${state}`);
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole('heading', { name: '프로필 설정', exact: true })).toBeVisible();
+});
+
+test('cancelling native authentication keeps the sheet usable and retries with a new request', async ({
+  page,
+  request,
+}) => {
+  await prepareApp(page);
+  await beginLogin(page);
+  const firstMessages = await page.evaluate(() => window.contractMessages ?? []);
+  const first = firstMessages.find((msg) => msg.type === 'AUTH_GITHUB_START')!;
+  const button = page.getByRole('button', { name: 'GitHub로 시작', exact: true });
+  await expect(button).toHaveAttribute('aria-disabled', 'true');
+  await receive(page, { type: 'RESULT', id: first.id, ok: false, error: 'cancelled' });
+  await expect(button).toHaveAttribute('aria-disabled', 'false');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await button.click();
+  await expect
+    .poll(
+      async () =>
+        (await page.evaluate(() => window.contractMessages ?? [])).filter(
+          (msg) => msg.type === 'AUTH_GITHUB_START',
+        ).length,
+    )
+    .toBe(2);
+  const messages = (await page.evaluate(() => window.contractMessages ?? [])).filter(
+    (msg) => msg.type === 'AUTH_GITHUB_START',
+  );
+  expect(messages[1]!.id).not.toBe(first.id);
+  const calls = (await (await request.get(`${upstream}/__test/calls`)).json()) as Call[];
+  expect(
+    calls
+      .filter((call) => call.path.endsWith('/authorize-url'))
+      .every((call) => call.query.returnTo === '/workspace?tab=active'),
+  ).toBe(true);
+  expect(calls.some((call) => call.path.endsWith('/auth/github/callback'))).toBe(false);
+});
+
+test('D token deletion uses the active cookie before A logout and B session clear', async ({
+  page,
+  request,
+}) => {
+  await prepareApp(page);
+  const state = await beginLogin(page, '/settings');
+  await page.goto(`/auth/callback?code=contract-code&state=${state}`);
+  await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible();
+  await receive(page, {
+    type: 'PUSH_TOKEN',
+    token: 'ExponentPushToken[contract]',
+    platform: 'android',
+  });
+  await expect
+    .poll(async () => {
+      const calls = (await (await request.get(`${upstream}/__test/calls`)).json()) as Call[];
+      return calls.some((call) => call.path.endsWith('/push-tokens') && call.method === 'POST');
+    })
+    .toBe(true);
+  await page.evaluate(() => {
+    window.contractMessages = [];
+  });
+  await page.getByRole('button', { name: '로그아웃', exact: true }).click();
+  await page
+    .getByRole('alertdialog', { name: '로그아웃할까요?' })
+    .getByRole('button', { name: '로그아웃', exact: true })
+    .click();
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).some((cookie) => cookie.name === 'linker_session'),
+    )
+    .toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => window.contractMessages ?? []))
+    .toContainEqual({ type: 'AUTH_SESSION_CLEAR' });
+  const calls = (await (await request.get(`${upstream}/__test/calls`)).json()) as Call[];
+  const lifecycle = calls.filter(
+    (call) => call.path.includes('/push-tokens') || call.path.endsWith('/auth/logout'),
+  );
+  expect(lifecycle.map((call) => [call.method, call.path, call.hasCookie])).toEqual([
+    ['POST', '/api/v1/user/push-tokens', true],
+    [
+      'DELETE',
+      `/api/v1/user/push-tokens/${encodeURIComponent('ExponentPushToken[contract]')}`,
+      true,
+    ],
+    ['POST', '/api/v1/user/auth/logout', true],
+  ]);
+  expect(lifecycle[0]!.body).toEqual({ token: 'ExponentPushToken[contract]', platform: 'android' });
+  expect((await page.context().cookies()).some((cookie) => cookie.name === 'linker_session')).toBe(
+    false,
+  );
+  expect(
+    (await page.evaluate(() => window.contractMessages ?? [])).some(
+      (msg) => msg.type === 'AUTH_SESSION_SAVE',
+    ),
+  ).toBe(false);
 });
 
 test('normal-mode sitemap routes and robots use public cookie-free API partitions', async ({

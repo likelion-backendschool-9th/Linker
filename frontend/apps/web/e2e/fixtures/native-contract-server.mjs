@@ -45,7 +45,10 @@ createServer(async (req, res) => {
     path: url.pathname,
     query: Object.fromEntries(url.searchParams),
     hasCookie: Boolean(req.headers.cookie),
-    body: url.pathname.endsWith('/callback') ? { ...body } : undefined,
+    body:
+      url.pathname.endsWith('/callback') || url.pathname.endsWith('/push-tokens')
+        ? { ...body }
+        : undefined,
   });
   if (url.pathname === '/api/v1/public/auth/github/authorize-url') {
     const state = randomUUID();
@@ -82,6 +85,21 @@ createServer(async (req, res) => {
   if (url.pathname === '/api/v1/user/me') {
     return me ? send(200, me) : send(401, { code: 'LOGIN_REQUIRED', message: '로그인이 필요해요' });
   }
+  if (url.pathname === '/api/v1/user/me/settings') {
+    return me
+      ? send(200, {
+          github: { login: me.login, connected: true },
+          notificationEmail: 'native-contract@example.test',
+          pushEnabled: true,
+          plan: { name: 'FREE', label: '무료', kind: 'PRO' },
+        })
+      : send(401, { code: 'LOGIN_REQUIRED', message: '로그인이 필요해요' });
+  }
+  if (url.pathname === '/api/v1/user/auth/logout' && req.method === 'POST') {
+    sessions.delete(token);
+    res.setHeader('Set-Cookie', 'linker_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    return send(204);
+  }
   if (url.pathname === '/api/v1/user/me/teams') {
     return send(200, { items: [], teamLimit: 10, teamCount: 0 });
   }
@@ -103,8 +121,12 @@ createServer(async (req, res) => {
     });
   }
   if (url.pathname === '/api/v1/user/notifications/unread-count') return send(200, { count: 0 });
-  if (url.pathname === '/api/v1/user/push-tokens') return send(204);
-  if (url.pathname.startsWith('/api/v1/user/push-tokens/')) return send(204);
+  if (
+    url.pathname === '/api/v1/user/push-tokens' ||
+    url.pathname.startsWith('/api/v1/user/push-tokens/')
+  ) {
+    return me ? send(204) : send(401, { code: 'LOGIN_REQUIRED', message: '로그인이 필요해요' });
+  }
   if (url.pathname === '/api/v1/public/tech-tags') return send(200, []);
   if (url.pathname === '/api/v1/public/job-categories') return send(200, []);
   if (url.pathname.startsWith('/api/v1/public/sitemap/')) {
