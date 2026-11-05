@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
  * {@code UserModerationService.hidesDirectMessage}. Team rooms skip that predicate.
  */
 @Repository
-public class ChatListQuery {
+public class ChatListQueryRepository {
 
 	private static final String VISIBLE = """
 			(
@@ -176,7 +176,7 @@ public class ChatListQuery {
 
 	private final NamedParameterJdbcTemplate jdbc;
 
-	public ChatListQuery(NamedParameterJdbcTemplate jdbc) {
+	public ChatListQueryRepository(NamedParameterJdbcTemplate jdbc) {
 		this.jdbc = jdbc;
 	}
 

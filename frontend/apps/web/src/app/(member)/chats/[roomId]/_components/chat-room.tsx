@@ -23,6 +23,7 @@ import {
   markRead,
   unreadMembersKey,
   mergeCatchUpHistory,
+  mergeRoomMessage,
   messagesKey,
   messagesOptions,
   missedMessages,
@@ -31,6 +32,7 @@ import {
   type MessagePage,
   type RoomMessage,
 } from '../_lib/room-api';
+import { storedSendClientId, type StoredSendEvent } from '../_lib/stored-send';
 import { ChatPhotoViewer } from './chat-photo-viewer';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
@@ -90,18 +92,19 @@ export function ChatRoom({ roomId }: { roomId: number }) {
       if (message.roomId !== roomId) return;
       client.setQueryData<InfiniteData<MessagePage>>(messagesKey(viewer.login, roomId), (data) => {
         if (!data?.pages.length) return data;
+        const found = data.pages.some((page) => page.items.some((item) => item.id === message.id));
         return {
           ...data,
-          pages: data.pages.map((page, index) =>
-            index === 0
-              ? {
-                  ...page,
-                  items: [...page.items.filter((item) => item.id !== message.id), message].sort(
-                    (a, b) => a.id - b.id,
-                  ),
-                }
-              : page,
-          ),
+          pages: data.pages.map((page, index) => {
+            if (found) {
+              return {
+                ...page,
+                items: page.items.map((item) => (item.id === message.id ? mergeRoomMessage(item, message) : item)),
+              };
+            }
+            if (index !== 0) return page;
+            return { ...page, items: [...page.items, message].sort((a, b) => a.id - b.id) };
+          }),
         };
       });
       if (message.clientMessageId) outbox.acknowledge(message.clientMessageId);
@@ -112,7 +115,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     try {
       const position = lastSeen.current || latest.current;
       const page = await missedMessages(roomId, latest.current);
-      if (page.items.length > CHAT.catchUpMax) {
+      if (page.catchUpLimited || page.items.length > CHAT.catchUpMax) {
         setLargeGap(true);
         // Keep the cached read position and every returned message: truncating here
         // loses the anchor and creates a gap that older-page pagination cannot fill.
@@ -131,10 +134,18 @@ export function ChatRoom({ roomId }: { roomId: number }) {
       void catchUp();
     }
   }, [connection, catchUp]);
+  useStompSubscription<StoredSendEvent>('/user/queue/chat-rooms', (event) => {
+    const clientMessageId = storedSendClientId(event, roomId);
+    if (!clientMessageId) return;
+    outbox.acknowledge(clientMessageId);
+    void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+  });
   useStompSubscription<{ event: string; message?: RoomMessage }>(
     `/topic/chat-rooms/${roomId}`,
     (event) => {
-      if (event.event === 'MESSAGE' && event.message) receive(event.message);
+      if ((event.event === 'MESSAGE' || event.event === 'EDIT' || event.event === 'DELETE') && event.message) {
+        receive(event.message);
+      }
       else {
         void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
         void client.invalidateQueries({ queryKey: unreadMembersKey(viewer.login, roomId) });

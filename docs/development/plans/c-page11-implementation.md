@@ -1,7 +1,7 @@
 # C — 11 이슈 목록 API 구현
 
 작업 브랜치: `feat/11-page-api`. 관련 이슈: [#86](https://github.com/likelion-backendschool-9th/Linker/issues/86).
-기준 dev: `9fb7074` (#202 공통 계약, #206 D 채팅 변경 포함).
+기준 dev: `98a4783` (#202 공통 계약 및 D의 #206·#210·#212 포함).
 
 ## 범위
 
@@ -102,3 +102,7 @@ OPENAPI_URL=/home/jangabc3/Linker/backend/build/openapi/page11-client.json pnpm 
 ```
 
 OpenAPI 입력 파일은 위 통합 테스트가 생성한다. 저장소 경로가 다르면 해당 절대경로를 변경한다.
+
+## 최신 dev 재검증
+
+2026-11-05, dev `98a4783`의 #210·#212를 병합한 상태에서 동일 테스트 43개, bootJar, API·웹 타입 검사를 다시 통과했다. 11번 기능을 확장하거나 다른 담당자의 구현을 수정하지 않았다. 이 기록은 로컬 검증이며, 푸시 후 PR CI와 사용자 머지를 별도로 확인한다.

@@ -3,45 +3,85 @@ package com.linker.backend.service.user;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import com.linker.backend.dto.chat.event.ChatMessageReady;
+import com.linker.backend.dto.chat.event.ChatReadAdvanced;
 import com.linker.backend.dto.chat.event.ChatRoomsChanged;
+import com.linker.backend.dto.chat.event.ChatSendAccepted;
+import com.linker.backend.dto.chat.event.ChatSendRejected;
+import com.linker.backend.dto.chat.event.ChatTranscriptChanged;
+import com.linker.backend.dto.chat.request.EditChatMessageRequest;
+import com.linker.backend.dto.chat.request.MarkChatReadRequest;
+import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatCounterpartResponse;
+import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
 import com.linker.backend.dto.chat.response.ChatLastMessageResponse;
+import com.linker.backend.dto.chat.response.ChatMemberResponse;
+import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
+import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
+import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatRoom;
+import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.chat.DmStatus;
+import com.linker.backend.entity.chat.MessageType;
+import com.linker.backend.entity.chat.MessageVisibility;
+import com.linker.backend.entity.chat.RoomType;
+import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
+import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.global.realtime.ChatRoomAccess;
 import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.repository.chat.ChatListQuery;
-import com.linker.backend.repository.chat.ChatListQuery.ChatListRow;
-import com.linker.backend.repository.chat.ChatListQuery.ChatListSummary;
+import com.linker.backend.global.security.RedisRateLimiter;
+import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatListQueryRepository;
+import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListRow;
+import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListSummary;
+import com.linker.backend.repository.chat.ChatMessageQueryRepository;
+import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessageRow;
+import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserChatController}.
- * Sending a message stays closed until page 17. List calculations read rows that tests or a
- * later writer insert. This class does not invent team names, company names, or message text.
+ * Page 16 reads chat rows. Page 17 stores text and the caller's own edit, delete, read, and mute.
+ * Team titles and deleting someone else's message stay closed until a real team role source exists.
  */
 @Service
 public class UserChatService {
 
 	/** Technical page size, not a Policy limit. */
 	static final int PAGE_SIZE = 20;
+
+	/** Technical history page, distinct from {@link PlanLimits#CHAT_CATCH_UP_MAX}. */
+	static final int MESSAGE_PAGE_SIZE = 30;
+
+	private static final String CHAT_SEND_BUCKET = "chat.send";
+	private static final String FREE_HISTORY = "FREE_60_DAYS";
 
 	/** Context binding only. The token is not an authenticator or an integrity seal. */
 	private static final int CURSOR_VERSION = 1;
@@ -51,19 +91,31 @@ public class UserChatService {
 	static final String HIDDEN_PREVIEW = "운영 정책에 따라 숨겨진 메시지예요";
 
 	private final ChatRoomAccess chatRooms;
-	private final ChatListQuery lists;
+	private final ChatListQueryRepository lists;
 	private final ChatRoomRepository rooms;
 	private final ChatRoomMemberRepository members;
 	private final ApplicationEventPublisher events;
 	private final Clock clock;
+	private final UserRepository accounts;
+	private final ChatMessageRepository messages;
+	private final ChatMessageQueryRepository messageQuery;
+	private final RedisRateLimiter rateLimiter;
+	private final TransactionTemplate transactions;
+	private final UserModerationService moderation;
 
 	public UserChatService(
 			ChatRoomAccess chatRooms,
-			ChatListQuery lists,
+			ChatListQueryRepository lists,
 			ChatRoomRepository rooms,
 			ChatRoomMemberRepository members,
 			ApplicationEventPublisher events,
-			Clock clock
+			Clock clock,
+			UserRepository accounts,
+			ChatMessageRepository messages,
+			ChatMessageQueryRepository messageQuery,
+			RedisRateLimiter rateLimiter,
+			PlatformTransactionManager transactions,
+			UserModerationService moderation
 	) {
 		this.chatRooms = chatRooms;
 		this.lists = lists;
@@ -71,16 +123,42 @@ public class UserChatService {
 		this.members = members;
 		this.events = events;
 		this.clock = clock;
+		this.accounts = accounts;
+		this.messages = messages;
+		this.messageQuery = messageQuery;
+		this.rateLimiter = rateLimiter;
+		this.transactions = new TransactionTemplate(transactions);
+		this.moderation = moderation;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
 		if (!chatRooms.canSend(userId, roomId)) {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
-		if (payload == null || payload.isEmpty()) {
-			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		TextCommand command = textCommand(payload);
+		User account = accounts.findById(userId).orElseThrow(() -> new StompAuthException("로그인이 필요해요"));
+		if (account.getStatus() != UserStatus.ACTIVE) {
+			transactions.executeWithoutResult(status -> reject(
+					userId,
+					roomId,
+					command.clientMessageId(),
+					account.getStatus() == UserStatus.SUSPENDED ? "SUSPENDED" : "FORBIDDEN",
+					account.getStatus() == UserStatus.SUSPENDED
+							? "정지된 계정은 이 기능을 쓸 수 없어요" : "이 기능을 사용할 수 없어요",
+					false,
+					null
+			));
+			return;
 		}
-		throw new StompAuthException("채팅 전송은 아직 준비 중이에요");
+		try {
+			Boolean stored = transactions.execute(status -> storeNewText(account, roomId, command));
+			if (Boolean.TRUE.equals(stored)) {
+				return;
+			}
+		}
+		catch (DataIntegrityViolationException exception) {
+			transactions.executeWithoutResult(status -> confirmStored(userId, roomId, command));
+		}
 	}
 
 	@Transactional(readOnly = true)
@@ -161,6 +239,479 @@ public class UserChatService {
 			room.markRejected(now);
 		}
 		return true;
+	}
+
+	@Transactional(readOnly = true)
+	public ChatMessagePageResponse messages(AuthenticatedUser user, long roomId, Long before, Long after) {
+		if (before != null && after != null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "목록 위치를 확인해 주세요");
+		}
+		if ((before != null && before < 1) || (after != null && after < 1)) {
+			throw new ApiException(400, "VALIDATION_ERROR", "목록 위치를 확인해 주세요");
+		}
+		ChatRoomMember member = members.findActive(roomId, user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
+		Instant start = historyStart(team);
+		if (before != null) {
+			requireAnchor(roomId, before);
+		}
+		if (after != null) {
+			requireAnchor(roomId, after);
+		}
+		int limit = after == null ? MESSAGE_PAGE_SIZE : PlanLimits.CHAT_CATCH_UP_MAX;
+		List<ChatMessageRow> rows = new ArrayList<>(after != null
+				? messageQuery.after(user.userId(), roomId, team, start, after, limit + 1)
+				: before != null
+						? messageQuery.before(user.userId(), roomId, team, start, before, limit + 1)
+						: messageQuery.latest(user.userId(), roomId, team, start, limit + 1));
+		boolean more = rows.size() > limit;
+		if (more) {
+			if (after != null) {
+				rows.remove(rows.size() - 1);
+			}
+			else {
+				rows.remove(0);
+			}
+		}
+		boolean capped = after != null && more;
+		Long nextAfter = capped && !rows.isEmpty() ? rows.get(rows.size() - 1).id() : null;
+		return new ChatMessagePageResponse(
+				rows.stream().map(UserChatService::toMessage).toList(),
+				more,
+				capped,
+				nextAfter,
+				team ? new ChatHistoryLimitResponse(FREE_HISTORY, false) : null
+		);
+	}
+
+	@Transactional
+	public void markRead(AuthenticatedUser user, long roomId, MarkChatReadRequest request) {
+		if (request == null || request.lastReadMessageId() == null || request.lastReadMessageId() < 1) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
+		}
+		long messageId = request.lastReadMessageId();
+		ChatRoomMember member = members.lockActive(roomId, user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
+		requireAnchor(roomId, messageId);
+		if (!messageQuery.visibleTo(user.userId(), roomId, team, historyStart(team), messageId)) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
+		}
+		Long current = member.getLastReadMessageId();
+		if (current != null && messageId <= current) {
+			return;
+		}
+		member.readUntil(messageId);
+		events.publishEvent(new ChatReadAdvanced(roomId, messageId));
+		events.publishEvent(new ChatRoomsChanged(user.userId(), roomId));
+	}
+
+	@Transactional
+	public ChatMessageResponse edit(AuthenticatedUser principal, long roomId, long messageId, EditChatMessageRequest request) {
+		Participant participant = requireParticipant(principal, roomId);
+		ChatMessage message = lockVisible(participant, roomId, messageId);
+		if (message.getMessageType() != MessageType.TEXT || !participant.account().getId().equals(message.getSenderId())) {
+			throw new ApiException(403, "FORBIDDEN", "메시지를 수정할 수 없어요");
+		}
+		if (message.getDeletedAt() != null || message.getVisibility() != MessageVisibility.VISIBLE) {
+			throw new ApiException(409, "STATE_CONFLICT", "수정할 수 없는 메시지예요");
+		}
+		String text = request == null ? null : request.text();
+		if (text == null || text.isBlank()) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 내용을 확인해 주세요");
+		}
+		if (text.codePointCount(0, text.length()) > PlanLimits.CHAT_MESSAGE_MAX_CHARS) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지는 2000자까지 쓸 수 있어요");
+		}
+		Instant deadline = message.getCreatedAt().plus(Duration.ofHours(PlanLimits.CHAT_EDIT_WITHIN_HOURS));
+		if (clock.instant().isAfter(deadline)) {
+			throw new ApiException(409, "STATE_CONFLICT", "메시지를 수정할 수 있는 시간이 지났어요");
+		}
+		message.revise(text, DatabaseInstant.now(clock));
+		messages.saveAndFlush(message);
+		ChatMessageResponse response = present(message);
+		events.publishEvent(new ChatTranscriptChanged("EDIT", roomId, response));
+		return response;
+	}
+
+	@Transactional
+	public void deleteMessage(AuthenticatedUser principal, long roomId, long messageId) {
+		Participant participant = requireParticipant(principal, roomId);
+		ChatMessage message = lockVisible(participant, roomId, messageId);
+		// No teams or team_members source exists, so a team owner/admin cannot delete someone else's message.
+		if (message.getSenderId() == null
+				|| message.getMessageType() == MessageType.SYSTEM
+				|| message.getMessageType() == MessageType.PR_EVENT
+				|| !participant.account().getId().equals(message.getSenderId())) {
+			throw new ApiException(403, "FORBIDDEN", "메시지를 삭제할 수 없어요");
+		}
+		if (message.getVisibility() != MessageVisibility.VISIBLE) {
+			throw new ApiException(409, "STATE_CONFLICT", "삭제할 수 없는 메시지예요");
+		}
+		if (message.getDeletedAt() != null) {
+			return;
+		}
+		message.delete(DatabaseInstant.now(clock));
+		messages.saveAndFlush(message);
+		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message)));
+	}
+
+	@Transactional(readOnly = true)
+	public UnreadMembersResponse unreadMembers(AuthenticatedUser principal, long roomId, long messageId) {
+		Participant participant = requireReader(principal, roomId);
+		if (participant.member().getRoom().getRoomType() != RoomType.TEAM) {
+			throw new ApiException(403, "FORBIDDEN", "1:1 채팅에서는 참여자 목록을 보여 주지 않아요");
+		}
+		ChatMessage message = visibleMessage(participant, roomId, messageId);
+		List<ChatMemberResponse> items = new ArrayList<>();
+		for (ChatRoomMember member : members.findActiveInRoom(roomId)) {
+			if (message.getSenderId() != null && message.getSenderId().equals(member.getUserId())) {
+				continue;
+			}
+			Long read = member.getLastReadMessageId();
+			if (read != null && read >= message.getId()) {
+				continue;
+			}
+			boolean team = true;
+			if (!messageQuery.visibleTo(member.getUserId(), roomId, team, historyStart(team), message.getId())) {
+				continue;
+			}
+			User account = accounts.findById(member.getUserId()).orElse(null);
+			if (account == null) {
+				continue;
+			}
+			items.add(new ChatMemberResponse(account.getId(), account.getUsername(), account.visibleName(), account.getAvatarUrl()));
+		}
+		return new UnreadMembersResponse(items);
+	}
+
+	@Transactional
+	public void updateNotification(AuthenticatedUser principal, long roomId, UpdateChatNotificationRequest request) {
+		if (request == null || request.muted() == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "알림 설정을 확인해 주세요");
+		}
+		User account = requireActive(principal);
+		ChatRoomMember member = members.lockActive(roomId, account.getId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		if (member.isMuted() == request.muted()) {
+			return;
+		}
+		member.mute(request.muted());
+		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
+	}
+
+	/**
+	 * Current safe row for a subscriber. Delivery may reorder frames, so a snapshot taken at
+	 * commit is not what the socket sends.
+	 */
+	@Transactional(readOnly = true)
+	public ChatMessageResponse currentTranscript(long viewerId, long roomId, long messageId) {
+		if (!visibleTo(viewerId, roomId, messageId)) {
+			return null;
+		}
+		ChatMessage message = messages.findWithRoom(messageId).orElse(null);
+		if (message == null || !message.getRoom().getId().equals(roomId)) {
+			return null;
+		}
+		return present(message);
+	}
+
+	@Transactional(readOnly = true)
+	public boolean visibleTo(long viewerId, long roomId, long messageId) {
+		ChatRoomMember member = members.findActive(roomId, viewerId).orElse(null);
+		if (member == null) {
+			return false;
+		}
+		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
+		return messageQuery.visibleTo(viewerId, roomId, team, historyStart(team), messageId);
+	}
+
+	private boolean storeNewText(User account, long roomId, TextCommand command) {
+		User current = accounts.findById(account.getId()).orElseThrow(() -> new StompAuthException("로그인이 필요해요"));
+		if (current.getStatus() != UserStatus.ACTIVE) {
+			reject(current.getId(), roomId, command.clientMessageId(), "FORBIDDEN", "이 기능을 사용할 수 없어요", false, null);
+			return false;
+		}
+		ChatRoom room = rooms.lockById(roomId).orElseThrow(() -> new StompAuthException("채팅방에 참여할 수 없어요"));
+		if (members.findActive(roomId, current.getId()).isEmpty() || !room.admitsSender()) {
+			throw new StompAuthException("채팅방에 참여할 수 없어요");
+		}
+		if (room.getRoomType() == RoomType.TEAM) {
+			reject(current.getId(), roomId, command.clientMessageId(), "TEAM_STATE_UNAVAILABLE", "팀 상태를 확인할 수 없어요", false, null);
+			return false;
+		}
+		ChatMessage existing = messages.findBySenderIdAndClientMessageId(current.getId(), command.clientMessageId()).orElse(null);
+		if (existing != null) {
+			confirmStored(current.getId(), roomId, command);
+			return false;
+		}
+		RedisRateLimiter.Decision decision;
+		try {
+			decision = rateLimiter.tryAcquire(CHAT_SEND_BUCKET, current.getId(), PlanLimits.CHAT_SENDS_PER_SECOND, 1);
+		}
+		catch (DataAccessException exception) {
+			reject(current.getId(), roomId, command.clientMessageId(), "SERVICE_UNAVAILABLE", "잠시 후 다시 시도해 주세요", true, null);
+			return false;
+		}
+		if (!decision.allowed()) {
+			reject(current.getId(), roomId, command.clientMessageId(), "RATE_LIMITED", "요청이 너무 많아요. 잠시 후 다시 시도해 주세요", true, decision.retryAfterSeconds());
+			return false;
+		}
+		Instant createdAt = DatabaseInstant.now(clock);
+		ChatMessage message = messages.saveAndFlush(ChatMessage.clientText(room, current.getId(), command.text(), command.clientMessageId()));
+		messages.assignCreatedAt(message.getId(), createdAt);
+		message.alignCreatedAt(createdAt);
+		if (!message.getRoom().getId().equals(room.getId())) {
+			throw new IllegalStateException("message room mismatch");
+		}
+		room.markLastMessage(message.getId(), createdAt);
+		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != current.getId()).count();
+		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread)));
+		boolean team = room.getRoomType() == RoomType.TEAM;
+		for (Long memberId : members.findActiveUserIds(roomId)) {
+			boolean visible = memberId == current.getId()
+					|| messageQuery.visibleTo(memberId, roomId, team, historyStart(team), message.getId());
+			if (visible) {
+				events.publishEvent(new ChatRoomsChanged(memberId, roomId));
+			}
+		}
+		return true;
+	}
+
+	private void confirmStored(long userId, long roomId, TextCommand command) {
+		ChatMessage existing = messages.findBySenderIdAndClientMessageId(userId, command.clientMessageId()).orElse(null);
+		if (existing == null || !sameRequest(existing, roomId, command)) {
+			reject(userId, roomId, command.clientMessageId(), "CONFLICT", "이미 사용한 메시지 식별자예요", false, null);
+			return;
+		}
+		events.publishEvent(new ChatSendAccepted(userId, roomId, command.clientMessageId(), existing.getId()));
+	}
+
+	private static boolean sameRequest(ChatMessage existing, long roomId, TextCommand command) {
+		return existing.getMessageType() == MessageType.TEXT
+				&& command.text().equals(existing.getBody())
+				&& existing.getRoom().getId().equals(roomId);
+	}
+
+	private void reject(
+			long userId,
+			long roomId,
+			String clientMessageId,
+			String code,
+			String message,
+			boolean retryable,
+			Long retryAfterSeconds
+	) {
+		events.publishEvent(new ChatSendRejected(userId, roomId, clientMessageId, code, message, retryable, retryAfterSeconds));
+	}
+
+	private Participant requireParticipant(AuthenticatedUser principal, long roomId) {
+		return member(requireActive(principal), roomId);
+	}
+
+	private Participant requireReader(AuthenticatedUser principal, long roomId) {
+		User account = requireKnown(principal);
+		if (account.getStatus() != UserStatus.ACTIVE && account.getStatus() != UserStatus.SUSPENDED) {
+			throw new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요");
+		}
+		return member(account, roomId);
+	}
+
+	private Participant member(User account, long roomId) {
+		ChatRoomMember membership = members.findActive(roomId, account.getId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		return new Participant(account, membership);
+	}
+
+	private User requireKnown(AuthenticatedUser principal) {
+		if (principal == null) {
+			throw new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요");
+		}
+		return accounts.findById(principal.userId())
+				.orElseThrow(() -> new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요"));
+	}
+
+	private User requireActive(AuthenticatedUser principal) {
+		User account = requireKnown(principal);
+		if (account.getStatus() != UserStatus.ACTIVE) {
+			throw new ApiException(403, "FORBIDDEN", account.getStatus() == UserStatus.SUSPENDED
+					? "정지된 계정은 이 기능을 쓸 수 없어요"
+					: "이 기능을 사용할 수 없어요");
+		}
+		return account;
+	}
+
+	private ChatMessage lockVisible(Participant participant, long roomId, long messageId) {
+		assertVisible(participant, roomId, messageId);
+		return messages.lockById(messageId)
+				.orElseThrow(() -> new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요"));
+	}
+
+	private ChatMessage visibleMessage(Participant participant, long roomId, long messageId) {
+		assertVisible(participant, roomId, messageId);
+		return messages.findWithRoom(messageId)
+				.orElseThrow(() -> new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요"));
+	}
+
+	private void assertVisible(Participant participant, long roomId, long messageId) {
+		boolean team = participant.member().getRoom().getRoomType() == RoomType.TEAM;
+		Long owner = messageQuery.roomIdOf(messageId);
+		if (owner == null || owner != roomId || !messageQuery.visibleTo(
+				participant.account().getId(),
+				roomId,
+				team,
+				historyStart(team),
+				messageId
+		)) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
+		}
+	}
+
+	private ChatMessageResponse present(ChatMessage message) {
+		String text = message.getDeletedAt() != null
+				? DELETED_PREVIEW
+				: message.getVisibility() == MessageVisibility.HIDDEN ? HIDDEN_PREVIEW : message.getBody();
+		User sender = message.getSenderId() == null ? null : accounts.findById(message.getSenderId()).orElse(null);
+		return new ChatMessageResponse(
+				message.getId(),
+				message.getRoom().getId(),
+				unreadCount(message),
+				message.getClientMessageId(),
+				sender == null ? null : new ChatMemberResponse(
+						sender.getId(),
+						sender.getUsername(),
+						sender.visibleName(),
+						sender.getAvatarUrl()
+				),
+				message.getMessageType().name(),
+				text,
+				List.of(),
+				null,
+				message.getCreatedAt(),
+				message.getEditedAt(),
+				message.getDeletedAt(),
+				message.getVisibility().name()
+		);
+	}
+
+	private long unreadCount(ChatMessage message) {
+		Long senderId = message.getSenderId();
+		return members.findActiveInRoom(message.getRoom().getId()).stream()
+				.filter(member -> senderId == null || !senderId.equals(member.getUserId()))
+				.filter(member -> member.getLastReadMessageId() == null || member.getLastReadMessageId() < message.getId())
+				.count();
+	}
+
+	private record Participant(User account, ChatRoomMember member) {
+	}
+
+	private void requireAnchor(long roomId, long messageId) {
+		Long owner = messageQuery.roomIdOf(messageId);
+		if (owner == null || owner != roomId) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
+		}
+	}
+
+	private Instant historyStart(boolean team) {
+		if (!team) {
+			return null;
+		}
+		return clock.instant().minus(Duration.ofDays(PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE));
+	}
+
+	private static TextCommand textCommand(Map<String, Object> payload) {
+		if (payload == null || unsupportedAttachment(payload)) {
+			throw new StompAuthException(payload == null || !unsupportedAttachment(payload)
+					? "메시지 내용을 확인해 주세요" : "텍스트 메시지만 보낼 수 있어요");
+		}
+		Object textValue = payload.get("text");
+		if (!(textValue instanceof String text) || text.isBlank()) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
+		if (text.codePointCount(0, text.length()) > PlanLimits.CHAT_MESSAGE_MAX_CHARS) {
+			throw new StompAuthException("메시지는 2000자까지 쓸 수 있어요");
+		}
+		Object rawId = payload.get("clientMessageId");
+		if (!(rawId instanceof String clientId) || !canonicalUuid(clientId)) {
+			throw new StompAuthException("메시지 식별자를 확인해 주세요");
+		}
+		return new TextCommand(clientId, text);
+	}
+
+	private static boolean unsupportedAttachment(Map<String, Object> payload) {
+		return present(payload.get("fileIds"))
+				|| present(payload.get("mentionedUserIds"))
+				|| present(payload.get("issueRefs"))
+				|| Boolean.TRUE.equals(payload.get("mentionAll"))
+				|| foreignType(payload.get("messageType"))
+				|| foreignType(payload.get("type"));
+	}
+
+	private static boolean present(Object value) {
+		if (value instanceof List<?> list) {
+			return !list.isEmpty();
+		}
+		if (value instanceof String text) {
+			return !text.isBlank();
+		}
+		return false;
+	}
+
+	private static boolean foreignType(Object value) {
+		return value instanceof String text && !text.isBlank() && !"TEXT".equals(text);
+	}
+
+	private static boolean canonicalUuid(String raw) {
+		try {
+			return raw.equals(UUID.fromString(raw).toString());
+		}
+		catch (IllegalArgumentException exception) {
+			return false;
+		}
+	}
+
+	private static ChatMessageResponse toMessage(ChatMessage message, User sender, long unreadCount) {
+		return new ChatMessageResponse(
+				message.getId(),
+				message.getRoom().getId(),
+				unreadCount,
+				message.getClientMessageId(),
+				new ChatMemberResponse(sender.getId(), sender.getUsername(), sender.visibleName(), sender.getAvatarUrl()),
+				message.getMessageType().name(),
+				message.getBody(),
+				List.of(),
+				null,
+				message.getCreatedAt(),
+				message.getEditedAt(),
+				null,
+				"VISIBLE"
+		);
+	}
+
+	private static ChatMessageResponse toMessage(ChatMessageRow row) {
+		String text = row.deletedAt() != null ? DELETED_PREVIEW : "HIDDEN".equals(row.visibility()) ? HIDDEN_PREVIEW : row.body();
+		ChatMemberResponse sender = row.senderId() == null ? null : new ChatMemberResponse(
+				row.senderId(),
+				row.username(),
+				visibleName(row.displayName(), row.username()),
+				row.avatarUrl()
+		);
+		return new ChatMessageResponse(
+				row.id(),
+				row.roomId(),
+				row.unreadCount(),
+				row.clientMessageId(),
+				sender,
+				row.type(),
+				text,
+				List.of(),
+				null,
+				row.createdAt(),
+				row.editedAt(),
+				row.deletedAt(),
+				row.visibility()
+		);
 	}
 
 	private String resolveTab(AuthenticatedUser user, String rawTab) {
@@ -316,5 +867,8 @@ public class UserChatService {
 	}
 
 	private record ParsedCursor(int version, long userId, String tab, Instant sortAt, long roomId) {
+	}
+
+	private record TextCommand(String clientMessageId, String text) {
 	}
 }

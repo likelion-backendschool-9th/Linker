@@ -43,11 +43,22 @@ public class ChatMessage extends BaseTimeEntity {
 
 	private Instant deletedAt;
 
+	@Column(name = "client_message_id", length = 36)
+	private String clientMessageId;
+
+	private Instant editedAt;
+
 	protected ChatMessage() {
 	}
 
 	public static ChatMessage text(ChatRoom room, Long senderId, String body) {
 		return create(room, senderId, MessageType.TEXT, body, MessageVisibility.VISIBLE);
+	}
+
+	public static ChatMessage clientText(ChatRoom room, long senderId, String body, String clientMessageId) {
+		ChatMessage message = text(room, senderId, body);
+		message.clientMessageId = clientMessageId;
+		return message;
 	}
 
 	public static ChatMessage system(ChatRoom room, String body) {
@@ -70,6 +81,11 @@ public class ChatMessage extends BaseTimeEntity {
 		return message;
 	}
 
+	public void revise(String body, Instant editedAt) {
+		this.body = body;
+		this.editedAt = editedAt;
+	}
+
 	public void delete(Instant when) {
 		this.deletedAt = when;
 	}
@@ -80,5 +96,41 @@ public class ChatMessage extends BaseTimeEntity {
 
 	public Long getId() {
 		return id;
+	}
+
+	public ChatRoom getRoom() {
+		return room;
+	}
+
+	public Long getSenderId() {
+		return senderId;
+	}
+
+	public String getBody() {
+		return body;
+	}
+
+	public MessageType getMessageType() {
+		return messageType;
+	}
+
+	public String getClientMessageId() {
+		return clientMessageId;
+	}
+
+	public Instant getEditedAt() {
+		return editedAt;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public MessageVisibility getVisibility() {
+		return visibility;
+	}
+
+	public void alignCreatedAt(Instant createdAt) {
+		replaceCreatedAt(createdAt);
 	}
 }

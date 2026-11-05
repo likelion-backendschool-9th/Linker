@@ -7,17 +7,32 @@ import { renderWithProviders } from '@/test/render-with-providers';
 import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import { ChatRoom } from './chat-room';
 
-const subscription = vi.hoisted(() => ({ handler: undefined as ((event: { event: string }) => void) | undefined }));
+const subscription = vi.hoisted(() => ({
+  handlers: new Map<string, (event: { event?: string; type?: string; roomId?: number; clientMessageId?: string; message?: object }) => void>(),
+  acknowledge: vi.fn(),
+}));
 vi.mock('@/lib/realtime/use-stomp', () => ({
   useStompConnectionState: () => 'idle',
-  useStompSubscription: (_destination: string, handler: (event: { event: string }) => void) => { subscription.handler = handler; },
+  useStompSubscription: (destination: string, handler: (event: never) => void) => {
+    subscription.handlers.set(destination, handler as (event: {
+      event?: string;
+      type?: string;
+      roomId?: number;
+      clientMessageId?: string;
+      message?: object;
+    }) => void);
+  },
 }));
 vi.mock('../_hooks/use-message-outbox', () => ({
-  useMessageOutbox: () => ({ outbox: { acknowledge: vi.fn() }, pending: [] }),
+  useMessageOutbox: () => ({ outbox: { acknowledge: subscription.acknowledge }, pending: [] }),
 }));
 vi.mock('./message-timeline', () => ({
-  MessageTimeline: ({ messages, onUnread }: { messages: RoomMessage[]; onUnread: (id: number) => void }) =>
-    <button onClick={() => onUnread(messages[0]!.id)}>안 읽음 {messages[0]!.unreadCount}명</button>,
+  MessageTimeline: ({ messages, onUnread }: { messages: RoomMessage[]; onUnread: (id: number) => void }) => (
+    <>
+      <div>{messages.map((item) => <span key={item.id}>{item.text}</span>)}</div>
+      <button onClick={() => onUnread(messages[0]!.id)}>안 읽음 {messages[0]!.unreadCount}명</button>
+    </>
+  ),
 }));
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
 const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', plan: 'FREE', myRole: 'MEMBER', status: 'ACTIVE' }, historyLimitDays: 60 };
@@ -34,8 +49,55 @@ it('refreshes both the message count and the open unread-members sheet on a READ
   await userEvent.click(await screen.findByRole('button', { name: '안 읽음 2명' }));
   expect(await screen.findByText('도윤')).toBeVisible();
   read = true;
-  act(() => subscription.handler!({ event: 'READ' }));
+  act(() => subscription.handlers.get('/topic/chat-rooms/1')!({ event: 'READ' }));
   await waitFor(() => expect(screen.getByText('안 읽음 1명')).toBeInTheDocument());
   await waitFor(() => expect(screen.queryByText('도윤')).not.toBeInTheDocument());
   expect(screen.getByText('서연')).toBeVisible();
+});
+
+it('acknowledges a stored send from the existing user queue', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (path) => {
+    if (path === '/api/v1/user/chat-rooms/1') return room;
+    if (path === '/api/v1/user/chat-rooms/1/messages') return { items: [message], hasMore: false };
+    throw new Error(`unexpected API: ${path}`);
+  });
+  subscription.acknowledge.mockClear();
+  renderWithProviders(<ChatRoom roomId={1} />, { viewer: { login: 'me', role: 'developer' } });
+  await screen.findByRole('button', { name: '안 읽음 2명' });
+  act(() => subscription.handlers.get('/user/queue/chat-rooms')?.({
+    type: 'CHAT_SEND_ACCEPTED',
+    roomId: 1,
+    clientMessageId: 'saved-1',
+  }));
+  expect(subscription.acknowledge).toHaveBeenCalledWith('saved-1');
+});
+
+it('merges an EDIT into the cached message without refetching history', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (path) => {
+    if (path === '/api/v1/user/chat-rooms/1') return room;
+    if (path === '/api/v1/user/chat-rooms/1/messages') return { items: [message], hasMore: false };
+    throw new Error(`unexpected API: ${path}`);
+  });
+  renderWithProviders(<ChatRoom roomId={1} />, { viewer: { login: 'me', role: 'developer' } });
+  expect(await screen.findByText('대화')).toBeVisible();
+  const handler = subscription.handlers.get('/topic/chat-rooms/1');
+  const calls = vi.mocked(apiFetch).mock.calls.length;
+  act(() => handler!({
+    event: 'EDIT',
+    message: { ...message, text: '고친 대화', editedAt: '2026-11-05T01:00:00Z' },
+  }));
+  await waitFor(() => expect(screen.getByText('고친 대화')).toBeVisible());
+  expect(screen.queryByText('대화')).not.toBeInTheDocument();
+  expect(vi.mocked(apiFetch).mock.calls.length).toBe(calls);
+  act(() => handler!({
+    event: 'DELETE',
+    message: { ...message, text: '삭제된 메시지입니다', deletedAt: '2026-11-05T02:00:00Z' },
+  }));
+  await waitFor(() => expect(screen.getByText('삭제된 메시지입니다')).toBeVisible());
+  act(() => handler!({
+    event: 'EDIT',
+    message: { ...message, text: '지연된 원문', editedAt: '2026-11-05T00:30:00Z', deletedAt: null },
+  }));
+  expect(screen.getByText('삭제된 메시지입니다')).toBeVisible();
+  expect(screen.queryByText('지연된 원문')).not.toBeInTheDocument();
 });
