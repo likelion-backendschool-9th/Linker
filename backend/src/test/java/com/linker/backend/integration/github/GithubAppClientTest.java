@@ -43,7 +43,7 @@ class GithubAppClientTest {
 	}
 
 	static GithubAppProperties properties() {
-		return new GithubAppProperties("123", "linker-test", "", "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10));
+		return GithubAppProperties.installation("123", "linker-test", "", "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10));
 	}
 
 	@Test

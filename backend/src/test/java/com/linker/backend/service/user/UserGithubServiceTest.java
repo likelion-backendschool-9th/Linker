@@ -17,7 +17,7 @@ class UserGithubServiceTest {
 	private final GithubInstallationState states = mock(GithubInstallationState.class);
 	private final GithubUserAccessTokenSource tokens = mock(GithubUserAccessTokenSource.class);
 	private final GithubAppClient client = mock(GithubAppClient.class);
-	private final UserGithubService service = new UserGithubService(new GithubAppProperties(
+	private final UserGithubService service = new UserGithubService(GithubAppProperties.installation(
 			"123", "linker-test", "", "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10)), states, tokens, client);
 
 	@Test

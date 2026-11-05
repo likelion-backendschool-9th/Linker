@@ -21,7 +21,7 @@ public class ChatMessageQueryRepository {
 	private static final String SELECT = """
 			SELECT
 			  m.id, m.room_id, m.sender_id, m.message_type, m.body, m.visibility, m.deleted_at,
-			  m.created_at, m.client_message_id,
+			  m.created_at, m.edited_at, m.client_message_id,
 			  u.username, u.display_name, u.avatar_url, u.status AS sender_status,
 			  (
 			    SELECT COUNT(*)
@@ -108,6 +108,7 @@ public class ChatMessageQueryRepository {
 	private ChatMessageRow map(ResultSet rs, int rowNum) throws SQLException {
 		Long senderId = rs.getObject("sender_id", Long.class);
 		Timestamp deleted = rs.getTimestamp("deleted_at");
+		Timestamp edited = rs.getTimestamp("edited_at");
 		return new ChatMessageRow(
 				rs.getLong("id"),
 				rs.getLong("room_id"),
@@ -122,7 +123,8 @@ public class ChatMessageQueryRepository {
 				rs.getString("body"),
 				rs.getString("visibility"),
 				deleted == null ? null : deleted.toInstant(),
-				rs.getTimestamp("created_at").toInstant()
+				rs.getTimestamp("created_at").toInstant(),
+				edited == null ? null : edited.toInstant()
 		);
 	}
 
@@ -140,7 +142,8 @@ public class ChatMessageQueryRepository {
 			String body,
 			String visibility,
 			Instant deletedAt,
-			Instant createdAt
+			Instant createdAt,
+			Instant editedAt
 	) {
 	}
 }

@@ -35,4 +35,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 			  and u.deletedAt is null
 			""")
 	List<User> findIndexable(Pageable pageable);
+
+	boolean existsByUsername(String username);
+
+	boolean existsByUsernameAndIdNot(String username, Long id);
 }

@@ -46,6 +46,8 @@ public class ChatMessage extends BaseTimeEntity {
 	@Column(name = "client_message_id", length = 36)
 	private String clientMessageId;
 
+	private Instant editedAt;
+
 	protected ChatMessage() {
 	}
 
@@ -79,6 +81,11 @@ public class ChatMessage extends BaseTimeEntity {
 		return message;
 	}
 
+	public void revise(String body, Instant editedAt) {
+		this.body = body;
+		this.editedAt = editedAt;
+	}
+
 	public void delete(Instant when) {
 		this.deletedAt = when;
 	}
@@ -109,6 +116,18 @@ public class ChatMessage extends BaseTimeEntity {
 
 	public String getClientMessageId() {
 		return clientMessageId;
+	}
+
+	public Instant getEditedAt() {
+		return editedAt;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public MessageVisibility getVisibility() {
+		return visibility;
 	}
 
 	public void alignCreatedAt(Instant createdAt) {

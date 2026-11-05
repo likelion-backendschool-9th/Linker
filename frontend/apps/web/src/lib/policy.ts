@@ -27,6 +27,11 @@ export const DRAFT = {
   keepDays: 7,
 } as const;
 
+/** 04 ch. 2 — login within this window restores a pending deletion. */
+export const ACCOUNT = {
+  withdrawalRestoreDays: 30,
+} as const;
+
 /** 04 ch. 3 POL-A-2, POL-A-3, POL-H-8 */
 export const PROFILE = {
   displayName: { min: 1, max: 20 },
