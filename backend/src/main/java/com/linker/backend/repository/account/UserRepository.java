@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+	List<User> findByStatusAndWithdrawRequestedAtLessThanEqual(UserStatus status, Instant withdrawRequestedAt);
+
 	@Query("""
 			select u from User u
 			where u.userType = com.linker.backend.entity.account.UserType.DEVELOPER
@@ -20,4 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 			  and u.deletedAt is null
 			""")
 	List<User> findIndexable(Pageable pageable);
+
+	boolean existsByUsername(String username);
+
+	boolean existsByUsernameAndIdNot(String username, Long id);
 }

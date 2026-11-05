@@ -15,6 +15,10 @@ public final class PlanLimits {
 	public static final int SESSION_DAYS = 30;
 	/** Policy ch. 3 — pending withdrawal before anonymization. */
 	public static final int ACCOUNT_WITHDRAWAL_DAYS = 30;
+	/** Policy ch. 2 — login during pending deletion restores the account. */
+	public static final int ACCOUNT_WITHDRAWAL_RESTORE_DAYS = 30;
+	/** Terms version stored with onboarding agreement. Matches the page 02 client. */
+	public static final String TERMS_VERSION = "2026-10-01";
 	/** POL-A-2 display name length. */
 	public static final int PROFILE_DISPLAY_NAME_MIN = 1;
 	public static final int PROFILE_DISPLAY_NAME_MAX = 20;
@@ -77,6 +81,11 @@ public final class PlanLimits {
 	public static final int FLEX_POST_EXPIRY_GRACE_DAYS = 30;
 	/** Policy ch. 11 — whole-team notice before both Flex expiry and grace-period end. */
 	public static final int FLEX_EXPIRY_NOTICE_DAYS_BEFORE = 7;
+
+	/** Policy ch. 7 / page 11 — shared issue sync contract. */
+	public static final int ISSUE_REFRESH_INTERVAL_SECONDS = 60;
+	public static final int ISSUE_ACTIVE_SYNC_MINUTES = 15;
+	public static final int ISSUE_PROGRESS_DAYS = 14;
 
 	private PlanLimits() {
 	}

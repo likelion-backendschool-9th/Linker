@@ -32,4 +32,11 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 			where m.room.id = :roomId and m.leftAt is null
 			""")
 	List<Long> findActiveUserIds(@Param("roomId") long roomId);
+
+	@Query("""
+			select m from ChatRoomMember m
+			where m.room.id = :roomId and m.leftAt is null
+			order by m.userId
+			""")
+	List<ChatRoomMember> findActiveInRoom(@Param("roomId") long roomId);
 }

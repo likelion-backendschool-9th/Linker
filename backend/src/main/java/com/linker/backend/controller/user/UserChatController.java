@@ -3,10 +3,14 @@ package com.linker.backend.controller.user;
 import java.security.Principal;
 import java.util.Map;
 
+import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
+import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
+import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.realtime.StompPrincipal;
@@ -25,6 +29,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -95,6 +100,55 @@ public class UserChatController {
 			@RequestBody MarkChatReadRequest request
 	) {
 		chat.markRead(user, roomId, request);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("/chat-rooms/{roomId}/messages/{messageId}")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "editChatMessage")
+	public ResponseEntity<ChatMessageResponse> edit(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@PathVariable long messageId,
+			@RequestBody EditChatMessageRequest request
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.edit(user, roomId, messageId, request));
+	}
+
+	@DeleteMapping("/chat-rooms/{roomId}/messages/{messageId}")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "deleteChatMessage")
+	@ApiResponse(responseCode = "204", description = "Message soft-deleted or already deleted by the author")
+	public ResponseEntity<Void> deleteMessage(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@PathVariable long messageId
+	) {
+		chat.deleteMessage(user, roomId, messageId);
+		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/chat-rooms/{roomId}/messages/{messageId}/unread-members")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "listUnreadChatMembers")
+	public ResponseEntity<UnreadMembersResponse> unreadMembers(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@PathVariable long messageId
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.unreadMembers(user, roomId, messageId));
+	}
+
+	@PatchMapping("/chat-rooms/{roomId}/notification")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "updateChatNotification")
+	@ApiResponse(responseCode = "204", description = "Caller's mute preference stored")
+	public ResponseEntity<Void> notification(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@RequestBody UpdateChatNotificationRequest request
+	) {
+		chat.updateNotification(user, roomId, request);
 		return ResponseEntity.noContent().build();
 	}
 
