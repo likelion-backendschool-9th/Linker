@@ -2,8 +2,7 @@
 
 // overlay: shared team picker for workspace navigation
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown } from 'lucide-react';
-import type { Route } from 'next';
+import { Check, ChevronDown, Users } from 'lucide-react';
 import Image from 'next/image';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
@@ -13,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import styles from '@/features/teams/team-ui.module.css';
+import { teamEntryHref } from '@/features/teams/team-entry';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
 import { myTeamsOptions } from '../_lib/team-queries';
@@ -48,19 +48,21 @@ export function TeamSwitcher({ teamId, name }: { teamId: string; name: string })
         <ul className={styles.list}>
           {teams.data.items.map((team) => {
             const current = String(team.id) === teamId;
-            const href = (
-              team.status === 'ARCHIVED' ? `/chats/${team.chatRoomId}` : `/teams/${team.id}/issues`
-            ) as Route;
+            const href = teamEntryHref(team);
             const content = (
               <>
-                <Image
-                  className={styles.avatar}
-                  src={team.orgAvatarUrl}
-                  alt=""
-                  width={40}
-                  height={40}
-                  sizes="40px"
-                />
+                {team.orgAvatarUrl ? (
+                  <Image
+                    className={styles.avatar}
+                    src={team.orgAvatarUrl}
+                    alt=""
+                    width={40}
+                    height={40}
+                    sizes="40px"
+                  />
+                ) : (
+                  <Users size={40} aria-hidden className={styles.avatar} />
+                )}
                 <span className={styles.body}>
                   {team.name}
                   <span className={styles.meta}>
@@ -86,10 +88,15 @@ export function TeamSwitcher({ teamId, name }: { teamId: string; name: string })
                   >
                     {content}
                   </button>
-                ) : (
+                ) : href ? (
                   <OverlayLink overlay={overlay} href={href} className={styles.picker}>
                     {content}
                   </OverlayLink>
+                ) : (
+                  <div className={styles.picker} aria-disabled="true">
+                    {content}
+                    <span className={styles.meta}>채팅방을 찾지 못했어요</span>
+                  </div>
                 )}
               </li>
             );

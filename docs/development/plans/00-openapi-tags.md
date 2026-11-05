@@ -37,6 +37,8 @@ orval은 `tags-split`이다. `p00-common`은 `frontend/packages/api/src/generate
 | `verifyInstallation` | `POST /api/v1/user/team-setup/installations/verify` | 200 |
 | `receiveGithubWebhook` | `POST /api/v1/webhook/github` | 200 중복, 202 접수 |
 
+페이지 07 팀 목록은 `p07-workspace`로 공개한다. operationId는 `getMyTeams`, 경로는 `GET /api/v1/user/me/teams`다. items의 필수 필드·nullable은 서버 스펙을 따른다. C의 내 이슈 API는 이 변경에 포함하지 않는다.
+
 페이지 16 목록은 `p16-chat-list`로 공개한다. operationId는 `listChatRooms`, `unreadChatSummary`, `acceptChatRequest`, `deleteChatRequest`다. 삭제는 204다.
 
 페이지 17은 `p17-chat-room`이다. operationId는 `listChatMessages`, `markChatRead`, `editChatMessage`, `deleteChatMessage`, `listUnreadChatMembers`, `updateChatNotification`이다. 읽음·삭제·음소거는 204다. 방 정보 GET은 아직 없다. STOMP SEND와 토픽 이벤트는 스펙에 넣지 않는다. 토픽 이벤트는 `MESSAGE`, `EDIT`, `DELETE`, `READ`다. 본인 큐는 `CHAT_ROOMS_CHANGED`, `CHAT_SEND_REJECTED`, `CHAT_SEND_ACCEPTED`다.
