@@ -32,6 +32,7 @@ public class SecurityConfig {
 				.logout(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
 						.requestMatchers("/api/v1/public/**").permitAll()
 						.requestMatchers("/api/v1/webhook/**").permitAll()
 						.requestMatchers("/ws", "/ws/**").permitAll()

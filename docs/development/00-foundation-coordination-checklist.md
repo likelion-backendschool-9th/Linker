@@ -31,7 +31,7 @@
 - [ ] **E** 모노레포·Next·tokens·`radix-ui` 골격 머지
 - [ ] **E** `packages/api`(orval) + `lib/api/api-fetch` + 공통 에러 코드 처리 + `Providers`
 - [ ] **A B C D** E의 fetch/orval/Provider 경로만 사용 (각자 `fetch` 금지)
-- [ ] **전원** OpenAPI `@Tag` ↔ orval 파일 규칙 합의·문서화
+- [x] **전원** OpenAPI `@Tag` ↔ orval 파일 규칙 합의·문서화 — [00 OpenAPI 태그](plans/00-openapi-tags.md)
 
 ---
 
@@ -56,7 +56,7 @@
 
 ### B (인프라 선행)
 - [ ] 호스트·Postgres·Redis·서울 리전 결정 (웹훅·STOMP 스파이크 전)
-- [ ] **B → A·D** 접속 정보·환경 변수 키 이름 공유
+- [ ] **B → A·D** 접속 정보·환경 변수 키 이름 공유 — A의 1차 확인은 [인프라 접속 기록](plans/00-infra-access-log.md)
 
 ---
 
@@ -78,18 +78,18 @@
 - [ ] GitHub App 등록 (PRD ch.8 + Email read), 웹훅 서명·큐, smee
 - [ ] 스파이크: 설치 → Setup URL 복귀 → `GET /user/installations` 검증
 - [ ] bridge + Expo WebView (`linker://auth`, Android back)
-- [ ] **B ↔ A** 웹 로그인 콜백과 앱 딥링크 복귀 시나리오 한 장으로 맞춤 (JWT 브릿지 금지)
+- [ ] **B ↔ A** 웹 로그인 콜백과 앱 딥링크 복귀 시나리오 한 장으로 맞춤 (JWT 브릿지 금지) — 코드 대조는 [00 스파이크](plans/00-foundation-spikes.md) §5. 로그아웃 문구는 열림
 
 ### C
-- [ ] 스파이크: Projects 보드, Status Blocked, start/due 필드, `projects_v2_item` 웹훅
+- [ ] 스파이크: Projects 보드, Status Blocked, start/due 필드, `projects_v2_item` 웹훅 — 조회 결론만 [00 스파이크](plans/00-foundation-spikes.md) §1
 - [ ] Vitest + axe, Playwright + axe, MSW 골격
-- [ ] **C ↔ B** 웹훅 이벤트 목록·페이로드 필드 freeze
+- [ ] **C ↔ B** 웹훅 이벤트 목록·페이로드 필드 freeze — 큐 값 설명은 같은 문서 §2. 수신 샘플 전이라 공동 freeze는 아님
 
 ### D
-- [ ] STOMP 설정·인증 인터셉터·재연결
+- [ ] STOMP 설정·인증 인터셉터·재연결 — 브라우저 확인은 못 함. [00 스파이크](plans/00-foundation-spikes.md) §3
 - [ ] `NotificationService.create()` **시그니처 D2 freeze**
 - [ ] Redis `@RateLimit`, `PlanLimits` (숫자는 Policy / `policy.ts`와 동일 출처)
-- [ ] 스파이크: Toss 테스트 결제 → confirm → cancel
+- [ ] 스파이크: Toss 테스트 결제 → confirm → cancel — 키 없음. [00 스파이크](plans/00-foundation-spikes.md) §4
 - [ ] 프론트 `lib/realtime` STOMP 클라이언트
 - [ ] **D → 전원** 알림 create 인자·에러 코드 공유 (이후 시그니처 변경 자제) — [공유 안내·담당별 확인 양식](plans/d-notification-create-contract.md) 작성 완료. 실제 전달·이슈 고정·소비자 확인은 별도.
 
@@ -131,14 +131,14 @@
 
 아래를 이슈/스레드에 붙여 두고 “변경 시 전원 멘션”으로 운영합니다.
 
-- [ ] JWT claim 필드·의미·재발급 시점 (**A**)
-- [ ] 공통 에러 코드 + `api-fetch` 매핑 (**E**; `LOGIN_REQUIRED`↔A)
-- [ ] `NotificationService.create()` 인자 (**D**)
+- [x] JWT claim 필드·의미·재발급 시점 (**A**) — [00 구현 계약 freeze](plans/00-foundation-contract-freeze.md) §1–§2
+- [x] 공통 에러 코드 + `api-fetch` 매핑 (**E**; `LOGIN_REQUIRED`↔A) — 같은 문서 §3
+- [x] `NotificationService.create()` 인자 (**D**) — 같은 문서 §6
 - [x] `user_blocks` 열기/닫기 의미 (**E**; D 소비) — see `plans/e-block-contract-freeze.md`
 - [ ] 웹훅 이벤트·큐 페이로드 (**B**; C 소비) — [B 전달 계약·C 확인 대기 항목](plans/b-backend-cross-contracts.md). 작성과 공동 freeze를 구분
-- [ ] OpenAPI `@Tag` 규칙 (**전원**)
-- [ ] `policy.ts` 키 (**C**)
-- [ ] Tech tags / job categories public API 형태 (**A**; 시트 소비자는 그대로)
+- [x] OpenAPI `@Tag` 규칙 (**전원**) — [00 OpenAPI 태그](plans/00-openapi-tags.md)
+- [x] `policy.ts` 키 (**C**) — [00 구현 계약 freeze](plans/00-foundation-contract-freeze.md) §5
+- [x] Tech tags / job categories public API 형태 (**A**; 시트 소비자는 그대로) — 같은 문서 §4
 
 ---
 
@@ -156,10 +156,10 @@
 ### 6 스파이크
 - [ ] WebView GitHub 로그인 복귀 (**B↔A**)
 - [ ] App 설치 콜백 검증 (**B**)
-- [ ] Projects Blocked + 날짜 필드 (**C**)
-- [ ] 웹훅 수신 (**B**, C 소비 가능)
-- [ ] STOMP 재연결 (**D**)
-- [ ] Toss confirm/cancel (**D**)
+- [ ] Projects Blocked + 날짜 필드 (**C**) — 조회 결론만 [00 스파이크](plans/00-foundation-spikes.md) §1
+- [ ] 웹훅 수신 (**B**, C 소비 가능) — smee ping 없음. 같은 문서 §2
+- [ ] STOMP 재연결 (**D**) — 브라우저 확인 없음. 같은 문서 §3
+- [ ] Toss confirm/cancel (**D**) — 키 없음. 같은 문서 §4
 
 ### 공통
 - [ ] Sentry 연동 (**전원**)
@@ -199,7 +199,7 @@
 - [ ] 설치 콜백 스파이크
 - [ ] bridge + Expo 셸
 - [ ] C와 웹훅 이벤트 freeze
-- [ ] A와 auth 딥링크 정렬
+- [ ] A와 auth 딥링크 정렬 — 페이지 전 경계는 [00 페이지 착수 경계](plans/00-page-gate.md)
 
 ### C 이슈 체크
 - [ ] policy/format/SEO/image

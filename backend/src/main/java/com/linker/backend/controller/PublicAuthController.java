@@ -3,6 +3,9 @@ package com.linker.backend.controller;
 import com.linker.backend.global.security.SessionCookies;
 import com.linker.backend.service.PublicAuthService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.CacheControl;
@@ -25,6 +28,9 @@ public class PublicAuthController {
 	}
 
 	@PostMapping("/auth/refresh")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "refreshSession")
+	@ApiResponse(responseCode = "204", description = "Session cookie replaced")
 	public ResponseEntity<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
 		String token = cookies.read(request);
 		String renewed = auth.refresh(token);

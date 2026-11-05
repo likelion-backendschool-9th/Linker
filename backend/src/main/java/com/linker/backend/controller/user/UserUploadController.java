@@ -7,6 +7,11 @@ import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.service.user.UserUploadService;
 
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -22,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/user")
-@Tag(name = "p00-common")
 public class UserUploadController {
 
 	private final UserUploadService uploads;
@@ -32,6 +36,9 @@ public class UserUploadController {
 	}
 
 	@PostMapping("/uploads")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "createUpload")
+	@ApiResponse(responseCode = "201", description = "Upload target issued", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = CreateUploadResponse.class)))
 	public ResponseEntity<CreateUploadResponse> create(
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@RequestBody CreateUploadRequest request
@@ -52,6 +59,7 @@ public class UserUploadController {
 	 * Local-storage stand-in for the cloud PUT target returned as {@code uploadUrl}.
 	 * Not used when a real object-storage provider issues a remote presigned URL.
 	 */
+	@Hidden
 	@PutMapping(value = "/uploads/{fileId}/content", consumes = MediaType.ALL_VALUE)
 	public ResponseEntity<Void> putContent(
 			@AuthenticationPrincipal AuthenticatedUser user,
@@ -64,6 +72,8 @@ public class UserUploadController {
 	}
 
 	@PostMapping("/uploads/{fileId}/complete")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "completeUpload")
 	public ResponseEntity<CompleteUploadResponse> complete(
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@PathVariable String fileId
