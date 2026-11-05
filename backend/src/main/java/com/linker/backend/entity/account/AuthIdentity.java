@@ -54,7 +54,32 @@ public class AuthIdentity extends BaseTimeEntity {
 	protected AuthIdentity() {
 	}
 
+	public static AuthIdentity github(User user, String githubUserId, String login, String email, Instant when) {
+		AuthIdentity identity = new AuthIdentity();
+		identity.user = user;
+		identity.provider = AuthProvider.GITHUB;
+		identity.providerUserId = githubUserId;
+		identity.providerLogin = login;
+		identity.email = email;
+		identity.lastLoginAt = when;
+		return identity;
+	}
+
+	public void recordLogin(String login, String email, Instant when) {
+		this.providerLogin = login;
+		if (email != null && !email.isBlank()) {
+			this.email = email;
+		}
+		this.failedLoginCount = 0;
+		this.lockedUntil = null;
+		this.lastLoginAt = when;
+	}
+
 	public Long getId() {
 		return id;
+	}
+
+	public User getUser() {
+		return user;
 	}
 }

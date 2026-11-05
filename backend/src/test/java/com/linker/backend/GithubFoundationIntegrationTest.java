@@ -287,7 +287,7 @@ class GithubFoundationIntegrationTest {
 
 	@Test
 	void expiredStateCannotBeConsumed() throws Exception {
-		var properties = new com.linker.backend.global.config.GithubAppProperties("123", "linker", "", "https://api.github.com",
+		var properties = com.linker.backend.global.config.GithubAppProperties.installation("123", "linker", "", "https://api.github.com",
 				"2026-03-10", java.time.Duration.ofSeconds(10), java.time.Duration.ofMillis(1));
 		var shortLived = new GithubInstallationState(redis, properties);
 		String state = shortLived.issue(7, 11);
