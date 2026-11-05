@@ -38,3 +38,19 @@ it('mounts the mock widget under NEXT_PUBLIC_USE_MOCKS', async () => {
   expect(widget.destroy).toEqual(expect.any(Function));
   await widget.destroy();
 });
+
+it('keeps a safe return path on the mock payment result', async () => {
+  vi.stubEnv('NEXT_PUBLIC_USE_MOCKS', 'true');
+  document.body.innerHTML = '<div id="methods"></div><div id="agreement"></div>';
+  const widget = await mountPaymentWidget(
+    order,
+    { methods: '#methods', agreement: '#agreement' },
+    new AbortController().signal,
+    '/me/stats',
+  );
+  const checkbox = document.querySelector<HTMLInputElement>('input[type="checkbox"]');
+  if (!checkbox) throw new Error('missing agreement');
+  checkbox.checked = true;
+  await expect(widget.requestPayment()).resolves.toContain('returnTo=%2Fme%2Fstats');
+  await widget.destroy();
+});

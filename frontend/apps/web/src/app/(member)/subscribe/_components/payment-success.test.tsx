@@ -49,6 +49,32 @@ it('keeps benefits locked when the approval API fails', async () => {
   expect(screen.queryByText('결제를 완료했어요')).not.toBeInTheDocument();
 });
 
+it('returns to the screen that opened checkout', async () => {
+  fetchMock.mockResolvedValue({
+    status: 'ACTIVE',
+    planKey: 'PRO',
+    amount: 2900,
+    expiresOn: '2026-12-01',
+    benefits: ['사진 10장'],
+  });
+  renderWithProviders(<PaymentSuccess payment={payment} returnTo="/me/stats" />);
+  await userEvent.click(await screen.findByRole('button', { name: '서비스 이용하기' }));
+  expect(replace).toHaveBeenCalledWith('/me/stats');
+});
+
+it('returns home when checkout has no return path', async () => {
+  fetchMock.mockResolvedValue({
+    status: 'ACTIVE',
+    planKey: 'PRO',
+    amount: 2900,
+    expiresOn: '2026-12-01',
+    benefits: ['사진 10장'],
+  });
+  renderWithProviders(<PaymentSuccess payment={payment} returnTo="//evil.example" />);
+  await userEvent.click(await screen.findByRole('button', { name: '서비스 이용하기' }));
+  expect(replace).toHaveBeenCalledWith('/feed');
+});
+
 it('returns to plans when callback information is invalid', async () => {
   renderWithProviders(<PaymentSuccess payment={null} />);
   await userEvent.click(screen.getByRole('button', { name: '다시 시도' }));

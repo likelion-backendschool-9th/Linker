@@ -12,7 +12,15 @@ import { mountPaymentWidget, type PaymentWidget } from '@/lib/payments/payment-w
 
 import styles from './subscription.module.css';
 
-export function PaymentPanel({ order, onBack }: { order: CheckoutOrder; onBack: () => void }) {
+export function PaymentPanel({
+  order,
+  onBack,
+  returnTo,
+}: {
+  order: CheckoutOrder;
+  onBack: () => void;
+  returnTo?: string | null;
+}) {
   const router = useRouter();
   const widget = useRef<PaymentWidget | null>(null);
   const [ready, setReady] = useState(false);
@@ -26,6 +34,7 @@ export function PaymentPanel({ order, onBack }: { order: CheckoutOrder; onBack: 
       order,
       { methods: '#subscription-methods', agreement: '#subscription-agreement' },
       abort.signal,
+      returnTo,
     )
       .then(async (value) => {
         if (abort.signal.aborted) {
@@ -44,7 +53,7 @@ export function PaymentPanel({ order, onBack }: { order: CheckoutOrder; onBack: 
       widget.current = null;
       void mounted?.destroy();
     };
-  }, [order, attempt]);
+  }, [order, attempt, returnTo]);
   async function pay() {
     if (!widget.current || pending) return;
     setPending(true);

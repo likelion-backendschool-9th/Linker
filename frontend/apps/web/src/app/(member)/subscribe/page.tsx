@@ -28,7 +28,11 @@ export default async function SubscribePage({ searchParams }: PageProps<'/subscr
   return (
     <PageFrame title="요금제" variant="stack" backHref={backHref}>
       <HydrationBoundary state={dehydrate(client)}>
-        <PlanSelector key={session?.login ?? 'guest'} reason={reason} />
+        <PlanSelector
+          key={session?.login ?? 'guest'}
+          reason={reason}
+          returnTo={typeof params.returnTo === 'string' ? params.returnTo : null}
+        />
       </HydrationBoundary>
     </PageFrame>
   );

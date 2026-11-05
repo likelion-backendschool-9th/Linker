@@ -31,7 +31,13 @@ const REASONS: Record<string, string> = {
   'team-members': '팀 인원 제한 없이 함께하려면 Flex를 확인해 보세요.',
   stats: '작업물의 유입 경로와 채용 담당자 조회 수를 확인해 보세요.',
 };
-export function PlanSelector({ reason }: { reason: string }) {
+export function PlanSelector({
+  reason,
+  returnTo,
+}: {
+  reason: string;
+  returnTo?: string | null;
+}) {
   const { login, role, status } = useViewer();
   const recruiter = role === 'recruiter';
   const plans = useQuery(plansOptions(login, reason));
@@ -63,6 +69,7 @@ export function PlanSelector({ reason }: { reason: string }) {
       <PaymentPanel
         key={order.orderId}
         order={order}
+        returnTo={returnTo}
         onBack={() => {
           setOrder(null);
           checkout.reset();

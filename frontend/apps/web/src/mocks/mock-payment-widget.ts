@@ -1,11 +1,13 @@
 import type { CheckoutOrder } from '@/features/subscription/subscription-api';
 import type { PaymentWidget, WidgetTargets } from '@/lib/payments/payment-widget';
+import { withPaymentReturnTo } from '@/lib/payments/payment-return';
 import { ApiError } from '@/lib/api/api-error';
 
 /** Deliberately labelled mock controls: never contacts Toss or collects card details. */
 export function mountMockPaymentWidget(
   order: CheckoutOrder,
   targets: WidgetTargets,
+  returnTo?: string | null,
 ): PaymentWidget {
   const methods = document.querySelector(targets.methods);
   const agreement = document.querySelector(targets.agreement);
@@ -48,11 +50,11 @@ export function mountMockPaymentWidget(
       if (declined) {
         query.set('code', 'MOCK_DECLINED');
         query.set('message', '테스트 결제를 완료하지 못했어요.');
-        return `/subscribe/fail?${query}`;
+        return withPaymentReturnTo(`/subscribe/fail?${query}`, returnTo);
       }
       query.set('paymentKey', `mock_${order.orderId}`);
       query.set('amount', String(order.amount));
-      return `/subscribe/success?${query}`;
+      return withPaymentReturnTo(`/subscribe/success?${query}`, returnTo);
     },
     destroy: async () => {
       fieldset.remove();
