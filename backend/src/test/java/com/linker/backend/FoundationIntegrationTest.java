@@ -476,6 +476,16 @@ class FoundationIntegrationTest {
 	@Test
 	void reportIsIdempotentAndAutoHidesAtFiveReporters() throws Exception {
 		User target = saveUser("target", UserType.DEVELOPER);
+		User operatorA = saveUser("ops-a", UserType.DEVELOPER);
+		User operatorB = saveUser("ops-b", UserType.DEVELOPER);
+		User suspendedOps = saveUser("ops-suspended", UserType.DEVELOPER);
+		suspendedOps.suspendUntil(Instant.now().plusSeconds(3600));
+		users.save(suspendedOps);
+		admins.save(Admin.assign(operatorA, AdminRole.OPERATOR));
+		admins.save(Admin.assign(operatorB, AdminRole.OPERATOR));
+		admins.save(Admin.assign(suspendedOps, AdminRole.OPERATOR));
+		admins.save(Admin.assign(target, AdminRole.OPERATOR)); // reported user who is also an operator — excluded
+
 		User first = saveUser("reporter", UserType.DEVELOPER);
 		String token = sessions.issue(first, "JUnit", "127.0.0.1").rawToken();
 		String payload = "{\"targetType\":\"USER\",\"targetId\":\"" + target.getId() + "\",\"reason\":\"SPAM\",\"detail\":\"\"}";
@@ -488,6 +498,7 @@ class FoundationIntegrationTest {
 			assertThat(reportCase.getReporterCount()).isEqualTo(1);
 			assertThat(reportCase.getAutoHiddenAt()).isNull();
 		});
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM notifications", Long.class)).isZero();
 
 		mockMvc.perform(post("/api/v1/user/reports")
 						.cookie(cookie(token))
@@ -514,7 +525,31 @@ class FoundationIntegrationTest {
 				.satisfies(reportCase -> {
 					assertThat(reportCase.getReporterCount()).isEqualTo(5);
 					assertThat(reportCase.getAutoHiddenAt()).isNotNull();
+					assertThat(jdbc.queryForObject(
+							"SELECT count(*) FROM notifications WHERE notification_type=? AND group_key=?",
+							Long.class,
+							"REPORT_AUTO_HIDDEN",
+							"report-auto-hidden:" + reportCase.getId()
+					)).isEqualTo(2L);
+					assertThat(jdbc.queryForList(
+							"SELECT user_id FROM notifications WHERE group_key=?",
+							Long.class,
+							"report-auto-hidden:" + reportCase.getId()
+					)).containsExactlyInAnyOrder(operatorA.getId(), operatorB.getId());
 				});
+
+		User sixth = saveUser("reporter6", UserType.DEVELOPER);
+		String sixthToken = sessions.issue(sixth, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(post("/api/v1/user/reports")
+						.cookie(cookie(sixthToken))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(payload))
+				.andExpect(status().isNoContent());
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM notifications WHERE notification_type=?",
+				Long.class,
+				"REPORT_AUTO_HIDDEN"
+		)).isEqualTo(2L);
 	}
 
 	@Test
