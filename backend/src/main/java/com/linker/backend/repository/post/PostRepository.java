@@ -47,4 +47,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			@Param("repoId") long repoId,
 			@Param("excludePostId") long excludePostId
 	);
+
+	@Query("""
+			select p from Post p
+			join fetch p.repo
+			join fetch p.author
+			where p.deletedAt is null
+			  and p.visibility = com.linker.backend.entity.post.PostVisibility.VISIBLE
+			  and p.author.status = com.linker.backend.entity.account.UserStatus.ACTIVE
+			  and p.author.deletedAt is null
+			order by p.createdAt desc, p.id desc
+			""")
+	List<Post> findVisibleForFeed();
 }

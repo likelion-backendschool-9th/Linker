@@ -16,6 +16,7 @@ import java.util.Set;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.dto.post.request.CommentWriteRequest;
+import com.linker.backend.dto.post.request.FeedSeenRequest;
 import com.linker.backend.dto.post.request.PostPeriodRequest;
 import com.linker.backend.dto.post.request.PostPhotoRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
@@ -29,12 +30,14 @@ import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
 import com.linker.backend.dto.post.response.PostPeriodResponse;
 import com.linker.backend.dto.post.response.PostPhotoResponse;
+import com.linker.backend.dto.post.response.RecommendedUsersResponse;
 import com.linker.backend.dto.post.response.RepoSummaryResponse;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.file.UploadedFile;
 import com.linker.backend.entity.github.GithubRepo;
 import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.entity.post.Comment;
+import com.linker.backend.entity.post.FeedSeenPost;
 import com.linker.backend.entity.post.Post;
 import com.linker.backend.entity.post.PostDemoLink;
 import com.linker.backend.entity.post.PostImage;
@@ -50,6 +53,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubRepoRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
+import com.linker.backend.repository.post.FeedSeenPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
@@ -72,6 +76,7 @@ public class UserPostService {
 	private final UserUploadService uploads;
 	private final PostLikeRepository likes;
 	private final CommentRepository comments;
+	private final FeedSeenPostRepository seenPosts;
 	private final UserBlockRepository blocks;
 	private final UserNotificationService notifications;
 	private final RecruitCardMapper authors;
@@ -86,6 +91,7 @@ public class UserPostService {
 			UserUploadService uploads,
 			PostLikeRepository likes,
 			CommentRepository comments,
+			FeedSeenPostRepository seenPosts,
 			UserBlockRepository blocks,
 			UserNotificationService notifications,
 			RecruitCardMapper authors,
@@ -98,12 +104,48 @@ public class UserPostService {
 		this.techTags = techTags;
 		this.uploads = uploads;
 		this.likes = likes;
+		this.seenPosts = seenPosts;
 		this.comments = comments;
 		this.blocks = blocks;
 		this.notifications = notifications;
 		this.authors = authors;
 		this.rateLimiter = rateLimiter;
 		this.clock = clock;
+	}
+
+	@Transactional
+	public void markSeen(AuthenticatedUser user, FeedSeenRequest request) {
+		if (request == null || request.postIds() == null || request.postIds().isEmpty()) {
+			return;
+		}
+		User viewer = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		Instant now = clock.instant();
+		Set<Long> unique = new HashSet<>();
+		for (Long postId : request.postIds()) {
+			if (postId == null || postId <= 0 || !unique.add(postId)) {
+				continue;
+			}
+			Post post = posts.findById(postId).orElse(null);
+			if (post == null || post.getDeletedAt() != null) {
+				continue;
+			}
+			var existing = seenPosts.findByUserIdAndPostId(user.userId(), postId);
+			if (existing.isPresent()) {
+				existing.get().touchSeenAt(now);
+			} else {
+				seenPosts.save(FeedSeenPost.of(viewer, post, now));
+			}
+		}
+	}
+
+	/**
+	 * Empty-feed stack recommendations need {@code user_tech_tags} (A/04). Until that table exists,
+	 * return an empty list rather than inventing ownership.
+	 */
+	@Transactional(readOnly = true)
+	public RecommendedUsersResponse recommendedUsers(AuthenticatedUser user) {
+		return new RecommendedUsersResponse(List.of());
 	}
 
 	@Transactional(readOnly = true)

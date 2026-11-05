@@ -1,5 +1,7 @@
 package com.linker.backend.repository.post;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,5 +31,18 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 			@Param("postId") long postId,
 			@Param("cursorId") Long cursorId,
 			Pageable pageable
+	);
+
+	@Query("""
+			select l.post.id, count(l)
+			from PostLike l
+			join l.user u
+			where l.post.id in :postIds
+			  and u.createdAt <= :matureBefore
+			group by l.post.id
+			""")
+	List<Object[]> countMatureLikesByPostIds(
+			@Param("postIds") Collection<Long> postIds,
+			@Param("matureBefore") Instant matureBefore
 	);
 }

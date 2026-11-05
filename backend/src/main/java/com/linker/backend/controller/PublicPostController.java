@@ -1,9 +1,11 @@
 package com.linker.backend.controller;
 
 import com.linker.backend.dto.post.response.CommentListResponse;
+import com.linker.backend.dto.post.response.FeedPostItemResponse;
 import com.linker.backend.dto.post.response.PostCardListResponse;
 import com.linker.backend.dto.post.response.PostDetailResponse;
 import com.linker.backend.dto.post.response.PostReadmeResponse;
+import com.linker.backend.dto.recruit.response.CursorPage;
 import com.linker.backend.service.PublicPostService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,12 +21,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/public")
 @Tag(name = "p23-post-detail")
+@Tag(name = "p24-feed")
 public class PublicPostController {
 
 	private final PublicPostService posts;
 
 	public PublicPostController(PublicPostService posts) {
 		this.posts = posts;
+	}
+
+	@GetMapping("/feed")
+	@Operation(tags = {"p24-feed"})
+	public ResponseEntity<CursorPage<FeedPostItemResponse>> feed(
+			@RequestParam(required = false) String cursor,
+			@RequestParam(required = false) Boolean offersOnly
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.feed(cursor, offersOnly));
 	}
 
 	@GetMapping("/posts/{postId}")

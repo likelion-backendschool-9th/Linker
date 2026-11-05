@@ -30,6 +30,7 @@ import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
+import com.linker.backend.repository.post.FeedSeenPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.post.PostViewRepository;
@@ -61,6 +62,8 @@ class PublicPostServiceTest {
 	@Mock
 	PostViewRepository views;
 	@Mock
+	FeedSeenPostRepository seenPosts;
+	@Mock
 	UserRepository users;
 	@Mock
 	UserBlockRepository blocks;
@@ -71,7 +74,7 @@ class PublicPostServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new PublicPostService(posts, comments, likes, views, users, blocks, authors, CLOCK);
+		service = new PublicPostService(posts, comments, likes, views, seenPosts, users, blocks, authors, CLOCK);
 		SecurityContextHolder.clearContext();
 	}
 
@@ -138,6 +141,86 @@ class PublicPostServiceTest {
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("NOT_IMPLEMENTED"));
 	}
 
+	@Test
+	void guestFeedUsesPopularOrNewWhyShown() {
+		Post popular = postWithId(1L, 10L, PostVisibility.VISIBLE, NOW.minusSeconds(3600));
+		Post newest = postWithId(2L, 11L, PostVisibility.VISIBLE, NOW.minusSeconds(60));
+		when(posts.findVisibleForFeed()).thenReturn(List.of(newest, popular));
+		when(likes.countMatureLikesByPostIds(any(), any())).thenReturn(List.<Object[]>of(new Object[]{1L, 5L}));
+		when(comments.countNonAuthorByPostIds(any())).thenReturn(List.of());
+		when(authors.toAuthor(any())).thenAnswer(invocation -> {
+			User author = invocation.getArgument(0);
+			return new AuthorBriefResponse(author.getId(), author.getUsername(), author.getUsername(), "", "DEVELOPER", "OFF");
+		});
+
+		var page = service.feed(null, false);
+
+		assertThat(page.items()).hasSize(2);
+		assertThat(page.items().getFirst().type()).isEqualTo("POST");
+		assertThat(page.items().getFirst().whyShown()).isEqualTo("이번 주 인기");
+		assertThat(page.items().get(1).whyShown()).isEqualTo("새로 올라온 작업물");
+		assertThat(page.nextCursor()).isNull();
+	}
+
+	@Test
+	void loggedInFeedExcludesSeenOwnAndBlockedAndLimitsSameAuthor() {
+		Post own = postWithId(1L, 99L, PostVisibility.VISIBLE, NOW.minusSeconds(100));
+		Post blocked = postWithId(2L, 50L, PostVisibility.VISIBLE, NOW.minusSeconds(90));
+		Post seen = postWithId(8L, 40L, PostVisibility.VISIBLE, NOW.minusSeconds(85));
+		Post a1 = postWithId(3L, 10L, PostVisibility.VISIBLE, NOW.minusSeconds(80));
+		Post a2 = postWithId(4L, 10L, PostVisibility.VISIBLE, NOW.minusSeconds(70));
+		Post a3 = postWithId(5L, 10L, PostVisibility.VISIBLE, NOW.minusSeconds(60));
+		Post b1 = postWithId(6L, 20L, PostVisibility.VISIBLE, NOW.minusSeconds(50));
+		Post c1 = postWithId(7L, 30L, PostVisibility.VISIBLE, NOW.minusSeconds(40));
+		when(posts.findVisibleForFeed()).thenReturn(List.of(own, blocked, seen, a1, a2, a3, b1, c1));
+		when(blocks.findActiveBlockedIds(99L)).thenReturn(List.of(50L));
+		when(blocks.findActiveBlockerIds(99L)).thenReturn(List.of());
+		when(seenPosts.findPostIdsByUserId(99L)).thenReturn(List.of(8L));
+		when(likes.countMatureLikesByPostIds(any(), any())).thenReturn(List.<Object[]>of(
+				new Object[]{3L, 3L}, new Object[]{4L, 2L}, new Object[]{5L, 1L},
+				new Object[]{6L, 4L}, new Object[]{7L, 1L}
+		));
+		when(comments.countNonAuthorByPostIds(any())).thenReturn(List.of());
+		when(authors.toAuthor(any())).thenAnswer(invocation -> {
+			User author = invocation.getArgument(0);
+			return new AuthorBriefResponse(author.getId(), author.getUsername(), author.getUsername(), "", "DEVELOPER", "OFF");
+		});
+		setViewer(99L, "viewer");
+
+		var page = service.feed(null, null);
+
+		assertThat(page.items()).extracting(item -> item.post().id())
+				.doesNotContain(1L, 2L, 8L)
+				.containsExactly(6L, 3L, 4L, 7L, 5L);
+		List<Long> authorsInOrder = page.items().stream().map(item -> item.post().author().id()).toList();
+		int run = 1;
+		for (int i = 1; i < authorsInOrder.size(); i++) {
+			if (authorsInOrder.get(i).equals(authorsInOrder.get(i - 1))) {
+				run++;
+				assertThat(run).isLessThanOrEqualTo(2);
+			} else {
+				run = 1;
+			}
+		}
+	}
+
+	@Test
+	void feedOffersOnlyExcludesOffSeekingAuthors() {
+		Post open = postWithId(1L, 10L, PostVisibility.VISIBLE, NOW);
+		ReflectionTestUtils.setField(open.getAuthor(), "jobSeekingStatus",
+				com.linker.backend.entity.account.JobSeekingStatus.OPEN);
+		Post off = postWithId(2L, 11L, PostVisibility.VISIBLE, NOW);
+		when(posts.findVisibleForFeed()).thenReturn(List.of(open, off));
+		when(likes.countMatureLikesByPostIds(any(), any())).thenReturn(List.of());
+		when(comments.countNonAuthorByPostIds(any())).thenReturn(List.of());
+		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "a", "a", "", "DEVELOPER", "OPEN"));
+
+		var page = service.feed(null, true);
+
+		assertThat(page.items()).hasSize(1);
+		assertThat(page.items().getFirst().post().id()).isEqualTo(1L);
+	}
+
 	private void setViewer(long userId, String login) {
 		AuthenticatedUser user = new AuthenticatedUser(
 				userId, login, UserType.DEVELOPER, UserStatus.ACTIVE,
@@ -147,22 +230,26 @@ class PublicPostServiceTest {
 	}
 
 	private Post post(long authorId, PostVisibility visibility) {
-		User author = User.create("author", UserType.DEVELOPER);
+		return postWithId(42L, authorId, visibility, NOW);
+	}
+
+	private Post postWithId(long postId, long authorId, PostVisibility visibility, Instant createdAt) {
+		User author = User.create("author" + authorId, UserType.DEVELOPER);
 		ReflectionTestUtils.setField(author, "id", authorId);
 		GithubRepo repo = new GithubRepo() {
 		};
-		ReflectionTestUtils.setField(repo, "id", 11L);
-		ReflectionTestUtils.setField(repo, "fullName", "author/demo");
-		ReflectionTestUtils.setField(repo, "ownerLogin", "author");
-		ReflectionTestUtils.setField(repo, "name", "demo");
+		ReflectionTestUtils.setField(repo, "id", 1000L + postId);
+		ReflectionTestUtils.setField(repo, "fullName", "author" + authorId + "/demo" + postId);
+		ReflectionTestUtils.setField(repo, "ownerLogin", "author" + authorId);
+		ReflectionTestUtils.setField(repo, "name", "demo" + postId);
 		ReflectionTestUtils.setField(repo, "isPrivate", false);
 		ReflectionTestUtils.setField(repo, "isFork", false);
 		ReflectionTestUtils.setField(repo, "stargazersCount", 1);
 		ReflectionTestUtils.setField(repo, "forksCount", 0);
 		Post post = Post.publish(author, repo, null, "intro", "body", null, null, null, null, 0, 0);
-		ReflectionTestUtils.setField(post, "id", 42L);
+		ReflectionTestUtils.setField(post, "id", postId);
 		ReflectionTestUtils.setField(post, "visibility", visibility);
-		ReflectionTestUtils.setField(post, "createdAt", NOW);
+		ReflectionTestUtils.setField(post, "createdAt", createdAt);
 		return post;
 	}
 }
