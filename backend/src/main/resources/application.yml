@@ -37,6 +37,19 @@ spring:
     resources:
       add-mappings: false
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  swagger-ui:
+    enabled: false
+  packages-to-scan:
+    - com.linker.backend.controller
+    - com.linker.backend.integration.github
+  paths-to-match:
+    - /api/v1/**
+
 server:
   error:
     include-stacktrace: never

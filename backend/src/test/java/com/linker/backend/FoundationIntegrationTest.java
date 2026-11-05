@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Set;
@@ -658,6 +660,40 @@ class FoundationIntegrationTest {
 				.andExpect(status().isTooManyRequests())
 				.andExpect(header().exists("Retry-After"))
 				.andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+	}
+
+	@Test
+	void openApiPublishesExistingFoundationEndpointsOnly() throws Exception {
+		MvcResult result = mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/user/me'].get.tags[0]").value("p00-common"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me'].get.operationId").value("getMe"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/auth/refresh'].post.operationId").value("refreshSession"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/auth/refresh'].post.responses['204']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/public/auth/refresh'].post.responses['200']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/user/uploads'].post.responses['201']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/user/blocks'].post.responses['204']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/webhook/github'].post.responses['202']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/public/tech-tags'].get.operationId").value("listTechTags"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/job-categories'].get.operationId").value("listJobCategories"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/sitemap/{kind}'].get.operationId").value("listSitemap"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/uploads'].post.operationId").value("createUpload"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/uploads/{fileId}/complete'].post.operationId").value("completeUpload"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/blocks'].get.operationId").value("listBlocks"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/blocks'].post.operationId").value("createBlock"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/blocks/{userId}'].delete.operationId").value("deleteBlock"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/reports'].post.operationId").value("createReport"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/team-setup/install-url'].get.operationId").value("getInstallUrl"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/team-setup/installations/verify'].post.operationId").value("verifyInstallation"))
+				.andExpect(jsonPath("$.paths['/api/v1/webhook/github'].post.operationId").value("receiveGithubWebhook"))
+				.andReturn();
+		String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+		assertThat(body).doesNotContain("/uploads/{fileId}/content");
+		assertThat(body).doesNotContain("security-probes");
+		assertThat(body).doesNotContain("chat-rooms");
+		Path output = Path.of("build", "openapi", "v3-api-docs.json");
+		Files.createDirectories(output.getParent());
+		Files.writeString(output, body);
 	}
 
 	@Test
