@@ -17,15 +17,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 	private final StompHandshakeInterceptor handshakeInterceptor;
 	private final StompChannelInterceptor channelInterceptor;
+	private final ChatDeliveryGuard deliveryGuard;
 	private final LinkerProperties properties;
 
 	public WebSocketConfig(
 			StompHandshakeInterceptor handshakeInterceptor,
 			StompChannelInterceptor channelInterceptor,
+			ChatDeliveryGuard deliveryGuard,
 			LinkerProperties properties
 	) {
 		this.handshakeInterceptor = handshakeInterceptor;
 		this.channelInterceptor = channelInterceptor;
+		this.deliveryGuard = deliveryGuard;
 		this.properties = properties;
 	}
 
@@ -46,6 +49,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 	@Override
 	public void configureClientInboundChannel(ChannelRegistration registration) {
 		registration.interceptors(channelInterceptor);
+	}
+
+	@Override
+	public void configureClientOutboundChannel(ChannelRegistration registration) {
+		registration.interceptors(deliveryGuard);
 	}
 
 	private String[] allowedOriginPatterns() {

@@ -11,8 +11,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.chat.ChatRoom;
+import com.linker.backend.entity.chat.ChatRoomMember;
+import com.linker.backend.entity.chat.DmStatus;
+import com.linker.backend.entity.chat.RequestKind;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatRoomMemberRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.service.PublicAuthService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +44,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Real WebSocket upgrade against the embedded server. Interceptor unit tests stay separate.
- * Message catch-up is not asserted: chat rows are not persisted yet.
+ * Text persistence and catch-up live in ChatTextIntegrationTest.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -76,11 +82,18 @@ class StompConnectionTest {
 	@Autowired
 	private PublicAuthService sessions;
 
+	@Autowired
+	private ChatRoomRepository rooms;
+
+	@Autowired
+	private ChatRoomMemberRepository members;
+
 	private String token;
+	private User user;
 
 	@BeforeEach
 	void issueSession() {
-		User user = users.saveAndFlush(User.create("stomp-" + System.nanoTime(), UserType.DEVELOPER));
+		user = users.saveAndFlush(User.create("stomp-" + System.nanoTime(), UserType.DEVELOPER));
 		token = sessions.issue(user, "JUnit", "127.0.0.1").rawToken();
 	}
 
@@ -107,10 +120,10 @@ class StompConnectionTest {
 		assertThat(session.isConnected()).isTrue();
 		session.subscribe("/user/queue/notifications", ignoreFrames());
 		session.subscribe("/user/queue/chat-rooms", ignoreFrames());
-		// Temporary room access allows any positive id. Real membership is page 16–17.
-		session.subscribe("/topic/chat-rooms/1", ignoreFrames());
 		assertThat(session.isConnected()).isTrue();
-		session.disconnect();
+		session.subscribe("/topic/chat-rooms/1", ignoreFrames());
+		Thread.sleep(300);
+		assertThat(session.isConnected()).isFalse();
 	}
 
 	@Test
@@ -123,6 +136,24 @@ class StompConnectionTest {
 		second.subscribe("/user/queue/notifications", ignoreFrames());
 		assertThat(second.isConnected()).isTrue();
 		second.disconnect();
+	}
+
+	@Test
+	void activeMemberCanSubscribeToTheRoom() throws Exception {
+		User other = users.saveAndFlush(User.create("stomp-other-" + System.nanoTime(), UserType.DEVELOPER));
+		ChatRoom room = rooms.saveAndFlush(ChatRoom.direct(
+				user.getId(),
+				other.getId(),
+				DmStatus.ACCEPTED,
+				RequestKind.GENERAL,
+				null
+		));
+		members.saveAndFlush(ChatRoomMember.join(room, user.getId()));
+		StompSession session = connect(token);
+		session.subscribe("/topic/chat-rooms/" + room.getId(), ignoreFrames());
+		Thread.sleep(300);
+		assertThat(session.isConnected()).isTrue();
+		session.disconnect();
 	}
 
 	@Test

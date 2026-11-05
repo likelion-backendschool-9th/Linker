@@ -108,6 +108,62 @@ public class User extends BaseTimeEntity {
 		this.lastActiveAt = when;
 	}
 
+	public void rename(String username) {
+		this.username = username;
+	}
+
+	public void refreshAvatar(String avatarUrl) {
+		this.avatarUrl = blankToNull(avatarUrl);
+	}
+
+	public void keepNotificationEmail(String email, Instant verifiedAt) {
+		if (this.email != null && !this.email.isBlank()) {
+			return;
+		}
+		String value = blankToNull(email);
+		if (value == null) {
+			return;
+		}
+		this.email = value;
+		this.emailVerifiedAt = verifiedAt;
+	}
+
+	public void useGithubDisplayName(String name) {
+		String value = blankToNull(name);
+		if (value == null) {
+			return;
+		}
+		this.displayName = value.length() <= 20 ? value : value.substring(0, 20);
+	}
+
+	/**
+	 * @return true when a pending withdrawal inside the restore window becomes active
+	 */
+	public boolean restoreWithdrawal(Instant now, java.time.Duration window) {
+		if (status != UserStatus.WITHDRAWING || withdrawRequestedAt == null) {
+			return false;
+		}
+		if (withdrawRequestedAt.plus(window).isBefore(now)) {
+			return false;
+		}
+		this.status = UserStatus.ACTIVE;
+		this.withdrawRequestedAt = null;
+		return true;
+	}
+
+	public boolean withdrawalExpired(Instant now, java.time.Duration window) {
+		return status == UserStatus.WITHDRAWING
+				&& (withdrawRequestedAt == null || withdrawRequestedAt.plus(window).isBefore(now));
+	}
+
+	private static String blankToNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -118,6 +174,10 @@ public class User extends BaseTimeEntity {
 
 	public String getDisplayName() {
 		return displayName;
+	}
+
+	public String getAvatarUrl() {
+		return avatarUrl;
 	}
 
 	public UserType getUserType() {

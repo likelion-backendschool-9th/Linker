@@ -14,7 +14,7 @@ const row = {
   kind: 'REQUEST',
   title: '김개발',
   counterpart: null,
-  requestKind: 'NORMAL',
+  requestKind: 'GENERAL',
   requestDirection: 'RECEIVED',
   companyName: null,
   muted: true,
@@ -98,4 +98,36 @@ it('deletes a received request only after confirming and refreshes the list', as
   );
   expect(await screen.findByText('받은 메시지 요청이 없어요.')).toBeVisible();
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+});
+
+it('omits a missing team name and a missing preview without inventing copy', async () => {
+  fetchMock.mockImplementation(async (url) => {
+    if (url.endsWith('unread-summary'))
+      return { TEAM: 1, DIRECT: 0, REQUEST: 0, total: 1, requestCount: 0 };
+    if (url.includes('tab=TEAM')) {
+      return {
+        items: [
+          {
+            id: 8,
+            kind: 'TEAM',
+            title: null,
+            counterpart: null,
+            requestKind: null,
+            requestDirection: null,
+            companyName: null,
+            muted: false,
+            unreadCount: 1,
+            lastMessage: { text: null, createdAt: '2026-11-01T00:00:00Z' },
+          },
+        ],
+        nextCursor: null,
+      };
+    }
+    return { items: [], nextCursor: null };
+  });
+  renderWithProviders(<ChatList />, { viewer: { role: 'developer', login: 'developer' } });
+  expect(await screen.findByLabelText('읽지 않은 메시지 1개')).toBeVisible();
+  expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+  expect(screen.queryByText('아직 메시지가 없어요.')).not.toBeInTheDocument();
+  expect(screen.queryByText('사진을 보냈어요')).not.toBeInTheDocument();
 });

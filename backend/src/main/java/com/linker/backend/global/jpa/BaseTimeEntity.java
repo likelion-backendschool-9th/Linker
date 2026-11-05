@@ -28,4 +28,12 @@ public abstract class BaseTimeEntity {
 	public Instant getUpdatedAt() {
 		return updatedAt;
 	}
+
+	/**
+	 * Aligns the in-memory instant with a value already written to the database.
+	 * Auditing still fills {@code created_at} on insert. {@code updatable = false} keeps later flushes from reverting a native correction.
+	 */
+	protected final void replaceCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
 }
