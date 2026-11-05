@@ -41,6 +41,19 @@ public final class PlanLimits {
 	public static final int APPLICATION_EXPIRE_DAYS = 14;
 	/** Policy ch. 11 — free team member cap (Flex unlimited later). */
 	public static final int TEAM_MEMBERS_FREE = 6;
+	/** POL-P-2 / ch. 2 — project post writes and photo caps. */
+	public static final int POSTS_PER_DAY = 10;
+	public static final int POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
+	public static final int POST_INTRO_MIN = 1;
+	public static final int POST_INTRO_MAX = 60;
+	public static final int POST_BODY_MAX = 2_000;
+	public static final int POST_ROLE_MAX = 40;
+	public static final int POST_DEMO_LINKS_MAX = 3;
+	public static final int POST_TAGS_MAX = 5;
+	public static final int POST_TEAM_SIZE_MIN = 1;
+	public static final int POST_TEAM_SIZE_MAX = 50;
+	public static final int POST_PHOTOS_FREE = 5;
+	public static final int POST_PHOTOS_PRO = 10;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;
