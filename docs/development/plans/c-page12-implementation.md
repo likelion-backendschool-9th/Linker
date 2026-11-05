@@ -53,15 +53,23 @@ Markdown은 CommonMark AST에서 원시 HTML을 텍스트로 이스케이프하�
 
 - [issue-cache.sql](../../../backend/src/main/resources/db/issue-schema/issue-cache.sql): 기존 11번 준비본.
 - [issue-sync-jobs.sql](../../../backend/src/main/resources/db/issue-schema/issue-sync-jobs.sql): 12번 재시도 테이블 준비본.
-- 두 파일 모두 자동 Flyway 검색 경로 밖이다. B의 실제 팀·멤버·저장소·보드 테이블 이후 정식 버전 번호로 편입한다. 기존 V1–V4를 변경하지 않았으며 공용/개발 DB에 임의 적용하지 않는다.
-- 실제 실행에는 A의 `GithubUserAccessTokenSource`, B의 DB 기반 `TeamAccess` 및 팀/조직/저장소/보드 연결이 필요하다. 테스트용 대체 구현은 테스트 소스에만 있다.
+- 두 파일 모두 자동 Flyway 검색 경로 밖이다. B의 실제 팀·멤버·저장소·보드 테이블 이후 정식 버전 번호로 편입한다. 기존 자동 Flyway 마이그레이션을 변경하지 않았으며 공용/개발 DB에 임의 적용하지 않는다.
+- 최신 dev `48ae110`에는 A의 `PersistedGithubUserAccessTokenSource.tokenFor(long)`가 병합되어 시그니처 호환과 컴파일을 확인했다. 실제 사용자 토큰은 사용하지 않았다. 실행에는 여전히 B의 DB 기반 `TeamAccess` 및 팀/조직/저장소/보드 연결이 필요하다. 테스트용 대체 구현은 테스트 소스에만 있다.
 - 실제 사용자 토큰·GitHub App 쓰기/수신, 설치 완료 후 캐시 연동, 정식 마이그레이션, 프론트 화면 연결은 아직 실검증하지 않았다. 이 문서는 이를 완료로 선언하지 않는다. 이슈 #88은 In progress를 유지하고 PR에는 `Refs #88`을 쓴다.
 
 ## 검증 결과
 
 - 격리 PostgreSQL·Redis + 실제 Spring Security/MockMvc + 모의 GitHub HTTP를 사용했다. 팀 공용 DB·실제 GitHub 보드는 변경하지 않았다.
 - `IssueReadIntegrationTest` 50개: 기존 11번 27개 + 12번 23개 통과.
-- `IssueMarkdownTest` 3개, 정책·GitHub 설치·사용자 연동·JWT 회귀 16개: 합계 **69개 통과**, 실패·오류·생략 0.
+- `IssueMarkdownTest` 3개, 정책·GitHub 설치·사용자 연동·JWT 회귀 16개: 합계 **69개 통과**, 실패·오류·생략 0. 최초 검증은 dev `b0c67cb` 기반이며, 최신 dev 병합 후의 조건부 진단 결과는 아래에서 구분한다.
 - 12번은 내부 ID·권한·후보·초대 미수락/탈퇴·담당자 제한·silent ignore·알림 중복·라벨·일정 해제/순서·부분 실패·재시도·권한 회수·연결 변경·최대 시도·상태 close/reopen·삭제/이동·하위 이슈 노출·오래된 응답을 검증했다.
 - `bootJar` 빌드, Orval 생성, `@linker/api` 및 웹 typecheck 통과. 전체 백엔드 테스트·실 GitHub App 쓰기·프론트 브라우저 E2E는 실행하지 않았다.
 - OpenAPI 생성은 테스트가 덤프한 실제 Spring 스펙에서 `scripts/scope_openapi.py`로 p00/p11/p12만 선택한다. D의 다른 페이지 생성물을 이 C PR에서 새로 만들지 않는다. 페이지 mock·기존 프론트 상세 화면은 교체하지 않는다.
+
+## 최신 dev 병합 후 공통 기동 문제 (48ae110)
+
+- A의 #211·#213을 포함한 최신 dev를 작업 브랜치에 병합했다. C와의 코드 충돌은 없고 `bootJar` 및 API·웹 타입 검사는 통과한다.
+- **기본 설정의 Spring 기동 테스트는 실패한다.** 기존 dev에 `V4__chat_message_edited_at.sql`과 `V4__github_social_login.sql`이 동시에 있어 Flyway가 `Found more than one migration with version 4`로 중단한다. C12가 생성한 파일은 아니며 이 PR은 해당 두 파일을 수정하지 않는다.
+- 원인을 분리하기 위해 `/tmp`의 SQL 사본에서만 GitHub 로그인 V4를 임시 V7로 옮기고, 테스트 JVM의 `spring.flyway.locations`를 해당 사본으로 지정했다. 소스·개발 DB·실행 설정은 변경하지 않았다. 이 **진단 조건에서 최신 dev + C12 테스트 69개가 통과**했다. 이는 정식 마이그레이션 순서 확정이나 기본 CI 성공을 뜻하지 않는다.
+- 기본 환경을 다시 통과시키려면 관련 마이그레이션 담당자가 공용 적용 이력을 확인하고 중복 번호를 조율해야 한다. 적용된 SQL을 이 C PR에서 임의로 재번호화하거나 repair하지 않는다.
+- 이 공통 기동 문제 해결 전에는 12번을 “최신 dev 기본 환경 검증 완료” 또는 “즉시 병합 가능”으로 표시하지 않는다. #88은 In progress다.
