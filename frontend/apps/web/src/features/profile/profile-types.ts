@@ -2,7 +2,8 @@ export type PublicProfile = {
   id: number;
   login: string;
   name: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
+  githubUrl: string;
   userType: 'DEVELOPER' | 'RECRUITER';
   kind: 'DEVELOPER' | 'RECRUITER';
   bio: string | null;
