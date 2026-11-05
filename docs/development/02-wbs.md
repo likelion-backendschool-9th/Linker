@@ -339,6 +339,7 @@
 - **범위:** 목록·메시지·읽음·검색·개인 요청·채용 제안·공유·AI 요약
 - **주요 참조 데이터:** chat_rooms, chat_room_members, chat_messages, chat_message_images, chat_message_mentions, ai_chat_summaries. 전체 연결은 기존 ERD §7-2와 5장.
 - **완료 기준:** 팀/개인 대화·재연결·읽음·차단 기간을 통일한다. AI는 C, 보낸 제안은 A가 구현하고 D가 채팅 계약을 검토한다.
+- 페이지 16 목록 구현은 엔드포인트 4개를 추가하지 않는다. 응답은 `{items,nextCursor}`, 기술적 페이지 크기는 20이며 Policy 한도가 아니다. cursor는 마지막 가시 메시지 시각(없으면 방 생성 시각) 내림차순과 roomId 내림차순의 keyset이다. 토큰에는 버전·사용자·탭·정렬 시각·roomId가 들어가고, 요청 문맥과 다르면 400이다. 인코딩은 인증이나 변조 방지가 아니며 각 조회는 멤버십을 다시 확인한다. 실시간 재정렬의 스냅샷은 보장하지 않는다. 모집자 `TEAM`/`REQUEST`는 403, `DIRECT`는 허용한다. 수락·거절의 최초 전환이 커밋된 뒤에만 처리한 본인 `/user/queue/chat-rooms`로 `{type:"CHAT_ROOMS_CHANGED",roomId}`를 보낸다. `requestKind`는 `GENERAL`/`RECRUITING`이다. 팀 제목은 `teams`가 없어 null이며 `team_id` FK는 08 이후다. 메시지 `payload`·`client_message_id`·`edited_at`과 전송 API는 17이다. 무료 팀 60일 이력 제한은 구독 상태가 없어 목록에 적용하지 않는다. 삭제·숨김 메시지의 미리보기 문구는 Policy를 따르고, 미읽음 집계에서 빼는 규칙은 문서에 없어 ERD의 `id > last_read_message_id`에서 본인 메시지와 1:1 차단 기간만 제외한다. 거절 후 30일 재요청 금지는 방 생성(#98)이며 이 DELETE가 기간을 저장하지 않는다. GET은 EXPIRED를 저장하지 않는다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |

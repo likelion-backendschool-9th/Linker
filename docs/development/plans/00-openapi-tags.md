@@ -37,6 +37,8 @@ orval은 `tags-split`이다. `p00-common`은 `frontend/packages/api/src/generate
 | `verifyInstallation` | `POST /api/v1/user/team-setup/installations/verify` | 200 |
 | `receiveGithubWebhook` | `POST /api/v1/webhook/github` | 200 중복, 202 접수 |
 
+페이지 16 목록은 `p16-chat-list`로 공개한다. operationId는 `listChatRooms`, `unreadChatSummary`, `acceptChatRequest`, `deleteChatRequest`다. 삭제는 204다. STOMP 경로와 메시지 전송은 스펙에 넣지 않는다.
+
 `PUT /api/v1/user/uploads/{fileId}/content`는 스펙에 없다. WBS 업로드 API 2개에 없고, OpenAPI 포함 여부는 E 확인 전이다. STOMP와 테스트용 프로브 경로도 스펙에 없다.
 
 ## 3. 필드 비교

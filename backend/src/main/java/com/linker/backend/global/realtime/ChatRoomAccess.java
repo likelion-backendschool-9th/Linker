@@ -1,10 +1,12 @@
 package com.linker.backend.global.realtime;
 
 /**
- * Room participation check for STOMP SEND/SUBSCRIBE on chat destinations.
- * Chat tables land with page 16/17; until then the default bean only requires a signed-in user.
+ * Room participation for STOMP. Subscribe and send are separate:
+ * a pending request can be read by its members, and further sends stay closed.
  */
 public interface ChatRoomAccess {
 
-	boolean canParticipate(long userId, long roomId);
+	boolean canSubscribe(long userId, long roomId);
+
+	boolean canSend(long userId, long roomId);
 }
