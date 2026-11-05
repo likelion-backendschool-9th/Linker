@@ -1,5 +1,6 @@
 package com.linker.backend.repository.recruit;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,5 +60,61 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 	List<Application> findPendingByRecruitPostId(
 			@Param("recruitPostId") long recruitPostId,
 			@Param("pending") ApplicationStatus pending
+	);
+
+	long countByRecruitPostIdAndStatus(long recruitPostId, ApplicationStatus status);
+
+	@Query("""
+			select a from Application a
+			join fetch a.recruitRole
+			join fetch a.applicant
+			where a.recruitPost.id = :recruitPostId
+			  and a.applicant.id = :applicantId
+			order by a.attempt desc, a.id desc
+			""")
+	List<Application> findByRecruitPostIdAndApplicantId(
+			@Param("recruitPostId") long recruitPostId,
+			@Param("applicantId") long applicantId
+	);
+
+	@Query("""
+			select a from Application a
+			join fetch a.applicant
+			join fetch a.recruitRole
+			where a.recruitPost.id = :recruitPostId
+			  and a.status <> :canceled
+			  and (:roleId is null or a.recruitRole.id = :roleId)
+			order by a.createdAt desc, a.id desc
+			""")
+	List<Application> findForAuthor(
+			@Param("recruitPostId") long recruitPostId,
+			@Param("roleId") Long roleId,
+			@Param("canceled") ApplicationStatus canceled
+	);
+
+	@Query("""
+			select a from Application a
+			join fetch a.applicant
+			join fetch a.recruitRole
+			join fetch a.recruitPost p
+			join fetch p.author
+			where a.id = :applicationId
+			  and a.recruitPost.id = :recruitPostId
+			""")
+	Optional<Application> findDetailedForPost(
+			@Param("recruitPostId") long recruitPostId,
+			@Param("applicationId") long applicationId
+	);
+
+	@Query("""
+			select a from Application a
+			join fetch a.applicant
+			join fetch a.recruitPost
+			where a.status = :pending
+			  and a.expiresAt <= :now
+			""")
+	List<Application> findExpiredPending(
+			@Param("pending") ApplicationStatus pending,
+			@Param("now") Instant now
 	);
 }

@@ -18,8 +18,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
+import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitRoleWriteRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
+import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
@@ -35,6 +38,7 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
@@ -64,6 +68,8 @@ class UserRecruitmentServiceTest {
 	@Mock
 	TechTagRepository techTags;
 	@Mock
+	UserBlockRepository blocks;
+	@Mock
 	UserNotificationService notifications;
 
 	UserRecruitmentService service;
@@ -72,7 +78,7 @@ class UserRecruitmentServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new UserRecruitmentService(
-				posts, applications, users, techTags, new RecruitCardMapper(), notifications, CLOCK);
+				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER,
 				UserStatus.ACTIVE,
@@ -289,6 +295,112 @@ class UserRecruitmentServiceTest {
 		assertThat(stillOpen.getStatus()).isEqualTo(RecruitStatus.OPEN);
 	}
 
+	@Test
+	void applyCreatesPendingAndNotifiesAuthor() {
+		RecruitPost post = foreignPost();
+		User applicant = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(applicant, "id", 10L);
+		when(posts.findDetailedById(8L)).thenReturn(Optional.of(post));
+		when(applications.findByRecruitPostIdAndApplicantId(8L, 10L)).thenReturn(List.of());
+		when(users.findById(10L)).thenReturn(Optional.of(applicant));
+		when(applications.save(any(Application.class))).thenAnswer(invocation -> {
+			Application application = invocation.getArgument(0);
+			ReflectionTestUtils.setField(application, "id", 70L);
+			return application;
+		});
+
+		var response = service.apply(developer, 8L, new ApplyRecruitRequest(5L, "참여하고 싶어요"));
+
+		assertThat(response.id()).isEqualTo(70L);
+		assertThat(response.status()).isEqualTo("PENDING");
+		verify(notifications).create(any(CreateNotificationCommand.class));
+	}
+
+	@Test
+	void applyRejectsOwnPost() {
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(ownedPost()));
+
+		assertThatThrownBy(() -> service.apply(developer, 3L, new ApplyRecruitRequest(5L, "hi")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("FORBIDDEN"));
+	}
+
+	@Test
+	void applyRejectsClosedPost() {
+		RecruitPost post = foreignPost();
+		post.close(NOW);
+		when(posts.findDetailedById(8L)).thenReturn(Optional.of(post));
+
+		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L, "hi")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("RECRUIT_CLOSED"));
+	}
+
+	@Test
+	void acceptRequiresTeam() {
+		RecruitPost post = ownedPost();
+		Application application = pendingOn(post, 20L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+
+		assertThatThrownBy(() -> service.accept(developer, 3L, 7L, null))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("TEAM_REQUIRED"));
+	}
+
+	@Test
+	void acceptRejectsWhenRoleFullWithoutIncrease() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(100L);
+		RecruitRole role = post.getRoles().getFirst();
+		ReflectionTestUtils.setField(role, "acceptedCount", role.getHeadcount());
+		Application application = pendingOn(post, 20L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+
+		assertThatThrownBy(() -> service.accept(developer, 3L, 7L, new AcceptApplicationRequest(false)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("ROLE_FULL");
+					assertThat(api.getDetail()).containsEntry("roleId", 5L);
+				});
+	}
+
+	@Test
+	void rejectMarksRejectedAndNotifiesWithoutExposingReasonToSheet() {
+		RecruitPost post = ownedPost();
+		Application application = pendingOn(post, 20L);
+		User author = post.getAuthor();
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+		when(users.findById(10L)).thenReturn(Optional.of(author));
+
+		service.reject(developer, 3L, 7L, new RejectApplicationRequest("내부 메모"));
+
+		assertThat(application.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
+		assertThat(application.getRejectReason()).isEqualTo("내부 메모");
+		var sheet = service.applicationSheet(developer, 3L, 7L);
+		assertThat(sheet.status()).isEqualTo("REJECTED");
+		assertThat(sheet.message()).isEqualTo("hello");
+		ArgumentCaptor<CreateNotificationCommand> captor =
+				ArgumentCaptor.forClass(CreateNotificationCommand.class);
+		verify(notifications).create(captor.capture());
+		assertThat(captor.getValue().notificationType()).isEqualTo(NotificationTypes.APPLICATION_REJECTED);
+	}
+
+	@Test
+	void expireOverdueApplicationsNotifiesApplicants() {
+		RecruitPost post = ownedPost();
+		Application overdue = pendingOn(post, 20L);
+		ReflectionTestUtils.setField(overdue, "expiresAt", NOW.minusSeconds(60));
+		when(applications.findExpiredPending(ApplicationStatus.PENDING, NOW)).thenReturn(List.of(overdue));
+
+		assertThat(service.expireOverdueApplications()).isEqualTo(1);
+		assertThat(overdue.getStatus()).isEqualTo(ApplicationStatus.EXPIRED);
+		verify(notifications).create(any(CreateNotificationCommand.class));
+	}
+
 	private RecruitWriteRequest writeRequest(Long roleId) {
 		return new RecruitWriteRequest(
 				"함께 만들어요",
@@ -316,6 +428,31 @@ class UserRecruitmentServiceTest {
 		post.addRole(role);
 		ReflectionTestUtils.setField(role, "id", 5L);
 		return post;
+	}
+
+	private RecruitPost foreignPost() {
+		User author = User.create("author", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 1L);
+		RecruitPost post = RecruitPost.open(
+				author, "title", "desc", WorkMode.ONLINE, null, null, null,
+				LocalDate.of(2026, 11, 12), NOW);
+		ReflectionTestUtils.setField(post, "id", 8L);
+		ReflectionTestUtils.setField(post, "createdAt", NOW);
+		RecruitRole role = RecruitRole.of(RecruitRoleType.BACKEND, 2);
+		post.addRole(role);
+		ReflectionTestUtils.setField(role, "id", 5L);
+		return post;
+	}
+
+	private Application pendingOn(RecruitPost post, long applicantId) {
+		User applicant = User.create("applicant", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(applicant, "id", applicantId);
+		RecruitRole role = post.getRoles().getFirst();
+		Application application = Application.pending(
+				post, role, applicant, "hello", 1, NOW.plusSeconds(14L * 86_400L));
+		ReflectionTestUtils.setField(application, "id", 7L);
+		ReflectionTestUtils.setField(application, "createdAt", NOW);
+		return application;
 	}
 
 	private static Application pendingApplication(long applicantId, ApplicationStatus status) {

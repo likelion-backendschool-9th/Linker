@@ -31,6 +31,16 @@ public final class PlanLimits {
 	public static final int RECRUIT_HEADCOUNT_MAX = 10;
 	public static final int RECRUIT_TECH_TAGS_MAX = 10;
 	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
+	/** POL-R-3 — apply message and daily cap. */
+	public static final int APPLICATION_MESSAGE_MAX = 300;
+	public static final int APPLICATIONS_PER_DAY = 20;
+	public static final int APPLICATIONS_PER_DAY_WINDOW_SECONDS = 86_400;
+	/** POL-R-3 — one re-apply after cancel (attempt 1 then 2). */
+	public static final int APPLICATION_MAX_ATTEMPTS = 2;
+	/** POL-R-4 — unhandled pending applications expire after this many days. */
+	public static final int APPLICATION_EXPIRE_DAYS = 14;
+	/** Policy ch. 11 — free team member cap (Flex unlimited later). */
+	public static final int TEAM_MEMBERS_FREE = 6;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;

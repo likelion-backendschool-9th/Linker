@@ -15,8 +15,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
+import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitRoleWriteRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
+import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
+import com.linker.backend.dto.recruit.response.AcceptApplicationResponse;
+import com.linker.backend.dto.recruit.response.ApplicantListItemResponse;
+import com.linker.backend.dto.recruit.response.ApplicantListResponse;
+import com.linker.backend.dto.recruit.response.ApplicationCreateResponse;
+import com.linker.backend.dto.recruit.response.ApplicationSheetResponse;
+import com.linker.backend.dto.recruit.response.CompletionBriefResponse;
 import com.linker.backend.dto.recruit.response.CursorPage;
 import com.linker.backend.dto.recruit.response.MyApplicationResponse;
 import com.linker.backend.dto.recruit.response.RecruitCardResponse;
@@ -35,11 +44,13 @@ import com.linker.backend.entity.recruit.RecruitPostTag;
 import com.linker.backend.entity.recruit.RecruitRole;
 import com.linker.backend.entity.recruit.RecruitRoleType;
 import com.linker.backend.entity.recruit.RecruitStatus;
+import com.linker.backend.entity.recruit.RecruitVisibility;
 import com.linker.backend.entity.recruit.WorkMode;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
@@ -56,6 +67,7 @@ public class UserRecruitmentService {
 	private final ApplicationRepository applications;
 	private final UserRepository users;
 	private final TechTagRepository techTags;
+	private final UserBlockRepository blocks;
 	private final RecruitCardMapper cards;
 	private final UserNotificationService notifications;
 	private final Clock clock;
@@ -65,6 +77,7 @@ public class UserRecruitmentService {
 			ApplicationRepository applications,
 			UserRepository users,
 			TechTagRepository techTags,
+			UserBlockRepository blocks,
 			RecruitCardMapper cards,
 			UserNotificationService notifications,
 			Clock clock
@@ -73,6 +86,7 @@ public class UserRecruitmentService {
 		this.applications = applications;
 		this.users = users;
 		this.techTags = techTags;
+		this.blocks = blocks;
 		this.cards = cards;
 		this.notifications = notifications;
 		this.clock = clock;
@@ -284,6 +298,214 @@ public class UserRecruitmentService {
 			}
 		}
 		return closed;
+	}
+
+	@Transactional
+	public ApplicationCreateResponse apply(AuthenticatedUser user, long recruitId, ApplyRecruitRequest request) {
+		RecruitPost post = posts.findDetailedById(recruitId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "삭제되었거나 볼 수 없는 콘텐츠예요"));
+		if (post.getVisibility() != RecruitVisibility.VISIBLE) {
+			throw new ApiException(404, "NOT_FOUND", "삭제되었거나 볼 수 없는 콘텐츠예요");
+		}
+		if (post.getAuthor().getId() == user.userId()) {
+			throw new ApiException(403, "FORBIDDEN", "내 모집 글에는 지원할 수 없어요");
+		}
+		if (post.getStatus() == RecruitStatus.CLOSED) {
+			throw new ApiException(409, "RECRUIT_CLOSED", "모집이 끝났어요");
+		}
+		long authorId = post.getAuthor().getId();
+		if (blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(user.userId(), authorId)
+				|| blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(authorId, user.userId())) {
+			throw new ApiException(403, "FORBIDDEN", "차단된 사용자와는 지원할 수 없어요");
+		}
+		if (request == null || request.roleId() == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요");
+		}
+		String message = request.message() == null ? "" : request.message().trim();
+		if (message.length() > PlanLimits.APPLICATION_MESSAGE_MAX) {
+			throw new ApiException(400, "TOO_LONG", "300자까지 쓸 수 있어요");
+		}
+		RecruitRole role = post.getRoles().stream()
+				.filter(item -> item.getId().equals(request.roleId()))
+				.findFirst()
+				.orElseThrow(() -> new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요"));
+		List<Application> history = applications.findByRecruitPostIdAndApplicantId(post.getId(), user.userId());
+		if (history.stream().anyMatch(item -> item.getStatus() == ApplicationStatus.PENDING)) {
+			throw new ApiException(409, "ALREADY_APPLIED", "이미 지원한 모집 글이에요");
+		}
+		if (history.stream().anyMatch(item ->
+				item.getStatus() == ApplicationStatus.ACCEPTED
+						|| item.getStatus() == ApplicationStatus.REJECTED
+						|| item.getStatus() == ApplicationStatus.EXPIRED)) {
+			throw new ApiException(409, "ALREADY_APPLIED", "이미 지원한 모집 글이에요");
+		}
+		int maxAttempt = history.stream().mapToInt(Application::getAttempt).max().orElse(0);
+		if (maxAttempt >= PlanLimits.APPLICATION_MAX_ATTEMPTS) {
+			throw new ApiException(409, "ALREADY_APPLIED", "이미 지원한 모집 글이에요");
+		}
+		User applicant = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		Instant now = clock.instant();
+		Application application = Application.pending(
+				post,
+				role,
+				applicant,
+				message,
+				maxAttempt + 1,
+				now.plusSeconds(PlanLimits.APPLICATION_EXPIRE_DAYS * 24L * 3600L)
+		);
+		applications.save(application);
+		notifications.create(new CreateNotificationCommand(
+				authorId,
+				NotificationTypes.APPLICATION_RECEIVED,
+				user.userId(),
+				"RECRUIT_POST",
+				post.getId(),
+				"/recruits/" + post.getId(),
+				null,
+				"application-received:" + application.getId()
+		));
+		return new ApplicationCreateResponse(application.getId(), application.getStatus().name());
+	}
+
+	@Transactional(readOnly = true)
+	public ApplicantListResponse listApplicants(AuthenticatedUser user, long recruitId, Long roleId) {
+		RecruitPost post = requireOwnedPost(user.userId(), recruitId);
+		List<Application> rows = applications.findForAuthor(post.getId(), roleId, ApplicationStatus.CANCELED);
+		Instant now = clock.instant();
+		List<ApplicantListItemResponse> items = rows.stream()
+				.map(application -> new ApplicantListItemResponse(
+						application.getId(),
+						cards.toAuthor(application.getApplicant()),
+						application.getRecruitRole().getId(),
+						application.getRecruitRole().getRole().label(),
+						application.getStatus().name(),
+						application.getCreatedAt().toString(),
+						daysLeft(application.getExpiresAt(), now)
+				))
+				.toList();
+		return new ApplicantListResponse(
+				post.getRoles().stream().map(cards::toRole).toList(),
+				items
+		);
+	}
+
+	@Transactional(readOnly = true)
+	public ApplicationSheetResponse applicationSheet(
+			AuthenticatedUser user,
+			long recruitId,
+			long applicationId
+	) {
+		requireOwnedPost(user.userId(), recruitId);
+		Application application = applications.findDetailedForPost(recruitId, applicationId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "지원 내역을 찾지 못했어요"));
+		return new ApplicationSheetResponse(
+				application.getId(),
+				application.getStatus().name(),
+				application.getMessage(),
+				application.getCreatedAt().toString(),
+				cards.toAuthor(application.getApplicant()),
+				List.of(),
+				new CompletionBriefResponse(0, 0),
+				List.of(),
+				List.of()
+		);
+	}
+
+	@Transactional
+	public AcceptApplicationResponse accept(
+			AuthenticatedUser user,
+			long recruitId,
+			long applicationId,
+			AcceptApplicationRequest request
+	) {
+		RecruitPost post = requireOwnedPost(user.userId(), recruitId);
+		Application application = applications.findDetailedForPost(recruitId, applicationId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "지원 내역을 찾지 못했어요"));
+		if (application.getStatus() != ApplicationStatus.PENDING) {
+			throw new ApiException(409, "NOT_PENDING", "검토 중인 지원만 수락할 수 있어요");
+		}
+		if (post.getTeamId() == null) {
+			throw new ApiException(409, "TEAM_REQUIRED", "팀을 먼저 만들어야 수락할 수 있어요");
+		}
+		RecruitRole role = application.getRecruitRole();
+		boolean increase = request != null && Boolean.TRUE.equals(request.increaseHeadcount());
+		if (role.isFull()) {
+			if (increase && role.getHeadcount() < PlanLimits.RECRUIT_HEADCOUNT_MAX) {
+				role.updateHeadcount(role.getHeadcount() + 1);
+			}
+			else {
+				throw new ApiException(
+						409,
+						"ROLE_FULL",
+						"이 역할은 이미 다 찼어요",
+						Map.of("roleId", role.getId(), "headcount", role.getHeadcount())
+				);
+			}
+		}
+		// teams/chat tables (B/D) are not introduced yet — cannot join membership/chat.
+		// Fail safely with the FE-aligned code so accept does not leave half-applied state.
+		throw new ApiException(409, "TEAM_REQUIRED", "팀을 먼저 만들어야 수락할 수 있어요");
+	}
+
+	@Transactional
+	public void reject(
+			AuthenticatedUser user,
+			long recruitId,
+			long applicationId,
+			RejectApplicationRequest request
+	) {
+		requireOwnedPost(user.userId(), recruitId);
+		Application application = applications.findDetailedForPost(recruitId, applicationId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "지원 내역을 찾지 못했어요"));
+		if (application.getStatus() != ApplicationStatus.PENDING) {
+			throw new ApiException(409, "NOT_PENDING", "검토 중인 지원만 거절할 수 있어요");
+		}
+		User author = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		String reason = request == null ? null : blankToNull(request.reason());
+		if (reason != null && reason.length() > PlanLimits.APPLICATION_MESSAGE_MAX) {
+			throw new ApiException(400, "VALIDATION_ERROR", "거절 사유를 확인해 주세요");
+		}
+		application.reject(reason, author, clock.instant());
+		notifications.create(new CreateNotificationCommand(
+				application.getApplicant().getId(),
+				NotificationTypes.APPLICATION_REJECTED,
+				user.userId(),
+				"RECRUIT_POST",
+				recruitId,
+				"/recruits/" + recruitId,
+				null,
+				"application-rejected:" + application.getId()
+		));
+	}
+
+	@Transactional
+	public int expireOverdueApplications() {
+		Instant now = clock.instant();
+		List<Application> overdue = applications.findExpiredPending(ApplicationStatus.PENDING, now);
+		for (Application application : overdue) {
+			application.expire();
+			notifications.create(new CreateNotificationCommand(
+					application.getApplicant().getId(),
+					NotificationTypes.APPLICATION_EXPIRED,
+					null,
+					"RECRUIT_POST",
+					application.getRecruitPost().getId(),
+					"/recruits/" + application.getRecruitPost().getId(),
+					null,
+					"application-expired:" + application.getId()
+			));
+		}
+		return overdue.size();
+	}
+
+	private static int daysLeft(Instant expiresAt, Instant now) {
+		long seconds = expiresAt.getEpochSecond() - now.getEpochSecond();
+		if (seconds <= 0) {
+			return 0;
+		}
+		return (int) Math.ceil(seconds / 86_400.0);
 	}
 
 	private void applyRoleEdits(
