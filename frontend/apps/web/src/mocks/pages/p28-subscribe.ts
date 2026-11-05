@@ -1,5 +1,5 @@
 import { addMonths, addYears } from 'date-fns';
-import { PLAN_LIMITS, SUBSCRIPTION_PRICE } from '@/lib/policy';
+import { SUBSCRIPTION_PRICE } from '@/lib/policy';
 import { ownOrder, saveOrder, type Order } from '../fixtures/payment-orders';
 import { state } from '../fixtures/subscriptions';
 import { fail, get, newId, post, type MockRoute } from '../core/define';
@@ -54,7 +54,7 @@ const recruiterPlans = [
 
 const flexAmount = (members: number) =>
   SUBSCRIPTION_PRICE.flexMonthly +
-  Math.max(0, members - PLAN_LIMITS.teamMembers.free) * SUBSCRIPTION_PRICE.flexExtraMember;
+  Math.max(0, members - SUBSCRIPTION_PRICE.flexIncludedSeats) * SUBSCRIPTION_PRICE.flexExtraMember;
 function candidates() {
   return TEAMS.filter((team) => team.myRole === 'OWNER' && team.status === 'ACTIVE').map(
     (team) => ({

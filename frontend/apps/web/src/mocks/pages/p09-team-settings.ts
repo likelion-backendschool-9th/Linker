@@ -1,6 +1,6 @@
 import { daysFromNow, del, fail, get, newId, patch, post, type MockRoute } from '../core/define';
 import { findTeam, TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
-import { SUBSCRIPTION_PRICE, PLAN_LIMITS } from '@/lib/policy';
+import { SUBSCRIPTION_PRICE } from '@/lib/policy';
 
 /** 09 Team settings & members: `TeamController / GithubController` */
 
@@ -68,7 +68,10 @@ export const routes: MockRoute[] = [
         nextAmount:
           team.plan === 'FLEX'
             ? SUBSCRIPTION_PRICE.flexMonthly +
-              Math.max(0, (TEAM_MEMBERS[team.id]?.length ?? 0) - PLAN_LIMITS.teamMembers.free) *
+              Math.max(
+                0,
+                (TEAM_MEMBERS[team.id]?.length ?? 0) - SUBSCRIPTION_PRICE.flexIncludedSeats,
+              ) *
                 SUBSCRIPTION_PRICE.flexExtraMember
             : null,
         nextBillingAt: team.plan === 'FLEX' ? daysFromNow(15) : null,

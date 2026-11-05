@@ -94,12 +94,17 @@ export const ISSUE = {
 export const CHAT = {
   /** Policy ch. 2 rate limits/network failures; TODO 17 reconnect limit. */
   sendsPerSecond: 5,
+  sharesPerMinute: 10,
+  sharesPerDay: 100,
   autoRetries: 3,
   catchUpMax: 500,
   messageMax: 2000,
   imagesPerSend: 10,
   editWithinHours: 24,
   offerMessageMax: 1000,
+  teamImageOriginalRetentionDaysFree: 90,
+  /** Summary results only; shared cards follow chat retention. */
+  aiSummaryRetentionDays: 7,
 } as const;
 
 /** 04 ch. 10 — operator admin session is locked after 30 minutes without activity. */
@@ -114,6 +119,7 @@ export const PLAN_LIMITS = {
   openRecruitPosts: { free: 3, pro: 10 },
   teamMembers: { free: 6, flex: null },
   teamChatHistoryDays: { free: 60, flex: null },
+  /** Policy ch. 8 / ch. 14: daily count remains tentative. */
   aiSummaryPerDay: { free: 0, flex: 10 },
   recruitingOffersPerDay: { free: 10, scout: 50 },
   jobAds: { free: 0, scout: 1 },
@@ -125,12 +131,20 @@ export const SUBSCRIPTION_PRICE = {
   proYearly: 29000,
   flexMonthly: 7900,
   flexExtraMember: 1900,
+  /** Billing inclusion, independent of the free-team member cap. */
+  flexIncludedSeats: 6,
   scoutMonthly: 14900,
   trialDays: 7,
 } as const;
 
 /** Policy ch. 11 payment and expiry rules. */
-export const SUBSCRIPTION_RULES = { refundWithinDays: 7, flexGraceDays: 30 } as const;
+export const SUBSCRIPTION_RULES = {
+  refundWithinDays: 7,
+  flexGraceDays: 30,
+  paymentFailureGraceDays: 7,
+  /** Whole-team notice before both Flex expiry and grace-period end. */
+  flexExpiryNoticeDaysBefore: 7,
+} as const;
 
 /** Page TODO 30 / WBS 30: displayed analytics periods. */
 export const STATS = { trendDays: 30, recruiterWeeks: 8 } as const;
