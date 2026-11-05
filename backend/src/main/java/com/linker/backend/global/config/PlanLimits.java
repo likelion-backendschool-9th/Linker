@@ -16,6 +16,8 @@ public final class PlanLimits {
 	public static final int PUBLIC_READS_PER_MINUTE = 60;
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
+	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
+	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;
 	public static final int REPORT_DETAIL_MAX_CHARS = 1000;
 	/** Reject decoded images larger than this on either side before they are resized. */

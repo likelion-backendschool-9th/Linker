@@ -8,8 +8,9 @@ import java.util.Optional;
 import com.linker.backend.global.error.ApiException;
 
 /**
- * Dev and test stand-in. The presigned URL is not an HTTP endpoint; callers place bytes with {@link #stage}.
- * A real provider still has to be chosen before clients can PUT an upload.
+ * Dev and test stand-in. {@link com.linker.backend.service.user.UserUploadService} rewrites the
+ * create response {@code uploadUrl} to {@code PUT /api/v1/user/uploads/{fileId}/content}, which
+ * calls {@link #stage}. A real cloud provider still has to be chosen for non-local deploys.
  */
 public final class LocalObjectStorage implements ObjectStorage {
 

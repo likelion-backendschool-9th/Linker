@@ -19,6 +19,7 @@ import com.linker.backend.entity.file.UploadedFile;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.integration.storage.LocalObjectStorage;
 import com.linker.backend.integration.storage.ObjectStorage;
 import com.linker.backend.repository.file.UploadedFileRepository;
 
@@ -54,7 +55,32 @@ public class UserUploadService {
 		String key = "uploads/" + user.userId() + "/" + UUID.randomUUID();
 		UploadedFile file = files.save(UploadedFile.pending(user.userId(), resolved, key, contentType, size));
 		ObjectStorage.Presign presign = storage.presignPut(key, contentType, size);
-		return new CreatedUpload(Long.toString(file.getId()), presign.url());
+		String uploadUrl = storage instanceof LocalObjectStorage
+				? "/api/v1/user/uploads/" + file.getId() + "/content"
+				: presign.url();
+		return new CreatedUpload(Long.toString(file.getId()), uploadUrl);
+	}
+
+	/**
+	 * Accepts the browser PUT for {@link LocalObjectStorage} stand-in URLs.
+	 * Cloud providers receive the PUT at their own presigned URL instead.
+	 */
+	@Transactional
+	public void putContent(AuthenticatedUser user, long fileId, String contentType, byte[] body) {
+		if (!(storage instanceof LocalObjectStorage local)) {
+			throw new ApiException(404, "NOT_FOUND", "대상을 찾을 수 없어요");
+		}
+		UploadedFile file = owned(user.userId(), fileId);
+		if (file.isComplete()) {
+			throw new ApiException(409, "STATE_CONFLICT", "이미 업로드가 끝난 파일이에요");
+		}
+		if (contentType == null || !contentType.equalsIgnoreCase(file.getContentType())) {
+			throw new ApiException(400, "VALIDATION_ERROR", "JPG, PNG, WebP, GIF 사진만 올릴 수 있어요.");
+		}
+		if (body.length != file.getByteSize()) {
+			throw new ApiException(400, "VALIDATION_ERROR", "올린 파일 크기가 요청과 달라요");
+		}
+		local.stage(file.getStorageKey(), body);
 	}
 
 	@Transactional
@@ -144,14 +170,12 @@ public class UserUploadService {
 				throw new ApiException(400, "VALIDATION_ERROR", "JPG, PNG, WebP, GIF 사진만 올릴 수 있어요.");
 			}
 			if (sniffed == Kind.GIF) {
+				// Keep the original GIF so animation survives; GIFs do not carry EXIF GPS.
 				Dimensions dimensions = dimensions(bytes);
 				return new ProcessedImage(bytes, "image/gif", dimensions.width(), dimensions.height());
 			}
 			if (sniffed == Kind.WEBP) {
-				Dimensions dimensions = dimensions(bytes);
-				if (Math.max(dimensions.width(), dimensions.height()) <= PlanLimits.IMAGE_LONG_SIDE) {
-					return new ProcessedImage(bytes, "image/webp", dimensions.width(), dimensions.height());
-				}
+				// Re-encode as PNG so container metadata (including location) is dropped.
 				BufferedImage scaled = scale(read(bytes), PlanLimits.IMAGE_LONG_SIDE);
 				byte[] encoded = write(scaled, "png", false);
 				return new ProcessedImage(encoded, "image/png", scaled.getWidth(), scaled.getHeight());
