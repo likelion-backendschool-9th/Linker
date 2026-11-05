@@ -12,10 +12,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.linker.backend.dto.chat.event.ChatMessageReady;
+import com.linker.backend.dto.chat.event.ChatReadAdvanced;
 import com.linker.backend.dto.chat.event.ChatRoomsChanged;
 import com.linker.backend.dto.chat.event.ChatSendAccepted;
 import com.linker.backend.dto.chat.event.ChatSendRejected;
+import com.linker.backend.dto.chat.event.ChatTranscriptChanged;
+import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
+import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatCounterpartResponse;
 import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
@@ -25,6 +29,7 @@ import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
@@ -34,6 +39,7 @@ import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.chat.DmStatus;
 import com.linker.backend.entity.chat.MessageType;
+import com.linker.backend.entity.chat.MessageVisibility;
 import com.linker.backend.entity.chat.RoomType;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
@@ -62,8 +68,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserChatController}.
- * Sending a message stays closed until page 17. List calculations read rows that tests or a
- * later writer insert. This class does not invent team names, company names, or message text.
+ * Page 16 reads chat rows. Page 17 stores text and the caller's own edit, delete, read, and mute.
+ * Team titles and deleting someone else's message stay closed until a real team role source exists.
  */
 @Service
 public class UserChatService {
@@ -297,7 +303,118 @@ public class UserChatService {
 			return;
 		}
 		member.readUntil(messageId);
+		events.publishEvent(new ChatReadAdvanced(roomId, messageId));
 		events.publishEvent(new ChatRoomsChanged(user.userId(), roomId));
+	}
+
+	@Transactional
+	public ChatMessageResponse edit(AuthenticatedUser principal, long roomId, long messageId, EditChatMessageRequest request) {
+		Participant participant = requireParticipant(principal, roomId);
+		ChatMessage message = lockVisible(participant, roomId, messageId);
+		if (message.getMessageType() != MessageType.TEXT || !participant.account().getId().equals(message.getSenderId())) {
+			throw new ApiException(403, "FORBIDDEN", "메시지를 수정할 수 없어요");
+		}
+		if (message.getDeletedAt() != null || message.getVisibility() != MessageVisibility.VISIBLE) {
+			throw new ApiException(409, "STATE_CONFLICT", "수정할 수 없는 메시지예요");
+		}
+		String text = request == null ? null : request.text();
+		if (text == null || text.isBlank()) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 내용을 확인해 주세요");
+		}
+		if (text.codePointCount(0, text.length()) > PlanLimits.CHAT_MESSAGE_MAX_CHARS) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지는 2000자까지 쓸 수 있어요");
+		}
+		Instant deadline = message.getCreatedAt().plus(Duration.ofHours(PlanLimits.CHAT_EDIT_WITHIN_HOURS));
+		if (clock.instant().isAfter(deadline)) {
+			throw new ApiException(409, "STATE_CONFLICT", "메시지를 수정할 수 있는 시간이 지났어요");
+		}
+		message.revise(text, DatabaseInstant.now(clock));
+		messages.saveAndFlush(message);
+		ChatMessageResponse response = present(message);
+		events.publishEvent(new ChatTranscriptChanged("EDIT", roomId, response));
+		return response;
+	}
+
+	@Transactional
+	public void deleteMessage(AuthenticatedUser principal, long roomId, long messageId) {
+		Participant participant = requireParticipant(principal, roomId);
+		ChatMessage message = lockVisible(participant, roomId, messageId);
+		// No teams or team_members source exists, so a team owner/admin cannot delete someone else's message.
+		if (message.getSenderId() == null
+				|| message.getMessageType() == MessageType.SYSTEM
+				|| message.getMessageType() == MessageType.PR_EVENT
+				|| !participant.account().getId().equals(message.getSenderId())) {
+			throw new ApiException(403, "FORBIDDEN", "메시지를 삭제할 수 없어요");
+		}
+		if (message.getVisibility() != MessageVisibility.VISIBLE) {
+			throw new ApiException(409, "STATE_CONFLICT", "삭제할 수 없는 메시지예요");
+		}
+		if (message.getDeletedAt() != null) {
+			return;
+		}
+		message.delete(DatabaseInstant.now(clock));
+		messages.saveAndFlush(message);
+		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message)));
+	}
+
+	@Transactional(readOnly = true)
+	public UnreadMembersResponse unreadMembers(AuthenticatedUser principal, long roomId, long messageId) {
+		Participant participant = requireReader(principal, roomId);
+		if (participant.member().getRoom().getRoomType() != RoomType.TEAM) {
+			throw new ApiException(403, "FORBIDDEN", "1:1 채팅에서는 참여자 목록을 보여 주지 않아요");
+		}
+		ChatMessage message = visibleMessage(participant, roomId, messageId);
+		List<ChatMemberResponse> items = new ArrayList<>();
+		for (ChatRoomMember member : members.findActiveInRoom(roomId)) {
+			if (message.getSenderId() != null && message.getSenderId().equals(member.getUserId())) {
+				continue;
+			}
+			Long read = member.getLastReadMessageId();
+			if (read != null && read >= message.getId()) {
+				continue;
+			}
+			boolean team = true;
+			if (!messageQuery.visibleTo(member.getUserId(), roomId, team, historyStart(team), message.getId())) {
+				continue;
+			}
+			User account = accounts.findById(member.getUserId()).orElse(null);
+			if (account == null) {
+				continue;
+			}
+			items.add(new ChatMemberResponse(account.getId(), account.getUsername(), account.visibleName(), account.getAvatarUrl()));
+		}
+		return new UnreadMembersResponse(items);
+	}
+
+	@Transactional
+	public void updateNotification(AuthenticatedUser principal, long roomId, UpdateChatNotificationRequest request) {
+		if (request == null || request.muted() == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "알림 설정을 확인해 주세요");
+		}
+		User account = requireActive(principal);
+		ChatRoomMember member = members.lockActive(roomId, account.getId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		if (member.isMuted() == request.muted()) {
+			return;
+		}
+		member.mute(request.muted());
+		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
+	}
+
+	/**
+	 * Current safe row for a subscriber. Delivery may reorder frames, so a snapshot taken at
+	 * commit is not what the socket sends.
+	 */
+	@Transactional(readOnly = true)
+	public ChatMessageResponse currentTranscript(long viewerId, long roomId, long messageId) {
+		if (!visibleTo(viewerId, roomId, messageId)) {
+			return null;
+		}
+		ChatMessage message = messages.findWithRoom(messageId).orElse(null);
+		if (message == null || !message.getRoom().getId().equals(roomId)) {
+			return null;
+		}
+		return present(message);
 	}
 
 	@Transactional(readOnly = true)
@@ -389,6 +506,106 @@ public class UserChatService {
 		events.publishEvent(new ChatSendRejected(userId, roomId, clientMessageId, code, message, retryable, retryAfterSeconds));
 	}
 
+	private Participant requireParticipant(AuthenticatedUser principal, long roomId) {
+		return member(requireActive(principal), roomId);
+	}
+
+	private Participant requireReader(AuthenticatedUser principal, long roomId) {
+		User account = requireKnown(principal);
+		if (account.getStatus() != UserStatus.ACTIVE && account.getStatus() != UserStatus.SUSPENDED) {
+			throw new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요");
+		}
+		return member(account, roomId);
+	}
+
+	private Participant member(User account, long roomId) {
+		ChatRoomMember membership = members.findActive(roomId, account.getId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		return new Participant(account, membership);
+	}
+
+	private User requireKnown(AuthenticatedUser principal) {
+		if (principal == null) {
+			throw new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요");
+		}
+		return accounts.findById(principal.userId())
+				.orElseThrow(() -> new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요"));
+	}
+
+	private User requireActive(AuthenticatedUser principal) {
+		User account = requireKnown(principal);
+		if (account.getStatus() != UserStatus.ACTIVE) {
+			throw new ApiException(403, "FORBIDDEN", account.getStatus() == UserStatus.SUSPENDED
+					? "정지된 계정은 이 기능을 쓸 수 없어요"
+					: "이 기능을 사용할 수 없어요");
+		}
+		return account;
+	}
+
+	private ChatMessage lockVisible(Participant participant, long roomId, long messageId) {
+		assertVisible(participant, roomId, messageId);
+		return messages.lockById(messageId)
+				.orElseThrow(() -> new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요"));
+	}
+
+	private ChatMessage visibleMessage(Participant participant, long roomId, long messageId) {
+		assertVisible(participant, roomId, messageId);
+		return messages.findWithRoom(messageId)
+				.orElseThrow(() -> new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요"));
+	}
+
+	private void assertVisible(Participant participant, long roomId, long messageId) {
+		boolean team = participant.member().getRoom().getRoomType() == RoomType.TEAM;
+		Long owner = messageQuery.roomIdOf(messageId);
+		if (owner == null || owner != roomId || !messageQuery.visibleTo(
+				participant.account().getId(),
+				roomId,
+				team,
+				historyStart(team),
+				messageId
+		)) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
+		}
+	}
+
+	private ChatMessageResponse present(ChatMessage message) {
+		String text = message.getDeletedAt() != null
+				? DELETED_PREVIEW
+				: message.getVisibility() == MessageVisibility.HIDDEN ? HIDDEN_PREVIEW : message.getBody();
+		User sender = message.getSenderId() == null ? null : accounts.findById(message.getSenderId()).orElse(null);
+		return new ChatMessageResponse(
+				message.getId(),
+				message.getRoom().getId(),
+				unreadCount(message),
+				message.getClientMessageId(),
+				sender == null ? null : new ChatMemberResponse(
+						sender.getId(),
+						sender.getUsername(),
+						sender.visibleName(),
+						sender.getAvatarUrl()
+				),
+				message.getMessageType().name(),
+				text,
+				List.of(),
+				null,
+				message.getCreatedAt(),
+				message.getEditedAt(),
+				message.getDeletedAt(),
+				message.getVisibility().name()
+		);
+	}
+
+	private long unreadCount(ChatMessage message) {
+		Long senderId = message.getSenderId();
+		return members.findActiveInRoom(message.getRoom().getId()).stream()
+				.filter(member -> senderId == null || !senderId.equals(member.getUserId()))
+				.filter(member -> member.getLastReadMessageId() == null || member.getLastReadMessageId() < message.getId())
+				.count();
+	}
+
+	private record Participant(User account, ChatRoomMember member) {
+	}
+
 	private void requireAnchor(long roomId, long messageId) {
 		Long owner = messageQuery.roomIdOf(messageId);
 		if (owner == null || owner != roomId) {
@@ -466,7 +683,7 @@ public class UserChatService {
 				List.of(),
 				null,
 				message.getCreatedAt(),
-				null,
+				message.getEditedAt(),
 				null,
 				"VISIBLE"
 		);
@@ -491,7 +708,7 @@ public class UserChatService {
 				List.of(),
 				null,
 				row.createdAt(),
-				null,
+				row.editedAt(),
 				row.deletedAt(),
 				row.visibility()
 		);

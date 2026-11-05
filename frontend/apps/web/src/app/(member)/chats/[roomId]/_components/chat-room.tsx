@@ -23,6 +23,7 @@ import {
   markRead,
   unreadMembersKey,
   mergeCatchUpHistory,
+  mergeRoomMessage,
   messagesKey,
   messagesOptions,
   missedMessages,
@@ -91,18 +92,19 @@ export function ChatRoom({ roomId }: { roomId: number }) {
       if (message.roomId !== roomId) return;
       client.setQueryData<InfiniteData<MessagePage>>(messagesKey(viewer.login, roomId), (data) => {
         if (!data?.pages.length) return data;
+        const found = data.pages.some((page) => page.items.some((item) => item.id === message.id));
         return {
           ...data,
-          pages: data.pages.map((page, index) =>
-            index === 0
-              ? {
-                  ...page,
-                  items: [...page.items.filter((item) => item.id !== message.id), message].sort(
-                    (a, b) => a.id - b.id,
-                  ),
-                }
-              : page,
-          ),
+          pages: data.pages.map((page, index) => {
+            if (found) {
+              return {
+                ...page,
+                items: page.items.map((item) => (item.id === message.id ? mergeRoomMessage(item, message) : item)),
+              };
+            }
+            if (index !== 0) return page;
+            return { ...page, items: [...page.items, message].sort((a, b) => a.id - b.id) };
+          }),
         };
       });
       if (message.clientMessageId) outbox.acknowledge(message.clientMessageId);
@@ -141,7 +143,9 @@ export function ChatRoom({ roomId }: { roomId: number }) {
   useStompSubscription<{ event: string; message?: RoomMessage }>(
     `/topic/chat-rooms/${roomId}`,
     (event) => {
-      if (event.event === 'MESSAGE' && event.message) receive(event.message);
+      if ((event.event === 'MESSAGE' || event.event === 'EDIT' || event.event === 'DELETE') && event.message) {
+        receive(event.message);
+      }
       else {
         void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
         void client.invalidateQueries({ queryKey: unreadMembersKey(viewer.login, roomId) });

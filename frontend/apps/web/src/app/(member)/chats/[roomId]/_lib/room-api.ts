@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import type { ChatIssueCard } from './chat-reference-types';
 
 /** Provisional WBS 17 DTOs; replace with generated Orval contracts once Spring publishes OpenAPI. */
-export type ChatMember = { id: number; login: string; name: string; avatarUrl: string };
+export type ChatMember = { id: number; login: string; name: string; avatarUrl: string | null };
 export type RoomInfo = {
   id: number;
   kind: 'TEAM' | 'DIRECT' | 'REQUEST';
@@ -83,6 +83,7 @@ export function messagesOptions(login: string | null, id: number) {
     getNextPageParam: (page) => (page.hasMore ? page.items[0]?.id : undefined),
   });
 }
+/** `after` returns only newer ids. An edit or delete of an older message is not in that page. */
 export function missedMessages(id: number, after: number) {
   return apiFetch<MessagePage>(`/api/v1/user/chat-rooms/${id}/messages?after=${after}`);
 }
@@ -103,6 +104,43 @@ export function setMuted(id: number, muted: boolean) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ muted }),
   });
+}
+
+/**
+ * Microseconds since the epoch. `Date.parse` stops at milliseconds, so two edits inside one
+ * millisecond would compare equal. Digits after the sixth fractional digit are ignored because
+ * stored chat times stop at microseconds. An unparsable value has no order.
+ */
+function editedAtMicros(value: string | null): bigint | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!match) return null;
+  const zone = match[8]!;
+  let millis = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6]));
+  if (Number.isNaN(millis)) return null;
+  if (zone !== 'Z') {
+    const sign = zone.startsWith('-') ? -1 : 1;
+    millis -= sign * (Number(zone.slice(1, 3)) * 60 + Number(zone.slice(4, 6))) * 60_000;
+  }
+  return BigInt(millis) * 1000n + BigInt((match[7] ?? '').padEnd(6, '0').slice(0, 6));
+}
+
+/**
+ * Live frames can arrive out of commit order. A later delete or edit wins over an older snapshot.
+ * A hidden or deleted row is not replaced by text from an earlier frame.
+ * Edit order uses the full microsecond `editedAt`. Two bodies with the same microsecond are not
+ * ordered: the body already on screen stays.
+ */
+export function mergeRoomMessage(current: RoomMessage | undefined, incoming: RoomMessage): RoomMessage {
+  if (!current) return incoming;
+  if (current.visibility === 'HIDDEN' && incoming.visibility !== 'HIDDEN') return current;
+  if (current.deletedAt && !incoming.deletedAt) return current;
+  if (incoming.deletedAt) return incoming;
+  const currentEdited = editedAtMicros(current.editedAt);
+  const incomingEdited = editedAtMicros(incoming.editedAt);
+  if (incomingEdited === null) return currentEdited === null ? incoming : current;
+  if (currentEdited === null || incomingEdited > currentEdited) return incoming;
+  return current;
 }
 
 /** Realtime delivery, REST catch-up and paginated results can overlap. */
