@@ -25,7 +25,7 @@ export function ChatRoomRow({ room, disabled, onAccept, onDelete }: Props) {
         </span>
         <div className={styles.body}>
           <div className={styles.heading}>
-            <h2 className={styles.title}>{room.title}</h2>
+            {room.title ? <h2 className={styles.title}>{room.title}</h2> : null}
             {room.muted && (
               <span role="img" aria-label="알림 꺼짐">
                 <BellOff aria-hidden className={styles.mutedIcon} />
@@ -35,7 +35,11 @@ export function ChatRoomRow({ room, disabled, onAccept, onDelete }: Props) {
           {room.requestKind === 'RECRUITING' && (
             <p className={styles.offer}>채용 제안 · {room.companyName}</p>
           )}
-          <p className={styles.preview}>{room.lastMessage?.text ?? '아직 메시지가 없어요.'}</p>
+          {room.lastMessage?.text ? (
+            <p className={styles.preview}>{room.lastMessage.text}</p>
+          ) : room.lastMessage ? null : (
+            <p className={styles.preview}>아직 메시지가 없어요.</p>
+          )}
           {room.kind === 'REQUEST' && room.requestDirection === 'SENT' && (
             <p className={styles.meta}>대기 중 · 상대가 수락하면 대화가 열려요</p>
           )}
@@ -59,11 +63,11 @@ export function ChatRoomRow({ room, disabled, onAccept, onDelete }: Props) {
             variant="outline"
             disabled={disabled}
             onClick={onDelete}
-            aria-label={`${room.title} 요청 삭제`}
+            aria-label={room.title ? `${room.title} 요청 삭제` : '요청 삭제'}
           >
             삭제
           </Button>
-          <Button disabled={disabled} onClick={onAccept} aria-label={`${room.title} 요청 수락`}>
+          <Button disabled={disabled} onClick={onAccept} aria-label={room.title ? `${room.title} 요청 수락` : '요청 수락'}>
             수락
           </Button>
         </div>

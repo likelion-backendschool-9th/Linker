@@ -690,7 +690,8 @@ class FoundationIntegrationTest {
 		String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
 		assertThat(body).doesNotContain("/uploads/{fileId}/content");
 		assertThat(body).doesNotContain("security-probes");
-		assertThat(body).doesNotContain("chat-rooms");
+		assertThat(body).doesNotContain("/app/chat-rooms");
+		assertThat(body).doesNotContain("/topic/chat-rooms");
 		Path output = Path.of("build", "openapi", "v3-api-docs.json");
 		Files.createDirectories(output.getParent());
 		Files.writeString(output, body);

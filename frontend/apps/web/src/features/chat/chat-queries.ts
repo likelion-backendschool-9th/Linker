@@ -9,14 +9,14 @@ export type ChatTab = (typeof CHAT_TABS)[number];
 export type ChatRoom = {
   id: number;
   kind: ChatTab;
-  title: string;
+  title: string | null;
   counterpart: { avatarUrl: string | null } | null;
-  requestKind: 'NORMAL' | 'RECRUITING' | null;
+  requestKind: 'GENERAL' | 'RECRUITING' | null;
   requestDirection: 'SENT' | 'RECEIVED' | null;
   companyName: string | null;
   muted: boolean;
   unreadCount: number;
-  lastMessage: { text: string; createdAt: string } | null;
+  lastMessage: { text: string | null; createdAt: string } | null;
 };
 export type ChatPage = { items: ChatRoom[]; nextCursor: string | null };
 export type UnreadSummary = Record<ChatTab, number> & { requestCount: number; total: number };

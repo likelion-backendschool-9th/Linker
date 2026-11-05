@@ -3,19 +3,37 @@ package com.linker.backend.controller.user;
 import java.security.Principal;
 import java.util.Map;
 
+import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
+import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.realtime.StompPrincipal;
+import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.service.user.UserChatService;
 
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
- * UserChatController (WBS S09). Common STOMP SEND lands here; REST endpoints are added with pages 16–17.
+ * UserChatController (WBS S09). STOMP SEND stays here. Page 16 list and request actions are REST.
  */
-@Controller
+@RestController
+@RequestMapping("/api/v1/user")
 public class UserChatController {
 
 	private final UserChatService chat;
@@ -24,6 +42,7 @@ public class UserChatController {
 		this.chat = chat;
 	}
 
+	@Hidden
 	@MessageMapping("/chat-rooms/{roomId}/messages")
 	public void sendMessage(
 			@DestinationVariable long roomId,
@@ -31,6 +50,43 @@ public class UserChatController {
 			Principal principal
 	) {
 		chat.sendMessage(requireUserId(principal), roomId, payload);
+	}
+
+	@GetMapping("/chat-rooms")
+	@Tag(name = "p16-chat-list")
+	@Operation(operationId = "listChatRooms")
+	public ResponseEntity<ChatRoomPageResponse> list(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestParam(required = false) String tab,
+			@RequestParam(required = false) String cursor
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.list(user, tab, cursor));
+	}
+
+	@GetMapping("/chat-rooms/unread-summary")
+	@Tag(name = "p16-chat-list")
+	@Operation(operationId = "unreadChatSummary")
+	public ResponseEntity<UnreadSummaryResponse> unreadSummary(@AuthenticationPrincipal AuthenticatedUser user) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.unreadSummary(user));
+	}
+
+	@PostMapping("/chat-requests/{roomId}/accept")
+	@Tag(name = "p16-chat-list")
+	@Operation(operationId = "acceptChatRequest")
+	public ResponseEntity<AcceptChatRequestResponse> accept(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.accept(user, roomId));
+	}
+
+	@DeleteMapping("/chat-requests/{roomId}")
+	@Tag(name = "p16-chat-list")
+	@Operation(operationId = "deleteChatRequest")
+	@ApiResponse(responseCode = "204", description = "Received request rejected")
+	public ResponseEntity<Void> delete(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long roomId) {
+		chat.deleteRequest(user, roomId);
+		return ResponseEntity.noContent().build();
 	}
 
 	private long requireUserId(Principal principal) {

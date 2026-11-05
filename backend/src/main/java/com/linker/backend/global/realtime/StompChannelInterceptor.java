@@ -84,7 +84,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 		Matcher room = ROOM_TOPIC.matcher(destination);
 		if (room.matches()) {
 			long roomId = Long.parseLong(room.group(1));
-			if (!chatRooms.canParticipate(user.userId(), roomId)) {
+			if (!chatRooms.canSubscribe(user.userId(), roomId)) {
 				throw new StompAuthException("채팅방에 참여할 수 없어요");
 			}
 			return;
@@ -101,7 +101,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 			throw new StompAuthException("전송할 수 없는 경로예요");
 		}
 		long roomId = Long.parseLong(room.group(1));
-		if (!chatRooms.canParticipate(user.userId(), roomId)) {
+		if (!chatRooms.canSend(user.userId(), roomId)) {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
 	}

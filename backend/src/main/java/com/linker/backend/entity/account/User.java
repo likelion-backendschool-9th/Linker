@@ -120,6 +120,10 @@ public class User extends BaseTimeEntity {
 		return displayName;
 	}
 
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+
 	public UserType getUserType() {
 		return userType;
 	}

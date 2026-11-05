@@ -2,10 +2,12 @@ package com.linker.backend.controller.user;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Clock;
 import java.util.Map;
 
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
+import com.linker.backend.global.realtime.ChatRoomAccess;
 import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.realtime.StompPrincipal;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -16,7 +18,17 @@ import org.junit.jupiter.api.Test;
 class UserChatControllerTest {
 
 	private final UserChatController controller = new UserChatController(
-			new UserChatService((userId, roomId) -> userId == 7L && roomId == 10L)
+			new UserChatService(new ChatRoomAccess() {
+				@Override
+				public boolean canSubscribe(long userId, long roomId) {
+					return userId == 7L && roomId == 10L;
+				}
+
+				@Override
+				public boolean canSend(long userId, long roomId) {
+					return userId == 7L && roomId == 10L;
+				}
+			}, null, null, null, null, Clock.systemUTC())
 	);
 
 	@Test
