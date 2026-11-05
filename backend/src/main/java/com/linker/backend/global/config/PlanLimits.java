@@ -69,6 +69,11 @@ public final class PlanLimits {
 	/** Policy ch. 11 — whole-team notice before both Flex expiry and grace-period end. */
 	public static final int FLEX_EXPIRY_NOTICE_DAYS_BEFORE = 7;
 
+	/** Policy ch. 7 / page 11 — shared issue sync contract. */
+	public static final int ISSUE_REFRESH_INTERVAL_SECONDS = 60;
+	public static final int ISSUE_ACTIVE_SYNC_MINUTES = 15;
+	public static final int ISSUE_PROGRESS_DAYS = 14;
+
 	private PlanLimits() {
 	}
 

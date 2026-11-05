@@ -57,6 +57,10 @@ server:
     include-binding-errors: never
 
 linker:
+  # Activate only after B's shared schema + C schema and payload contract are ready.
+  issues:
+    sync-enabled: ${ISSUE_SYNC_ENABLED:false}
+    webhook-enabled: ${ISSUE_WEBHOOK_ENABLED:false}
   session:
     cookie-name: ${SESSION_COOKIE_NAME:linker_session}
     same-site: Lax
