@@ -38,7 +38,37 @@ public class GithubToken extends BaseTimeEntity {
 	protected GithubToken() {
 	}
 
+	public static GithubToken issue(User user, String accessTokenEnc, Instant accessExpiresAt, String refreshTokenEnc, Instant refreshExpiresAt) {
+		GithubToken token = new GithubToken();
+		token.user = user;
+		token.replace(accessTokenEnc, accessExpiresAt, refreshTokenEnc, refreshExpiresAt);
+		return token;
+	}
+
+	public void replace(String accessTokenEnc, Instant accessExpiresAt, String refreshTokenEnc, Instant refreshExpiresAt) {
+		this.accessTokenEnc = accessTokenEnc;
+		this.accessExpiresAt = accessExpiresAt;
+		this.refreshTokenEnc = refreshTokenEnc;
+		this.refreshExpiresAt = refreshExpiresAt;
+	}
+
 	public Long getId() {
 		return id;
+	}
+
+	public String getAccessTokenEnc() {
+		return accessTokenEnc;
+	}
+
+	public Instant getAccessExpiresAt() {
+		return accessExpiresAt;
+	}
+
+	public String getRefreshTokenEnc() {
+		return refreshTokenEnc;
+	}
+
+	public Instant getRefreshExpiresAt() {
+		return refreshExpiresAt;
 	}
 }

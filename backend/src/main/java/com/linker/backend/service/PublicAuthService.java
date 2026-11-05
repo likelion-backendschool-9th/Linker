@@ -3,25 +3,43 @@ package com.linker.backend.service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
 
+import com.linker.backend.dto.auth.response.GithubAuthorizeResponse;
+import com.linker.backend.entity.account.AuthIdentity;
+import com.linker.backend.entity.account.AuthProvider;
+import com.linker.backend.entity.account.GithubToken;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserSession;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
+import com.linker.backend.global.config.GithubAppProperties;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.JwtSessionTokens;
 import com.linker.backend.global.security.SessionClaims;
+import com.linker.backend.integration.github.GithubAccount;
+import com.linker.backend.integration.github.GithubAuthorizeUrls;
+import com.linker.backend.integration.github.GithubLoginState;
+import com.linker.backend.integration.github.GithubTokenCipher;
+import com.linker.backend.integration.github.GithubUserAuthClient;
+import com.linker.backend.integration.github.GithubUserSession;
+import com.linker.backend.repository.account.AuthIdentityRepository;
+import com.linker.backend.repository.account.GithubTokenRepository;
+import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
+import com.linker.backend.repository.moderation.BannedGithubIdRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.PublicAuthController}.
@@ -34,14 +52,66 @@ public class PublicAuthService {
 	private static final Duration EXTEND_WHEN_WITHIN = Duration.ofDays(1);
 	private static final int MAX_TOKEN_LENGTH = 4096;
 
+	private static final Duration WITHDRAWAL = Duration.ofDays(PlanLimits.ACCOUNT_WITHDRAWAL_RESTORE_DAYS);
+
 	private final UserSessionRepository sessions;
 	private final AdminRepository admins;
 	private final JwtSessionTokens tokens;
+	private final UserRepository users;
+	private final AuthIdentityRepository identities;
+	private final GithubTokenRepository githubTokens;
+	private final BannedGithubIdRepository bannedGithubIds;
+	private final GithubAppProperties github;
+	private final GithubLoginState loginState;
+	private final GithubUserAuthClient githubUsers;
+	private final GithubTokenCipher cipher;
+	private final Clock clock;
+	private final TransactionTemplate transactions;
 
-	public PublicAuthService(UserSessionRepository sessions, AdminRepository admins, JwtSessionTokens tokens) {
+	public PublicAuthService(UserSessionRepository sessions, AdminRepository admins, JwtSessionTokens tokens,
+			UserRepository users, AuthIdentityRepository identities, GithubTokenRepository githubTokens,
+			BannedGithubIdRepository bannedGithubIds, GithubAppProperties github, GithubLoginState loginState,
+			GithubUserAuthClient githubUsers, GithubTokenCipher cipher, Clock clock,
+			PlatformTransactionManager transactionManager) {
 		this.sessions = sessions;
 		this.admins = admins;
 		this.tokens = tokens;
+		this.users = users;
+		this.identities = identities;
+		this.githubTokens = githubTokens;
+		this.bannedGithubIds = bannedGithubIds;
+		this.github = github;
+		this.loginState = loginState;
+		this.githubUsers = githubUsers;
+		this.cipher = cipher;
+		this.clock = clock;
+		this.transactions = new TransactionTemplate(transactionManager);
+	}
+
+	public GithubAuthorizeResponse authorize(String client, String returnTo) {
+		String normalized = normalizeClient(client);
+		requireGithubLogin();
+		String safeReturn = safeReturnTo(returnTo);
+		String redirect = GithubAuthorizeUrls.redirectUri(github.userCallbackUrl().trim(), normalized);
+		String state = loginState.issue(normalized, safeReturn, redirect);
+		return new GithubAuthorizeResponse(
+				GithubAuthorizeUrls.build(github.webBaseUrl(), github.clientId(), redirect, state),
+				state);
+	}
+
+	public GithubLogin callback(String code, String state, String userAgent, String ip) {
+		if (code == null || code.isBlank() || code.length() > 512 || code.chars().anyMatch(Character::isWhitespace)) {
+			throw rejected();
+		}
+		requireGithubLogin();
+		GithubLoginState.Pending pending = loginState.consume(state);
+		GithubUserSession githubSession = githubUsers.exchange(code, pending.redirectUri());
+		GithubAccount account = githubUsers.account(githubSession.accessToken());
+		GithubLogin saved = transactions.execute(status -> saveLogin(account, githubSession, pending.returnTo(), userAgent, ip));
+		if (saved == null) {
+			throw rejected();
+		}
+		return saved;
 	}
 
 	@Transactional
@@ -171,7 +241,98 @@ public class PublicAuthService {
 		return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
 	}
 
+	private GithubLogin saveLogin(GithubAccount account, GithubUserSession githubSession, String returnTo, String userAgent, String ip) {
+		String githubUserId = Long.toString(account.id());
+		if (bannedGithubIds.existsByGithubUserId(githubUserId)) {
+			throw new ApiException(403, "FORBIDDEN", "이용이 제한된 GitHub 계정이에요");
+		}
+		Instant now = clock.instant();
+		Optional<AuthIdentity> found = identities.findByProviderAndProviderUserId(AuthProvider.GITHUB, githubUserId);
+		User user;
+		boolean isNew = found.isEmpty();
+		boolean restored = false;
+		if (isNew) {
+			if (users.existsByUsername(account.login())) {
+				throw new ApiException(409, "STATE_CONFLICT", "이미 사용 중인 사용자 이름이에요");
+			}
+			user = users.save(User.create(account.login(), UserType.DEVELOPER));
+			user.useGithubDisplayName(account.name());
+			identities.save(AuthIdentity.github(user, githubUserId, account.login(), blank(account.email()), now));
+		}
+		else {
+			user = found.get().getUser();
+			if (user.getUserType() != UserType.DEVELOPER || user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null
+					|| user.withdrawalExpired(now, WITHDRAWAL)) {
+				throw new ApiException(403, "FORBIDDEN", "탈퇴가 완료된 계정이에요");
+			}
+			restored = user.restoreWithdrawal(now, WITHDRAWAL);
+			if (!user.getUsername().equals(account.login())) {
+				if (users.existsByUsernameAndIdNot(account.login(), user.getId())) {
+					throw new ApiException(409, "STATE_CONFLICT", "이미 사용 중인 사용자 이름이에요");
+				}
+				user.rename(account.login());
+			}
+			found.get().recordLogin(account.login(), blank(account.email()), now);
+		}
+		user.refreshAvatar(account.avatarUrl());
+		user.keepNotificationEmail(account.email(), now);
+		user.touch(now);
+		storeGithubToken(user, githubSession);
+		return new GithubLogin(issue(user, userAgent, ip).rawToken(), isNew, restored, returnTo);
+	}
+
+	private void storeGithubToken(User user, GithubUserSession githubSession) {
+		String access = cipher.encrypt(githubSession.accessToken());
+		String refresh = githubSession.refreshToken() == null ? null : cipher.encrypt(githubSession.refreshToken());
+		githubTokens.findByUser_Id(user.getId()).ifPresentOrElse(
+				row -> row.replace(access, githubSession.accessExpiresAt(), refresh, githubSession.refreshExpiresAt()),
+				() -> githubTokens.save(GithubToken.issue(user, access, githubSession.accessExpiresAt(), refresh, githubSession.refreshExpiresAt())));
+	}
+
+	private void requireGithubLogin() {
+		if (github.clientId().isBlank() || github.clientSecret().isBlank()
+				|| !GithubAuthorizeUrls.callbackUrl(github.userCallbackUrl())
+				|| !GithubTokenCipher.usable(github.tokenEncryptionKey())) {
+			throw new ApiException(503, "SERVICE_UNAVAILABLE", "GitHub 로그인 연결이 아직 준비되지 않았어요");
+		}
+	}
+
+	private static String normalizeClient(String client) {
+		if ("web".equals(client) || "app".equals(client)) {
+			return client;
+		}
+		throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+	}
+
+	static String safeReturnTo(String value) {
+		if (value == null) {
+			return "/feed";
+		}
+		String trimmed = value.trim();
+		if (trimmed.isEmpty() || !trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.startsWith("/\\")
+				|| trimmed.length() > 2048 || trimmed.indexOf('\\') >= 0 || trimmed.indexOf('\n') >= 0
+				|| trimmed.indexOf('\r') >= 0 || trimmed.indexOf('\0') >= 0) {
+			return "/feed";
+		}
+		return trimmed;
+	}
+
+	private static String blank(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.length() > 320 ? null : trimmed;
+	}
+
+	private static ApiException rejected() {
+		return new ApiException(400, "VALIDATION_ERROR", "로그인을 완료하지 못했어요. 다시 시도해 주세요.");
+	}
+
 	public record IssuedSession(String rawToken, long sessionId) {
+	}
+
+	public record GithubLogin(String rawToken, boolean isNew, boolean restored, String returnTo) {
 	}
 
 	public record AuthenticatedSession(AuthenticatedUser user, String renewedToken) {

@@ -10,7 +10,7 @@
 | 웹훅 | 원문 HMAC 검증·delivery 중복 방지·DB 수신 저장·Redis 큐·처리 실패 기록·재시도·수신 기록 재큐잉 |
 | GitHub App 인증 | 별도 App RSA 키로 RS256 JWT 생성. PKCS#1/PKCS#8 PEM 지원. A의 세션 JWT 키와 분리 |
 | 설치 검증 | 사용자·세션에 묶인 Redis 일회용 state → 서버의 사용자 토큰으로 `GET /user/installations` 조회 → 현재 App·Organization·정지 여부 검증 |
-| A 연결점 | `GithubUserAccessTokenSource.tokenFor(userId)` 구현 필요. 없으면 503 `SERVICE_UNAVAILABLE`; 임시 사용자 토큰을 환경변수나 요청 본문으로 받지 않음 |
+| A 연결점 | `PersistedGithubUserAccessTokenSource.tokenFor(userId)`가 소셜 로그인으로 저장한 `github_tokens`를 복호화한다. 설정 키가 없으면 503 `SERVICE_UNAVAILABLE`. 토큰이 없거나 갱신에 실패하면 401 `LOGIN_REQUIRED`. 임시 토큰을 환경변수나 요청 본문으로 받지 않음 |
 | 실환경 스파이크 | 실제 GitHub App·키·테스트 조직과 A의 사용자 토큰 경로가 준비된 후 수행. 자동 테스트 통과와 별개 |
 | E 스토리지 | 업체 미결정 유지. 별도 업로드 API·클라우드 설정을 추가하지 않음 |
 
@@ -24,7 +24,7 @@ PRD §8·페이지 TODO 00 기준이다. App 이름과 소유 계정은 팀이 �
 | 저장소 권한 | Metadata: read, Contents: read, Issues: read/write, Pull requests: read |
 | 조직 권한 | Members: read/write, Projects: read/write |
 | 이벤트 | `issues`, `pull_request`, `projects_v2_item`, `organization`, `installation` |
-| 사용자 로그인 callback | A의 `/auth/callback` 계약과 맞춤 |
+| 사용자 로그인 callback | 웹은 `GITHUB_USER_CALLBACK_URL`(`/auth/callback`). 앱은 같은 주소에 `?client=app`을 붙인 주소. 두 주소를 App에 등록 |
 | 설치 후 Setup URL | 웹의 `/teams/new/callback`. 로그인 callback과 구분 |
 | 웹훅 URL | 운영은 `https://linker.newlecture.com/api/v1/webhook/github`, 개발은 테스트용 smee 채널 |
 | Webhook secret | 서버 `GITHUB_WEBHOOK_SECRET`와 일치 |
@@ -40,6 +40,10 @@ GitHub의 “Request user authorization during installation” 옵션을 켜면 
 | --- | --- |
 | `GITHUB_APP_ID` / `GITHUB_APP_SLUG` | GitHub App ID / 설치 URL에 쓰는 slug |
 | `GITHUB_APP_PRIVATE_KEY` | 별도 App RSA PEM. 한 줄의 `\n` 표기도 지원 |
+| `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET` | 사용자 소셜 로그인(code 교환)용 App OAuth 클라이언트. App ID·개인키와 다름 |
+| `GITHUB_USER_CALLBACK_URL` | 쿼리 없는 웹 콜백. 예: `http://localhost:3000/auth/callback` |
+| `GITHUB_WEB_BASE_URL` | 인가 화면 호스트. 기본 `https://github.com` |
+| `GITHUB_TOKEN_ENCRYPTION_KEY` | `github_tokens` AES-GCM 키. 32바이트를 Base64로 인코딩 |
 | `GITHUB_WEBHOOK_SECRET` | 웹훅 원문 서명 검증용 secret |
 | `GITHUB_API_BASE_URL` / `GITHUB_API_VERSION` | `https://api.github.com` / `2026-03-10` |
 | `GITHUB_HTTP_TIMEOUT` | 연결·응답 timeout 기본 `10s` |

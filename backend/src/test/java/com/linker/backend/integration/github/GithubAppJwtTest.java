@@ -24,7 +24,7 @@ class GithubAppJwtTest {
 		var pair = generator.generateKeyPair();
 		String pem = "-----BEGIN PRIVATE KEY-----\n" + Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded()) + "\n-----END PRIVATE KEY-----";
 		Instant now = Instant.parse("2026-11-05T00:00:00Z");
-		var properties = new GithubAppProperties("123", "linker", pem, "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10));
+		var properties = GithubAppProperties.installation("123", "linker", pem, "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10));
 		SignedJWT jwt = SignedJWT.parse(new GithubAppJwt(properties, Clock.fixed(now, ZoneOffset.UTC)).issue());
 		assertThat(jwt.verify(new RSASSAVerifier((RSAPublicKey) pair.getPublic()))).isTrue();
 		assertThat(jwt.getJWTClaimsSet().getIssuer()).isEqualTo("123");
@@ -36,7 +36,7 @@ class GithubAppJwtTest {
 		derValue(sequence);
 		derValue(sequence);
 		String pkcs1 = "-----BEGIN RSA PRIVATE KEY-----\n" + Base64.getEncoder().encodeToString(derValue(sequence)) + "\n-----END RSA PRIVATE KEY-----";
-		var pkcs1Properties = new GithubAppProperties("123", "linker", pkcs1, properties.apiBaseUrl(), properties.apiVersion(), properties.requestTimeout(), properties.stateTtl());
+		var pkcs1Properties = GithubAppProperties.installation("123", "linker", pkcs1, properties.apiBaseUrl(), properties.apiVersion(), properties.requestTimeout(), properties.stateTtl());
 		SignedJWT pkcs1Jwt = SignedJWT.parse(new GithubAppJwt(pkcs1Properties, Clock.fixed(now, ZoneOffset.UTC)).issue());
 		assertThat(pkcs1Jwt.verify(new RSASSAVerifier((RSAPublicKey) pair.getPublic()))).isTrue();
 	}
@@ -55,7 +55,7 @@ class GithubAppJwtTest {
 	@Test
 	void absentOrInvalidCredentialsNeverLeakTheirContent() {
 		for (String key : new String[]{"", "synthetic-invalid-private-key"}) {
-			var properties = new GithubAppProperties("123", "linker", key, "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10));
+			var properties = GithubAppProperties.installation("123", "linker", key, "https://api.github.com", "2026-03-10", Duration.ofSeconds(10), Duration.ofMinutes(10));
 			assertThatThrownBy(() -> new GithubAppJwt(properties, Clock.systemUTC()).issue())
 					.isInstanceOf(ApiException.class).hasMessageNotContaining("synthetic");
 		}
