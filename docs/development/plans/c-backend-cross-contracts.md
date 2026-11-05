@@ -1,11 +1,11 @@
 # 백엔드 00 C — 순서 4 교차 계약 확인
 
-2026-11-05, `976d380` 기준. 담당 C, 확인 대상 B·D.
+2026-11-05, `976d380` 코드 기준. 담당 C, 확인 대상 B·D. B의 [#184 리뷰](https://github.com/likelion-backendschool-9th/Linker/pull/184#pullrequestreview-5779375943)와 [#183 확인 기록](https://github.com/likelion-backendschool-9th/Linker/issues/183)을 반영했다.
 순서 3 산출물을 연결 규칙으로 정리하는 단계다. 새 API·테이블·핸들러·토큰 공급·알림 발송은 추가하지 않는다.
 
 | 경계 | 이번 C 확인 | 공동 확정 상태 |
 | --- | --- | --- |
-| B ↔ C 웹훅 | 현재 delivery로 원본 식별·재조회가 가능한 경로와 소비 기준 작성 | B 확인 대기. 실제 App 수신·캐시 저장 성공과 구분 |
+| B ↔ C 웹훅 | 현재 delivery로 원본 식별·재조회가 가능한 경로와 소비 기준 작성 | 필드·큐·비대상 처리·직렬화 방향 B 확인. 실제 수신·보관 정책·구현 검증은 별도 |
 | C ↔ D 숫자 | Policy·화면 상수·서버 상수의 값·단위 대조 | 대응 키가 없는 항목은 D 확인 대기 |
 | D → C 알림 | 현재 command와 역할별 create 계약 확인 | 이번에는 기록만 함. 알림 생성·발송 없음 |
 
@@ -66,11 +66,11 @@
 | `issues`: `opened`, `edited`, `closed`, `reopened`, `assigned`, `unassigned`, `labeled`, `unlabeled` | 설치·저장소·이슈를 확인하고 원본 재조회. 제목·본문·OPEN/CLOSED·담당자·라벨을 캐시에 반영할 입력으로 사용 |
 | `issues`: `deleted` | 검증된 기존 연결에 한해 삭제 이벤트를 식별. 지연된 이전 이벤트로 삭제 상태를 되돌리지 않음 |
 | `issues`: `transferred` | `changes.new_issue`, `changes.new_repository`도 확인. 새 저장소 권한·팀 연결 재검증 후 이전/새 식별자를 정리하는 후속 처리 필요 |
-| `issues`: `locked`, `unlocked`, `milestoned`, `demilestoned`, `pinned`, `unpinned` | 현행 ERD 캐시의 직접 갱신 항목과 구분. 무시/재조회 정책은 B와 확인하고 조용히 성공 처리하지 않음 |
+| `issues`: `locked`, `unlocked`, `milestoned`, `demilestoned`, `pinned`, `unpinned` | 검증 후 현행 소비 범위 밖으로 명시 분류한 action은 업무 변경 없이 정상 반환할 수 있음. 미지원·잘못된 필드·미해결 연결은 이 성공 분기에 섞지 않음 |
 | `projects_v2_item`: `created`, `edited`, `converted`, `restored` | 보드·item·콘텐츠를 확인하고 현재 상태/날짜/멤버십 재조회. `converted`는 Issue로 바뀐 콘텐츠 기준 |
 | `projects_v2_item`: `deleted` | 보드에서 항목이 제거된 것과 GitHub 이슈 삭제를 구분. 재검증 후 연결 item과 보드 상태·날짜를 정리할 기준으로 사용 |
 | `projects_v2_item`: `archived` | 보관을 이슈 CLOSED/삭제로 바꾸지 않음. 현행 캐시에 별도 보관 상태가 없어 노출·멤버십 취급은 B·C 확인 필요 |
-| `projects_v2_item`: `reordered` | 현행 이슈 목록은 마감 우선 정렬이므로 순서 자체를 저장하지 않음. B와 소비 종료 기준 확인 |
+| `projects_v2_item`: `reordered` | 현행 이슈 목록은 마감 우선 정렬이므로 순서 자체를 저장하지 않음. 검증 후 비대상으로 명시 분류해 정상 반환하는 기준에 B 동의 |
 | 기타 event / 알 수 없는 action | 다른 담당자 이벤트를 C가 대신 처리하지 않음. 미지원·잘못된 입력과 의도적 비대상을 구분하고 처리 결과를 B와 맞춤 |
 
 상태는 [기존 C 계약](c-backend-projects-contract.md)의 TODO/IN_PROGRESS/BLOCKED/DONE/OTHER/NONE을 유지한다.
@@ -81,7 +81,7 @@
 
 - B의 전달은 at-least-once다. C 업무 저장 후 B 완료 표시 전에 중단돼도 재실행 결과가 같도록 저장해야 한다. 이번에는 그 저장 코드를 구현하지 않는다.
 - B의 delivery별 advisory lock은 같은 이슈의 서로 다른 delivery 순서까지 보장하지 않는다.
-- **C 제안:** 같은 이슈의 웹훅·수동·주기 동기화는 하나의 갱신 흐름으로 직렬화하고, 그 흐름 안에서 원본 재조회 → 짧은 DB 저장 순서로 처리한다. 외부 조회를 DB 트랜잭션에 넣지 않는다. 다중 인스턴스에서도 성립할 구현 수단은 후속 설계다.
+- **B·C 방향 확인:** 같은 이슈의 웹훅·수동·주기 동기화는 모든 인스턴스·진입 경로에 걸쳐 원본 조회 시작부터 DB 반영까지 직렬화한다. 외부 조회를 DB 트랜잭션에 넣지 않고 필요한 DB 변경만 짧게 저장한다. 현재 delivery 잠금이나 DB 저장 단계만의 잠금으로 이 범위가 보장되지는 않는다. 구체적인 구현 수단과 실검증은 후속 저장 구현에서 확인한다.
 - Issues의 오래된 `issue.updated_at`은 ERD의 `github_updated_at`보다 최신 값을 덮어쓰지 않도록 확인한다. Projects 변경은 별개이므로 Issues 시각만으로 버리지 않는다.
 - Projects의 오래된 이벤트도 무조건 payload를 저장하지 않고 현재 item을 재조회한다. 재조회만으로 동시 저장 순서가 보장되는 것은 아니므로 위 직렬화 기준을 함께 확인한다.
 - 삭제된 item·이슈는 재조회 결과와 검증된 삭제 이벤트를 구분한다. 권한 부족·통신 실패·404만으로 이슈 삭제를 확정하지 않는다.
@@ -135,13 +135,21 @@ C의 이슈 알림 생성 시점·링크·중복 그룹 키를 이번에 새로 
 
 ## 7. 이슈 기록과 종료 조건
 
-공유 위치는 [공통 이슈 #49의 B 확인 요청](https://github.com/likelion-backendschool-9th/Linker/issues/49#issuecomment-6647801493)이다.
+B는 [#184 리뷰](https://github.com/likelion-backendschool-9th/Linker/pull/184#pullrequestreview-5779375943)에서 공개 스키마 기준 경로·큐 유지·비대상 처리 및 직렬화 방향에 동의했고, 보완은 [PR #185](https://github.com/likelion-backendschool-9th/Linker/pull/185)에 정리했다.
+`PROCESSED`는 전달 처리가 끝났다는 뜻이며 캐시 변경 증거가 아니다. 명시적으로 분류한 비대상의 정상 반환과, 미지원·잘못된 필드·미해결 연결은 구분한다. 현재 `IGNORED` 자동 기록 경로는 없다.
+B가 보고한 격리 통합 테스트 15개는 합성 입력의 서명 수신→DB→Redis 행 ID 큐→handler 식별 필드 유지와 C 미연결 시 RECEIVED 유지·복구를 포함한다. C가 이 테스트를 이번 문서 수정에서 재실행한 것은 아니며, 실제 App 수신·C 캐시 저장 검증을 뜻하지 않는다.
+보관 항목의 노출·멤버십·날짜 정책과 다중 인스턴스 구현 검증은 미확정 상태로 유지한다.
+
+공유 위치는 [B↔C 웹훅 소비 계약 확인 #183](https://github.com/likelion-backendschool-9th/Linker/issues/183)이다. 기존 #49 댓글은 #183으로 이동한 뒤 삭제됐다.
 이 문서 작성만으로 이슈 댓글 게시·상대 확인·팀 전체 freeze가 완료된 것은 아니다.
 
 - [x] 최신 B envelope·큐·외부 설치 ID·토큰·트랜잭션 경계를 코드와 대조
 - [x] C event/action·식별자·재조회·중복/지연 소비안 작성
 - [x] C 관련 정책 숫자 및 현재 알림 인자 대조
-- [ ] B와 실제 샘플 경로, 의도적 비대상/보관 처리, 동일 이슈 갱신 직렬화 기준 확인
+- [x] B가 공개 스키마 기준 필드 경로·큐 유지·명시적 비대상 정상 반환·갱신 직렬화 방향 확인
+- [ ] 실제 GitHub App 수신 샘플 확인
+- [ ] 보관 항목의 노출·멤버십·날짜 정책 공동 확인
+- [ ] 다중 인스턴스·모든 진입 경로의 직렬화 구현 수단과 실검증 확인
 - [ ] D와 ISSUE 3개 대응 키·단위·적용 위치 확인
 - [ ] 이슈에 C 확인 결과를 게시하고 상대 확인 기록 연결
 
