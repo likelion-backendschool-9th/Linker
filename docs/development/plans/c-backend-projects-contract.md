@@ -77,9 +77,11 @@ Projects용 공동 합의안:
 4. 중복 delivery와 지연 이벤트를 검증한다. ERD의 오래된 `updated_at` 무시 규칙을 따르되, Issues와 Projects의 시각을 혼동하지 않도록 비교 필드·재조회 기준을 실제 응답으로 확정한다.
 5. 정책상 동기화 읽기는 설치 토큰, 사용자 권한이 필요한 쓰기는 사용자 토큰을 쓴다. B의 공급 위치와 실제 Projects 권한은 연결 시 검증하고 토큰 값을 문서·로그에 남기지 않는다.
 
-**연결 전 확인할 현재 제약:** `dispatch`는 `@Transactional` 안에서 handler를 호출한다.
-따라서 handler에 외부 GitHub 호출을 그대로 넣으면 트랜잭션 중 외부 호출이 된다.
-실제 연결 전에 B·C가 처리 경계를 맞춰야 하며, 이번에는 B 코드나 큐를 변경하지 않는다.
+**B 선행 반영 후 상태(2026-11-05, #179):** `dispatch`는 `Propagation.NEVER`로 바깥 트랜잭션을 거절하고 handler를 트랜잭션 밖에서 호출한다.
+C도 GitHub 조회를 트랜잭션 밖에서 끝낸 뒤 필요한 DB 변경만 짧은 자체 트랜잭션으로 처리한다.
+읽기 설치 토큰은 `GithubAppClient.installationReadToken(외부설치ID)`에 있으며 실제 Projects 권한·호출은 미검증이다.
+전달은 at least once이고 같은 이슈에 대한 서로 다른 delivery의 순서는 보장하지 않는다. C의 멱등 저장·지연 이벤트 기준은 공동 확인이 필요하다.
+기존 큐·식별자·처리 경계와 C 확인 항목은 [B 순서 4 교차 계약](b-backend-cross-contracts.md)을 참고한다.
 처리하지 않은 이벤트를 성공으로 표시하는 빈 handler도 등록하지 않는다.
 
 ## 5. 실제 스파이크 통과 조건 — 조회 결과 반영

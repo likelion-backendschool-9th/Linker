@@ -87,6 +87,7 @@ A는 서버 내부 `GithubUserAccessTokenSource` bean에서 사용자 토큰을 
 - 수신 전 네트워크 실패는 DB에 기록되지 않는다. GitHub의 자동 재전송을 전제하지 않고 GitHub Recent deliveries의 수동/API redelivery로 확인한다. 처리 완료 기록의 30일 정리는 ERD 기준 후속 운영 작업이며 이번 스파이크 완료에 포함하지 않는다.
 
 새 PROCESSING 상태·테이블·컬럼은 추가하지 않았다. C의 보드/이슈 매핑과 이전 별도 캐시 연결 요청을 이 구현에 포함하지 않는다. 이벤트 의미의 최종 freeze는 B↔C 확인 후 진행한다.
+순서 4의 이벤트·필드 목록, A 이슈 #180의 B 확인 결과와 D 알림 인자 기록은 [B 교차 계약 확인](../development/plans/b-backend-cross-contracts.md)을 따른다. 이 계약 정리는 새 API 구현이나 실환경 스파이크 통과를 뜻하지 않는다.
 
 ## 실제 스파이크 순서
 

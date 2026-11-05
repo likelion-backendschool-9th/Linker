@@ -133,7 +133,7 @@
 - [ ] 공통 에러 코드 + `api-fetch` 매핑 (**E**; `LOGIN_REQUIRED`↔A)
 - [ ] `NotificationService.create()` 인자 (**D**)
 - [x] `user_blocks` 열기/닫기 의미 (**E**; D 소비) — see `plans/e-block-contract-freeze.md`
-- [ ] 웹훅 이벤트·큐 페이로드 (**B**; C 소비)
+- [ ] 웹훅 이벤트·큐 페이로드 (**B**; C 소비) — [B 전달 계약·C 확인 대기 항목](plans/b-backend-cross-contracts.md). 작성과 공동 freeze를 구분
 - [ ] OpenAPI `@Tag` 규칙 (**전원**)
 - [ ] `policy.ts` 키 (**C**)
 - [ ] Tech tags / job categories public API 형태 (**A**; 시트 소비자는 그대로)
