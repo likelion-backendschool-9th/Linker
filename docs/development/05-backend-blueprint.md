@@ -133,7 +133,7 @@ Keep each API’s method, path, query, permission, DTO, status, error code, page
 
 Apply authorization in `global.security` and services. Package names do not grant access. Operator privileges never bypass ordinary team/chat membership.
 
-JWT remains the documented AGENTS target; the inspected code uses a random cookie token with a DB SHA-256 hash. Keep secrets in httpOnly cookies only. JWT migration is separate work.
+The session cookie is an RS256 JWT after #176; its SHA-256 hash remains linked to the DB session. Keep secrets in httpOnly cookies only. Screen claims do not replace current DB authorization. GitHub App JWT keys are separate from these session keys.
 
 Responses keep unwrapped success bodies, cursor `{items, nextCursor}`, create/async statuses and `global.error` `{code, message, detail}`. Do not expose entities. Preserve per-endpoint `p00`/`pNN` OpenAPI tags at method level when classes split.
 
@@ -180,7 +180,7 @@ Keep the existing URL and response contract. Do not treat the webhook as a guest
 
 Preserve the existing Compose/Nginx/main-deployment setup. The proxy routes `/api/v1/` to Spring and `/ws` with upgrade headers; `/api/bff/` is reserved. Follow [Docker](../operations/02-docker.md) and [automatic deployment](../operations/04-automatic-deployment.md). Package moves must not change deployment or provider selection.
 
-Inspected layout after this adoption: Public controllers/services at `controller`/`service` roots; user controllers/services under `*.user`; webhook under `integration.github`. Foundation stage keeps exactly seven paired entry services (`PublicAuthService`, `PublicCatalogService`, `PublicSitemapService`, `UserSessionService`, `UserUploadService`, `UserModerationService`, `UserChatService`) with helper logic inlined into those classes. Session cookies use random tokens; STOMP scaffolding exists, but `UserChatService` still rejects send until chat persistence lands.
+Public controllers/services remain at `controller`/`service` roots, authenticated ones under `*.user`, and webhook ingress under `integration.github`. The original seven paired entries now also have `UserGithubController`/`UserGithubService` for the documented installation spike; the role-specific notification creation services remain internal. Session cookies use RS256 JWTs; STOMP scaffolding exists, but `UserChatService` still rejects send until chat persistence lands. The GitHub HTTP adapter requires no ambient DB transaction, webhook outcomes use short transactions, and duplicate dispatch uses a PostgreSQL session advisory lock. See [GitHub App operations](../operations/06-github-app.md) for A token integration and live-spike prerequisites.
 
 
 ## 9. Migration and unresolved decisions

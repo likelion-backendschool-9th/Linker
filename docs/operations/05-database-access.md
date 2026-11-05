@@ -137,10 +137,12 @@ psql 종료는 `\q`다. 터널/백엔드를 종료하려면 해당 실행 터미
 | `BACKEND_PORT` → Spring `SERVER_PORT` | `8080` |
 | 자동 테이블 생성·SQL 초기화 | `ddl-auto=none`, `spring.sql.init.mode=never`로 실행 |
 | Flyway | 기존 Spring 설정 유지. 현재 `enabled=true`로 미적용 마이그레이션 자동 적용 |
-| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | 프로세스 환경. 없으면 루트 `.env`의 같은 키 |
+| 웹훅 소비·복구 worker | 공용 DB + 개인 Redis 조합에서는 `LINKER_WEBHOOK_CONSUMER_ENABLED=false`를 기본 전달. 기존 프로세스 환경변수로 명시한 값은 유지 |
+| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY`, `GITHUB_*`의 지원 키 | 프로세스 환경 우선. 없으면 루트 `.env`의 같은 키. GitHub 키 목록은 [App 안내](06-github-app.md) 참조 |
 
-스크립트는 `.env.remote-db`를 읽고 같은 이름의 프로세스 환경변수가 있으면 우선한다. DB 접속에는 루트 `.env`를 쓰지 않는다. 세션 JWT 키만, 프로세스 환경에 없을 때 루트 `.env`에서 백엔드로 넘긴다.
+스크립트는 `.env.remote-db`를 읽고 같은 이름의 프로세스 환경변수가 있으면 우선한다. DB 접속에는 루트 `.env`를 쓰지 않는다. 지원하는 세션 JWT·GitHub 설정만, 프로세스 환경에 없을 때 루트 `.env`에서 백엔드로 넘긴다. 값은 문자 그대로 읽고 셸 실행·변수 확장을 하지 않는다. worker 활성화는 루트 `.env`에서 가져오지 않고 명시적인 프로세스 환경변수로만 덮어쓴다.
 Redis는 자동 실행·종료하지 않는다. 위 로컬 Redis 준비 절차를 사용한다.
+웹훅 worker는 공용 DB의 다른 실행 환경에 속한 수신 기록을 개인 Redis로 가져오지 않도록 기본 중지한다. 실제 웹훅 스파이크는 [GitHub App 안내](06-github-app.md)의 격리 환경에서 실행한다.
 IDE에서 직접 Spring을 실행할 때는 `tunnel` 모드를 유지하고 위 DB·Redis 설정과 자동 DDL·SQL 초기화 설정을 IDE에 별도로 지정한다.
 
 공통 값은 [remote-db.json](../../config/remote-db.json), 개인 설정 항목은 [.env.remote-db.example](../../.env.remote-db.example)에 있다.
