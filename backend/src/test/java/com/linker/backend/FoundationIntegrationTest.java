@@ -253,6 +253,7 @@ class FoundationIntegrationTest {
 		User user = saveUser("ops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
 		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		assertThat(tokens.verify(issued.rawToken()).orElseThrow().operator()).isTrue();
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
 				.andExpect(status().isForbidden())
@@ -261,8 +262,29 @@ class FoundationIntegrationTest {
 		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray());
+
+		PublicAuthService.IssuedSession unverified = sessions.issue(user, "JUnit", "127.0.0.1");
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(unverified.rawToken())))
+				.andExpect(status().isForbidden());
+
+		admins.deleteAll();
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void verifiedOperatorSessionExpiresAfterThirtyIdleMinutes() throws Exception {
+		User user = saveUser("idle-ops", UserType.DEVELOPER);
+		admins.save(Admin.assign(user, AdminRole.OPERATOR));
+		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
+		jdbc.update("update user_sessions set operator_seen_at=now()-interval '31 minutes' where id=?", issued.sessionId());
+
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isUnauthorized());
+		assertThat(jdbc.queryForObject("select revoked_at is not null from user_sessions where id=?", Boolean.class, issued.sessionId())).isTrue();
 	}
 
 	@Test

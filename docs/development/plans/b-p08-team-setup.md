@@ -8,11 +8,11 @@
 
 ## 공통 변경 범위
 
-- 기존 공통 ERD·WBS·태그 계약·운영 안내와 A/C/D 업무 코드는 변경하지 않는다. JWT claim·쿠키·오류 코드·알림 생성 시그니처·C 동기화 플래그도 유지한다.
+- 기존 공통 ERD·WBS·태그 계약·운영 안내, C/D 업무 코드는 유지한다. 사용자 추가 요청으로 A의 PublicAuthService에서는 기존 정책대로 세션 OTP 이력이 있어야 운영자 API 권한을 부여하도록 보완했다. JWT claim·쿠키·오류 코드·알림 생성 시그니처·C 동기화 플래그는 유지한다.
 - TeamAccess의 기존 인터페이스를 유지하면서 항상 거절하던 임시 구현을 DB 멤버십 구현으로 교체한다. 이는 C가 요청한 실제 권한 연결이며, 삭제/탈퇴/역할/보관 상태를 함께 검증한다.
 - PlanLimits에는 이미 Policy에 있는 읽기 전용 30일 보관 값만 추가한다. 기존 한도나 A/D 상수는 바꾸지 않는다.
 - B worker/webhook 설정만 기본 false로 추가한다. 공용 생성 SDK는 서버 스펙으로 재생성하며 p07·p11 생성 파일은 dev와 동일하다.
-- 최신 #216에서 삭제된 변수 adminOtpLastActiveAt의 남은 초기화 한 줄이 타입 검사를 막아 그 참조만 제거했다. 운영자 권한/OTP 판정은 변경하지 않았다.
+- 최신 #216에서 삭제된 변수 adminOtpLastActiveAt의 남은 초기화 한 줄이 타입 검사를 막아 그 참조만 제거했다. 서버 OTP 판정 보완은 별도이며 mock의 권한 규칙을 새로 정하지 않았다.
 - 07 테스트는 마이그레이션이 항상 4개라는 가정 대신 준비 SQL 적용 전후의 실제 이력이 동일한지 비교한다. 정식 버전을 임의 확정하지 않는다.
 
 ## API와 권한
@@ -98,15 +98,15 @@ TEAM_SETUP_WORKER_ENABLED, TEAM_SETUP_WEBHOOK_ENABLED는 기본 false다. 준비
 - backend bootJar, 전체 frontend typecheck·test·프로덕션 빌드, Compose 설정/운영 구성 검증, git diff --check 통과. 웹 테스트 449개 통과, 공용 mock 한 줄 수정 후 관련 11개 재실행 통과. 전체 lint는 오류 0개이며 기존 미사용 인자 경고 4개가 있다.
 - 기본 ./gradlew build는 259개 중 100개 실패했다. 9개 Spring 테스트 컨텍스트가 모두 중복 V4에서 초기화에 실패했고, 이후 테스트도 같은 컨텍스트 실패로 중단됐다. 기존 중복 V4와 준비본 편입은 미해결이다.
 - 별도의 임시 Gradle init script를 사용해 테스트 프로세스에서만 Flyway를 끄고 원본 V1~V9 SQL을 명시한 순서로 초기화하여 회귀 결과를 분리했다. 임시 스크립트는 저장소/CI/운영 설정에 포함하지 않으며, 정식 Flyway upgrade 통과로 간주하지 않는다.
-- 이 보조 실행은 285개 중 284개 통과·1개 실패다. B 07 통합 17개·08 관련 40개·C 이슈 통합 27개는 모두 통과했다. 남은 1개는 아래 A 운영자 OTP 기대/구현 불일치이며 전체 검사가 성공했다고 표시하지 않는다.
+- OTP 보완 후 이 보조 실행은 286개 전부 통과했다. B 07 통합 17개·08 관련 40개·C 이슈 통합 27개를 포함한다. 운영자 API는 OTP 전 403, 검증한 세션만 200, 다른 세션·권한 회수 후 403, 30분 초과 비활성 시 세션 만료를 확인했다. 정식 Flyway를 사용하는 기본 빌드의 V4 중복은 별개로 남아 있다.
 
 외부 API 형식은 [GitHub App REST 문서](https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#list-installation-requests-for-the-authenticated-app)와 [Projects GraphQL 문서](https://docs.github.com/en/graphql/reference/projects)를 함께 확인했다.
 
 ## 남은 확인
 
 - A/D/E 적용 이력·번호·머지 순서 합의 후 준비본 정식 Flyway 편입·업그레이드 검증.
-- A #216 운영자 API는 OTP 전 조회가 200인 반면 기존 FoundationIntegrationTest는 403을 기대한다. 이 권한/테스트 계약은 A 확인이 필요하며 B가 임의로 변경하지 않는다.
-- E 작업 브랜치와의 병합 미리보기에서 User.java의 A/E 기존 충돌을 확인했다. 이번 08은 User.java를 변경하지 않는다. E 담당이 최신 dev 반영 및 마이그레이션 순서를 조율해야 한다.
+- 서버의 기존 세션 OTP 확인 경계는 복원했다. 실제 OTP 입력·검증 HTTP API/화면은 아직 없으므로 A가 연결해야 하며, 이 작업에서는 새 인증 API를 추가하지 않는다.
+- E 최신 cf7c122는 dev를 통합해 이전 User.java 충돌을 정리했다. 해당 파일이 최신 dev와 동일함을 확인했다. E의 V2~V5 마이그레이션 번호 충돌과 정식 통합은 여전히 조율해야 한다.
 - 실제 테스트 조직·App 준비 후 설치 요청/검증, 보드 생성, C와 실제 웹훅 수신·캐시 갱신 샘플 확인.
 - 08 프론트는 기존 미리보기 상태이며 실 API 저장 동선 연결·실브라우저 왕복은 #79 후속 범위다.
 - 기존 보드는 이름이 Status인 SINGLE_SELECT 필드를 기준으로 연결한다. 이름을 바꾼 사용자 정의 상태 필드는 별도 선택 UI/API 계약 없이 자동 추측하지 않는다.

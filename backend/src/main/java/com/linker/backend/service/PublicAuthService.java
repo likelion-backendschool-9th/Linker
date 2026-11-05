@@ -237,7 +237,8 @@ public class PublicAuthService {
 
 	private AuthenticatedUser toPrincipal(UserSession session, User user) {
 		boolean adminRegistered = adminRegistered(user);
-		boolean operatorAuthorized = adminRegistered;
+		// adm is registration metadata; admin API access also needs this session's OTP proof.
+		boolean operatorAuthorized = adminRegistered && session.getOtpVerifiedAt() != null;
 		return new AuthenticatedUser(
 				user.getId(),
 				user.getUsername(),
