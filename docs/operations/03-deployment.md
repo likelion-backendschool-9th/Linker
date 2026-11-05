@@ -60,7 +60,7 @@ curl -I https://linker.newlecture.com/
 
 ## 인증서·DB 관리
 
-개인 PC에서 서버 DB를 조회하려면 [DB 접속 안내](./05-database-access.md)를 따른다.
+운영 DB는 서버에서 관리한다. 개인 PC의 개발 DB는 [로컬 DB 안내](./05-database-access.md)를 따른다. 운영 데이터는 로컬로 복사되지 않는다.
 
 호스트 Nginx 설정은 `/etc/nginx/sites-available/linker`, 인증서는 호스트 Certbot이 관리한다.
 다른 팀의 설정은 변경하지 않는다. [초기 HTTP 예시](../../nginx/host-linker.http.conf.example)로 현재 HTTPS 설정을 덮어쓰지 않는다.
