@@ -13,6 +13,8 @@ public final class PlanLimits {
 	public static final int IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 	public static final int IMAGE_LONG_SIDE = 2048;
 	public static final int SESSION_DAYS = 30;
+	/** Policy ch. 3 — pending withdrawal before anonymization. */
+	public static final int ACCOUNT_WITHDRAWAL_DAYS = 30;
 	/** Policy ch. 2 — login during pending deletion restores the account. */
 	public static final int ACCOUNT_WITHDRAWAL_RESTORE_DAYS = 30;
 	/** Terms version stored with onboarding agreement. Matches the page 02 client. */

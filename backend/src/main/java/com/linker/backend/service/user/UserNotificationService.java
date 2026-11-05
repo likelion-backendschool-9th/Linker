@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.entity.account.User;
@@ -55,6 +56,23 @@ public class UserNotificationService {
 				deliverAfter
 		);
 		return notifications.save(notification);
+	}
+
+	/** Header bell. Quiet-hours rows stay hidden until {@code deliver_after}. */
+	@Transactional(readOnly = true)
+	public long unreadCount(AuthenticatedUser user) {
+		return notifications.countVisibleUnread(user.userId(), Instant.now(clock));
+	}
+
+	/** Push preference only. In-app notification rows stay in place when this is off. */
+	@Transactional
+	public boolean setPushEnabled(AuthenticatedUser principal, Boolean pushEnabled) {
+		if (pushEnabled == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+		}
+		User user = requireActiveUser(principal.userId());
+		user.setPushEnabled(pushEnabled);
+		return user.isPushEnabled();
 	}
 
 	private User requireActiveUser(long userId) {

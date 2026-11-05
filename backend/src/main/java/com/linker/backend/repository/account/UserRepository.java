@@ -1,5 +1,6 @@
 package com.linker.backend.repository.account;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.linker.backend.entity.account.User;
@@ -11,6 +12,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface UserRepository extends JpaRepository<User, Long> {
+
+	List<User> findByStatusAndWithdrawRequestedAtLessThanEqual(UserStatus status, Instant withdrawRequestedAt);
 
 	@Query("""
 			select u from User u

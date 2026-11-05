@@ -141,6 +141,7 @@ erDiagram
     timestamptz last_active_at
     timestamptz withdraw_requested_at "withdrawal pending start"
     timestamptz deleted_at "anonymized"
+    timestamptz onboarded_at "profile step finished, session onb"
   }
   auth_identities {
     bigint id PK
@@ -974,7 +975,7 @@ erDiagram
 | user_sessions | 🟢 | Refresh token and 30-day login, operator OTP status | POL-A-1, POL ch. 10 |
 | user_agreements | 🟢 | Consent history: terms, privacy, age 14+, marketing | POL-A-1, Privacy Policy |
 | tech_tags | 🟢 | Predefined tech stack tag list (seed data) | POL-A-3 |
-| user_tech_tags | 🟢 | My tech stack, max 10 | A-3 |
+| user_tech_tags | 🟢 | My tech stack, max 10, unique (user_id, tag_id) | A-3 |
 | username_redirects | 🟡 | 90-day redirect of old URL after GitHub username change | POL ch. 3 exceptions |
 | contribution_days | 🟡 | Daily GitHub contributions, last 12 months, refreshed daily | A-4 |
 | recruiter_profiles | 🟡 | Recruiter company name, job title, verified email domain (1:1 with users) | H-1, POL ch. 3 recruiter accounts |
@@ -992,6 +993,7 @@ erDiagram
 | user_type | DEVELOPER (GitHub sign-up) / RECRUITER (company email sign-up). Set at sign-up, never changes. RECRUITER gets an auto-generated `username` of `r-` + number, and GitHub columns/tables stay empty |
 | job_seeking_status | Job-seeking status (POL-H-4). OPEN = job seeking (badge for everyone), OFFERS_ONLY = offers only (shown to recruiters only), OFF = recruiting offers blocked. DEVELOPER only. Batch sets OFF after 90 days inactive |
 | deleted_at | 30 days after withdrawal, personal columns (name, avatar, bio, email) are cleared and this is set |
+| onboarded_at | Set when onboarding profile save finishes. Null until then. The session `onb` claim follows this column |
 
 - Indexes: `username` UK, `status`, `looking_for_team` + `last_active_at`, `job_seeking_status` (recruiter feed filter).
 - Recruiters are not split into a separate table; they live in `users`. Chat, reports, blocking, sanctions and notifications all point at `users.id`, so everything is reused as-is.
