@@ -30,9 +30,11 @@ beforeEach(() => {
     window.dispatchEvent(new PopStateEvent('popstate'));
   });
   vi.mocked(useRouter).mockReturnValue({
+    bfcacheId: 'test',
     push,
     replace: vi.fn(),
     back: vi.fn(),
+    forward: vi.fn(),
     refresh: vi.fn(),
     prefetch: vi.fn(),
   });
