@@ -46,7 +46,6 @@ async function readRoleCookie(): Promise<MockRole> {
 
 function setBrowserRole(role: MockRole) {
   if (typeof window === 'undefined') return;
-  adminOtpLastActiveAt = null;
   if (role === 'guest') document.cookie = `${MOCK_ROLE_COOKIE}=; path=/; max-age=0`;
   else document.cookie = `${MOCK_ROLE_COOKIE}=${role}; path=/; samesite=lax`;
 }

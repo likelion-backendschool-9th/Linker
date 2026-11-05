@@ -67,9 +67,11 @@ class WorkspaceTeamIntegrationTest {
 	@Autowired PublicAuthService sessions;
 	@Autowired ObjectMapper json;
 	int org;
+	java.util.List<java.util.Map<String, Object>> migrationHistoryBefore;
 
 	@BeforeEach
 	void clean() {
+		migrationHistoryBefore = migrationHistory();
 		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.teams') is null", Boolean.class))) {
 			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-foundation.sql")).execute(dataSource);
 		}
@@ -185,7 +187,8 @@ class WorkspaceTeamIntegrationTest {
 				insert into chat_rooms(room_type,team_id,created_at,updated_at)
 				values ('TEAM',999999,now(),now())
 				""")).isInstanceOf(DataIntegrityViolationException.class);
-		assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success", Long.class)).isEqualTo(4);
+		// Prepared SQL must preserve actual history, including later A/D migrations.
+		assertThat(migrationHistory()).isEqualTo(migrationHistoryBefore);
 		assertThat(jdbc.queryForObject("""
 				select count(*) from information_schema.columns
 				where table_name='chat_messages' and column_name in ('client_message_id','edited_at')
@@ -386,6 +389,12 @@ class WorkspaceTeamIntegrationTest {
 				""", Long.class, room, sender, visibility);
 	}
 
+	private java.util.List<java.util.Map<String, Object>> migrationHistory() {
+		if (!Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('flyway_schema_history') is not null", Boolean.class))) {
+			return java.util.List.of();
+		}
+		return jdbc.queryForList("select installed_rank,version,checksum,success from flyway_schema_history order by installed_rank");
+	}
 	private User user(String name) { return users.saveAndFlush(User.create(name, UserType.DEVELOPER)); }
 	private Cookie cookie(User user) { return new Cookie("linker_session", sessions.issue(user, "workspace-test", "127.0.0.1").rawToken()); }
 	private long team(User creator, String status) {
