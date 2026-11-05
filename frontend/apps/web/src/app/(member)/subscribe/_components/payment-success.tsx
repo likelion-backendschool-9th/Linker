@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
@@ -11,12 +12,19 @@ import {
   PLAN_LABELS,
   type PaymentReturn,
 } from '@/features/subscription/subscription-api';
+import { safeReturnTo } from '@/lib/auth/return-to';
 import { formatWon } from '@/lib/format/number';
 import { formatDate } from '@/lib/format/time';
 
 import styles from './subscription.module.css';
 
-export function PaymentSuccess({ payment }: { payment: PaymentReturn | null }) {
+export function PaymentSuccess({
+  payment,
+  returnTo,
+}: {
+  payment: PaymentReturn | null;
+  returnTo?: string | null;
+}) {
   const started = useRef(false);
   const client = useQueryClient();
   const router = useRouter();
@@ -68,7 +76,7 @@ export function PaymentSuccess({ payment }: { payment: PaymentReturn | null }) {
           <li key={benefit}>{benefit}</li>
         ))}
       </ul>
-      <Button onClick={() => router.replace('/feed')}>서비스 이용하기</Button>
+      <Button onClick={() => router.replace(safeReturnTo(returnTo) as Route)}>서비스 이용하기</Button>
       <Button variant="outline" onClick={() => router.replace('/settings/subscription')}>
         구독 관리
       </Button>

@@ -1,6 +1,8 @@
 import type { CheckoutOrder } from '@/features/subscription/subscription-api';
 import { ApiError } from '@/lib/api/api-error';
 
+import { paymentCallbackUrl } from './payment-return';
+
 export type WidgetTargets = { methods: string; agreement: string };
 export type PaymentWidget = {
   requestPayment: () => Promise<string | void>;
@@ -17,11 +19,12 @@ export async function mountPaymentWidget(
   order: CheckoutOrder,
   targets: WidgetTargets,
   signal: AbortSignal,
+  returnTo?: string | null,
 ): Promise<PaymentWidget> {
   if (process.env.NEXT_PUBLIC_USE_MOCKS === 'true') {
     const { mountMockPaymentWidget } = await import('@/mocks/mock-payment-widget');
     signal.throwIfAborted();
-    return mountMockPaymentWidget(order, targets);
+    return mountMockPaymentWidget(order, targets, returnTo);
   }
   const key = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
   if (!key?.startsWith('test_')) throw unavailable();
@@ -58,8 +61,8 @@ export async function mountPaymentWidget(
         await widgets.requestPayment({
           orderId: order.orderId,
           orderName: order.orderName,
-          successUrl: `${window.location.origin}/subscribe/success`,
-          failUrl: `${window.location.origin}/subscribe/fail`,
+          successUrl: paymentCallbackUrl('success', window.location.origin, returnTo),
+          failUrl: paymentCallbackUrl('fail', window.location.origin, returnTo),
         });
       },
       destroy,

@@ -1,4 +1,5 @@
 import { PageFrame } from '@/components/layout/page-frame';
+import { safeReturnTo } from '@/lib/auth/return-to';
 import { getSession } from '@/lib/auth/session';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -19,6 +20,7 @@ export default async function PaymentFailurePage({ searchParams }: PageProps<'/s
         orderId={orderId}
         code={code}
         message={message}
+        returnTo={safeReturnTo(typeof params.returnTo === 'string' ? params.returnTo : null)}
       />
     </PageFrame>
   );
