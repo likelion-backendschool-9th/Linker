@@ -6,7 +6,7 @@
 | 경계 | B 확인 결과 | 남은 확인 |
 | --- | --- | --- |
 | A ↔ B 로그인·딥링크 | A 초안의 B 딥링크 항목 및 계약 변경 시 A·B 공유 규칙을 #180에서 체크 | 실제 GitHub 로그인·쿠키 수신은 페이지 01 구현 및 실환경 스파이크에서 확인. 로그아웃 설명 차이는 아래 참고 |
-| B ↔ C 웹훅 | 아래 이벤트·DB 필드·큐·전달 경계를 B 측에서 공유 | C의 대상 식별·갱신 가능 여부, 지원 action·실제 payload 경로·지연 이벤트 처리 확인 전 공동 freeze 미완료 |
+| B ↔ C 웹훅 | 아래 이벤트·DB 필드·큐·전달 경계를 B 측에서 공유. C PR #184의 소비안에 대한 B 검토는 §7 | 실제 수신 샘플·보관 처리 정책·직렬화 구현 수단 확인 전 전체 공동 freeze 미완료 |
 | D → B 알림 | 현행 `UserNotificationService.create(CreateNotificationCommand)` 인자 확인·기록 | 이번 단계에서는 알림 생성·발송하지 않음. D 계약 변경 시 함께 재확인 |
 
 ## 1. A 시나리오에 대한 B 확인
@@ -126,9 +126,64 @@ B의 이후 user 팀 초대는 `notificationType=TEAM_INVITE`, `linkPath=/invite
 - [x] A 초안 #180의 B 딥링크 확인과 변경 시 A·B 공유 규칙 체크
 - [x] B 이벤트·필드·큐·트랜잭션·재시도 경계 작성 및 기존 코드 대조
 - [x] D 알림 인자·TEAM_INVITE·초대 경로 기록
+- [x] C PR #184의 공개 스키마 경로·소비안 대조 및 B 수신·전달 통합 테스트 보강 (§7)
 - [ ] A와 로그아웃 부가 설명 차이 정리
 - [ ] C가 이 필드로 대상 식별·캐시 갱신이 가능한지 확인하고 실제 action·필드 경로·지연 처리 기준을 같은 이슈에 기록
 - [ ] 스파이크 실패 시 보드 지원 축소 여부를 공동 기록. 실패하지 않았다면 축소 합의 불필요
 
 0번의 전원 OpenAPI 태그·에러 코드·Sentry 합의, D↔E 차단 소비와 C↔D 숫자는 각 담당자가 확인한다.
 저장소 밖 선행·조율 순서 원본에도 B 교차 계약 링크·현재 확인 상태와 #180을 별도 반영해야 한다.
+
+## 7. C PR #184에 대한 B 확인 (2026-11-05)
+
+기준은 `dev`의 `976d380`, [C PR #184](https://github.com/likelion-backendschool-9th/Linker/pull/184)의
+[소비안 df2b521](https://github.com/likelion-backendschool-9th/Linker/blob/df2b5216439c8ba879940e2111a5de97b36635f7/docs/development/plans/c-backend-cross-contracts.md)이다.
+B↔C 공동 기록 위치는 [이슈 #183](https://github.com/likelion-backendschool-9th/Linker/issues/183)이며,
+기존 #49 코멘트는 별도 이슈로 옮기면서 삭제했다. C PR의 삭제된 코멘트 링크도 #183으로 맞춰야 한다.
+
+### 필드 경로와 샘플의 증거 범위
+
+Octokit 스키마를 커밋 `aa80c24a3f55354465b8b1438d33dd5602956d0d`로 고정해 확인했다.
+
+| C의 경로 | B 대조 결과 |
+| --- | --- |
+| `projects_v2_item.project_node_id`, `.node_id`, `.content_node_id` | 각각 보드·item·콘텐츠 node ID 문자열. item 숫자 `id`와 구분 |
+| `projects_v2_item.content_type` | `Issue` / `PullRequest` / `DraftIssue`. Issue만 이슈 캐시 대상으로 삼는 C 기준과 호환 |
+| `projects_v2_item.updated_at`, `.archived_at` | 항목 변경 시각 및 nullable 보관 시각. Issues 원본 시각과 별개 |
+| `changes.field_value.field_node_id`, `.field_type` | edited의 필드 식별 힌트. 새 상태·날짜 값은 제공하지 않아 재조회 필요 |
+| `changes.content_type.from`, `.to` | converted는 DraftIssue → Issue. 변환 후 콘텐츠를 확인하는 C 기준과 호환 |
+| `changes.new_issue`, `.new_repository` | issues transferred의 새 위치. 이전 위치의 `issue`·`repository`와 구분해 권한·연결 재검증 |
+
+근거: [item](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/common/projects_v2_item.schema.json),
+[edited](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/projects_v2_item/edited.schema.json),
+[converted](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/projects_v2_item/converted.schema.json),
+[transferred](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/issues/transferred.schema.json),
+[reordered](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/projects_v2_item/reordered.schema.json).
+
+B가 필요한 필드를 별도 정규화해 큐에 추가할 필요는 없다. 원문 JSON의 식별 필드가 DB·기존 큐·handler를 거쳐 유지되는 경로를
+edited·converted·transferred의 **식별 필드 중심 합성 입력**으로 확인했다. 전체 스키마 검증용 fixture나 실제 App 수신 캡처는 아니다.
+App의 실제 event/action·누락 필드·권한을 확인할 수신 샘플은 여전히 필요하다.
+
+### 의도적 비대상과 미지원·실패의 구분
+
+현재 `void handle(delivery)`의 정상 반환은 **그 handler의 전달 처리 완료**다. 모든 일치 handler가 정상 반환하면 B는 PROCESSED로 기록한다.
+이 상태가 캐시 행 변경·보드 갱신 성공을 뜻하지는 않는다. IGNORED를 자동 기록하는 경로는 현재 없으며 이번에 추가하지 않는다.
+
+- `reordered`처럼 C가 현재 캐시에 저장하지 않기로 명시한, 검증된 비대상 action은 후속 실제 소비자가 식별·분류 후 업무 변경 없이 정상 반환할 수 있다. 분류 기준을 문서·테스트에 남기며, 모든 입력에 성공을 반환하는 빈 handler와 구분한다.
+- 알려지지 않은 action·잘못된 필수 필드·연결 검증 실패·원본 조회 실패를 위 비대상 분기에 섞어 성공 처리하지 않는다. 후속 소비자는 미해결 상태를 명시하고, 예외 종료 시 B의 기존 FAILED·재시도 경로를 따른다.
+- C가 지원하지 않는 다른 event는 `supports`에서 제외한다. 소비 handler 자체가 없으면 B의 RECEIVED 유지·복구 규칙을 그대로 따른다.
+- `archived`를 이슈 CLOSED·삭제로 취급하지 않는 C의 구분은 맞다. 하지만 Projects 항목 보관 시 노출·보드 멤버십·날짜 보존 규칙은 현재 Policy·ERD에 명시되어 있지 않다. **B가 무시/삭제/비노출로 확정하지 않는다.** C와 정책 의미를 정리하기 전에는 보관을 의도적 비대상으로 승인하거나 자동 성공 처리하지 않는다.
+
+### 동일 이슈 갱신 순서
+
+C의 ‘같은 이슈의 웹훅·수동·주기 동기화를 하나의 갱신 흐름으로 직렬화’하는 방향에 B 측은 동의한다.
+후속 구현에서 다음 조건을 함께 충족해야 하며, 현재 delivery 잠금이 이 기능까지 제공한다고 간주하지 않는다.
+
+1. 동일 갱신 대상의 모든 진입 경로·앱 인스턴스가 같은 조율 수단을 사용한다. JVM 안의 단순 synchronized나 delivery ID별 잠금만으로 완료 처리하지 않는다.
+2. **원본 재조회 시작부터 DB 반영까지** 순서를 제어한다. 조회가 끝난 후 DB 저장만 잠그면 오래된 조회가 나중에 저장될 수 있다. 이 과정에서도 외부 호출 중 DB 트랜잭션을 열지 않는다.
+3. Issues의 `github_updated_at` 비교와 Projects 시각의 구분을 유지한다. 삭제·이동·보관·권한 상실 재검증 및 부분 실패 후 재실행도 같은 흐름에서 다룬다.
+4. 다중 인스턴스 조율 수단·동시성/지연/실패 테스트는 C 후속 저장 구현과 함께 확인한다. B가 여기서 새 잠금 서비스·임대 상태·스키마를 먼저 만들지 않는다.
+
+이번 보완의 격리 통합 테스트는 기존 11개와 새 검증 4개, 총 15개 통과다.
+새 검증은 서명된 HTTP 수신 후 식별 필드 전달 3개와 C 미등록 시 RECEIVED 유지·복구 1개다.
+실제 C handler·캐시 저장·App 수신 성공을 입증하는 테스트는 아니며, B↔C 확인 상태는 #183에서 구분해 관리한다.
