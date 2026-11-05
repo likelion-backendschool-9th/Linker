@@ -212,3 +212,48 @@
 - [ ] RateLimit + PlanLimits
 - [ ] Toss 스파이크
 - [ ] E 차단 스키마 소비 확인
+
+## D 정책값 대조 (2026-11-05)
+
+D 담당 채팅·알림·구독만 대조했다. 기준은 `docs/planning/04-policy.md`. 서버는 `PlanLimits`, 화면은 `frontend/apps/web/src/lib/policy.ts`. 적힌 숫자가 같으면 값을 바꾸지 않았다. 요금은 Policy 11장에 있고 14장에서 아직 미확정이다.
+
+### 일치
+
+| 항목 | Policy | PlanLimits | policy.ts |
+| --- | --- | --- | --- |
+| 채팅 전송 | 2장 5회/초 | `CHAT_SENDS_PER_SECOND` 5 | `CHAT.sendsPerSecond` 5 |
+| 메시지 길이 | 8장 2,000자 | `CHAT_MESSAGE_MAX_CHARS` 2000 | `CHAT.messageMax` 2000 |
+| 사진 수 | 8장 한 번에 10장 | `CHAT_IMAGES_PER_SEND` 10 | `CHAT.imagesPerSend` 10 |
+| 수정 가능 시간 | 8장 24시간 | `CHAT_EDIT_WITHIN_HOURS` 24 | `CHAT.editWithinHours` 24 |
+| 채용 첫 메시지 | 8장 1,000자 | `CHAT_OFFER_MESSAGE_MAX_CHARS` 1000 | `CHAT.offerMessageMax` 1000 |
+| 재접속 한 번에 불러오기 | 8장 예외 500개 | `CHAT_CATCH_UP_MAX` 500 | `CHAT.catchUpMax` 500 |
+| 전송 자동 재시도 | 2장 3회 | `CHAT_AUTO_RETRIES` 3 | `CHAT.autoRetries` 3 |
+| 무료 팀 대화 조회 | 11장 60일 | `TEAM_CHAT_HISTORY_DAYS_FREE` 60 | `PLAN_LIMITS.teamChatHistoryDays.free` 60 |
+| 채용 제안 | 2장·11장 10회/일, Scout 50 | `RECRUITING_OFFERS_PER_DAY_*` 10, 50 | `PLAN_LIMITS.recruitingOffersPerDay` 10, 50 |
+| AI 요약 | 2장·11장 10회/일 | `AI_SUMMARY_PER_DAY_FLEX` 10 | `PLAN_LIMITS.aiSummaryPerDay.flex` 10 |
+| 조용한 시간 | POL-N-1 22:00–08:00, 마케팅 21:00–08:00 | `QUIET_HOURS_*` 22, 8, `MARKETING_QUIET_HOURS_START_HOUR` 21 | 화면 상수 없음. 서버 값은 Policy와 같음 |
+| Pro 월 요금 | 11장 ₩2,900 | `PRO_MONTHLY_KRW` 2900 | `SUBSCRIPTION_PRICE.proMonthly` 2900 |
+| Flex | 11장 ₩7,900, 6명까지, 7번째부터 ₩1,900 | `FLEX_BASE_MONTHLY_KRW` 7900, `FLEX_INCLUDED_SEATS` 6, `FLEX_EXTRA_SEAT_KRW` 1900 | `flexMonthly` 7900, `flexExtraMember` 1900, `teamMembers.free` 6 |
+| Scout 월 요금 | 11장 ₩14,900 | `SCOUT_MONTHLY_KRW` 14900 | `scoutMonthly` 14900 |
+| 체험·환불·Flex 유예 | 7일, 7일, 30일 | `SUBSCRIPTION_TRIAL_DAYS` 7, `PAYMENT_REFUND_WITHIN_DAYS` 7, `FLEX_POST_EXPIRY_GRACE_DAYS` 30 | `trialDays` 7, `refundWithinDays` 7, `flexGraceDays` 30 |
+
+### 숫자 충돌은 없고, 한쪽 또는 양쪽에 상수가 없음
+
+Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여기 값으로 채운다.
+
+| 항목 | Policy | 없는 곳 |
+| --- | --- | --- |
+| Pro 연 요금 ₩29,000 | 11장 | `PlanLimits`. `policy.ts`의 `proYearly` 29000은 Policy와 같음 |
+| 결제 실패 유예 7일 | 11장 | `policy.ts`. `PAYMENT_FAILURE_GRACE_DAYS` 7은 Policy와 같음 |
+| 무료 팀 채팅 이미지 원본 90일 | 8장·11장 | `PlanLimits`, `policy.ts` |
+| AI 요약 결과 보관 7일 | 11장 | `PlanLimits`, `policy.ts` |
+| Flex 종료·유예 종료 7일 전 알림 | 11장 | `PlanLimits`, `policy.ts` |
+| 채팅방 공유 10회/분, 100회/일 | 2장 | `PlanLimits`, `policy.ts` |
+
+### 합의 전 상수로 두지 않음
+
+| 항목 | 이유 |
+| --- | --- |
+| 1:1 채팅 이미지 원본 1년 | 8장 예외와 14장이 잠정이라고 적음 |
+| 요금·플랜 이름 최종 확정 | 11장 숫자와 14장 미확정 체크가 같이 있음. 지금 세 곳의 월 요금은 같고, 이 대조에서 금액을 바꾸지 않음 |
+| AI 요약 10회가 최종인지 | 2장·11장·양쪽 코드는 10. 14장만 잠정 10으로 남아 있음 |
