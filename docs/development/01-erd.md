@@ -1108,6 +1108,8 @@ erDiagram
 
 **github_webhook_deliveries**: `delivery_id` UK prevents processing the same webhook twice. Stored and acknowledged immediately on receipt, then processed asynchronously (@Async / Redis queue). Processed rows are deleted after 30 days.
 
+Current foundation implementation: V1 has no installation FK and stores the external GitHub installation ID from the payload. Page 08 must resolve it through `github_installations.github_installation_id` before wiring the planned relation; do not treat it as an internal PK. The dispatcher uses the existing status/attempts/error fields, short outcome transactions and a session advisory lock (no DB transaction during handler HTTP calls). Stale RECEIVED/FAILED rows are requeued with operational retry settings. Queue delivery is at least once; domain handlers remain idempotent. No new table/column/enum is introduced by this foundation work. See [GitHub App operations](../operations/06-github-app.md).
+
 **teams**
 
 | Column | Notes |

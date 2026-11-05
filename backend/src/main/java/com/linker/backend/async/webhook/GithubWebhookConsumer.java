@@ -37,4 +37,14 @@ public class GithubWebhookConsumer {
 			log.warn("webhook consumer failed: {}", exception.getClass().getSimpleName());
 		}
 	}
+
+	@Scheduled(fixedDelayString = "${linker.webhook.recovery-delay-ms:60000}")
+	public void recover() {
+		try {
+			webhooks.recover();
+		}
+		catch (RuntimeException exception) {
+			log.warn("webhook recovery failed: {}", exception.getClass().getSimpleName());
+		}
+	}
 }

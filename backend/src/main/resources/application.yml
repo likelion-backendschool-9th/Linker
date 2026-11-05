@@ -64,9 +64,22 @@ linker:
     local-dir: ${STORAGE_LOCAL_DIR:}
   github:
     webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+    app:
+      id: ${GITHUB_APP_ID:}
+      slug: ${GITHUB_APP_SLUG:}
+      private-key: ${GITHUB_APP_PRIVATE_KEY:}
+      api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
+      api-version: ${GITHUB_API_VERSION:2026-03-10}
+      request-timeout: ${GITHUB_HTTP_TIMEOUT:10s}
+      state-ttl: ${GITHUB_INSTALL_STATE_TTL:10m}
   webhook:
     consumer-enabled: true
     queue-key: linker:github:webhook
+    max-attempts: ${GITHUB_WEBHOOK_MAX_ATTEMPTS:5}
+    retry-delay: ${GITHUB_WEBHOOK_RETRY_DELAY:30s}
+    received-timeout: ${GITHUB_WEBHOOK_RECEIVED_TIMEOUT:60s}
+    recovery-batch-size: ${GITHUB_WEBHOOK_RECOVERY_BATCH_SIZE:100}
+    recovery-delay-ms: ${GITHUB_WEBHOOK_RECOVERY_DELAY_MS:60000}
   payment:
     secret-key: ${TOSS_SECRET_KEY:}
     client-key: ${TOSS_CLIENT_KEY:}

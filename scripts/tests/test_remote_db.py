@@ -17,6 +17,37 @@ COMMON = json.loads((remote_db.ROOT / 'config/remote-db.json').read_text())
 
 
 class RemoteDbTests(unittest.TestCase):
+    def test_dotenv_github_settings_are_literal_and_database_worker_settings_are_excluded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env').write_text(
+                "GITHUB_APP_ID=123\nGITHUB_APP_PRIVATE_KEY='literal $value #value\\n'\n"
+                "DB_PASSWORD=synthetic-local-password\nDB_URL=synthetic-local-url\n"
+                "LINKER_WEBHOOK_CONSUMER_ENABLED=true\nSPRING_JPA_HIBERNATE_DDL_AUTO=create-drop\n"
+            )
+            with patch.object(remote_db, 'ROOT', root):
+                values = remote_db.backend_settings_from_dotenv()
+            self.assertEqual(values, {'GITHUB_APP_ID': '123', 'GITHUB_APP_PRIVATE_KEY': 'literal $value #value\\n'})
+
+    def test_process_github_settings_override_dotenv_without_changing_remote_database(self):
+        with patch.dict(os.environ, {'GITHUB_APP_ID': '456'}, clear=True), \
+             patch.object(remote_db, 'backend_settings_from_dotenv', return_value={'GITHUB_APP_ID': '123', 'GITHUB_APP_SLUG': 'test-app'}):
+            environment = remote_db.backend_environment(COMMON, {}, 15432, 'synthetic-remote-password')
+        self.assertEqual(environment['GITHUB_APP_ID'], '456')
+        self.assertEqual(environment['GITHUB_APP_SLUG'], 'test-app')
+        self.assertEqual(environment['DB_URL'], 'jdbc:postgresql://127.0.0.1:15432/linker')
+        self.assertEqual(environment['DB_PASSWORD'], 'synthetic-remote-password')
+        self.assertEqual(environment['LINKER_WEBHOOK_CONSUMER_ENABLED'], 'false')
+
+    def test_malformed_selected_dotenv_values_never_appear_in_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env').write_text("GITHUB_APP_PRIVATE_KEY='synthetic-secret\n")
+            with patch.object(remote_db, 'ROOT', root):
+                with self.assertRaises(ValueError) as result:
+                    remote_db.backend_settings_from_dotenv()
+            self.assertNotIn('synthetic-secret', str(result.exception))
+
     def test_personal_values_are_literal_and_environment_can_override_username(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / '.env.remote-db'
@@ -260,6 +291,14 @@ class RemoteDbTests(unittest.TestCase):
             with self.subTest(environment=inherited), patch.dict(os.environ, inherited, clear=True):
                 environment = remote_db.backend_environment(COMMON, {}, 15432, 'synthetic-secret')
                 self.assertEqual(environment.get('SPRING_FLYWAY_ENABLED'), inherited.get('SPRING_FLYWAY_ENABLED'))
+
+    def test_shared_db_backend_disables_webhook_workers_unless_explicitly_enabled(self):
+        with patch.dict(os.environ, {}, clear=True):
+            environment = remote_db.backend_environment(COMMON, {}, 15432, 'synthetic-secret')
+            self.assertEqual(environment['LINKER_WEBHOOK_CONSUMER_ENABLED'], 'false')
+        with patch.dict(os.environ, {'LINKER_WEBHOOK_CONSUMER_ENABLED': 'true'}, clear=True):
+            environment = remote_db.backend_environment(COMMON, {}, 15432, 'synthetic-secret')
+            self.assertEqual(environment['LINKER_WEBHOOK_CONSUMER_ENABLED'], 'true')
 
 
 if __name__ == '__main__':

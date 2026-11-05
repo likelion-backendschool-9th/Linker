@@ -20,11 +20,18 @@ PERSONAL_KEYS = {
     "DB_PASSWORD", "DB_USERNAME", "SSH_USER", "SSH_KEY_FILE", "LOCAL_DB_PORT",
     "REDIS_HOST", "REDIS_PORT", "BACKEND_PORT",
 }
-SESSION_ENV_KEYS = ("JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY")
+BACKEND_ENV_KEYS = (
+    "JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY", "GITHUB_WEBHOOK_SECRET", "GITHUB_APP_ID",
+    "GITHUB_APP_SLUG", "GITHUB_APP_PRIVATE_KEY", "GITHUB_API_BASE_URL",
+    "GITHUB_API_VERSION", "GITHUB_HTTP_TIMEOUT", "GITHUB_INSTALL_STATE_TTL",
+    "GITHUB_WEBHOOK_MAX_ATTEMPTS", "GITHUB_WEBHOOK_RETRY_DELAY",
+    "GITHUB_WEBHOOK_RECEIVED_TIMEOUT", "GITHUB_WEBHOOK_RECOVERY_BATCH_SIZE",
+    "GITHUB_WEBHOOK_RECOVERY_DELAY_MS",
+)
 
 
-def session_keys_from_dotenv():
-    """Copy only the session JWT PEMs from the repo-root .env. Other keys stay untouched."""
+def backend_settings_from_dotenv():
+    """Read selected JWT/GitHub settings literally; never import local DB settings."""
     path = ROOT / ".env"
     values = {}
     if not path.exists():
@@ -35,7 +42,7 @@ def session_keys_from_dotenv():
             continue
         key, _, value = stripped.partition("=")
         key, value = key.strip(), value.strip()
-        if key not in SESSION_ENV_KEYS:
+        if key not in BACKEND_ENV_KEYS:
             continue
         if value[:1] in {"'", '"'}:
             if len(value) < 2 or value[-1] != value[0]:
@@ -163,8 +170,10 @@ def backend_environment(common, personal, local_port, password):
         "SPRING_JPA_HIBERNATE_DDL_AUTO": "none",
         "SPRING_SQL_INIT_MODE": "never",
     })
-    for key, value in session_keys_from_dotenv().items():
+    for key, value in backend_settings_from_dotenv().items():
         environment.setdefault(key, value)
+    # Shared DB + personal Redis must not drain/recover another worker's deliveries.
+    environment.setdefault("LINKER_WEBHOOK_CONSUMER_ENABLED", "false")
     return environment
 
 
