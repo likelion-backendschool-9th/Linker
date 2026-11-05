@@ -15,6 +15,7 @@ type ConfirmDialogProps = {
   /** Delete, leave, block: error-colored confirm button */
   destructive?: boolean;
   pending?: boolean;
+  error?: string | null;
   onConfirm: () => void;
 };
 
@@ -29,6 +30,7 @@ export function ConfirmDialog({
   confirmLabel,
   destructive = false,
   pending = false,
+  error = null,
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -40,6 +42,11 @@ export function ConfirmDialog({
           <AlertDialog.Description className={styles.description}>
             {description}
           </AlertDialog.Description>
+          {error && (
+            <p role="alert" className={styles.error}>
+              {error}
+            </p>
+          )}
           <div className={styles.actions}>
             <AlertDialog.Cancel asChild>
               <Button variant="outline">취소</Button>

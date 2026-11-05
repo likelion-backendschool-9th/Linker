@@ -7,7 +7,6 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
-import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -39,6 +38,7 @@ import { MessageActions } from './message-actions';
 import { UnreadMembersSheet } from './unread-members-sheet';
 import { MessageTimeline } from './message-timeline';
 import { ChatRoomMenu } from './chat-room-menu';
+import { RequestRoomBar } from './request-room-bar';
 import { RoomInfoSheet } from './room-info-sheet';
 import { PullRequestSheet } from './pull-request-sheet';
 import styles from './chat-room.module.css';
@@ -182,10 +182,13 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         <p className={styles.meta} role="status">
           {CONNECTION[connection]}
         </p>
-        <ChatRoomMenu room={room} />
+        <ChatRoomMenu room={room} login={viewer.login} disabled={suspended} />
         <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
         {room.team && <PullRequestSheet roomId={roomId} login={viewer.login} />}
       </div>
+      {room.kind === 'REQUEST' && room.requestDirection === 'RECEIVED' && (
+        <RequestRoomBar room={room} login={viewer.login} disabled={suspended} />
+      )}
       {room.historyLimitDays !== null && (
         <p className={styles.notice}>
           무료 팀은 최근 {room.historyLimitDays}일 대화만 볼 수 있어요
@@ -259,16 +262,11 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         </div>
       )}
       {room.kind === 'REQUEST' ? (
-        <div className={styles.notice}>
-          <p>
-            {room.requestDirection === 'RECEIVED'
-              ? '요청을 수락하면 대화가 열려요.'
-              : '상대가 수락하면 대화가 열려요'}
-          </p>
-          <Button asChild variant="outline">
-            <Link href="/chats?tab=REQUEST">메시지 요청함</Link>
-          </Button>
-        </div>
+        room.requestDirection !== 'RECEIVED' && (
+          <div className={styles.notice}>
+            <p>상대가 수락하면 대화가 열려요</p>
+          </div>
+        )
       ) : (
         <>
           {readOnly && <p role="status">지금은 대화를 읽을 수만 있어요.</p>}

@@ -119,7 +119,9 @@ export const routes: MockRoute[] = [
     return undefined;
   }),
   del('/api/v1/user/chat-rooms/:roomId/members/me', ({ params }) => {
-    const index = ROOMS.findIndex((room) => room.id === Number(params.roomId));
+    const room = roomOr404(params.roomId!);
+    if (room.kind !== 'DIRECT') fail(403, 'FORBIDDEN', '1:1 대화에서만 나갈 수 있어요');
+    const index = ROOMS.findIndex((item) => item.id === room.id);
     if (index >= 0) ROOMS.splice(index, 1);
     return undefined;
   }),

@@ -85,6 +85,10 @@ export function markRead(id: number, lastReadMessageId: number) {
     body: JSON.stringify({ lastReadMessageId }),
   });
 }
+export function leaveRoom(id: number) {
+  return apiFetch<void>(`/api/v1/user/chat-rooms/${id}/members/me`, { method: 'DELETE' });
+}
+
 export function setMuted(id: number, muted: boolean) {
   return apiFetch<void>(`/api/v1/user/chat-rooms/${id}/notification`, {
     method: 'PATCH',

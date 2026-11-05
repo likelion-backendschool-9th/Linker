@@ -56,6 +56,10 @@
   outline-offset: -2px;
 }
 
+.menuItemDanger {
+  color: var(--color-status-error);
+}
+
 .toolbar,
 .composer {
   flex-shrink: 0;
@@ -231,6 +235,23 @@
   padding: var(--space-xs);
   font-size: var(--font-size-caption);
   color: var(--color-text-secondary);
+}
+
+.requestBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-bottom: 2px solid var(--color-hairline);
+}
+
+.requestActions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.requestActions > * {
+  flex: 1;
 }
 
 .sectionTitle {
