@@ -82,7 +82,7 @@
 | S18 | 검색 색인 | `SitemapController` | B | 1 | 00 |
 | 합계 | 18개 시스템 | 실제 HTTP 컨트롤러 29개 | | 205 | 00~33 |
 
-회원 신고·차단은 UserModerationService, 운영 조치는 AdminService에서 각각 처리하며 데이터 계층을 공유한다. 운영 환불은 AdminSubscriptionController → AdminSubscriptionService로 배치한다. 중립 공용 서비스나 다른 역할의 서비스를 경유하지 않는다.
+회원 신고·차단은 UserModerationService, 운영 조치는 AdminService에서 각각 처리하며 데이터 계층을 공유한다. 운영 환불은 AdminSubscriptionController → AdminSubscriptionService로 배치한다. 중립 공용 서비스나 다른 역할의 서비스를 경유하지 않는다. 단, 신고 자동숨김의 시스템 운영자 알림은 청사진 §4의 명시적 예외다.
 
 ## 2. API·구현 규칙
 
@@ -372,7 +372,10 @@
 
 ### 4-10. 알림·푸시 — `NotificationController`
 
-**0단계 생성 계약 복원:** UserNotificationService·RecruiterNotificationService·AdminNotificationService가 각각 `create(CreateNotificationCommand)`를 제공한다. 접두사는 생성 업무의 접근 경계이며 수신자 계정 종류가 아니다. 입력 DTO·Entity·Repository·정책 상수는 공유하고 서비스는 다른 역할을 호출하지 않는다. 호출 인자·오류·트랜잭션·야간 지연·미정 사항은 [백엔드 청사진 §4](05-backend-blueprint.md#4-controller--service-11)를 따른다. 기존 작업 목록의 NotificationService 표기는 이 역할별 계약으로 읽는다. 목록/읽음/푸시 API는 페이지 18에서 구현하며 이번 복원은 REST 205개·테이블 69개를 늘리지 않는다.
+**0단계 생성 계약 복원:** UserNotificationService·RecruiterNotificationService·AdminNotificationService가 각각 `create(CreateNotificationCommand)`를 제공한다. 접두사는 생성 업무의 접근 경계이며 수신자 계정 종류가 아니다. 입력 DTO·Entity·Repository·정책 상수는 공유하고 서비스는 다른 역할을 호출하지 않는다(아래 신고 자동숨김 예외 제외). 호출 인자·오류·트랜잭션·야간 지연·미정 사항은 [백엔드 청사진 §4](05-backend-blueprint.md#4-controller--service-11)를 따른다. 기존 작업 목록의 NotificationService 표기는 이 역할별 계약으로 읽는다. 목록/읽음/푸시 API는 페이지 18에서 구현하며 이번 복원은 REST 205개·테이블 69개를 늘리지 않는다.
+
+**신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 UserModerationService가 활성 운영자별 AdminNotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
+
 
 **시스템 주담당:** D · **REST:** 7개
 
