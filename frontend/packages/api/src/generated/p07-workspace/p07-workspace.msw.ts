@@ -4,38 +4,60 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-import {
-  faker
-} from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 
-import {
-  HttpResponse,
-  http
-} from 'msw';
-import type {
-  HttpResponseResolver,
-  RequestHandlerOptions
-} from 'msw';
+import { HttpResponse, http } from 'msw';
+import type { HttpResponseResolver, RequestHandlerOptions } from 'msw';
 
-import type {
-  MyTeamsResponse
-} from '../openAPIDefinition.schemas';
+import type { MyTeamsResponse } from '../openAPIDefinition.schemas';
 
+export const getGetMyTeamsResponseMock = (
+  overrideResponse: Partial<Extract<MyTeamsResponse, object>> = {},
+): MyTeamsResponse => ({
+  items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    id: faker.number.int(),
+    name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    orgAvatarUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      null,
+    ]),
+    status: faker.helpers.arrayElement(['ACTIVE', 'COMPLETED', 'READ_ONLY', 'ARCHIVED'] as const),
+    myRole: faker.helpers.arrayElement(['OWNER', 'ADMIN', 'MEMBER'] as const),
+    memberCount: faker.number.int(),
+    joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z',
+    chatRoomId: faker.helpers.arrayElement([faker.number.int(), null]),
+    plan: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    openIssueCount: faker.helpers.arrayElement([faker.number.int(), null]),
+    unreadCount: faker.helpers.arrayElement([faker.number.int(), null]),
+  })),
+  teamLimit: faker.number.int(),
+  teamCount: faker.number.int(),
+  nextCursor: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
+  ]),
+  ...overrideResponse,
+});
 
-export const getGetMyTeamsResponseMock = (overrideResponse: Partial<Extract<MyTeamsResponse, object>> = {}): MyTeamsResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), orgAvatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(['ACTIVE','COMPLETED','READ_ONLY','ARCHIVED'] as const), myRole: faker.helpers.arrayElement(['OWNER','ADMIN','MEMBER'] as const), memberCount: faker.number.int(), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', chatRoomId: faker.helpers.arrayElement([faker.number.int(), null]), plan: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), openIssueCount: faker.helpers.arrayElement([faker.number.int(), null]), unreadCount: faker.helpers.arrayElement([faker.number.int(), null])})), teamLimit: faker.number.int(), teamCount: faker.number.int(), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
-
-
-export const getGetMyTeamsMockHandler = (overrideResponse?: MyTeamsResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<MyTeamsResponse> | MyTeamsResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/api/v1/user/me/teams', async (info: Parameters<HttpResponseResolver>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getGetMyTeamsResponseMock(),
-      { status: 200
-      })
-  }, options)
-}
-export const getP07WorkspaceMock = () => [
-  getGetMyTeamsMockHandler()
-]
+export const getGetMyTeamsMockHandler = (
+  overrideResponse?:
+    | MyTeamsResponse
+    | ((info: Parameters<HttpResponseResolver>[0]) => Promise<MyTeamsResponse> | MyTeamsResponse),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    '*/api/v1/user/me/teams',
+    async (info: Parameters<HttpResponseResolver>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetMyTeamsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+export const getP07WorkspaceMock = () => [getGetMyTeamsMockHandler()];
