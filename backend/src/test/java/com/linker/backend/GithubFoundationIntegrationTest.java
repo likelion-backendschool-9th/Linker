@@ -13,6 +13,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -30,6 +32,9 @@ import com.linker.backend.service.PublicAuthService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -87,6 +92,7 @@ class GithubFoundationIntegrationTest {
 	@Autowired GithubWebhookDeliveryRepository deliveries;
 	@Autowired GithubInstallationState states;
 	@Autowired Probe probe;
+	@Autowired ObjectMapper json;
 	@Autowired PlatformTransactionManager transactionManager;
 	@MockitoSpyBean RedisWebhookQueue queue;
 	@MockitoBean GithubAppClient github;
@@ -98,9 +104,81 @@ class GithubFoundationIntegrationTest {
 		redis.delete("linker:github:webhook");
 		reset(queue);
 		probe.calls.set(0);
+		probe.supportedEvent = "spike_event";
+		probe.lastDelivery.set(null);
 		probe.fail = false;
 		probe.entered = null;
 		probe.release = null;
+	}
+
+	/** Schema-shaped synthetic inputs, not captures from the team's GitHub App. */
+	@ParameterizedTest
+	@MethodSource("consumerPayloads")
+	void consumerIdentifiersSurviveSignedHttpReceiptQueueAndDispatch(String event, String action, String payload) throws Exception {
+		probe.supportedEvent = event;
+		byte[] body = payload.getBytes(StandardCharsets.UTF_8);
+		String deliveryId = "contract-" + event + "-" + action;
+		mvc.perform(post("/api/v1/webhook/github").contentType(MediaType.APPLICATION_JSON)
+				.header("X-GitHub-Delivery", deliveryId).header("X-GitHub-Event", event)
+				.header("X-Hub-Signature-256", signature(body)).content(body))
+				.andExpect(status().isAccepted());
+
+		GithubWebhookDelivery saved = deliveries.findByDeliveryId(deliveryId).orElseThrow();
+		assertThat(queue.poll()).contains(saved.getId());
+		assertThat(queue.poll()).isEmpty();
+		webhooks.dispatch(saved.getId());
+
+		GithubWebhookDelivery delivered = probe.lastDelivery.get();
+		assertThat(delivered).isNotNull();
+		assertThat(delivered.getDeliveryId()).isEqualTo(deliveryId);
+		assertThat(delivered.getEvent()).isEqualTo(event);
+		assertThat(delivered.getAction()).isEqualTo(action);
+		assertThat(delivered.getInstallationId()).isEqualTo(4242L).isNotEqualTo(saved.getId());
+		assertThat(json.readTree(delivered.getPayload())).isEqualTo(json.readTree(payload));
+		assertThat(deliveries.findById(saved.getId()).orElseThrow().getStatus()).isEqualTo(WebhookStatus.PROCESSED);
+		webhooks.dispatch(saved.getId());
+		assertThat(probe.calls.get()).isEqualTo(1);
+	}
+
+	@Test
+	void anUnregisteredProjectsConsumerLeavesTheReceiptAvailableForLater() throws Exception {
+		byte[] body = projectsPayload("edited", "Issue", "\"field_value\":{\"field_node_id\":\"PVTF_DATE\",\"field_type\":\"date\"}")
+				.getBytes(StandardCharsets.UTF_8);
+		webhooks.accept("unhandled-projects", "projects_v2_item", signature(body), body);
+		long id = queue.poll().orElseThrow();
+		webhooks.dispatch(id);
+		GithubWebhookDelivery saved = deliveries.findById(id).orElseThrow();
+		assertThat(saved.getStatus()).isEqualTo(WebhookStatus.RECEIVED);
+		assertThat(saved.getAttempts()).isZero();
+		assertThat(saved.getProcessedAt()).isNull();
+		assertThat(probe.calls.get()).isZero();
+		age(id);
+		webhooks.recover();
+		assertThat(queue.poll()).contains(id);
+	}
+
+	static Stream<Arguments> consumerPayloads() {
+		return Stream.of(
+				Arguments.of("projects_v2_item", "edited", projectsPayload("edited", "Issue",
+						"\"field_value\":{\"field_node_id\":\"PVTF_DATE\",\"field_type\":\"date\"}")),
+				Arguments.of("projects_v2_item", "converted", projectsPayload("converted", "Issue",
+						"\"content_type\":{\"from\":\"DraftIssue\",\"to\":\"Issue\"}")),
+				Arguments.of("issues", "transferred", """
+						{"action":"transferred","installation":{"id":4242},"organization":{"id":7},
+						 "repository":{"id":101,"node_id":"R_OLD"},
+						 "issue":{"id":501,"node_id":"I_OLD","number":12,"updated_at":"2026-11-05T01:00:00Z"},
+						 "changes":{"new_issue":{"id":502,"node_id":"I_NEW","number":3},
+						 "new_repository":{"id":102,"node_id":"R_NEW"}}}
+						"""));
+	}
+
+	private static String projectsPayload(String action, String contentType, String changes) {
+		return """
+				{"action":"%s","installation":{"id":4242},"organization":{"id":7},
+				 "projects_v2_item":{"id":9,"node_id":"PVTI_ITEM","project_node_id":"PVT_BOARD",
+				 "content_node_id":"I_ISSUE","content_type":"%s",
+				 "updated_at":"2026-11-05T01:00:00Z","archived_at":null},"changes":{%s}}
+				""".formatted(action, contentType, changes);
 	}
 
 	@Test
@@ -248,10 +326,14 @@ class GithubFoundationIntegrationTest {
 
 	private long receive(String deliveryId) throws Exception {
 		byte[] body = "{\"action\":\"changed\"}".getBytes(StandardCharsets.UTF_8);
+		webhooks.accept(deliveryId, "spike_event", signature(body), body);
+		return queue.poll().orElseThrow();
+	}
+
+	private String signature(byte[] body) throws Exception {
 		Mac mac = Mac.getInstance("HmacSHA256");
 		mac.init(new SecretKeySpec("synthetic-webhook-secret".getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-		webhooks.accept(deliveryId, "spike_event", "sha256=" + HexFormat.of().formatHex(mac.doFinal(body)), body);
-		return queue.poll().orElseThrow();
+		return "sha256=" + HexFormat.of().formatHex(mac.doFinal(body));
 	}
 	private void age(long id) {
 		jdbc.update("update github_webhook_deliveries set processed_at = ?, updated_at = ? where id = ?",
@@ -260,12 +342,15 @@ class GithubFoundationIntegrationTest {
 
 	static class Probe implements GithubWebhookHandler {
 		final AtomicInteger calls = new AtomicInteger();
+		final AtomicReference<GithubWebhookDelivery> lastDelivery = new AtomicReference<>();
+		volatile String supportedEvent = "spike_event";
 		volatile boolean fail;
 		volatile CountDownLatch entered;
 		volatile CountDownLatch release;
-		public boolean supports(String event) { return "spike_event".equals(event); }
+		public boolean supports(String event) { return supportedEvent.equals(event); }
 		public void handle(GithubWebhookDelivery delivery) {
 			assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+			lastDelivery.set(delivery);
 			calls.incrementAndGet();
 			if (entered != null) { entered.countDown(); }
 			if (release != null) {
