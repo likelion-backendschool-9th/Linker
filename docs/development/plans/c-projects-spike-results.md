@@ -58,7 +58,7 @@ items는 의도적으로 첫 5개만 조회하며 `hasNextPage`가 true인 상�
 | 보드·필드·상태 옵션 실 조회 | 성공. 위 ID·타입 확인 |
 | Blocked 설정 후 OPEN 유지 | 미실행. 해당 옵션이 없고 개인 인증은 읽기 권한만 추가함 |
 | 날짜 설정·비우기 후 재조회 | 미실행. 지정된 변경 테스트 항목과 쓰기 권한 없음 |
-| GitHub App 설치 토큰으로 조회 | 미실행. 현재 dev의 `LinkerProperties.Github`는 `webhookSecret`만 제공하며 설치 토큰 공급·Projects 호출 코드 없음 |
+| GitHub App 설치 토큰으로 조회 | 미실행. #179 이후 별도 `GithubAppProperties`·`GithubAppClient.installationReadToken(외부설치ID)`가 제공되지만 실제 App 권한·Projects 호출 검증은 남아 있음. 기존 개인 인증 조회 결과와 구분 |
 | 실제 웹훅 수신·C 처리 | 미실행. B의 수신·큐·handler 확장 지점은 있으나 C Projects handler는 없음 |
 | 캐시 저장·재시도·동시 변경 | 미실행. DB 또는 정식 페이지 구현으로 확장하지 않음 |
 
