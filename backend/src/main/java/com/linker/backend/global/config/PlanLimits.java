@@ -15,6 +15,8 @@ public final class PlanLimits {
 	public static final int SESSION_DAYS = 30;
 	public static final int PUBLIC_READS_PER_MINUTE = 60;
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
+	/** Policy ch. 6 — archived teams do not consume this personal membership cap. */
+	public static final int TEAMS_PER_USER_MAX = 10;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;

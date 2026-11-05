@@ -1,4 +1,4 @@
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Users } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -32,22 +32,33 @@ export async function TeamFrame({ teamId, title, children }: TeamFrameProps) {
   return (
     <PageFrame title={title}>
       <div className={styles.team}>
-        <Image
-          src={team.orgAvatarUrl}
-          alt=""
-          width={40}
-          height={40}
-          sizes="40px"
-          className={styles.avatar}
-        />
+        {team.orgAvatarUrl ? (
+          <Image
+            src={team.orgAvatarUrl}
+            alt=""
+            width={40}
+            height={40}
+            sizes="40px"
+            className={styles.avatar}
+          />
+        ) : (
+          <Users size={40} aria-hidden className={styles.avatar} />
+        )}
         <div className={styles.name}>
           <TeamSwitcher teamId={teamId} name={team.name} />
           {note && <span className={styles.badge}>{note}</span>}
         </div>
-        <Link href={`/chats/${team.chatRoomId}` as Route} className={styles.chat}>
-          <MessageCircle aria-hidden />
-          <span className="sr-only">팀 채팅으로 가기</span>
-        </Link>
+        {team.chatRoomId !== null && (
+          <Link href={`/chats/${team.chatRoomId}` as Route} className={styles.chat}>
+            <MessageCircle aria-hidden />
+            <span className="sr-only">
+              팀 채팅으로 가기
+              {team.unreadCount !== null && team.unreadCount > 0
+                ? `, 안 읽은 메시지 ${team.unreadCount}개`
+                : ''}
+            </span>
+          </Link>
+        )}
       </div>
       <TeamNav teamId={teamId} />
       {children}
