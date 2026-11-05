@@ -213,6 +213,67 @@ export interface MeResponse {
   suspendedUntil?: string;
 }
 
+export type TeamItemStatus = typeof TeamItemStatus[keyof typeof TeamItemStatus];
+
+
+export const TeamItemStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  READ_ONLY: 'READ_ONLY',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type TeamItemMyRole = typeof TeamItemMyRole[keyof typeof TeamItemMyRole];
+
+
+export const TeamItemMyRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+} as const;
+
+export interface TeamItem {
+  id: number;
+  name: string;
+  /** @nullable */
+  orgAvatarUrl: string | null;
+  status: TeamItemStatus;
+  myRole: TeamItemMyRole;
+  memberCount: number;
+  joinedAt: string;
+  /**
+     * 본인이 참여한 실제 팀 채팅방. 미연결이면 null
+     * @nullable
+     */
+  chatRoomId: number | null;
+  /**
+     * 구독 조회 연결 전에는 미확인(null). 연결 후 FREE 또는 FLEX
+     * @nullable
+     */
+  plan: string | null;
+  /**
+     * 현재 연결 저장소의 캐시상 열린 이슈 수. 캐시 미준비 또는 0건의 초기 동기화 완료를 확인할 수 없으면 null
+     * @nullable
+     */
+  openIssueCount: number | null;
+  /**
+     * 본인 현재 TEAM 채팅방 참여가 있으면 실제 미읽음 수. 연결된 방이 없으면 null
+     * @nullable
+     */
+  unreadCount: number | null;
+}
+
+export interface MyTeamsResponse {
+  items: TeamItem[];
+  teamLimit: number;
+  teamCount: number;
+  /**
+     * 개인 소속 팀 전체 목록이므로 다음 커서 없음
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
 export interface SitemapItem {
   id?: number;
   url?: string;
