@@ -39,7 +39,7 @@ orval은 `tags-split`이다. `p00-common`은 `frontend/packages/api/src/generate
 
 페이지 16 목록은 `p16-chat-list`로 공개한다. operationId는 `listChatRooms`, `unreadChatSummary`, `acceptChatRequest`, `deleteChatRequest`다. 삭제는 204다.
 
-페이지 17 텍스트 조회·읽음은 `p17-chat-room`이다. operationId는 `listChatMessages`, `markChatRead`다. 읽음은 204다. STOMP SEND와 토픽 이벤트는 스펙에 넣지 않는다. 이벤트는 `{event:"MESSAGE",message}`와 본인 큐의 `CHAT_ROOMS_CHANGED`, `CHAT_SEND_REJECTED`, `CHAT_SEND_ACCEPTED`다.
+페이지 17은 `p17-chat-room`이다. operationId는 `listChatMessages`, `markChatRead`, `editChatMessage`, `deleteChatMessage`, `listUnreadChatMembers`, `updateChatNotification`이다. 읽음·삭제·음소거는 204다. 방 정보 GET은 아직 없다. STOMP SEND와 토픽 이벤트는 스펙에 넣지 않는다. 토픽 이벤트는 `MESSAGE`, `EDIT`, `DELETE`, `READ`다. 본인 큐는 `CHAT_ROOMS_CHANGED`, `CHAT_SEND_REJECTED`, `CHAT_SEND_ACCEPTED`다.
 
 `PUT /api/v1/user/uploads/{fileId}/content`는 스펙에 없다. WBS 업로드 API 2개에 없고, OpenAPI 포함 여부는 E 확인 전이다. STOMP와 테스트용 프로브 경로도 스펙에 없다.
 

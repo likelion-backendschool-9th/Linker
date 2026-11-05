@@ -4,9 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.linker.backend.dto.chat.event.ChatMessageReady;
+import com.linker.backend.dto.chat.event.ChatReadAdvanced;
 import com.linker.backend.dto.chat.event.ChatRoomsChanged;
 import com.linker.backend.dto.chat.event.ChatSendAccepted;
 import com.linker.backend.dto.chat.event.ChatSendRejected;
+import com.linker.backend.dto.chat.event.ChatTranscriptChanged;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -35,6 +37,24 @@ public class ChatRoomListNotifier {
 	public void publishMessage(ChatMessageReady event) {
 		String destination = "/topic/chat-rooms/" + event.roomId();
 		Map<String, Object> body = Map.of("event", "MESSAGE", "message", event.message());
+		template.convertAndSend(destination, (Object) body);
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void publishTranscript(ChatTranscriptChanged event) {
+		String destination = "/topic/chat-rooms/" + event.roomId();
+		Map<String, Object> body = Map.of("event", event.event(), "message", event.message());
+		template.convertAndSend(destination, (Object) body);
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void publishRead(ChatReadAdvanced event) {
+		String destination = "/topic/chat-rooms/" + event.roomId();
+		Map<String, Object> body = Map.of(
+				"event", "READ",
+				"roomId", event.roomId(),
+				"messageId", event.messageId()
+		);
 		template.convertAndSend(destination, (Object) body);
 	}
 
