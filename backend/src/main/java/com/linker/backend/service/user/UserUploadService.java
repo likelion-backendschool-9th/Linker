@@ -23,6 +23,8 @@ import com.linker.backend.integration.storage.LocalObjectStorage;
 import com.linker.backend.integration.storage.ObjectStorage;
 import com.linker.backend.repository.file.UploadedFileRepository;
 
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,7 +76,7 @@ public class UserUploadService {
 		if (file.isComplete()) {
 			throw new ApiException(409, "STATE_CONFLICT", "이미 업로드가 끝난 파일이에요");
 		}
-		if (contentType == null || !contentType.equalsIgnoreCase(file.getContentType())) {
+		if (!sameMediaType(contentType, file.getContentType())) {
 			throw new ApiException(400, "VALIDATION_ERROR", "JPG, PNG, WebP, GIF 사진만 올릴 수 있어요.");
 		}
 		if (body.length != file.getByteSize()) {
@@ -112,6 +114,21 @@ public class UserUploadService {
 			throw new ApiException(409, "STATE_CONFLICT", "파일 업로드가 끝나지 않았어요");
 		}
 		return file;
+	}
+
+	/** Compares type and subtype. Parameters such as {@code charset} are ignored. */
+	private boolean sameMediaType(String actual, String expected) {
+		if (actual == null || expected == null) {
+			return false;
+		}
+		try {
+			MediaType sent = MediaType.parseMediaType(actual);
+			MediaType stored = MediaType.parseMediaType(expected);
+			return sent.getType().equalsIgnoreCase(stored.getType())
+					&& sent.getSubtype().equalsIgnoreCase(stored.getSubtype());
+		} catch (InvalidMediaTypeException ex) {
+			return false;
+		}
 	}
 
 	private UploadedFile owned(long userId, long fileId) {
