@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.dto.post.request.CommentWriteRequest;
+import com.linker.backend.dto.post.request.FeedSeenRequest;
 import com.linker.backend.dto.post.request.PostPhotoRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
+import com.linker.backend.entity.post.FeedSeenPost;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
@@ -34,6 +36,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubRepoRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
+import com.linker.backend.repository.post.FeedSeenPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
@@ -68,6 +71,8 @@ class UserPostServiceTest {
 	@Mock
 	CommentRepository comments;
 	@Mock
+	FeedSeenPostRepository seenPosts;
+	@Mock
 	UserBlockRepository blocks;
 	@Mock
 	UserNotificationService notifications;
@@ -83,7 +88,7 @@ class UserPostServiceTest {
 	void setUp() {
 		service = new UserPostService(
 				repos, posts, users, techTags, uploads,
-				likes, comments, blocks, notifications, authors, rateLimiter, CLOCK);
+				likes, comments, seenPosts, blocks, notifications, authors, rateLimiter, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
@@ -262,6 +267,31 @@ class UserPostServiceTest {
 		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ", null)))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("EMPTY"));
+	}
+
+	@Test
+	void markSeenUpsertsIdempotently() {
+		User viewer = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(viewer, "id", 10L);
+		Post post = ownedPost();
+		when(users.findById(10L)).thenReturn(Optional.of(viewer));
+		when(posts.findById(42L)).thenReturn(Optional.of(post));
+		when(seenPosts.findByUserIdAndPostId(10L, 42L)).thenReturn(Optional.empty());
+
+		service.markSeen(developer, new FeedSeenRequest(java.util.Arrays.asList(42L, 42L, null)));
+
+		verify(seenPosts).save(any(FeedSeenPost.class));
+
+		FeedSeenPost existing = FeedSeenPost.of(viewer, post, NOW);
+		when(seenPosts.findByUserIdAndPostId(10L, 42L)).thenReturn(Optional.of(existing));
+		service.markSeen(developer, new FeedSeenRequest(List.of(42L)));
+		assertThat(existing.getSeenAt()).isEqualTo(NOW);
+		verify(seenPosts).save(any(FeedSeenPost.class));
+	}
+
+	@Test
+	void recommendedUsersEmptyWithoutTechTags() {
+		assertThat(service.recommendedUsers(developer).items()).isEmpty();
 	}
 
 	private PostWriteRequest writeRequest(Long repoId, List<PostPhotoRequest> photos) {

@@ -54,6 +54,15 @@ public final class PlanLimits {
 	public static final int POST_TEAM_SIZE_MAX = 50;
 	public static final int POST_PHOTOS_FREE = 5;
 	public static final int POST_PHOTOS_PRO = 10;
+	/** POL-P-4 / FE p24 mock — home feed cursor page size. */
+	public static final int FEED_PAGE_SIZE = 10;
+	/** POL-P-4 — following posts per one recommendation slot. */
+	public static final int FEED_FOLLOWING_PER_RECOMMENDATION = 4;
+	/** POL-P-4 — max consecutive posts from the same author. */
+	public static final int FEED_MAX_CONSECUTIVE_SAME_AUTHOR = 2;
+	/** POL-P-4 — recommendation pool window and new-account like exclusion. */
+	public static final int FEED_RECOMMENDATION_DAYS = 7;
+	public static final int FEED_NEW_ACCOUNT_LIKE_EXCLUSION_DAYS = 7;
 	/** POL-P-5 / ch. 2 — comment rate and length. */
 	public static final int POST_COMMENT_MAX = 500;
 	public static final int POST_COMMENTS_PER_MINUTE = 10;

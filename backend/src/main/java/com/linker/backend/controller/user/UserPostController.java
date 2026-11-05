@@ -1,6 +1,7 @@
 package com.linker.backend.controller.user;
 
 import com.linker.backend.dto.post.request.CommentWriteRequest;
+import com.linker.backend.dto.post.request.FeedSeenRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
 import com.linker.backend.dto.post.response.CommentResponse;
 import com.linker.backend.dto.post.response.EditorRepoListResponse;
@@ -8,6 +9,7 @@ import com.linker.backend.dto.post.response.LikeCountResponse;
 import com.linker.backend.dto.post.response.LikerListResponse;
 import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
+import com.linker.backend.dto.post.response.RecommendedUsersResponse;
 import com.linker.backend.dto.post.response.RepoSummaryResponse;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -36,12 +38,33 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user")
 @Tag(name = "p22-post-editor")
 @Tag(name = "p23-post-detail")
+@Tag(name = "p24-feed")
 public class UserPostController {
 
 	private final UserPostService posts;
 
 	public UserPostController(UserPostService posts) {
 		this.posts = posts;
+	}
+
+	@PostMapping("/feed/seen")
+	@Operation(tags = {"p24-feed"})
+	public ResponseEntity<Void> markSeen(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestBody(required = false) FeedSeenRequest request
+	) {
+		posts.markSeen(user, request);
+		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+	}
+
+	@GetMapping("/feed/recommended-users")
+	@Operation(tags = {"p24-feed"})
+	public ResponseEntity<RecommendedUsersResponse> recommendedUsers(
+			@AuthenticationPrincipal AuthenticatedUser user
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.recommendedUsers(user));
 	}
 
 	@GetMapping("/post-editor/repos")

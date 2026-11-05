@@ -1,5 +1,6 @@
 package com.linker.backend.repository.post;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 	boolean existsByParentIdAndDeletedAtIsNull(long parentId);
 
 	long countByParentId(long parentId);
+
+	@Query("""
+			select c.post.id, count(c)
+			from Comment c
+			join c.post p
+			where c.post.id in :postIds
+			  and c.deletedAt is null
+			  and c.author.id <> p.author.id
+			group by c.post.id
+			""")
+	List<Object[]> countNonAuthorByPostIds(@Param("postIds") Collection<Long> postIds);
 }
