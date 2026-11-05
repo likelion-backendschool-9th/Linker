@@ -31,16 +31,23 @@ public final class PlanLimits {
 	public static final int CHAT_OFFER_MESSAGE_MAX_CHARS = 1_000;
 	public static final int CHAT_CATCH_UP_MAX = 500;
 	public static final int CHAT_AUTO_RETRIES = 3;
+	/** Policy ch. 2 — share actions, separate from normal message sends. */
+	public static final int CHAT_SHARES_PER_MINUTE = 10;
+	public static final int CHAT_SHARES_PER_DAY = 100;
 
 	/** Policy ch. 11 — free team history window (Flex = unlimited). */
 	public static final int TEAM_CHAT_HISTORY_DAYS_FREE = 60;
+	/** Policy ch. 8 / ch. 11 — free-team image originals, not message retention. */
+	public static final int TEAM_CHAT_IMAGE_ORIGINAL_RETENTION_DAYS_FREE = 90;
 
 	/** Policy ch. 11 — recruiting offer daily caps. */
 	public static final int RECRUITING_OFFERS_PER_DAY_FREE = 10;
 	public static final int RECRUITING_OFFERS_PER_DAY_SCOUT = 50;
 
-	/** Policy ch. 11 — Flex AI summary daily cap per person (KST). */
+	/** Policy ch. 8 / ch. 11 — Flex AI daily cap per person (KST), still tentative. */
 	public static final int AI_SUMMARY_PER_DAY_FLEX = 10;
+	/** Policy ch. 8 / ch. 11 — summary results only; shared cards follow chat retention. */
+	public static final int AI_SUMMARY_RETENTION_DAYS = 7;
 
 	/** POL-N-1 quiet hours (KST). Non-chat held from start hour until end hour. */
 	public static final int QUIET_HOURS_START_HOUR = 22;
@@ -50,6 +57,7 @@ public final class PlanLimits {
 
 	/** Policy ch. 11 / To-be-decided — tentative KRW prices (server is source of truth). */
 	public static final int PRO_MONTHLY_KRW = 2_900;
+	public static final int PRO_YEARLY_KRW = 29_000;
 	public static final int FLEX_BASE_MONTHLY_KRW = 7_900;
 	public static final int FLEX_EXTRA_SEAT_KRW = 1_900;
 	public static final int FLEX_INCLUDED_SEATS = 6;
@@ -58,6 +66,8 @@ public final class PlanLimits {
 	public static final int PAYMENT_REFUND_WITHIN_DAYS = 7;
 	public static final int PAYMENT_FAILURE_GRACE_DAYS = 7;
 	public static final int FLEX_POST_EXPIRY_GRACE_DAYS = 30;
+	/** Policy ch. 11 — whole-team notice before both Flex expiry and grace-period end. */
+	public static final int FLEX_EXPIRY_NOTICE_DAYS_BEFORE = 7;
 
 	private PlanLimits() {
 	}

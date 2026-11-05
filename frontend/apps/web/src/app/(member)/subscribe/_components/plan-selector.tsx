@@ -17,7 +17,7 @@ import {
 } from '@/features/subscription/subscription-api';
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
-import { PLAN_LIMITS } from '@/lib/policy';
+import { SUBSCRIPTION_PRICE } from '@/lib/policy';
 import { formatWon } from '@/lib/format/number';
 
 import { PaymentPanel } from './payment-panel';
@@ -150,7 +150,7 @@ export function PlanSelector({ reason }: { reason: string }) {
                       <p className={styles.description}>Flex는 월간 결제만 가능해요.</p>
                       {plan.perExtraMember !== undefined && (
                         <p className={styles.description}>
-                          {PLAN_LIMITS.teamMembers.free}명까지 기본 요금, 이후 1명당{' '}
+                          {SUBSCRIPTION_PRICE.flexIncludedSeats}명까지 기본 요금, 이후 1명당{' '}
                           {formatWon(plan.perExtraMember)} 추가
                         </p>
                       )}

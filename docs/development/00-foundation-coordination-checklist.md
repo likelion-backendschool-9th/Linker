@@ -258,7 +258,7 @@ Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여�
 | --- | --- |
 | 1:1 채팅 이미지 원본 1년 | 8장 예외와 14장이 잠정이라고 적음 |
 | 요금·플랜 이름 최종 확정 | 11장 숫자와 14장 미확정 체크가 같이 있음. 지금 세 곳의 월 요금은 같고, 이 대조에서 금액을 바꾸지 않음 |
-| AI 요약 10회가 최종인지 | 2장·11장·양쪽 코드는 10. 14장만 잠정 10으로 남아 있음 |
+| AI 요약 10회가 최종인지 | 2장·11장·양쪽 코드는 10. 8장·14장에 잠정 10으로 명시됨 |
 
 ## D STOMP 연결 검증 (2026-11-05)
 
@@ -304,3 +304,38 @@ Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여�
 - 알림 억제를 `CHAT`과 `MESSAGE_REQUEST`만 할지, 그 사람이 만든 다른 종류도 할지.
 - 알림 판단에 넘길 시각이 메시지 `createdAt`인지.
 - 피드·프로필·게시물의 활성 차단은 E가 따로 빌린다. 이 적용 계획에 넣지 않는다.
+
+
+## D 정책 상수 보완 (2026-11-05)
+
+앞의 누락 표는 대조 당시 기록이다. 아래 서버 상수를 보완했다. 프론트 변경·C 확인은 아직 별도이며, 최종 계약 완료로 표시하지 않는다. 요금·플랜명·AI 일일 한도·1:1 이미지 보관 기간의 잠정 상태는 유지한다. Pro 연 요금도 기존 Policy 값을 표현할 뿐 가격 확정을 의미하지 않는다.
+
+| 서버 키                                        | 값·단위    | 적용 대상 / C와 맞출 의미                                      |
+| ---------------------------------------------- | ---------- | -------------------------------------------------------------- |
+| `PRO_YEARLY_KRW`                               | 29000원/년 | Pro 연 결제, 기존 프론트 proYearly와 대응                      |
+| `PAYMENT_FAILURE_GRACE_DAYS` (기존)            | 7일        | 결제 실패 후 혜택 유지 기간, 프론트 누락 보완 필요             |
+| `TEAM_CHAT_IMAGE_ORIGINAL_RETENTION_DAYS_FREE` | 90일       | 무료 팀 채팅 이미지 원본만. 메시지 보관 기간·1:1 이미지와 별개 |
+| `AI_SUMMARY_RETENTION_DAYS`                    | 7일        | 요약 결과 보관. 공유한 카드 수명과 별개                        |
+| `FLEX_EXPIRY_NOTICE_DAYS_BEFORE`               | 7일 전     | Flex 종료 및 종료 후 유예 만료 각각의 팀 전체 사전 알림        |
+| `CHAT_SHARES_PER_MINUTE`                       | 10회/분    | 채팅방 공유 동작. 일반 메시지 전송 제한과 별개                 |
+| `CHAT_SHARES_PER_DAY`                          | 100회/일   | 같은 공유 동작의 일일 한도                                     |
+| `FLEX_INCLUDED_SEATS` (기존)                   | 6명        | Flex 기본 요금 포함 인원. 무료 팀 정원과 의미가 다름           |
+
+C는 프론트 상수 및 구독 화면·목업의 Flex 포함 인원 참조를 보완한다. 프론트 키 이름은 언어별 관례에 따라 달라도 되지만 의미·값·단위를 맞춰 최종 확인한다. 서버 이번 변경은 상수 선언만이며 한도 집행·보관 삭제·알림 스케줄 기능을 추가하지 않는다. 공통 기술 설정을 제외한 새 API·DB 변경도 없다.
+
+### 프론트 보완·최종 대조
+
+사용자 요청으로 D가 프론트 보완도 함께 수행했다. 위 표의 프론트 누락은 아래 키로 해소했다. 정책 자체의 잠정 상태는 유지한다.
+
+| 서버                                           | 프론트                                          | 동일 값  |
+| ---------------------------------------------- | ----------------------------------------------- | -------- |
+| `PRO_YEARLY_KRW`                               | `SUBSCRIPTION_PRICE.proYearly` (기존)           | 29000원  |
+| `PAYMENT_FAILURE_GRACE_DAYS`                   | `SUBSCRIPTION_RULES.paymentFailureGraceDays`    | 7일      |
+| `TEAM_CHAT_IMAGE_ORIGINAL_RETENTION_DAYS_FREE` | `CHAT.teamImageOriginalRetentionDaysFree`       | 90일     |
+| `AI_SUMMARY_RETENTION_DAYS`                    | `CHAT.aiSummaryRetentionDays`                   | 7일      |
+| `FLEX_EXPIRY_NOTICE_DAYS_BEFORE`               | `SUBSCRIPTION_RULES.flexExpiryNoticeDaysBefore` | 7일 전   |
+| `CHAT_SHARES_PER_MINUTE`                       | `CHAT.sharesPerMinute`                          | 10회/분  |
+| `CHAT_SHARES_PER_DAY`                          | `CHAT.sharesPerDay`                             | 100회/일 |
+| `FLEX_INCLUDED_SEATS`                          | `SUBSCRIPTION_PRICE.flexIncludedSeats`          | 6명      |
+
+구독 화면, 결제 목업, 팀 설정의 Flex 금액 계산은 새 포함 인원 키를 사용한다. 무료 정원 키는 무료 정원 의미로 유지한다. 기존 값 대조 결과와 함께 누락 항목을 보완했으며, 이슈 고정·C의 확인은 별도다. 실행 기능·정책 확정 여부는 바꾸지 않았다.
