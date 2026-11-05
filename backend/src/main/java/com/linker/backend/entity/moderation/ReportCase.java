@@ -77,6 +77,10 @@ public class ReportCase extends BaseTimeEntity {
 		return targetId;
 	}
 
+	public Long getTargetUserId() {
+		return targetUserId;
+	}
+
 	public Instant getAutoHiddenAt() {
 		return autoHiddenAt;
 	}

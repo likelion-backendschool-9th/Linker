@@ -8,11 +8,13 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.BlockInserter;
 import com.linker.backend.repository.moderation.ReportCaseOpener;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.service.admin.AdminNotificationService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,11 +43,18 @@ class BlockServiceTest {
 	@Mock
 	ReportRepository reports;
 
+	@Mock
+	AdminRepository admins;
+
+	@Mock
+	AdminNotificationService adminNotifications;
+
 	UserModerationService service;
 
 	@BeforeEach
 	void setUp() {
-		service = new UserModerationService(users, blocks, inserter, cases, caseOpener, reports);
+		service = new UserModerationService(
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications);
 	}
 
 	@Test

@@ -1,9 +1,12 @@
 package com.linker.backend.service.user;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.linker.backend.dto.moderation.response.BlockView;
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.moderation.Report;
@@ -11,14 +14,17 @@ import com.linker.backend.entity.moderation.ReportCase;
 import com.linker.backend.entity.moderation.ReportReason;
 import com.linker.backend.entity.moderation.ReportTargetType;
 import com.linker.backend.entity.moderation.UserBlock;
+import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.BlockInserter;
 import com.linker.backend.repository.moderation.ReportCaseOpener;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.service.admin.AdminNotificationService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserModerationController}.
  * D2 block-period helpers ({@link #hidesDirectMessage}, {@link #blockedEitherWay}) stay here for chat.
+ * Report auto-hide may call {@link AdminNotificationService#create} (narrow AGENTS exception).
  */
 @Service
 public class UserModerationService {
@@ -36,6 +43,8 @@ public class UserModerationService {
 	private final ReportCaseRepository cases;
 	private final ReportCaseOpener caseOpener;
 	private final ReportRepository reports;
+	private final AdminRepository admins;
+	private final AdminNotificationService adminNotifications;
 
 	public UserModerationService(
 			UserRepository users,
@@ -43,7 +52,9 @@ public class UserModerationService {
 			BlockInserter inserter,
 			ReportCaseRepository cases,
 			ReportCaseOpener caseOpener,
-			ReportRepository reports
+			ReportRepository reports,
+			AdminRepository admins,
+			AdminNotificationService adminNotifications
 	) {
 		this.users = users;
 		this.blocks = blocks;
@@ -51,6 +62,8 @@ public class UserModerationService {
 		this.cases = cases;
 		this.caseOpener = caseOpener;
 		this.reports = reports;
+		this.admins = admins;
+		this.adminNotifications = adminNotifications;
 	}
 
 	@Transactional(readOnly = true)
@@ -129,10 +142,38 @@ public class UserModerationService {
 		reportCase.changeReporterCount(count);
 		if (count >= PlanLimits.REPORT_AUTO_HIDE_REPORTERS && reportCase.getAutoHiddenAt() == null) {
 			reportCase.markAutoHidden(Instant.now());
+			notifyOperatorsOfAutoHide(reportCase);
 			// Target content visibility (UNDER_REVIEW) lands with posts/chat pages that own the rows.
 		}
 		// Chat ±PlanLimits.REPORT_CHAT_CONTEXT_MESSAGES snapshots need chat_messages +
-		// report_message_snapshots (ERD page 17). Admin action/result notifications are page 25.
+		// report_message_snapshots (ERD page 17). Reporter outcome / sanction alerts are page 25.
+	}
+
+	/**
+	 * First auto-hide only (caller already guarded {@code autoHiddenAt}). Same transaction as
+	 * {@link #report}; creates one {@code REPORT_AUTO_HIDDEN} row per active operator, skipping the
+	 * reported user and reporters. {@code groupKey} is not an idempotency key.
+	 */
+	private void notifyOperatorsOfAutoHide(ReportCase reportCase) {
+		long caseId = reportCase.getId();
+		Set<Long> excluded = new HashSet<>(reports.findReporterIdsByReportCaseId(caseId));
+		excluded.add(reportCase.getTargetUserId());
+		String groupKey = "report-auto-hidden:" + caseId;
+		for (Long operatorUserId : admins.findActiveOperatorUserIds()) {
+			if (excluded.contains(operatorUserId)) {
+				continue;
+			}
+			adminNotifications.create(new CreateNotificationCommand(
+					operatorUserId,
+					NotificationTypes.REPORT_AUTO_HIDDEN,
+					null,
+					null,
+					null,
+					"/admin/reports",
+					null,
+					groupKey
+			));
+		}
 	}
 
 	private long resolveTargetUserId(ReportTargetType type, long targetId) {
