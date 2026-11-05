@@ -91,7 +91,7 @@
 - [ ] Redis `@RateLimit`, `PlanLimits` (숫자는 Policy / `policy.ts`와 동일 출처)
 - [ ] 스파이크: Toss 테스트 결제 → confirm → cancel
 - [ ] 프론트 `lib/realtime` STOMP 클라이언트
-- [ ] **D → 전원** 알림 create 인자·에러 코드 공유 (이후 시그니처 변경 자제)
+- [ ] **D → 전원** 알림 create 인자·에러 코드 공유 (이후 시그니처 변경 자제) — [공유 안내·담당별 확인 양식](plans/d-notification-create-contract.md) 작성 완료. 실제 전달·이슈 고정·소비자 확인은 별도.
 
 ---
 
