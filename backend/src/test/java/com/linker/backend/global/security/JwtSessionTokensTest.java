@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 
 import com.linker.backend.global.config.LinkerProperties;
 
@@ -22,7 +23,13 @@ class JwtSessionTokensTest {
 
 		assertThat(raw.split("\\.")).hasSize(3);
 		assertThat(tokens.verify(raw)).contains(claims);
-		String tampered = raw.substring(0, raw.length() - 1) + (raw.endsWith("a") ? "b" : "a");
+		// Mutate a decoded signature byte; the final Base64 character may differ
+		// only in unused padding bits without changing the signature.
+		String[] parts = raw.split("\\.");
+		byte[] signature = Base64.getUrlDecoder().decode(parts[2]);
+		signature[0] ^= 1;
+		String tampered = parts[0] + "." + parts[1] + "."
+				+ Base64.getUrlEncoder().withoutPadding().encodeToString(signature);
 		assertThat(tokens.verify(tampered)).isEmpty();
 	}
 
