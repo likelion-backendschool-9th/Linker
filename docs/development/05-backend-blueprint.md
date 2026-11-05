@@ -98,9 +98,25 @@ AdminSubscriptionController → AdminSubscriptionService → PaymentGateway
 - Keep access checks and business transactions explicit. When rules repeat across roles, cover all implementations with the same policy cases so they cannot silently diverge.
 - Notification creation is a stage-00 internal use case, so it does not require an empty notification controller or a new REST API. The implemented producers are `service.user.UserNotificationService`, `service.recruiter.RecruiterNotificationService`, and `service.admin.AdminNotificationService`.
 - Each exposes `create(dto.notification.request.CreateNotificationCommand)`, validates recipient/optional actor, calculates quiet hours from PlanLimits, and saves through the existing NotificationRepository in the caller’s transaction.
-- The service prefix identifies the producing use-case boundary, **not the recipient’s account type**. Services are internal and do not grant permission by name; callers verify their original use-case permissions before constructing the command.
-- There is no PublicNotificationService: anonymous notification creation has no existing use case. No controller shells, new tables, REST paths, push sends or STOMP publishes are added by the restore.
-- `NotificationTypes` holds shared string identifiers, not a new database enum. Quiet-hours calculation is private to each role service. CHAT bypasses quiet hours; non-chat waits 22:00–08:00 KST, MARKETING 21:00–08:00. Marketing consent and other production eligibility stay with the caller; a type string alone does not authorize marketing.
+- The service prefix identifies the producing use-case boundary, **not the recipient’s account type**. A logged-in user flow calls `UserNotificationService` (team invite is this case). A recruiter flow calls `RecruiterNotificationService`. An operator flow calls `AdminNotificationService`. Services do not call each other. Anonymous creation has no use case, so there is no `PublicNotificationService`.
+- Callers check their own use-case permission and, for `MARKETING`, marketing consent before building the command. The service does not grant permission by name. `create` does not suppress senders the recipient has blocked; that filter stays at the call site (DM and notification suppression are still to be wired with chat).
+- `CreateNotificationCommand` requires `recipientUserId` and `notificationType`. Optional fields are `actorUserId`, `targetType`, `targetId`, `linkPath`, `payloadJson`, and `groupKey`. A blank `notificationType` throws `IllegalArgumentException`. Blank optional strings are stored as null. `NotificationTypes` holds known strings (`CHAT`, `ISSUE_ASSIGNED`, `DUE_SOON`, `APPLICATION_RECEIVED`, `APPLICATION_ACCEPTED`, `APPLICATION_REJECTED`, `COMMENT`, `FOLLOW`, `MESSAGE_REQUEST`, `TEAM_INVITE`, `MARKETING`); producers may pass another string. These strings are not a database enum.
+- A missing or deleted recipient, or a present but missing or deleted actor, throws `404 NOT_FOUND` with message `사용자를 찾을 수 없어요`. Deleted means `UserStatus.DELETED` or `deletedAt` set.
+- `create` is `@Transactional` and joins the caller’s transaction, so a rollback of that use case removes the notification row. It does not send push or publish STOMP. List, read, badge, push, and the morning flush of `deliver_after` are page 18, not this contract.
+- Quiet hours are calculated inside each role service from `PlanLimits` (KST). `CHAT` stores `deliver_after` null. `MARKETING` waits from 21:00 to 08:00. Every other type waits from 22:00 to 08:00. Outside those windows `deliver_after` is null.
+- Report notification type and send timing are not decided. Chat ±10 report snapshots are not part of `create`.
+
+```java
+userNotifications.create(new CreateNotificationCommand(
+        recipientUserId,
+        NotificationTypes.TEAM_INVITE,
+        actorUserId,
+        null,
+        null,
+        "/invite/" + code,
+        null,
+        null));
+```
 
 ### Inventory (summary)
 
