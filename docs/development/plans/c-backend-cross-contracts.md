@@ -92,6 +92,8 @@
 
 ## 5. C ↔ D 숫자 대조
 
+[D 채팅·알림·구독 정책 숫자 재검토](c-d-policy-review.md)에 현행 값 18쌍, 기록된 누락 6개, Flex 포함 인원 의미 분리안과 잠정 정책 근거를 정리했다. 검토·제안이며 코드 변경이나 공동 확정은 아니다. 아래 C 이슈 관련 3개 키의 확인 범위와 구분한다.
+
 값의 원천은 [Policy](../../planning/04-policy.md)다. 키 철자가 서로 같아야 한다는 뜻이 아니라 **의미·값·단위가 같은지** 확인한다.
 [화면 policy.ts](../../../frontend/apps/web/src/lib/policy.ts)와
 [서버 PlanLimits](../../../backend/src/main/java/com/linker/backend/global/config/PlanLimits.java)를 대조했다.
