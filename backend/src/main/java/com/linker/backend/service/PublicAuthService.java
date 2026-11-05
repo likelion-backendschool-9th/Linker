@@ -86,6 +86,9 @@ public class PublicAuthService {
 			renewed = tokens.sign(current, expiresAt);
 			session.rotate(hash(renewed), expiresAt);
 		}
+		if (operatorIdleExpired(session, user)) {
+			return Optional.empty();
+		}
 		return Optional.of(new AuthenticatedSession(toPrincipal(session, user), renewed));
 	}
 

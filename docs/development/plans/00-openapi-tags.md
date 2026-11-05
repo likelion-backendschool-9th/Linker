@@ -49,6 +49,8 @@ orval은 `tags-split`이다. `p00-common`은 `frontend/packages/api/src/generate
 
 페이지 18 헤더 배지는 `p18-notifications`다. operationId는 `getUnreadNotificationCount`이고 `GET /api/v1/user/notifications/unread-count`는 `{count}`다. `read_at`이 없고, `deliver_after`가 비었거나 이미 지난 행만 센다. 목록·읽음 처리는 아직 없다.
 
+페이지 25 운영 신고는 `p25-admin-reports`다. operationId는 `listReportCases`, `getReportCase`, `actOnReportCase`, `listAppeals`, `decideAppeal`다. 목록 상태는 `PENDING`, `HANDLED`, `APPEALED`이고 `overdue=true`는 서울 영업일 2일을 넘긴 대기 건이다. 채팅 상세는 신고 때 복사한 앞뒤 10개만 담는다. 숨김과 삭제는 사유가 필요하다. 이의 수용은 제재의 `revoked_at`을 찍고 사건을 다시 연다. 채용 광고 상세와 OTP는 이 단계에 없다.
+
 페이지 02 온보딩은 `p02-onboarding`이다. operationId는 `getOnboarding`, `acceptOnboardingAgreements`, `saveOnboardingProfile`, `saveOnboardingEmail`이다. 동의와 이메일은 204다. 프로필 저장도 204이고, 응답에서 `onb=true` 쿠키를 다시 발급한다. 이메일 저장은 GitHub 이메일이 없을 때만 의미가 있다.
 
 `PUT /api/v1/user/uploads/{fileId}/content`는 스펙에 없다. WBS 업로드 API 2개에 없고, OpenAPI 포함 여부는 E 확인 전이다. STOMP와 테스트용 프로브 경로도 스펙에 없다.

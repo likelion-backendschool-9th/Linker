@@ -54,4 +54,8 @@ public class Admin extends BaseTimeEntity {
 	public User getUser() {
 		return user;
 	}
+
+	public AdminRole getAdminRole() {
+		return adminRole;
+	}
 }

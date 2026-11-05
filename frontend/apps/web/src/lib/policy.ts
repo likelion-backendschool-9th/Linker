@@ -112,6 +112,14 @@ export const ADMIN = {
   otpIdleMinutes: 30,
 } as const;
 
+/** Policy ch. 9. The server applies these; the reports screen reads the resulting flags. */
+export const REPORT = {
+  handlingBusinessDays: 2,
+  dismissalsBeforeRestriction: 5,
+  restrictionDays: 30,
+  chatContextMessages: 10,
+} as const;
+
 /** `null` = no limit. 04 ch. 11 (Pro / Flex / Scout tables) */
 export const PLAN_LIMITS = {
   photosPerPost: { free: 5, pro: 10 },

@@ -1,5 +1,6 @@
 package com.linker.backend.entity.account;
 
+import java.time.Duration;
 import java.time.Instant;
 
 import com.linker.backend.global.jpa.BaseTimeEntity;
@@ -39,6 +40,9 @@ public class UserSession extends BaseTimeEntity {
 	private Instant expiresAt;
 
 	private Instant otpVerifiedAt;
+
+	/** Last authenticated request from an operator. Idle past {@code ADMIN_OTP_IDLE_MINUTES} revokes the session. */
+	private Instant operatorSeenAt;
 
 	private Instant revokedAt;
 
@@ -86,6 +90,18 @@ public class UserSession extends BaseTimeEntity {
 
 	public Instant getOtpVerifiedAt() {
 		return otpVerifiedAt;
+	}
+
+	/**
+	 * @return true when the operator has been idle longer than {@code idle} and the session is now revoked
+	 */
+	public boolean expireOperatorIfIdle(Instant now, Duration idle) {
+		if (operatorSeenAt != null && !operatorSeenAt.plus(idle).isAfter(now)) {
+			revoke(now);
+			return true;
+		}
+		this.operatorSeenAt = now;
+		return false;
 	}
 
 	public Instant getRevokedAt() {
