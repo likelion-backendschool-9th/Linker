@@ -3,6 +3,7 @@ package com.linker.backend.service.recruit;
 import java.util.List;
 
 import com.linker.backend.dto.recruit.response.AuthorBriefResponse;
+import com.linker.backend.dto.recruit.response.AuthorCardResponse;
 import com.linker.backend.dto.recruit.response.RecruitCardResponse;
 import com.linker.backend.dto.recruit.response.RecruitRoleResponse;
 import com.linker.backend.entity.account.User;
@@ -35,7 +36,7 @@ public class RecruitCardMapper {
 		);
 	}
 
-	private RecruitRoleResponse toRole(RecruitRole role) {
+	public RecruitRoleResponse toRole(RecruitRole role) {
 		return new RecruitRoleResponse(
 				role.getId(),
 				role.getRole().name(),
@@ -46,7 +47,7 @@ public class RecruitCardMapper {
 		);
 	}
 
-	private AuthorBriefResponse toAuthor(User author) {
+	public AuthorBriefResponse toAuthor(User author) {
 		return new AuthorBriefResponse(
 				author.getId(),
 				author.getUsername(),
@@ -54,6 +55,19 @@ public class RecruitCardMapper {
 				author.getAvatarUrl() == null ? "" : author.getAvatarUrl(),
 				author.getUserType().name(),
 				author.getJobSeekingStatus().name()
+		);
+	}
+
+	public AuthorCardResponse toAuthorCard(User author) {
+		AuthorBriefResponse brief = toAuthor(author);
+		return new AuthorCardResponse(
+				brief.id(),
+				brief.login(),
+				brief.name(),
+				brief.avatarUrl(),
+				brief.userType(),
+				brief.jobStatus(),
+				author.getBio()
 		);
 	}
 }

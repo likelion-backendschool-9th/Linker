@@ -79,6 +79,10 @@ public class RecruitRole extends BaseTimeEntity {
 		this.headcount = headcount;
 	}
 
+	public void incrementAccepted() {
+		this.acceptedCount += 1;
+	}
+
 	public boolean isFull() {
 		return acceptedCount >= headcount;
 	}

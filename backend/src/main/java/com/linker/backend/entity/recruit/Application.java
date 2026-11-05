@@ -89,6 +89,19 @@ public class Application extends BaseTimeEntity {
 		this.status = ApplicationStatus.EXPIRED;
 	}
 
+	public void accept(User decidedBy, Instant decidedAt) {
+		this.status = ApplicationStatus.ACCEPTED;
+		this.decidedBy = decidedBy;
+		this.decidedAt = decidedAt;
+	}
+
+	public void reject(String reason, User decidedBy, Instant decidedAt) {
+		this.status = ApplicationStatus.REJECTED;
+		this.rejectReason = reason;
+		this.decidedBy = decidedBy;
+		this.decidedAt = decidedAt;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -119,5 +132,9 @@ public class Application extends BaseTimeEntity {
 
 	public Instant getExpiresAt() {
 		return expiresAt;
+	}
+
+	public String getRejectReason() {
+		return rejectReason;
 	}
 }

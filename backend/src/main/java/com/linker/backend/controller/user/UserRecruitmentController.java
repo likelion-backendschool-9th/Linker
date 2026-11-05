@@ -1,6 +1,13 @@
 package com.linker.backend.controller.user;
 
+import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
+import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
+import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
+import com.linker.backend.dto.recruit.response.AcceptApplicationResponse;
+import com.linker.backend.dto.recruit.response.ApplicantListResponse;
+import com.linker.backend.dto.recruit.response.ApplicationCreateResponse;
+import com.linker.backend.dto.recruit.response.ApplicationSheetResponse;
 import com.linker.backend.dto.recruit.response.CursorPage;
 import com.linker.backend.dto.recruit.response.MyApplicationResponse;
 import com.linker.backend.dto.recruit.response.RecruitCardResponse;
@@ -33,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user")
 @Tag(name = "p19-recruit-list")
 @Tag(name = "p20-recruit-editor")
+@Tag(name = "p21-recruit-detail")
 public class UserRecruitmentController {
 
 	private final UserRecruitmentService recruitment;
@@ -160,6 +168,77 @@ public class UserRecruitmentController {
 			@PathVariable long recruitId
 	) {
 		recruitment.delete(user, recruitId);
+		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+	}
+
+	@PostMapping("/recruits/{recruitId}/applications")
+	@DeveloperOnly
+	@RateLimit(
+			key = "recruit.apply",
+			permits = PlanLimits.APPLICATIONS_PER_DAY,
+			windowSeconds = PlanLimits.APPLICATIONS_PER_DAY_WINDOW_SECONDS
+	)
+	@Operation(tags = {"p21-recruit-detail"})
+	public ResponseEntity<ApplicationCreateResponse> apply(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long recruitId,
+			@RequestBody ApplyRecruitRequest request
+	) {
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.cacheControl(CacheControl.noStore())
+				.body(recruitment.apply(user, recruitId, request));
+	}
+
+	@GetMapping("/recruits/{recruitId}/applications")
+	@DeveloperOnly
+	@Operation(tags = {"p21-recruit-detail"})
+	public ResponseEntity<ApplicantListResponse> listApplicants(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long recruitId,
+			@RequestParam(required = false) Long roleId
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(recruitment.listApplicants(user, recruitId, roleId));
+	}
+
+	@GetMapping("/recruits/{recruitId}/applications/{applicationId}")
+	@DeveloperOnly
+	@Operation(tags = {"p21-recruit-detail"})
+	public ResponseEntity<ApplicationSheetResponse> applicationSheet(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long recruitId,
+			@PathVariable long applicationId
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(recruitment.applicationSheet(user, recruitId, applicationId));
+	}
+
+	@PostMapping("/recruits/{recruitId}/applications/{applicationId}/accept")
+	@DeveloperOnly
+	@Operation(tags = {"p21-recruit-detail"})
+	public ResponseEntity<AcceptApplicationResponse> accept(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long recruitId,
+			@PathVariable long applicationId,
+			@RequestBody(required = false) AcceptApplicationRequest request
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(recruitment.accept(user, recruitId, applicationId, request));
+	}
+
+	@PostMapping("/recruits/{recruitId}/applications/{applicationId}/reject")
+	@DeveloperOnly
+	@Operation(tags = {"p21-recruit-detail"})
+	public ResponseEntity<Void> reject(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long recruitId,
+			@PathVariable long applicationId,
+			@RequestBody(required = false) RejectApplicationRequest request
+	) {
+		recruitment.reject(user, recruitId, applicationId, request);
 		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
 	}
 }

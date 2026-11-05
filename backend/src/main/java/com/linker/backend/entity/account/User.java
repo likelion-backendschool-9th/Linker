@@ -120,6 +120,10 @@ public class User extends BaseTimeEntity {
 		return displayName;
 	}
 
+	public String getBio() {
+		return bio;
+	}
+
 	public String getAvatarUrl() {
 		return avatarUrl;
 	}
