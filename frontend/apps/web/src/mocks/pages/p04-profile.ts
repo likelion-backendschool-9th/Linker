@@ -35,6 +35,7 @@ function profileOf(target: MockUser, viewerId: number | null, viewerRole: string
   const isRecruiterViewer = viewerRole === 'recruiter';
   return {
     ...brief(target),
+    githubUrl: `https://github.com/${target.login}`,
     // Header layout depends on the member type (04 ch. 3)
     kind: target.userType,
     bio: target.bio,

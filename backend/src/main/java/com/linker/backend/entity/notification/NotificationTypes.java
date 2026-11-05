@@ -14,6 +14,7 @@ public final class NotificationTypes {
 	public static final String APPLICATION_REJECTED = "APPLICATION_REJECTED";
 	public static final String COMMENT = "COMMENT";
 	public static final String FOLLOW = "FOLLOW";
+	public static final String JOB_SEEKING_OFF = "JOB_SEEKING_OFF";
 	public static final String MESSAGE_REQUEST = "MESSAGE_REQUEST";
 	public static final String TEAM_INVITE = "TEAM_INVITE";
 	public static final String REPORT_AUTO_HIDDEN = "REPORT_AUTO_HIDDEN";

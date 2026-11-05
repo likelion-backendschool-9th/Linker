@@ -15,6 +15,8 @@ public interface AdminRepository extends JpaRepository<Admin, Long> {
 	@Query("select count(a) > 0 from Admin a where a.user.id = :userId")
 	boolean existsForUser(@Param("userId") long userId);
 
+	Optional<Admin> findByUser_Id(long userId);
+
 	/** Active admins whose linked account is ACTIVE and not soft-deleted. */
 	@Query("""
 			select a.user.id from Admin a

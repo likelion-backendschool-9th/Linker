@@ -22,10 +22,6 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Long> 
 	Optional<UserSession> findActive(@Param("hash") String hash, @Param("now") Instant now);
 
 	@Modifying
-	@Query("""
-			update UserSession s
-			set s.revokedAt = :now
-			where s.user.id = :userId and s.revokedAt is null
-			""")
+	@Query("update UserSession s set s.revokedAt = :now where s.user.id = :userId and s.revokedAt is null")
 	void revokeActive(@Param("userId") long userId, @Param("now") Instant now);
 }

@@ -4,6 +4,41 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+export type ApiErrorBodyDetail = {[key: string]: unknown};
+
+export interface ApiErrorBody {
+  code?: string;
+  message?: string;
+  detail?: ApiErrorBodyDetail;
+}
+
+export interface UserCard {
+  id?: number;
+  login?: string;
+  name?: string;
+}
+
+export interface BlockView {
+  user?: UserCard;
+  blockedAt?: string;
+}
+
+export interface CompleteUploadResponse {
+  fileId?: string;
+  url?: string;
+}
+
+export interface CreateBlockRequest {
+  userId?: number;
+}
+
+export interface CreateReportRequest {
+  targetType?: string;
+  targetId?: unknown;
+  reason?: string;
+  detail?: string;
+}
+
 export interface CreateUploadRequest {
   type?: string;
   purpose?: string;
@@ -16,9 +51,244 @@ export interface CreateUploadResponse {
   uploadUrl?: string;
 }
 
-export interface CompleteUploadResponse {
-  fileId?: string;
+export interface InstallUrlResponse {
+  installUrl?: string;
+  state?: string;
+}
+
+export interface IssueRepositoryOption {
+  id: number;
+  name: string;
+}
+
+export interface IssueLabel {
+  name: string;
+  color: string;
+}
+
+export interface IssueMemberOption {
+  id: number;
+  login: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+}
+
+export interface IssueFilterOptionsResponse {
+  repos: IssueRepositoryOption[];
+  labels: IssueLabel[];
+  members: IssueMemberOption[];
+  /** TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE */
+  statuses: string[];
+}
+
+export type IssueListItemStatus = typeof IssueListItemStatus[keyof typeof IssueListItemStatus];
+
+
+export const IssueListItemStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+  OTHER: 'OTHER',
+  NONE: 'NONE',
+} as const;
+
+export type IssueListItemState = typeof IssueListItemState[keyof typeof IssueListItemState];
+
+
+export const IssueListItemState = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+} as const;
+
+export interface IssueAssignee {
+  /** @nullable */
+  id: number | null;
+  login: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  inTeam: boolean;
+}
+
+export type IssueListItemSyncStatus = typeof IssueListItemSyncStatus[keyof typeof IssueListItemSyncStatus];
+
+
+export const IssueListItemSyncStatus = {
+  SYNCED: 'SYNCED',
+  PENDING: 'PENDING',
+  FAILED: 'FAILED',
+} as const;
+
+export interface IssueListItem {
+  id: number;
+  number: number;
+  repoId: number;
+  repoName: string;
+  title: string;
+  status: IssueListItemStatus;
+  state: IssueListItemState;
+  assignees: IssueAssignee[];
+  labels: IssueLabel[];
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+  overdue: boolean;
+  inProject: boolean;
+  scheduleSyncFailed: boolean;
+  syncStatus: IssueListItemSyncStatus;
+  /** @nullable */
+  syncedAt: string | null;
+}
+
+export interface IssueListResponse {
+  items: IssueListItem[];
+  /** @nullable */
+  nextCursor: string | null;
+  total: number;
+  canWrite: boolean;
+  /** @nullable */
+  writePermissionReason: string | null;
+}
+
+export interface IssueProgressCompletion {
+  done: number;
+  total: number;
+  rate: number;
+}
+
+export interface IssueProgressCounts {
+  todo: number;
+  inProgress: number;
+  blocked: number;
+  done: number;
+}
+
+export interface IssueProgressDay {
+  date: string;
+  /** @nullable */
+  todo: number | null;
+  /** @nullable */
+  inProgress: number | null;
+  /** @nullable */
+  blocked: number | null;
+  /** @nullable */
+  done: number | null;
+}
+
+export interface IssueProgressWorkload {
+  userId: number;
+  login: string;
+  openCount: number;
+}
+
+export interface IssueProgressResponse {
+  completion: IssueProgressCompletion;
+  counts: IssueProgressCounts;
+  history: IssueProgressDay[];
+  openByAssignee: IssueProgressWorkload[];
+  overdueCount: number;
+  dueSoonCount: number;
+}
+
+export interface IssueRefreshResponse {
+  refreshedAt: string;
+  updatedCount: number;
+}
+
+export interface JobCategoryResponse {
+  key?: string;
+  label?: string;
+}
+
+export interface MeResponse {
+  userId?: number;
+  login?: string;
+  userType?: string;
+  isAdmin?: boolean;
+  status?: string;
+  onboarded?: boolean;
+  suspendedUntil?: string;
+}
+
+export type TeamItemStatus = typeof TeamItemStatus[keyof typeof TeamItemStatus];
+
+
+export const TeamItemStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  READ_ONLY: 'READ_ONLY',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type TeamItemMyRole = typeof TeamItemMyRole[keyof typeof TeamItemMyRole];
+
+
+export const TeamItemMyRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+} as const;
+
+export interface TeamItem {
+  id: number;
+  name: string;
+  /** @nullable */
+  orgAvatarUrl: string | null;
+  status: TeamItemStatus;
+  myRole: TeamItemMyRole;
+  memberCount: number;
+  joinedAt: string;
+  /**
+     * 본인이 참여한 실제 팀 채팅방. 미연결이면 null
+     * @nullable
+     */
+  chatRoomId: number | null;
+  /**
+     * 구독 조회 연결 전에는 미확인(null). 연결 후 FREE 또는 FLEX
+     * @nullable
+     */
+  plan: string | null;
+  /**
+     * 현재 연결 저장소의 캐시상 열린 이슈 수. 캐시 미준비 또는 0건의 초기 동기화 완료를 확인할 수 없으면 null
+     * @nullable
+     */
+  openIssueCount: number | null;
+  /**
+     * 본인 현재 TEAM 채팅방 참여가 있으면 실제 미읽음 수. 연결된 방이 없으면 null
+     * @nullable
+     */
+  unreadCount: number | null;
+}
+
+export interface MyTeamsResponse {
+  items: TeamItem[];
+  teamLimit: number;
+  teamCount: number;
+  /**
+     * 개인 소속 팀 전체 목록이므로 다음 커서 없음
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface SitemapItem {
+  id?: number;
   url?: string;
+  updatedAt?: string;
+}
+
+export interface SitemapPage {
+  kind?: string;
+  page?: number;
+  items?: SitemapItem[];
+}
+
+export interface TechTagResponse {
+  id?: number;
+  name?: string;
 }
 
 export interface VerifyInstallationRequest {
@@ -48,64 +318,33 @@ export interface VerifyInstallationResponse {
   installationId?: string;
 }
 
-export interface CreateReportRequest {
-  targetType?: string;
-  targetId?: unknown;
-  reason?: string;
-  detail?: string;
-}
+export type RefreshTeamIssuesParams = {
+repo?: number;
+status?: string;
+assignee?: string;
+label?: string;
+open?: boolean;
+view?: string;
+};
 
-export interface CreateBlockRequest {
-  userId?: number;
-}
+export type GetTeamIssueProgressParams = {
+days?: number;
+};
 
-export interface InstallUrlResponse {
-  installUrl?: string;
-  state?: string;
-}
+export type ListTeamIssuesParams = {
+repo?: number;
+status?: string;
+assignee?: string;
+label?: string;
+open?: boolean;
+cursor?: string;
+size?: number;
+};
 
-export interface MeResponse {
-  userId?: number;
-  login?: string;
-  userType?: string;
-  isAdmin?: boolean;
-  status?: string;
-  onboarded?: boolean;
-  suspendedUntil?: string;
-}
-
-export interface UserCard {
-  id?: number;
-  login?: string;
-  name?: string;
-}
-
-export interface BlockView {
-  user?: UserCard;
-  blockedAt?: string;
-}
-
-export interface TechTagResponse {
-  id?: number;
-  name?: string;
-}
-
-export interface SitemapItem {
-  id?: number;
-  url?: string;
-  updatedAt?: string;
-}
-
-export interface SitemapPage {
-  kind?: string;
-  page?: number;
-  items?: SitemapItem[];
-}
-
-export interface JobCategoryResponse {
-  key?: string;
-  label?: string;
-}
+export type ListUnscheduledTeamIssuesParams = {
+cursor?: string;
+size?: number;
+};
 
 export type ListSitemapParams = {
 page?: number;

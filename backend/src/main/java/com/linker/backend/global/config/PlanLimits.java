@@ -15,6 +15,10 @@ public final class PlanLimits {
 	public static final int SESSION_DAYS = 30;
 	/** Policy ch. 3 — pending withdrawal before anonymization. */
 	public static final int ACCOUNT_WITHDRAWAL_DAYS = 30;
+	/** Policy ch. 2 — login during pending deletion restores the account. */
+	public static final int ACCOUNT_WITHDRAWAL_RESTORE_DAYS = 30;
+	/** Terms version stored with onboarding agreement. Matches the page 02 client. */
+	public static final String TERMS_VERSION = "2026-10-01";
 	/** POL-A-2 display name length. */
 	public static final int PROFILE_DISPLAY_NAME_MIN = 1;
 	public static final int PROFILE_DISPLAY_NAME_MAX = 20;
@@ -22,8 +26,16 @@ public final class PlanLimits {
 	public static final int PROFILE_BIO_MAX = 160;
 	/** POL-A-3 predefined tech stack tags. */
 	public static final int PROFILE_TECH_STACK_MAX = 10;
+	/** POL-P-5 follows created per viewer per Seoul day. */
+	public static final int FOLLOWS_PER_DAY = 200;
+	/** POL-A-3. Looking-for-team turns off after this many days without a login. */
+	public static final int PROFILE_LOOKING_FOR_TEAM_IDLE_DAYS = 30;
+	/** POL-H-4. Job seeking turns off after this many days without a login. */
+	public static final int PROFILE_JOB_SEEKING_IDLE_DAYS = 90;
 	public static final int PUBLIC_READS_PER_MINUTE = 60;
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
+	/** Policy ch. 6 — archived teams do not consume this personal membership cap. */
+	public static final int TEAMS_PER_USER_MAX = 10;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
@@ -83,6 +95,11 @@ public final class PlanLimits {
 	public static final int FLEX_POST_EXPIRY_GRACE_DAYS = 30;
 	/** Policy ch. 11 — whole-team notice before both Flex expiry and grace-period end. */
 	public static final int FLEX_EXPIRY_NOTICE_DAYS_BEFORE = 7;
+
+	/** Policy ch. 7 / page 11 — shared issue sync contract. */
+	public static final int ISSUE_REFRESH_INTERVAL_SECONDS = 60;
+	public static final int ISSUE_ACTIVE_SYNC_MINUTES = 15;
+	public static final int ISSUE_PROGRESS_DAYS = 14;
 
 	private PlanLimits() {
 	}

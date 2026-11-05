@@ -3,13 +3,16 @@ package com.linker.backend.service.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,17 +20,23 @@ import com.linker.backend.dto.account.request.NotificationEmailRequest;
 import com.linker.backend.dto.account.request.OnboardingAgreementsRequest;
 import com.linker.backend.dto.account.request.OnboardingEmailRequest;
 import com.linker.backend.dto.account.request.OnboardingProfileRequest;
+import com.linker.backend.dto.account.request.ProfileUpdateRequest;
+import com.linker.backend.dto.account.response.ProfileEditResponse;
 import com.linker.backend.entity.account.AgreementType;
 import com.linker.backend.entity.account.JobSeekingStatus;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
 import com.linker.backend.entity.profile.TechTag;
+import com.linker.backend.entity.profile.UserTechTag;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserAgreementRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.entity.notification.NotificationTypes;
+import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.service.PublicLegalService;
@@ -64,6 +73,12 @@ class UserAccountServiceTest {
 
 	@Mock
 	private UserSessionRepository sessions;
+
+	@Mock
+	private FollowRepository follows;
+
+	@Mock
+	private UserNotificationService notifications;
 
 	@Test
 	void onboardingStartsAtAgreementsUsingTheLegalVersion() {
@@ -245,7 +260,132 @@ class UserAccountServiceTest {
 
 	private UserAccountService service() {
 		return new UserAccountService(
-				users, agreements, techTags, selectedTags, legal, ownedTeams, sessions, Clock.fixed(NOW, ZoneOffset.UTC));
+				users, agreements, techTags, selectedTags, legal, ownedTeams, sessions, follows, notifications,
+				Clock.fixed(NOW, ZoneOffset.UTC));
+	}
+
+	@Test
+	void followNotifiesOnceAndRejectsARecruiterTarget() {
+		User follower = developer();
+		User target = developer();
+		ReflectionTestUtils.setField(target, "id", 8L);
+		ReflectionTestUtils.setField(target, "username", "hubot");
+		when(users.findById(7L)).thenReturn(Optional.of(follower));
+		when(users.findByUsername("hubot")).thenReturn(Optional.of(target));
+		when(follows.existsByFollower_IdAndFollowing_Id(7L, 8L)).thenReturn(false, true);
+		when(follows.countByFollower_IdAndCreatedAtGreaterThanEqual(7L, Instant.parse("2026-11-04T15:00:00Z")))
+				.thenReturn(0L);
+
+		service().follow(principal(), "hubot");
+		service().follow(principal(), "hubot");
+
+		verify(notifications).create(new CreateNotificationCommand(
+				8L, NotificationTypes.FOLLOW, 7L, "USER", 7L, "/u/octocat", null, null));
+		verify(follows).save(any());
+
+		User recruiter = User.create("r-1", UserType.RECRUITER);
+		ReflectionTestUtils.setField(recruiter, "id", 9L);
+		when(users.findByUsername("r-1")).thenReturn(Optional.of(recruiter));
+		assertThatThrownBy(() -> service().follow(principal(), "r-1"))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("채용 담당자는 팔로우할 수 없어요");
+	}
+
+	@Test
+	void followStopsAtTheDailyLimit() {
+		User follower = developer();
+		User target = developer();
+		ReflectionTestUtils.setField(target, "id", 8L);
+		ReflectionTestUtils.setField(target, "username", "hubot");
+		when(users.findById(7L)).thenReturn(Optional.of(follower));
+		when(users.findByUsername("hubot")).thenReturn(Optional.of(target));
+		when(follows.existsByFollower_IdAndFollowing_Id(7L, 8L)).thenReturn(false);
+		when(follows.countByFollower_IdAndCreatedAtGreaterThanEqual(anyLong(), any())).thenReturn(200L);
+
+		assertThatThrownBy(() -> service().follow(principal(), "hubot"))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("팔로우는 하루에 200명까지 할 수 있어요");
+		verify(notifications, never()).create(any());
+	}
+
+	@Test
+	void profileEditReusesOnboardingRulesAndLeavesJobCategoriesEmpty() {
+		User user = developer();
+		user.applyOnboardingProfile("명석", "백엔드", "https://blog.example", true, JobSeekingStatus.OPEN, NOW);
+		when(users.findById(7L)).thenReturn(Optional.of(user));
+		UserTechTag selected = mock(UserTechTag.class);
+		when(selected.tagName()).thenReturn("Java");
+		when(selectedTags.findSelected(7L)).thenReturn(List.of(selected));
+
+		ProfileEditResponse current = service().profile(principal());
+
+		assertThat(current.kind()).isEqualTo("DEVELOPER");
+		assertThat(current.name()).isEqualTo("명석");
+		assertThat(current.bio()).isEqualTo("백엔드");
+		assertThat(current.blogUrl()).isEqualTo("https://blog.example");
+		assertThat(current.techStack()).containsExactly("Java");
+		assertThat(current.lookingForTeam()).isTrue();
+		assertThat(current.jobStatus()).isEqualTo("SEEKING");
+		assertThat(current.jobCategories()).isEmpty();
+		assertThatThrownBy(() -> service().updateProfile(principal(), new ProfileUpdateRequest(
+				"새 이름", "소개", "http://blog.example", List.of("Spring"), false, "OPEN")))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("블로그 주소는 https로 시작해야 해요.");
+
+		TechTag spring = mock(TechTag.class);
+		when(spring.getName()).thenReturn("Spring");
+		when(techTags.findByNameIn(List.of("Spring"))).thenReturn(List.of(spring));
+		UserTechTag savedTag = mock(UserTechTag.class);
+		when(savedTag.tagName()).thenReturn("Spring");
+		when(selectedTags.findSelected(7L)).thenReturn(List.of(savedTag));
+
+		ProfileEditResponse saved = service().updateProfile(principal(), new ProfileUpdateRequest(
+				"새 이름", "소개", "https://notes.example", List.of("Spring"), false, "OPEN"));
+
+		assertThat(saved.name()).isEqualTo("새 이름");
+		assertThat(saved.blogUrl()).isEqualTo("https://notes.example");
+		assertThat(saved.techStack()).containsExactly("Spring");
+		assertThat(saved.lookingForTeam()).isFalse();
+		assertThat(saved.jobStatus()).isEqualTo("OPEN");
+		assertThat(saved.jobCategories()).isEmpty();
+		assertThat(user.getJobSeekingStatus()).isEqualTo(JobSeekingStatus.OFFERS_ONLY);
+		assertThat(user.isOnboarded()).isFalse();
+	}
+
+	@Test
+	void inactivityTurnsLookingForTeamOffAt30DaysAndJobSeekingOffAt90Days() {
+		User recent = developer();
+		recent.applyOnboardingProfile("명석", "", null, true, JobSeekingStatus.OPEN, NOW);
+		recent.touch(NOW.minus(40, ChronoUnit.DAYS));
+		when(users.findInactiveDevelopers(NOW.minus(30, ChronoUnit.DAYS))).thenReturn(List.of(recent));
+
+		service().settleInactiveProfiles(NOW);
+
+		assertThat(recent.isLookingForTeam()).isFalse();
+		assertThat(recent.getJobSeekingStatus()).isEqualTo(JobSeekingStatus.OPEN);
+		verify(notifications, never()).create(any());
+
+		User quiet = developer();
+		quiet.applyOnboardingProfile("명석", "", null, true, JobSeekingStatus.OFFERS_ONLY, NOW);
+		quiet.touch(NOW.minus(90, ChronoUnit.DAYS));
+		when(users.findInactiveDevelopers(NOW.minus(30, ChronoUnit.DAYS))).thenReturn(List.of(quiet));
+		when(users.findById(7L)).thenReturn(Optional.of(quiet));
+
+		service().settleInactiveProfiles(NOW);
+		service().deliverJobSeekingOffNotice(7L);
+		service().deliverJobSeekingOffNotice(7L);
+
+		assertThat(quiet.isLookingForTeam()).isFalse();
+		assertThat(quiet.getJobSeekingStatus()).isEqualTo(JobSeekingStatus.OFF);
+		verify(notifications).create(new CreateNotificationCommand(
+				7L,
+				NotificationTypes.JOB_SEEKING_OFF,
+				null,
+				null,
+				null,
+				"/settings/profile",
+				"{\"message\":\"구직 상태를 껐어요\"}",
+				null));
 	}
 
 	private static User developer() {

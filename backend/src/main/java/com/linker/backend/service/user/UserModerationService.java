@@ -20,6 +20,7 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.BlockInserter;
 import com.linker.backend.repository.moderation.ReportCaseOpener;
@@ -49,6 +50,7 @@ public class UserModerationService {
 	private final AdminRepository admins;
 	private final AdminNotificationService adminNotifications;
 	private final SanctionRepository sanctions;
+	private final FollowRepository follows;
 	private final Clock clock;
 
 	public UserModerationService(
@@ -61,6 +63,7 @@ public class UserModerationService {
 			AdminRepository admins,
 			AdminNotificationService adminNotifications,
 			SanctionRepository sanctions,
+			FollowRepository follows,
 			Clock clock
 	) {
 		this.users = users;
@@ -72,6 +75,7 @@ public class UserModerationService {
 		this.admins = admins;
 		this.adminNotifications = adminNotifications;
 		this.sanctions = sanctions;
+		this.follows = follows;
 		this.clock = clock;
 	}
 
@@ -99,6 +103,7 @@ public class UserModerationService {
 		if (blocked.getId() == null) {
 			throw new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요");
 		}
+		follows.deleteBetween(blockerId, blockedId);
 		if (blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(blockerId, blockedId)) {
 			return;
 		}
