@@ -44,7 +44,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Real WebSocket upgrade against the embedded server. Interceptor unit tests stay separate.
- * Message catch-up is not asserted: sending still does not persist a message.
+ * Text persistence and catch-up live in ChatTextIntegrationTest.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers

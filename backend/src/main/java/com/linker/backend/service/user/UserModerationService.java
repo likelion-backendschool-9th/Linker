@@ -1,5 +1,6 @@
 package com.linker.backend.service.user;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.linker.backend.entity.moderation.UserBlock;
 import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
+import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.BlockInserter;
@@ -45,6 +47,7 @@ public class UserModerationService {
 	private final ReportRepository reports;
 	private final AdminRepository admins;
 	private final AdminNotificationService adminNotifications;
+	private final Clock clock;
 
 	public UserModerationService(
 			UserRepository users,
@@ -54,7 +57,8 @@ public class UserModerationService {
 			ReportCaseOpener caseOpener,
 			ReportRepository reports,
 			AdminRepository admins,
-			AdminNotificationService adminNotifications
+			AdminNotificationService adminNotifications,
+			Clock clock
 	) {
 		this.users = users;
 		this.blocks = blocks;
@@ -64,6 +68,7 @@ public class UserModerationService {
 		this.reports = reports;
 		this.admins = admins;
 		this.adminNotifications = adminNotifications;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
@@ -93,14 +98,14 @@ public class UserModerationService {
 		if (blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(blockerId, blockedId)) {
 			return;
 		}
-		inserter.insertActive(blockerId, blockedId);
+		inserter.insertActive(blockerId, blockedId, DatabaseInstant.now(clock));
 	}
 
 	@Transactional
 	public void unblock(long blockerId, long blockedId) {
 		UserBlock active = blocks.findByBlockerIdAndBlockedIdAndUnblockedAtIsNull(blockerId, blockedId)
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "차단 중인 사용자가 아니에요"));
-		active.close(Instant.now());
+		active.close(DatabaseInstant.now(clock));
 	}
 
 	@Transactional(readOnly = true)

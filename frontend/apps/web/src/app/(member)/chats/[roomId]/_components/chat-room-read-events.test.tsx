@@ -7,13 +7,23 @@ import { renderWithProviders } from '@/test/render-with-providers';
 import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import { ChatRoom } from './chat-room';
 
-const subscription = vi.hoisted(() => ({ handler: undefined as ((event: { event: string }) => void) | undefined }));
+const subscription = vi.hoisted(() => ({
+  handlers: new Map<string, (event: { event?: string; type?: string; roomId?: number; clientMessageId?: string }) => void>(),
+  acknowledge: vi.fn(),
+}));
 vi.mock('@/lib/realtime/use-stomp', () => ({
   useStompConnectionState: () => 'idle',
-  useStompSubscription: (_destination: string, handler: (event: { event: string }) => void) => { subscription.handler = handler; },
+  useStompSubscription: (destination: string, handler: (event: never) => void) => {
+    subscription.handlers.set(destination, handler as (event: {
+      event?: string;
+      type?: string;
+      roomId?: number;
+      clientMessageId?: string;
+    }) => void);
+  },
 }));
 vi.mock('../_hooks/use-message-outbox', () => ({
-  useMessageOutbox: () => ({ outbox: { acknowledge: vi.fn() }, pending: [] }),
+  useMessageOutbox: () => ({ outbox: { acknowledge: subscription.acknowledge }, pending: [] }),
 }));
 vi.mock('./message-timeline', () => ({
   MessageTimeline: ({ messages, onUnread }: { messages: RoomMessage[]; onUnread: (id: number) => void }) =>
@@ -34,8 +44,25 @@ it('refreshes both the message count and the open unread-members sheet on a READ
   await userEvent.click(await screen.findByRole('button', { name: '안 읽음 2명' }));
   expect(await screen.findByText('도윤')).toBeVisible();
   read = true;
-  act(() => subscription.handler!({ event: 'READ' }));
+  act(() => subscription.handlers.get('/topic/chat-rooms/1')!({ event: 'READ' }));
   await waitFor(() => expect(screen.getByText('안 읽음 1명')).toBeInTheDocument());
   await waitFor(() => expect(screen.queryByText('도윤')).not.toBeInTheDocument());
   expect(screen.getByText('서연')).toBeVisible();
+});
+
+it('acknowledges a stored send from the existing user queue', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (path) => {
+    if (path === '/api/v1/user/chat-rooms/1') return room;
+    if (path === '/api/v1/user/chat-rooms/1/messages') return { items: [message], hasMore: false };
+    throw new Error(`unexpected API: ${path}`);
+  });
+  subscription.acknowledge.mockClear();
+  renderWithProviders(<ChatRoom roomId={1} />, { viewer: { login: 'me', role: 'developer' } });
+  await screen.findByRole('button', { name: '안 읽음 2명' });
+  act(() => subscription.handlers.get('/user/queue/chat-rooms')?.({
+    type: 'CHAT_SEND_ACCEPTED',
+    roomId: 1,
+    clientMessageId: 'saved-1',
+  }));
+  expect(subscription.acknowledge).toHaveBeenCalledWith('saved-1');
 });

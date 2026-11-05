@@ -39,7 +39,15 @@ export type RoomMessage = {
   deletedAt: string | null;
   visibility?: 'VISIBLE' | 'UNDER_REVIEW' | 'HIDDEN';
 };
-export type MessagePage = { items: RoomMessage[]; hasMore: boolean };
+export type MessagePage = {
+  items: RoomMessage[];
+  hasMore: boolean;
+  /** `after` stopped at the 500 cap. Continue from `nextAfter`; this screen does not auto-page it. */
+  catchUpLimited?: boolean;
+  nextAfter?: number | null;
+  /** Team history actually applied. Absent for 1:1. Flex is not granted by this field. */
+  history?: { applied: 'FREE_60_DAYS'; flexSupported: false } | null;
+};
 export const roomKey = (login: string | null, id: number) => ['chat', login, 'room', id] as const;
 export const messagesKey = (login: string | null, id: number) =>
   [...roomKey(login, id), 'messages'] as const;

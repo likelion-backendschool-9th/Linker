@@ -80,4 +80,8 @@ public class ChatRoomMember extends BaseTimeEntity {
 	public boolean isMuted() {
 		return muted;
 	}
+
+	public Long getLastReadMessageId() {
+		return lastReadMessageId;
+	}
 }

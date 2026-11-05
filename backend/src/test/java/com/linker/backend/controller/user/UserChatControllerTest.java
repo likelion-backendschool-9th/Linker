@@ -14,6 +14,9 @@ import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.service.user.UserChatService;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import static org.mockito.Mockito.mock;
 
 class UserChatControllerTest {
 
@@ -28,7 +31,7 @@ class UserChatControllerTest {
 				public boolean canSend(long userId, long roomId) {
 					return userId == 7L && roomId == 10L;
 				}
-			}, null, null, null, null, Clock.systemUTC())
+			}, null, null, null, null, Clock.systemUTC(), null, null, null, null, mock(PlatformTransactionManager.class), null)
 	);
 
 	@Test
@@ -46,10 +49,10 @@ class UserChatControllerTest {
 	}
 
 	@Test
-	void scaffoldBlocksPersistenceUntilChatTablesExist() {
+	void rejectsNonTextPayload() {
 		assertThatThrownBy(() -> controller.sendMessage(10L, Map.of("body", "hi"), principal()))
 				.isInstanceOf(StompAuthException.class)
-				.hasMessageContaining("준비");
+				.hasMessageContaining("메시지");
 	}
 
 	private static StompPrincipal principal() {

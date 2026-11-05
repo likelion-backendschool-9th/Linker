@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -65,7 +66,7 @@ class UserModerationReportNotificationTest {
 	@BeforeEach
 	void setUp() {
 		service = new UserModerationService(
-				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications);
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, Clock.systemUTC());
 	}
 
 	@Test

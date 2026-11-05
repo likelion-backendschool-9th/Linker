@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import com.linker.backend.repository.account.UserRepository;
@@ -54,7 +55,7 @@ class BlockServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new UserModerationService(
-				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications);
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, Clock.systemUTC());
 	}
 
 	@Test
