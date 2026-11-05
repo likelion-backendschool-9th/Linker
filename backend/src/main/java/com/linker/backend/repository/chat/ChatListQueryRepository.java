@@ -84,7 +84,8 @@ public class ChatListQueryRepository {
 			  COALESCE(unread.unread_count, 0) AS unread_count,
 			  counterpart.avatar_url,
 			  counterpart.display_name,
-			  counterpart.username
+			  counterpart.username,
+			  counterpart.status AS counterpart_status
 			%s
 			LEFT JOIN LATERAL (
 			  SELECT m.id, m.body, m.visibility, m.deleted_at, m.created_at
@@ -103,7 +104,7 @@ public class ChatListQueryRepository {
 			    AND %s
 			) unread ON true
 			LEFT JOIN LATERAL (
-			  SELECT u.avatar_url, u.display_name, u.username
+			  SELECT u.avatar_url, u.display_name, u.username, u.status
 			  FROM chat_room_members other_member
 			  JOIN users u ON u.id = other_member.user_id
 			  WHERE other_member.room_id = r.id
@@ -227,7 +228,8 @@ public class ChatListQueryRepository {
 				rs.getLong("unread_count"),
 				rs.getString("avatar_url"),
 				rs.getString("display_name"),
-				rs.getString("username")
+				rs.getString("username"),
+				rs.getString("counterpart_status")
 		);
 	}
 
@@ -249,7 +251,8 @@ public class ChatListQueryRepository {
 			long unreadCount,
 			String avatarUrl,
 			String displayName,
-			String username
+			String username,
+			String counterpartStatus
 	) {
 	}
 

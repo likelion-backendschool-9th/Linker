@@ -119,6 +119,26 @@ public class PublicAuthService {
 		session.markOtpVerified(when);
 	}
 
+	/**
+	 * Signs the current claims into the existing session and rotates its hash.
+	 * Used when onboarding completion changes {@code onb}.
+	 */
+	@Transactional
+	public String reissue(long sessionId) {
+		UserSession session = sessions.findById(sessionId)
+				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
+		if (session.getRevokedAt() != null || !session.getExpiresAt().isAfter(Instant.now())) {
+			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
+		}
+		User user = session.getUser();
+		if (user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null) {
+			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
+		}
+		String renewed = tokens.sign(claims(user), session.getExpiresAt());
+		session.rotate(hash(renewed), session.getExpiresAt());
+		return renewed;
+	}
+
 	@Transactional
 	public void revoke(String rawToken) {
 		if (rawToken == null || rawToken.isBlank() || rawToken.length() > MAX_TOKEN_LENGTH) {

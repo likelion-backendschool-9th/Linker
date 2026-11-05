@@ -71,6 +71,9 @@ public class User extends BaseTimeEntity {
 
 	private Instant deletedAt;
 
+	/** Set when the onboarding profile step is saved. Drives the session {@code onb} claim. */
+	private Instant onboardedAt;
+
 	protected User() {
 	}
 
@@ -104,8 +107,68 @@ public class User extends BaseTimeEntity {
 		this.deletedAt = when;
 	}
 
+	/** Clears personal columns after the pending-withdrawal window. Username stays for the unique key. */
+	public void anonymize(Instant when) {
+		markDeleted(when);
+		this.displayName = null;
+		this.avatarUrl = null;
+		this.bio = null;
+		this.blogUrl = null;
+		this.email = null;
+	}
+
 	public void touch(Instant when) {
 		this.lastActiveAt = when;
+	}
+
+	public void applyOnboardingProfile(
+			String displayName,
+			String bio,
+			String blogUrl,
+			boolean lookingForTeam,
+			JobSeekingStatus jobStatus,
+			Instant now) {
+		this.displayName = displayName;
+		this.bio = blankToNull(bio);
+		this.blogUrl = blankToNull(blogUrl);
+		this.lookingForTeam = lookingForTeam;
+		if (this.jobSeekingStatus != jobStatus) {
+			this.jobSeekingStatus = jobStatus;
+			this.jobSeekingUpdatedAt = now;
+		}
+	}
+
+	public void keepNotificationEmail(String email) {
+		if (this.email != null && !this.email.isBlank()) {
+			return;
+		}
+		this.email = email;
+	}
+
+	public void changeNotificationEmail(String email) {
+		this.email = email;
+	}
+
+	public void setPushEnabled(boolean pushEnabled) {
+		this.pushEnabled = pushEnabled;
+	}
+
+	public void completeOnboarding(Instant when) {
+		if (this.onboardedAt == null) {
+			this.onboardedAt = when;
+		}
+	}
+
+	public boolean isOnboarded() {
+		return onboardedAt != null;
+	}
+
+	private static String blankToNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	public Long getId() {
@@ -118,6 +181,30 @@ public class User extends BaseTimeEntity {
 
 	public String getDisplayName() {
 		return displayName;
+	}
+
+	public String getBio() {
+		return bio;
+	}
+
+	public String getBlogUrl() {
+		return blogUrl;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public boolean isPushEnabled() {
+		return pushEnabled;
+	}
+
+	public boolean isLookingForTeam() {
+		return lookingForTeam;
+	}
+
+	public JobSeekingStatus getJobSeekingStatus() {
+		return jobSeekingStatus;
 	}
 
 	public String getAvatarUrl() {
@@ -138,6 +225,10 @@ public class User extends BaseTimeEntity {
 
 	public Instant getDeletedAt() {
 		return deletedAt;
+	}
+
+	public Instant getWithdrawRequestedAt() {
+		return withdrawRequestedAt;
 	}
 
 	public String visibleName() {

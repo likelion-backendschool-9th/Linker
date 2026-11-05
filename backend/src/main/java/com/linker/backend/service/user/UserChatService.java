@@ -474,11 +474,12 @@ public class UserChatService {
 
 	private static ChatMessageResponse toMessage(ChatMessageRow row) {
 		String text = row.deletedAt() != null ? DELETED_PREVIEW : "HIDDEN".equals(row.visibility()) ? HIDDEN_PREVIEW : row.body();
+		boolean withdrawn = "DELETED".equals(row.senderStatus());
 		ChatMemberResponse sender = row.senderId() == null ? null : new ChatMemberResponse(
 				row.senderId(),
-				row.username(),
-				visibleName(row.displayName(), row.username()),
-				row.avatarUrl()
+				withdrawn ? null : row.username(),
+				withdrawn ? WITHDRAWN_MEMBER : visibleName(row.displayName(), row.username()),
+				withdrawn ? null : row.avatarUrl()
 		);
 		return new ChatMessageResponse(
 				row.id(),
@@ -604,10 +605,11 @@ public class UserChatService {
 
 	private static ChatRoomItemResponse toItem(String tab, ChatListRow row) {
 		boolean team = "TEAM".equals(row.roomType());
-		String title = team ? null : visibleName(row.displayName(), row.username());
+		boolean withdrawn = "DELETED".equals(row.counterpartStatus());
+		String title = team ? null : withdrawn ? WITHDRAWN_MEMBER : visibleName(row.displayName(), row.username());
 		ChatCounterpartResponse counterpart = team || row.username() == null
 				? null
-				: new ChatCounterpartResponse(row.avatarUrl());
+				: new ChatCounterpartResponse(withdrawn ? null : row.avatarUrl());
 		ChatLastMessageResponse lastMessage = row.previewCreatedAt() == null
 				? null
 				: new ChatLastMessageResponse(previewText(row), row.previewCreatedAt());
@@ -634,6 +636,8 @@ public class UserChatService {
 		}
 		return row.previewBody();
 	}
+
+	private static final String WITHDRAWN_MEMBER = "탈퇴한 사용자";
 
 	private static String visibleName(String displayName, String username) {
 		if (displayName != null && !displayName.isBlank()) {

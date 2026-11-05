@@ -22,7 +22,7 @@ public class ChatMessageQueryRepository {
 			SELECT
 			  m.id, m.room_id, m.sender_id, m.message_type, m.body, m.visibility, m.deleted_at,
 			  m.created_at, m.client_message_id,
-			  u.username, u.display_name, u.avatar_url,
+			  u.username, u.display_name, u.avatar_url, u.status AS sender_status,
 			  (
 			    SELECT COUNT(*)
 			    FROM chat_room_members other_member
@@ -117,6 +117,7 @@ public class ChatMessageQueryRepository {
 				rs.getString("username"),
 				rs.getString("display_name"),
 				rs.getString("avatar_url"),
+				rs.getString("sender_status"),
 				rs.getString("message_type"),
 				rs.getString("body"),
 				rs.getString("visibility"),
@@ -134,6 +135,7 @@ public class ChatMessageQueryRepository {
 			String username,
 			String displayName,
 			String avatarUrl,
+			String senderStatus,
 			String type,
 			String body,
 			String visibility,
