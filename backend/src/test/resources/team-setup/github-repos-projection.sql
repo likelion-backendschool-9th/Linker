@@ -26,4 +26,3 @@ CREATE TABLE github_repos (
 
 CREATE INDEX github_repos_owner_login_idx ON github_repos (owner_login);
 CREATE INDEX github_repos_deleted_at_idx ON github_repos (deleted_at);
-
