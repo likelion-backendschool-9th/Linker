@@ -49,6 +49,10 @@ orval은 `tags-split`이다. `p00-common`은 `frontend/packages/api/src/generate
 
 페이지 18 헤더 배지는 `p18-notifications`다. operationId는 `getUnreadNotificationCount`이고 `GET /api/v1/user/notifications/unread-count`는 `{count}`다. `read_at`이 없고, `deliver_after`가 비었거나 이미 지난 행만 센다. 목록·읽음 처리는 아직 없다.
 
+페이지 05 프로필 수정은 `p05-profile-edit`다. operationId는 `getMyProfile`, `updateMyProfile`다. 개발자만 호출한다. 조회와 저장은 `kind`, `name`, `bio`, `blogUrl`, `techStack`, `lookingForTeam`, `jobStatus`, `jobCategories`다. 관심 직군은 아직 저장하지 않으므로 `jobCategories`는 빈 배열이다. GitHub 다시 불러오기는 사용자 토큰이 이 줄에 합쳐진 뒤에 둔다.
+
+페이지 04 공개 프로필은 `p04-profile`이다. operationId는 `getPublicProfile`, `listFollowers`, `listFollowings`, `followUser`, `unfollowUser`다. 공개 조회는 로그인 쿠키가 있으면 팔로우 관계와 구직 표시를 포함하고 `Cache-Control: no-store`다. 차단 관계면 404 `볼 수 없는 프로필`이다. 팔로우와 언팔로우는 204이고 개발자만 호출한다. 팔로우는 서울 기준 하루 200명까지이며, 새 팔로우만 `FOLLOW` 알림을 만든다. 완료 기록은 09 테이블 전에 0이다.
+
 페이지 02 온보딩은 `p02-onboarding`이다. operationId는 `getOnboarding`, `acceptOnboardingAgreements`, `saveOnboardingProfile`, `saveOnboardingEmail`이다. 동의와 이메일은 204다. 프로필 저장도 204이고, 응답에서 `onb=true` 쿠키를 다시 발급한다. 이메일 저장은 GitHub 이메일이 없을 때만 의미가 있다.
 
 `PUT /api/v1/user/uploads/{fileId}/content`는 스펙에 없다. WBS 업로드 API 2개에 없고, OpenAPI 포함 여부는 E 확인 전이다. STOMP와 테스트용 프로브 경로도 스펙에 없다.

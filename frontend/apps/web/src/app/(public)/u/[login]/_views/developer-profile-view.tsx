@@ -31,7 +31,9 @@ export function DeveloperProfileView({
       <header className={styles.header}>
         <div className={styles.identity}>
           <span className={styles.avatar}>
-            <Image src={profile.avatarUrl} alt="" fill sizes="80px" priority />
+            {profile.avatarUrl && (
+              <Image src={profile.avatarUrl} alt="" fill sizes="80px" priority />
+            )}
           </span>
           <div className={styles.identityText}>
             <h2 className={styles.name}>{profile.name}</h2>
@@ -59,7 +61,7 @@ export function DeveloperProfileView({
         <ul className={styles.links}>
           <li>
             <a
-              href={`https://github.com/${encodeURIComponent(profile.login)}`}
+              href={profile.githubUrl}
               target="_blank"
               rel="noreferrer"
             >

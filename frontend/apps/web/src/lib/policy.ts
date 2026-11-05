@@ -33,7 +33,14 @@ export const PROFILE = {
   bioMax: 160,
   techStackMax: 10,
   jobCategoriesMax: 3,
+  /** POL-A-3. The server turns the badge off after this many days without login. */
+  lookingForTeamIdleDays: 30,
+  /** POL-H-4. The server turns job seeking off and notifies on the next session read. */
+  jobSeekingIdleDays: 90,
 } as const;
+
+/** POL-P-5. The server rejects the next follow with this daily cap. */
+export const FOLLOW = { perDay: 200 } as const;
 
 /** 04 ch. 3 "Recruiter accounts" */
 export const RECRUITER = {

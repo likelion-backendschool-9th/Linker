@@ -1,6 +1,7 @@
 package com.linker.backend.service.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -42,6 +43,6 @@ class UserSessionServiceTest {
 	}
 
 	private UserSessionService service() {
-		return new UserSessionService(sessions, Clock.fixed(NOW, ZoneOffset.UTC));
+		return new UserSessionService(sessions, mock(UserAccountService.class), Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 }

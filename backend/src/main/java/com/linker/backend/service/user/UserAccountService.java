@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,8 +17,11 @@ import com.linker.backend.dto.account.request.NotificationEmailRequest;
 import com.linker.backend.dto.account.request.OnboardingAgreementsRequest;
 import com.linker.backend.dto.account.request.OnboardingEmailRequest;
 import com.linker.backend.dto.account.request.OnboardingProfileRequest;
+import com.linker.backend.dto.account.request.ProfileUpdateRequest;
 import com.linker.backend.dto.account.response.NotificationEmailResponse;
 import com.linker.backend.dto.account.response.OnboardingResponse;
+import com.linker.backend.dto.account.response.ProfileEditResponse;
+import com.linker.backend.dto.account.response.ProfilePeopleResponse;
 import com.linker.backend.dto.account.response.SettingsResponse;
 import com.linker.backend.dto.account.response.WithdrawalCheckResponse;
 import com.linker.backend.dto.account.response.WithdrawalResponse;
@@ -27,6 +31,9 @@ import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
 import com.linker.backend.entity.account.UserAgreement;
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.entity.notification.NotificationTypes;
+import com.linker.backend.entity.profile.Follow;
 import com.linker.backend.entity.profile.TechTag;
 import com.linker.backend.entity.profile.UserTechTag;
 import com.linker.backend.global.config.PlanLimits;
@@ -35,11 +42,14 @@ import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserAgreementRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
+import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.service.PublicLegalService;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Paired entry for {@link com.linker.backend.controller.user.UserAccountController}. */
@@ -49,6 +59,8 @@ public class UserAccountService {
 	/** ERD {@code users.blog_url} and {@code users.email}. Not policy numbers. */
 	private static final int BLOG_URL_MAX = 2048;
 	private static final int EMAIL_MAX = 320;
+	/** Follower sheet page size. Not a policy number. */
+	private static final int PEOPLE_PAGE_SIZE = 20;
 
 	private final UserRepository users;
 	private final UserAgreementRepository agreements;
@@ -57,6 +69,8 @@ public class UserAccountService {
 	private final PublicLegalService legal;
 	private final OwnedTeamLookup ownedTeams;
 	private final UserSessionRepository sessions;
+	private final FollowRepository follows;
+	private final UserNotificationService notifications;
 	private final Clock clock;
 
 	public UserAccountService(
@@ -67,6 +81,8 @@ public class UserAccountService {
 			PublicLegalService legal,
 			OwnedTeamLookup ownedTeams,
 			UserSessionRepository sessions,
+			FollowRepository follows,
+			UserNotificationService notifications,
 			Clock clock) {
 		this.users = users;
 		this.agreements = agreements;
@@ -75,6 +91,8 @@ public class UserAccountService {
 		this.legal = legal;
 		this.ownedTeams = ownedTeams;
 		this.sessions = sessions;
+		this.follows = follows;
+		this.notifications = notifications;
 		this.clock = clock;
 	}
 
@@ -382,5 +400,200 @@ public class UserAccountService {
 
 	private static String blank(String value) {
 		return value == null ? "" : value;
+	}
+
+	@Transactional(readOnly = true)
+	public ProfileEditResponse profile(AuthenticatedUser principal) {
+		return profileOf(requireUser(principal));
+	}
+
+	@Transactional
+	public ProfileEditResponse updateProfile(AuthenticatedUser principal, ProfileUpdateRequest request) {
+		User user = requireUser(principal);
+		if (user.getUserType() != UserType.DEVELOPER) {
+			throw new ApiException(403, "DEVELOPER_ONLY", "개발자만 사용할 수 있어요");
+		}
+		if (request == null || request.lookingForTeam() == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+		}
+		user.applyOnboardingProfile(
+				displayName(request.name()),
+				bio(request.bio()),
+				blogUrl(request.blogUrl()),
+				request.lookingForTeam(),
+				jobSeeking(request.jobStatus()),
+				Instant.now(clock));
+		replaceTechStack(user, techNames(request.techStack()));
+		return profileOf(user);
+	}
+
+	@Transactional
+	public void settleInactiveProfiles(Instant now) {
+		Instant teamDeadline = now.minus(PlanLimits.PROFILE_LOOKING_FOR_TEAM_IDLE_DAYS, ChronoUnit.DAYS);
+		Instant jobDeadline = now.minus(PlanLimits.PROFILE_JOB_SEEKING_IDLE_DAYS, ChronoUnit.DAYS);
+		for (User user : users.findInactiveDevelopers(teamDeadline)) {
+			Instant active = user.getLastActiveAt() != null ? user.getLastActiveAt() : user.getCreatedAt();
+			if (active == null) {
+				continue;
+			}
+			if (user.isLookingForTeam() && !active.isAfter(teamDeadline)) {
+				user.clearLookingForTeam();
+			}
+			if (user.getJobSeekingStatus() != JobSeekingStatus.OFF && !active.isAfter(jobDeadline)) {
+				user.markJobSeekingOffForInactivity(now);
+			}
+		}
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void deliverJobSeekingOffNotice(long userId) {
+		User user = users.findById(userId).orElse(null);
+		if (user == null || user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null) {
+			return;
+		}
+		if (!user.takeJobSeekingOffNotice()) {
+			return;
+		}
+		notifications.create(new CreateNotificationCommand(
+				user.getId(),
+				NotificationTypes.JOB_SEEKING_OFF,
+				null,
+				null,
+				null,
+				"/settings/profile",
+				"{\"message\":\"구직 상태를 껐어요\"}",
+				null));
+	}
+
+	private ProfileEditResponse profileOf(User user) {
+		List<String> techStack = selectedTags.findSelected(user.getId()).stream().map(UserTechTag::tagName).toList();
+		return new ProfileEditResponse(
+				"DEVELOPER",
+				user.visibleName(),
+				blank(user.getBio()),
+				blank(user.getBlogUrl()),
+				techStack,
+				user.isLookingForTeam(),
+				jobStatus(user.getJobSeekingStatus()),
+				List.of());
+	}
+
+	@Transactional(readOnly = true)
+	public ProfilePeopleResponse followers(AuthenticatedUser viewer, String login, String cursor) {
+		return people(viewer, visible(login).getId(), cursor, true);
+	}
+
+	@Transactional(readOnly = true)
+	public ProfilePeopleResponse followings(AuthenticatedUser viewer, String login, String cursor) {
+		return people(viewer, visible(login).getId(), cursor, false);
+	}
+
+	@Transactional
+	public void follow(AuthenticatedUser viewer, String login) {
+		User follower = requireActive(viewer.userId());
+		User target = visible(login);
+		if (follower.getId().equals(target.getId())) {
+			throw new ApiException(400, "VALIDATION_ERROR", "자기 자신은 팔로우할 수 없어요");
+		}
+		if (target.getUserType() != UserType.DEVELOPER) {
+			throw new ApiException(403, "FORBIDDEN", "채용 담당자는 팔로우할 수 없어요");
+		}
+		if (follows.existsByFollower_IdAndFollowing_Id(follower.getId(), target.getId())) {
+			return;
+		}
+		Instant start = LocalDate.now(clock.withZone(PlanLimits.APP_ZONE))
+				.atStartOfDay(PlanLimits.APP_ZONE)
+				.toInstant();
+		if (follows.countByFollower_IdAndCreatedAtGreaterThanEqual(follower.getId(), start) >= PlanLimits.FOLLOWS_PER_DAY) {
+			throw new ApiException(429, "RATE_LIMITED", "팔로우는 하루에 " + PlanLimits.FOLLOWS_PER_DAY + "명까지 할 수 있어요");
+		}
+		follows.save(Follow.link(follower, target));
+		notifications.create(new CreateNotificationCommand(
+				target.getId(),
+				NotificationTypes.FOLLOW,
+				follower.getId(),
+				"USER",
+				follower.getId(),
+				"/u/" + follower.getUsername(),
+				null,
+				null));
+	}
+
+	@Transactional
+	public void unfollow(AuthenticatedUser viewer, String login) {
+		User follower = requireActive(viewer.userId());
+		User target = visible(login);
+		follows.deletePair(follower.getId(), target.getId());
+	}
+
+	private ProfilePeopleResponse people(AuthenticatedUser viewer, long userId, String cursor, boolean followers) {
+		Long before = cursor(cursor);
+		var page = PageRequest.of(0, PEOPLE_PAGE_SIZE + 1);
+		List<Follow> rows = followers
+				? (before == null ? follows.followersFirst(userId, page) : follows.followersBefore(userId, before, page))
+				: (before == null ? follows.followingsFirst(userId, page) : follows.followingsBefore(userId, before, page));
+		String nextCursor = null;
+		if (rows.size() > PEOPLE_PAGE_SIZE) {
+			rows = rows.subList(0, PEOPLE_PAGE_SIZE);
+			nextCursor = Long.toString(rows.get(PEOPLE_PAGE_SIZE - 1).getId());
+		}
+		List<Long> ids = rows.stream().map(row -> person(row, followers).getId()).toList();
+		Set<Long> followed = ids.isEmpty()
+				? Set.of()
+				: Set.copyOf(follows.findFollowedIds(viewer.userId(), ids));
+		List<ProfilePeopleResponse.Person> items = rows.stream()
+				.map(row -> {
+					User person = person(row, followers);
+					return new ProfilePeopleResponse.Person(
+							new ProfilePeopleResponse.Card(
+									person.getId(),
+									person.getUsername(),
+									person.visibleName(),
+									person.getAvatarUrl(),
+									person.getUserType().name(),
+									visibleJobStatus(person, viewer)),
+							followed.contains(person.getId()));
+				})
+				.toList();
+		return new ProfilePeopleResponse(items, nextCursor);
+	}
+
+	private static User person(Follow follow, boolean followers) {
+		return followers ? follow.getFollower() : follow.getFollowing();
+	}
+
+	private User requireActive(long userId) {
+		return users.findById(userId)
+				.filter(user -> user.getStatus() != UserStatus.DELETED && user.getDeletedAt() == null)
+				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
+	}
+
+	private User visible(String login) {
+		if (login == null || login.isBlank()) {
+			throw new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요");
+		}
+		return users.findByUsername(login.trim())
+				.filter(user -> user.getStatus() != UserStatus.DELETED && user.getDeletedAt() == null)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+	}
+
+	private static String visibleJobStatus(User user, AuthenticatedUser viewer) {
+		if (user.getJobSeekingStatus() != JobSeekingStatus.OFFERS_ONLY) {
+			return jobStatus(user.getJobSeekingStatus());
+		}
+		boolean self = viewer.userId() == user.getId();
+		boolean recruiter = viewer.userType() == UserType.RECRUITER;
+		return self || recruiter ? "OPEN" : "OFF";
+	}
+
+	private static Long cursor(String cursor) {
+		if (cursor == null || cursor.isBlank()) {
+			return null;
+		}
+		try {
+			return Long.valueOf(cursor);
+		} catch (NumberFormatException exception) {
+			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+		}
 	}
 }
