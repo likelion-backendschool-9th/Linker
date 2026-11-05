@@ -90,6 +90,20 @@ public class IssueCacheRepository {
                 .addValue("missing", source.confirmedMissing())
                 .addValue("now", Timestamp.from(now)));
       }
+      if (Boolean.TRUE.equals(
+          jdbc.queryForObject(
+              "SELECT to_regclass('issue_sync_jobs') IS NOT NULL", Map.of(), Boolean.class)))
+        jdbc.update(
+            "UPDATE issues i SET sync_status=CASE WHEN EXISTS(SELECT 1 FROM issue_sync_jobs j WHERE"
+                + " j.issue_id=i.id AND j.status='FAILED' AND j.id=(SELECT max(x.id) FROM"
+                + " issue_sync_jobs x WHERE x.issue_id=i.id)) OR EXISTS(SELECT 1 FROM"
+                + " issue_sync_jobs j WHERE j.issue_id=i.id AND j.status IN ('PENDING','RUNNING')"
+                + " AND j.last_error IS NOT NULL) THEN 'FAILED' ELSE 'PENDING' END WHERE"
+                + " i.team_id=:team AND (EXISTS(SELECT 1 FROM issue_sync_jobs j WHERE"
+                + " j.issue_id=i.id AND j.status IN ('PENDING','RUNNING')) OR EXISTS(SELECT 1 FROM"
+                + " issue_sync_jobs j WHERE j.issue_id=i.id AND j.status='FAILED' AND j.id=(SELECT"
+                + " max(x.id) FROM issue_sync_jobs x WHERE x.issue_id=i.id)))",
+            Map.of("team", expected.teamId()));
       return count;
     });
   }

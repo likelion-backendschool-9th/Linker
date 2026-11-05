@@ -4,7 +4,7 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-export type ApiErrorBodyDetail = {[key: string]: unknown};
+export type ApiErrorBodyDetail = { [key: string]: unknown };
 
 export interface ApiErrorBody {
   code?: string;
@@ -56,14 +56,126 @@ export interface InstallUrlResponse {
   state?: string;
 }
 
-export interface IssueRepositoryOption {
-  id: number;
+export interface IssueDetailPerson {
+  /** @nullable */
+  id: number | null;
+  login: string;
   name: string;
+  /** @nullable */
+  avatarUrl: string | null;
 }
+
+export interface IssueAssigneeCandidates {
+  items: IssueDetailPerson[];
+  max: number;
+}
+
+export interface IssueAssigneesRequest {
+  userIds: number[];
+}
+
+export interface IssueAssignee {
+  /** @nullable */
+  id: number | null;
+  login: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  inTeam: boolean;
+}
+
+export interface IssueAssigneesResult {
+  assignees: IssueAssignee[];
+}
+
+export type IssueDetailResponseStatus =
+  (typeof IssueDetailResponseStatus)[keyof typeof IssueDetailResponseStatus];
+
+export const IssueDetailResponseStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+  OTHER: 'OTHER',
+  NONE: 'NONE',
+} as const;
+
+export type IssueDetailResponseState =
+  (typeof IssueDetailResponseState)[keyof typeof IssueDetailResponseState];
+
+export const IssueDetailResponseState = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+} as const;
+
+export type IssueDetailResponseSyncStatus =
+  (typeof IssueDetailResponseSyncStatus)[keyof typeof IssueDetailResponseSyncStatus];
+
+export const IssueDetailResponseSyncStatus = {
+  SYNCED: 'SYNCED',
+  PENDING: 'PENDING',
+  FAILED: 'FAILED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type IssueDetailResponseDeletedOrMoved =
+  (typeof IssueDetailResponseDeletedOrMoved)[keyof typeof IssueDetailResponseDeletedOrMoved] | null;
+
+export const IssueDetailResponseDeletedOrMoved = {
+  DELETED: 'DELETED',
+  MOVED: 'MOVED',
+} as const;
 
 export interface IssueLabel {
   name: string;
   color: string;
+}
+
+export interface IssueSubIssueCounts {
+  total: number;
+  done: number;
+}
+
+export interface IssueDetailResponse {
+  id: number;
+  teamId: number;
+  number: number;
+  repoId: number;
+  repoName: string;
+  title: string;
+  body: string;
+  status: IssueDetailResponseStatus;
+  state: IssueDetailResponseState;
+  assignees: IssueAssignee[];
+  labels: IssueLabel[];
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+  overdue: boolean;
+  inProject: boolean;
+  author: IssueDetailPerson;
+  /** @nullable */
+  githubUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  subIssues: IssueSubIssueCounts;
+  canWrite: boolean;
+  /** @nullable */
+  writePermissionReason: string | null;
+  syncFailed: boolean;
+  syncStatus: IssueDetailResponseSyncStatus;
+  /** @nullable */
+  deletedOrMoved: IssueDetailResponseDeletedOrMoved;
+  /** @nullable */
+  movedToIssueId: number | null;
+}
+
+export interface IssueRepositoryOption {
+  id: number;
+  name: string;
 }
 
 export interface IssueMemberOption {
@@ -82,8 +194,19 @@ export interface IssueFilterOptionsResponse {
   statuses: string[];
 }
 
-export type IssueListItemStatus = typeof IssueListItemStatus[keyof typeof IssueListItemStatus];
+export interface IssueLabelOptions {
+  items: IssueLabel[];
+}
 
+export interface IssueLabelsRequest {
+  labels: string[];
+}
+
+export interface IssueLabelsResult {
+  labels: IssueLabel[];
+}
+
+export type IssueListItemStatus = (typeof IssueListItemStatus)[keyof typeof IssueListItemStatus];
 
 export const IssueListItemStatus = {
   TODO: 'TODO',
@@ -94,26 +217,15 @@ export const IssueListItemStatus = {
   NONE: 'NONE',
 } as const;
 
-export type IssueListItemState = typeof IssueListItemState[keyof typeof IssueListItemState];
-
+export type IssueListItemState = (typeof IssueListItemState)[keyof typeof IssueListItemState];
 
 export const IssueListItemState = {
   OPEN: 'OPEN',
   CLOSED: 'CLOSED',
 } as const;
 
-export interface IssueAssignee {
-  /** @nullable */
-  id: number | null;
-  login: string;
-  name: string;
-  /** @nullable */
-  avatarUrl: string | null;
-  inTeam: boolean;
-}
-
-export type IssueListItemSyncStatus = typeof IssueListItemSyncStatus[keyof typeof IssueListItemSyncStatus];
-
+export type IssueListItemSyncStatus =
+  (typeof IssueListItemSyncStatus)[keyof typeof IssueListItemSyncStatus];
 
 export const IssueListItemSyncStatus = {
   SYNCED: 'SYNCED',
@@ -198,6 +310,57 @@ export interface IssueRefreshResponse {
   updatedCount: number;
 }
 
+/**
+ * PUT replaces both dates; null clears the field
+ */
+export interface IssueScheduleRequest {
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+}
+
+export interface IssueScheduleResult {
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+}
+
+export type IssueStatusRequestStatus =
+  (typeof IssueStatusRequestStatus)[keyof typeof IssueStatusRequestStatus];
+
+export const IssueStatusRequestStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+} as const;
+
+export interface IssueStatusRequest {
+  status: IssueStatusRequestStatus;
+}
+
+export interface IssueStatusResult {
+  status: string;
+  state: string;
+}
+
+export interface IssueSubIssue {
+  /** @nullable */
+  id: number | null;
+  number: number;
+  title: string;
+  state: string;
+  githubUrl: string;
+}
+
+export interface IssueSubIssues {
+  items: IssueSubIssue[];
+  total: number;
+  done: number;
+}
+
 export interface JobCategoryResponse {
   key?: string;
   label?: string;
@@ -232,14 +395,14 @@ export interface TechTagResponse {
 
 export interface VerifyInstallationRequest {
   /**
-     * @minLength 1
-     * @pattern [0-9]{1,19}
-     */
+   * @minLength 1
+   * @pattern [0-9]{1,19}
+   */
   installationId: string;
   /**
-     * @minLength 0
-     * @maxLength 128
-     */
+   * @minLength 0
+   * @maxLength 128
+   */
   state: string;
   /** @pattern install|update */
   setupAction?: string;
@@ -258,34 +421,33 @@ export interface VerifyInstallationResponse {
 }
 
 export type RefreshTeamIssuesParams = {
-repo?: number;
-status?: string;
-assignee?: string;
-label?: string;
-open?: boolean;
-view?: string;
+  repo?: number;
+  status?: string;
+  assignee?: string;
+  label?: string;
+  open?: boolean;
+  view?: string;
 };
 
 export type GetTeamIssueProgressParams = {
-days?: number;
+  days?: number;
 };
 
 export type ListTeamIssuesParams = {
-repo?: number;
-status?: string;
-assignee?: string;
-label?: string;
-open?: boolean;
-cursor?: string;
-size?: number;
+  repo?: number;
+  status?: string;
+  assignee?: string;
+  label?: string;
+  open?: boolean;
+  cursor?: string;
+  size?: number;
 };
 
 export type ListUnscheduledTeamIssuesParams = {
-cursor?: string;
-size?: number;
+  cursor?: string;
+  size?: number;
 };
 
 export type ListSitemapParams = {
-page?: number;
+  page?: number;
 };
-

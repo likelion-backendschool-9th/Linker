@@ -206,6 +206,149 @@ public class GithubIssueClient implements IssueSource {
     throw unavailable();
   }
 
+  public record Detail(
+      Issue issue, String body, String location, String unavailableState, Instant created) {}
+
+  public Detail detail(Repo repo, int number, String token) {
+    verifyRepository(repo, token);
+    outside();
+    try {
+      return http.get()
+          .uri("/repos/{owner}/{repo}/issues/{number}", repo.owner(), repo.name(), number)
+          .headers(h -> h.setBearerAuth(token))
+          .exchange((req, res) -> {
+            int status = res.getStatusCode().value();
+            if (status == 301 || status == 302 || status == 307 || status == 308)
+              return new Detail(null, "", res.getHeaders().getFirst("Location"), "MOVED", null);
+            if (status == 404 || status == 410) return new Detail(null, "", null, "DELETED", null);
+            if (res.getStatusCode().isError()) throw upstream(status);
+            var raw = res.bodyTo(JsonNode.class);
+            if (raw == null || raw.has("pull_request")) throw unavailable();
+            return new Detail(
+                parse(raw), raw.path("body").asString(""), null, null, instant(raw, "created_at"));
+          });
+    } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  public List<Label> labelOptions(Repo repo, String token) {
+    verifyRepository(repo, token);
+    List<Label> result = new ArrayList<>();
+    for (int page = 1; page <= MAX_PAGES; page++) {
+      var raw =
+          get(
+              "/repos/{owner}/{repo}/labels?per_page=100&page={page}",
+              token,
+              repo.owner(),
+              repo.name(),
+              page);
+      if (!raw.isArray()) throw unavailable();
+      for (var node : raw)
+        result.add(new Label(text(node, "name"), "#" + text(node, "color").replace("#", "")));
+      if (raw.size() < 100) return List.copyOf(result);
+    }
+    throw unavailable();
+  }
+
+  public boolean candidateCanRead(Repo repo, String login, String token) {
+    outside();
+    try {
+      return http.get()
+          .uri(
+              "/repos/{owner}/{repo}/collaborators/{login}/permission",
+              repo.owner(),
+              repo.name(),
+              login)
+          .headers(h -> h.setBearerAuth(token))
+          .exchange((req, res) -> {
+            if (res.getStatusCode().value() == 404) return false;
+            if (res.getStatusCode().isError()) throw upstream(res.getStatusCode().value());
+            var raw = res.bodyTo(JsonNode.class);
+            if (raw == null) throw unavailable();
+            if (!login.equalsIgnoreCase(raw.path("user").path("login").asString("")))
+              throw unavailable();
+            return List.of("read", "triage", "write", "maintain", "admin")
+                .contains(text(raw, "permission"));
+          });
+    } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  public List<Issue> subIssues(Repo repo, int number, String token) {
+    verifyRepository(repo, token);
+    List<Issue> result = new ArrayList<>();
+    for (int page = 1; page <= MAX_PAGES; page++) {
+      var raw =
+          get(
+              "/repos/{owner}/{repo}/issues/{number}/sub_issues?per_page=100&page={page}",
+              token,
+              repo.owner(),
+              repo.name(),
+              number,
+              page);
+      if (!raw.isArray()) throw unavailable();
+      for (var item : raw) result.add(parse(item));
+      if (raw.size() < 100) return List.copyOf(result);
+    }
+    throw unavailable();
+  }
+
+  public Issue editIssue(Repo repo, int number, Map<String, ?> fields, long userId) {
+    String token = userTokens.tokenFor(userId);
+    verifyRepository(repo, token);
+    outside();
+    try {
+      var raw =
+          http.patch()
+              .uri("/repos/{owner}/{repo}/issues/{number}", repo.owner(), repo.name(), number)
+              .headers(h -> h.setBearerAuth(token))
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(fields)
+              .retrieve()
+              .onStatus(
+                  s -> s.isError(),
+                  (req, res) -> {
+                    throw upstream(res.getStatusCode().value());
+                  })
+              .body(JsonNode.class);
+      if (raw == null || raw.has("pull_request")) throw unavailable();
+      return parse(raw);
+    } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  public void projectField(
+      Context context, String item, String field, String option, LocalDate date, long userId) {
+    if (field == null || field.isBlank())
+      throw new ApiException(409, "STATE_CONFLICT", "프로젝트 필드 연결이 필요해요");
+    Map<String, Object> vars = new LinkedHashMap<>();
+    vars.put("project", context.board().nodeId());
+    vars.put("item", item);
+    vars.put("field", field);
+    String mutation;
+    if (option == null && date == null)
+      mutation =
+          "mutation($project:ID!,$item:ID!,$field:ID!){clearProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field}){projectV2Item{id}}}";
+    else {
+      vars.put(
+          "value",
+          option == null
+              ? Map.of("date", date.toString())
+              : Map.of("singleSelectOptionId", option));
+      mutation =
+          "mutation($project:ID!,$item:ID!,$field:ID!,$value:ProjectV2FieldValue!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:$value}){projectV2Item{id}}}";
+    }
+    var data = graphql(mutation, vars, userTokens.tokenFor(userId));
+    String operation =
+        option == null && date == null
+            ? "clearProjectV2ItemFieldValue"
+            : "updateProjectV2ItemFieldValue";
+    if (!item.equals(text(data.path(operation).path("projectV2Item"), "id"))) throw unavailable();
+  }
+
   private Issue parse(JsonNode raw) {
     try {
       long id = raw.path("id").asLong(0);
@@ -283,6 +426,14 @@ public class GithubIssueClient implements IssueSource {
         throw unavailable();
       return result.path("data");
     } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  private static Instant instant(JsonNode raw, String field) {
+    try {
+      return Instant.parse(text(raw, field));
+    } catch (java.time.DateTimeException e) {
       throw unavailable();
     }
   }
