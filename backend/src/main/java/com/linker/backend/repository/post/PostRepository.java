@@ -32,4 +32,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			where p.id = :id and p.deletedAt is null
 			""")
 	Optional<Post> findDetailedById(@Param("id") long id);
+
+	@Query("""
+			select p from Post p
+			join fetch p.repo
+			join fetch p.author
+			where p.repo.id = :repoId
+			  and p.id <> :excludePostId
+			  and p.deletedAt is null
+			  and p.visibility = com.linker.backend.entity.post.PostVisibility.VISIBLE
+			order by p.createdAt desc
+			""")
+	List<Post> findSameRepoVisible(
+			@Param("repoId") long repoId,
+			@Param("excludePostId") long excludePostId
+	);
 }

@@ -228,12 +228,56 @@ public class Post extends BaseTimeEntity {
 		return linkerIssueCount;
 	}
 
+	public int getLikeCount() {
+		return likeCount;
+	}
+
+	public int getCommentCount() {
+		return commentCount;
+	}
+
+	public int getViewCount() {
+		return viewCount;
+	}
+
+	public PostVisibility getVisibility() {
+		return visibility;
+	}
+
 	public Instant getEditedAt() {
 		return editedAt;
 	}
 
 	public Instant getDeletedAt() {
 		return deletedAt;
+	}
+
+	public void softDelete(Instant when) {
+		this.deletedAt = when;
+	}
+
+	public void increaseLikeCount() {
+		this.likeCount += 1;
+	}
+
+	public void decreaseLikeCount() {
+		if (this.likeCount > 0) {
+			this.likeCount -= 1;
+		}
+	}
+
+	public void increaseCommentCount() {
+		this.commentCount += 1;
+	}
+
+	public void decreaseCommentCount() {
+		if (this.commentCount > 0) {
+			this.commentCount -= 1;
+		}
+	}
+
+	public void increaseViewCount() {
+		this.viewCount += 1;
 	}
 
 	public List<PostImage> getImages() {

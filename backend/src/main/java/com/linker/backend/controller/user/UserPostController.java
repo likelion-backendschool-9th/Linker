@@ -1,7 +1,11 @@
 package com.linker.backend.controller.user;
 
+import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
+import com.linker.backend.dto.post.response.CommentResponse;
 import com.linker.backend.dto.post.response.EditorRepoListResponse;
+import com.linker.backend.dto.post.response.LikeCountResponse;
+import com.linker.backend.dto.post.response.LikerListResponse;
 import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
 import com.linker.backend.dto.post.response.RepoSummaryResponse;
@@ -17,7 +21,9 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -29,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/user")
 @Tag(name = "p22-post-editor")
+@Tag(name = "p23-post-detail")
 public class UserPostController {
 
 	private final UserPostService posts;
@@ -102,5 +109,96 @@ public class UserPostController {
 		return ResponseEntity.ok()
 				.cacheControl(CacheControl.noStore())
 				.body(posts.update(user, postId, request));
+	}
+
+	@PostMapping("/posts/{postId}/likes")
+	@DeveloperOnly
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<LikeCountResponse> like(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.like(user, postId));
+	}
+
+	@DeleteMapping("/posts/{postId}/likes")
+	@DeveloperOnly
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<LikeCountResponse> unlike(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.unlike(user, postId));
+	}
+
+	@GetMapping("/posts/{postId}/likes")
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<LikerListResponse> likers(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId,
+			@RequestParam(required = false) String cursor
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.likers(user, postId, cursor));
+	}
+
+	@PostMapping("/posts/{postId}/comments")
+	@DeveloperOnly
+	@RateLimit(
+			key = "post.comment.minute",
+			permits = PlanLimits.POST_COMMENTS_PER_MINUTE,
+			windowSeconds = PlanLimits.POST_COMMENTS_PER_MINUTE_WINDOW_SECONDS
+	)
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<CommentResponse> createComment(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId,
+			@RequestBody CommentWriteRequest request
+	) {
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.cacheControl(CacheControl.noStore())
+				.body(posts.createComment(user, postId, request));
+	}
+
+	@PatchMapping("/posts/{postId}/comments/{commentId}")
+	@DeveloperOnly
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<CommentResponse> updateComment(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId,
+			@PathVariable long commentId,
+			@RequestBody CommentWriteRequest request
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.updateComment(user, postId, commentId, request));
+	}
+
+	@DeleteMapping("/posts/{postId}/comments/{commentId}")
+	@DeveloperOnly
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<Void> deleteComment(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId,
+			@PathVariable long commentId
+	) {
+		posts.deleteComment(user, postId, commentId);
+		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+	}
+
+	@DeleteMapping("/posts/{postId}")
+	@DeveloperOnly
+	@Operation(tags = {"p23-post-detail"})
+	public ResponseEntity<Void> deletePost(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long postId
+	) {
+		posts.deletePost(user, postId);
+		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
 	}
 }
