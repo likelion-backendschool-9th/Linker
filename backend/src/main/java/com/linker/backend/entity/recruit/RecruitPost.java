@@ -3,7 +3,9 @@ package com.linker.backend.entity.recruit;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.linker.backend.entity.account.User;
 import com.linker.backend.global.jpa.BaseTimeEntity;
@@ -141,10 +143,25 @@ public class RecruitPost extends BaseTimeEntity {
 		this.deadline = deadline;
 	}
 
+	/**
+	 * Diff-based replace avoids Hibernate flushing INSERT before DELETE for the same
+	 * {@code (recruit_post_id, tag_id)} UK when an overlapping tag is kept on update.
+	 */
 	public void replaceTags(List<RecruitPostTag> next) {
-		tags.clear();
-		for (RecruitPostTag tag : next) {
-			addTag(tag);
+		List<RecruitPostTag> desiredTags = next == null ? List.of() : next;
+		Set<Long> desired = new HashSet<>();
+		for (RecruitPostTag tag : desiredTags) {
+			desired.add(tag.getTag().getId());
+		}
+		tags.removeIf(existing -> !desired.contains(existing.getTag().getId()));
+		Set<Long> present = new HashSet<>();
+		for (RecruitPostTag existing : tags) {
+			present.add(existing.getTag().getId());
+		}
+		for (RecruitPostTag tag : desiredTags) {
+			if (!present.contains(tag.getTag().getId())) {
+				addTag(tag);
+			}
 		}
 	}
 
