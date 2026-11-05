@@ -13,7 +13,7 @@
 | `sub` | `users.id` 문자열 | 비어 있지 않음 |
 | `typ` | 가입 유형. `user_type` | `DEVELOPER`, `RECRUITER` |
 | `adm` | `admins` 행이 있는지 | boolean. 운영 OTP 통과가 아님 |
-| `onb` | 화면 분기용 온보딩 완료 | boolean. 지금은 `SessionClaims.onboarded`가 항상 `false` |
+| `onb` | 화면 분기용 온보딩 완료 | boolean. `users.onboarded_at`이 있으면 true |
 | `st` | 계정 상태 | `ACTIVE`, `SUSPENDED`, `WITHDRAWING` |
 
 추가로 `jti`, `iat`, `exp`가 있다. `jti`는 서명마다 새 값이다.
@@ -23,7 +23,7 @@
 - `POST /api/v1/public/auth/refresh`는 유효한 세션이면 항상 쿠키를 교체하고 204를 반환한다. 없거나 삭제된 세션은 401 `LOGIN_REQUIRED`다. 교체 전 쿠키는 거부한다.
 - 그 외 인증 요청은 claim이 DB와 다르거나, 만료가 30일 목표의 마지막 1일 안이면 쿠키를 교체한다.
 - 정지 변경은 다음 인증 요청에서 claim을 다시 쓴다. 통합 테스트로 확인했다.
-- 온보딩 완료에 따른 `onb=true` 재발급은 페이지 02가 상태를 저장한 뒤에 적용한다. 지금은 값을 바꾸지 않는다.
+- 온보딩 프로필 저장이 `users.onboarded_at`을 찍으면, 그 응답에서 `onb=true` 쿠키를 다시 발급한다.
 
 `GET /api/v1/user/me` 본문은 `userId`, `login`, `userType`, `isAdmin`, `status`, `onboarded`, `suspendedUntil`이다. `isAdmin`은 `adm`과 같이 `admins` 행이며 OTP 완료가 아니다.
 

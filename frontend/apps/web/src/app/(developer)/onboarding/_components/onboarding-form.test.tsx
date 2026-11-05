@@ -76,4 +76,38 @@ describe('OnboardingForm', () => {
     expect(replace).toHaveBeenCalledWith('/feed');
     expect(refresh).toHaveBeenCalledOnce();
   });
+
+  it('collects a notification email only when GitHub omitted one', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <OnboardingForm
+        initial={{ ...initial, emailRequired: true }}
+        techTags={[]}
+        techStackMax={10}
+      />,
+    );
+
+    await user.click(screen.getByLabelText(/만 14세 이상입니다/));
+    await user.click(screen.getByLabelText(/이용약관에 동의합니다/));
+    await user.click(screen.getByLabelText(/개인정보 처리방침에 동의합니다/));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(screen.getByLabelText('알림 이메일')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '기본 프로필을 확인해 주세요' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('올바른 이메일 주소를 입력해 주세요.');
+
+    await user.type(screen.getByLabelText('알림 이메일'), 'me@example.com');
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith(
+      '/api/v1/user/onboarding/email',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ email: 'me@example.com' }),
+      }),
+    );
+    expect(screen.getByRole('heading', { name: '기본 프로필을 확인해 주세요' })).toBeInTheDocument();
+  });
 });

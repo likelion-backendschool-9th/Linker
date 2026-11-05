@@ -87,4 +87,8 @@ public class UserSession extends BaseTimeEntity {
 	public Instant getOtpVerifiedAt() {
 		return otpVerifiedAt;
 	}
+
+	public Instant getRevokedAt() {
+		return revokedAt;
+	}
 }

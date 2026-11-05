@@ -698,6 +698,61 @@ class FoundationIntegrationTest {
 	}
 
 	@Test
+	void onboardingFinishesWithAnOnboardedCookie() throws Exception {
+		User user = saveUser("octocat", UserType.DEVELOPER);
+		Cookie cookie = cookie(sessions.issue(user, "JUnit", "127.0.0.1").rawToken());
+
+		mockMvc.perform(get("/api/v1/user/onboarding").cookie(cookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.step").value("AGREEMENTS"))
+				.andExpect(jsonPath("$.emailRequired").value(true))
+				.andExpect(jsonPath("$.termsVersion").value("2026-10-01"));
+
+		mockMvc.perform(post("/api/v1/user/onboarding/agreements")
+						.cookie(cookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"ageConfirmed":true,"termsAccepted":true,"privacyAccepted":true,"marketingAccepted":false,"termsVersion":"2026-10-01"}
+								"""))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(put("/api/v1/user/onboarding/email")
+						.cookie(cookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"me@example.com\"}"))
+				.andExpect(status().isNoContent());
+
+		MvcResult saved = mockMvc.perform(put("/api/v1/user/onboarding/profile")
+						.cookie(cookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"name":"명석","bio":"","blogUrl":"","techStack":["Java"],"lookingForTeam":false,"jobStatus":"OFF"}
+								"""))
+				.andExpect(status().isNoContent())
+				.andExpect(header().exists("Set-Cookie"))
+				.andReturn();
+
+		SessionClaims renewed = tokens.verify(cookieValue(saved.getResponse().getHeader("Set-Cookie"))).orElseThrow();
+		assertThat(renewed.onboarded()).isTrue();
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(cookieValue(saved.getResponse().getHeader("Set-Cookie")))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.onboarded").value(true));
+
+		mockMvc.perform(get("/api/v1/public/legal-documents/terms"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 이용약관")));
+		mockMvc.perform(get("/api/v1/public/legal-documents/privacy"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 개인정보처리방침")));
+		mockMvc.perform(get("/api/v1/public/legal-documents/community"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 커뮤니티 정책")));
+	}
+
+	@Test
 	void unknownFailuresDoNotEchoTheException() throws Exception {
 		mockMvc.perform(get("/api/v1/public/missing"))
 				.andExpect(status().isNotFound())

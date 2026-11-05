@@ -13,6 +13,19 @@ public final class PlanLimits {
 	public static final int IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 	public static final int IMAGE_LONG_SIDE = 2048;
 	public static final int SESSION_DAYS = 30;
+	/** Policy ch. 3 — pending withdrawal before anonymization. */
+	public static final int ACCOUNT_WITHDRAWAL_DAYS = 30;
+	/** Policy ch. 2 — login during pending deletion restores the account. */
+	public static final int ACCOUNT_WITHDRAWAL_RESTORE_DAYS = 30;
+	/** Terms version stored with onboarding agreement. Matches the page 02 client. */
+	public static final String TERMS_VERSION = "2026-10-01";
+	/** POL-A-2 display name length. */
+	public static final int PROFILE_DISPLAY_NAME_MIN = 1;
+	public static final int PROFILE_DISPLAY_NAME_MAX = 20;
+	/** POL-A-2 bio length. */
+	public static final int PROFILE_BIO_MAX = 160;
+	/** POL-A-3 predefined tech stack tags. */
+	public static final int PROFILE_TECH_STACK_MAX = 10;
 	public static final int PUBLIC_READS_PER_MINUTE = 60;
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;

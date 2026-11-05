@@ -5,7 +5,7 @@ import com.linker.backend.entity.account.User;
 /**
  * Screen-routing claims carried in the session JWT.
  * {@code adm} is the {@code admins} row, not the operator OTP flag. Spring still checks the session row.
- * {@code onb} stays false until agreement and profile steps exist.
+ * {@code onb} is true after the onboarding profile step sets {@code users.onboarded_at}.
  */
 public record SessionClaims(
 		String subject,
@@ -16,7 +16,7 @@ public record SessionClaims(
 ) {
 
 	public static boolean onboarded(User user) {
-		return false;
+		return user.isOnboarded();
 	}
 
 	public static SessionClaims of(User user, boolean adminRegistered) {
