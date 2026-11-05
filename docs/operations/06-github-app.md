@@ -49,10 +49,9 @@ GitHub의 “Request user authorization during installation” 옵션을 켜면 
 | `GITHUB_WEBHOOK_RECEIVED_TIMEOUT` | 큐에서 유실된 RECEIVED 재확인 간격 기본 `60s` |
 | `GITHUB_WEBHOOK_RECOVERY_BATCH_SIZE` | 복구 조회 한 번의 최대 건수 기본 `100` |
 | `GITHUB_WEBHOOK_RECOVERY_DELAY_MS` | 복구 스캔 주기 기본 `60000`ms |
-| `LINKER_WEBHOOK_CONSUMER_ENABLED` | 일반 앱 기본 true. `remote_db.py backend`의 공용 DB 개발은 기본 false |
+| `LINKER_WEBHOOK_CONSUMER_ENABLED` | 기본 true. 로컬 Compose도 루트 `.env` 값을 백엔드에 전달한다 |
 
-루트 `.env`의 설정은 Compose가 backend에 전달한다. `python3 scripts/remote_db.py backend`도 위 GitHub 설정과 세션 JWT 키를 `.env`에서 읽되 기존 프로세스 환경변수를 우선한다. DB 접속은 `.env.remote-db`, worker 활성화는 명시적인 프로세스 환경변수 기준을 유지한다. IDE/`./gradlew bootRun`으로 직접 실행한다면 Spring 프로세스 환경변수로 전달한다.
-`.env.remote-db`에 위 App 설정을 추가하지 않는다. 그 파일은 DB 도우미의 제한된 개인 접속 설정용이다.
+루트 `.env`의 GitHub 설정과 세션 JWT 키는 Compose가 backend에 전달한다. 로컬 백엔드는 Compose DB `db:5432`를 사용한다. IDE에서 `./gradlew bootRun`으로 직접 실행한다면 같은 값을 Spring 프로세스 환경변수로 전달하고, DB는 `.env`의 `localhost:5500`을 사용한다.
 운영 서버의 App 설정은 기존 서버 `.env` 관리 절차를 따르며, 실제 App 등록·배포를 코드 구현 완료와 혼동하지 않는다.
 
 ## 설치 검증 호출과 A 연결
