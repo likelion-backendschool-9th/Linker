@@ -49,7 +49,7 @@ import tools.jackson.databind.ObjectMapper;
     properties = {
       "spring.flyway.enabled=false",
       "spring.sql.init.mode=always",
-      "spring.sql.init.schema-locations=classpath:db/migration/V1__step0_foundation.sql,classpath:db/migration/V2__chat_rooms.sql,classpath:db/migration/V3__chat_message_client_id.sql,classpath:db/migration/V4__chat_message_edited_at.sql,classpath:db/migration/V4__github_social_login.sql,classpath:db/team-schema/team-foundation.sql,classpath:team-setup/github-repos-projection.sql,classpath:db/team-schema/team-repositories.sql,classpath:db/team-schema/team-setup.sql,classpath:db/issue-schema/issue-cache.sql"
+      "spring.sql.init.schema-locations=classpath:db/migration/V1__step0_foundation.sql,classpath:db/migration/V2__chat_rooms.sql,classpath:db/migration/V3__chat_message_client_id.sql,classpath:db/migration/V4__chat_message_edited_at.sql,classpath:db/migration/V4__github_social_login.sql,classpath:db/migration/V5__user_agreements.sql,classpath:db/migration/V6__onboarding_profile.sql,classpath:db/migration/V7__follows.sql,classpath:db/migration/V8__profile_inactivity_notice.sql,classpath:db/migration/V9__ops_reports.sql,classpath:db/team-schema/team-foundation.sql,classpath:team-setup/github-repos-projection.sql,classpath:db/team-schema/team-repositories.sql,classpath:db/team-schema/team-setup.sql,classpath:db/issue-schema/issue-cache.sql"
     })
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 @Testcontainers
@@ -394,6 +394,35 @@ class TeamSetupIntegrationTest {
     verify(github, times(2)).createDateField(anyLong(), anyString(), anyString());
     assertThat(jdbc.queryForObject("select count(*) from team_project_boards", Long.class))
         .isEqualTo(1);
+  }
+
+  @Test
+  void createdOwnerIsVisibleToAsWithdrawalCheckAndCannotWithdraw() throws Exception {
+    var session = cookie(user("owner", UserType.DEVELOPER));
+    long team = create(session);
+    mvc.perform(get("/api/v1/user/me/withdrawal-check").cookie(session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.ownedTeams[0].id").value(team));
+    mvc.perform(post("/api/v1/user/me/withdrawal").cookie(session))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("OWNED_TEAMS_EXIST"));
+  }
+
+  @Test
+  void AsWithdrawalRevokesTeamAccessEvenWhenTheMembershipHistoryRemains() throws Exception {
+    long team = create(cookie(user("owner", UserType.DEVELOPER)));
+    var member = user("member", UserType.DEVELOPER);
+    join(team, member, "MEMBER", "MEMBER");
+    var session = cookie(member);
+    assertThat(access.hasRole(member.getId(), team, TeamRole.Level.MEMBER)).isTrue();
+    mvc.perform(post("/api/v1/user/me/withdrawal").cookie(session)).andExpect(status().isOk());
+    assertThat(access.hasRole(member.getId(), team, TeamRole.Level.MEMBER)).isFalse();
+    mvc.perform(
+            post("/api/v1/user/teams")
+                .cookie(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createBody()))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test

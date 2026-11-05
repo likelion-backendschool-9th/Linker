@@ -88,4 +88,23 @@ public class ReportCase extends BaseTimeEntity {
 	public int getReporterCount() {
 		return reporterCount;
 	}
+
+	public ReportCaseStatus getStatus() {
+		return status;
+	}
+
+	public Instant getResolvedAt() {
+		return resolvedAt;
+	}
+
+	public void resolve(ReportCaseStatus next, long adminId, Instant when) {
+		this.status = next;
+		this.assignedAdminId = adminId;
+		this.resolvedAt = when;
+	}
+
+	public void reopen() {
+		this.status = ReportCaseStatus.PENDING;
+		this.resolvedAt = null;
+	}
 }

@@ -136,11 +136,13 @@ erDiagram
     boolean looking_for_team "looking for team"
     varchar job_seeking_status "OPEN, OFFERS_ONLY, OFF (default)"
     timestamptz job_seeking_updated_at
+    boolean job_seeking_off_notice "set when the 90-day batch turns job seeking off"
     boolean push_enabled "push on/off (off stops push only)"
     timestamptz contribution_synced_at "last graph refresh"
     timestamptz last_active_at
     timestamptz withdraw_requested_at "withdrawal pending start"
     timestamptz deleted_at "anonymized"
+    timestamptz onboarded_at "profile step finished, session onb"
   }
   auth_identities {
     bigint id PK
@@ -170,6 +172,7 @@ erDiagram
     varchar ip
     timestamptz expires_at "30 days, extended on use"
     timestamptz otp_verified_at "operator 2FA"
+    timestamptz operator_seen_at "last operator request; idle 30 min revokes the session"
     timestamptz revoked_at
   }
   user_agreements {
@@ -974,7 +977,7 @@ erDiagram
 | user_sessions | 🟢 | Refresh token and 30-day login, operator OTP status | POL-A-1, POL ch. 10 |
 | user_agreements | 🟢 | Consent history: terms, privacy, age 14+, marketing | POL-A-1, Privacy Policy |
 | tech_tags | 🟢 | Predefined tech stack tag list (seed data) | POL-A-3 |
-| user_tech_tags | 🟢 | My tech stack, max 10 | A-3 |
+| user_tech_tags | 🟢 | My tech stack, max 10, unique (user_id, tag_id) | A-3 |
 | username_redirects | 🟡 | 90-day redirect of old URL after GitHub username change | POL ch. 3 exceptions |
 | contribution_days | 🟡 | Daily GitHub contributions, last 12 months, refreshed daily | A-4 |
 | recruiter_profiles | 🟡 | Recruiter company name, job title, verified email domain (1:1 with users) | H-1, POL ch. 3 recruiter accounts |
@@ -991,7 +994,9 @@ erDiagram
 | looking_for_team | When on, shown in Find Team search. Batch turns it off after 30 days inactive (based on `last_active_at`) |
 | user_type | DEVELOPER (GitHub sign-up) / RECRUITER (company email sign-up). Set at sign-up, never changes. RECRUITER gets an auto-generated `username` of `r-` + number, and GitHub columns/tables stay empty |
 | job_seeking_status | Job-seeking status (POL-H-4). OPEN = job seeking (badge for everyone), OFFERS_ONLY = offers only (shown to recruiters only), OFF = recruiting offers blocked. DEVELOPER only. Batch sets OFF after 90 days inactive |
+| job_seeking_off_notice | Set when that batch turns job seeking off. Cleared when the next `GET /api/v1/user/me` creates the "구직 상태를 껐어요" notice |
 | deleted_at | 30 days after withdrawal, personal columns (name, avatar, bio, email) are cleared and this is set |
+| onboarded_at | Set when onboarding profile save finishes. Null until then. The session `onb` claim follows this column |
 
 - Indexes: `username` UK, `status`, `looking_for_team` + `last_active_at`, `job_seeking_status` (recruiter feed filter).
 - Recruiters are not split into a separate table; they live in `users`. Chat, reports, blocking, sanctions and notifications all point at `users.id`, so everything is reused as-is.
@@ -1008,7 +1013,7 @@ erDiagram
 
 **github_tokens**: `user_id` UK (1:1). Tokens are stored AES-encrypted and never sent to the app or frontend. When expired, the server refreshes with the refresh token; if that fails, it asks the user to log in again.
 
-**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office.
+**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes the session. OTP enrollment is still a later step, so an `admins` row is enough to open the back office until then.
 
 **recruiter_profiles**: `user_id` UK (1:1). `company_email_domain` is used for the profile's "회사 메일 인증(@domain)" (Company email verified) label and for operator checks. When operator company verification is added in phase 3, create a `companies` table and add `company_id`.
 

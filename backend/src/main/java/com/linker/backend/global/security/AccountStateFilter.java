@@ -27,7 +27,10 @@ public class AccountStateFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-		if (safe(request) || "/api/v1/public/auth/refresh".equals(request.getRequestURI())) {
+		if (safe(request)
+				|| "/api/v1/public/auth/refresh".equals(request.getRequestURI())
+				|| "/api/v1/user/auth/logout".equals(request.getRequestURI())
+				|| "/api/v1/user/me/withdrawal".equals(request.getRequestURI())) {
 			filterChain.doFilter(request, response);
 			return;
 		}

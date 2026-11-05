@@ -41,7 +41,10 @@ const formSchema = z.object({
   techStack: z.array(z.string()).max(PROFILE.techStackMax),
   lookingForTeam: z.boolean(),
   jobStatus: z.enum(['SEEKING', 'OPEN', 'OFF']),
+  email: z.string(),
 });
+
+const notificationEmail = z.string().trim().email('올바른 이메일 주소를 입력해 주세요.');
 
 type FormValues = z.infer<typeof formSchema>;
 type OnboardingResponse = {
@@ -67,8 +70,12 @@ export function OnboardingForm({
 }) {
   const router = useRouter();
   const refreshSession = useAccountSessionRefresh();
-  const [step, setStep] = useState<'AGREEMENTS' | 'PROFILE'>(
-    initial.step === 'AGREEMENTS' ? 'AGREEMENTS' : 'PROFILE',
+  const [step, setStep] = useState<'AGREEMENTS' | 'EMAIL' | 'PROFILE'>(
+    initial.step === 'EMAIL' && initial.emailRequired
+      ? 'EMAIL'
+      : initial.step === 'AGREEMENTS'
+        ? 'AGREEMENTS'
+        : 'PROFILE',
   );
   const [pending, setPending] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -83,6 +90,7 @@ export function OnboardingForm({
       termsAccepted: false,
       privacyAccepted: false,
       marketingAccepted: false,
+      email: '',
       ...initial.defaults,
     },
   });
@@ -109,12 +117,39 @@ export function OnboardingForm({
           termsVersion: initial.termsVersion,
         }),
       });
-      setStep('PROFILE');
+      setStep(initial.emailRequired ? 'EMAIL' : 'PROFILE');
     } catch (error) {
       setApiError(
         error instanceof ApiError
           ? error.message
           : '동의 내용을 저장하지 못했어요. 다시 시도해 주세요.',
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveEmail() {
+    const parsed = notificationEmail.safeParse(form.getValues('email'));
+    if (!parsed.success) {
+      form.setError('email', { message: parsed.error.issues[0]?.message });
+      form.setFocus('email');
+      return;
+    }
+    setPending(true);
+    setApiError(null);
+    try {
+      await apiFetch('/api/v1/user/onboarding/email', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: parsed.data }),
+      });
+      setStep('PROFILE');
+    } catch (error) {
+      setApiError(
+        error instanceof ApiError
+          ? error.message
+          : '알림 이메일을 저장하지 못했어요. 다시 시도해 주세요.',
       );
     } finally {
       setPending(false);
@@ -183,7 +218,12 @@ export function OnboardingForm({
     <form className={styles.form} onSubmit={form.handleSubmit(saveProfile)} noValidate>
       <ol className={styles.progress} aria-label="온보딩 단계">
         <li aria-current={step === 'AGREEMENTS' ? 'step' : undefined}>1. 약관 동의</li>
-        <li aria-current={step === 'PROFILE' ? 'step' : undefined}>2. 기본 프로필</li>
+        {initial.emailRequired && (
+          <li aria-current={step === 'EMAIL' ? 'step' : undefined}>2. 알림 이메일</li>
+        )}
+        <li aria-current={step === 'PROFILE' ? 'step' : undefined}>
+          {initial.emailRequired ? '3. 기본 프로필' : '2. 기본 프로필'}
+        </li>
       </ol>
 
       {step === 'AGREEMENTS' ? (
@@ -251,6 +291,34 @@ export function OnboardingForm({
           >
             {pending ? '저장 중…' : '다음'}
           </Button>
+        </fieldset>
+      ) : step === 'EMAIL' ? (
+        <fieldset className={styles.fieldset} disabled={pending}>
+          <legend>알림 이메일</legend>
+          <p className={styles.help}>프로필에는 표시되지 않아요. 계정 안내와 알림을 받는 주소예요.</p>
+          <div className={styles.field}>
+            <label htmlFor="notification-email">알림 이메일</label>
+            <input
+              id="notification-email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              {...form.register('email')}
+              aria-invalid={!!form.formState.errors.email}
+              aria-describedby={form.formState.errors.email ? 'email-error' : undefined}
+            />
+            {form.formState.errors.email && (
+              <FieldError id="email-error">{form.formState.errors.email.message}</FieldError>
+            )}
+          </div>
+          <div className={styles.actions}>
+            <Button type="button" variant="outline" onClick={() => setStep('AGREEMENTS')} disabled={pending}>
+              이전
+            </Button>
+            <Button type="button" onClick={saveEmail} disabled={pending} aria-busy={pending}>
+              {pending ? '저장 중…' : '다음'}
+            </Button>
+          </div>
         </fieldset>
       ) : (
         <section className={styles.profile} aria-labelledby="profile-step-title">
@@ -330,7 +398,7 @@ export function OnboardingForm({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setStep('AGREEMENTS')}
+              onClick={() => setStep(initial.emailRequired ? 'EMAIL' : 'AGREEMENTS')}
               disabled={pending}
             >
               이전
