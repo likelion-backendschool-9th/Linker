@@ -52,8 +52,8 @@ const TARGET_LABEL: Record<ReportTargetType, string> = {
   TEAM_MESSAGE: '팀 채팅', DIRECT_MESSAGE: '1:1 채팅', RECRUITER_AD: '채용 광고',
 };
 const REASON_LABEL: Record<string, string> = {
-  SPAM: '스팸', ABUSE: '괴롭힘·혐오', FAKE_RECRUIT: '허위 모집', PLAGIARISM: '표절·도용',
-  SEXUAL_CONTENT: '성적 콘텐츠', ILLEGAL: '불법 행위', OTHER: '기타',
+  SPAM: '스팸', ABUSE: '괴롭힘·혐오', SEXUAL: '성적 콘텐츠', PRIVACY: '개인정보 노출',
+  PLAGIARISM: '표절·도용', FAKE_RECRUIT: '허위 모집', IMPERSONATION: '사칭', ILLEGAL: '불법 행위', OTHER: '기타',
 };
 
 function formatDate(value: string) {

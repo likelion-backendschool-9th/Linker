@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Set;
@@ -658,6 +660,96 @@ class FoundationIntegrationTest {
 				.andExpect(status().isTooManyRequests())
 				.andExpect(header().exists("Retry-After"))
 				.andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+	}
+
+	@Test
+	void openApiPublishesExistingFoundationEndpointsOnly() throws Exception {
+		MvcResult result = mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/user/me'].get.tags[0]").value("p00-common"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me'].get.operationId").value("getMe"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/auth/refresh'].post.operationId").value("refreshSession"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/auth/refresh'].post.responses['204']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/public/auth/refresh'].post.responses['200']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/user/uploads'].post.responses['201']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/user/blocks'].post.responses['204']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/webhook/github'].post.responses['202']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/public/tech-tags'].get.operationId").value("listTechTags"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/job-categories'].get.operationId").value("listJobCategories"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/sitemap/{kind}'].get.operationId").value("listSitemap"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/uploads'].post.operationId").value("createUpload"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/uploads/{fileId}/complete'].post.operationId").value("completeUpload"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/blocks'].get.operationId").value("listBlocks"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/blocks'].post.operationId").value("createBlock"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/blocks/{userId}'].delete.operationId").value("deleteBlock"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/reports'].post.operationId").value("createReport"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/team-setup/install-url'].get.operationId").value("getInstallUrl"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/team-setup/installations/verify'].post.operationId").value("verifyInstallation"))
+				.andExpect(jsonPath("$.paths['/api/v1/webhook/github'].post.operationId").value("receiveGithubWebhook"))
+				.andReturn();
+		String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+		assertThat(body).doesNotContain("/uploads/{fileId}/content");
+		assertThat(body).doesNotContain("security-probes");
+		assertThat(body).doesNotContain("/app/chat-rooms");
+		assertThat(body).doesNotContain("/topic/chat-rooms");
+		Path output = Path.of("build", "openapi", "v3-api-docs.json");
+		Files.createDirectories(output.getParent());
+		Files.writeString(output, body);
+	}
+
+	@Test
+	void onboardingFinishesWithAnOnboardedCookie() throws Exception {
+		User user = saveUser("octocat", UserType.DEVELOPER);
+		Cookie cookie = cookie(sessions.issue(user, "JUnit", "127.0.0.1").rawToken());
+
+		mockMvc.perform(get("/api/v1/user/onboarding").cookie(cookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.step").value("AGREEMENTS"))
+				.andExpect(jsonPath("$.emailRequired").value(true))
+				.andExpect(jsonPath("$.termsVersion").value("2026-10-01"));
+
+		mockMvc.perform(post("/api/v1/user/onboarding/agreements")
+						.cookie(cookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"ageConfirmed":true,"termsAccepted":true,"privacyAccepted":true,"marketingAccepted":false,"termsVersion":"2026-10-01"}
+								"""))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(put("/api/v1/user/onboarding/email")
+						.cookie(cookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"me@example.com\"}"))
+				.andExpect(status().isNoContent());
+
+		MvcResult saved = mockMvc.perform(put("/api/v1/user/onboarding/profile")
+						.cookie(cookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"name":"명석","bio":"","blogUrl":"","techStack":["Java"],"lookingForTeam":false,"jobStatus":"OFF"}
+								"""))
+				.andExpect(status().isNoContent())
+				.andExpect(header().exists("Set-Cookie"))
+				.andReturn();
+
+		SessionClaims renewed = tokens.verify(cookieValue(saved.getResponse().getHeader("Set-Cookie"))).orElseThrow();
+		assertThat(renewed.onboarded()).isTrue();
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(cookieValue(saved.getResponse().getHeader("Set-Cookie")))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.onboarded").value(true));
+
+		mockMvc.perform(get("/api/v1/public/legal-documents/terms"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 이용약관")));
+		mockMvc.perform(get("/api/v1/public/legal-documents/privacy"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 개인정보처리방침")));
+		mockMvc.perform(get("/api/v1/public/legal-documents/community"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 커뮤니티 정책")));
 	}
 
 	@Test

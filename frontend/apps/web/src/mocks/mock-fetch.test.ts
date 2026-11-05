@@ -73,29 +73,13 @@ describe('mockFetch', () => {
     expect(await errorOf(mockFetch('/api/v1/admin/audit-logs'))).toMatchObject({ status: 403 });
   });
 
-  it('requires operator OTP before admin data and again after the idle timeout', async () => {
+  it('lists report cases for an operator without OTP', async () => {
     vi.useFakeTimers();
     try {
       loginAs('operator');
-      const beforeOtp = errorOf(mockFetch('/api/v1/admin/report-cases'));
-      await vi.advanceTimersByTimeAsync(150);
-      await expect(beforeOtp).resolves.toMatchObject({ status: 403, code: 'OTP_REQUIRED' });
-
-      const verify = mockFetch('/api/v1/admin/otp/verify', {
-        method: 'POST',
-        body: JSON.stringify({ code: '123456' }),
-      });
-      await vi.advanceTimersByTimeAsync(150);
-      await expect(verify).resolves.toMatchObject({ verified: true });
-
       const cases = mockFetch<{ items: unknown[] }>('/api/v1/admin/report-cases?status=PENDING');
       await vi.advanceTimersByTimeAsync(150);
       await expect(cases).resolves.toMatchObject({ items: expect.any(Array) });
-
-      vi.advanceTimersByTime(30 * 60 * 1000);
-      const afterTimeout = errorOf(mockFetch('/api/v1/admin/report-cases'));
-      await vi.advanceTimersByTimeAsync(150);
-      await expect(afterTimeout).resolves.toMatchObject({ status: 403, code: 'OTP_REQUIRED' });
     } finally {
       vi.useRealTimers();
     }

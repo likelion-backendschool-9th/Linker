@@ -127,6 +127,8 @@ docker compose up -d --build --wait --wait-timeout 240
 docker compose down
 ```
 
+`docker compose down -v`는 DB·Redis 데이터 볼륨을 삭제한다. DB 도구 접속과 기존 볼륨의 비밀번호는 [로컬 DB 안내](05-database-access.md)를 본다.
+
 기본 구성은 빌드된 앱을 실행하며, `compose.dev.yml`을 함께 지정하면 개발 서버와 소스 동기화 규칙을 사용합니다.
 웹 이미지는 프론트 모노레포를 컨텍스트로 사용하고 `web` 및 공유 패키지 의존성만 설치합니다. Expo 앱은 이미지에 포함하지 않습니다.
 Next.js standalone 서버는 공유 패키지를 포함하도록 모노레포 루트까지 파일을 추적합니다.

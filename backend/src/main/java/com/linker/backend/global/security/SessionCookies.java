@@ -43,4 +43,17 @@ public class SessionCookies {
 		}
 		return builder.build().toString();
 	}
+
+	public String clear() {
+		ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(session.cookieName(), "")
+				.httpOnly(true)
+				.secure(session.secure())
+				.sameSite(session.sameSite())
+				.path(session.path())
+				.maxAge(0);
+		if (session.domain() != null && !session.domain().isBlank()) {
+			builder.domain(session.domain());
+		}
+		return builder.build().toString();
+	}
 }

@@ -2,6 +2,8 @@ package com.linker.backend.controller;
 
 import com.linker.backend.service.PublicSitemapService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,8 @@ public class PublicSitemapController {
 	}
 
 	@GetMapping("/sitemap/{kind}")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "listSitemap")
 	public ResponseEntity<PublicSitemapService.SitemapPage> list(
 			@PathVariable String kind,
 			@RequestParam(name = "page", defaultValue = "1") int page

@@ -9,6 +9,8 @@ import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.service.user.UserModerationService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/user")
-@Tag(name = "p00-common")
 public class UserModerationController {
 
 	private final UserModerationService moderation;
@@ -33,11 +34,16 @@ public class UserModerationController {
 	}
 
 	@GetMapping("/me/blocks")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "listBlocks")
 	public ResponseEntity<List<BlockView>> list(@AuthenticationPrincipal AuthenticatedUser user) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(moderation.listBlocks(user.userId()));
 	}
 
 	@PostMapping("/blocks")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "createBlock")
+	@ApiResponse(responseCode = "204", description = "Blocking period opened")
 	public ResponseEntity<Void> block(@AuthenticationPrincipal AuthenticatedUser user, @RequestBody CreateBlockRequest request) {
 		if (request.userId() == null) {
 			throw new ApiException(400, "VALIDATION_ERROR", "차단할 사용자를 확인해 주세요");
@@ -47,12 +53,18 @@ public class UserModerationController {
 	}
 
 	@DeleteMapping("/blocks/{userId}")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "deleteBlock")
+	@ApiResponse(responseCode = "204", description = "Blocking period closed")
 	public ResponseEntity<Void> unblock(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long userId) {
 		moderation.unblock(user.userId(), userId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/reports")
+	@Tag(name = "p00-common")
+	@Operation(operationId = "createReport")
+	@ApiResponse(responseCode = "204", description = "Report stored")
 	public ResponseEntity<Void> report(@AuthenticationPrincipal AuthenticatedUser user, @RequestBody CreateReportRequest request) {
 		moderation.report(user.userId(), request.targetType(), request.targetId(), request.reason(), request.detail());
 		return ResponseEntity.noContent().build();

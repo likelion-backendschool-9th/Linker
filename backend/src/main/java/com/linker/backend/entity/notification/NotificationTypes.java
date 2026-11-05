@@ -18,9 +18,11 @@ public final class NotificationTypes {
 	/** Post like (POL-P-5 / WBS page 23). */
 	public static final String POST_LIKE = "POST_LIKE";
 	public static final String FOLLOW = "FOLLOW";
+	public static final String JOB_SEEKING_OFF = "JOB_SEEKING_OFF";
 	public static final String MESSAGE_REQUEST = "MESSAGE_REQUEST";
 	public static final String TEAM_INVITE = "TEAM_INVITE";
 	public static final String REPORT_AUTO_HIDDEN = "REPORT_AUTO_HIDDEN";
+	public static final String REPORT_OUTCOME = "REPORT_OUTCOME";
 	public static final String MARKETING = "MARKETING";
 
 	private NotificationTypes() {

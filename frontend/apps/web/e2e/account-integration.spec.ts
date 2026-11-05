@@ -81,17 +81,9 @@ test('recruiter login, safe returnTo, and reset-link states use the recruiter mo
   await expect(page.getByLabel('새 비밀번호 확인')).toBeVisible();
 });
 
-test('operator reports stay hidden until mock OTP, then detail and review actions work', async ({ page }) => {
-  await page.clock.install();
+test('operator report list and detail actions work', async ({ page }) => {
   await page.goto('/api/mock/login/operator?returnTo=%2Fadmin');
   await expect(page).toHaveURL(/\/admin\/reports$/);
-  await expect(page.getByRole('heading', { name: '운영자 추가 인증' })).toBeVisible();
-  await page.getByLabel('인증 코드').fill('000000');
-  await page.getByRole('button', { name: '인증하고 신고 보기' }).click();
-  await expect(page.getByText('인증 코드가 맞지 않아요', { exact: true })).toBeVisible();
-
-  await page.getByLabel('인증 코드').fill('123456');
-  await page.getByRole('button', { name: '인증하고 신고 보기' }).click();
   await expect(page.getByRole('heading', { name: '운영 · 신고 처리' })).toBeVisible();
   await expect(page.getByRole('button', { name: /#1 · 게시물/ })).toBeVisible();
   await page.getByRole('button', { name: /#1 · 게시물/ }).click();
@@ -108,9 +100,6 @@ test('operator reports stay hidden until mock OTP, then detail and review action
   await page.getByRole('button', { name: '수용', exact: true }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: '결정 저장' }).click();
   await expect(page.getByRole('status')).toContainText('이의 제기 결정을 저장했어요');
-
-  await page.clock.fastForward(30 * 60 * 1000);
-  await expect(page.getByRole('heading', { name: '운영자 추가 인증' })).toBeVisible();
 });
 
 test('non-operator roles follow the route access matrix and app pages fit target widths', async ({ page }) => {

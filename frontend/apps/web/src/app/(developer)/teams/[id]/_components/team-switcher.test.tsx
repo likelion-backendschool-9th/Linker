@@ -18,6 +18,7 @@ const team: MyTeam = {
   openIssueCount: 2,
   chatRoomId: 10,
   unreadCount: 0,
+  joinedAt: '2026-11-01T00:00:00Z',
 };
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
@@ -72,4 +73,31 @@ it('a failed team query offers retry and a workspace exit instead of a misleadin
     '/workspace',
   );
   expect(screen.queryByText('참여 중인 팀이 없어요.')).not.toBeInTheDocument();
+});
+
+it('keeps an archived team without a room visible without creating a null destination', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({
+    items: [
+      team,
+      {
+        ...team,
+        id: 3,
+        name: '연결 전 보관 팀',
+        status: 'ARCHIVED',
+        orgAvatarUrl: null,
+        chatRoomId: null,
+        unreadCount: null,
+      },
+    ],
+  });
+  renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
+    searchParams: '?overlay=team-switcher',
+  });
+  expect(await screen.findByText('연결 전 보관 팀')).toBeVisible();
+  expect(screen.queryByRole('link', { name: /연결 전 보관 팀/ })).not.toBeInTheDocument();
+  expect(screen.getByText('채팅방을 찾지 못했어요')).toBeVisible();
+  expect(screen.getByRole('link', { name: '워크스페이스로 가기' })).toHaveAttribute(
+    'href',
+    '/workspace',
+  );
 });

@@ -2,7 +2,7 @@
 
 // client boundary: team list query and URL filter
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, FolderGit2, Plus, Users } from 'lucide-react';
+import { ArrowRight, FolderGit2, MessageCircle, Plus, Users } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,10 +13,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import styles from '@/features/teams/team-ui.module.css';
-import { TEAM } from '@/lib/policy';
+import { teamEntryHref } from '@/features/teams/team-entry';
 import { collaborationLinks } from '@/lib/navigation/collaboration-links';
 
-import { myTeamsOptions } from '../../teams/[id]/_lib/team-queries';
+import { myTeamsOptions, type MyTeam } from '../../teams/[id]/_lib/team-queries';
 
 const FILTERS = ['all', 'ACTIVE', 'COMPLETED', 'READ_ONLY', 'ARCHIVED'] as const;
 const LABELS = {
@@ -28,6 +28,10 @@ const LABELS = {
 };
 
 export function WorkspaceView() {
+  const [teamId] = useQueryState('teamId');
+  const myIssuesHref = teamId
+    ? (`/workspace/issues?teamId=${encodeURIComponent(teamId)}` as Route)
+    : collaborationLinks.myIssues;
   return (
     <div className={styles.stack}>
       <section
@@ -39,14 +43,14 @@ export function WorkspaceView() {
             내 이슈
           </h2>
           <Button asChild variant="outline">
-            <Link href={collaborationLinks.myIssues}>
+            <Link href={myIssuesHref}>
               내 이슈 전체 보기
               <ArrowRight aria-hidden />
             </Link>
           </Button>
         </div>
         <p className={styles.description}>
-          모든 팀에서 나에게 배정된 이슈를 마감일 순으로 확인해요.
+          선택한 팀에서 나에게 배정된 이슈를 마감일 순으로 확인해요.
         </p>
       </section>
       <div className={styles.actions}>
@@ -68,8 +72,9 @@ function WorkspaceTeams() {
   );
   if (teams.isPending) return <Skeleton variant="card" count={3} />;
   if (teams.isError) return <ErrorState onRetry={() => void teams.refetch()} />;
-  const activeCount = teams.data.items.filter((team) => team.status !== 'ARCHIVED').length;
-  const atLimit = activeCount >= TEAM.maxTeamsPerUser;
+  const activeCount = teams.data.teamCount;
+  const teamLimit = teams.data.teamLimit;
+  const atLimit = activeCount >= teamLimit;
   const items = teams.data.items.filter((team) => filter === 'all' || team.status === filter);
 
   return (
@@ -78,7 +83,7 @@ function WorkspaceTeams() {
         <div className={styles.section}>
           <p className={styles.description}>함께하는 팀과 프로젝트를 한곳에서 확인해요.</p>
           <p className={styles.meta}>
-            참여 중인 팀 {activeCount}/{TEAM.maxTeamsPerUser} · 보관된 팀 제외
+            참여 중인 팀 {activeCount}/{teamLimit} · 보관된 팀 제외
           </p>
         </div>
         {atLimit ? (
@@ -91,9 +96,7 @@ function WorkspaceTeams() {
           </Button>
         )}
       </div>
-      {atLimit && (
-        <p className={styles.description}>팀은 {TEAM.maxTeamsPerUser}개까지 참여할 수 있어요.</p>
-      )}
+      {atLimit && <p className={styles.description}>팀은 {teamLimit}개까지 참여할 수 있어요.</p>}
       <div className={styles.actions} role="group" aria-label="팀 상태 필터">
         {FILTERS.map((value) => (
           <Button
@@ -155,56 +158,7 @@ function WorkspaceTeams() {
                       .filter((team) => team.status === status)
                       .map((team) => (
                         <li key={team.id}>
-                          <article aria-labelledby={`team-${team.id}`}>
-                            <Link
-                              className={`${styles.card} ${styles.linkCard}`}
-                              href={
-                                (team.status === 'ARCHIVED'
-                                  ? `/chats/${team.chatRoomId}`
-                                  : `/teams/${team.id}/issues`) as Route
-                              }
-                            >
-                              <div className={styles.row}>
-                                <Image
-                                  className={styles.avatar}
-                                  src={team.orgAvatarUrl}
-                                  alt=""
-                                  width={48}
-                                  height={48}
-                                  sizes="48px"
-                                />
-                                <div className={styles.body}>
-                                  <h4 id={`team-${team.id}`} className={styles.cardTitle}>
-                                    {team.name}
-                                  </h4>
-                                  <span className={styles.meta}>
-                                    {team.myRole === 'OWNER'
-                                      ? '오너'
-                                      : team.myRole === 'ADMIN'
-                                        ? '관리자'
-                                        : '멤버'}
-                                  </span>
-                                </div>
-                                <ArrowRight aria-hidden />
-                              </div>
-                              <div className={styles.heading}>
-                                <span className={styles.badge}>{LABELS[team.status]}</span>
-                                <span className={styles.badge}>
-                                  {team.plan === 'FLEX' ? 'Flex' : 'Free'}
-                                </span>
-                              </div>
-                              <div className={styles.actions}>
-                                <span className={styles.row}>
-                                  <Users size={16} aria-hidden />
-                                  {team.memberCount}명
-                                </span>
-                                <span className={styles.row}>
-                                  <FolderGit2 size={16} aria-hidden />
-                                  열린 이슈 {team.openIssueCount}개
-                                </span>
-                              </div>
-                            </Link>
-                          </article>
+                          <WorkspaceTeamCard team={team} />
                         </li>
                       ))}
                   </ul>
@@ -214,5 +168,73 @@ function WorkspaceTeams() {
         )}
       </section>
     </div>
+  );
+}
+
+function WorkspaceTeamCard({ team }: { team: MyTeam }) {
+  const href = teamEntryHref(team);
+  const content = (
+    <>
+      <div className={styles.row}>
+        {team.orgAvatarUrl ? (
+          <Image
+            className={styles.avatar}
+            src={team.orgAvatarUrl}
+            alt=""
+            width={48}
+            height={48}
+            sizes="48px"
+          />
+        ) : (
+          <Users size={48} aria-hidden className={styles.avatar} />
+        )}
+        <div className={styles.body}>
+          <h4 id={`team-${team.id}`} className={styles.cardTitle}>
+            {team.name}
+          </h4>
+          <span className={styles.meta}>
+            {team.myRole === 'OWNER' ? '오너' : team.myRole === 'ADMIN' ? '관리자' : '멤버'}
+          </span>
+        </div>
+        {href && <ArrowRight aria-hidden />}
+      </div>
+      <div className={styles.heading}>
+        <span className={styles.badge}>{LABELS[team.status]}</span>
+        {(team.plan === 'FREE' || team.plan === 'FLEX') && (
+          <span className={styles.badge}>{team.plan === 'FLEX' ? 'Flex' : 'Free'}</span>
+        )}
+      </div>
+      <div className={styles.actions}>
+        <span className={styles.row}>
+          <Users size={16} aria-hidden />
+          {team.memberCount}명
+        </span>
+        {team.openIssueCount !== null && (
+          <span className={styles.row}>
+            <FolderGit2 size={16} aria-hidden />
+            열린 이슈 {team.openIssueCount}개
+          </span>
+        )}
+        {team.unreadCount !== null && team.unreadCount > 0 && (
+          <span className={styles.row}>
+            <MessageCircle size={16} aria-hidden />안 읽은 메시지 {team.unreadCount}개
+          </span>
+        )}
+      </div>
+    </>
+  );
+  return (
+    <article aria-labelledby={`team-${team.id}`}>
+      {href ? (
+        <Link className={`${styles.card} ${styles.linkCard}`} href={href}>
+          {content}
+        </Link>
+      ) : (
+        <div className={`${styles.card} ${styles.linkCard}`} aria-disabled="true">
+          {content}
+          <p className={styles.description}>채팅방을 찾지 못했어요</p>
+        </div>
+      )}
+    </article>
   );
 }

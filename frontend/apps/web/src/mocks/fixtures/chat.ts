@@ -32,7 +32,7 @@ export type MockRoom = {
   /** The other person for DIRECT and REQUEST */
   counterpart: UserBrief | null;
   /** REQUEST from a recruiter (04 POL-H-3) */
-  requestKind: 'NORMAL' | 'RECRUITING' | null;
+  requestKind: 'GENERAL' | 'RECRUITING' | null;
   /** From my side: sent by me, or waiting for my answer */
   requestDirection: 'SENT' | 'RECEIVED' | null;
   muted: boolean;
@@ -121,7 +121,7 @@ export const ROOMS: MockRoom[] = [
     teamId: null,
     title: minjae!.name,
     counterpart: brief(minjae!),
-    requestKind: 'NORMAL',
+    requestKind: 'GENERAL',
     requestDirection: 'RECEIVED',
     muted: false,
     memberCount: 2,
@@ -133,7 +133,7 @@ export const ROOMS: MockRoom[] = [
     teamId: null,
     title: hayun!.name,
     counterpart: brief(hayun!),
-    requestKind: 'NORMAL',
+    requestKind: 'GENERAL',
     requestDirection: 'SENT',
     muted: false,
     memberCount: 2,

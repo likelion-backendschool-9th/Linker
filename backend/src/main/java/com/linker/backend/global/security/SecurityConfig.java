@@ -1,5 +1,9 @@
 package com.linker.backend.global.security;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.linker.backend.global.config.LinkerProperties;
 import com.linker.backend.global.error.ErrorResponseWriter;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -12,6 +16,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
@@ -19,6 +26,7 @@ public class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(
 			HttpSecurity http,
+			LinkerProperties properties,
 			SessionAuthenticationFilter sessionAuthenticationFilter,
 			AccountStateFilter accountStateFilter,
 			PublicRateLimitFilter publicRateLimitFilter,
@@ -26,12 +34,14 @@ public class SecurityConfig {
 			ErrorResponseWriter errors
 	) throws Exception {
 		http
+				.cors(cors -> cors.configurationSource(corsConfigurationSource(properties)))
 				.csrf(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
 				.logout(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
 						.requestMatchers("/api/v1/public/**").permitAll()
 						.requestMatchers("/api/v1/webhook/**").permitAll()
 						.requestMatchers("/ws", "/ws/**").permitAll()
@@ -49,6 +59,22 @@ public class SecurityConfig {
 				.addFilterAfter(accountStateFilter, PublicRateLimitFilter.class)
 				.addFilterAfter(originCheckFilter, AccountStateFilter.class);
 		return http.build();
+	}
+
+	private static CorsConfigurationSource corsConfigurationSource(LinkerProperties properties) {
+		CorsConfiguration configuration = new CorsConfiguration();
+		List<String> origins = Arrays.stream(properties.security().allowedOrigins().split(","))
+				.map(String::trim)
+				.filter(value -> !value.isEmpty())
+				.toList();
+		configuration.setAllowedOrigins(origins);
+		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"));
+		configuration.setAllowedHeaders(List.of("*"));
+		configuration.setAllowCredentials(origins.isEmpty() ? false : true);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/api/**", configuration);
+		source.registerCorsConfiguration("/ws/**", configuration);
+		return source;
 	}
 
 	@Bean

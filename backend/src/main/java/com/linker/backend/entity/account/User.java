@@ -67,9 +67,16 @@ public class User extends BaseTimeEntity {
 
 	private Instant lastActiveAt;
 
+	/** Set by the inactivity batch when it turns job seeking off. Cleared after the notice is created. */
+	@Column(nullable = false)
+	private boolean jobSeekingOffNotice;
+
 	private Instant withdrawRequestedAt;
 
 	private Instant deletedAt;
+
+	/** Set when the onboarding profile step is saved. Drives the session {@code onb} claim. */
+	private Instant onboardedAt;
 
 	protected User() {
 	}
@@ -104,8 +111,137 @@ public class User extends BaseTimeEntity {
 		this.deletedAt = when;
 	}
 
+	/** Clears personal columns after the pending-withdrawal window. Username stays for the unique key. */
+	public void anonymize(Instant when) {
+		markDeleted(when);
+		this.displayName = null;
+		this.avatarUrl = null;
+		this.bio = null;
+		this.blogUrl = null;
+		this.email = null;
+	}
+
 	public void touch(Instant when) {
 		this.lastActiveAt = when;
+	}
+
+	public void clearLookingForTeam() {
+		this.lookingForTeam = false;
+	}
+
+	public void markJobSeekingOffForInactivity(Instant when) {
+		if (this.jobSeekingStatus == JobSeekingStatus.OFF) {
+			return;
+		}
+		this.jobSeekingStatus = JobSeekingStatus.OFF;
+		this.jobSeekingUpdatedAt = when;
+		this.jobSeekingOffNotice = true;
+	}
+
+	public boolean takeJobSeekingOffNotice() {
+		if (!this.jobSeekingOffNotice) {
+			return false;
+		}
+		this.jobSeekingOffNotice = false;
+		return true;
+	}
+
+	public void applyOnboardingProfile(
+			String displayName,
+			String bio,
+			String blogUrl,
+			boolean lookingForTeam,
+			JobSeekingStatus jobStatus,
+			Instant now) {
+		this.displayName = displayName;
+		this.bio = blankToNull(bio);
+		this.blogUrl = blankToNull(blogUrl);
+		this.lookingForTeam = lookingForTeam;
+		if (this.jobSeekingStatus != jobStatus) {
+			this.jobSeekingStatus = jobStatus;
+			this.jobSeekingUpdatedAt = now;
+		}
+	}
+
+	public void keepNotificationEmail(String email) {
+		if (this.email != null && !this.email.isBlank()) {
+			return;
+		}
+		this.email = email;
+	}
+
+	public void keepNotificationEmail(String email, Instant verifiedAt) {
+		if (this.email != null && !this.email.isBlank()) {
+			return;
+		}
+		String value = blankToNull(email);
+		if (value == null) {
+			return;
+		}
+		this.email = value;
+		this.emailVerifiedAt = verifiedAt;
+	}
+
+	public void changeNotificationEmail(String email) {
+		this.email = email;
+	}
+
+	public void setPushEnabled(boolean pushEnabled) {
+		this.pushEnabled = pushEnabled;
+	}
+
+	public void completeOnboarding(Instant when) {
+		if (this.onboardedAt == null) {
+			this.onboardedAt = when;
+		}
+	}
+
+	public boolean isOnboarded() {
+		return onboardedAt != null;
+	}
+
+	public void rename(String username) {
+		this.username = username;
+	}
+
+	public void refreshAvatar(String avatarUrl) {
+		this.avatarUrl = blankToNull(avatarUrl);
+	}
+
+	public void useGithubDisplayName(String name) {
+		String value = blankToNull(name);
+		if (value == null) {
+			return;
+		}
+		this.displayName = value.length() <= 20 ? value : value.substring(0, 20);
+	}
+
+	/**
+	 * @return true when a pending withdrawal inside the restore window becomes active
+	 */
+	public boolean restoreWithdrawal(Instant now, java.time.Duration window) {
+		if (status != UserStatus.WITHDRAWING || withdrawRequestedAt == null) {
+			return false;
+		}
+		if (withdrawRequestedAt.plus(window).isBefore(now)) {
+			return false;
+		}
+		this.status = UserStatus.ACTIVE;
+		this.withdrawRequestedAt = null;
+		return true;
+	}
+
+	public boolean withdrawalExpired(Instant now, java.time.Duration window) {
+		return status == UserStatus.WITHDRAWING
+				&& (withdrawRequestedAt == null || withdrawRequestedAt.plus(window).isBefore(now));
+	}
+
+	private static String blankToNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	public Long getId() {
@@ -124,16 +260,32 @@ public class User extends BaseTimeEntity {
 		return bio;
 	}
 
+	public String getBlogUrl() {
+		return blogUrl;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public boolean isPushEnabled() {
+		return pushEnabled;
+	}
+
+	public boolean isLookingForTeam() {
+		return lookingForTeam;
+	}
+
+	public JobSeekingStatus getJobSeekingStatus() {
+		return jobSeekingStatus;
+	}
+
 	public String getAvatarUrl() {
 		return avatarUrl;
 	}
 
 	public UserType getUserType() {
 		return userType;
-	}
-
-	public JobSeekingStatus getJobSeekingStatus() {
-		return jobSeekingStatus;
 	}
 
 	public UserStatus getStatus() {
@@ -146,6 +298,14 @@ public class User extends BaseTimeEntity {
 
 	public Instant getDeletedAt() {
 		return deletedAt;
+	}
+
+	public Instant getWithdrawRequestedAt() {
+		return withdrawRequestedAt;
+	}
+
+	public Instant getLastActiveAt() {
+		return lastActiveAt;
 	}
 
 	public String visibleName() {

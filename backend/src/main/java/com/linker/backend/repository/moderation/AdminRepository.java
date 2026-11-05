@@ -1,6 +1,7 @@
 package com.linker.backend.repository.moderation;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.moderation.Admin;
@@ -13,6 +14,8 @@ public interface AdminRepository extends JpaRepository<Admin, Long> {
 
 	@Query("select count(a) > 0 from Admin a where a.user.id = :userId")
 	boolean existsForUser(@Param("userId") long userId);
+
+	Optional<Admin> findByUser_Id(long userId);
 
 	/** Active admins whose linked account is ACTIVE and not soft-deleted. */
 	@Query("""

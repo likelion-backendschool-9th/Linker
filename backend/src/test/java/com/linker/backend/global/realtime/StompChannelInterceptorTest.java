@@ -24,7 +24,17 @@ class StompChannelInterceptorTest {
 
 	@BeforeEach
 	void setUp() {
-		interceptor = new StompChannelInterceptor((userId, roomId) -> userId == 7L && roomId == 10L);
+		interceptor = new StompChannelInterceptor(new ChatRoomAccess() {
+			@Override
+			public boolean canSubscribe(long userId, long roomId) {
+				return userId == 7L && roomId == 10L;
+			}
+
+			@Override
+			public boolean canSend(long userId, long roomId) {
+				return userId == 7L && roomId == 10L;
+			}
+		}, new StompSessionUsers());
 		user = new AuthenticatedUser(
 				7L,
 				"yunsu",

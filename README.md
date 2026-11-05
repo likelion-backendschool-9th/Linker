@@ -229,7 +229,7 @@ docker compose up -d --build --wait --wait-timeout 240
 docker compose ps
 ```
 
-기본 접속 주소는 **http://localhost:8000**입니다. 일반 Docker 빌드는 목업을 사용하지 않으므로 업무 기능에는 실제 백엔드 구현이 필요합니다. 소스 자동 반영과 Compose 버전 조건은 [Docker 실행 가이드](docs/operations/02-docker.md)를 참고하세요.
+기본 접속 주소는 **http://localhost:8000**입니다. 일반 Docker 빌드는 목업을 사용하지 않으므로 업무 기능에는 실제 백엔드 구현이 필요합니다. 소스 자동 반영과 Compose 버전 조건은 [Docker 실행 가이드](docs/operations/02-docker.md)를, DB 도구 접속은 [로컬 DB 안내](docs/operations/05-database-access.md)를 참고하세요.
 
 Expo 실기기 실행은 `frontend/apps/mobile/.env.example`의 웹 주소를 개발 PC의 LAN IP로 설정하고 개발 빌드를 사용합니다. 상세 절차는 [프론트엔드 청사진](docs/development/03-frontend-blueprint.md)의 앱·브리지 항목을 따릅니다.
 
@@ -257,6 +257,6 @@ pnpm build
 | [백엔드 청사진](docs/development/05-backend-blueprint.md)                                                         | 서버 도메인·보안·트랜잭션·연동 설계와 미확정 제안 |
 | [저장소 설정](docs/operations/01-setup.md) · [Docker](docs/operations/02-docker.md)                               | 개발 환경·CI·로컬 컨테이너 실행                   |
 | [서버 운영](docs/operations/03-deployment.md) · [자동 배포](docs/operations/04-automatic-deployment.md)           | 운영 구성·HTTPS·main 배포 초기 설정과 절차        |
-| [서버 DB 접속](docs/operations/05-database-access.md) | SSH 터널·Windows/WSL 구분·DB 연결 및 오류 확인 |
+| [로컬 DB](docs/operations/05-database-access.md) | Docker Compose 로컬 DB, `127.0.0.1:5500`, 볼륨·비밀번호 |
 
 README는 프로젝트의 입구입니다. 상세 수치·권한은 정책, 화면은 페이지 TODO, API·담당은 WBS, 데이터 구조는 ERD를 우선합니다.
