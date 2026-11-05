@@ -3,6 +3,7 @@ package com.linker.backend.service.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -14,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
+import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.PostPhotoRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
 import com.linker.backend.entity.account.User;
@@ -23,13 +25,19 @@ import com.linker.backend.entity.file.UploadedFile;
 import com.linker.backend.entity.file.UploadPurpose;
 import com.linker.backend.entity.github.GithubRepo;
 import com.linker.backend.entity.post.Post;
+import com.linker.backend.entity.post.PostLike;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubRepoRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.repository.post.CommentRepository;
+import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.service.recruit.RecruitCardMapper;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,13 +63,27 @@ class UserPostServiceTest {
 	TechTagRepository techTags;
 	@Mock
 	UserUploadService uploads;
+	@Mock
+	PostLikeRepository likes;
+	@Mock
+	CommentRepository comments;
+	@Mock
+	UserBlockRepository blocks;
+	@Mock
+	UserNotificationService notifications;
+	@Mock
+	RecruitCardMapper authors;
+	@Mock
+	RedisRateLimiter rateLimiter;
 
 	UserPostService service;
 	AuthenticatedUser developer;
 
 	@BeforeEach
 	void setUp() {
-		service = new UserPostService(repos, posts, users, techTags, uploads, CLOCK);
+		service = new UserPostService(
+				repos, posts, users, techTags, uploads,
+				likes, comments, blocks, notifications, authors, rateLimiter, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
@@ -196,6 +218,52 @@ class UserPostServiceTest {
 		assertThat(post.getSummary()).isEqualTo("한 줄 소개입니다");
 	}
 
+	@Test
+	void likeIsIdempotentAndNotifiesAuthor() {
+		Post post = otherAuthorsPost();
+		User actor = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(actor, "id", 10L);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
+		when(likes.existsByPostIdAndUserId(42L, 10L)).thenReturn(false);
+		when(users.findById(10L)).thenReturn(Optional.of(actor));
+
+		var first = service.like(developer, 42L);
+		assertThat(first.likeCount()).isEqualTo(1);
+
+		when(likes.existsByPostIdAndUserId(42L, 10L)).thenReturn(true);
+		var second = service.like(developer, 42L);
+		assertThat(second.likeCount()).isEqualTo(1);
+		verify(likes, org.mockito.Mockito.times(1)).save(any(PostLike.class));
+		verify(notifications).create(any());
+	}
+
+	@Test
+	void deletePostSoftDeletes() {
+		Post post = ownedPost();
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(comments.findByPostIdOrderByIdAsc(42L)).thenReturn(List.of());
+
+		service.deletePost(developer, 42L);
+
+		assertThat(post.getDeletedAt()).isEqualTo(NOW);
+		verify(likes).deleteByPostId(42L);
+	}
+
+	@Test
+	void createCommentRejectsEmpty() {
+		when(rateLimiter.tryAcquire(eq("post.comment.day"), eq(10L), eq(PlanLimits.POST_COMMENTS_PER_DAY),
+				eq(PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS)))
+				.thenReturn(new RedisRateLimiter.Decision(true, 0));
+		Post post = ownedPost();
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
+
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ", null)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("EMPTY"));
+	}
+
 	private PostWriteRequest writeRequest(Long repoId, List<PostPhotoRequest> photos) {
 		return new PostWriteRequest(
 				repoId,
@@ -215,6 +283,15 @@ class UserPostServiceTest {
 		ReflectionTestUtils.setField(author, "id", 10L);
 		GithubRepo repo = publicRepo(11L, "dev/linker-web");
 		Post post = Post.publish(author, repo, null, "old", "body", null, null, null, null, 0, 0);
+		ReflectionTestUtils.setField(post, "id", 42L);
+		return post;
+	}
+
+	private Post otherAuthorsPost() {
+		User author = User.create("other", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 99L);
+		GithubRepo repo = publicRepo(11L, "other/linker-web");
+		Post post = Post.publish(author, repo, null, "intro", "body", null, null, null, null, 0, 0);
 		ReflectionTestUtils.setField(post, "id", 42L);
 		return post;
 	}

@@ -14,11 +14,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.PostPeriodRequest;
 import com.linker.backend.dto.post.request.PostPhotoRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
+import com.linker.backend.dto.post.response.CommentResponse;
 import com.linker.backend.dto.post.response.EditorRepoListResponse;
 import com.linker.backend.dto.post.response.EditorRepoResponse;
+import com.linker.backend.dto.post.response.LikeCountResponse;
+import com.linker.backend.dto.post.response.LikerItemResponse;
+import com.linker.backend.dto.post.response.LikerListResponse;
 import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
 import com.linker.backend.dto.post.response.PostPeriodResponse;
@@ -27,30 +33,49 @@ import com.linker.backend.dto.post.response.RepoSummaryResponse;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.file.UploadedFile;
 import com.linker.backend.entity.github.GithubRepo;
+import com.linker.backend.entity.notification.NotificationTypes;
+import com.linker.backend.entity.post.Comment;
 import com.linker.backend.entity.post.Post;
 import com.linker.backend.entity.post.PostDemoLink;
 import com.linker.backend.entity.post.PostImage;
+import com.linker.backend.entity.post.PostLike;
 import com.linker.backend.entity.post.PostTag;
+import com.linker.backend.entity.post.PostVisibility;
 import com.linker.backend.entity.profile.TechTag;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubRepoRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.repository.post.CommentRepository;
+import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.service.recruit.RecruitCardMapper;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserPostService {
 
+	private static final String UNAVAILABLE = "삭제되었거나 볼 수 없는 콘텐츠예요";
+	private static final String DELETED_COMMENT = "삭제된 댓글입니다";
+
 	private final GithubRepoRepository repos;
 	private final PostRepository posts;
 	private final UserRepository users;
 	private final TechTagRepository techTags;
 	private final UserUploadService uploads;
+	private final PostLikeRepository likes;
+	private final CommentRepository comments;
+	private final UserBlockRepository blocks;
+	private final UserNotificationService notifications;
+	private final RecruitCardMapper authors;
+	private final RedisRateLimiter rateLimiter;
 	private final Clock clock;
 
 	public UserPostService(
@@ -59,6 +84,12 @@ public class UserPostService {
 			UserRepository users,
 			TechTagRepository techTags,
 			UserUploadService uploads,
+			PostLikeRepository likes,
+			CommentRepository comments,
+			UserBlockRepository blocks,
+			UserNotificationService notifications,
+			RecruitCardMapper authors,
+			RedisRateLimiter rateLimiter,
 			Clock clock
 	) {
 		this.repos = repos;
@@ -66,6 +97,12 @@ public class UserPostService {
 		this.users = users;
 		this.techTags = techTags;
 		this.uploads = uploads;
+		this.likes = likes;
+		this.comments = comments;
+		this.blocks = blocks;
+		this.notifications = notifications;
+		this.authors = authors;
+		this.rateLimiter = rateLimiter;
 		this.clock = clock;
 	}
 
@@ -190,6 +227,139 @@ public class UserPostService {
 		post.replaceDemoLinks(content.demoLinks());
 		post.replaceTags(content.tags());
 		return new PostIdResponse(post.getId());
+	}
+
+	@Transactional
+	public LikeCountResponse like(AuthenticatedUser user, long postId) {
+		Post post = requireReadablePost(user, postId);
+		if (likes.existsByPostIdAndUserId(postId, user.userId())) {
+			return new LikeCountResponse(post.getLikeCount());
+		}
+		User actor = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		likes.save(PostLike.of(post, actor));
+		post.increaseLikeCount();
+		long authorId = post.getAuthor().getId();
+		if (authorId != user.userId()) {
+			notifications.create(new CreateNotificationCommand(
+					authorId,
+					NotificationTypes.POST_LIKE,
+					user.userId(),
+					"POST",
+					postId,
+					"/posts/" + postId,
+					null,
+					"post-like:" + postId + ":" + user.userId()
+			));
+		}
+		return new LikeCountResponse(post.getLikeCount());
+	}
+
+	@Transactional
+	public LikeCountResponse unlike(AuthenticatedUser user, long postId) {
+		Post post = requireReadablePost(user, postId);
+		likes.findByPostIdAndUserId(postId, user.userId()).ifPresent(like -> {
+			likes.delete(like);
+			post.decreaseLikeCount();
+		});
+		return new LikeCountResponse(post.getLikeCount());
+	}
+
+	@Transactional(readOnly = true)
+	public LikerListResponse likers(AuthenticatedUser user, long postId, String cursor) {
+		requireReadablePost(user, postId);
+		Long cursorId = null;
+		if (cursor != null && !cursor.isBlank()) {
+			try {
+				cursorId = Long.parseLong(cursor.trim());
+			}
+			catch (NumberFormatException exception) {
+				throw new ApiException(400, "VALIDATION_ERROR", "커서를 확인해 주세요");
+			}
+		}
+		int pageSize = 20;
+		List<PostLike> rows = likes.findLikers(postId, cursorId, PageRequest.of(0, pageSize + 1));
+		boolean hasMore = rows.size() > pageSize;
+		List<PostLike> page = hasMore ? rows.subList(0, pageSize) : rows;
+		List<LikerItemResponse> items = page.stream()
+				.map(like -> new LikerItemResponse(authors.toAuthor(like.getUser())))
+				.toList();
+		String next = hasMore ? Long.toString(page.getLast().getId()) : null;
+		return new LikerListResponse(items, next);
+	}
+
+	@Transactional
+	public CommentResponse createComment(AuthenticatedUser user, long postId, CommentWriteRequest request) {
+		enforceCommentDayLimit(user.userId());
+		Post post = requireReadablePost(user, postId);
+		String text = requireCommentText(request == null ? null : request.text());
+		Comment parent = null;
+		Long parentId = request == null ? null : request.parentId();
+		if (parentId != null) {
+			parent = comments.findDetailedById(parentId)
+					.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요"));
+			if (parent.getPost().getId() != postId || parent.getParent() != null || parent.isDeleted()) {
+				throw new ApiException(400, "VALIDATION_ERROR", "답글 대상을 확인해 주세요");
+			}
+		}
+		User author = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		Comment comment = comments.save(Comment.write(post, author, parent, text));
+		post.increaseCommentCount();
+		notifyComment(post, parent, user.userId(), comment.getId());
+		return toCommentResponse(comment);
+	}
+
+	@Transactional
+	public CommentResponse updateComment(AuthenticatedUser user, long postId, long commentId, CommentWriteRequest request) {
+		Comment comment = comments.findDetailedById(commentId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요"));
+		if (comment.getPost().getId() != postId || comment.isDeleted()) {
+			throw new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요");
+		}
+		requireReadablePost(user, postId);
+		if (comment.getAuthor().getId() != user.userId()) {
+			throw new ApiException(403, "FORBIDDEN", "내 댓글이 아니에요");
+		}
+		String text = requireCommentText(request == null ? null : request.text());
+		comment.edit(text, clock.instant());
+		return toCommentResponse(comment);
+	}
+
+	@Transactional
+	public void deleteComment(AuthenticatedUser user, long postId, long commentId) {
+		Comment comment = comments.findDetailedById(commentId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요"));
+		if (comment.getPost().getId() != postId || comment.isDeleted()) {
+			throw new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요");
+		}
+		Post post = requireReadablePost(user, postId);
+		boolean isCommentAuthor = comment.getAuthor().getId() == user.userId();
+		boolean isPostOwner = post.getAuthor().getId() == user.userId();
+		if (!isCommentAuthor && !isPostOwner) {
+			throw new ApiException(403, "FORBIDDEN", "댓글을 삭제할 수 없어요");
+		}
+		boolean hasReplies = comments.countByParentId(commentId) > 0;
+		if (hasReplies) {
+			comment.softDelete(clock.instant());
+		}
+		else {
+			comments.delete(comment);
+		}
+		post.decreaseCommentCount();
+	}
+
+	@Transactional
+	public void deletePost(AuthenticatedUser user, long postId) {
+		Post post = requireOwnedPost(user.userId(), postId);
+		Instant now = clock.instant();
+		for (Comment comment : comments.findByPostIdOrderByIdAsc(postId)) {
+			if (!comment.isDeleted()) {
+				comment.softDelete(now);
+			}
+		}
+		likes.deleteByPostId(postId);
+		post.softDelete(now);
 	}
 
 	private ValidatedContent validateContent(PostWriteRequest request, long userId) {
@@ -330,11 +500,103 @@ public class UserPostService {
 
 	private Post requireOwnedPost(long userId, long postId) {
 		Post post = posts.findDetailedById(postId)
-				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "삭제되었거나 볼 수 없는 콘텐츠예요"));
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", UNAVAILABLE));
 		if (post.getAuthor().getId() != userId) {
 			throw new ApiException(403, "FORBIDDEN", "내 게시물이 아니에요");
 		}
 		return post;
+	}
+
+	private Post requireReadablePost(AuthenticatedUser user, long postId) {
+		Post post = posts.findDetailedById(postId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", UNAVAILABLE));
+		long authorId = post.getAuthor().getId();
+		if (blocked(user.userId(), authorId)) {
+			throw new ApiException(404, "NOT_FOUND", UNAVAILABLE);
+		}
+		boolean isAuthor = user.userId() == authorId;
+		if (post.getVisibility() != PostVisibility.VISIBLE && !isAuthor) {
+			throw new ApiException(404, "NOT_FOUND", UNAVAILABLE);
+		}
+		return post;
+	}
+
+	private boolean blocked(long a, long b) {
+		return blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(a, b)
+				|| blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(b, a);
+	}
+
+	private void enforceCommentDayLimit(long userId) {
+		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire(
+				"post.comment.day",
+				userId,
+				PlanLimits.POST_COMMENTS_PER_DAY,
+				PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS
+		);
+		if (!decision.allowed()) {
+			throw new ApiException(
+					429,
+					"RATE_LIMITED",
+					"요청이 너무 많아요. 잠시 후 다시 시도해 주세요",
+					Map.of("retryAfterSeconds", decision.retryAfterSeconds())
+			);
+		}
+	}
+
+	private String requireCommentText(String raw) {
+		if (raw == null || raw.isBlank()) {
+			throw new ApiException(400, "EMPTY", "내용을 입력해 주세요");
+		}
+		String text = raw.trim();
+		if (text.length() > PlanLimits.POST_COMMENT_MAX) {
+			throw new ApiException(400, "TOO_LONG", "500자까지 쓸 수 있어요");
+		}
+		return text;
+	}
+
+	private void notifyComment(Post post, Comment parent, long actorId, long commentId) {
+		long postAuthorId = post.getAuthor().getId();
+		if (postAuthorId != actorId) {
+			notifications.create(new CreateNotificationCommand(
+					postAuthorId,
+					NotificationTypes.COMMENT,
+					actorId,
+					"COMMENT",
+					commentId,
+					"/posts/" + post.getId(),
+					null,
+					"post-comment:" + post.getId() + ":" + commentId
+			));
+		}
+		if (parent != null) {
+			long parentAuthorId = parent.getAuthor().getId();
+			if (parentAuthorId != actorId && parentAuthorId != postAuthorId) {
+				notifications.create(new CreateNotificationCommand(
+						parentAuthorId,
+						NotificationTypes.COMMENT,
+						actorId,
+						"COMMENT",
+						commentId,
+						"/posts/" + post.getId(),
+						null,
+						"comment-reply:" + parent.getId() + ":" + commentId
+				));
+			}
+		}
+	}
+
+	private CommentResponse toCommentResponse(Comment comment) {
+		boolean deleted = comment.isDeleted();
+		return new CommentResponse(
+				comment.getId(),
+				comment.getPost().getId(),
+				comment.getParent() == null ? null : comment.getParent().getId(),
+				authors.toAuthor(comment.getAuthor()),
+				deleted ? DELETED_COMMENT : comment.getBody(),
+				deleted,
+				comment.getCreatedAt().toString(),
+				comment.getEditedAt() == null ? null : comment.getEditedAt().toString()
+		);
 	}
 
 	private RepoSummaryResponse toSummary(GithubRepo repo, int commitCount, int issueCount) {

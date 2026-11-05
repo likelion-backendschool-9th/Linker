@@ -15,6 +15,8 @@ public final class NotificationTypes {
 	/** Recruit post deleted → pending applications expire (POL-R). */
 	public static final String APPLICATION_EXPIRED = "APPLICATION_EXPIRED";
 	public static final String COMMENT = "COMMENT";
+	/** Post like (POL-P-5 / WBS page 23). */
+	public static final String POST_LIKE = "POST_LIKE";
 	public static final String FOLLOW = "FOLLOW";
 	public static final String MESSAGE_REQUEST = "MESSAGE_REQUEST";
 	public static final String TEAM_INVITE = "TEAM_INVITE";
