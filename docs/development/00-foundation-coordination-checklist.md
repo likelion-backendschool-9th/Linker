@@ -24,6 +24,8 @@
 
 ---
 
+> 신고 알림 freeze: E는 최초 자동숨김 시 활성 운영자별 `AdminNotificationService.create`로 `REPORT_AUTO_HIDDEN`을 생성한다(역할 간 호출의 좁은 예외). 피신고자·신고자에게 생성하지 않으며 중복 생산을 막는다. 상세 계약은 [청사진 §4](05-backend-blueprint.md#report-auto-hide-notification--frozen-contract). 호출부 연결은 E 담당이며 이 기록은 연결 완료를 뜻하지 않는다.
+
 ## 1. D1 오전 — E가 연 뒤에 시작
 
 - [ ] **E** 모노레포·Next·tokens·`radix-ui` 골격 머지
