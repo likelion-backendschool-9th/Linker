@@ -12,6 +12,8 @@ public final class NotificationTypes {
 	public static final String APPLICATION_RECEIVED = "APPLICATION_RECEIVED";
 	public static final String APPLICATION_ACCEPTED = "APPLICATION_ACCEPTED";
 	public static final String APPLICATION_REJECTED = "APPLICATION_REJECTED";
+	/** Recruit post deleted → pending applications expire (POL-R). */
+	public static final String APPLICATION_EXPIRED = "APPLICATION_EXPIRED";
 	public static final String COMMENT = "COMMENT";
 	public static final String FOLLOW = "FOLLOW";
 	public static final String MESSAGE_REQUEST = "MESSAGE_REQUEST";

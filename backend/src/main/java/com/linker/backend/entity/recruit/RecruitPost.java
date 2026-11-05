@@ -119,6 +119,64 @@ public class RecruitPost extends BaseTimeEntity {
 		tag.attach(this);
 	}
 
+	public void assignTeam(Long teamId) {
+		this.teamId = teamId;
+	}
+
+	public void updateContent(
+			String title,
+			String description,
+			WorkMode workMode,
+			String region,
+			RecruitGoal goal,
+			String expectedPeriod,
+			LocalDate deadline
+	) {
+		this.title = title;
+		this.description = description;
+		this.workMode = workMode;
+		this.region = region;
+		this.goal = goal;
+		this.expectedPeriod = expectedPeriod;
+		this.deadline = deadline;
+	}
+
+	public void replaceTags(List<RecruitPostTag> next) {
+		tags.clear();
+		for (RecruitPostTag tag : next) {
+			addTag(tag);
+		}
+	}
+
+	public void removeRole(RecruitRole role) {
+		roles.remove(role);
+	}
+
+	public void close(Instant closedAt) {
+		this.status = RecruitStatus.CLOSED;
+		this.closedAt = closedAt;
+	}
+
+	public void reopen() {
+		this.status = RecruitStatus.OPEN;
+		this.closedAt = null;
+	}
+
+	public void softDelete(Instant deletedAt) {
+		this.deletedAt = deletedAt;
+		if (this.status == RecruitStatus.OPEN) {
+			this.status = RecruitStatus.CLOSED;
+			this.closedAt = deletedAt;
+		}
+	}
+
+	public boolean allRolesFull() {
+		if (roles.isEmpty()) {
+			return false;
+		}
+		return roles.stream().allMatch(RecruitRole::isFull);
+	}
+
 	public Long getId() {
 		return id;
 	}

@@ -2,6 +2,7 @@ package com.linker.backend.repository.recruit;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import com.linker.backend.entity.recruit.RecruitPost;
 import com.linker.backend.entity.recruit.RecruitRoleType;
@@ -15,6 +16,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> {
+
+	long countByAuthorIdAndStatusAndDeletedAtIsNull(long authorId, RecruitStatus status);
+
+	@Query("""
+			select p from RecruitPost p
+			left join fetch p.roles
+			left join fetch p.author
+			where p.id = :id and p.deletedAt is null
+			""")
+	Optional<RecruitPost> findDetailedById(@Param("id") long id);
+
+	@Query("""
+			select distinct p from RecruitPost p
+			left join fetch p.roles
+			where p.status = :status
+			  and p.deletedAt is null
+			""")
+	List<RecruitPost> findOpenWithRoles(@Param("status") RecruitStatus status);
 
 	@Query("""
 			select distinct p from RecruitPost p

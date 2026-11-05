@@ -85,6 +85,10 @@ public class Application extends BaseTimeEntity {
 		this.status = ApplicationStatus.CANCELED;
 	}
 
+	public void expire() {
+		this.status = ApplicationStatus.EXPIRED;
+	}
+
 	public Long getId() {
 		return id;
 	}

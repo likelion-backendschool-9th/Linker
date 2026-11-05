@@ -38,4 +38,26 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 			where a.id = :id
 			""")
 	Optional<Application> findDetailedById(@Param("id") long id);
+
+	@Query("""
+			select distinct a.recruitRole.id from Application a
+			where a.recruitPost.id = :recruitPostId
+			  and a.status <> :canceled
+			""")
+	List<Long> findLockedRoleIds(
+			@Param("recruitPostId") long recruitPostId,
+			@Param("canceled") ApplicationStatus canceled
+	);
+
+	@Query("""
+			select a from Application a
+			join fetch a.applicant
+			join fetch a.recruitRole
+			where a.recruitPost.id = :recruitPostId
+			  and a.status = :pending
+			""")
+	List<Application> findPendingByRecruitPostId(
+			@Param("recruitPostId") long recruitPostId,
+			@Param("pending") ApplicationStatus pending
+	);
 }

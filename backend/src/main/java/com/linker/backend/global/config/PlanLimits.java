@@ -18,6 +18,19 @@ public final class PlanLimits {
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
 	/** List page size for recruit feeds (WBS cursor pages). */
 	public static final int RECRUIT_PAGE_SIZE = 20;
+	/** POL-R-1 — concurrent OPEN recruit posts (subscriptions/#124 later unlocks Pro). */
+	public static final int OPEN_RECRUIT_POSTS_FREE = 3;
+	public static final int OPEN_RECRUIT_POSTS_PRO = 10;
+	/** Policy ch. 2 — recruit post creates per user per rolling day. */
+	public static final int RECRUIT_POSTS_PER_DAY = 5;
+	public static final int RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
+	/** POL-R-1 field bounds. */
+	public static final int RECRUIT_TITLE_MAX = 40;
+	public static final int RECRUIT_INTRO_MAX = 1000;
+	public static final int RECRUIT_HEADCOUNT_MIN = 1;
+	public static final int RECRUIT_HEADCOUNT_MAX = 10;
+	public static final int RECRUIT_TECH_TAGS_MAX = 10;
+	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;
