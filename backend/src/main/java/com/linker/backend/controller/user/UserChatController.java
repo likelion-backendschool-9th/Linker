@@ -3,7 +3,9 @@ package com.linker.backend.controller.user;
 import java.security.Principal;
 import java.util.Map;
 
+import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
+import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.global.realtime.StompAuthException;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -68,6 +71,31 @@ public class UserChatController {
 	@Operation(operationId = "unreadChatSummary")
 	public ResponseEntity<UnreadSummaryResponse> unreadSummary(@AuthenticationPrincipal AuthenticatedUser user) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.unreadSummary(user));
+	}
+
+	@GetMapping("/chat-rooms/{roomId}/messages")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "listChatMessages")
+	public ResponseEntity<ChatMessagePageResponse> messages(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@RequestParam(required = false) Long before,
+			@RequestParam(required = false) Long after
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.messages(user, roomId, before, after));
+	}
+
+	@PostMapping("/chat-rooms/{roomId}/read")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "markChatRead")
+	@ApiResponse(responseCode = "204", description = "Read pointer advanced or already ahead")
+	public ResponseEntity<Void> read(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@RequestBody MarkChatReadRequest request
+	) {
+		chat.markRead(user, roomId, request);
+		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/chat-requests/{roomId}/accept")

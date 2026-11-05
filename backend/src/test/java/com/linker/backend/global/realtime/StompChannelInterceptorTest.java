@@ -34,7 +34,7 @@ class StompChannelInterceptorTest {
 			public boolean canSend(long userId, long roomId) {
 				return userId == 7L && roomId == 10L;
 			}
-		});
+		}, new StompSessionUsers());
 		user = new AuthenticatedUser(
 				7L,
 				"yunsu",

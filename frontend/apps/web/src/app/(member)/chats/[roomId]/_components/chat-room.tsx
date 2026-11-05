@@ -31,6 +31,7 @@ import {
   type MessagePage,
   type RoomMessage,
 } from '../_lib/room-api';
+import { storedSendClientId, type StoredSendEvent } from '../_lib/stored-send';
 import { ChatPhotoViewer } from './chat-photo-viewer';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
@@ -112,7 +113,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     try {
       const position = lastSeen.current || latest.current;
       const page = await missedMessages(roomId, latest.current);
-      if (page.items.length > CHAT.catchUpMax) {
+      if (page.catchUpLimited || page.items.length > CHAT.catchUpMax) {
         setLargeGap(true);
         // Keep the cached read position and every returned message: truncating here
         // loses the anchor and creates a gap that older-page pagination cannot fill.
@@ -131,6 +132,12 @@ export function ChatRoom({ roomId }: { roomId: number }) {
       void catchUp();
     }
   }, [connection, catchUp]);
+  useStompSubscription<StoredSendEvent>('/user/queue/chat-rooms', (event) => {
+    const clientMessageId = storedSendClientId(event, roomId);
+    if (!clientMessageId) return;
+    outbox.acknowledge(clientMessageId);
+    void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+  });
   useStompSubscription<{ event: string; message?: RoomMessage }>(
     `/topic/chat-rooms/${roomId}`,
     (event) => {

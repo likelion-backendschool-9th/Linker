@@ -24,9 +24,11 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 	private static final Pattern USER_QUEUE = Pattern.compile("^/user/queue/(chat-rooms|notifications)$");
 
 	private final ChatRoomAccess chatRooms;
+	private final StompSessionUsers sessions;
 
-	public StompChannelInterceptor(ChatRoomAccess chatRooms) {
+	public StompChannelInterceptor(ChatRoomAccess chatRooms, StompSessionUsers sessions) {
 		this.chatRooms = chatRooms;
+		this.sessions = sessions;
 	}
 
 	@Override
@@ -38,6 +40,10 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 		StompCommand command = accessor.getCommand();
 		if (command == StompCommand.CONNECT) {
 			bindUser(accessor);
+			return message;
+		}
+		if (command == StompCommand.DISCONNECT) {
+			sessions.unbind(accessor.getSessionId());
 			return message;
 		}
 		AuthenticatedUser user = requireUser(accessor);
@@ -57,7 +63,9 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 		if (!(attribute instanceof AuthenticatedUser user)) {
 			throw new StompAuthException("로그인이 필요해요");
 		}
-		accessor.setUser(new StompPrincipal(user));
+		StompPrincipal principal = new StompPrincipal(user);
+		accessor.setUser(principal);
+		sessions.bind(accessor.getSessionId(), user.userId());
 	}
 
 	private AuthenticatedUser requireUser(StompHeaderAccessor accessor) {

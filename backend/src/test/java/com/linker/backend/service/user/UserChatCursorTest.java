@@ -17,20 +17,21 @@ import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
 import com.linker.backend.global.realtime.ChatRoomAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.repository.chat.ChatListQuery;
-import com.linker.backend.repository.chat.ChatListQuery.ChatListRow;
+import com.linker.backend.repository.chat.ChatListQueryRepository;
+import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListRow;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.transaction.PlatformTransactionManager;
 
 class UserChatCursorTest {
 
 	@Test
 	void databaseFailureIsNotReportedAsABadCursor() {
-		ChatListQuery lists = mock(ChatListQuery.class);
+		ChatListQueryRepository lists = mock(ChatListQueryRepository.class);
 		Instant sortAt = Instant.parse("2026-11-01T00:00:00Z");
 		ChatListRow row = new ChatListRow(
 				4L, "DIRECT", "GENERAL", false, sortAt, "안녕", "VISIBLE", null, sortAt, 1L, null, "상대", "other"
@@ -53,7 +54,13 @@ class UserChatCursorTest {
 				mock(ChatRoomRepository.class),
 				mock(ChatRoomMemberRepository.class),
 				mock(ApplicationEventPublisher.class),
-				Clock.systemUTC()
+				Clock.systemUTC(),
+				null,
+				null,
+				null,
+				null,
+				mock(PlatformTransactionManager.class),
+				null
 		);
 		AuthenticatedUser user = new AuthenticatedUser(
 				7L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE, null, false, false, true, 1L

@@ -124,4 +124,13 @@ public class ChatRoom extends BaseTimeEntity {
 	public Instant getRespondedAt() {
 		return respondedAt;
 	}
+
+	public Long getLastMessageId() {
+		return lastMessageId;
+	}
+
+	public void markLastMessage(long messageId, Instant at) {
+		this.lastMessageId = messageId;
+		this.lastMessageAt = at;
+	}
 }
