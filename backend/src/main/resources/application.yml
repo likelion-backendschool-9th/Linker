@@ -57,6 +57,11 @@ server:
     include-binding-errors: never
 
 linker:
+  # Activate after migration order is agreed and B/C prepared schemas are formally applied.
+  team-setup:
+    worker-enabled: ${TEAM_SETUP_WORKER_ENABLED:false}
+    webhook-enabled: ${TEAM_SETUP_WEBHOOK_ENABLED:false}
+    poll-delay-ms: ${TEAM_SETUP_POLL_DELAY_MS:5000}
   # Activate only after B's shared schema + C schema and payload contract are ready.
   issues:
     sync-enabled: ${ISSUE_SYNC_ENABLED:false}

@@ -23,6 +23,10 @@ export interface BlockView {
   blockedAt?: string;
 }
 
+export interface CompleteTeamSetupRequest {
+  retry?: boolean;
+}
+
 export interface CompleteUploadResponse {
   fileId?: string;
   url?: string;
@@ -37,6 +41,20 @@ export interface CreateReportRequest {
   targetId?: unknown;
   reason?: string;
   detail?: string;
+}
+
+export interface CreateTeamRequest {
+  /**
+     * @minLength 1
+     * @pattern [0-9]{1,19}
+     */
+  installationId: string;
+  /**
+     * @minLength 0
+     * @maxLength 255
+     */
+  name: string;
+  description?: string;
 }
 
 export interface CreateUploadRequest {
@@ -274,6 +292,27 @@ export interface MyTeamsResponse {
   nextCursor: string | null;
 }
 
+export interface SaveTeamReposRequest {
+  /** @items.exclusiveMinimum 0 */
+  repoIds: number[];
+}
+
+export type SetupBoardRequestMode = typeof SetupBoardRequestMode[keyof typeof SetupBoardRequestMode];
+
+
+export const SetupBoardRequestMode = {
+  NEW: 'NEW',
+  EXISTING: 'EXISTING',
+} as const;
+
+export type SetupBoardRequestStatusMapping = {[key: string]: string};
+
+export interface SetupBoardRequest {
+  mode: SetupBoardRequestMode;
+  boardId?: string;
+  statusMapping?: SetupBoardRequestStatusMapping;
+}
+
 export interface SitemapItem {
   id?: number;
   url?: string;
@@ -286,25 +325,106 @@ export interface SitemapPage {
   items?: SitemapItem[];
 }
 
+export interface TeamCreatedResponse {
+  id: number;
+  name: string;
+  chatRoomId: number;
+}
+
+export interface TeamSetupBoardSaved {
+  boardId: string;
+  name: string;
+}
+
+export interface TeamSetupStatusOption {
+  id: string;
+  name: string;
+}
+
+export interface TeamSetupBoardPreview {
+  id: string;
+  name: string;
+  cardCount: number;
+  statusColumns: string[];
+  statusOptions: TeamSetupStatusOption[];
+}
+
+export interface TeamSetupBoards {
+  items: TeamSetupBoardPreview[];
+}
+
+export type TeamSetupPermissionBasePermission = typeof TeamSetupPermissionBasePermission[keyof typeof TeamSetupPermissionBasePermission];
+
+
+export const TeamSetupPermissionBasePermission = {
+  NONE: 'NONE',
+  READ: 'READ',
+  WRITE: 'WRITE',
+  ADMIN: 'ADMIN',
+} as const;
+
+export interface TeamSetupPermission {
+  basePermission: TeamSetupPermissionBasePermission;
+  settingsUrl: string;
+}
+
+export type TeamSetupProgressState = typeof TeamSetupProgressState[keyof typeof TeamSetupProgressState];
+
+
+export const TeamSetupProgressState = {
+  QUEUED: 'QUEUED',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  STALE: 'STALE',
+} as const;
+
+export interface TeamSetupProgress {
+  queued: boolean;
+  state: TeamSetupProgressState;
+  /** @nullable */
+  failedStep: string | null;
+}
+
+export interface TeamSetupRepository {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+}
+
+export interface TeamSetupRepositories {
+  items: TeamSetupRepository[];
+  /** @nullable */
+  notInstalledCount: number | null;
+  settingsUrl: string;
+}
+
 export interface TechTagResponse {
   id?: number;
   name?: string;
 }
 
 export interface VerifyInstallationRequest {
-  /**
-     * @minLength 1
-     * @pattern [0-9]{1,19}
-     */
-  installationId: string;
+  /** @pattern [0-9]{1,19} */
+  installationId?: string;
   /**
      * @minLength 0
      * @maxLength 128
      */
   state: string;
-  /** @pattern install|update */
+  /** @pattern install|update|request */
   setupAction?: string;
 }
+
+export type VerifyInstallationResponseResult = typeof VerifyInstallationResponseResult[keyof typeof VerifyInstallationResponseResult];
+
+
+export const VerifyInstallationResponseResult = {
+  INSTALLED: 'INSTALLED',
+  REQUESTED_FROM_OWNER: 'REQUESTED_FROM_OWNER',
+  ALREADY_LINKED: 'ALREADY_LINKED',
+} as const;
 
 export interface Organization {
   id?: number;
@@ -313,9 +433,13 @@ export interface Organization {
 }
 
 export interface VerifyInstallationResponse {
-  result?: string;
-  org?: Organization;
-  installationId?: string;
+  result: VerifyInstallationResponseResult;
+  /** @nullable */
+  org: Organization;
+  /** @nullable */
+  installationId: string | null;
+  /** @nullable */
+  teamId: number | null;
 }
 
 export type RefreshTeamIssuesParams = {
