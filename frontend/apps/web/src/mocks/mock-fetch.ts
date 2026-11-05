@@ -1,6 +1,5 @@
 import { ApiError } from '@/lib/api/api-error';
 import { MOCK_ROLE_COOKIE, parseMockRole, type MockRole } from '@/lib/auth/mock-viewer';
-import { ADMIN } from '@/lib/policy';
 
 import { fail, type MockContext, type MockRoute, type ParamName } from './core/define';
 import { buildViewer } from './core/viewer';
@@ -13,8 +12,6 @@ import { routes } from './routes';
  */
 
 const BROWSER_DELAY_MS = 150;
-const ADMIN_OTP_IDLE_MS = ADMIN.otpIdleMinutes * 60 * 1000;
-let adminOtpLastActiveAt: number | null = null;
 
 type Compiled = { route: MockRoute; regex: RegExp; paramNames: string[]; dynamic: number };
 
@@ -71,14 +68,6 @@ function authorize(entry: Compiled, ctx: MockContext) {
   if (path.startsWith('/api/v1/admin/') && role !== 'operator') {
     fail(403, 'FORBIDDEN', '운영자만 쓸 수 있어요');
   }
-  if (path.startsWith('/api/v1/admin/') && path !== '/api/v1/admin/otp/verify') {
-    const now = Date.now();
-    if (adminOtpLastActiveAt === null || now - adminOtpLastActiveAt >= ADMIN_OTP_IDLE_MS) {
-      adminOtpLastActiveAt = null;
-      fail(403, 'OTP_REQUIRED', '운영자 OTP 인증이 필요해요');
-    }
-    adminOtpLastActiveAt = now;
-  }
   if (entry.route.only === 'developer' && role === 'recruiter') {
     fail(403, 'DEVELOPER_ONLY', '개발자 계정만 쓸 수 있어요');
   }
@@ -122,12 +111,6 @@ export async function mockFetch<T>(url: string, init: RequestInit = {}): Promise
   authorize(entry, ctx);
 
   const result = await entry.route.handle(ctx);
-  if (
-    entry.route.path === '/api/v1/admin/otp/verify' &&
-    (result as { verified?: boolean } | undefined)?.verified
-  ) {
-    adminOtpLastActiveAt = Date.now();
-  }
   // Callers must not mutate fixtures, and server → client props must be serializable
   return (result === undefined ? undefined : structuredClone(result)) as T;
 }

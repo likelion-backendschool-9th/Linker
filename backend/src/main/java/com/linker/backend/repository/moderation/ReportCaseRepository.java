@@ -1,5 +1,6 @@
 package com.linker.backend.repository.moderation;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.entity.moderation.ReportCase;
@@ -15,6 +16,8 @@ import org.springframework.data.repository.query.Param;
 public interface ReportCaseRepository extends JpaRepository<ReportCase, Long> {
 
 	Optional<ReportCase> findByTargetTypeAndTargetIdAndStatus(ReportTargetType targetType, long targetId, ReportCaseStatus status);
+
+	List<ReportCase> findByTargetType(ReportTargetType targetType);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select c from ReportCase c where c.id = :id")

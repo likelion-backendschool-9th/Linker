@@ -26,6 +26,7 @@ import com.linker.backend.repository.moderation.BlockInserter;
 import com.linker.backend.repository.moderation.ReportCaseOpener;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.ReportRepository;
+import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.service.admin.AdminNotificationService;
 
@@ -48,6 +49,7 @@ public class UserModerationService {
 	private final ReportRepository reports;
 	private final AdminRepository admins;
 	private final AdminNotificationService adminNotifications;
+	private final SanctionRepository sanctions;
 	private final FollowRepository follows;
 	private final Clock clock;
 
@@ -60,6 +62,7 @@ public class UserModerationService {
 			ReportRepository reports,
 			AdminRepository admins,
 			AdminNotificationService adminNotifications,
+			SanctionRepository sanctions,
 			FollowRepository follows,
 			Clock clock
 	) {
@@ -71,6 +74,7 @@ public class UserModerationService {
 		this.reports = reports;
 		this.admins = admins;
 		this.adminNotifications = adminNotifications;
+		this.sanctions = sanctions;
 		this.follows = follows;
 		this.clock = clock;
 	}
@@ -136,6 +140,9 @@ public class UserModerationService {
 		ReportTargetType type = parseType(targetType);
 		ReportReason reportReason = parseReason(reason);
 		String normalizedDetail = normalizeDetail(reportReason, detail);
+		if (sanctions.hasActiveReportRestriction(reporterId, Instant.now(clock))) {
+			throw new ApiException(403, "REPORT_RESTRICTED", "최근 30일 동안 기각이 5번이라 30일 동안 신고할 수 없어요");
+		}
 		long parsedTargetId = parseTargetId(targetId);
 		long targetUserId = resolveTargetUserId(type, parsedTargetId);
 		if (targetUserId == reporterId) {
@@ -148,7 +155,7 @@ public class UserModerationService {
 			return;
 		}
 		reports.saveAndFlush(Report.create(reportCase, reporterId, reportReason, normalizedDetail));
-		int count = (int) reports.countByReportCase_Id(reportCase.getId());
+		int count = (int) reports.countEligibleReporters(reportCase.getId(), Instant.now(clock));
 		reportCase.changeReporterCount(count);
 		if (count >= PlanLimits.REPORT_AUTO_HIDE_REPORTERS && reportCase.getAutoHiddenAt() == null) {
 			reportCase.markAutoHidden(Instant.now());

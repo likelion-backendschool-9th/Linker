@@ -40,6 +40,12 @@ public final class PlanLimits {
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;
+	/** Policy ch. 9 — handling target, counted in Seoul weekdays. */
+	public static final int REPORT_HANDLING_BUSINESS_DAYS = 2;
+	/** Policy ch. 9 — dismissed reports inside this window restrict reporting. */
+	public static final int REPORT_DISMISS_WINDOW_DAYS = 30;
+	public static final int REPORT_DISMISS_LIMIT = 5;
+	public static final int REPORT_RESTRICTION_DAYS = 30;
 	public static final int REPORT_DETAIL_MAX_CHARS = 1000;
 	/** Reject decoded images larger than this on either side before they are resized. */
 	public static final int IMAGE_MAX_SOURCE_SIDE = 8_192;
