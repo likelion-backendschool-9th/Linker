@@ -1,6 +1,7 @@
 package com.linker.backend.integration.github;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
@@ -8,6 +9,7 @@ import com.linker.backend.async.webhook.WebhookQueue;
 import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.entity.github.WebhookStatus;
 import com.linker.backend.global.error.ApiException;
+import com.linker.backend.global.config.GithubWebhookSettings;
 import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
 
 import org.slf4j.Logger;
@@ -15,6 +17,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,21 +35,35 @@ public class GithubWebhookService {
 	private final WebhookQueue queue;
 	private final ObjectMapper objectMapper;
 	private final List<GithubWebhookHandler> handlers;
+	private final GithubWebhookDispatchLock locks;
+	private final GithubWebhookSettings settings;
+	private final Clock clock;
+	private final TransactionTemplate transactions;
 
 	public GithubWebhookService(
 			GithubWebhookSignatureVerifier signatures,
 			GithubWebhookDeliveryRepository deliveries,
 			WebhookQueue queue,
 			ObjectMapper objectMapper,
-			List<GithubWebhookHandler> handlers
+			List<GithubWebhookHandler> handlers,
+			GithubWebhookDispatchLock locks,
+			GithubWebhookSettings settings,
+			Clock clock,
+			PlatformTransactionManager transactionManager
 	) {
 		this.signatures = signatures;
 		this.deliveries = deliveries;
 		this.queue = queue;
 		this.objectMapper = objectMapper;
 		this.handlers = handlers;
+		this.locks = locks;
+		this.settings = settings;
+		this.clock = clock;
+		this.transactions = new TransactionTemplate(transactionManager);
+		this.transactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	}
 
+	@Transactional(propagation = Propagation.NEVER)
 	public boolean accept(String deliveryId, String event, String signature, byte[] body) {
 		signatures.verify(body == null ? new byte[0] : body, signature);
 		validateEnvelope(deliveryId, event, body);
@@ -68,15 +88,22 @@ public class GithubWebhookService {
 			return false;
 		}
 		catch (DataIntegrityViolationException exception) {
+			if (deliveries.findByDeliveryId(id).isEmpty()) {
+				throw exception;
+			}
 			requeueIfStillReceived(id);
 			return true;
 		}
 	}
 
-	@Transactional
+	@Transactional(propagation = Propagation.NEVER)
 	public void dispatch(long id) {
-		GithubWebhookDelivery delivery = deliveries.findByIdForUpdate(id).orElse(null);
-		if (delivery == null || delivery.getStatus() != WebhookStatus.RECEIVED) {
+		locks.withLock(id, () -> dispatchLocked(id));
+	}
+
+	private void dispatchLocked(long id) {
+		GithubWebhookDelivery delivery = deliveries.findById(id).orElse(null);
+		if (delivery == null || !eligible(delivery)) {
 			return;
 		}
 		List<GithubWebhookHandler> matched = handlers.stream()
@@ -89,11 +116,37 @@ public class GithubWebhookService {
 			for (GithubWebhookHandler handler : matched) {
 				handler.handle(delivery);
 			}
-			delivery.markProcessed(Instant.now());
 		}
 		catch (RuntimeException exception) {
-			delivery.markFailed(Instant.now());
+			transactions.executeWithoutResult(status -> deliveries.findByIdForUpdate(id)
+					.ifPresent(saved -> saved.markFailed(clock.instant())));
+			log.warn("webhook handler failed for delivery {}: {}", id, exception.getClass().getSimpleName());
+			return;
 		}
+		transactions.executeWithoutResult(status -> deliveries.findByIdForUpdate(id)
+				.ifPresent(saved -> saved.markProcessed(clock.instant())));
+	}
+
+	@Transactional(propagation = Propagation.NEVER)
+	public void recover() {
+		Instant now = clock.instant();
+		Instant receivedBefore = now.minus(settings.receivedTimeout());
+		Instant retryBefore = now.minus(settings.retryDelay());
+		for (Long id : deliveries.findRecoveryIds(receivedBefore, retryBefore, settings.maxAttempts(), settings.recoveryBatchSize())) {
+			Integer touched = transactions.execute(status -> deliveries.touchForRecovery(
+					id, now, receivedBefore, retryBefore, settings.maxAttempts()));
+			if (touched != null && touched == 1) {
+				enqueue(id);
+			}
+		}
+	}
+
+	private boolean eligible(GithubWebhookDelivery delivery) {
+		return delivery.getStatus() == WebhookStatus.RECEIVED
+				|| (delivery.getStatus() == WebhookStatus.FAILED
+				&& delivery.getAttempts() < settings.maxAttempts()
+				&& delivery.getProcessedAt() != null
+				&& !delivery.getProcessedAt().isAfter(clock.instant().minus(settings.retryDelay())));
 	}
 
 	private void requeueIfStillReceived(String deliveryId) {

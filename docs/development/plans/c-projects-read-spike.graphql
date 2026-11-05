@@ -1,0 +1,57 @@
+# Read-only. Items are a five-item sample, not a complete cache sync.
+query CProjectsReadSpike($owner: String!, $number: Int!) {
+  organization(login: $owner) {
+    projectV2(number: $number) {
+      id
+      number
+      title
+      url
+      fields(first: 100) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          __typename
+          ... on ProjectV2Field { id name dataType }
+          ... on ProjectV2SingleSelectField {
+            id
+            name
+            dataType
+            options { id name }
+          }
+          ... on ProjectV2IterationField { id name dataType }
+        }
+      }
+      items(first: 5) {
+        totalCount
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id
+          type
+          content {
+            __typename
+            ... on Issue {
+              id
+              number
+              state
+              repository { nameWithOwner }
+            }
+          }
+          fieldValues(first: 100) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              __typename
+              ... on ProjectV2ItemFieldDateValue {
+                date
+                field { ... on ProjectV2Field { id name dataType } }
+              }
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                name
+                optionId
+                field { ... on ProjectV2SingleSelectField { id name } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

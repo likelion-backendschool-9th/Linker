@@ -257,6 +257,8 @@
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation` | GitHub org invite (team owner who is also a GitHub org owner, daily limit error) | team OWNER + org owner |
 | 17 | B | GET | `/api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR sheet (open, merged) | team MEMBER |
 
+00의 B 설치 스파이크는 위 08의 `install-url`·`installations/verify` 경로를 `UserGithubController` → `UserGithubService`로 먼저 제공한다. 현재 설치 확인 성공(`INSTALLED`)만 서버 토큰으로 확인하며, 오너 승인 대기·기존 팀 연결 결과와 영속 팀 생성은 08에서 연결한다. A의 사용자 토큰 공급 경로와 실제 App 검증이 필요하다. 자세한 연결·재시도 기준은 [GitHub App 운영 안내](../operations/06-github-app.md)를 따른다. API 소유·원래 페이지·205개 합계는 유지한다.
+
 ### 4-7. 팀·초대·완주 — `TeamController`
 
 **시스템 주담당:** B · **REST:** 29개

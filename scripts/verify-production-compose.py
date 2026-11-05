@@ -23,6 +23,10 @@ def configuration(*files):
             "DB_PASSWORD": "compose-validation-only",
             "JWT_PRIVATE_KEY": "compose-validation-only",
             "JWT_PUBLIC_KEY": "compose-validation-only",
+            "GITHUB_APP_ID": "123",
+            "GITHUB_APP_SLUG": "linker-validation",
+            "GITHUB_APP_PRIVATE_KEY": "github-app-validation-only",
+            "GITHUB_WEBHOOK_SECRET": "github-webhook-validation-only",
             "PROXY_PORT": "3004",
             "IMAGE_PREFIX": "ghcr.io/example/linker",
             "IMAGE_TAG": "a" * 40,
@@ -73,6 +77,16 @@ def main():
         for field in ["ports", "healthcheck", "restart", "mem_limit"]:
             assert images["services"][name].get(field) == services[name].get(field)
     assert images["volumes"] == production["volumes"]
+    github_settings = {
+        "GITHUB_APP_ID": "123", "GITHUB_APP_SLUG": "linker-validation",
+        "GITHUB_APP_PRIVATE_KEY": "github-app-validation-only",
+        "GITHUB_WEBHOOK_SECRET": "github-webhook-validation-only",
+    }
+    for config in [base, production, images]:
+        for key, value in github_settings.items():
+            assert config["services"]["backend"]["environment"][key] == value, key
+            for other in ["web", "proxy", "db", "redis"]:
+                assert key not in config["services"][other].get("environment", {}), other
     print("PASS: production and image-only deployment keep ports, resources and data volumes")
 
 

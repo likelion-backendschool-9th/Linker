@@ -110,4 +110,16 @@ public class GithubWebhookDelivery extends BaseTimeEntity {
 	public String getPayload() {
 		return payload;
 	}
+
+	public int getAttempts() {
+		return attempts;
+	}
+
+	public String getError() {
+		return error;
+	}
+
+	public Instant getProcessedAt() {
+		return processedAt;
+	}
 }
