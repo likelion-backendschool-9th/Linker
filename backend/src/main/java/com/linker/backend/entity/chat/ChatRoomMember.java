@@ -77,6 +77,16 @@ public class ChatRoomMember {
 		this.hiddenAt = when;
 	}
 
+	/** Back in a 1:1 room the person left or hid; the row is unique per room and user. */
+	public void rejoin() {
+		this.leftAt = null;
+		this.hiddenAt = null;
+	}
+
+	public Instant getLeftAt() {
+		return leftAt;
+	}
+
 	public ChatRoom getRoom() {
 		return room;
 	}

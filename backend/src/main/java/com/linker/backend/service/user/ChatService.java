@@ -26,6 +26,8 @@ import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
 import com.linker.backend.dto.chat.request.ShareChatCardRequest;
+import com.linker.backend.dto.chat.request.StartDirectChatRequest;
+import com.linker.backend.dto.chat.response.StartDirectChatResponse;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatCounterpartResponse;
 import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
@@ -71,6 +73,8 @@ import com.linker.backend.repository.chat.ChatMessageRepositoryCustom.ChatMessag
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
+import com.linker.backend.repository.profile.FollowRepository;
+import com.linker.backend.repository.team.TeamMemberRepository;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -126,6 +130,8 @@ public class ChatService {
 	private final JsonMapper json = JsonMapper.builder().build();
 	private final TeamChatAccess teamChat;
 	private final ChatMessageMentionRepository mentions;
+	private final FollowRepository follows;
+	private final TeamMemberRepository teamMembers;
 
 	public ChatService(
 			ChatRoomAccess chatRooms,
@@ -142,7 +148,9 @@ public class ChatService {
 			ChatMessageImageRepository imageLinks,
 			NotificationService notifications,
 			TeamChatAccess teamChat,
-			ChatMessageMentionRepository mentions
+			ChatMessageMentionRepository mentions,
+			FollowRepository follows,
+			TeamMemberRepository teamMembers
 	) {
 		this.chatRooms = chatRooms;
 		this.rooms = rooms;
@@ -159,6 +167,8 @@ public class ChatService {
 		this.notifications = notifications;
 		this.teamChat = teamChat;
 		this.mentions = mentions;
+		this.follows = follows;
+		this.teamMembers = teamMembers;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -252,6 +262,10 @@ public class ChatService {
 			kind = "REQUEST";
 			direction = Objects.equals(room.getRequesterId(), user.userId()) ? "SENT" : "RECEIVED";
 		}
+		else if (rejectionHiddenFrom(room, user.userId(), clock.instant())) {
+			kind = "REQUEST";
+			direction = "SENT";
+		}
 		else {
 			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
 		}
@@ -343,6 +357,158 @@ public class ChatService {
 		return true;
 	}
 
+	/**
+	 * POL-C-4. Mutual follows and current teammates get an open room. Anyone else needs a first message,
+	 * which opens a 30-day request; without it nothing is stored and the caller is told to ask. A pending
+	 * request in either direction is returned unchanged, and a rejection stays hidden from its sender for
+	 * {@link PlanLimits#CHAT_REQUEST_DAYS}: the new message is dropped and the answer looks pending.
+	 * Blocked pairs, recruiters and missing accounts are 404, like the profile.
+	 */
+	@Transactional
+	public StartDirectChatResponse startDirect(AuthenticatedUser principal, StartDirectChatRequest request) {
+		User me = requireActive(principal);
+		if (request == null || request.userId() == null || request.userId() < 1) {
+			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+		}
+		long targetId = request.userId();
+		if (targetId == me.getId()) {
+			throw new ApiException(400, "VALIDATION_ERROR", "나에게는 메시지를 보낼 수 없어요");
+		}
+		User target = accounts.findById(targetId)
+				.filter(user -> user.getUserType() == UserType.DEVELOPER)
+				.filter(user -> user.getDeletedAt() == null
+						&& user.getStatus() != UserStatus.DELETED && user.getStatus() != UserStatus.WITHDRAWING)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		if (moderation.blockedEitherWay(me.getId(), target.getId())) {
+			throw new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요");
+		}
+		String firstMessage = firstMessage(request.message());
+		String dmKey = Math.min(me.getId(), targetId) + ":" + Math.max(me.getId(), targetId);
+		Instant now = DatabaseInstant.now(clock);
+		boolean open = (follows.existsByFollower_IdAndFollowing_Id(me.getId(), targetId)
+				&& follows.existsByFollower_IdAndFollowing_Id(targetId, me.getId()))
+				|| teamMembers.existsSharedTeam(me.getId(), targetId);
+		if (open) {
+			boolean created = rooms.insertAcceptedIfAbsent(dmKey, me.getId(), now) == 1;
+			ChatRoom room = rooms.lockByDmKey(dmKey).orElseThrow();
+			boolean changed = created;
+			if (room.getDmStatus() != DmStatus.ACCEPTED) {
+				room.markAccepted(now);
+				changed = true;
+			}
+			changed |= ensureMember(room, me.getId());
+			changed |= ensureMember(room, targetId);
+			if (changed) {
+				announceRoom(room.getId(), me.getId(), targetId);
+			}
+			return StartDirectChatResponse.direct(room.getId());
+		}
+		ChatRoom room = rooms.lockByDmKey(dmKey).orElse(null);
+		if (room != null) {
+			StartDirectChatResponse current = currentDirectAnswer(room, me.getId(), targetId, now);
+			if (current != null) {
+				return current;
+			}
+		}
+		if (firstMessage == null) {
+			return StartDirectChatResponse.request(null);
+		}
+		Instant expiresAt = now.plus(Duration.ofDays(PlanLimits.CHAT_REQUEST_DAYS));
+		if (room == null) {
+			boolean created = rooms.insertRequestIfAbsent(dmKey, me.getId(), expiresAt, now) == 1;
+			room = rooms.lockByDmKey(dmKey).orElseThrow();
+			if (!created) {
+				// Someone opened this pair between the read and the insert; answer from what they stored.
+				StartDirectChatResponse current = currentDirectAnswer(room, me.getId(), targetId, now);
+				return current != null ? current : StartDirectChatResponse.request(room.getId());
+			}
+		}
+		else {
+			room.reopenRequest(me.getId(), expiresAt);
+		}
+		ensureMember(room, me.getId());
+		ensureMember(room, targetId);
+		ChatMessage message = messages.saveAndFlush(ChatMessage.text(room, me.getId(), firstMessage));
+		messages.assignCreatedAt(message.getId(), now);
+		message.alignCreatedAt(now);
+		room.markLastMessage(message.getId(), now);
+		notifications.create(new CreateNotificationCommand(
+				targetId,
+				NotificationTypes.MESSAGE_REQUEST,
+				me.getId(),
+				"CHAT_ROOM",
+				room.getId(),
+				"/chats/" + room.getId(),
+				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + "}",
+				"message-request:" + room.getId()
+		));
+		announceRoom(room.getId(), me.getId(), targetId);
+		return StartDirectChatResponse.request(room.getId());
+	}
+
+	/**
+	 * What an existing pair row already answers without a new request, or null when a new request may
+	 * replace it (expired, rejected over 30 days ago, rejected by me, or an open room the other person left).
+	 */
+	private StartDirectChatResponse currentDirectAnswer(ChatRoom room, long myId, long targetId, Instant now) {
+		DmStatus status = room.getDmStatus();
+		if (status == DmStatus.ACCEPTED) {
+			ChatRoomMember other = members.findAnyInRoom(room.getId(), targetId).orElse(null);
+			if (other == null || other.getLeftAt() != null) {
+				return null;
+			}
+			if (ensureMember(room, myId)) {
+				announceRoom(room.getId(), myId, targetId);
+			}
+			return StartDirectChatResponse.direct(room.getId());
+		}
+		if (status == DmStatus.REQUESTED && room.getRequestExpiresAt() != null && room.getRequestExpiresAt().isAfter(now)) {
+			return StartDirectChatResponse.request(room.getId());
+		}
+		if (rejectionHiddenFrom(room, myId, now)) {
+			return StartDirectChatResponse.request(room.getId());
+		}
+		return null;
+	}
+
+	/** The sender of a rejected request keeps seeing it as pending for {@link PlanLimits#CHAT_REQUEST_DAYS}. */
+	private static boolean rejectionHiddenFrom(ChatRoom room, long viewerId, Instant now) {
+		return room.getRoomType() == RoomType.DIRECT
+				&& room.getDmStatus() == DmStatus.REJECTED
+				&& Objects.equals(room.getRequesterId(), viewerId)
+				&& room.getRespondedAt() != null
+				&& room.getRespondedAt().plus(Duration.ofDays(PlanLimits.CHAT_REQUEST_DAYS)).isAfter(now);
+	}
+
+	/** Adds or brings back one person in a 1:1 room. Returns true when the row changed. */
+	private boolean ensureMember(ChatRoom room, long userId) {
+		ChatRoomMember member = members.findAnyInRoom(room.getId(), userId).orElse(null);
+		if (member == null) {
+			members.saveAndFlush(ChatRoomMember.join(room, userId));
+			return true;
+		}
+		if (member.getLeftAt() != null || member.getHiddenAt() != null) {
+			member.rejoin();
+			return true;
+		}
+		return false;
+	}
+
+	private void announceRoom(long roomId, long firstUserId, long secondUserId) {
+		events.publishEvent(new ChatRoomsChanged(firstUserId, roomId));
+		events.publishEvent(new ChatRoomsChanged(secondUserId, roomId));
+	}
+
+	private static String firstMessage(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		if (raw.codePointCount(0, raw.length()) > PlanLimits.CHAT_MESSAGE_MAX_CHARS) {
+			throw new ApiException(400, "VALIDATION_ERROR", "메시지는 2000자까지 쓸 수 있어요");
+		}
+		return raw;
+	}
+
 	@Transactional(readOnly = true)
 	public ChatMessagePageResponse messages(AuthenticatedUser user, long roomId, Long before, Long after) {
 		if (before != null && after != null) {
@@ -401,7 +567,8 @@ public class ChatService {
 		}
 		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire("chat.share", participant.account().getId(), PlanLimits.CHAT_SHARES_PER_MINUTE, 1);
 		if (!decision.allowed()) {
-			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요");
+			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요",
+					Map.of("retryAfterSeconds", decision.retryAfterSeconds()));
 		}
 		String payload = "{\"targetType\":\"" + targetType + "\",\"targetId\":" + request.targetId() + "}";
 		ChatMessage message = messages.saveAndFlush(ChatMessage.shareCard(participant.member().getRoom(), participant.account().getId(), payload, request.clientMessageId()));
@@ -793,19 +960,22 @@ public class ChatService {
 	}
 
 	private User requireKnown(AuthenticatedUser principal) {
+		// LOGIN_REQUIRED opens the login sheet; UNAUTHORIZED is reserved for webhook signatures.
 		if (principal == null) {
-			throw new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요");
+			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
 		}
 		return accounts.findById(principal.userId())
-				.orElseThrow(() -> new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요"));
+				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
 	}
 
 	private User requireActive(AuthenticatedUser principal) {
 		User account = requireKnown(principal);
+		// A token issued before the suspension passes AccountStateFilter; answer with the same code.
+		if (account.getStatus() == UserStatus.SUSPENDED) {
+			throw new ApiException(403, "SUSPENDED", "정지된 계정은 이 기능을 쓸 수 없어요");
+		}
 		if (account.getStatus() != UserStatus.ACTIVE) {
-			throw new ApiException(403, "FORBIDDEN", account.getStatus() == UserStatus.SUSPENDED
-					? "정지된 계정은 이 기능을 쓸 수 없어요"
-					: "이 기능을 사용할 수 없어요");
+			throw new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요");
 		}
 		return account;
 	}

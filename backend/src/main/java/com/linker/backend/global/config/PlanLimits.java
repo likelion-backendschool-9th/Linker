@@ -114,6 +114,8 @@ public final class PlanLimits {
 	public static final int CHAT_OFFER_MESSAGE_MAX_CHARS = 1_000;
 	public static final int CHAT_CATCH_UP_MAX = 500;
 	public static final int CHAT_AUTO_RETRIES = 3;
+	/** Policy ch. 8 "1:1 chat request status": a request expires unanswered, and a rejected sender waits, this long. */
+	public static final int CHAT_REQUEST_DAYS = 30;
 	/** Policy ch. 2 — share actions, separate from normal message sends. */
 	public static final int CHAT_SHARES_PER_MINUTE = 10;
 	public static final int CHAT_SHARES_PER_DAY = 100;

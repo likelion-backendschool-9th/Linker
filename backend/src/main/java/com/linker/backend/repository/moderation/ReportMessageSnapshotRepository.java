@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ReportMessageSnapshotRepository extends JpaRepository<ReportMessageSnapshot, Long> {
 
 	List<ReportMessageSnapshot> findByReport_ReportCase_IdOrderByRelPositionAsc(long caseId);
+
+	boolean existsByReport_ReportCase_Id(long caseId);
 }

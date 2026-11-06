@@ -52,6 +52,19 @@ public class ReportMessageSnapshot {
 	protected ReportMessageSnapshot() {
 	}
 
+	/** Copy of one chat line at report time; {@code relPosition} 0 is the reported message. */
+	public static ReportMessageSnapshot copy(
+			Report report, long messageId, long senderId, String body, int relPosition, Instant messageCreatedAt) {
+		ReportMessageSnapshot snapshot = new ReportMessageSnapshot();
+		snapshot.report = report;
+		snapshot.messageId = messageId;
+		snapshot.senderId = senderId;
+		snapshot.body = body == null ? "" : body;
+		snapshot.relPosition = relPosition;
+		snapshot.messageCreatedAt = messageCreatedAt;
+		return snapshot;
+	}
+
 	public Long getMessageId() {
 		return messageId;
 	}

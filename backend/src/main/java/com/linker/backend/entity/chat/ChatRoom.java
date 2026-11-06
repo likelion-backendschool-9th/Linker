@@ -99,6 +99,19 @@ public class ChatRoom {
 		this.respondedAt = when;
 	}
 
+	/** Same pair row (one per {@code dm_key}) starts a fresh general request from {@code requesterId}. */
+	public void reopenRequest(long requesterId, Instant expiresAt) {
+		this.dmStatus = DmStatus.REQUESTED;
+		this.requestKind = RequestKind.GENERAL;
+		this.requesterId = requesterId;
+		this.requestExpiresAt = expiresAt;
+		this.respondedAt = null;
+	}
+
+	public String getDmKey() {
+		return dmKey;
+	}
+
 	public boolean admitsSubscriber(Instant now) {
 		if (roomType == RoomType.TEAM) {
 			return true;

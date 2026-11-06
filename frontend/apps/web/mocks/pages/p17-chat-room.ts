@@ -220,8 +220,12 @@ export const routes: MockRoute[] = [
       const existing = ROOMS.find(
         (r) => r.kind === 'DIRECT' && r.counterpart?.id === Number(body.userId),
       );
-      // Mutual follow / same team → room; otherwise a message request (POL-C-4)
-      return existing ? { roomId: existing.id, kind: 'DIRECT' } : { roomId: 21, kind: 'REQUEST' };
+      // Mutual follow / same team → room; otherwise a message request (POL-C-4).
+      // A request needs `message`; without it nothing is created and roomId is null.
+      if (existing) return { roomId: existing.id, kind: 'DIRECT' };
+      return typeof body.message === 'string' && body.message.trim()
+        ? { roomId: 21, kind: 'REQUEST' }
+        : { roomId: null, kind: 'REQUEST' };
     },
     { only: 'developer' },
   ),
