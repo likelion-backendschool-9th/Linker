@@ -13,7 +13,7 @@ import com.linker.backend.integration.github.GithubAppClient;
 import com.linker.backend.integration.github.GithubInstallationState;
 import com.linker.backend.integration.github.GithubTeamSource;
 import com.linker.backend.integration.github.GithubUserAccessTokenSource;
-import com.linker.backend.repository.team.TeamSetupRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,7 @@ public class GithubService {
   private final GithubUserAccessTokenSource tokens;
   private final GithubAppClient github;
   private final GithubTeamSource setup;
-  private final TeamSetupRepository teams;
+  private final TeamRepository teams;
 
   public GithubService(
       GithubAppProperties properties,
@@ -34,7 +34,7 @@ public class GithubService {
       GithubUserAccessTokenSource tokens,
       GithubAppClient github,
       GithubTeamSource setup,
-      TeamSetupRepository teams) {
+      TeamRepository teams) {
     this.properties = properties;
     this.states = states;
     this.tokens = tokens;

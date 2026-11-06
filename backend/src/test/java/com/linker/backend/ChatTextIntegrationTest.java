@@ -351,14 +351,13 @@ class ChatTextIntegrationTest {
 	void allMentionRequiresTeamOwnerOrAdmin() throws Exception {
 		User owner = user("team-owner-all");
 		User member = user("team-member-all");
-		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(91001L));
+		long teamId = com.linker.backend.support.TeamTestFixtures.team(jdbc, owner.getId(), "JUnit mention team", "ACTIVE");
+		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(teamId));
 		members.saveAndFlush(ChatRoomMember.join(team, owner.getId()));
 		members.saveAndFlush(ChatRoomMember.join(team, member.getId()));
 		try {
-			doReturn(true).when(teamChat).writableBy(anyLong(), eq(91001L));
-			// @all looks up the team's members; the team tables are not in this test database
-			doReturn(List.of()).when(teamChat).mentionCandidates(anyLong(), eq(91001L));
-			doReturn(false).when(teamChat).canModerate(member.getId(), 91001L);
+			doReturn(true).when(teamChat).writableBy(anyLong(), eq(teamId));
+			doReturn(false).when(teamChat).canModerate(member.getId(), teamId);
 			StompSession memberSocket = connect(member);
 			List<String> rejected = frames(memberSocket, "/user/queue/chat-rooms");
 			send(memberSocket, team.getId(), UUID.randomUUID().toString(), "@all 공지", Map.of());
@@ -366,7 +365,7 @@ class ChatTextIntegrationTest {
 			assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, team.getId())).isZero();
 			memberSocket.disconnect();
 
-			doReturn(true).when(teamChat).canModerate(owner.getId(), 91001L);
+			doReturn(true).when(teamChat).canModerate(owner.getId(), teamId);
 			StompSession ownerSocket = connect(owner);
 			send(ownerSocket, team.getId(), UUID.randomUUID().toString(), "@전체 공지", Map.of());
 			waitUntil(() -> jdbc.queryForObject(

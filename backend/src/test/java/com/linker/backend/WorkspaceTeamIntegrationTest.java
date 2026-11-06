@@ -70,13 +70,7 @@ class WorkspaceTeamIntegrationTest {
 
 	@BeforeEach
 	void clean() {
-		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.teams') is null", Boolean.class))) {
-			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-foundation.sql")).execute(dataSource);
-		}
-		// github_repos comes from Flyway V12; still load B/C prepared schemas when missing.
-		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.team_repos') is null", Boolean.class))) {
-			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-repositories.sql")).execute(dataSource);
-		}
+		// B team tables now come from Flyway V20; only C's issue schema remains prepared.
 		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.issues') is null", Boolean.class))) {
 			new ResourceDatabasePopulator(new ClassPathResource("db/issue-schema/issue-cache.sql")).execute(dataSource);
 		}

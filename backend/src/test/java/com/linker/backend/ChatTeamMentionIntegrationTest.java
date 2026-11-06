@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
 import com.linker.backend.entity.account.User;
@@ -28,6 +27,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.service.user.ChatService;
+import com.linker.backend.support.TeamTestFixtures;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -47,8 +47,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /**
  * Team chat mentions (Policy ch. 8): what is stored, who is notified with which type, and what is
  * dropped or rejected. Push behaviour (muted rooms, quiet hours, bundling) is in
- * {@code NotificationDeliveryIntegrationTest}. Team tables are not Flyway-managed yet, so
- * {@link TeamChatAccess} is stubbed the same way {@code ChatTextIntegrationTest} does.
+ * {@code NotificationDeliveryIntegrationTest}. {@link TeamChatAccess} is stubbed the same way {@code ChatTextIntegrationTest} does, but the room
+ * points at a real V20 team row because {@code chat_rooms.team_id} is a foreign key.
  */
 @SpringBootTest
 @Testcontainers
@@ -92,9 +92,6 @@ class ChatTeamMentionIntegrationTest {
 	private ChatRoomMemberRepository members;
 	@Autowired
 	private ChatService chat;
-
-	/** Static: JUnit creates a new instance per test and chat_rooms.team_id is unique. */
-	private static final AtomicLong NEXT_TEAM_ID = new AtomicLong(93_000L);
 
 	@AfterEach
 	void resetStubs() {
@@ -236,10 +233,10 @@ class ChatTeamMentionIntegrationTest {
 
 	/** A team room with an owner who may moderate, plus two ordinary members. */
 	private Team team() {
-		long teamId = NEXT_TEAM_ID.getAndIncrement();
 		User owner = user("owner");
 		User alice = user("alice");
 		User bob = user("bob");
+		long teamId = TeamTestFixtures.team(jdbc, owner.getId(), "mention-" + System.nanoTime(), "ACTIVE");
 		ChatRoom room = rooms.saveAndFlush(ChatRoom.team(teamId));
 		for (User member : List.of(owner, alice, bob)) {
 			members.saveAndFlush(ChatRoomMember.join(room, member.getId()));
