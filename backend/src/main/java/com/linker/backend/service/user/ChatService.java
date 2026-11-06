@@ -8,11 +8,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.linker.backend.dto.chat.event.ChatMessageReady;
 import com.linker.backend.dto.chat.event.ChatReadAdvanced;
@@ -43,6 +45,7 @@ import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatMessageImage;
+import com.linker.backend.entity.chat.ChatMessageMention;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.chat.type.DmStatus;
@@ -63,6 +66,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListRow;
 import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListSummary;
 import com.linker.backend.repository.chat.ChatMessageImageRepository;
+import com.linker.backend.repository.chat.ChatMessageMentionRepository;
 import com.linker.backend.repository.chat.ChatMessageRepositoryCustom.ChatMessageRow;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
@@ -95,6 +99,8 @@ public class ChatService {
 	static final int MESSAGE_PAGE_SIZE = 30;
 
 	private static final String CHAT_SEND_BUCKET = "chat.send";
+	/** Technical bound on the mention id list, not a Policy limit. The text itself is capped at 2,000 chars. */
+	private static final int MAX_MENTIONED_IDS = 100;
 	private static final String FREE_HISTORY = "FREE_60_DAYS";
 
 	/** Context binding only. The token is not an authenticator or an integrity seal. */
@@ -119,6 +125,7 @@ public class ChatService {
 	private final NotificationService notifications;
 	private final JsonMapper json = JsonMapper.builder().build();
 	private final TeamChatAccess teamChat;
+	private final ChatMessageMentionRepository mentions;
 
 	public ChatService(
 			ChatRoomAccess chatRooms,
@@ -134,7 +141,8 @@ public class ChatService {
 			UploadService uploads,
 			ChatMessageImageRepository imageLinks,
 			NotificationService notifications,
-			TeamChatAccess teamChat
+			TeamChatAccess teamChat,
+			ChatMessageMentionRepository mentions
 	) {
 		this.chatRooms = chatRooms;
 		this.rooms = rooms;
@@ -150,6 +158,7 @@ public class ChatService {
 		this.imageLinks = imageLinks;
 		this.notifications = notifications;
 		this.teamChat = teamChat;
+		this.mentions = mentions;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -157,6 +166,10 @@ public class ChatService {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
 		SendCommand command = sendCommand(payload);
+		if (!command.mentionedUserIds().isEmpty()
+				&& rooms.findById(roomId).map(ChatRoom::getRoomType).orElse(null) != RoomType.TEAM) {
+			throw new StompAuthException("텍스트 메시지만 보낼 수 있어요");
+		}
 		User account = accounts.findById(userId).orElseThrow(() -> new StompAuthException("로그인이 필요해요"));
 		if (account.getStatus() != UserStatus.ACTIVE) {
 			transactions.executeWithoutResult(status -> reject(
@@ -634,6 +647,9 @@ public class ChatService {
 		long unread = recipientIds.size();
 		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread, imageUrls)));
 		boolean team = room.getRoomType() == RoomType.TEAM;
+		if (team) {
+			storeMentions(message, room, current, command, recipientIds);
+		}
 		if (!team) {
 			for (Long recipientId : recipientIds) {
 				notifications.create(new CreateNotificationCommand(
@@ -656,6 +672,53 @@ public class ChatService {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Team rooms only notify on mentions (Policy ch. 8). A mentioned id counts only if that person is an
+	 * active team member who can read the message; anything else is dropped and the message still goes out.
+	 * {@code @person} rings even when the room is muted ({@code CHAT_MENTION}). {@code @all} is an ordinary
+	 * {@code CHAT} notification, so muted members are skipped by the push job, and someone who is also
+	 * mentioned by name gets the mention only.
+	 */
+	private void storeMentions(
+			ChatMessage message, ChatRoom room, User sender, SendCommand command, List<Long> recipientIds
+	) {
+		if (command.mentionedUserIds().isEmpty() && !command.mentionAll()) {
+			return;
+		}
+		Set<Long> mentionable = teamChat.mentionCandidates(sender.getId(), room.getTeamId()).stream()
+				.map(ChatMemberResponse::id)
+				.collect(Collectors.toSet());
+		List<Long> reachable = recipientIds.stream().filter(mentionable::contains).toList();
+		List<Long> people = command.mentionedUserIds().stream().filter(reachable::contains).toList();
+		for (Long personId : people) {
+			mentions.save(ChatMessageMention.person(message, personId));
+			notifications.create(roomNotification(personId, sender, room, message, NotificationTypes.CHAT_MENTION, "mention"));
+		}
+		if (command.mentionAll()) {
+			mentions.save(ChatMessageMention.everyone(message));
+			for (Long memberId : reachable) {
+				if (!people.contains(memberId)) {
+					notifications.create(roomNotification(memberId, sender, room, message, NotificationTypes.CHAT, "mentionAll"));
+				}
+			}
+		}
+	}
+
+	private static CreateNotificationCommand roomNotification(
+			long recipientId, User sender, ChatRoom room, ChatMessage message, String type, String flag
+	) {
+		return new CreateNotificationCommand(
+				recipientId,
+				type,
+				sender.getId(),
+				"CHAT_ROOM",
+				room.getId(),
+				"/chats/" + room.getId(),
+				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + ",\"" + flag + "\":true}",
+				"chat:" + room.getId()
+		);
 	}
 
 	private void confirmStored(long userId, long roomId, SendCommand command) {
@@ -882,10 +945,11 @@ public class ChatService {
 			throw new StompAuthException("메시지 식별자를 확인해 주세요");
 		}
 		boolean mentionAll = mentionAll(payload.get("mentionAll")) || hasAllMention(text);
+		List<Long> mentionedUserIds = mentionedUserIds(payload.get("mentionedUserIds"));
 		if (text.isBlank()) {
-			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds, mentionAll);
+			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds, mentionAll, mentionedUserIds);
 		}
-		return new SendCommand(clientId, MessageType.TEXT, text, fileIds, mentionAll);
+		return new SendCommand(clientId, MessageType.TEXT, text, fileIds, mentionAll, mentionedUserIds);
 	}
 
 	private static List<Long> fileIds(Object raw) {
@@ -909,6 +973,21 @@ public class ChatService {
 				throw new StompAuthException("메시지 내용을 확인해 주세요");
 			}
 			ids.add(id);
+		}
+		return List.copyOf(ids);
+	}
+
+	/** Ids picked from the autocomplete. Repeats are dropped; anything that is not a positive id is rejected. */
+	private static List<Long> mentionedUserIds(Object raw) {
+		if (raw == null) {
+			return List.of();
+		}
+		if (!(raw instanceof List<?> list) || list.size() > MAX_MENTIONED_IDS) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
+		Set<Long> ids = new LinkedHashSet<>();
+		for (Object item : list) {
+			ids.add(fileId(item));
 		}
 		return List.copyOf(ids);
 	}
@@ -944,8 +1023,7 @@ public class ChatService {
 	}
 
 	private static boolean unsupportedAttachment(Map<String, Object> payload) {
-		return present(payload.get("mentionedUserIds"))
-				|| present(payload.get("issueRefs"))
+		return present(payload.get("issueRefs"))
 				|| foreignType(payload.get("messageType"))
 				|| foreignType(payload.get("type"));
 	}
@@ -1200,6 +1278,9 @@ public class ChatService {
 	private record ParsedCursor(int version, long userId, String tab, Instant sortAt, long roomId) {
 	}
 
-	private record SendCommand(String clientMessageId, MessageType type, String body, List<Long> fileIds, boolean mentionAll) {
+	private record SendCommand(
+			String clientMessageId, MessageType type, String body, List<Long> fileIds, boolean mentionAll,
+			List<Long> mentionedUserIds
+	) {
 	}
 }

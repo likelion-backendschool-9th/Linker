@@ -356,6 +356,8 @@ class ChatTextIntegrationTest {
 		members.saveAndFlush(ChatRoomMember.join(team, member.getId()));
 		try {
 			doReturn(true).when(teamChat).writableBy(anyLong(), eq(91001L));
+			// @all looks up the team's members; the team tables are not in this test database
+			doReturn(List.of()).when(teamChat).mentionCandidates(anyLong(), eq(91001L));
 			doReturn(false).when(teamChat).canModerate(member.getId(), 91001L);
 			StompSession memberSocket = connect(member);
 			List<String> rejected = frames(memberSocket, "/user/queue/chat-rooms");

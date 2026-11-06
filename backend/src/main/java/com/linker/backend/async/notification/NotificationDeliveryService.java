@@ -5,12 +5,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.linker.backend.entity.notification.Notification;
+import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.integration.push.PushGateway;
 import com.linker.backend.integration.push.PushMessage;
 import com.linker.backend.repository.notification.NotificationRepository;
@@ -19,7 +21,6 @@ import com.linker.backend.repository.notification.PushTokenRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -58,35 +59,53 @@ public class NotificationDeliveryService {
 		Map<Long, List<Notification>> byUser = rows.stream().collect(Collectors.groupingBy(n -> n.getUser().getId(), LinkedHashMap::new, Collectors.toList()));
 		Map<Long, List<com.linker.backend.entity.notification.PushToken>> byTokenUser = tokens.findByUser_IdIn(byUser.keySet()).stream()
 				.collect(Collectors.groupingBy(t -> t.getUser().getId()));
-		List<Notification> sentRows = new ArrayList<>();
+		Set<Long> sentIds = new LinkedHashSet<>();
 		for (Map.Entry<Long, List<Notification>> entry : byUser.entrySet()) {
-			List<Notification> selected = bundle(entry.getValue());
+			List<Bundle> bundles = bundle(entry.getValue());
 			for (var token : byTokenUser.getOrDefault(entry.getKey(), List.of())) {
-				List<PushMessage> messages = selected.stream().map(n -> message(token.getExpoPushToken(), n)).toList();
+				List<PushMessage> messages = bundles.stream().map(b -> message(token.getExpoPushToken(), b.representative())).toList();
 				Set<String> successful = gateway.send(messages);
-				if (successful.contains(token.getExpoPushToken())) sentRows.addAll(selected);
+				if (successful.contains(token.getExpoPushToken())) {
+					// every row the push stands for is done, not only the one that was shown
+					bundles.forEach(b -> b.rows().forEach(n -> sentIds.add(n.getId())));
+				}
 			}
 		}
-		markSent(sentRows);
+		markSent(sentIds);
 	}
 
-	@Transactional
-	void markSent(List<Notification> rows) {
-		Instant now = Instant.now(clock);
-		rows.forEach(row -> row.markPushed(now));
-	}
-
-	private List<Notification> bundle(List<Notification> rows) {
-		Map<String, Notification> bundled = new LinkedHashMap<>();
-		for (Notification row : rows) {
-			String key = row.getNotificationType() + "\u0000" + (row.getGroupKey() == null ? row.getId() : row.getGroupKey());
-			bundled.put(key, row);
+	void markSent(Set<Long> ids) {
+		if (!ids.isEmpty()) {
+			notifications.markPushed(ids, Instant.now(clock));
 		}
-		return new ArrayList<>(bundled.values());
+	}
+
+	/** One push per chat room (Policy ch. 8) and one per row for everything else. Rows arrive oldest first. */
+	private List<Bundle> bundle(List<Notification> rows) {
+		Map<String, List<Notification>> groups = new LinkedHashMap<>();
+		for (Notification row : rows) {
+			String type = NotificationTypes.isChat(row.getNotificationType()) ? NotificationTypes.CHAT : row.getNotificationType();
+			String key = type + "\u0000" + (row.getGroupKey() == null ? row.getId() : row.getGroupKey());
+			groups.computeIfAbsent(key, k -> new ArrayList<>()).add(row);
+		}
+		return groups.values().stream().map(group -> new Bundle(representative(group), group)).toList();
+	}
+
+	/** The latest mention speaks for its room, because a mention is why the user is being pinged. */
+	private static Notification representative(List<Notification> rows) {
+		for (int index = rows.size() - 1; index >= 0; index--) {
+			if (NotificationTypes.CHAT_MENTION.equals(rows.get(index).getNotificationType())) {
+				return rows.get(index);
+			}
+		}
+		return rows.get(rows.size() - 1);
+	}
+
+	private record Bundle(Notification representative, List<Notification> rows) {
 	}
 
 	private PushMessage message(String token, Notification row) {
-		String title = row.getNotificationType();
+		String title = "Linker";
 		String body = "새 알림이 도착했어요";
 		try {
 			JsonNode node = row.getPayload() == null ? null : json.readTree(row.getPayload());
