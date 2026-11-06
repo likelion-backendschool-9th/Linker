@@ -79,6 +79,8 @@ class IssueReadIntegrationTest {
   static volatile List<Map<String, Object>> editedAssignees, editedLabels;
   static volatile String editedState, boardOption, startValue, dueValue;
   static volatile boolean ignoreEdit, failDueOnce, redirectDetail, missingDetail, failAfterEditOnce;
+  static volatile String redirectLocation;
+  static volatile boolean moveConnected, movedIdentityWrong, emptyChildren, selfChild, rateLimited;
   @Autowired UserIssueDetailService details;
   static volatile String issueTitle = "로그인 오류", updated = "2026-11-05T01:00:00Z";
   @Autowired MockMvc mvc;
@@ -126,7 +128,18 @@ class IssueReadIntegrationTest {
           Object response;
           if (path.contains("access_tokens"))
             response = Map.of("token", "installation-read", "expires_at", "2099-01-01T00:00:00Z");
-          else if (path.startsWith("/repos/acme/web/collaborators/")) {
+          else if (rateLimited && path.equals("/repos/acme/web/issues/1")) {
+            status = 429;
+            exchange.getResponseHeaders().add("Retry-After", "120");
+            response = Map.of("message", "rate limited");
+          } else if (path.equals("/repos/acme/mobile"))
+            response = Map.of("id", 3000, "permissions", Map.of("push", true));
+          else if (path.equals("/repos/acme/mobile/issues/7")) {
+            var moved = issue(movedIdentityWrong ? 99 : 1);
+            moved.put("number", 7);
+            moved.put("html_url", "https://github.com/acme/mobile/issues/7");
+            response = moved;
+          } else if (path.startsWith("/repos/acme/web/collaborators/")) {
             String login = path.split("/")[5];
             response = Map.of("user", Map.of("login", login), "permission", "read");
           } else if (path.startsWith("/repos/acme/web/labels")) {
@@ -137,7 +150,10 @@ class IssueReadIntegrationTest {
           } else if (path.contains("/sub_issues")) {
             var hidden = issue(3);
             hidden.put("html_url", "https://github.com/other/private/issues/3");
-            response = List.of(issue(2), hidden);
+            response =
+                selfChild
+                    ? List.of(issue(1))
+                    : emptyChildren ? List.of() : List.of(issue(2), hidden);
           } else if (path.equals("/repos/acme/web/issues/1")
               && exchange.getRequestMethod().equals("PATCH")) {
             var input = JSON.readTree(exchange.getRequestBody());
@@ -175,7 +191,11 @@ class IssueReadIntegrationTest {
             status = redirectDetail ? 301 : 404;
             exchange
                 .getResponseHeaders()
-                .add("Location", "https://api.github.com/repositories/999/issues/3");
+                .add(
+                    "Location",
+                    redirectLocation == null
+                        ? "https://api.github.com/repositories/999/issues/3"
+                        : redirectLocation);
             response = Map.of("message", "moved");
           } else if (path.startsWith("/repos/acme/web/issues")) {
             if (failRest) {
@@ -328,7 +348,7 @@ class IssueReadIntegrationTest {
     map.put("title", n == 1 ? issueTitle : "프로젝트 미등록");
     map.put("state", n == 1 && editedState != null ? editedState : n == 1 ? "open" : "closed");
     map.put("body", "## 로그인 오류\n<script>alert(1)</script>\n[위험](javascript:alert(1))");
-    map.put("user", Map.of("login", "kim"));
+    map.put("user", Map.of("id", 101, "login", "kim"));
     map.put("created_at", "2026-10-01T01:00:00Z");
     map.put("updated_at", updated);
     map.put("closed_at", n == 1 && !"closed".equals(editedState) ? null : "2026-11-05T01:00:00Z");
@@ -369,7 +389,7 @@ class IssueReadIntegrationTest {
             "id",
             "ISSUE" + n,
             "repository",
-            Map.of("nameWithOwner", "acme/web")),
+            Map.of("nameWithOwner", moveConnected && n == 1 ? "acme/mobile" : "acme/web")),
         "fieldValues",
         Map.of(
             "pageInfo",
@@ -450,6 +470,12 @@ class IssueReadIntegrationTest {
             + " VALUES(1,10,'BOARD','STATUS','START','TARGET'),(2,20,'OTHERBOARD','STATUS','START','TARGET')");
     jdbc.update("INSERT INTO board_status_mappings VALUES(1,1,'READY','TODO')");
     for (String key : redis.keys("issues:*")) redis.delete(key);
+    redirectLocation = null;
+    moveConnected = false;
+    movedIdentityWrong = false;
+    emptyChildren = false;
+    selfChild = false;
+    rateLimited = false;
     editedAssignees = null;
     editedLabels = null;
     editedState = null;
@@ -678,10 +704,15 @@ class IssueReadIntegrationTest {
     handler.handle(delivery);
     handler.handle(delivery);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isEqualTo(2);
-    assertThatThrownBy(() ->
-            handler.handle(
-                GithubWebhookDelivery.received(
-                    "bad", "issues", "edited", 999L, delivery.getPayload().replace("500", "999"))))
+    assertThatThrownBy(
+            () ->
+                handler.handle(
+                    GithubWebhookDelivery.received(
+                        "bad",
+                        "issues",
+                        "edited",
+                        999L,
+                        delivery.getPayload().replace("500", "999"))))
         .isInstanceOf(ApiException.class);
   }
 
@@ -772,6 +803,12 @@ class IssueReadIntegrationTest {
     assertThat(source.list(context.repos().getFirst(), "installation-read"))
         .hasSize(100)
         .noneMatch(i -> i.number() == 50);
+    redirectLocation = null;
+    moveConnected = false;
+    movedIdentityWrong = false;
+    emptyChildren = false;
+    selfChild = false;
+    rateLimited = false;
     editedAssignees = null;
     editedLabels = null;
     editedState = null;
@@ -795,8 +832,10 @@ class IssueReadIntegrationTest {
   void adapterRejectsNetworkInsideTransaction() {
     var repo = contexts.get(10).repos().getFirst();
     REQUESTS.clear();
-    assertThatThrownBy(() ->
-            new TransactionTemplate(manager).execute(tx -> source.list(repo, "installation-read")))
+    assertThatThrownBy(
+            () ->
+                new TransactionTemplate(manager)
+                    .execute(tx -> source.list(repo, "installation-read")))
         .isInstanceOf(IllegalStateException.class);
     assertThat(REQUESTS).isEmpty();
   }
@@ -841,14 +880,16 @@ class IssueReadIntegrationTest {
   void changedTeamBindingPreventsStaleCacheCommit() {
     var old = contexts.get(10);
     jdbc.update("UPDATE team_project_boards SET due_date_field_id='CHANGED' WHERE team_id=10");
-    assertThatThrownBy(() ->
-            cache.apply(
-                old,
-                new IssueSource.Snapshot(
-                    List.of(new IssueSource.RepositoryIssues(old.repos().getFirst(), List.of())),
-                    Map.of()),
-                true,
-                Instant.now()))
+    assertThatThrownBy(
+            () ->
+                cache.apply(
+                    old,
+                    new IssueSource.Snapshot(
+                        List.of(
+                            new IssueSource.RepositoryIssues(old.repos().getFirst(), List.of())),
+                        Map.of()),
+                    true,
+                    Instant.now()))
         .isInstanceOf(ApiException.class);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
   }
@@ -1119,9 +1160,10 @@ class IssueReadIntegrationTest {
   void page12PartialDateFailureIsDurableAndRetryable() {
     long id = firstIssue();
     failDueOnce = true;
-    assertThatThrownBy(() ->
-            reads.schedule(
-                member(), 10, id, LocalDate.parse("2026-11-02"), LocalDate.parse("2026-11-09")))
+    assertThatThrownBy(
+            () ->
+                reads.schedule(
+                    member(), 10, id, LocalDate.parse("2026-11-02"), LocalDate.parse("2026-11-09")))
         .isInstanceOf(ApiException.class);
     assertThat(jdbc.queryForObject("SELECT sync_status FROM issues WHERE id=?", String.class, id))
         .isEqualTo("FAILED");
@@ -1370,5 +1412,205 @@ class IssueReadIntegrationTest {
     assertThat(
             jdbc.queryForObject("SELECT name FROM issue_labels WHERE issue_id=?", String.class, id))
         .isEqualTo("feature");
+  }
+
+  void connectedMove() {
+    jdbc.update("INSERT INTO github_repos VALUES(300,3000,'acme','mobile',NULL)");
+    jdbc.update("INSERT INTO team_repos VALUES(3,10,300)");
+    redirectDetail = true;
+    moveConnected = true;
+    redirectLocation =
+        "http://127.0.0.1:" + server.getAddress().getPort() + "/repositories/3000/issues/7";
+  }
+
+  @Test
+  void page12ConnectedTransferPreservesIdentityAndRefreshesDestination() {
+    long id = firstIssue();
+    connectedMove();
+    var moved = reads.detail(member(), 10, id);
+    assertThat(moved.deletedOrMoved()).isNull();
+    assertThat(moved.movedToIssueId()).isEqualTo(id);
+    assertThat(moved.repoId()).isEqualTo(300);
+    assertThat(moved.repoName()).isEqualTo("acme/mobile");
+    assertThat(moved.number()).isEqualTo(7);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM issues WHERE github_issue_id=101", Integer.class))
+        .isEqualTo(1);
+    var next = reads.detail(member(), 10, id);
+    assertThat(next.deletedOrMoved()).isNull();
+    assertThat(next.canWrite()).isTrue();
+    assertThat(REQUESTS).noneMatch(v -> v.contains("/repositories/3000"));
+  }
+
+  @Test
+  void page12RedirectNeverFetchesUnknownHostOrUnconnectedRepository() {
+    long id = firstIssue();
+    redirectDetail = true;
+    for (String target :
+        List.of(
+            "http://evil.invalid/repositories/3000/issues/7",
+            "http://127.0.0.1:1/repositories/3000/issues/7",
+            "/repositories/999/issues/7",
+            "/repos/other/private/issues/7",
+            "/repositories/3000/issues/7?token=x")) {
+      redirectLocation = target;
+      REQUESTS.clear();
+      var moved = reads.detail(member(), 10, id);
+      assertThat(moved.movedToIssueId()).isNull();
+      assertThat(moved.repoId()).isEqualTo(100);
+      assertThat(REQUESTS)
+          .noneMatch(
+              v -> v.contains("mobile") || v.contains("private") || v.contains("/repositories/"));
+    }
+  }
+
+  @Test
+  void page12TransferRejectsDifferentGithubIdentityBeforeCacheWrite() {
+    long id = firstIssue();
+    connectedMove();
+    movedIdentityWrong = true;
+    assertThatThrownBy(() -> reads.detail(member(), 10, id)).isInstanceOf(ApiException.class);
+    assertThat(jdbc.queryForObject("SELECT repo_id FROM issues WHERE id=?", Long.class, id))
+        .isEqualTo(100L);
+  }
+
+  @Test
+  void page12AuthorUsesLinkedGithubIdentityAndProfile() {
+    long id = firstIssue();
+    jdbc.update(
+        "UPDATE users SET avatar_url='https://avatars.githubusercontent.com/u/101' WHERE id=1");
+    var author = reads.detail(member(), 10, id).author();
+    assertThat(author.id()).isEqualTo(1L);
+    assertThat(author.name()).isEqualTo("김개발");
+    assertThat(author.avatarUrl()).contains("/u/101");
+    jdbc.update("DELETE FROM auth_identities WHERE user_id=1");
+    assertThat(reads.detail(member(), 10, id).author().id()).isNull();
+    assertThat(reads.detail(member(), 10, id).author().login()).isEqualTo("kim");
+  }
+
+  @Test
+  void page12SubIssueSummaryAndParentLinksFollowCompleteSourceRead() {
+    long id = firstIssue();
+    var children = reads.subIssues(member(), 10, id);
+    assertThat(children.total()).isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT sub_issues_total FROM issues WHERE id=?", Integer.class, id))
+        .isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject("SELECT sub_issues_done FROM issues WHERE id=?", Integer.class, id))
+        .isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT parent_issue_id FROM issues WHERE number=2", Long.class))
+        .isEqualTo(id);
+    emptyChildren = true;
+    reads.subIssues(member(), 10, id);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT sub_issues_total FROM issues WHERE id=?", Integer.class, id))
+        .isZero();
+    assertThat(jdbc.queryForObject("SELECT parent_issue_id FROM issues WHERE number=2", Long.class))
+        .isNull();
+  }
+
+  @Test
+  void page12MalformedChildRelationshipDoesNotOverwriteSummary() {
+    long id = firstIssue();
+    reads.subIssues(member(), 10, id);
+    selfChild = true;
+    assertThatThrownBy(() -> reads.subIssues(member(), 10, id)).isInstanceOf(ApiException.class);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT sub_issues_total FROM issues WHERE id=?", Integer.class, id))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void page12CrashedWorkerCannotExceedRetryLimit() {
+    long id = firstIssue();
+    failDueOnce = true;
+    assertThatThrownBy(() -> reads.schedule(member(), 10, id, null, null))
+        .isInstanceOf(ApiException.class);
+    jdbc.update(
+        "UPDATE issue_sync_jobs SET status='RUNNING',attempts=3,next_retry_at='2020-01-01'");
+    REQUESTS.clear();
+    details.retryDue();
+    assertThat(jdbc.queryForObject("SELECT attempts FROM issue_sync_jobs", Integer.class))
+        .isEqualTo(3);
+    assertThat(jdbc.queryForObject("SELECT last_error FROM issue_sync_jobs", String.class))
+        .isEqualTo("RETRY_EXHAUSTED");
+    assertThat(jdbc.queryForObject("SELECT status FROM issue_sync_jobs", String.class))
+        .isEqualTo("FAILED");
+    assertThat(REQUESTS).isEmpty();
+  }
+
+  @Test
+  void page12MissingCandidateSchemaReturnsReadinessError() throws Exception {
+    long id = firstIssue();
+    jdbc.execute("ALTER TABLE team_members RENAME COLUMN github_org_state TO staged_org_state");
+    try {
+      mvc.perform(get(detailUrl(id) + "/assignee-candidates").cookie(login(1)))
+          .andExpect(status().isServiceUnavailable())
+          .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
+    } finally {
+      jdbc.execute("ALTER TABLE team_members RENAME COLUMN staged_org_state TO github_org_state");
+    }
+  }
+
+  @Test
+  void page12MutationsNeverRunExternalCallsInsideCallerTransaction() {
+    long id = firstIssue();
+    REQUESTS.clear();
+    assertThatThrownBy(
+            () ->
+                new TransactionTemplate(manager)
+                    .execute(s -> reads.labels(member(), 10, id, List.of())))
+        .isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
+    assertThat(REQUESTS).isEmpty();
+  }
+
+  @Test
+  void page12GithubRateLimitRemainsRetryableAndRespectsServerDelay() {
+    long id = firstIssue();
+    rateLimited = true;
+    assertThatThrownBy(() -> reads.labels(member(), 10, id, List.of("feature")))
+        .isInstanceOf(ApiException.class)
+        .extracting("status")
+        .isEqualTo(429);
+    assertThat(jdbc.queryForObject("SELECT status FROM issue_sync_jobs", String.class))
+        .isEqualTo("PENDING");
+    var at =
+        jdbc.queryForObject("SELECT next_retry_at FROM issue_sync_jobs", java.sql.Timestamp.class)
+            .toInstant();
+    assertThat(at).isEqualTo(Instant.parse("2026-11-05T15:32:00Z"));
+    REQUESTS.clear();
+    details.retryDue();
+    assertThat(REQUESTS).isEmpty();
+    rateLimited = false;
+    jdbc.update("UPDATE issue_sync_jobs SET next_retry_at='2020-01-01'");
+    details.retryDue();
+    assertThat(jdbc.queryForObject("SELECT status FROM issue_sync_jobs", String.class))
+        .isEqualTo("DONE");
+  }
+
+  @Autowired IssueEditJobRepository editJobs;
+
+  @Test
+  void page12LateFailureCannotRequeueAnAlreadyCommittedChange() {
+    long issue = firstIssue();
+    reads.labels(member(), 10, issue, List.of("feature"));
+    long job = jdbc.queryForObject("SELECT id FROM issue_sync_jobs", Long.class);
+    new TransactionTemplate(manager)
+        .executeWithoutResult(
+            status ->
+                editJobs.failed(
+                    job, issue, false, "LOST_COMMIT_ACK", Instant.parse("2020-01-01T00:00:00Z")));
+    assertThat(editJobs.get(job).status()).isEqualTo("DONE");
+    assertThat(
+            jdbc.queryForObject("SELECT sync_status FROM issues WHERE id=?", String.class, issue))
+        .isEqualTo("SYNCED");
+    REQUESTS.clear();
+    details.retryDue();
+    assertThat(REQUESTS).isEmpty();
   }
 }

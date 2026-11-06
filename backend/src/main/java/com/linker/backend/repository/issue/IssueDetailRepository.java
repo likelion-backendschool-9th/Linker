@@ -88,7 +88,60 @@ public class IssueDetailRepository {
         (rs, n) -> new IssueListResponse.Label(rs.getString(1), rs.getString(2)));
   }
 
+  public Person author(long githubId, String login) {
+    var found =
+        sql.query(
+            "SELECT u.id,u.display_name,u.avatar_url FROM auth_identities a JOIN users u ON"
+                + " u.id=a.user_id WHERE a.provider='GITHUB' AND a.provider_user_id=:github AND"
+                + " u.deleted_at IS NULL AND u.status<>'DELETED'",
+            Map.of("github", Long.toString(githubId)),
+            (rs, n) ->
+                new Person(
+                    rs.getLong(1),
+                    login,
+                    rs.getString(2) == null ? login : rs.getString(2),
+                    rs.getString(3)));
+    return found.isEmpty() ? new Person(null, login, login, null) : found.getFirst();
+  }
+
+  /** Caller holds the team lock and a short transaction, after the full source read completes. */
+  public void subIssues(
+      long team,
+      long parent,
+      com.linker.backend.dto.issue.response.IssueDetailResponse.SubIssues children) {
+    var ids =
+        children.items().stream()
+            .map(com.linker.backend.dto.issue.response.IssueDetailResponse.SubIssue::id)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    sql.update(
+        "UPDATE issues SET sub_issues_total=:total,sub_issues_done=:done WHERE id=:id AND"
+            + " team_id=:team",
+        Map.of("id", parent, "team", team, "total", children.total(), "done", children.done()));
+    if (ids.isEmpty())
+      sql.update(
+          "UPDATE issues SET parent_issue_id=NULL WHERE parent_issue_id=:parent AND team_id=:team",
+          Map.of("parent", parent, "team", team));
+    else {
+      var args = Map.of("parent", parent, "team", team, "ids", ids);
+      sql.update(
+          "UPDATE issues SET parent_issue_id=NULL WHERE parent_issue_id=:parent AND team_id=:team"
+              + " AND id NOT IN (:ids)",
+          args);
+      sql.update(
+          "UPDATE issues SET parent_issue_id=:parent WHERE id IN (:ids) AND team_id=:team AND"
+              + " id<>:parent",
+          args);
+    }
+  }
+
   public List<Person> candidates(long team) {
+    if (!Boolean.TRUE.equals(
+        sql.queryForObject(
+            "SELECT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('team_members')"
+                + " AND attname='github_org_state' AND NOT attisdropped)",
+            Map.of(),
+            Boolean.class))) throw IssueContextRepository.unavailable();
     return sql.query(
         "SELECT u.id,u.username,u.display_name,u.avatar_url FROM team_members m JOIN users u ON"
             + " u.id=m.user_id JOIN auth_identities a ON a.user_id=u.id AND a.provider='GITHUB'"

@@ -24,10 +24,12 @@ public class GithubIssueClient implements IssueSource {
   // Transport safety ceiling, not a product/plan limit. Never commit a truncated scan.
   private static final int MAX_PAGES = 10000;
   private final RestClient http;
+  private final java.net.URI apiOrigin;
   private final GithubUserAccessTokenSource userTokens;
 
   public GithubIssueClient(GithubAppProperties properties, GithubUserAccessTokenSource userTokens) {
     this.userTokens = userTokens;
+    this.apiOrigin = java.net.URI.create(properties.apiBaseUrl());
     var client =
         HttpClient.newBuilder()
             .connectTimeout(properties.requestTimeout())
@@ -82,7 +84,7 @@ public class GithubIssueClient implements IssueSource {
               .onStatus(
                   status -> status.isError(),
                   (request, response) -> {
-                    throw upstream(response.getStatusCode().value());
+                    throw upstream(response.getStatusCode().value(), response.getHeaders());
                   })
               .body(JsonNode.class);
       if (raw == null) throw unavailable();
@@ -130,13 +132,13 @@ public class GithubIssueClient implements IssueSource {
       var project =
           graphql(
                   """
-                  query($id:ID!,$after:String){node(id:$id){... on ProjectV2{id owner{... on Organization{login}}
-                  items(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{id isArchived
-                  content{__typename ... on Issue{id repository{nameWithOwner}}}
-                  fieldValues(first:100){pageInfo{hasNextPage endCursor} nodes{__typename
-                  ... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2Field{id}}}
-                  ... on ProjectV2ItemFieldSingleSelectValue{optionId field{... on ProjectV2SingleSelectField{id}}}}}}}}}}
-                  """,
+query($id:ID!,$after:String){node(id:$id){... on ProjectV2{id owner{... on Organization{login}}
+items(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{id isArchived
+content{__typename ... on Issue{id repository{nameWithOwner}}}
+fieldValues(first:100){pageInfo{hasNextPage endCursor} nodes{__typename
+... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2Field{id}}}
+... on ProjectV2ItemFieldSingleSelectValue{optionId field{... on ProjectV2SingleSelectField{id}}}}}}}}}}
+""",
                   vars,
                   token)
               .path("node");
@@ -163,11 +165,11 @@ public class GithubIssueClient implements IssueSource {
           var more =
               graphql(
                       """
-                      query($id:ID!,$after:String!){node(id:$id){... on ProjectV2Item{fieldValues(first:100,after:$after){
-                      pageInfo{hasNextPage endCursor} nodes{__typename
-                      ... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2Field{id}}}
-                      ... on ProjectV2ItemFieldSingleSelectValue{optionId field{... on ProjectV2SingleSelectField{id}}}}}}}}
-                      """,
+query($id:ID!,$after:String!){node(id:$id){... on ProjectV2Item{fieldValues(first:100,after:$after){
+pageInfo{hasNextPage endCursor} nodes{__typename
+... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2Field{id}}}
+... on ProjectV2ItemFieldSingleSelectValue{optionId field{... on ProjectV2SingleSelectField{id}}}}}}}}
+""",
                       Map.of("id", text(item, "id"), "after", fieldCursor),
                       token)
                   .path("node")
@@ -207,7 +209,12 @@ public class GithubIssueClient implements IssueSource {
   }
 
   public record Detail(
-      Issue issue, String body, String location, String unavailableState, Instant created) {}
+      Issue issue,
+      String body,
+      String location,
+      String unavailableState,
+      Instant created,
+      long authorGithubId) {}
 
   public Detail detail(Repo repo, int number, String token) {
     verifyRepository(repo, token);
@@ -216,20 +223,89 @@ public class GithubIssueClient implements IssueSource {
       return http.get()
           .uri("/repos/{owner}/{repo}/issues/{number}", repo.owner(), repo.name(), number)
           .headers(h -> h.setBearerAuth(token))
-          .exchange((req, res) -> {
-            int status = res.getStatusCode().value();
-            if (status == 301 || status == 302 || status == 307 || status == 308)
-              return new Detail(null, "", res.getHeaders().getFirst("Location"), "MOVED", null);
-            if (status == 404 || status == 410) return new Detail(null, "", null, "DELETED", null);
-            if (res.getStatusCode().isError()) throw upstream(status);
-            var raw = res.bodyTo(JsonNode.class);
-            if (raw == null || raw.has("pull_request")) throw unavailable();
-            return new Detail(
-                parse(raw), raw.path("body").asString(""), null, null, instant(raw, "created_at"));
-          });
+          .exchange(
+              (req, res) -> {
+                int status = res.getStatusCode().value();
+                if (status == 301 || status == 302 || status == 307 || status == 308)
+                  return new Detail(
+                      null, "", res.getHeaders().getFirst("Location"), "MOVED", null, 0);
+                if (status == 404 || status == 410)
+                  return new Detail(null, "", null, "DELETED", null, 0);
+                if (res.getStatusCode().isError()) throw upstream(status, res.getHeaders());
+                var raw = res.bodyTo(JsonNode.class);
+                if (raw == null || raw.has("pull_request")) throw unavailable();
+                return new Detail(
+                    parse(raw),
+                    raw.path("body").asString(""),
+                    null,
+                    null,
+                    instant(raw, "created_at"),
+                    raw.path("user").path("id").asLong(0));
+              });
     } catch (RestClientException e) {
       throw unavailable();
     }
+  }
+
+  public record MovedTarget(Repo repo, int number) {}
+
+  /**
+   * Interpret, never follow, Location. Only the configured API origin and connected repos count.
+   */
+  public MovedTarget movedTarget(Context context, String location) {
+    if (location == null || location.isBlank()) return null;
+    try {
+      var uri = apiOrigin.resolve(location);
+      if (uri.getUserInfo() != null
+          || uri.getFragment() != null
+          || uri.getQuery() != null
+          || !apiOrigin.getScheme().equalsIgnoreCase(uri.getScheme())
+          || !apiOrigin.getHost().equalsIgnoreCase(uri.getHost())
+          || port(apiOrigin) != port(uri)) return null;
+      String path = uri.getPath();
+      String base = apiOrigin.getPath();
+      if (base != null && !base.isBlank() && !base.equals("/")) {
+        base = base.replaceAll("/+$", "");
+        if (!path.startsWith(base + "/")) return null;
+        path = path.substring(base.length());
+      }
+      var byId =
+          java.util.regex.Pattern.compile("^/repositories/([1-9][0-9]*)/issues/([1-9][0-9]*)$")
+              .matcher(path);
+      if (byId.matches()) {
+        long external = Long.parseLong(byId.group(1));
+        int number = Integer.parseInt(byId.group(2));
+        return context.repos().stream()
+            .filter(repo -> repo.githubId() == external)
+            .findFirst()
+            .map(repo -> new MovedTarget(repo, number))
+            .orElse(null);
+      }
+      var byName =
+          java.util.regex.Pattern.compile(
+                  "^/repos/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/issues/([1-9][0-9]*)$")
+              .matcher(path);
+      if (byName.matches()) {
+        int number = Integer.parseInt(byName.group(3));
+        return context.repos().stream()
+            .filter(
+                repo ->
+                    repo.owner().equalsIgnoreCase(byName.group(1))
+                        && repo.name().equalsIgnoreCase(byName.group(2)))
+            .findFirst()
+            .map(repo -> new MovedTarget(repo, number))
+            .orElse(null);
+      }
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+    return null;
+  }
+
+  private static int port(java.net.URI uri) {
+    return uri.getPort() >= 0
+        ? uri.getPort()
+        : "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
   }
 
   public List<Label> labelOptions(Repo repo, String token) {
@@ -261,16 +337,18 @@ public class GithubIssueClient implements IssueSource {
               repo.name(),
               login)
           .headers(h -> h.setBearerAuth(token))
-          .exchange((req, res) -> {
-            if (res.getStatusCode().value() == 404) return false;
-            if (res.getStatusCode().isError()) throw upstream(res.getStatusCode().value());
-            var raw = res.bodyTo(JsonNode.class);
-            if (raw == null) throw unavailable();
-            if (!login.equalsIgnoreCase(raw.path("user").path("login").asString("")))
-              throw unavailable();
-            return List.of("read", "triage", "write", "maintain", "admin")
-                .contains(text(raw, "permission"));
-          });
+          .exchange(
+              (req, res) -> {
+                if (res.getStatusCode().value() == 404) return false;
+                if (res.getStatusCode().isError())
+                  throw upstream(res.getStatusCode().value(), res.getHeaders());
+                var raw = res.bodyTo(JsonNode.class);
+                if (raw == null) throw unavailable();
+                if (!login.equalsIgnoreCase(raw.path("user").path("login").asString("")))
+                  throw unavailable();
+                return List.of("read", "triage", "write", "maintain", "admin")
+                    .contains(text(raw, "permission"));
+              });
     } catch (RestClientException e) {
       throw unavailable();
     }
@@ -310,7 +388,7 @@ public class GithubIssueClient implements IssueSource {
               .onStatus(
                   s -> s.isError(),
                   (req, res) -> {
-                    throw upstream(res.getStatusCode().value());
+                    throw upstream(res.getStatusCode().value(), res.getHeaders());
                   })
               .body(JsonNode.class);
       if (raw == null || raw.has("pull_request")) throw unavailable();
@@ -396,7 +474,7 @@ public class GithubIssueClient implements IssueSource {
               .onStatus(
                   s -> s.isError(),
                   (req, res) -> {
-                    throw upstream(res.getStatusCode().value());
+                    throw upstream(res.getStatusCode().value(), res.getHeaders());
                   })
               .body(JsonNode.class);
       if (result == null) throw unavailable();
@@ -419,7 +497,7 @@ public class GithubIssueClient implements IssueSource {
               .onStatus(
                   s -> s.isError(),
                   (req, res) -> {
-                    throw upstream(res.getStatusCode().value());
+                    throw upstream(res.getStatusCode().value(), res.getHeaders());
                   })
               .body(JsonNode.class);
       if (result == null || result.has("errors") || !result.path("data").isObject())
@@ -462,7 +540,39 @@ public class GithubIssueClient implements IssueSource {
       throw new IllegalStateException("GitHub calls must run outside DB transactions");
   }
 
-  private static ApiException upstream(int status) {
+  private static ApiException upstream(int status, org.springframework.http.HttpHeaders headers) {
+    if (status == 429
+        || status == 403
+            && (headers.containsHeader("Retry-After")
+                || "0".equals(headers.getFirst("X-RateLimit-Remaining")))) {
+      long seconds = 60;
+      try {
+        String after = headers.getFirst("Retry-After");
+        String reset = headers.getFirst("X-RateLimit-Reset");
+        if (after != null) {
+          try {
+            seconds = Long.parseLong(after);
+          } catch (NumberFormatException e) {
+            seconds =
+                java.time.Duration.between(
+                        Instant.now(),
+                        java.time.ZonedDateTime.parse(
+                                after, java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME)
+                            .toInstant())
+                    .getSeconds();
+          }
+        } else if (reset != null) seconds = Long.parseLong(reset) - Instant.now().getEpochSecond();
+      } catch (java.time.DateTimeException | NumberFormatException e) {
+        seconds = 60;
+      }
+      // A malformed absurd header must not overflow the retry timestamp.
+      if (seconds > 315360000L) seconds = 315360000L;
+      return new ApiException(
+          429,
+          "RATE_LIMITED",
+          "GitHub 요청 한도에 도달했어요. 잠시 후 다시 시도해 주세요",
+          Map.of("retryAfterSeconds", Math.max(1, seconds)));
+    }
     if (status == 401 || status == 403)
       return new ApiException(403, "FORBIDDEN", "GitHub 권한을 확인해 주세요");
     return unavailable();

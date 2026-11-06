@@ -5,7 +5,6 @@ import com.linker.backend.dto.issue.response.IssueDetailResponse.AssigneesResult
 import com.linker.backend.dto.issue.response.IssueDetailResponse.Candidates;
 import com.linker.backend.dto.issue.response.IssueDetailResponse.LabelOptions;
 import com.linker.backend.dto.issue.response.IssueDetailResponse.LabelsResult;
-import com.linker.backend.dto.issue.response.IssueDetailResponse.Person;
 import com.linker.backend.dto.issue.response.IssueDetailResponse.ScheduleResult;
 import com.linker.backend.dto.issue.response.IssueDetailResponse.StatusResult;
 import com.linker.backend.dto.issue.response.IssueDetailResponse.SubIssue;
@@ -112,13 +111,31 @@ public class UserIssueDetailService {
     return new Selected(ctx, repo, row);
   }
 
+  private record ReadDetail(
+      Selected selected, GithubIssueClient.Detail live, String disposition, Long movedToId) {}
+
+  private ReadDetail readDetail(Selected s, String token) {
+    var first = github.detail(s.repo, s.row.number(), token);
+    if (!"MOVED".equals(first.unavailableState()))
+      return new ReadDetail(s, first, first.unavailableState(), null);
+    var target = github.movedTarget(s.context, first.location());
+    if (target == null) return new ReadDetail(s, first, "MOVED", null);
+    var live = github.detail(target.repo(), target.number(), token);
+    if (live.issue() == null) return new ReadDetail(s, first, "MOVED", null);
+    identity(s, live.issue());
+    if (live.issue().number() != target.number()) throw verifying("이동된 이슈 연결을 다시 확인하고 있어요");
+    return new ReadDetail(new Selected(s.context, target.repo(), s.row), live, null, s.row.id());
+  }
+
   public IssueDetailResponse detail(AuthenticatedUser user, long team, long issue) {
     return locks.team(
         team,
         () -> {
-          var s = select(user, team, issue, false);
-          String token = app.installationReadToken(s.context.installationId());
-          var live = github.detail(s.repo, s.row.number(), token);
+          var original = select(user, team, issue, false);
+          String token = app.installationReadToken(original.context.installationId());
+          var view = readDetail(original, token);
+          var s = view.selected();
+          var live = view.live();
           if (live.issue() != null) {
             identity(s, live.issue());
             if (live.issue().updated().isBefore(s.row.updated()))
@@ -136,7 +153,7 @@ public class UserIssueDetailService {
           var row = rows.get(team, issue);
           boolean canWrite = false;
           String reason = null;
-          if (live.unavailableState() != null || row.deleted()) reason = "ISSUE_UNAVAILABLE";
+          if (view.disposition() != null || row.deleted()) reason = "ISSUE_UNAVAILABLE";
           else if (!s.context.writable()) reason = "READ_ONLY_TEAM";
           else if (user.status() != UserStatus.ACTIVE) reason = "SUSPENDED";
           else
@@ -148,43 +165,44 @@ public class UserIssueDetailService {
             }
           var children =
               live.unavailableState() == null
-                  ? subIssues(user, team, issue)
+                  ? loadSubIssues(user, team, issue)
                   : new SubIssues(List.of(), 0, 0);
           boolean allowed = canWrite;
           String why = reason;
-          return tx.execute(status -> {
-            recheck(user, s);
-            String author = row.author() == null ? "" : row.author();
-            return new IssueDetailResponse(
-                row.id(),
-                team,
-                row.number(),
-                row.repoId(),
-                s.repo.fullName(),
-                row.title(),
-                IssueMarkdown.sanitize(live.body()),
-                row.status(),
-                row.state(),
-                rows.assignees(team, issue),
-                rows.labels(issue),
-                row.start(),
-                row.due(),
-                row.due() != null
-                    && row.due().isBefore(LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)))
-                    && !"DONE".equals(row.status()),
-                row.itemId() != null,
-                new Person(null, author, author, null),
-                row.url(),
-                live.created() == null ? row.created() : live.created(),
-                row.updated(),
-                new SubIssueCounts(children.total(), children.done()),
-                allowed,
-                why,
-                "FAILED".equals(row.sync()),
-                row.sync(),
-                live.unavailableState(),
-                null);
-          });
+          return tx.execute(
+              status -> {
+                recheck(user, s);
+                String author = row.author() == null ? "" : row.author();
+                return new IssueDetailResponse(
+                    row.id(),
+                    team,
+                    row.number(),
+                    row.repoId(),
+                    s.repo.fullName(),
+                    row.title(),
+                    IssueMarkdown.sanitize(live.body()),
+                    row.status(),
+                    row.state(),
+                    rows.assignees(team, issue),
+                    rows.labels(issue),
+                    row.start(),
+                    row.due(),
+                    row.due() != null
+                        && row.due().isBefore(LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)))
+                        && !"DONE".equals(row.status()),
+                    row.itemId() != null,
+                    rows.author(live.authorGithubId(), author),
+                    row.url(),
+                    live.created() == null ? row.created() : live.created(),
+                    row.updated(),
+                    new SubIssueCounts(children.total(), children.done()),
+                    allowed,
+                    why,
+                    "FAILED".equals(row.sync()),
+                    row.sync(),
+                    view.disposition(),
+                    view.movedToId());
+              });
         });
   }
 
@@ -208,6 +226,10 @@ public class UserIssueDetailService {
   }
 
   public SubIssues subIssues(AuthenticatedUser user, long team, long issue) {
+    return locks.team(team, () -> loadSubIssues(user, team, issue));
+  }
+
+  private SubIssues loadSubIssues(AuthenticatedUser user, long team, long issue) {
     var s = select(user, team, issue, false);
     var result =
         github.subIssues(
@@ -216,22 +238,40 @@ public class UserIssueDetailService {
     // Never expose private repository titles/URLs outside this team's connected repositories.
     var visible =
         result.stream()
-            .filter(i ->
-                s.context.repos().stream()
-                    .anyMatch(r ->
-                        i.url()
-                            .toLowerCase(java.util.Locale.ROOT)
-                            .startsWith(
-                                ("https://github.com/" + r.fullName() + "/issues/")
-                                    .toLowerCase(java.util.Locale.ROOT))))
-            .map(i ->
-                new SubIssue(
-                    rows.linkedId(team, i.githubId()), i.number(), i.title(), i.state(), i.url()))
+            .filter(
+                i ->
+                    s.context.repos().stream()
+                        .anyMatch(
+                            r ->
+                                i.url()
+                                    .toLowerCase(java.util.Locale.ROOT)
+                                    .startsWith(
+                                        ("https://github.com/" + r.fullName() + "/issues/")
+                                            .toLowerCase(java.util.Locale.ROOT))))
+            .map(
+                i ->
+                    new SubIssue(
+                        rows.linkedId(team, i.githubId()),
+                        i.number(),
+                        i.title(),
+                        i.state(),
+                        i.url()))
             .toList();
-    return new SubIssues(
-        visible,
-        visible.size(),
-        (int) visible.stream().filter(i -> "CLOSED".equals(i.state())).count());
+    if (result.stream()
+        .anyMatch(
+            child -> child.githubId() == s.row.githubId() || child.nodeId().equals(s.row.nodeId())))
+      throw verifying("하위 이슈 연결을 확인하지 못했어요");
+    var summary =
+        new SubIssues(
+            visible,
+            visible.size(),
+            (int) visible.stream().filter(i -> "CLOSED".equals(i.state())).count());
+    tx.executeWithoutResult(
+        status -> {
+          recheck(user, s);
+          rows.subIssues(team, issue, summary);
+        });
+    return summary;
   }
 
   public AssigneesResult assignees(AuthenticatedUser user, long team, long issue, List<Long> ids) {
@@ -239,16 +279,26 @@ public class UserIssueDetailService {
         || ids.size() > PlanLimits.ISSUE_ASSIGNEES_MAX
         || ids.stream().anyMatch(i -> i == null || i <= 0)
         || new HashSet<>(ids).size() != ids.size()) throw invalid();
-    change(user, team, issue, "SET_ASSIGNEES", Map.of("userIds", ids));
-    return new AssigneesResult(rows.assignees(team, issue));
+    return change(
+        user,
+        team,
+        issue,
+        "SET_ASSIGNEES",
+        Map.of("userIds", ids),
+        () -> new AssigneesResult(rows.assignees(team, issue)));
   }
 
   public LabelsResult labels(AuthenticatedUser user, long team, long issue, List<String> labels) {
     if (labels == null
         || labels.stream().anyMatch(l -> l == null || l.isBlank())
         || new HashSet<>(labels).size() != labels.size()) throw invalid();
-    change(user, team, issue, "SET_LABELS", Map.of("labels", labels));
-    return new LabelsResult(rows.labels(issue));
+    return change(
+        user,
+        team,
+        issue,
+        "SET_LABELS",
+        Map.of("labels", labels),
+        () -> new LabelsResult(rows.labels(issue)));
   }
 
   public ScheduleResult schedule(
@@ -257,22 +307,41 @@ public class UserIssueDetailService {
     var values = new LinkedHashMap<String, Object>();
     values.put("startDate", start == null ? null : start.toString());
     values.put("dueDate", due == null ? null : due.toString());
-    change(user, team, issue, "SET_START", values);
-    var r = rows.get(team, issue);
-    return new ScheduleResult(r.start(), r.due());
+    return change(
+        user,
+        team,
+        issue,
+        "SET_START",
+        values,
+        () -> {
+          var r = rows.get(team, issue);
+          return new ScheduleResult(r.start(), r.due());
+        });
   }
 
   public StatusResult status(AuthenticatedUser user, long team, long issue, String status) {
     if (status == null || !List.of("TODO", "IN_PROGRESS", "BLOCKED", "DONE").contains(status))
       throw invalid();
-    change(user, team, issue, "SET_STATUS", Map.of("status", status));
-    var r = rows.get(team, issue);
-    return new StatusResult(r.status(), r.state());
+    return change(
+        user,
+        team,
+        issue,
+        "SET_STATUS",
+        Map.of("status", status),
+        () -> {
+          var r = rows.get(team, issue);
+          return new StatusResult(r.status(), r.state());
+        });
   }
 
-  private void change(
-      AuthenticatedUser user, long team, long issue, String step, Map<String, ?> payload) {
-    locks.team(
+  private <T> T change(
+      AuthenticatedUser user,
+      long team,
+      long issue,
+      String step,
+      Map<String, ?> payload,
+      java.util.function.Supplier<T> result) {
+    return locks.team(
         team,
         () -> {
           var s = select(user, team, issue, true);
@@ -287,13 +356,22 @@ public class UserIssueDetailService {
                     .filter(Objects::nonNull)
                     .toList());
           long id =
-              tx.execute(status -> {
-                recheck(user, s);
-                return jobs.create(
-                    issue, user.userId(), step, json.writeValueAsString(durable), clock.instant());
-              });
+              tx.execute(
+                  status -> {
+                    recheck(user, s);
+                    return jobs.create(
+                        issue,
+                        user.userId(),
+                        step,
+                        json.writeValueAsString(durable),
+                        clock.instant());
+                  });
           execute(id, user);
-          return null;
+          return tx.execute(
+              status -> {
+                recheck(user, s);
+                return result.get();
+              });
         });
   }
 
@@ -326,11 +404,21 @@ public class UserIssueDetailService {
   private void execute(long id, AuthenticatedUser user) {
     var job = jobs.get(id);
     if ("DONE".equals(job.status()) || "FAILED".equals(job.status())) return;
+    if (job.attempts() >= MAX_ATTEMPTS) {
+      tx.executeWithoutResult(
+          status -> jobs.failed(id, job.issue(), true, "RETRY_EXHAUSTED", clock.instant()));
+      throw new ApiException(
+          503,
+          "SERVICE_UNAVAILABLE",
+          "자동 재시도를 마쳤어요. 동기화 상태를 확인해 주세요",
+          Map.of("jobId", id, "syncStatus", "FAILED", "retryScheduled", false));
+    }
     tx.executeWithoutResult(status -> jobs.start(id, clock.instant().plusSeconds(60)));
     try {
       var s = select(user, job.team(), job.issue(), true);
       var payload = json.readTree(job.payload());
-      validate(user, s, job.step(), payload);
+      if (!List.of("SET_ASSIGNEES", "SET_LABELS").contains(job.step()))
+        validate(user, s, job.step(), payload);
       if (!connection(s).equals(payload.path("connection").asString()))
         throw conflict("변경 요청 후 팀·보드 연결이 바뀌었어요");
       String token = app.installationReadToken(s.context.installationId());
@@ -445,57 +533,64 @@ public class UserIssueDetailService {
           && job.step().equals("SET_LABELS")
           && !new HashSet<>(actual.labels()).equals(new HashSet<>(response.labels())))
         throw verifying("라벨 변경 결과를 확인하지 못했어요");
-      tx.executeWithoutResult(status -> {
-        recheck(user, s);
-        var currentActor = rows.actor(user.userId());
-        if (currentActor.status() != UserStatus.ACTIVE
-            || currentActor.userType() != UserType.DEVELOPER)
-          throw new ApiException(403, "FORBIDDEN", "현재 계정 권한으로 변경을 완료할 수 없어요");
-        var previous = new HashSet<Long>();
-        payload.path("previousUserIds").forEach(v -> previous.add(v.asLong()));
-        cache.apply(
-            s.context,
-            new IssueSource.Snapshot(
-                List.of(new IssueSource.RepositoryIssues(s.repo, List.of(actual))), project),
-            false,
-            clock.instant());
-        if (job.step().equals("SET_ASSIGNEES"))
-          for (var assigned : rows.assignees(job.team(), job.issue()))
-            if (assigned.id() != null
-                && assigned.inTeam()
-                && !previous.contains(assigned.id())
-                && assigned.id() != user.userId()) {
-              notifications.create(
-                  new CreateNotificationCommand(
-                      assigned.id(),
-                      NotificationTypes.ISSUE_ASSIGNED,
-                      user.userId(),
-                      null,
-                      null,
-                      "/teams/" + job.team() + "/issues/" + job.issue(),
-                      null,
-                      "issue-assigned:" + job.id() + ":" + assigned.id()));
-            }
-        jobs.done(id, job.issue());
-      });
+      tx.executeWithoutResult(
+          status -> {
+            recheck(user, s);
+            var currentActor = rows.actor(user.userId());
+            if (currentActor.status() != UserStatus.ACTIVE
+                || currentActor.userType() != UserType.DEVELOPER)
+              throw new ApiException(403, "FORBIDDEN", "현재 계정 권한으로 변경을 완료할 수 없어요");
+            var previous = new HashSet<Long>();
+            payload.path("previousUserIds").forEach(v -> previous.add(v.asLong()));
+            cache.apply(
+                s.context,
+                new IssueSource.Snapshot(
+                    List.of(new IssueSource.RepositoryIssues(s.repo, List.of(actual))), project),
+                false,
+                clock.instant());
+            if (job.step().equals("SET_ASSIGNEES"))
+              for (var assigned : rows.assignees(job.team(), job.issue()))
+                if (assigned.id() != null
+                    && assigned.inTeam()
+                    && !previous.contains(assigned.id())
+                    && assigned.id() != user.userId()) {
+                  notifications.create(
+                      new CreateNotificationCommand(
+                          assigned.id(),
+                          NotificationTypes.ISSUE_ASSIGNED,
+                          user.userId(),
+                          null,
+                          null,
+                          "/teams/" + job.team() + "/issues/" + job.issue(),
+                          null,
+                          "issue-assigned:" + job.id() + ":" + assigned.id()));
+                }
+            jobs.done(id, job.issue());
+          });
     } catch (RuntimeException e) {
+      // A commit acknowledgement can be lost after DB success. DONE must remain terminal.
+      var persisted = jobs.get(id);
+      if ("DONE".equals(persisted.status())) return;
       boolean terminal =
-          jobs.get(id).attempts() >= MAX_ATTEMPTS
-              || e instanceof ApiException a && a.getStatus() < 500;
-      tx.executeWithoutResult(status ->
-          jobs.failed(
-              id,
-              job.issue(),
-              terminal,
-              e instanceof ApiException a ? a.getCode() : "SERVICE_UNAVAILABLE",
-              clock.instant().plusSeconds(60)));
+          persisted.attempts() >= MAX_ATTEMPTS
+              || e instanceof ApiException a && a.getStatus() < 500 && a.getStatus() != 429;
+      long retrySeconds = retrySeconds(e, persisted.attempts());
+      tx.executeWithoutResult(
+          status ->
+              jobs.failed(
+                  id,
+                  job.issue(),
+                  terminal,
+                  e instanceof ApiException a ? a.getCode() : "SERVICE_UNAVAILABLE",
+                  clock.instant().plusSeconds(retrySeconds)));
       int code = e instanceof ApiException a ? a.getStatus() : 503;
       String key = e instanceof ApiException a ? a.getCode() : "SERVICE_UNAVAILABLE";
-      throw new ApiException(
-          code,
-          key,
-          "GitHub 반영을 완료하지 못했어요. 동기화 상태를 확인해 주세요",
-          Map.of("jobId", id, "syncStatus", "FAILED", "retryScheduled", !terminal));
+      var failure = new LinkedHashMap<String, Object>();
+      failure.put("jobId", id);
+      failure.put("syncStatus", "FAILED");
+      failure.put("retryScheduled", !terminal);
+      if (!terminal) failure.put("retryAfterSeconds", retrySeconds);
+      throw new ApiException(code, key, "GitHub 반영을 완료하지 못했어요. 동기화 상태를 확인해 주세요", failure);
     }
   }
 
@@ -560,6 +655,17 @@ public class UserIssueDetailService {
 
   private static LocalDate date(JsonNode payload, String key) {
     return payload.path(key).isNull() ? null : LocalDate.parse(payload.path(key).asString());
+  }
+
+  private static long retrySeconds(RuntimeException error, int attempts) {
+    if (error instanceof ApiException api && api.getStatus() == 429) {
+      long server =
+          api.getDetail() != null && api.getDetail().get("retryAfterSeconds") instanceof Number n
+              ? n.longValue()
+              : 60;
+      return Math.max(60L * (1L << Math.min(attempts - 1, 10)), server);
+    }
+    return 60;
   }
 
   private static ApiException verifying(String message) {

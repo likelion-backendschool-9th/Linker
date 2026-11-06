@@ -105,18 +105,20 @@ public class IssueEditJobRepository {
   }
 
   public void failed(long id, long issue, boolean terminal, String error, Instant retryAt) {
-    sql.update(
-        "UPDATE issue_sync_jobs SET status=:status,last_error=:error,next_retry_at=:retry WHERE"
-            + " id=:id",
-        Map.of(
-            "id",
-            id,
-            "status",
-            terminal ? "FAILED" : "PENDING",
-            "error",
-            error,
-            "retry",
-            Timestamp.from(retryAt)));
-    sql.update("UPDATE issues SET sync_status='FAILED' WHERE id=:id", Map.of("id", issue));
+    int changed =
+        sql.update(
+            "UPDATE issue_sync_jobs SET status=:status,last_error=:error,next_retry_at=:retry WHERE"
+                + " id=:id AND status<>'DONE'",
+            Map.of(
+                "id",
+                id,
+                "status",
+                terminal ? "FAILED" : "PENDING",
+                "error",
+                error,
+                "retry",
+                Timestamp.from(retryAt)));
+    if (changed == 1)
+      sql.update("UPDATE issues SET sync_status='FAILED' WHERE id=:id", Map.of("id", issue));
   }
 }
