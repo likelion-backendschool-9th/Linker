@@ -26,6 +26,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Transactional(propagation = Propagation.NEVER)
 public class UserIssueService {
   private final UserIssueAccess access;
+  private final UserIssueTemplateService templates;
+  private final UserIssueCreateService creation;
   private final UserIssueDetailService detail;
   private final IssueReadRepository issues;
   private final Clock clock;
@@ -35,6 +37,8 @@ public class UserIssueService {
 
   public UserIssueService(
       UserIssueAccess access,
+      UserIssueTemplateService templates,
+      UserIssueCreateService creation,
       UserIssueDetailService detail,
       IssueReadRepository issues,
       Clock clock,
@@ -42,6 +46,8 @@ public class UserIssueService {
       IssueSource source,
       PlatformTransactionManager manager) {
     this.access = access;
+    this.templates = templates;
+    this.creation = creation;
     this.detail = detail;
     this.issues = issues;
     this.clock = clock;
@@ -74,49 +80,53 @@ public class UserIssueService {
       }
     boolean allowed = canWrite;
     String why = reason;
-    return read.execute(status -> {
-      requireMember(user, teamId);
-      if (!contexts.get(teamId).equals(context))
-        throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
-      var page =
-          issues.list(
-              teamId, query, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
-      return new IssueListResponse(page.items(), page.nextCursor(), page.total(), allowed, why);
-    });
+    return read.execute(
+        status -> {
+          requireMember(user, teamId);
+          if (!contexts.get(teamId).equals(context))
+            throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
+          var page =
+              issues.list(
+                  teamId, query, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
+          return new IssueListResponse(page.items(), page.nextCursor(), page.total(), allowed, why);
+        });
   }
 
   public IssueFilterOptionsResponse options(AuthenticatedUser user, long teamId) {
     requireMember(user, teamId);
     contexts.get(teamId);
-    return read.execute(status -> {
-      requireMember(user, teamId);
-      return issues.options(teamId);
-    });
+    return read.execute(
+        status -> {
+          requireMember(user, teamId);
+          return issues.options(teamId);
+        });
   }
 
   List<Long> matchingIds(long teamId, IssueListQuery query, boolean unscheduled) {
-    return read.execute(status -> {
-      List<Long> ids = new ArrayList<>();
-      String cursor = null;
-      do {
-        var q =
-            new IssueListQuery(
-                query.repo(),
-                query.status(),
-                query.assignee(),
-                query.label(),
-                query.open(),
-                cursor,
-                100);
-        var page =
-            issues.list(teamId, q, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
-        page.items().forEach(i -> ids.add(i.id()));
-        cursor = page.nextCursor();
-        if (ids.size() > 10000)
-          throw new ApiException(400, "VALIDATION_ERROR", "필터를 좁혀 다시 갱신해 주세요");
-      } while (cursor != null);
-      return List.copyOf(ids);
-    });
+    return read.execute(
+        status -> {
+          List<Long> ids = new ArrayList<>();
+          String cursor = null;
+          do {
+            var q =
+                new IssueListQuery(
+                    query.repo(),
+                    query.status(),
+                    query.assignee(),
+                    query.label(),
+                    query.open(),
+                    cursor,
+                    100);
+            var page =
+                issues.list(
+                    teamId, q, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
+            page.items().forEach(i -> ids.add(i.id()));
+            cursor = page.nextCursor();
+            if (ids.size() > 10000)
+              throw new ApiException(400, "VALIDATION_ERROR", "필터를 좁혀 다시 갱신해 주세요");
+          } while (cursor != null);
+          return List.copyOf(ids);
+        });
   }
 
   @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -158,5 +168,25 @@ public class UserIssueService {
   public IssueDetailResponse.StatusResult status(
       AuthenticatedUser u, long t, long i, String value) {
     return detail.status(u, t, i, value);
+  }
+
+  public com.linker.backend.dto.issue.response.IssueTemplateResponse.ListResponse templates(
+      AuthenticatedUser u, long t, long repo) {
+    return templates.list(u, t, repo);
+  }
+
+  public com.linker.backend.dto.issue.response.IssueTemplateResponse template(
+      AuthenticatedUser u, long t, long repo, String key) {
+    return templates.get(u, t, repo, key);
+  }
+
+  public com.linker.backend.dto.issue.response.IssueCreateResponse create(
+      AuthenticatedUser u, long t, com.linker.backend.dto.issue.request.IssueCreateRequest r) {
+    return creation.create(u, t, r);
+  }
+
+  public com.linker.backend.dto.issue.response.IssueCreateResponse creationProgress(
+      AuthenticatedUser u, long t, long job) {
+    return creation.progress(u, t, job);
   }
 }

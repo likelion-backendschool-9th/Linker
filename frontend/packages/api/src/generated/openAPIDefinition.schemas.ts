@@ -512,3 +512,99 @@ export type ListUnscheduledTeamIssuesParams = {
 export type ListSitemapParams = {
   page?: number;
 };
+export type IssueCreateRequestAnswers = { [key: string]: string[] };
+
+
+export interface IssueCreateRequest {
+  requestId: string;
+  /** @exclusiveMinimum 0 */
+  repoId?: number;
+  /** @minLength 1 */
+  title: string;
+  body?: string;
+  templateKey?: string;
+  answers?: IssueCreateRequestAnswers;
+  assigneeIds?: number[];
+  labels?: string[];
+  startDate?: string;
+  dueDate?: string;
+  status?: string;
+}
+
+
+export interface IssueCreateResponse {
+  jobId?: number;
+  status?: string;
+  step?: string;
+  issueId?: number;
+  detailPath?: string;
+  errorCode?: string;
+  retryScheduled?: boolean;
+  retryAfterSeconds?: number;
+}
+
+
+export interface Choice {
+  key?: string;
+  name?: string;
+  description?: string;
+  format?: string;
+  source?: string;
+}
+
+
+export interface Label {
+  name?: string;
+  color?: string;
+}
+
+
+export interface ListResponse {
+  templates?: Choice[];
+  assigneeCandidates?: IssueDetailPerson[];
+  labelOptions?: Label[];
+  maxAssignees?: number;
+}
+
+
+export interface Field {
+  id?: string;
+  type?: string;
+  label?: string;
+  description?: string;
+  value?: string;
+  options?: string[];
+  requiredOptions?: number[];
+  required?: boolean;
+  multiple?: boolean;
+  render?: string;
+  defaultValues?: string[];
+  placeholder?: string;
+}
+
+
+export interface IssueTemplateResponse {
+  key?: string;
+  name?: string;
+  description?: string;
+  format?: string;
+  source?: string;
+  title?: string;
+  body?: string;
+  fields?: Field[];
+  labels?: string[];
+  assignees?: string[];
+  projects?: string[];
+  issueType?: string;
+  fallback?: boolean;
+}
+
+
+export type ListIssueTemplatesParams = {
+  repoId: number;
+};
+
+
+export type GetIssueTemplateParams = {
+  repoId: number;
+};

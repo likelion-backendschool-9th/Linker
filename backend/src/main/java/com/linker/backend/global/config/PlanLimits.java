@@ -155,6 +155,8 @@ public final class PlanLimits {
 	public static final int ISSUE_PROGRESS_DAYS = 14;
 	/** Policy POL-I-2: GitHub maximum, not a team-size limit. */
 	public static final int ISSUE_ASSIGNEES_MAX = 10;
+	/** Policy ch.2: issue creation per author per KST day. */
+	public static final int ISSUE_CREATES_PER_DAY = 100;
 
 	private PlanLimits() {
 	}
