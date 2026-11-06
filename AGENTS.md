@@ -3,7 +3,6 @@
 ## Agent entry point
 - This root `AGENTS.md` is the single source of agent rules. `CLAUDE.md` files only import the same-folder `AGENTS.md` (`@AGENTS.md`); Cursor's `.cursor/rules/project-guide.mdc` points here. Put guidance here, never in `CLAUDE.md`.
 - Before backend changes, read `docs/development/05-backend-blueprint.md` §3–§4. WBS owns work/API contracts, not the service layout.
-- `.local-notes/` is local-only context, not authority. If `.local-notes/agents/README.md` exists, read it and the active-work/handoff notes before editing.
 - If a document contradicts a rule below (for example suggests a neutral shared business service), apply the rule here, report the stale reference, and do not infer a design from an old example.
 
 ## Project and scope
