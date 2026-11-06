@@ -1,6 +1,8 @@
 package com.linker.backend;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -526,14 +528,123 @@ class ChatRoomBasicsIntegrationTest {
 	}
 
 	@Test
-	void openApiDocumentsRoomBasicsWithoutRoomInfo() throws Exception {
+	void directAndRequestRoomInfoUsesRealRows() throws Exception {
+		User mina = named("미나");
+		User doyun = named("도윤");
+		ChatRoom accepted = direct(mina, doyun, DmStatus.ACCEPTED);
+		long firstId = Math.min(mina.getId(), doyun.getId());
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + accepted.getId()).cookie(cookie(mina)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(accepted.getId()))
+				.andExpect(jsonPath("$.kind").value("DIRECT"))
+				.andExpect(jsonPath("$.title").value("도윤"))
+				.andExpect(jsonPath("$.requestDirection").value(nullValue()))
+				.andExpect(jsonPath("$.muted").value(false))
+				.andExpect(jsonPath("$.team").value(nullValue()))
+				.andExpect(jsonPath("$.historyLimitDays").value(nullValue()))
+				.andExpect(jsonPath("$.members.length()").value(2))
+				.andExpect(jsonPath("$.members[0].id").value(firstId));
+
+		ChatRoomMember seat = members.findActive(accepted.getId(), mina.getId()).orElseThrow();
+		seat.mute(true);
+		members.saveAndFlush(seat);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + accepted.getId()).cookie(cookie(mina)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.muted").value(true))
+				.andExpect(jsonPath("$.title").value("도윤"));
+
+		doyun.markDeleted(NOW);
+		users.saveAndFlush(doyun);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + accepted.getId()).cookie(cookie(mina)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("탈퇴한 사용자"))
+				.andExpect(jsonPath("$.members[?(@.id == " + doyun.getId() + ")].name", contains("탈퇴한 사용자")))
+				.andExpect(jsonPath("$.members[?(@.id == " + doyun.getId() + ")].login", contains(nullValue())))
+				.andExpect(jsonPath("$.members[?(@.id == " + doyun.getId() + ")].avatarUrl", contains(nullValue())));
+
+		User sender = named("보내는사람");
+		User receiver = named("받는사람");
+		ChatRoom request = direct(sender, receiver, DmStatus.REQUESTED);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + request.getId()).cookie(cookie(sender)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.kind").value("REQUEST"))
+				.andExpect(jsonPath("$.requestDirection").value("SENT"))
+				.andExpect(jsonPath("$.title").value("받는사람"))
+				.andExpect(jsonPath("$.team").value(nullValue()));
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + request.getId()).cookie(cookie(receiver)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.kind").value("REQUEST"))
+				.andExpect(jsonPath("$.requestDirection").value("RECEIVED"))
+				.andExpect(jsonPath("$.title").value("보내는사람"));
+
+		jdbc.update(
+				"update chat_rooms set request_expires_at = ? where id = ?",
+				Timestamp.from(NOW.minusSeconds(1)),
+				request.getId()
+		);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + request.getId()).cookie(cookie(receiver)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+
+		ChatRoom rejected = direct(named("거절한사람"), named("거절받은사람"), DmStatus.REJECTED);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + rejected.getId()).cookie(cookie(users.findById(rejected.getRequesterId()).orElseThrow())))
+				.andExpect(status().isNotFound());
+
+		User outsider = user("outsider");
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + accepted.getId()).cookie(cookie(outsider)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("채팅방을 찾지 못했어요"));
+
+		User teamMember = named("팀원");
+		ChatRoom teamRoom = team(teamMember, named("다른팀원"));
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + teamRoom.getId()).cookie(cookie(teamMember)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("채팅방을 찾지 못했어요"))
+				.andExpect(jsonPath("$.kind").doesNotExist())
+				.andExpect(jsonPath("$.team").doesNotExist());
+
+		User blocker = named("차단한사람");
+		User blocked = named("차단된사람");
+		ChatRoom blockedRoom = direct(blocker, blocked, DmStatus.ACCEPTED);
+		moderation.block(blocker.getId(), blocked.getId());
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + blockedRoom.getId()).cookie(cookie(blocker)))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + blockedRoom.getId()).cookie(cookie(blocked)))
+				.andExpect(status().isNotFound());
+
+		User hidden = named("숨긴사람");
+		User visible = named("보이는사람");
+		ChatRoom hiddenRoom = direct(hidden, visible, DmStatus.ACCEPTED);
+		ChatRoomMember hiddenSeat = members.findActive(hiddenRoom.getId(), hidden.getId()).orElseThrow();
+		hiddenSeat.hide(NOW);
+		members.saveAndFlush(hiddenSeat);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + hiddenRoom.getId()).cookie(cookie(hidden)))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + hiddenRoom.getId()).cookie(cookie(visible)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("숨긴사람"));
+
+		User leaver = named("나간사람");
+		User stayer = named("남은사람");
+		ChatRoom leftRoom = direct(leaver, stayer, DmStatus.ACCEPTED);
+		ChatRoomMember leftSeat = members.findActive(leftRoom.getId(), leaver.getId()).orElseThrow();
+		leftSeat.leave(NOW);
+		members.saveAndFlush(leftSeat);
+		mockMvc.perform(get("/api/v1/user/chat-rooms/" + leftRoom.getId()).cookie(cookie(leaver)))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void openApiDocumentsRoomBasics() throws Exception {
 		mockMvc.perform(get("/v3/api-docs"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/messages/{messageId}'].patch.operationId").value("editChatMessage"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/messages/{messageId}'].patch.tags[0]").value("p17-chat-room"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/messages/{messageId}'].delete.operationId").value("deleteChatMessage"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/messages/{messageId}/unread-members'].get.operationId").value("listUnreadChatMembers"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/notification'].patch.operationId").value("updateChatNotification"))
-				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get").doesNotExist());
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get.operationId").value("getChatRoom"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get.tags[0]").value("p17-chat-room"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete").doesNotExist());
 	}
 
 	private void stale(ChatRoom room, ChatMessage message, String event, String text) {
@@ -619,6 +730,12 @@ class ChatRoomBasicsIntegrationTest {
 
 	private User user(String prefix) {
 		return users.saveAndFlush(User.create(prefix + "-" + System.nanoTime(), UserType.DEVELOPER));
+	}
+
+	private User named(String displayName) {
+		User account = user("room");
+		account.changeDisplayName(displayName);
+		return users.saveAndFlush(account);
 	}
 
 	private ChatRoom direct(User requester, User recipient, DmStatus status) {
