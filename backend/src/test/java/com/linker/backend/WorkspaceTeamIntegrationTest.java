@@ -185,7 +185,12 @@ class WorkspaceTeamIntegrationTest {
 				insert into chat_rooms(room_type,team_id,created_at,updated_at)
 				values ('TEAM',999999,now(),now())
 				""")).isInstanceOf(DataIntegrityViolationException.class);
-		assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success", Long.class)).isEqualTo(4);
+		assertThat(jdbc.queryForList("select version from flyway_schema_history where success", String.class))
+				.contains("4", "10").doesNotHaveDuplicates();
+		assertThat(jdbc.queryForObject("select script from flyway_schema_history where version = '4' and success", String.class))
+				.isEqualTo("V4__github_social_login.sql");
+		assertThat(jdbc.queryForObject("select script from flyway_schema_history where version = '10' and success", String.class))
+				.isEqualTo("V10__chat_message_edited_at.sql");
 		assertThat(jdbc.queryForObject("""
 				select count(*) from information_schema.columns
 				where table_name='chat_messages' and column_name in ('client_message_id','edited_at')
