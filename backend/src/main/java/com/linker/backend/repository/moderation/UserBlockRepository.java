@@ -39,4 +39,16 @@ public interface UserBlockRepository extends JpaRepository<UserBlock, Long> {
 			@Param("blockedId") long blockedId,
 			@Param("at") Instant at
 	);
+
+	@Query("""
+			select b.blockedId from UserBlock b
+			where b.blockerId = :userId and b.unblockedAt is null
+			""")
+	List<Long> findActiveBlockedIds(@Param("userId") long userId);
+
+	@Query("""
+			select b.blockerId from UserBlock b
+			where b.blockedId = :userId and b.unblockedAt is null
+			""")
+	List<Long> findActiveBlockerIds(@Param("userId") long userId);
 }
