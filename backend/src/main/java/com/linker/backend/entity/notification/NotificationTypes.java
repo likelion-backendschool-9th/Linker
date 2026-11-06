@@ -12,7 +12,11 @@ public final class NotificationTypes {
 	public static final String APPLICATION_RECEIVED = "APPLICATION_RECEIVED";
 	public static final String APPLICATION_ACCEPTED = "APPLICATION_ACCEPTED";
 	public static final String APPLICATION_REJECTED = "APPLICATION_REJECTED";
+	/** Recruit post deleted → pending applications expire (POL-R). */
+	public static final String APPLICATION_EXPIRED = "APPLICATION_EXPIRED";
 	public static final String COMMENT = "COMMENT";
+	/** Post like (POL-P-5 / WBS page 23). */
+	public static final String POST_LIKE = "POST_LIKE";
 	public static final String FOLLOW = "FOLLOW";
 	public static final String JOB_SEEKING_OFF = "JOB_SEEKING_OFF";
 	public static final String MESSAGE_REQUEST = "MESSAGE_REQUEST";
