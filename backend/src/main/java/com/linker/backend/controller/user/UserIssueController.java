@@ -48,7 +48,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user/teams/{teamId}")
 public class UserIssueController {
   @org.springframework.web.bind.annotation.ExceptionHandler(
-      org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+      {org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+       org.springframework.web.bind.MissingServletRequestParameterException.class})
   public ResponseEntity<com.linker.backend.global.error.ApiErrorBody> invalidParameter() {
     return ResponseEntity.badRequest()
         .body(
@@ -130,7 +131,8 @@ public class UserIssueController {
             issues.board(
                 user,
                 teamId,
-                new IssueListQuery(repo, null, assignee, label, open, null, IssueListQuery.MAX_SIZE)));
+                new IssueListQuery(
+                    repo, null, assignee, label, open, null, IssueListQuery.MAX_SIZE)));
   }
 
   @GetMapping("/issue-filters")
@@ -367,5 +369,26 @@ public class UserIssueController {
     return ResponseEntity.ok()
         .cacheControl(CacheControl.noStore())
         .body(issues.creationProgress(u, teamId, jobId));
+  }
+
+  @GetMapping("/calendar")
+  @DeveloperOnly
+  @Tag(name = "p15-calendar")
+  @Operation(operationId = "getTeamIssueCalendar", summary = "팀 캘린더 기간별 이슈 조회")
+  public ResponseEntity<com.linker.backend.dto.issue.response.IssueCalendarResponse> calendar(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @RequestParam
+          @org.springframework.format.annotation.DateTimeFormat(
+              iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+          java.time.LocalDate from,
+      @RequestParam
+          @org.springframework.format.annotation.DateTimeFormat(
+              iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+          java.time.LocalDate to,
+      @RequestParam(required = false) String assignee) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.calendar(user, teamId, from, to, assignee));
   }
 }

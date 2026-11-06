@@ -847,6 +847,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Tables: new none · shared issues, issue_assignees, notifications
 - [ ] Server: 9 AM scheduler notifying assignees the day before the due date
+- C15 backend contract and isolated verification: [c-page15-implementation.md](plans/c-page15-implementation.md). Inclusive KST dates and overlapping period bars; due-only dots; no due date/off-project items excluded; existing 12 schedule API reused. Reminder production uses the existing user notification service with per-issue/due-date/recipient transaction-safe deduplication. Android push delivery remains D-owned; see the documented current immediate-non-chat delivery gap.
 - [ ] Frontend: month/week views, range bars and dots, tap a date → that day's issues sheet → 12, guide for issues without due dates
 
 </details>
