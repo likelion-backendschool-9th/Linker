@@ -53,7 +53,7 @@ mock 모드는 유지하되 07 팀 목록 응답의 joinedAt·nextCursor·보관
 
 | 확인한 브랜치/PR | 마이그레이션 현황 | 이번 처리 |
 | --- | --- | --- |
-| dev / D #206·#210·#212 | V2 chat_rooms, V3 client_message_id, V4 edited_at | 그대로 반영·사용, 파일 수정 없음 |
+| dev / D #206·#210·#212 | V2 chat_rooms, V3 client_message_id, V10 edited_at | 그대로 반영·사용, 파일 수정 없음 |
 | E feat/59-e-backend | V2 recruit_list, V3 post_editor, V4 post_detail, V5 feed | 미머지. D 버전과 중복, 번호·적용 이력 조율 필요 |
 | A #211 | V4 github_social_login | 미머지. dev V4와 버전 중복 |
 | A #213 | V5 user_agreements, V6 onboarding_profile | 미머지. 머지 순서와 E V5 충돌 조율 필요 |
