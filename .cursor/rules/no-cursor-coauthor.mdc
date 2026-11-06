@@ -1,10 +1,11 @@
 ---
-description: Never attribute commits or PRs to Cursor
+description: Never add agent attribution to commits, PRs, code or docs
 alwaysApply: true
 ---
 
-# No Cursor git attribution
+# No agent git attribution
 
-- Do not add `Co-authored-by: Cursor`, `Made-with: Cursor`, or any Cursor agent trailer to commits or PR bodies.
+- Do not add `Co-Authored-By: Claude`, `Generated with Claude Code`, `Co-authored-by: Cursor`, `Made-with: Cursor`, or any other agent trailer/mark to commits, PR bodies, code or docs.
 - Commits and PRs must use the human author's identity only.
-- If tooling injects a Cursor trailer, remove it before finishing the commit/PR.
+- If tooling injects an agent trailer, remove it before finishing the commit/PR.
+- Commit format and branch rules are in the root `AGENTS.md` (Git workflow).
