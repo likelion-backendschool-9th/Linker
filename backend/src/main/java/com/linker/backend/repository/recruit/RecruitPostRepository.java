@@ -1,5 +1,6 @@
 package com.linker.backend.repository.recruit;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import com.linker.backend.entity.recruit.type.WorkMode;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -91,4 +93,16 @@ public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> 
 			order by p.sortAt desc, p.id desc
 			""")
 	List<RecruitPost> findMine(@Param("authorId") long authorId, Pageable pageable);
+
+	// Report hide, delete, or restore. A bulk update leaves updatedAt unchanged.
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update RecruitPost p
+			set p.visibility = :visibility, p.deletedAt = :deletedAt
+			where p.id = :id
+			""")
+	int updateReportedVisibility(
+			@Param("id") long id,
+			@Param("visibility") RecruitVisibility visibility,
+			@Param("deletedAt") Instant deletedAt);
 }
