@@ -45,17 +45,26 @@ export const routes: MockRoute[] = [
       );
     return paginate(sorted, query);
   }),
+  // Same rules as the server: REQUEST counts only received requests; recruiters only get DIRECT
   get('/api/v1/user/chat-rooms/unread-summary', ({ viewer }) => {
     const rooms = mineFor(viewer.role);
-    const sum = (kind: MockRoom['kind']) =>
-      rooms.filter((r) => r.kind === kind).reduce((total, r) => total + (UNREAD[r.id] ?? 0), 0);
+    const unread = (room: MockRoom) => UNREAD[room.id] ?? 0;
+    const sum = (list: MockRoom[]) => list.reduce((total, room) => total + unread(room), 0);
+    const received = rooms.filter(
+      (room) => room.kind === 'REQUEST' && room.requestDirection === 'RECEIVED',
+    );
+    const direct = sum(rooms.filter((room) => room.kind === 'DIRECT'));
+    if (viewer.role === 'recruiter') {
+      return { TEAM: 0, DIRECT: direct, REQUEST: 0, requestCount: 0, total: direct };
+    }
+    const team = sum(rooms.filter((room) => room.kind === 'TEAM'));
+    const request = sum(received);
     return {
-      TEAM: sum('TEAM'),
-      DIRECT: sum('DIRECT'),
-      REQUEST: sum('REQUEST'),
-      requestCount: rooms.filter((r) => r.kind === 'REQUEST' && r.requestDirection === 'RECEIVED')
-        .length,
-      total: rooms.reduce((total, r) => total + (UNREAD[r.id] ?? 0), 0),
+      TEAM: team,
+      DIRECT: direct,
+      REQUEST: request,
+      requestCount: received.length,
+      total: team + direct + request,
     };
   }),
   // Also borrowed by the top of 17

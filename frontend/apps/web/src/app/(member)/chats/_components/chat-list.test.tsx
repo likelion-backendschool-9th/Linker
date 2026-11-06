@@ -1,7 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 
+import { chatKeys } from '@/features/chat/chat-queries';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { renderWithProviders } from '@/test/render-with-providers';
 
@@ -130,4 +132,49 @@ it('omits a missing team name and a missing preview without inventing copy', asy
   expect(screen.queryByRole('heading')).not.toBeInTheDocument();
   expect(screen.queryByText('아직 메시지가 없어요.')).not.toBeInTheDocument();
   expect(screen.queryByText('사진을 보냈어요')).not.toBeInTheDocument();
+});
+
+/** Stands in for the bottom-tab subscription: a CHAT_ROOMS_CHANGED frame invalidates the account cache. */
+function RoomsChanged() {
+  const client = useQueryClient();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void client.invalidateQueries({ queryKey: chatKeys.account('developer') });
+      }}
+    >
+      방 목록 변경 알림
+    </button>
+  );
+}
+
+it('shows the server list again after joining and after leaving a team', async () => {
+  const user = userEvent.setup();
+  const team = { ...row, id: 8, kind: 'TEAM', title: 'Linker 해커톤팀', requestKind: null };
+  let teamRooms: (typeof team)[] = [];
+  fetchMock.mockImplementation(async (url) => {
+    if (url.endsWith('unread-summary'))
+      return { TEAM: 0, DIRECT: 0, REQUEST: 0, total: 0, requestCount: 0 };
+    if (url.includes('tab=TEAM')) return { items: teamRooms, nextCursor: null };
+    return { items: [], nextCursor: null };
+  });
+  renderWithProviders(
+    <>
+      <ChatList />
+      <RoomsChanged />
+    </>,
+    { viewer: { role: 'developer', login: 'developer' } },
+  );
+  expect(await screen.findByText('아직 팀 채팅이 없어요.')).toBeVisible();
+
+  teamRooms = [team];
+  await user.click(screen.getByRole('button', { name: '방 목록 변경 알림' }));
+  expect(await screen.findByRole('heading', { name: 'Linker 해커톤팀' })).toBeVisible();
+  expect(screen.queryByText('아직 팀 채팅이 없어요.')).not.toBeInTheDocument();
+
+  teamRooms = [];
+  await user.click(screen.getByRole('button', { name: '방 목록 변경 알림' }));
+  expect(await screen.findByText('아직 팀 채팅이 없어요.')).toBeVisible();
+  expect(screen.queryByRole('heading', { name: 'Linker 해커톤팀' })).not.toBeInTheDocument();
 });
