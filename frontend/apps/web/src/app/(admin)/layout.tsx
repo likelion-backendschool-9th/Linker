@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Operators only; everyone else gets 404 (blueprint §3-2). The OTP gate and 30-min idle logout
-// go in (admin)/admin/layout.tsx with page 25.
+// Operators only; everyone else gets 404 (blueprint §3-2). The server closes an operator
+// session after 30 minutes without a request. OTP stays a later step.
 export default async function AdminLayout({ children }: LayoutProps<'/'>) {
   await enforceAccess();
   return <AdminShell>{children}</AdminShell>;

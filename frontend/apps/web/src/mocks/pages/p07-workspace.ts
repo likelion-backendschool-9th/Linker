@@ -1,3 +1,7 @@
+import type { MyTeamsResponse } from '@linker/api/openAPIDefinition.schemas';
+
+import { TEAM } from '@/lib/policy';
+
 import { get, type MockRoute } from '../core/define';
 import { ISSUES, isOverdue } from '../fixtures/issues';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
@@ -20,8 +24,16 @@ export const routes: MockRoute[] = [
         openIssueCount: ISSUES.filter((i) => i.teamId === team.id && i.state === 'OPEN').length,
         chatRoomId: team.chatRoomId,
         unreadCount: team.id === 1 ? 3 : 0,
+        joinedAt:
+          TEAM_MEMBERS[team.id]?.find((member) => member.user.id === ME.id)?.joinedAt ??
+          team.createdAt,
       }));
-      return { items, teamLimit: 10, teamCount: items.length };
+      return {
+        items,
+        teamLimit: TEAM.maxTeamsPerUser,
+        teamCount: items.filter((team) => team.status !== 'ARCHIVED').length,
+        nextCursor: null,
+      } satisfies MyTeamsResponse;
     },
     { only: 'developer' },
   ),

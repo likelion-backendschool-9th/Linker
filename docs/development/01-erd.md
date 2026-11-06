@@ -136,6 +136,7 @@ erDiagram
     boolean looking_for_team "looking for team"
     varchar job_seeking_status "OPEN, OFFERS_ONLY, OFF (default)"
     timestamptz job_seeking_updated_at
+    boolean job_seeking_off_notice "set when the 90-day batch turns job seeking off"
     boolean push_enabled "push on/off (off stops push only)"
     timestamptz contribution_synced_at "last graph refresh"
     timestamptz last_active_at
@@ -171,6 +172,7 @@ erDiagram
     varchar ip
     timestamptz expires_at "30 days, extended on use"
     timestamptz otp_verified_at "operator 2FA"
+    timestamptz operator_seen_at "last operator request; idle 30 min revokes the session"
     timestamptz revoked_at
   }
   user_agreements {
@@ -992,6 +994,7 @@ erDiagram
 | looking_for_team | When on, shown in Find Team search. Batch turns it off after 30 days inactive (based on `last_active_at`) |
 | user_type | DEVELOPER (GitHub sign-up) / RECRUITER (company email sign-up). Set at sign-up, never changes. RECRUITER gets an auto-generated `username` of `r-` + number, and GitHub columns/tables stay empty |
 | job_seeking_status | Job-seeking status (POL-H-4). OPEN = job seeking (badge for everyone), OFFERS_ONLY = offers only (shown to recruiters only), OFF = recruiting offers blocked. DEVELOPER only. Batch sets OFF after 90 days inactive |
+| job_seeking_off_notice | Set when that batch turns job seeking off. Cleared when the next `GET /api/v1/user/me` creates the "구직 상태를 껐어요" notice |
 | deleted_at | 30 days after withdrawal, personal columns (name, avatar, bio, email) are cleared and this is set |
 | onboarded_at | Set when onboarding profile save finishes. Null until then. The session `onb` claim follows this column |
 
@@ -1010,7 +1013,7 @@ erDiagram
 
 **github_tokens**: `user_id` UK (1:1). Tokens are stored AES-encrypted and never sent to the app or frontend. When expired, the server refreshes with the refresh token; if that fails, it asks the user to log in again.
 
-**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office.
+**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes the session. OTP enrollment is still a later step, so an `admins` row is enough to open the back office until then.
 
 **recruiter_profiles**: `user_id` UK (1:1). `company_email_domain` is used for the profile's "회사 메일 인증(@domain)" (Company email verified) label and for operator checks. When operator company verification is added in phase 3, create a `companies` table and add `company_id`.
 

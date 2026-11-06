@@ -49,13 +49,18 @@ class BlockServiceTest {
 
 	@Mock
 	AdminNotificationService adminNotifications;
+	@Mock
+	com.linker.backend.repository.moderation.SanctionRepository sanctions;
+
+	@Mock
+	com.linker.backend.repository.profile.FollowRepository follows;
 
 	UserModerationService service;
 
 	@BeforeEach
 	void setUp() {
 		service = new UserModerationService(
-				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, Clock.systemUTC());
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, follows, Clock.systemUTC());
 	}
 
 	@Test

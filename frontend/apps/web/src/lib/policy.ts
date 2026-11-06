@@ -38,7 +38,14 @@ export const PROFILE = {
   bioMax: 160,
   techStackMax: 10,
   jobCategoriesMax: 3,
+  /** POL-A-3. The server turns the badge off after this many days without login. */
+  lookingForTeamIdleDays: 30,
+  /** POL-H-4. The server turns job seeking off and notifies on the next session read. */
+  jobSeekingIdleDays: 90,
 } as const;
+
+/** POL-P-5. The server rejects the next follow with this daily cap. */
+export const FOLLOW = { perDay: 200 } as const;
 
 /** 04 ch. 3 "Recruiter accounts" */
 export const RECRUITER = {
@@ -115,6 +122,14 @@ export const CHAT = {
 /** 04 ch. 10 — operator admin session is locked after 30 minutes without activity. */
 export const ADMIN = {
   otpIdleMinutes: 30,
+} as const;
+
+/** Policy ch. 9. The server applies these; the reports screen reads the resulting flags. */
+export const REPORT = {
+  handlingBusinessDays: 2,
+  dismissalsBeforeRestriction: 5,
+  restrictionDays: 30,
+  chatContextMessages: 10,
 } as const;
 
 /** `null` = no limit. 04 ch. 11 (Pro / Flex / Scout tables) */

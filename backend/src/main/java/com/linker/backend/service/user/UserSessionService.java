@@ -17,15 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserSessionService {
 
 	private final UserSessionRepository sessions;
+	private final UserAccountService accounts;
 	private final Clock clock;
 
-	public UserSessionService(UserSessionRepository sessions, Clock clock) {
+	public UserSessionService(UserSessionRepository sessions, UserAccountService accounts, Clock clock) {
 		this.sessions = sessions;
+		this.accounts = accounts;
 		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
 	public MeResponse me(AuthenticatedUser user) {
+		accounts.deliverJobSeekingOffNotice(user.userId());
 		return new MeResponse(
 				user.userId(),
 				user.login(),

@@ -26,12 +26,26 @@ public final class PlanLimits {
 	public static final int PROFILE_BIO_MAX = 160;
 	/** POL-A-3 predefined tech stack tags. */
 	public static final int PROFILE_TECH_STACK_MAX = 10;
+	/** POL-P-5 follows created per viewer per Seoul day. */
+	public static final int FOLLOWS_PER_DAY = 200;
+	/** POL-A-3. Looking-for-team turns off after this many days without a login. */
+	public static final int PROFILE_LOOKING_FOR_TEAM_IDLE_DAYS = 30;
+	/** POL-H-4. Job seeking turns off after this many days without a login. */
+	public static final int PROFILE_JOB_SEEKING_IDLE_DAYS = 90;
 	public static final int PUBLIC_READS_PER_MINUTE = 60;
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
+	/** Policy ch. 6 — archived teams do not consume this personal membership cap. */
+	public static final int TEAMS_PER_USER_MAX = 10;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;
+	/** Policy ch. 9 — handling target, counted in Seoul weekdays. */
+	public static final int REPORT_HANDLING_BUSINESS_DAYS = 2;
+	/** Policy ch. 9 — dismissed reports inside this window restrict reporting. */
+	public static final int REPORT_DISMISS_WINDOW_DAYS = 30;
+	public static final int REPORT_DISMISS_LIMIT = 5;
+	public static final int REPORT_RESTRICTION_DAYS = 30;
 	public static final int REPORT_DETAIL_MAX_CHARS = 1000;
 	/** Reject decoded images larger than this on either side before they are resized. */
 	public static final int IMAGE_MAX_SOURCE_SIDE = 8_192;

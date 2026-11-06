@@ -22,6 +22,8 @@ public class AccountWithdrawalJob {
 
 	@Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
 	public void anonymizeExpired() {
-		accounts.anonymizeExpiredWithdrawals(Instant.now(clock));
+		Instant now = Instant.now(clock);
+		accounts.anonymizeExpiredWithdrawals(now);
+		accounts.settleInactiveProfiles(now);
 	}
 }

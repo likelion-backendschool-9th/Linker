@@ -156,6 +156,9 @@ public class PublicAuthService {
 			renewed = tokens.sign(current, expiresAt);
 			session.rotate(hash(renewed), expiresAt);
 		}
+		if (operatorIdleExpired(session, user)) {
+			return Optional.empty();
+		}
 		return Optional.of(new AuthenticatedSession(toPrincipal(session, user), renewed));
 	}
 
@@ -163,7 +166,7 @@ public class PublicAuthService {
 		UserSession session = active(rawToken)
 				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
 		User user = session.getUser();
-		if (user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null) {
+		if (user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null || operatorIdleExpired(session, user)) {
 			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
 		}
 		String renewed = tokens.sign(claims(user), expiresAt);
@@ -177,6 +180,13 @@ public class PublicAuthService {
 			return Optional.empty();
 		}
 		return sessions.findActive(hash(rawToken), Instant.now());
+	}
+
+	private boolean operatorIdleExpired(UserSession session, User user) {
+		if (!adminRegistered(user)) {
+			return false;
+		}
+		return session.expireOperatorIfIdle(clock.instant(), Duration.ofMinutes(PlanLimits.ADMIN_OTP_IDLE_MINUTES));
 	}
 
 	/**
@@ -227,9 +237,7 @@ public class PublicAuthService {
 
 	private AuthenticatedUser toPrincipal(UserSession session, User user) {
 		boolean adminRegistered = adminRegistered(user);
-		boolean operatorAuthorized = adminRegistered
-				&& session.getOtpVerifiedAt() != null
-				&& session.getOtpVerifiedAt().plus(Duration.ofMinutes(PlanLimits.ADMIN_OTP_IDLE_MINUTES)).isAfter(Instant.now());
+		boolean operatorAuthorized = adminRegistered;
 		return new AuthenticatedUser(
 				user.getId(),
 				user.getUsername(),

@@ -60,13 +60,27 @@ class UserModerationReportNotificationTest {
 	AdminRepository admins;
 	@Mock
 	AdminNotificationService adminNotifications;
+	@Mock
+	com.linker.backend.repository.moderation.SanctionRepository sanctions;
+
+	@Mock
+	com.linker.backend.repository.profile.FollowRepository follows;
 
 	UserModerationService service;
 
 	@BeforeEach
 	void setUp() {
 		service = new UserModerationService(
-				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, Clock.systemUTC());
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, follows, Clock.systemUTC());
+	}
+
+	@Test
+	void restrictedReporterCannotFileAnotherReport() {
+		when(sanctions.hasActiveReportRestriction(eq(5L), any())).thenReturn(true);
+
+		assertThatThrownBy(() -> service.report(5L, "USER", 900L, "SPAM", null))
+				.isInstanceOf(com.linker.backend.global.error.ApiException.class)
+				.hasMessage("최근 30일 동안 기각이 5번이라 30일 동안 신고할 수 없어요");
 	}
 
 	@Test
@@ -166,7 +180,7 @@ class UserModerationReportNotificationTest {
 		when(caseOpener.openPending(ReportTargetType.USER, targetUserId, targetUserId)).thenReturn(caseId);
 		when(cases.lockById(caseId)).thenReturn(Optional.of(reportCase));
 		when(reports.existsByReportCase_IdAndReporterId(eq(caseId), any(Long.class))).thenReturn(false);
-		when(reports.countByReportCase_Id(caseId)).thenAnswer(invocation -> {
+		when(reports.countEligibleReporters(eq(caseId), any())).thenAnswer(invocation -> {
 			int n = countCalls.incrementAndGet();
 			return (long) (PlanLimits.REPORT_AUTO_HIDE_REPORTERS + n - 1);
 		});
@@ -187,7 +201,7 @@ class UserModerationReportNotificationTest {
 				.thenReturn(caseId);
 		when(cases.lockById(caseId)).thenReturn(Optional.of(reportCase));
 		when(reports.existsByReportCase_IdAndReporterId(caseId, reporterId)).thenReturn(false);
-		when(reports.countByReportCase_Id(caseId)).thenReturn(countAfterSave);
+		when(reports.countEligibleReporters(eq(caseId), any())).thenReturn(countAfterSave);
 	}
 
 	private static ReportCase lockedCase(long caseId, long targetUserId, Instant autoHiddenAt) {

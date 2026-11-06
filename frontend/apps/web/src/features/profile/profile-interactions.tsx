@@ -218,7 +218,7 @@ function ProfilePeopleSheet({
               <li key={user.id}>
                 <Link href={`/u/${encodeURIComponent(user.login)}`} onClick={overlay.close}>
                   <span className={styles.personAvatar}>
-                    <Image src={user.avatarUrl} alt="" fill sizes="32px" />
+                    {user.avatarUrl && <Image src={user.avatarUrl} alt="" fill sizes="32px" />}
                   </span>
                   <span className={styles.personName}>{user.name}</span>
                   <span className={styles.personHandle}>@{user.login}</span>

@@ -67,6 +67,10 @@ public class User extends BaseTimeEntity {
 
 	private Instant lastActiveAt;
 
+	/** Set by the inactivity batch when it turns job seeking off. Cleared after the notice is created. */
+	@Column(nullable = false)
+	private boolean jobSeekingOffNotice;
+
 	private Instant withdrawRequestedAt;
 
 	private Instant deletedAt;
@@ -119,6 +123,27 @@ public class User extends BaseTimeEntity {
 
 	public void touch(Instant when) {
 		this.lastActiveAt = when;
+	}
+
+	public void clearLookingForTeam() {
+		this.lookingForTeam = false;
+	}
+
+	public void markJobSeekingOffForInactivity(Instant when) {
+		if (this.jobSeekingStatus == JobSeekingStatus.OFF) {
+			return;
+		}
+		this.jobSeekingStatus = JobSeekingStatus.OFF;
+		this.jobSeekingUpdatedAt = when;
+		this.jobSeekingOffNotice = true;
+	}
+
+	public boolean takeJobSeekingOffNotice() {
+		if (!this.jobSeekingOffNotice) {
+			return false;
+		}
+		this.jobSeekingOffNotice = false;
+		return true;
 	}
 
 	public void applyOnboardingProfile(
@@ -277,6 +302,10 @@ public class User extends BaseTimeEntity {
 
 	public Instant getWithdrawRequestedAt() {
 		return withdrawRequestedAt;
+	}
+
+	public Instant getLastActiveAt() {
+		return lastActiveAt;
 	}
 
 	public String visibleName() {
