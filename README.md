@@ -202,6 +202,14 @@ Linker/
 
 ## 로컬 실행
 
+클론 후 한 번만 Git 훅을 연결하면 Cursor Agent가 붙이는 `Co-authored-by: Cursor` 줄이 커밋에서 제거됩니다.
+
+```bash
+bash scripts/setup-git-hooks.sh
+```
+
+Cursor IDE에서는 **Settings → Git & Pull Requests → Attribution**의 Commit/PR Attribution도 끕니다. (이미 머지된 히스토리의 컨트리뷰터 목록은 히스토리 재작성 없이는 지워지지 않습니다.)
+
 ### 프론트엔드 화면만 확인
 
 Node.js 22 이상과 pnpm 10.15.0이 필요합니다. CI는 Node.js 24를 사용합니다.
