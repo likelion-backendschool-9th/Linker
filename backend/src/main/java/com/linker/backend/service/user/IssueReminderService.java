@@ -5,7 +5,7 @@ import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.integration.github.GithubAppClient;
 import com.linker.backend.integration.github.GithubIssueClient;
-import com.linker.backend.repository.issue.*;
+import com.linker.backend.repository.issue.IssueRepository;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Map;
@@ -21,11 +21,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class IssueReminderService {
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(IssueReminderService.class);
-  private final IssueContextRepository contexts;
-  private final IssueReminderRepository reminders;
-  private final IssueDetailRepository actors;
+  private final IssueRepository issueRepository;
   private final UserIssueAccess access;
-  private final IssueSyncLock locks;
   private final GithubIssueClient github;
   private final GithubAppClient app;
   private final NotificationService notifications;
@@ -34,21 +31,15 @@ public class IssueReminderService {
   private final JsonMapper json = JsonMapper.builder().build();
 
   public IssueReminderService(
-      IssueContextRepository contexts,
-      IssueReminderRepository reminders,
-      IssueDetailRepository actors,
+      IssueRepository issueRepository,
       UserIssueAccess access,
-      IssueSyncLock locks,
       GithubIssueClient github,
       GithubAppClient app,
       NotificationService notifications,
       Clock clock,
       PlatformTransactionManager manager) {
-    this.contexts = contexts;
-    this.reminders = reminders;
-    this.actors = actors;
+    this.issueRepository = issueRepository;
     this.access = access;
-    this.locks = locks;
     this.github = github;
     this.app = app;
     this.notifications = notifications;
@@ -58,12 +49,12 @@ public class IssueReminderService {
 
   public int remindDueTomorrow() {
     var now = clock.instant().atZone(PlanLimits.APP_ZONE);
-    if (now.getHour() != PlanLimits.ISSUE_DUE_REMINDER_HOUR || !contexts.ready()) return 0;
+    if (now.getHour() != PlanLimits.ISSUE_DUE_REMINDER_HOUR) return 0;
     LocalDate due = now.toLocalDate().plusDays(PlanLimits.ISSUE_DUE_REMINDER_DAYS_BEFORE);
     int produced = 0;
-    for (long team : contexts.syncTeams())
+    for (long team : issueRepository.syncTeams())
       try {
-        produced += locks.team(team, () -> remind(team, due));
+        produced += issueRepository.withTeamLock(team, () -> remind(team, due));
       } catch (RuntimeException e) {
         log.warn("Issue due reminder skipped for team {} ({})", team, e.getClass().getSimpleName());
       }
@@ -71,11 +62,11 @@ public class IssueReminderService {
   }
 
   private int remind(long team, LocalDate due) {
-    var context = contexts.get(team);
+    var context = issueRepository.context(team);
     int produced = 0;
-    for (var candidate : reminders.candidates(team, due))
+    for (var candidate : issueRepository.reminderCandidates(team, due))
       try {
-        var actor = actors.actor(candidate.user());
+        var actor = issueRepository.actor(candidate.user());
         access.member(actor, team);
         var repo =
             context.repos().stream()
@@ -91,9 +82,9 @@ public class IssueReminderService {
         boolean created =
             tx.execute(
                 st -> {
-                  if (reminders.claimed(key, candidate.user())) return false;
-                  access.member(actors.actor(candidate.user()), team);
-                  if (!contexts.get(team).equals(context) || !reminders.eligible(candidate))
+                  if (issueRepository.reminderClaimed(key, candidate.user())) return false;
+                  access.member(issueRepository.actor(candidate.user()), team);
+                  if (!issueRepository.context(team).equals(context) || !issueRepository.reminderEligible(candidate))
                     return false;
                   String path = "/teams/" + team + "/issues/" + candidate.issue();
                   String payload =

@@ -22,10 +22,6 @@ import uuid
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE = Path(__file__).with_name("compose.yml")
 SQL_ROOT = ROOT / "backend/src/main/resources/db"
-SCHEMAS = (
-    "issue-schema/issue-cache.sql",
-    "issue-schema/issue-sync-jobs.sql",
-)
 APP_KEYS = ("GITHUB_APP_ID", "GITHUB_APP_SLUG", "GITHUB_APP_PRIVATE_KEY",
             "GITHUB_APP_CLIENT_ID", "GITHUB_APP_CLIENT_SECRET")
 PORTS = {"TEST_DB_PORT": "55432", "TEST_REDIS_PORT": "56379",
@@ -163,7 +159,9 @@ def database(directory, settings, sql):
 
 
 def schema_fingerprints():
-    return {name: hashlib.sha256((SQL_ROOT / name).read_bytes()).hexdigest() for name in SCHEMAS}
+    # Team (V20) and issue (V22) tables are normal Flyway migrations; nothing is applied by hand.
+    return {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted((SQL_ROOT / "migration").glob("V*__*.sql"))}
 
 
 def schema_matches(directory):
@@ -175,35 +173,19 @@ def prepare_schema(directory, settings):
     current = database(directory, settings, "SELECT current_database();")
     if current != "linker_github_test":
         raise SetupError("Refusing to prepare an unexpected database")
-    if schema_matches(directory):
-        required = database(directory, settings,
-                            "SELECT to_regclass('teams') IS NOT NULL AND to_regclass('issue_sync_jobs') IS NOT NULL;")
-        if required != "t":
-            raise SetupError("Local schema marker does not match database state")
-        print("Prepared schema already present; no SQL reapplied.")
-        return
-    if (directory / "schema.json").exists():
-        raise SetupError("Prepared SQL changed; review the local upgrade or use another isolated environment")
     ready = database(directory, settings,
-                     "SELECT to_regclass('users') IS NOT NULL AND to_regclass('github_repos') IS NOT NULL "
-                     "AND to_regclass('flyway_schema_history') IS NOT NULL "
-                     "AND to_regclass('teams') IS NOT NULL AND to_regclass('team_members') IS NOT NULL "
-                     "AND to_regclass('github_installations') IS NOT NULL AND to_regclass('team_repos') IS NOT NULL "
-                     "AND to_regclass('team_project_boards') IS NOT NULL "
-                     "AND to_regclass('board_status_mappings') IS NOT NULL AND to_regclass('pull_requests') IS NOT NULL;")
+                     "SELECT to_regclass('flyway_schema_history') IS NOT NULL "
+                     "AND to_regclass('teams') IS NOT NULL AND to_regclass('issues') IS NOT NULL "
+                     "AND to_regclass('issue_sync_jobs') IS NOT NULL;")
     if ready != "t":
-        raise SetupError("Start backend once so the normal Flyway history is applied first")
+        raise SetupError("Start backend once so the normal Flyway history (V20 teams, V22 issues) is applied first")
     history = database(directory, settings, "SELECT version FROM flyway_schema_history WHERE success ORDER BY version;")
     expected = {p.name.split('__')[0][1:] for p in (SQL_ROOT / "migration").glob("V*__*.sql")}
     if set(history.splitlines()) != expected:
-        raise SetupError("Local Flyway history differs from this checkout; start the current backend first")
-    existing = database(directory, settings, "SELECT to_regclass('issues') IS NOT NULL;")
-    if existing != "f":
-        raise SetupError("Existing unmarked issue schema preserved; review it before proceeding")
-    sql = "BEGIN;\n" + "\n".join((SQL_ROOT / name).read_text() for name in SCHEMAS) + "\nCOMMIT;\n"
-    database(directory, settings, sql)
+        raise SetupError("Local Flyway history differs from this checkout; start the current backend first. "
+                         "A DB prepared with the old issue-schema SQL needs a new isolated environment")
     private_write(directory / "schema.json", json.dumps(schema_fingerprints(), indent=2) + "\n")
-    print("C preparation SQL applied only to this isolated DB; B team tables come from Flyway V20.")
+    print("Schema comes from Flyway only (B V20, C V22); no SQL applied by this script.")
 
 
 def backend_environment(directory, settings, enable_sync=False):

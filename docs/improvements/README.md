@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 0 | [00-rules-docs.md](00-rules-docs.md) 규칙 문서 정리 | 완료 (#242, #243) |
 | 1 | [01-api-prefix-and-naming.md](01-api-prefix-and-naming.md) `/api/v1`, 클래스 이름, Entity 구조, CI 규칙 | 완료 (#244, #245) |
-| 2 | [02-jpa-migration.md](02-jpa-migration.md) JdbcTemplate → JPA, 담당자별 | 시작 전 |
+| 2 | [02-jpa-migration.md](02-jpa-migration.md) JdbcTemplate → JPA, 담당자별 | 진행 중 (B #248, D #249, A #251 일부, C `chore/issue-jpa`) |
 | 3 | [03-frontend.md](03-frontend.md) 프론트 컴포넌트 파일명, lint, URL·WBS 대조 | 시작 전 |
 | 4 | [04-cleanup.md](04-cleanup.md) README, 프로필, 과거 PR·커밋 정리 | 시작 전 |
 

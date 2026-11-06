@@ -21,12 +21,14 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.entity.account.User;
@@ -73,6 +75,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.socket.WebSocketHttpHeaders;
@@ -747,6 +750,42 @@ class ChatRoomBasicsIntegrationTest {
 		return mockMvc.perform(get("/api/v1/user/chat-rooms/" + roomId + "/messages").cookie(cookie(user)))
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
+	}
+
+	@Test
+	void everyRoomEndpointRejectsAnOutsiderAndAnAnonymousCaller() throws Exception {
+		User author = user("access-author");
+		User other = user("access-other");
+		User outsider = user("access-outsider");
+		ChatRoom room = direct(author, other, DmStatus.ACCEPTED);
+		ChatMessage message = messages.saveAndFlush(ChatMessage.text(room, author.getId(), "비공개"));
+		String base = "/api/v1/user/chat-rooms/" + room.getId();
+		String item = base + "/messages/" + message.getId();
+		String json = "{\"text\":\"x\",\"muted\":true,\"lastReadMessageId\":" + message.getId() + "}";
+		List<Supplier<MockHttpServletRequestBuilder>> requests = List.of(
+				() -> get(base),
+				() -> get(base + "/messages"),
+				() -> get(base + "/mention-candidates"),
+				() -> get(item + "/unread-members"),
+				() -> post(base + "/read").contentType(MediaType.APPLICATION_JSON).content(json),
+				() -> post(base + "/share-cards").contentType(MediaType.APPLICATION_JSON)
+						.content("{\"targetType\":\"POST\",\"targetId\":1,\"clientMessageId\":\"" + UUID.randomUUID() + "\"}"),
+				() -> patch(item).contentType(MediaType.APPLICATION_JSON).content(json),
+				() -> delete(item),
+				() -> patch(base + "/notification").contentType(MediaType.APPLICATION_JSON).content(json),
+				() -> delete(base + "/members/me"));
+		for (Supplier<MockHttpServletRequestBuilder> request : requests) {
+			mockMvc.perform(request.get().cookie(cookie(outsider)))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+			mockMvc.perform(request.get())
+					.andExpect(status().isUnauthorized());
+		}
+		// None of the rejected calls changed anything.
+		assertThat(messages.findById(message.getId()).orElseThrow().getBody()).isEqualTo("비공개");
+		assertThat(members.findActive(room.getId(), author.getId())).isPresent();
+		assertThat(members.findActive(room.getId(), other.getId()).orElseThrow().isMuted()).isFalse();
+		assertThat(members.findActive(room.getId(), outsider.getId())).isEmpty();
 	}
 
 	private void stamp(long messageId, Instant createdAt) {

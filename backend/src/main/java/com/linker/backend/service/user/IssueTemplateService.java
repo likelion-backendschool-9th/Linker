@@ -5,8 +5,8 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.*;
-import com.linker.backend.repository.issue.*;
-import com.linker.backend.repository.issue.IssueContextRepository.*;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.*;
+import com.linker.backend.repository.issue.IssueRepository;
 import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
@@ -15,22 +15,19 @@ import org.springframework.transaction.annotation.*;
 @Transactional(propagation = Propagation.NEVER)
 public class IssueTemplateService {
   private final UserIssueAccess access;
-  private final IssueContextRepository contexts;
-  private final IssueDetailRepository rows;
+  private final IssueRepository issueRepository;
   private final GithubAppClient app;
   private final GithubIssueClient github;
   private final IssueTemplateParser parser;
 
   public IssueTemplateService(
       UserIssueAccess access,
-      IssueContextRepository contexts,
-      IssueDetailRepository rows,
+      IssueRepository issueRepository,
       GithubAppClient app,
       GithubIssueClient github,
       IssueTemplateParser parser) {
     this.access = access;
-    this.contexts = contexts;
-    this.rows = rows;
+    this.issueRepository = issueRepository;
     this.app = app;
     this.github = github;
     this.parser = parser;
@@ -40,7 +37,7 @@ public class IssueTemplateService {
 
   public Selection select(AuthenticatedUser u, long team, long repo) {
     access.member(u, team);
-    var c = contexts.get(team);
+    var c = issueRepository.context(team);
     return new Selection(
         c,
         c.repos().stream()
@@ -111,14 +108,14 @@ public class IssueTemplateService {
             .findFirst()
             .orElseGet(() -> builtIn("task", true));
     access.member(u, team);
-    if (!contexts.get(team).equals(s.context()))
+    if (!issueRepository.context(team).equals(s.context()))
       throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
     return result;
   }
 
   public List<IssueDetailResponse.Person> candidates(Selection s) {
     String token = app.installationReadToken(s.context().installationId());
-    return rows.candidates(s.context().teamId()).stream()
+    return issueRepository.assigneeCandidates(s.context().teamId()).stream()
         .filter(p -> github.candidateCanRead(s.repo(), p.login(), token))
         .toList();
   }
@@ -130,7 +127,7 @@ public class IssueTemplateService {
     var labels =
         github.labelOptions(s.repo(), app.installationReadToken(s.context().installationId()));
     access.member(u, team);
-    if (!contexts.get(team).equals(s.context()))
+    if (!issueRepository.context(team).equals(s.context()))
       throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
     return new IssueTemplateResponse.ListResponse(
         templates.stream()

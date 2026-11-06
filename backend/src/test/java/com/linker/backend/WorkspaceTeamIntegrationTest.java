@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
-import javax.sql.DataSource;
 
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserType;
@@ -23,10 +22,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -62,7 +59,6 @@ class WorkspaceTeamIntegrationTest {
 
 	@Autowired MockMvc mvc;
 	@Autowired JdbcTemplate jdbc;
-	@Autowired DataSource dataSource;
 	@Autowired UserRepository users;
 	@Autowired AuthService sessions;
 	@Autowired ObjectMapper json;
@@ -70,10 +66,7 @@ class WorkspaceTeamIntegrationTest {
 
 	@BeforeEach
 	void clean() {
-		// B team tables now come from Flyway V20; only C's issue schema remains prepared.
-		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.issues') is null", Boolean.class))) {
-			new ResourceDatabasePopulator(new ClassPathResource("db/issue-schema/issue-cache.sql")).execute(dataSource);
-		}
+		// Team (V20) and issue (V22) tables both come from Flyway.
 		jdbc.execute("TRUNCATE users, github_repos RESTART IDENTITY CASCADE");
 		org = 100;
 	}
