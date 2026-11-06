@@ -185,7 +185,8 @@ class ChatQueryRepositoriesIntegrationTest {
 	void teamRoomsIgnoreBlocksAndHistoryStartCutsOlderMessages() {
 		User viewer = user("team-viewer");
 		User other = user("team-other");
-		ChatRoom room = rooms.saveAndFlush(ChatRoom.team(9_000_000L + System.nanoTime() % 1000));
+		long teamId = com.linker.backend.support.TeamTestFixtures.team(jdbc, viewer.getId(), "조회 테스트 팀", "ACTIVE");
+		ChatRoom room = rooms.saveAndFlush(ChatRoom.team(teamId));
 		members.saveAndFlush(ChatRoomMember.join(room, viewer.getId()));
 		members.saveAndFlush(ChatRoomMember.join(room, other.getId()));
 		long old = message(room, other, "예전", T0);

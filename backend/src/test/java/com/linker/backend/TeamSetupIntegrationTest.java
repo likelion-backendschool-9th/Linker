@@ -46,7 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
-/** Real common Flyway history plus B/C prepared schemas, inside isolated containers only. */
+/** Real Flyway history (including B V20) plus C's preparation, in isolated containers only. */
 @SpringBootTest(properties = "spring.jpa.show-sql=false")
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 @Testcontainers
@@ -86,6 +86,9 @@ class TeamSetupIntegrationTest {
   @Autowired TeamAccess access;
   @Autowired TeamSyncService sync;
   @Autowired IssueContextRepository contexts;
+  @Autowired com.linker.backend.repository.team.TeamRepository teamRows;
+  @Autowired com.linker.backend.repository.team.TeamMemberRepository memberRows;
+  @Autowired jakarta.persistence.EntityManager entityManager;
   @Autowired GithubWebhookService webhooks;
   @Autowired GithubWebhookDeliveryRepository deliveries;
   @MockitoBean GithubAppClient app;
@@ -111,13 +114,9 @@ class TeamSetupIntegrationTest {
           "main");
 
   private void preparedSchemasAfterFlyway() {
-    if (!Boolean.TRUE.equals(jdbc.queryForObject(
-        "select to_regclass('public.teams') is null", Boolean.class))) return;
-    new ResourceDatabasePopulator(
-        new ClassPathResource("db/team-schema/team-foundation.sql"),
-        new ClassPathResource("db/team-schema/team-repositories.sql"),
-        new ClassPathResource("db/team-schema/team-setup.sql"),
-        new ClassPathResource("db/issue-schema/issue-cache.sql"))
+    if (!Boolean.TRUE.equals(
+        jdbc.queryForObject("select to_regclass('public.issues') is null", Boolean.class))) return;
+    new ResourceDatabasePopulator(new ClassPathResource("db/issue-schema/issue-cache.sql"))
         .execute(jdbc.getDataSource());
   }
 
@@ -953,24 +952,290 @@ class TeamSetupIntegrationTest {
     verify(github, never()).createDateField(anyLong(), anyString(), anyString());
   }
 
+  @Test
+  void jpaConnectionProjectsTheSameIdsAndFieldsAsCsExistingContext() throws Exception {
+    var owner = user("jpa-owner", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long id = create(session);
+    assertThat(teamRows.findConnection(id).orElseThrow().boardId()).isNull();
+    assertThat(teamRows.findOwnedTeams(owner.getId()))
+        .extracting(item -> item.id())
+        .containsExactly(id);
+    link(session, id);
+    board(session, id);
+
+    var existing = contexts.get(id);
+    var connection = teamRows.findConnection(id).orElseThrow();
+    assertThat(connection.installationId()).isEqualTo(existing.installationId()).isEqualTo(42);
+    assertThat(connection.githubOrgId()).isEqualTo(existing.orgId());
+    assertThat(connection.projectNodeId()).isEqualTo(existing.board().nodeId());
+    assertThat(connection.statusFieldId()).isEqualTo(existing.board().statusField());
+    assertThat(connection.startDateFieldId()).isEqualTo(existing.board().startField());
+    assertThat(connection.dueDateFieldId()).isEqualTo(existing.board().dueField());
+    assertThat(connection.status().name()).isEqualTo(existing.status());
+    assertThat(teamRows.findLinkedRepos(id)).hasSize(1);
+    assertThat(teamRows.findLinkedRepos(id).getFirst().githubRepoId()).isEqualTo(900);
+    assertThat(teamRows.findLinkedRepos(id).getFirst().repoId())
+        .isEqualTo(existing.repos().getFirst().id());
+    var mapping =
+        teamRows.findBoardStatusMappings(connection.boardId()).stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    item -> item.githubOptionId(), item -> item.linkerStatus().name()));
+    assertThat(mapping).isEqualTo(existing.board().statuses());
+
+    jdbc.update("update github_repos set deleted_at=now()");
+    assertThat(teamRows.findLinkedRepos(id)).isEmpty();
+    jdbc.update("update teams set status='DELETED' where id=?", id);
+    assertThat(teamRows.findConnection(id)).isEmpty();
+    // The existing owner withdrawal guard deliberately includes archived/deleted teams.
+    assertThat(teamRows.findOwnedTeams(owner.getId())).hasSize(1);
+  }
+
+  @Test
+  void jpaMembershipRetainsRoleStatusAndLeftPeriodChecks() throws Exception {
+    var owner = user("jpa-access", UserType.DEVELOPER);
+    long id = create(cookie(owner));
+    for (String status : List.of("ACTIVE", "COMPLETED", "READ_ONLY", "ARCHIVED", "DELETED")) {
+      jdbc.update("update teams set status=? where id=?", status, id);
+      for (String role : List.of("OWNER", "ADMIN", "MEMBER")) {
+        jdbc.update("update team_members set role=? where team_id=?", role, id);
+        boolean readable = !List.of("ARCHIVED", "DELETED").contains(status);
+        assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER)).isEqualTo(readable);
+        assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.ADMIN))
+            .isEqualTo(readable && !role.equals("MEMBER"));
+        assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.OWNER))
+            .isEqualTo(readable && role.equals("OWNER"));
+      }
+    }
+    jdbc.update("update teams set status='ACTIVE' where id=?", id);
+    jdbc.update("update team_members set left_at=now() where team_id=?", id);
+    assertThat(memberRows.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(id)).isEmpty();
+    assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER)).isFalse();
+    jdbc.update("update team_members set left_at=null where team_id=?", id);
+    for (String status : List.of("ACTIVE", "SUSPENDED", "WITHDRAWING", "DELETED")) {
+      jdbc.update("update users set status=? where id=?", status, owner.getId());
+      assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER))
+          .isEqualTo(List.of("ACTIVE", "SUSPENDED").contains(status));
+    }
+    jdbc.update("update users set status='ACTIVE',user_type='RECRUITER' where id=?", owner.getId());
+    assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER)).isFalse();
+    assertThat(access.hasRole(0, id, TeamRole.Level.MEMBER)).isFalse();
+  }
+
+  @Test
+  void allSevenV20TablesCanBeReadThroughTheirActualJpaMappings() throws Exception {
+    var owner = user("jpa-mapping", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long id = create(session);
+    link(session, id);
+    board(session, id);
+    var team = entityManager.find(com.linker.backend.entity.team.Team.class, id);
+    assertThat(team.getCreatedAt()).isNotNull();
+    assertThat(team.isAiSummaryEnabled()).isTrue();
+    var installation =
+        entityManager.find(
+            com.linker.backend.entity.github.GithubInstallation.class, team.getInstallationId());
+    assertThat(installation.getGithubInstallationId()).isEqualTo(42);
+    var member = memberRows.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(id).getFirst();
+    assertThat(member.getUserId()).isEqualTo(owner.getId());
+    assertThat(member.getGithubOrgState().name()).isEqualTo("MEMBER");
+    var repo =
+        entityManager.find(
+            com.linker.backend.entity.team.TeamRepo.class,
+            jdbc.queryForObject("select id from team_repos", Long.class));
+    assertThat(repo.getRepoId()).isEqualTo(teamRows.findLinkedRepos(id).getFirst().repoId());
+    var project =
+        entityManager.find(
+            com.linker.backend.entity.team.TeamProjectBoard.class,
+            teamRows.findConnection(id).orElseThrow().boardId());
+    assertThat(project.getGithubProjectNodeId()).isEqualTo(contexts.get(id).board().nodeId());
+    var option =
+        entityManager.find(
+            com.linker.backend.entity.team.BoardStatusMapping.class,
+            jdbc.queryForObject("select min(id) from board_status_mappings", Long.class));
+    assertThat(option.getGithubOptionName()).isNotBlank();
+    Long pr =
+        jdbc.queryForObject(
+            """
+            insert into pull_requests(team_id,repo_id,github_pr_id,number,title,state,draft,
+              github_updated_at,created_at,updated_at) values (?,?,9901,1,'PR','OPEN',false,now(),now(),now()) returning id
+            """,
+            Long.class,
+            id,
+            repo.getRepoId());
+    assertThat(
+            entityManager
+                .find(com.linker.backend.entity.github.PullRequest.class, pr)
+                .getState()
+                .name())
+        .isEqualTo("OPEN");
+    assertThat(
+            jdbc.queryForObject(
+                "select success from flyway_schema_history where version='20'", Boolean.class))
+        .isTrue();
+  }
+
+  @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+  @Test
+  void setupSessionLockSurvivesShortCommitsRejectsContendersAndReleasesAfterFailure()
+      throws Exception {
+    var entered = new java.util.concurrent.CountDownLatch(1);
+    var release = new java.util.concurrent.CountDownLatch(1);
+    try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
+      var held =
+          executor.submit(
+              () ->
+                  teamRows.withTeamSetupLock(
+                      1234567,
+                      () -> {
+                        outside();
+                        new org.springframework.transaction.support.TransactionTemplate(
+                                transactionManager)
+                            .executeWithoutResult(
+                                status -> jdbc.queryForObject("select 1", Integer.class));
+                        outside();
+                        entered.countDown();
+                        try {
+                          if (!release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+                            throw new AssertionError("lock test timed out");
+                        } catch (InterruptedException failure) {
+                          throw new AssertionError(failure);
+                        }
+                        throw new IllegalStateException("synthetic callback failure");
+                      }));
+      try {
+        assertThat(entered.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        assertThatThrownBy(() -> teamRows.withTeamSetupLock(1234567, () -> null))
+            .isInstanceOfSatisfying(
+                ApiException.class, e -> assertThat(e.getStatus()).isEqualTo(409));
+        assertThat(teamRows.withOrganizationSetupLock(1234567, () -> "independent scope"))
+            .isEqualTo("independent scope");
+      } finally {
+        release.countDown();
+      }
+      assertThatThrownBy(() -> held.get(10, java.util.concurrent.TimeUnit.SECONDS))
+          .hasRootCauseInstanceOf(IllegalStateException.class)
+          .hasRootCauseMessage("synthetic callback failure");
+    }
+    assertThat(teamRows.withTeamSetupLock(1234567, () -> "released")).isEqualTo("released");
+    new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+        .executeWithoutResult(
+            status ->
+                assertThatThrownBy(() -> teamRows.withTeamSetupLock(1234567, () -> null))
+                    .isInstanceOf(
+                        org.springframework.transaction.IllegalTransactionStateException.class));
+  }
+
+  @Test
+  void pullRequestUpsertRejectsOlderSnapshotsAndRollsBackWithTheCaller() throws Exception {
+    var owner = user("pr-revision", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long team = create(session);
+    link(session, team);
+    long repoId = teamRows.repoId(repo.id());
+    var tx = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+    var recent =
+        new PullRequest(
+            9988,
+            1,
+            "recent",
+            "CLOSED",
+            false,
+            "author",
+            "https://github.com/org/api/pull/1",
+            null,
+            Instant.parse("2026-11-01T12:00:00Z"),
+            Instant.parse("2026-11-01T12:00:00Z"));
+    var old =
+        new PullRequest(
+            9988,
+            1,
+            "old",
+            "OPEN",
+            false,
+            "author",
+            "https://github.com/org/api/pull/1",
+            null,
+            null,
+            recent.updatedAt().minusSeconds(60));
+    tx.executeWithoutResult(
+        status -> {
+          teamRows.cachePullRequest(team, repoId, recent, Instant.now());
+          teamRows.cachePullRequest(team, repoId, old, Instant.now());
+        });
+    assertThat(
+            jdbc.queryForObject(
+                "select title from pull_requests where github_pr_id=9988", String.class))
+        .isEqualTo("recent");
+    var cancelled =
+        new PullRequest(
+            9989, 2, "rollback", "OPEN", false, "author", null, null, null, recent.updatedAt());
+    tx.executeWithoutResult(
+        status -> {
+          teamRows.cachePullRequest(team, repoId, cancelled, Instant.now());
+          status.setRollbackOnly();
+        });
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from pull_requests where github_pr_id=9989", Long.class))
+        .isZero();
+    assertThatThrownBy(() -> teamRows.cachePullRequest(team, repoId, old, Instant.now()))
+        .isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
+  }
+
+  @Test
+  void workspaceJpaProjectionHasBoundedQueryCountAsTeamsGrow() throws Exception {
+    var owner = user("query-count", UserType.DEVELOPER);
+    seedMembership(owner, 8000, "ACTIVE");
+    var statistics =
+        entityManager
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    boolean enabled = statistics.isStatisticsEnabled();
+    statistics.setStatisticsEnabled(true);
+    try {
+      statistics.clear();
+      assertThat(teamRows.findCurrentTeams(owner.getId())).hasSize(1);
+      long queries = statistics.getPrepareStatementCount();
+      for (int i = 1; i < 5; i++) seedMembership(owner, 8000 + i, i == 4 ? "ARCHIVED" : "ACTIVE");
+      statistics.clear();
+      var rows = teamRows.findCurrentTeams(owner.getId());
+      assertThat(rows).hasSize(5);
+      assertThat(rows.getLast().status()).isEqualTo("ARCHIVED");
+      assertThat(rows).allSatisfy(row -> assertThat(row.openIssueCount()).isNull());
+      assertThat(statistics.getPrepareStatementCount()).isEqualTo(queries).isEqualTo(3);
+    } finally {
+      statistics.setStatisticsEnabled(enabled);
+    }
+  }
+
   private void seedMembership(User owner, long org, String status) {
     long installation =
         jdbc.queryForObject(
-            "insert into github_installations(github_installation_id,account_id,account_login,account_type,repository_selection,installed_by,created_at,updated_at) values (?,?,'seed','Organization','ALL',?,now(),now()) returning id",
+            "insert into"
+                + " github_installations(github_installation_id,account_id,account_login,account_type,repository_selection,installed_by,created_at,updated_at)"
+                + " values (?,?,'seed','Organization','ALL',?,now(),now()) returning id",
             Long.class,
             org,
             org,
             owner.getId());
     long team =
         jdbc.queryForObject(
-            "insert into teams(installation_id,github_org_id,github_org_login,name,status,created_by,created_at,updated_at) values (?,?,'seed','Seed',?,?,now(),now()) returning id",
+            "insert into"
+                + " teams(installation_id,github_org_id,github_org_login,name,status,created_by,created_at,updated_at)"
+                + " values (?,?,'seed','Seed',?,?,now(),now()) returning id",
             Long.class,
             installation,
             org,
             status,
             owner.getId());
     jdbc.update(
-        "insert into team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at) values (?,?,'OWNER','MEMBER',now(),now(),now())",
+        "insert into"
+            + " team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at)"
+            + " values (?,?,'OWNER','MEMBER',now(),now(),now())",
         team,
         owner.getId());
   }
@@ -981,13 +1246,16 @@ class TeamSetupIntegrationTest {
 
   private void join(long team, User user, String role, String githubState) {
     jdbc.update(
-        "insert into team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at) values (?,?,?,?,now(),now(),now())",
+        "insert into"
+            + " team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at)"
+            + " values (?,?,?,?,now(),now(),now())",
         team,
         user.getId(),
         role,
         githubState);
     jdbc.update(
-        "insert into chat_room_members(room_id,user_id,joined_at,created_at,updated_at) select id,?,now(),now(),now() from chat_rooms where team_id=?",
+        "insert into chat_room_members(room_id,user_id,joined_at,created_at,updated_at) select"
+            + " id,?,now(),now(),now() from chat_rooms where team_id=?",
         user.getId(),
         team);
   }
@@ -1017,7 +1285,8 @@ class TeamSetupIntegrationTest {
 
   private void identity(User user, long github) {
     jdbc.update(
-        "insert into auth_identities(user_id,provider,provider_user_id,created_at,updated_at) values (?,'GITHUB',?,now(),now())",
+        "insert into auth_identities(user_id,provider,provider_user_id,created_at,updated_at)"
+            + " values (?,'GITHUB',?,now(),now())",
         user.getId(),
         Long.toString(github));
   }

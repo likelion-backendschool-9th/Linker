@@ -626,21 +626,38 @@ class IssueReadIntegrationTest {
     jdbc.update(
         "INSERT INTO auth_identities(user_id,provider,provider_user_id,created_at,updated_at)"
             + " VALUES(1,'GITHUB','101',now(),now()),(2,'GITHUB','102',now(),now())");
-    jdbc.update("INSERT INTO github_installations VALUES(1,500,NULL,NULL)");
-    jdbc.update("INSERT INTO teams VALUES(10,1,700,'acme','ACTIVE'),(20,1,700,'acme','READ_ONLY')");
+    jdbc.update("""
+        INSERT INTO github_installations(id,github_installation_id,account_id,account_login,
+          account_type,repository_selection,installed_by,created_at,updated_at)
+        VALUES(1,500,700,'acme','Organization','ALL',1,now(),now()),
+              (2,501,701,'other','Organization','ALL',1,now(),now())
+        """);
+    jdbc.update("""
+        INSERT INTO teams(id,installation_id,github_org_id,github_org_login,status,name,
+          created_by,created_at,updated_at)
+        VALUES(10,1,700,'acme','ACTIVE','Acme',1,now(),now()),
+              (20,2,701,'other','READ_ONLY','Read only',1,now(),now())
+        """);
     jdbc.update(
         "INSERT INTO"
             + " github_repos(id,github_repo_id,owner_login,name,full_name,deleted_at,created_at,updated_at)"
             + " VALUES(100,1000,'acme','web','acme/web',NULL,now(),now()),"
             + "(200,2000,'other','private','other/private',NULL,now(),now())");
-    jdbc.update("INSERT INTO team_repos VALUES(1,10,100),(2,20,200)");
+    jdbc.update("INSERT INTO team_repos(id,team_id,repo_id,connected_by,created_at,updated_at)"
+        + " VALUES(1,10,100,1,now(),now()),(2,20,200,1,now(),now())");
     jdbc.update(
-        "INSERT INTO team_members(id,team_id,user_id,role,left_at)"
-            + " VALUES(1,10,1,'MEMBER',NULL),(2,10,2,'MEMBER',now()),(3,20,1,'MEMBER',NULL)");
+        "INSERT INTO team_members(id,team_id,user_id,role,left_at,github_org_state,joined_at,created_at,updated_at)"
+            + " VALUES(1,10,1,'MEMBER',NULL,'MEMBER',now(),now(),now()),"
+            + "(2,10,2,'MEMBER',now(),'MEMBER',now(),now(),now()),"
+            + "(3,20,1,'MEMBER',NULL,'MEMBER',now(),now(),now())");
     jdbc.update(
-        "INSERT INTO team_project_boards"
-            + " VALUES(1,10,'BOARD','STATUS','START','TARGET'),(2,20,'OTHERBOARD','STATUS','START','TARGET')");
-    jdbc.update("INSERT INTO board_status_mappings VALUES(1,1,'READY','TODO')");
+        "INSERT INTO team_project_boards(id,team_id,github_project_node_id,status_field_id,"
+            + "start_date_field_id,due_date_field_id,project_number,title,created_by_linker,"
+            + "connected_by,created_at,updated_at)"
+            + " VALUES(1,10,'BOARD','STATUS','START','TARGET',1,'Board',false,1,now(),now()),"
+            + "(2,20,'OTHERBOARD','STATUS','START','TARGET',2,'Other',false,1,now(),now())");
+    jdbc.update("INSERT INTO board_status_mappings(id,board_id,github_option_id,linker_status,"
+        + "github_option_name,created_at,updated_at) VALUES(1,1,'READY','TODO','Ready',now(),now())");
     for (String key : redis.keys("issues:*")) redis.delete(key);
     redirectLocation = null;
     moveConnected = false;
@@ -1533,7 +1550,9 @@ class IssueReadIntegrationTest {
   void page12DoneClosesAndBlockedReopens() {
     long id = firstIssue();
     jdbc.update(
-        "INSERT INTO board_status_mappings VALUES(2,1,'FINISHED','DONE'),(3,1,'STOP','BLOCKED')");
+        "INSERT INTO board_status_mappings(id,board_id,github_option_id,linker_status,"
+            + "github_option_name,created_at,updated_at) VALUES(2,1,'FINISHED','DONE','Done',now(),now()),"
+            + "(3,1,'STOP','BLOCKED','Blocked',now(),now())");
     assertThat(reads.status(member(), 10, id, "DONE").state()).isEqualTo("CLOSED");
     assertThat(reads.status(member(), 10, id, "BLOCKED").state()).isEqualTo("OPEN");
     assertThat(jdbc.queryForObject("SELECT board_status FROM issues WHERE id=?", String.class, id))
@@ -1753,7 +1772,8 @@ class IssueReadIntegrationTest {
         "INSERT INTO"
             + " github_repos(id,github_repo_id,owner_login,name,full_name,deleted_at,created_at,updated_at)"
             + " VALUES(300,3000,'acme','mobile','acme/mobile',NULL,now(),now())");
-    jdbc.update("INSERT INTO team_repos VALUES(3,10,300)");
+    jdbc.update("INSERT INTO team_repos(id,team_id,repo_id,connected_by,created_at,updated_at)"
+        + " VALUES(3,10,300,1,now(),now())");
     redirectDetail = true;
     moveConnected = true;
     redirectLocation =
@@ -2377,7 +2397,7 @@ class IssueReadIntegrationTest {
 
   @Test
   void missingStatusFieldIsRejectedBeforeCreatingGithubIssue() throws Exception {
-    jdbc.update("UPDATE team_project_boards SET status_field_id=NULL WHERE team_id=10");
+    jdbc.update("UPDATE team_project_boards SET status_field_id='' WHERE team_id=10");
     mvc.perform(
             post(createUrl())
                 .cookie(login(1))
@@ -2695,7 +2715,7 @@ class IssueReadIntegrationTest {
     jdbc.update("UPDATE team_members SET left_at=now() WHERE user_id=1 AND team_id=10");
     assertThat(dueReminders.remindDueTomorrow()).isZero();
     jdbc.update(
-        "UPDATE team_members SET left_at=NULL,github_org_state='PENDING' WHERE user_id=1 AND"
+        "UPDATE team_members SET left_at=NULL,github_org_state='INVITED' WHERE user_id=1 AND"
             + " team_id=10");
     assertThat(dueReminders.remindDueTomorrow()).isZero();
     jdbc.update("UPDATE team_members SET github_org_state='MEMBER' WHERE user_id=1 AND team_id=10");
