@@ -28,7 +28,9 @@ import com.linker.backend.entity.moderation.ReportTargetType;
 import com.linker.backend.entity.moderation.Sanction;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.integration.github.GithubTokenCipher;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.account.UserSessionRepository;
 import com.linker.backend.repository.moderation.AdminActionRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.AppealRepository;
@@ -66,6 +68,12 @@ class AdminServiceTest {
 	private UserRepository users;
 	@Mock
 	private AdminNotificationService notifications;
+	@Mock
+	private GithubTokenCipher otpSecrets;
+	@Mock
+	private UserSessionRepository sessions;
+	@Mock
+	private ReportContentEffects content;
 
 	@Test
 	void hideRequiresAReasonAndDoesNotRecordAnAction() {
@@ -149,7 +157,7 @@ class AdminServiceTest {
 	private AdminService service() {
 		return new AdminService(
 				cases, reports, snapshots, sanctions, appeals, actions, admins, users, notifications,
-				Clock.fixed(NOW, ZoneOffset.UTC));
+				otpSecrets, sessions, content, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
 	private static Admin operator(long id) {

@@ -9,6 +9,7 @@ import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
+import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
@@ -76,6 +77,16 @@ public class UserChatController {
 	@Operation(operationId = "unreadChatSummary")
 	public ResponseEntity<UnreadSummaryResponse> unreadSummary(@AuthenticationPrincipal AuthenticatedUser user) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.unreadSummary(user));
+	}
+
+	@GetMapping("/chat-rooms/{roomId}")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "getChatRoom")
+	public ResponseEntity<ChatRoomInfoResponse> room(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.room(user, roomId));
 	}
 
 	@GetMapping("/chat-rooms/{roomId}/messages")

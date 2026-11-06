@@ -4,9 +4,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -88,6 +93,30 @@ public class ChatMessageQueryRepository {
 	public List<ChatMessageRow> after(long viewerId, long roomId, boolean team, Instant historyStart, long after, int limit) {
 		String sql = SELECT + " AND m.id > :anchor ORDER BY m.id ASC LIMIT :limit";
 		return jdbc.query(sql, params(viewerId, roomId, team, historyStart, after).addValue("limit", limit), this::map);
+	}
+
+	/**
+	 * Server URLs in {@code sort_order}. Callers drop these for deleted, hidden, and not-visible rows.
+	 */
+	public Map<Long, List<String>> imageUrls(Collection<Long> messageIds) {
+		if (messageIds == null || messageIds.isEmpty()) {
+			return Map.of();
+		}
+		Map<Long, List<String>> urls = new LinkedHashMap<>();
+		jdbc.query(
+				"""
+				SELECT i.message_id, f.url
+				FROM chat_message_images i
+				JOIN uploaded_files f ON f.id = i.file_id
+				WHERE i.message_id IN (:ids)
+				  AND f.url IS NOT NULL
+				ORDER BY i.message_id, i.sort_order, i.id
+				""",
+				new MapSqlParameterSource("ids", messageIds),
+				(RowCallbackHandler) rs -> urls.computeIfAbsent(rs.getLong("message_id"), id -> new ArrayList<>())
+						.add(rs.getString("url"))
+		);
+		return urls;
 	}
 
 	public boolean visibleTo(long viewerId, long roomId, boolean team, Instant historyStart, long messageId) {

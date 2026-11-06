@@ -75,6 +75,10 @@ public class UploadedFile extends BaseTimeEntity {
 		return uploaderId;
 	}
 
+	public UploadPurpose getPurpose() {
+		return purpose;
+	}
+
 	public String getStorageKey() {
 		return storageKey;
 	}

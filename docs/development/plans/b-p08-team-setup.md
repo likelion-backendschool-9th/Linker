@@ -2,18 +2,18 @@
 
 관련: #80, 선행 #76 / PR #214, C 연결 요청 PR #208.
 
-작업 브랜치 `feat/08-github-app-team-setup`에 최신 dev `2251a9f`를 통합했다. 본인의 #214와 A의 #213·#215·#216 머지를 반영했으며, 기존 07 동작과 A가 추가한 정책 상수를 보존했다. 07 의존성은 이제 dev에 머지된 상태다.
+작업 브랜치 `feat/08-github-app-team-setup`에 최신 dev `a9cc681`을 통합했다. #219의 Flyway·OTP 수정, #220의 mock OTP 복원, #218의 E 공유 테이블, 이후 A/C/D 구현을 보존하고 충돌 5곳을 해결했다.
 
 **현재 범위는 서버 코드·SQL 준비본·격리 자동 검증이다. 정식 마이그레이션 번호·실제 App·웹훅 샘플·브라우저 실연동 완료가 아니다.**
 
 ## 공통 변경 범위
 
-- 기존 공통 ERD·WBS·태그 계약·운영 안내, C/D 업무 코드는 유지한다. 사용자 추가 요청으로 A의 PublicAuthService에서는 기존 정책대로 세션 OTP 이력이 있어야 운영자 API 권한을 부여하도록 보완했다. JWT claim·쿠키·오류 코드·알림 생성 시그니처·C 동기화 플래그는 유지한다.
-- TeamAccess의 기존 인터페이스를 유지하면서 항상 거절하던 임시 구현을 DB 멤버십 구현으로 교체한다. 이는 C가 요청한 실제 권한 연결이며, 삭제/탈퇴/역할/보관 상태를 함께 검증한다.
-- PlanLimits에는 이미 Policy에 있는 읽기 전용 30일 보관 값만 추가한다. 기존 한도나 A/D 상수는 바꾸지 않는다.
-- B worker/webhook 설정만 기본 false로 추가한다. 공용 생성 SDK는 서버 스펙으로 재생성하며 p07·p11 생성 파일은 dev와 동일하다.
-- 최신 #216에서 삭제된 변수 adminOtpLastActiveAt의 남은 초기화 한 줄이 타입 검사를 막아 그 참조만 제거했다. 서버 OTP 판정 보완은 별도이며 mock의 권한 규칙을 새로 정하지 않았다.
-- 07 테스트는 마이그레이션이 항상 4개라는 가정 대신 준비 SQL 적용 전후의 실제 이력이 동일한지 비교한다. 정식 버전을 임의 확정하지 않는다.
+- 공통 ERD·WBS·태그 계약·운영 안내와 A/C/D 업무 구현은 최신 dev를 그대로 보존한다. PublicAuthService·FoundationIntegrationTest·WorkspaceTeamIntegrationTest·mock-fetch.ts도 dev와 동일하다.
+- TeamAccess SPI의 임시 거절 구현을 DB 멤버십 구현으로 교체한다. 삭제/탈퇴/역할/보관 상태를 검증한다. JWT claim·쿠키·오류 코드·알림 생성 시그니처는 변경하지 않는다.
+- PlanLimits에는 기존 Policy의 읽기 전용 30일 보관 값만 추가한다. B worker/webhook 설정만 기본 false로 추가하고 C 플래그는 유지한다.
+- 서버 스펙으로 SDK를 재생성한다. 기존 페이지별 SDK와 기존 모델 내보내기는 모두 보존하고 p08·공통 설치 검증 계약을 연결한다. 공용 모델 파일에는 최신 서버 응답 모델도 포함된다.
+- 08 테스트는 정식 Flyway V1~V18와 E의 실제 github_repos를 사용한다. 임시 Gradle init script와 복제 저장소 테이블을 제거하고, B/C 준비 SQL만 격리 테스트 DB에 추가한다.
+- C의 새 서비스가 구체 GithubIssueClient를 요구하므로 B 테스트의 모의 외부 어댑터도 같은 구체 타입으로 맞췄다. C 제품 코드는 변경하지 않는다.
 
 ## API와 권한
 
@@ -72,45 +72,34 @@ GitHub HTTP 호출은 ambient DB transaction을 거절한다. 설정의 외부 �
 
 ## SQL 준비 순서와 활성화 조건
 
-사용자 확인: **마이그레이션 번호 합의는 아직 없다. 코드와 준비본만 진행한다.**
+#219에서 A/D의 V4 중복을 해결했다. GitHub 로그인은 V4, 채팅 edited_at은 V10이다. E 공유 테이블은 V11~V14로 편입됐으며 최신 공통 Flyway 이력은 V1~V18이다. 이번 작업은 해당 정식 파일이나 checksum을 변경하지 않는다.
 
-현재 dev에는 V4__chat_message_edited_at.sql과 V4__github_social_login.sql이 중복돼 있다. 수정·재번호·기존 checksum 변경을 하지 않았다. B 신규 버전 파일도 추가하지 않았다.
+B 신규 번호는 아직 확정하지 않는다. 다음 준비본은 자동 적용 경로 밖에 있다.
 
-A의 V5~V9도 현재 dev에 들어왔다. E `feat/59-e-backend`의 V2~V5는 아직 dev에 없으며 D/A 번호와 겹친다. E는 공유 github_repos를 V3__post_editor.sql에 정의한다. 향후 합칠 때 버전·실제 적용 이력을 A/D/E와 함께 확인해야 하며, B 번호를 선점하지 않는다.
-
-준비본의 의존 순서는 다음과 같다. 정식 번호와 실제 적용 이력을 확인한 뒤 편입해야 하며, 개발/공용 DB에 수동 실행하라는 안내가 아니다.
-
-1. 현재 공통/인증/채팅의 정식 이력 충돌 해결.
+1. 정식 공통 Flyway V1~V18 적용 (E의 실제 github_repos 포함).
 2. 07의 team-foundation.sql (github_installations/teams/team_members, chat_rooms 팀 FK).
-3. E가 먼저 정의한 공유 github_repos. B가 제품 테이블을 복제 생성하지 않음.
-4. 07의 team-repositories.sql, 08의 team-setup.sql (보드/매핑/첫 PR 동기화용 캐시).
-5. C의 기존 db/issue-schema/issue-cache.sql.
+3. 07의 team-repositories.sql, 08의 team-setup.sql (보드/매핑/첫 PR 캐시).
+4. C의 기존 db/issue-schema/issue-cache.sql.
 
-TEAM_SETUP_WORKER_ENABLED, TEAM_SETUP_WEBHOOK_ENABLED는 기본 false다. 준비본 정식 편입·C 계약/실수신 확인 후 활성화한다. C의 ISSUE_SYNC_ENABLED/ISSUE_WEBHOOK_ENABLED와 기존 배포 전달 설정은 변경하지 않았다. 개인 .env 파일을 변경하거나 키를 작성하지 않았다.
-
-격리 통합 테스트는 Flyway를 테스트에서만 끄고 실제 원본 SQL들을 명시한 순서로 초기화한다. 중복 버전 문제를 해결했다거나 정식 Flyway upgrade 검증을 통과했다고 간주하지 않는다.
+TEAM_SETUP_WORKER_ENABLED와 TEAM_SETUP_WEBHOOK_ENABLED는 기본 false다. B/C 준비본의 정식 버전 편입·업그레이드·실제 수신 공동 확인 후 활성화한다. 개인 .env나 C의 활성화 설정은 변경하지 않았다.
 
 ## 자동 검증 결과 (2026-11-06)
 
-- TeamSetupIntegrationTest 24개 + GithubTeamClientTest 6개 + 기존 UserGithubServiceTest 3개/GithubAppClientTest 7개: 총 40개 통과. 격리 PostgreSQL 16·Redis 7과 로컬 모의 GitHub 서버를 사용했다. 최신 A의 실제 소유 팀 조회·오너 탈퇴 거절·탈퇴 후 팀 접근 거절도 포함한다.
-- 팀·OWNER·채팅방 원자 생성, 다른 조직 동시 생성 시 개인 한도, 역할 거절, 불확실 보드 생성 재시도, 연결한 보드 옵션 보호, 첫 동기화와 실패 재시작, 조직 멤버 제거·재설치·30일 보관을 확인했다.
-- 서명된 합성 웹훅 → 기존 B 수신/dispatch → C 캐시 → 이슈 목록/워크스페이스 집계 검증을 포함한다.
-- backend bootJar, 전체 frontend typecheck·test·프로덕션 빌드, Compose 설정/운영 구성 검증, git diff --check 통과. 웹 테스트 449개 통과, 공용 mock 한 줄 수정 후 관련 11개 재실행 통과. 전체 lint는 오류 0개이며 기존 미사용 인자 경고 4개가 있다.
-- 기본 ./gradlew build는 259개 중 100개 실패했다. 9개 Spring 테스트 컨텍스트가 모두 중복 V4에서 초기화에 실패했고, 이후 테스트도 같은 컨텍스트 실패로 중단됐다. 기존 중복 V4와 준비본 편입은 미해결이다.
-- 별도의 임시 Gradle init script를 사용해 테스트 프로세스에서만 Flyway를 끄고 원본 V1~V9 SQL을 명시한 순서로 초기화하여 회귀 결과를 분리했다. 임시 스크립트는 저장소/CI/운영 설정에 포함하지 않으며, 정식 Flyway upgrade 통과로 간주하지 않는다.
-- OTP 보완 후 이 보조 실행은 286개 전부 통과했다. B 07 통합 17개·08 관련 40개·C 이슈 통합 27개를 포함한다. 운영자 API는 OTP 전 403, 검증한 세션만 200, 다른 세션·권한 회수 후 403, 30분 초과 비활성 시 세션 만료를 확인했다. 정식 Flyway를 사용하는 기본 빌드의 V4 중복은 별개로 남아 있다.
+- **일반 ./gradlew build: 430개 전부 통과**, 실패·오류·생략 0. Flyway 비활성화나 임시 Gradle init script 없이 실행했다. B 08 통합 24개와 최신 A/C/D/E 회귀를 포함한다.
+- 08은 실제 PostgreSQL 16·Redis 7, 정식 Flyway와 E 실제 테이블을 사용하고 B/C 준비본만 테스트 DB에 추가한다. 이 성공을 B/C SQL의 정식 Flyway 편입 완료로 표시하지 않는다.
+- 전체 frontend lint·typecheck·test·프로덕션 빌드 통과. 웹 454개, 브리지 23개, 모바일 33개 및 API 생성 파이프라인을 확인했다.
+- Compose 구문·운영 구성 검사 통과. 배포 테스트는 Linux 컨테이너에서 9개 통과했다. git diff --check 통과.
+- 실제 테스트 조직/App이 없어 GitHub HTTP는 모의 검증이다. 서명된 합성 웹훅 → 기존 B 수신/dispatch → C 캐시 → C API/B 집계를 검증했다.
 
 외부 API 형식은 [GitHub App REST 문서](https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#list-installation-requests-for-the-authenticated-app)와 [Projects GraphQL 문서](https://docs.github.com/en/graphql/reference/projects)를 함께 확인했다.
 
 ## 남은 확인
 
-- A/D/E 적용 이력·번호·머지 순서 합의 후 준비본 정식 Flyway 편입·업그레이드 검증.
-- 서버의 기존 세션 OTP 확인 경계는 복원했다. 실제 OTP 입력·검증 HTTP API/화면은 아직 없으므로 A가 연결해야 하며, 이 작업에서는 새 인증 API를 추가하지 않는다.
-- E 최신 cf7c122는 dev를 통합해 이전 User.java 충돌을 정리했다. 해당 파일이 최신 dev와 동일함을 확인했다. E의 V2~V5 마이그레이션 번호 충돌과 정식 통합은 여전히 조율해야 한다.
-- 실제 테스트 조직·App 준비 후 설치 요청/검증, 보드 생성, C와 실제 웹훅 수신·캐시 갱신 샘플 확인.
-- 08 프론트는 기존 미리보기 상태이며 실 API 저장 동선 연결·실브라우저 왕복은 #79 후속 범위다.
-- 기존 보드는 이름이 Status인 SINGLE_SELECT 필드를 기준으로 연결한다. 이름을 바꾼 사용자 정의 상태 필드는 별도 선택 UI/API 계약 없이 자동 추측하지 않는다.
-- D 채팅의 팀 전송/제목 등 기존 보류 연결과 새 알림 타입 소비 확인. 이 PR에서 D 업무 코드를 임의 변경하지 않음.
-- C/D 및 GitHub App 권한 확인 전 동기화·웹훅 플래그를 임의 활성화하지 않음. 이슈 전체 완료/실서비스 검증 완료 표시는 하지 않음.
+- B/C 준비 SQL의 정식 Flyway 번호·적용 이력·기존 데이터 업그레이드 확인. 기존 V4 중복과 E 테이블 편입은 이미 dev에서 해결된 상태와 구분한다.
+- 실제 테스트 조직·App 준비 후 설치 요청/검증·보드 생성·C와 실제 웹훅 수신/캐시 갱신 샘플 확인.
+- 08 프론트 실 API 저장 동선과 실브라우저 왕복은 #79 후속 범위다.
+- 기존 보드는 이름이 Status인 SINGLE_SELECT 필드를 기준으로 연결한다. 이름을 바꾼 사용자 정의 필드는 자동 추측하지 않는다.
+- D의 팀 채팅·알림 소비, E의 모집 수락/팀·공개 저장소 소비 연결은 각 담당자와 확인한다. A의 실제 OTP 검증 API는 최신 dev 구현을 유지한다.
+- 스키마·계약·실수신 확인 전 worker/webhook을 임의 활성화하거나 이슈 전체 완료로 표시하지 않는다.
 
-이번 작업의 구현 상태·검증 결과·미합의 사항은 이 작업 기록에서 관리한다. 기존 공통 ERD·WBS·태그 계약·운영 안내는 변경하지 않는다.
+이번 작업 기록만 갱신하며 기존 공통 ERD·WBS·태그 계약·운영 안내는 최신 dev와 동일하게 유지한다.

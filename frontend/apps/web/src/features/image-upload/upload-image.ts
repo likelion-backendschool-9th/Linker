@@ -8,6 +8,7 @@ import { IMAGE } from '@/lib/policy';
  */
 
 export type UploadedImage = { fileId: string; url: string };
+export type UploadPurpose = 'POST' | 'CHAT' | 'ISSUE' | 'AVATAR';
 
 const MB = 1024 * 1024;
 
@@ -39,13 +40,19 @@ function putWithProgress(url: string, file: File, onProgress: (ratio: number) =>
 export async function uploadImage(
   file: File,
   onProgress: (ratio: number) => void,
+  purpose?: UploadPurpose,
 ): Promise<UploadedImage> {
   const { fileId, uploadUrl } = await apiFetch<{ fileId: string; uploadUrl: string }>(
     '/api/v1/user/uploads',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'IMAGE', contentType: file.type, size: file.size }),
+      body: JSON.stringify({
+        type: 'IMAGE',
+        contentType: file.type,
+        size: file.size,
+        ...(purpose ? { purpose } : {}),
+      }),
     },
   );
   if (process.env.NEXT_PUBLIC_USE_MOCKS === 'true') {

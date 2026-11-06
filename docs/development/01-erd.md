@@ -178,7 +178,7 @@ erDiagram
   user_agreements {
     bigint id PK
     bigint user_id FK
-    varchar agreement_type "TERMS, PRIVACY, AGE_14, MARKETING"
+    varchar agreement_type "TERMS, PRIVACY, AGE_14, AGE_19, BUSINESS_TERMS, MARKETING"
     varchar version "terms version"
     timestamptz agreed_at
     timestamptz withdrawn_at "marketing withdrawn"
@@ -576,6 +576,7 @@ erDiagram
   users |o--o{ issue_assignees : "linked if Linker user"
   issues ||--o{ issue_labels : "labels"
   issues ||--o{ issue_sync_jobs : "GitHub sync retries"
+  teams ||--o{ issue_sync_jobs : "creation intent"
   teams ||--o{ pull_requests : "PRs"
   github_repos ||--o{ pull_requests : "repo"
   teams ||--o{ team_progress_snapshots : "progress snapshots"
@@ -621,8 +622,11 @@ erDiagram
   }
   issue_sync_jobs {
     bigint id PK
-    bigint issue_id FK
-    varchar step "ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN"
+    bigint issue_id FK "nullable until GitHub creation is confirmed"
+    bigint team_id FK "creation intent scope"
+    uuid request_key "unique with requested_by"
+    timestamptz created_at
+    varchar step "CREATE, ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN, SET_ASSIGNEES, SET_LABELS"
     jsonb payload
     varchar status "PENDING, RUNNING, DONE, FAILED"
     int attempts
@@ -1013,7 +1017,7 @@ erDiagram
 
 **github_tokens**: `user_id` UK (1:1). Tokens are stored AES-encrypted and never sent to the app or frontend. When expired, the server refreshes with the refresh token; if that fails, it asks the user to log in again.
 
-**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes the session. OTP enrollment is still a later step, so an `admins` row is enough to open the back office until then.
+**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when this session passed operator 2FA. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes that session. An `admins` row is registration only. `/api/v1/admin/**` also requires this session's `otp_verified_at`, except `POST /api/v1/admin/otp/verify`, which a logged-in registered operator may call before OTP. That call checks the encrypted TOTP secret and then sets `otp_verified_at` on this session only. The JWT `adm` claim stays the registration flag. OTP secret enrollment still has no HTTP route.
 
 **recruiter_profiles**: `user_id` UK (1:1). `company_email_domain` is used for the profile's "회사 메일 인증(@domain)" (Company email verified) label and for operator checks. When operator company verification is added in phase 3, create a `companies` table and add `company_id`.
 
@@ -1147,7 +1151,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | issues | 🟢 | GitHub issues + Projects date/status cache | I-1~I-5 |
 | issue_assignees | 🟢 | Assignees, max 10 | I-2, I-5 |
 | issue_labels | 🟢 | Labels | I-2 |
-| issue_sync_jobs | 🟢 | Per-step retries after issue creation: add to project, dates, status | POL ch. 7 sync |
+| issue_sync_jobs | 🟢 | Per-step retries after creation and detail edits: project, dates, status, assignees, labels | POL ch. 7 sync |
 | pull_requests | 🟢 | PR cache, team chat PR list tab | C-3 |
 | team_progress_snapshots | 🟡 | Daily per-team status counts for the project progress graph (last 14 days trend) | T-7, S-9, POL-T-7 |
 
@@ -1167,7 +1171,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 
 **issue_assignees**: Stores GitHub assignees as-is and links `user_id` if that GitHub user is a Linker member. If an assignee leaves the team, the row stays and the UI shows "팀 밖 사용자" (Outside the team).
 
-**issue_sync_jobs**: Creating one issue needs 3–5 GitHub calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
+**issue_sync_jobs**: Page 13 also uses `step=CREATE` for a durable creation intent: `team_id`, `request_key` (unique with `requested_by`) and `created_at` let the server enforce per-author KST daily quota and idempotent draft resends before GitHub returns an issue ID. `issue_id` stays null until a real GitHub issue is confirmed; no local-only issue is inserted. The JSON payload checkpoints CREATE/CREATE_SENT/ADD_TO_PROJECT/SET_START/SET_DUE/SET_STATUS/VERIFY/DONE. A lost creation response is recovered by an opaque body marker; if its result cannot be confirmed, stop with CREATE_OUTCOME_UNKNOWN rather than POST a duplicate. Tokens are never stored. These columns extend the existing table and do not add a 70th table. Page 12 also persists failed assignee/label edits as `SET_ASSIGNEES`/`SET_LABELS`; schedule/status jobs retain the full desired value and replay idempotently, then verify source reads. Retry attempts are bounded operationally; no token is stored in payload. Creating an issue is a multi-step GitHub workflow; source verification may add read calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
 
 **team_progress_snapshots**: Columns are `team_id`, `snapshot_date` (UK together), `todo_count`, `in_progress_count`, `blocked_count`, `done_count`, `overdue_count`. A batch at 00:00 KST counts `issues.board_status` (excluding OTHER and NONE) per team. Stored for every team regardless of Flex; only the screen is Flex-only. Today's value isn't stored; it's counted from `issues` when the screen opens. Issue status change history is not stored, so metrics like cycle time (days spent In Progress) belong to the phase 2 bottleneck dashboard (T-6) with its own event table. Rows older than 1 year are deleted.
 
@@ -1191,7 +1195,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | room_type | TEAM uses `team_id` (UK), DIRECT uses `dm_key` (UK) |
 | dm_key | The two user ids joined as small:large. Ensures only one room per pair |
 | dm_status | ACCEPTED from the start for mutual follows or teammates. Otherwise REQUESTED (first message only) → ACCEPTED / REJECTED / EXPIRED (30 days) |
-| last_message_id, last_message_at | Denormalized latest message. Page 16 list still computes the viewer-visible message. Text send writes the pointer only after checking the message is in that room. An edit does not move this pointer. `team_id` has no FK until `teams` exists (page 08). V3 adds `client_message_id` (unique with `sender_id`). `payload` stays deferred. V4 adds `edited_at` |
+| last_message_id, last_message_at | Denormalized latest message. Page 16 list still computes the viewer-visible message. Text send writes the pointer only after checking the message is in that room. An edit does not move this pointer. `team_id` has no FK until `teams` exists (page 08). V3 adds `client_message_id` (unique with `sender_id`). `payload` stays deferred. V10 adds `edited_at` |
 | request_kind | Drives the "채용 제안" (Recruiting offer) label in the request inbox. RECRUITING for rooms created by recruiters, otherwise GENERAL. Kept after acceptance for stats (offer acceptance rate) and the recruiter my page "보낸 채용 제안" (Sent offers) list. List status maps dm_status for display: ACCEPTED → 대화 중 (In conversation), REQUESTED / REJECTED (within 30 days) → 응답 대기 (Awaiting reply), EXPIRED / REJECTED (after 30 days) → 응답 없음 (No reply). Index `(requester_id, request_kind, created_at desc)`. 10/day (Scout 50) limit in Redis |
 
 **chat_room_members**: Unread count = messages in the room with `id > last_read_message_id`. Team chat "unread by N people" = number of members whose `last_read_message_id` is less than the message id. Leaving the team sets `left_at`, and later messages are not visible.

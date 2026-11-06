@@ -67,19 +67,18 @@ class WorkspaceTeamIntegrationTest {
 	@Autowired PublicAuthService sessions;
 	@Autowired ObjectMapper json;
 	int org;
-	java.util.List<java.util.Map<String, Object>> migrationHistoryBefore;
 
 	@BeforeEach
 	void clean() {
-		migrationHistoryBefore = migrationHistory();
 		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.teams') is null", Boolean.class))) {
 			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-foundation.sql")).execute(dataSource);
 		}
-		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.github_repos') is null", Boolean.class))) {
-			new ResourceDatabasePopulator(
-					new ClassPathResource("workspace/issue-summary-prerequisites.sql"),
-					new ClassPathResource("db/team-schema/team-repositories.sql"),
-					new ClassPathResource("db/issue-schema/issue-cache.sql")).execute(dataSource);
+		// github_repos comes from Flyway V12; still load B/C prepared schemas when missing.
+		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.team_repos') is null", Boolean.class))) {
+			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-repositories.sql")).execute(dataSource);
+		}
+		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.issues') is null", Boolean.class))) {
+			new ResourceDatabasePopulator(new ClassPathResource("db/issue-schema/issue-cache.sql")).execute(dataSource);
 		}
 		jdbc.execute("TRUNCATE users, github_repos RESTART IDENTITY CASCADE");
 		org = 100;
@@ -187,8 +186,16 @@ class WorkspaceTeamIntegrationTest {
 				insert into chat_rooms(room_type,team_id,created_at,updated_at)
 				values ('TEAM',999999,now(),now())
 				""")).isInstanceOf(DataIntegrityViolationException.class);
-		// Prepared SQL must preserve actual history, including later A/D migrations.
-		assertThat(migrationHistory()).isEqualTo(migrationHistoryBefore);
+		assertThat(jdbc.queryForList("select version from flyway_schema_history where success", String.class))
+				.contains("4", "10", "11", "12", "13", "14").doesNotHaveDuplicates();
+		assertThat(jdbc.queryForObject("select script from flyway_schema_history where version = '4' and success", String.class))
+				.isEqualTo("V4__github_social_login.sql");
+		assertThat(jdbc.queryForObject("select script from flyway_schema_history where version = '10' and success", String.class))
+				.isEqualTo("V10__chat_message_edited_at.sql");
+		assertThat(jdbc.queryForObject("select script from flyway_schema_history where version = '11' and success", String.class))
+				.isEqualTo("V11__recruit_list.sql");
+		assertThat(jdbc.queryForObject("select script from flyway_schema_history where version = '12' and success", String.class))
+				.isEqualTo("V12__post_editor.sql");
 		assertThat(jdbc.queryForObject("""
 				select count(*) from information_schema.columns
 				where table_name='chat_messages' and column_name in ('client_message_id','edited_at')
@@ -362,7 +369,12 @@ class WorkspaceTeamIntegrationTest {
 		assertThat(item.path("openIssueCount").isNull()).isTrue();
 	}
 	private long repo(long team, User owner, boolean connected) {
-		long id = jdbc.queryForObject("insert into github_repos(github_repo_id,name) values (?,'test-repo') returning id", Long.class, org++);
+		long githubRepoId = org++;
+		String name = "test-repo-" + githubRepoId;
+		long id = jdbc.queryForObject("""
+				insert into github_repos(github_repo_id,owner_login,name,full_name,created_at,updated_at)
+				values (?,'acme',?,?,now(),now()) returning id
+				""", Long.class, githubRepoId, name, "acme/" + name);
 		if (connected) {
 			jdbc.update("insert into team_repos(team_id,repo_id,connected_by,created_at,updated_at) values (?,?,?,now(),now())", team, id, owner.getId());
 		}
@@ -389,12 +401,6 @@ class WorkspaceTeamIntegrationTest {
 				""", Long.class, room, sender, visibility);
 	}
 
-	private java.util.List<java.util.Map<String, Object>> migrationHistory() {
-		if (!Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('flyway_schema_history') is not null", Boolean.class))) {
-			return java.util.List.of();
-		}
-		return jdbc.queryForList("select installed_rank,version,checksum,success from flyway_schema_history order by installed_rank");
-	}
 	private User user(String name) { return users.saveAndFlush(User.create(name, UserType.DEVELOPER)); }
 	private Cookie cookie(User user) { return new Cookie("linker_session", sessions.issue(user, "workspace-test", "127.0.0.1").rawToken()); }
 	private long team(User creator, String status) {

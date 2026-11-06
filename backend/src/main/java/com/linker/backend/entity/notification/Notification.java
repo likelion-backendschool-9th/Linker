@@ -135,4 +135,10 @@ public class Notification extends BaseTimeEntity {
 	public Instant getReadAt() {
 		return readAt;
 	}
+
+	public void markRead(Instant when) {
+		if (this.readAt == null) {
+			this.readAt = when;
+		}
+	}
 }

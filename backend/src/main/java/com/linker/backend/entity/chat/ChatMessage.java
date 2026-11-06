@@ -61,6 +61,12 @@ public class ChatMessage extends BaseTimeEntity {
 		return message;
 	}
 
+	public static ChatMessage clientImage(ChatRoom room, long senderId, String clientMessageId) {
+		ChatMessage message = create(room, senderId, MessageType.IMAGE, "", MessageVisibility.VISIBLE);
+		message.clientMessageId = clientMessageId;
+		return message;
+	}
+
 	public static ChatMessage system(ChatRoom room, String body) {
 		return create(room, null, MessageType.SYSTEM, body, MessageVisibility.VISIBLE);
 	}
@@ -92,6 +98,11 @@ public class ChatMessage extends BaseTimeEntity {
 
 	public void hide() {
 		this.visibility = MessageVisibility.HIDDEN;
+	}
+
+	public void restore() {
+		this.visibility = MessageVisibility.VISIBLE;
+		this.deletedAt = null;
 	}
 
 	public Long getId() {

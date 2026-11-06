@@ -340,7 +340,7 @@
 - **주요 참조 데이터:** chat_rooms, chat_room_members, chat_messages, chat_message_images, chat_message_mentions, ai_chat_summaries. 전체 연결은 기존 ERD §7-2와 5장.
 - **완료 기준:** 팀/개인 대화·재연결·읽음·차단 기간을 통일한다. AI는 C, 보낸 제안은 A가 구현하고 D가 채팅 계약을 검토한다.
 - 페이지 16 목록 구현은 엔드포인트 4개를 추가하지 않는다. 응답은 `{items,nextCursor}`, 기술적 페이지 크기는 20이며 Policy 한도가 아니다. cursor는 마지막 가시 메시지 시각(없으면 방 생성 시각) 내림차순과 roomId 내림차순의 keyset이다. 토큰에는 버전·사용자·탭·정렬 시각·roomId가 들어가고, 요청 문맥과 다르면 400이다. 인코딩은 인증이나 변조 방지가 아니며 각 조회는 멤버십을 다시 확인한다. 실시간 재정렬의 스냅샷은 보장하지 않는다. 모집자 `TEAM`/`REQUEST`는 403, `DIRECT`는 허용한다. 수락·거절의 최초 전환이 커밋된 뒤에만 처리한 본인 `/user/queue/chat-rooms`로 `{type:"CHAT_ROOMS_CHANGED",roomId}`를 보낸다. `requestKind`는 `GENERAL`/`RECRUITING`이다. 팀 제목은 `teams`가 없어 null이며 `team_id` FK는 08 이후다. 메시지 `payload`·`client_message_id`·`edited_at`과 전송 API는 17이다. 무료 팀 60일 이력 제한은 구독 상태가 없어 목록에 적용하지 않는다. 삭제·숨김 메시지의 미리보기 문구는 Policy를 따르고, 미읽음 집계에서 빼는 규칙은 문서에 없어 ERD의 `id > last_read_message_id`에서 본인 메시지와 1:1 차단 기간만 제외한다. 거절 후 30일 재요청 금지는 방 생성(#98)이며 이 DELETE가 기간을 저장하지 않는다. GET은 EXPIRED를 저장하지 않는다.
-- 페이지 17 텍스트는 기존 STOMP SEND와 `GET .../messages`, `POST .../read`만 구현한다. 방 정보 GET은 포함하지 않는다. 일반 페이지는 30건이고 `after` 복구 상한은 500이다. 500에서 더 있으면 `catchUpLimited`와 `nextAfter`를 반환하며 잘라 버린 뒤 영구 누락으로 처리하지 않는다. 항목은 id 오름차순이다. `before`와 `after`를 같이 주면 400이다. 팀 이력은 구독 행이 없어 최근 60일(`FREE_60_DAYS`, `flexSupported: false`)만 반환한다. 1:1에는 그 제한을 씌우지 않는다. 팀 전송은 팀 상태 테이블이 없어 거절한다. 전송 한도는 사용자별 `chat.send` 초당 5회이고 공유 버킷과 분리한다. 같은 발신자·같은 clientMessageId의 같은 요청은 한 행이다. 다시 보내면 새 행이나 상대 재방송 없이 기존 `/user/queue/chat-rooms`로 `{type:CHAT_SEND_ACCEPTED}`만 발신자에게 보낸다. 유니크 충돌로 이미 저장된 같은 요청도 같다. 커밋 뒤에만 `/topic/chat-rooms/{roomId}`로 `{event:"MESSAGE", message}`를 보내고, 수신 직전에 멤버십과 차단 기간을 다시 보고, `MESSAGE`·`EDIT`·`DELETE` 본문은 그 시점의 안전한 행으로 바꾼다. 커밋 순서가 소켓 도착 순서는 아니다. 같은 토픽의 `EDIT`·`DELETE`는 자리 표시가 적용된 메시지를, `READ`는 `{event,roomId,messageId}`만 보낸다. 그 외 이벤트 이름은 전달하지 않는다. 브로커 receipt는 저장 성공이 아니다. 프로세스가 커밋 직후 죽으면 방송이 빠질 수 있다. `after`는 더 새로운 id만 돌려주므로 예전 메시지의 수정·삭제를 복구하지 않는다. V4는 `edited_at`만 추가한다. `payload`는 아직 없다. 본인 TEXT 수정·삭제, 팀 안 읽은 참여자, 본인 음소거는 구현한다. 방 정보 GET과 팀 소유자/운영자의 타인 메시지 삭제는 `teams`·`team_members`가 없어 보류한다. 목록의 무료 60일 제한도 아직 적용하지 않는다.
+- 페이지 17 텍스트와 DIRECT 이미지 관계 저장은 기존 STOMP SEND와 `GET .../messages`, `POST .../read`를 쓴다. DIRECT·요청 방 정보 GET은 실제 행으로 연다. 팀 방 정보와 나가기 API는 포함하지 않는다. 일반 페이지는 30건이고 `after` 복구 상한은 500이다. 500에서 더 있으면 `catchUpLimited`와 `nextAfter`를 반환하며 잘라 버린 뒤 영구 누락으로 처리하지 않는다. 항목은 id 오름차순이다. `before`와 `after`를 같이 주면 400이다. 팀 이력은 구독 행이 없어 최근 60일(`FREE_60_DAYS`, `flexSupported: false`)만 반환한다. 1:1에는 그 제한을 씌우지 않는다. 팀 전송은 팀 상태 테이블이 없어 거절한다. 전송 한도는 사용자별 `chat.send` 초당 5회이고 공유 버킷과 분리한다. 같은 발신자·같은 clientMessageId의 같은 요청은 한 행이다. 다시 보내면 새 행이나 상대 재방송 없이 기존 `/user/queue/chat-rooms`로 `{type:CHAT_SEND_ACCEPTED}`만 발신자에게 보낸다. 유니크 충돌로 이미 저장된 같은 요청도 같다. 커밋 뒤에만 `/topic/chat-rooms/{roomId}`로 `{event:"MESSAGE", message}`를 보내고, 수신 직전에 멤버십과 차단 기간을 다시 보고, `MESSAGE`·`EDIT`·`DELETE` 본문과 `imageUrls`는 그 시점의 안전한 행으로 바꾼다. 커밋 순서가 소켓 도착 순서는 아니다. 같은 토픽의 `EDIT`·`DELETE`는 자리 표시가 적용된 메시지를, `READ`는 `{event,roomId,messageId}`만 보낸다. 그 외 이벤트 이름은 전달하지 않는다. 브로커 receipt는 저장 성공이 아니다. 프로세스가 커밋 직후 죽으면 방송이 빠질 수 있다. `after`는 더 새로운 id만 돌려주므로 예전 메시지의 수정·삭제를 복구하지 않는다. V10은 `edited_at`만 추가한다. V15는 DIRECT 이미지 관계 `chat_message_images`(`message_id`, `file_id`, `sort_order`)를 추가한다. 완료된 본인 `CHAT` 파일만 요청 순서로 연결하고, 텍스트와 이미지는 TEXT, 이미지만은 IMAGE로 저장한다. 조회와 MESSAGE·EDIT·DELETE의 `imageUrls`는 그 순서다. 팀 전송은 팀 상태 테이블이 없어 계속 거절한다. `payload`는 아직 없다. 본인 TEXT 수정·삭제, 팀 안 읽은 참여자, 본인 음소거는 구현한다. 팀 방 정보와 팀 소유자/운영자의 타인 메시지 삭제는 `teams`·`team_members`가 없어 보류한다. 목록의 무료 60일 제한도 아직 적용하지 않는다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -377,6 +377,8 @@
 **0단계 생성 계약 복원:** UserNotificationService·RecruiterNotificationService·AdminNotificationService가 각각 `create(CreateNotificationCommand)`를 제공한다. 접두사는 생성 업무의 접근 경계이며 수신자 계정 종류가 아니다. 입력 DTO·Entity·Repository·정책 상수는 공유하고 서비스는 다른 역할을 호출하지 않는다(아래 신고 자동숨김 예외 제외). 호출 인자·오류·트랜잭션·야간 지연·미정 사항은 [백엔드 청사진 §4](05-backend-blueprint.md#4-controller--service-11)를 따른다. 기존 작업 목록의 NotificationService 표기는 이 역할별 계약으로 읽는다. 목록/읽음/푸시 API는 페이지 18에서 구현하며 이번 복원은 REST 205개·테이블 69개를 늘리지 않는다.
 
 **신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 UserModerationService가 활성 운영자별 AdminNotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
+
+페이지 18 목록은 `{items, nextCursor}`다. 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 8시 배치, Expo 발송, `pushed_at` 기록은 아직 없다.
 
 
 **시스템 주담당:** D · **REST:** 7개
@@ -789,6 +791,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: "채팅에 공유" (Share to chat) `[Included]` → 17's send message (issue card type)
 - Tables: new issue_sync_jobs · shared issues, issue_assignees, issue_labels, team_members, notifications
 - [ ] Server: retry via `issue_sync_jobs` when applying to GitHub fails; show in response when `sync_status = FAILED`
+- C12 implementation and isolated verification: [c-page12-implementation.md](plans/c-page12-implementation.md). Detail edits also use `SET_ASSIGNEES`/`SET_LABELS` retry steps; real A/B integration and versioned migration remain separate.
 - [ ] Frontend: 4 sheets (assignee, label, date, status) as shared components (reused in 13, 14, 15), disabled + toast without write permission, "일정이 GitHub에 반영되지 않았어요" (Schedule not applied to GitHub)
 
 </details>
@@ -805,6 +808,8 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Borrowed: 12's assignee and label option APIs, 11's `issue-filters` (repo list)
+- Creation has no issueId yet: reuse the same candidate/label rules through the existing template-list response (`assigneeCandidates`, `labelOptions`, `maxAssignees`), not a fabricated `/issues/0` call. No extra REST endpoint is added. Page 12 issue-scoped edit APIs stay unchanged.
+- C13 backend contract and isolated verification: [c-page13-implementation.md](plans/c-page13-implementation.md). `requestId` is a UUID retained for the same draft; changing the draft requires a new ID. Job progress returns the internal Linker issueId/detailPath after GitHub creation is confirmed.
 - Tables: new none · shared issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens
 - [ ] Server: parse issue form YAML, form answers → GitHub body (`### Question`, empty `_No response_`), retry queue for mid-way failures, never create Linker-only issues
 - [ ] Frontend: stepped (repo & template → content), dynamic form field rendering (react-hook-form + zod), reuse 12's sheets, on failure save draft on device + resend, enter with body prefilled from 17 "이슈로 만들기" (Make an issue)
@@ -896,6 +901,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Tables: new push_tokens · shared notifications, users, appeals (after 25 — A creates the table in 25; the appeal API is wired on D7)
+- 목록·단건 읽음·모두 읽음·Android 토큰 저장과 삭제, 본인 제재 이의 1회는 구현한다. `deliver_after` 전 행은 목록과 미독 수에서 빠지고 모두 읽음도 바꾸지 않는다. 8시 배치와 Expo 발송은 아직 없다.
 - [ ] Server: non-chat notifications between 10 PM and 8 AM batched and sent in the morning, Expo push sending (Android; skipped while `push_enabled` is off)
 - [ ] Frontend: list (incl. `TEAM_INVITE` → `/invite/[code]`), navigation, read state, live bell badge, appeal sheet, push permission prompt (Android app; iOS out of MVP)
 

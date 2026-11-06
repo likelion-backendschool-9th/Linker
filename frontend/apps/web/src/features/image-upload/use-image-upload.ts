@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { toast } from '@/stores/toast-store';
 
-import { uploadImage, validateImage, type UploadedImage } from './upload-image';
+import { uploadImage, validateImage, type UploadedImage, type UploadPurpose } from './upload-image';
 
 export type UploadItem = {
   key: string;
@@ -21,6 +21,8 @@ type ImageUploadOptions = {
   initial?: UploadedImage[];
   /** Called instead of the default toast when more photos are picked than `max` allows */
   onOverflow?: () => void;
+  /** Omitted for posts and avatars. Chat passes CHAT so the completed file can be attached. */
+  purpose?: UploadPurpose;
 };
 
 const fromUploaded = (image: UploadedImage): UploadItem => ({
@@ -36,7 +38,7 @@ const fromUploaded = (image: UploadedImage): UploadItem => ({
  * Upload state for one picker. `max` comes from `PLAN_LIMITS` by the caller (e.g. photos per post).
  * Publishing waits for `allDone` (04 ch. 4: publish only after every photo uploaded).
  */
-export function useImageUpload(max: number, { initial = [], onOverflow }: ImageUploadOptions = {}) {
+export function useImageUpload(max: number, { initial = [], onOverflow, purpose }: ImageUploadOptions = {}) {
   const [items, setItems] = useState<UploadItem[]>(() => initial.map(fromUploaded));
   const itemsRef = useRef(items);
   useEffect(() => {
@@ -52,11 +54,11 @@ export function useImageUpload(max: number, { initial = [], onOverflow }: ImageU
   const start = useCallback(
     (key: string, file: File) => {
       patch(key, { status: 'uploading', progress: 0 });
-      uploadImage(file, (progress) => patch(key, { progress }))
+      uploadImage(file, (progress) => patch(key, { progress }), purpose)
         .then((result) => patch(key, { status: 'done', progress: 1, result }))
         .catch(() => patch(key, { status: 'failed' }));
     },
-    [patch],
+    [patch, purpose],
   );
 
   function add(files: FileList | File[]) {

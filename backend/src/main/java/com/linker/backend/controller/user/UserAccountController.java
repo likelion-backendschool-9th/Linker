@@ -5,6 +5,7 @@ import com.linker.backend.dto.account.request.OnboardingAgreementsRequest;
 import com.linker.backend.dto.account.request.OnboardingEmailRequest;
 import com.linker.backend.dto.account.request.OnboardingProfileRequest;
 import com.linker.backend.dto.account.request.ProfileUpdateRequest;
+import com.linker.backend.dto.account.response.GithubProfileSyncResponse;
 import com.linker.backend.dto.account.response.NotificationEmailResponse;
 import com.linker.backend.dto.account.response.OnboardingResponse;
 import com.linker.backend.dto.account.response.ProfileEditResponse;
@@ -98,6 +99,14 @@ public class UserAccountController {
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@RequestBody ProfileUpdateRequest request) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(accounts.updateProfile(user, request));
+	}
+
+	@PostMapping("/me/profile/github-sync")
+	@DeveloperOnly
+	@Tag(name = "p05-profile-edit")
+	@Operation(operationId = "syncMyProfileFromGithub")
+	public ResponseEntity<GithubProfileSyncResponse> syncFromGithub(@AuthenticationPrincipal AuthenticatedUser user) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(accounts.syncFromGithub(user));
 	}
 
 	@GetMapping("/users/{login}/followers")

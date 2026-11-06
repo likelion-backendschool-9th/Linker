@@ -30,9 +30,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -44,13 +46,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
-/** Isolated schema preparation, NOT a resolution of the dev branch's duplicate V4 versions. */
-@SpringBootTest(
-    properties = {
-      "spring.flyway.enabled=false",
-      "spring.sql.init.mode=always",
-      "spring.sql.init.schema-locations=classpath:db/migration/V1__step0_foundation.sql,classpath:db/migration/V2__chat_rooms.sql,classpath:db/migration/V3__chat_message_client_id.sql,classpath:db/migration/V4__chat_message_edited_at.sql,classpath:db/migration/V4__github_social_login.sql,classpath:db/migration/V5__user_agreements.sql,classpath:db/migration/V6__onboarding_profile.sql,classpath:db/migration/V7__follows.sql,classpath:db/migration/V8__profile_inactivity_notice.sql,classpath:db/migration/V9__ops_reports.sql,classpath:db/team-schema/team-foundation.sql,classpath:team-setup/github-repos-projection.sql,classpath:db/team-schema/team-repositories.sql,classpath:db/team-schema/team-setup.sql,classpath:db/issue-schema/issue-cache.sql"
-    })
+/** Real common Flyway history plus B/C prepared schemas, inside isolated containers only. */
+@SpringBootTest(properties = "spring.jpa.show-sql=false")
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 @Testcontainers
 class TeamSetupIntegrationTest {
@@ -94,7 +91,7 @@ class TeamSetupIntegrationTest {
   @MockitoBean GithubAppClient app;
   @MockitoBean GithubUserAccessTokenSource tokens;
   @MockitoBean GithubTeamSource github;
-  @MockitoBean IssueSource issues;
+  @MockitoBean GithubIssueClient issues;
   final AtomicInteger creations = new AtomicInteger();
   final Map<String, Project> projects = new HashMap<>();
   final Repository repo =
@@ -113,8 +110,20 @@ class TeamSetupIntegrationTest {
           null,
           "main");
 
+  private void preparedSchemasAfterFlyway() {
+    if (!Boolean.TRUE.equals(jdbc.queryForObject(
+        "select to_regclass('public.teams') is null", Boolean.class))) return;
+    new ResourceDatabasePopulator(
+        new ClassPathResource("db/team-schema/team-foundation.sql"),
+        new ClassPathResource("db/team-schema/team-repositories.sql"),
+        new ClassPathResource("db/team-schema/team-setup.sql"),
+        new ClassPathResource("db/issue-schema/issue-cache.sql"))
+        .execute(jdbc.getDataSource());
+  }
+
   @BeforeEach
   void clean() {
+    preparedSchemasAfterFlyway();
     jdbc.execute("truncate users,github_repos restart identity cascade");
     try (var connection = redis.getConnectionFactory().getConnection()) {
       connection.serverCommands().flushDb();

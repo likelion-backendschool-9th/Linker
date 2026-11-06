@@ -1,10 +1,10 @@
 'use client';
 
+import { listPublicContributions } from '@linker/api/p04-profile/p04-profile';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { parseAsString, useQueryState } from 'nuqs';
 
-import { apiFetch } from '@/lib/api/api-fetch';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { toKst } from '@/lib/format/time';
 
@@ -33,10 +33,14 @@ export function ContributionCalendar({ login }: { login: string }) {
   const monthKey = /^\d{4}-\d{2}$/.test(month) ? month : currentMonth;
   const contributions = useQuery({
     queryKey: ['profile-contributions', login, monthKey],
-    queryFn: () =>
-      apiFetch<ContributionResponse>(
-        `/api/v1/public/users/${encodeURIComponent(login)}/contributions?month=${monthKey}`,
-      ),
+    queryFn: async () => {
+      const data = await listPublicContributions(login, { month: monthKey });
+      if (!data.month || !data.asOf) return null;
+      const days = (data.days ?? []).flatMap((day) =>
+        day.date != null && day.count != null ? [{ date: day.date, count: day.count }] : [],
+      );
+      return { month: data.month, asOf: data.asOf, days };
+    },
   });
 
   if (contributions.isPending) {
