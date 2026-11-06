@@ -253,16 +253,90 @@ class FoundationIntegrationTest {
 		User user = saveUser("ops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
 		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		assertThat(tokens.verify(issued.rawToken()).orElseThrow().operator()).isTrue();
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+		mockMvc.perform(post("/api/v1/user/security-probes/developer").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isOk());
+		mockMvc.perform(post("/api/v1/user/security-probes/teams/9").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("TEAM_ROLE_REQUIRED"));
+
+		User developer = saveUser("plain", UserType.DEVELOPER);
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(sessions.issue(developer, "JUnit", "127.0.0.1").rawToken())))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
 
 		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray());
+
+		PublicAuthService.IssuedSession other = sessions.issue(user, "JUnit", "127.0.0.1");
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(other.rawToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void suspendedOperatorStillNeedsOtpAndARevokedSessionLosesIt() throws Exception {
+		User user = saveUser("pausedops", UserType.DEVELOPER);
+		admins.save(Admin.assign(user, AdminRole.OPERATOR));
+		user.suspendUntil(Instant.now().plusSeconds(3600));
+		users.save(user);
+		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isOk());
+
+		sessions.revoke(issued.rawToken());
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_REQUIRED"));
+	}
+
+	@Test
+	void deletedOperatorCannotKeepTheAdminSession() throws Exception {
+		User user = saveUser("goneops", UserType.DEVELOPER);
+		admins.save(Admin.assign(user, AdminRole.OPERATOR));
+		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
+		user.markDeleted(Instant.now());
+		users.save(user);
+
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_REQUIRED"));
+	}
+
+	@Test
+	void operatorIdleRevokesThatSessionOnly() throws Exception {
+		User user = saveUser("idleops", UserType.DEVELOPER);
+		admins.save(Admin.assign(user, AdminRole.OPERATOR));
+		PublicAuthService.IssuedSession idle = sessions.issue(user, "JUnit", "127.0.0.1");
+		PublicAuthService.IssuedSession current = sessions.issue(user, "JUnit", "127.0.0.1");
+		sessions.markOperatorVerified(idle.sessionId(), Instant.now());
+		sessions.markOperatorVerified(current.sessionId(), Instant.now());
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(idle.rawToken())))
+				.andExpect(status().isOk());
+
+		jdbc.update("update user_sessions set operator_seen_at = now() - interval '31 minutes' where id = ?", idle.sessionId());
+
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(idle.rawToken())))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_REQUIRED"));
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(current.rawToken())))
+				.andExpect(status().isOk());
 	}
 
 	@Test
