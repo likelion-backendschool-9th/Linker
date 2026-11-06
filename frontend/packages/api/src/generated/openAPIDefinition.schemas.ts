@@ -1387,3 +1387,15 @@ export type GetTeamIssueBoardParams = {
   label?: string;
   open?: boolean;
 };
+export interface IssueCalendarResponse {
+  from: string;
+  to: string;
+  items: IssueListItem[];
+}
+
+
+export type GetTeamIssueCalendarParams = {
+  from: string;
+  to: string;
+  assignee?: string;
+};

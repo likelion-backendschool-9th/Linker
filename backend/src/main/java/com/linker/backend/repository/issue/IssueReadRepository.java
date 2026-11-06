@@ -87,8 +87,8 @@ public class IssueReadRepository {
 
   /**
    * Page 14 cards: every live issue of the team that is on the team's Projects board, with 11's
-   * filters except status (the columns are the statuses). Issues off the board stay in 11's
-   * "일정 없음". Ordered by due urgency: past due (oldest first), then soonest, then no due date.
+   * filters except status (the columns are the statuses). Issues off the board stay in 11's "일정
+   * 없음". Ordered by due urgency: past due (oldest first), then soonest, then no due date.
    */
   public List<IssueListResponse.Item> board(long teamId, IssueListQuery query, LocalDate today) {
     var params = new MapSqlParameterSource("team", teamId);
@@ -118,6 +118,29 @@ public class IssueReadRepository {
     sql += " ORDER BY i.due_date ASC NULLS LAST, i.id ASC";
     var rows = jdbc.query(sql, params, IssueReadRepository::row);
     return rows.isEmpty() ? List.of() : items(teamId, rows, today);
+  }
+
+  /** P15: overlap, not just deadlines falling inside the selected month/week. */
+  public List<IssueListResponse.Item> calendar(
+      long teamId, LocalDate from, LocalDate to, String assignee, LocalDate today) {
+    var params =
+        new MapSqlParameterSource("team", teamId).addValue("from", from).addValue("to", to);
+    String sql =
+        "SELECT i.*,r.name AS repo_name,COALESCE(i.github_updated_at,TIMESTAMPTZ '1970-01-01"
+            + " 00:00:00+00') AS sort_updated FROM issues i JOIN github_repos r ON r.id=i.repo_id"
+            + " JOIN team_repos tr ON tr.repo_id=i.repo_id AND tr.team_id=i.team_id WHERE"
+            + " i.team_id=:team AND i.deleted_at IS NULL AND r.deleted_at IS NULL AND"
+            + " i.project_item_id IS NOT NULL AND i.due_date IS NOT NULL AND"
+            + " COALESCE(i.start_date,i.due_date)<=:to AND i.due_date>=:from";
+    if (assignee != null) {
+      sql +=
+          " AND EXISTS(SELECT 1 FROM issue_assignees a WHERE a.issue_id=i.id AND"
+              + " a.github_login=:assignee)";
+      params.addValue("assignee", assignee);
+    }
+    sql += " ORDER BY COALESCE(i.start_date,i.due_date),i.due_date,i.id";
+    var selected = jdbc.query(sql, params, IssueReadRepository::row);
+    return selected.isEmpty() ? List.of() : items(teamId, selected, today);
   }
 
   private static Row row(ResultSet rs, int n) throws SQLException {
@@ -173,7 +196,8 @@ public class IssueReadRepository {
               .add(new IssueListResponse.Label(rs.getString("name"), rs.getString("color")));
         });
     return page.stream()
-            .map(row ->
+        .map(
+            row ->
                 new IssueListResponse.Item(
                     row.id(),
                     row.number(),
@@ -194,7 +218,7 @@ public class IssueReadRepository {
                     row.syncFailed(),
                     row.syncStatus(),
                     row.syncedAt()))
-            .toList();
+        .toList();
   }
 
   public IssueFilterOptionsResponse options(long teamId) {

@@ -11,6 +11,7 @@ export * from './p11-issue-list/p11-issue-list.zod';
 export * from './p12-issue-detail/p12-issue-detail.zod';
 export * from './p13-issue-create/p13-issue-create.zod';
 export * from './p14-board/p14-board.zod';
+export * from './p15-calendar/p15-calendar.zod';
 export * from './p16-chat-list/p16-chat-list.zod';
 export * from './p17-chat-room/p17-chat-room.zod';
 export * from './p18-notifications/p18-notifications.zod';

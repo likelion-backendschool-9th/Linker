@@ -76,7 +76,11 @@ public class UserIssueService {
               issues.list(
                   teamId, query, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
           return new IssueListResponse(
-              page.items(), page.nextCursor(), page.total(), permission.allowed(), permission.why());
+              page.items(),
+              page.nextCursor(),
+              page.total(),
+              permission.allowed(),
+              permission.why());
         });
   }
 
@@ -103,10 +107,38 @@ public class UserIssueService {
                 new IssueBoardResponse.Column(
                     key,
                     column.getValue(),
-                    cards.stream().filter(card -> key.equals(boardColumn(card.status()))).toList()));
+                    cards.stream()
+                        .filter(card -> key.equals(boardColumn(card.status())))
+                        .toList()));
           }
           return new IssueBoardResponse(
               permission.allowed(), permission.why(), List.copyOf(columns));
+        });
+  }
+
+  public com.linker.backend.dto.issue.response.IssueCalendarResponse calendar(
+      AuthenticatedUser user, long teamId, LocalDate from, LocalDate to, String assignee) {
+    requireMember(user, teamId);
+    // Transport/database-compatible ISO dates, not a product limit on the visible range.
+    if (from == null || to == null || from.isAfter(to) || from.getYear() < 1 || to.getYear() > 9999)
+      throw IssueListQuery.invalid();
+    var query =
+        new IssueListQuery(null, null, assignee, null, false, null, IssueListQuery.MAX_SIZE);
+    var context = contexts.get(teamId);
+    return read.execute(
+        st -> {
+          requireMember(user, teamId);
+          if (!contexts.get(teamId).equals(context))
+            throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
+          return new com.linker.backend.dto.issue.response.IssueCalendarResponse(
+              from,
+              to,
+              issues.calendar(
+                  teamId,
+                  from,
+                  to,
+                  query.assignee(),
+                  LocalDate.now(clock.withZone(PlanLimits.APP_ZONE))));
         });
   }
 

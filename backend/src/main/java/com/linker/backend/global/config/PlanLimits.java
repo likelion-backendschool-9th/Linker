@@ -195,6 +195,9 @@ public final class PlanLimits {
 	public static final int ISSUE_ASSIGNEES_MAX = 10;
 	/** Policy ch.2: issue creation per author per KST day. */
 	public static final int ISSUE_CREATES_PER_DAY = 100;
+	/** Policy POL-N-1 / Page 15: one day before due, 09:00 KST. */
+	public static final int ISSUE_DUE_REMINDER_DAYS_BEFORE = 1;
+	public static final int ISSUE_DUE_REMINDER_HOUR = 9;
 
 	private PlanLimits() {
 	}
