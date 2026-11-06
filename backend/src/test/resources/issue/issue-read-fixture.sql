@@ -1,5 +1,5 @@
 -- TEST ONLY: projections of B/D-owned tables, not product migrations or implementations.
--- github_repos comes from Flyway V11__post_editor.sql — do not recreate it here.
+-- github_repos comes from Flyway V12__post_editor.sql — do not recreate it here.
 CREATE TABLE github_installations(id bigint PRIMARY KEY,github_installation_id bigint UNIQUE,removed_at timestamptz,suspended_at timestamptz);
 CREATE TABLE teams(id bigint PRIMARY KEY,installation_id bigint,github_org_id bigint,github_org_login text,status text);
 CREATE TABLE team_repos(id bigint PRIMARY KEY,team_id bigint,repo_id bigint,UNIQUE(team_id,repo_id));

@@ -1,5 +1,5 @@
 -- Page 19 recruit list / my posts / my applications (WBS RecruitmentController).
--- Version starts at V10 so it does not collide with chat V2 on origin/dev.
+-- Version starts at V11 so it does not collide with chat/account migrations on origin/dev.
 -- teams is page 08; recruit_posts.team_id is stored without FK until that table exists.
 
 CREATE TABLE recruit_posts (

@@ -45,7 +45,7 @@ mock 모드는 유지하되 07 팀 목록 응답의 joinedAt·nextCursor·보관
 
 ## A·D·E와 꼭 맞출 것 — 다음 구현 전 리마인드
 
-1. **최신 dev에는 이미 D의 V2~V4가 있다.** E의 V2~V5와 A PR #211의 V4가 같은 버전을 사용한다. A PR #213의 V5·V6까지 포함해 각 DB 적용 여부를 먼저 확인한다. 파일 내용·적용 이력을 공유하되 비밀값은 공유하지 않는다.
+1. **이 브랜치의 자동 실행 버전은 V1–V10이다.** V4는 머지된 GitHub 로그인(#211)이고, 채팅 `edited_at`은 V10이다. `origin/dev` `2251a9f`에는 채팅 V4와 로그인 V4가 같이 있어 Flyway가 기동하지 못한다. E `feat/59-e-backend`는 미머지이며 V2–V5가 이 번호와 겹친다. 적용 이력은 비밀값 없이 확인한다.
 2. 그 결과에 맞춰 A·E의 번호 충돌 해소와 B의 **정식 마이그레이션 번호·머지 순서**를 함께 확정한다. B가 V5를 임의로 선점하지 않는다. 파일명만 다르고 버전이 같은 경우도 충돌이다. 이미 적용된 마이그레이션은 임의 수정·재번호/삭제하지 않으며, 적용 이력에 맞는 팀 합의를 먼저 한다.
 3. B의 공유 `teams`, `team_members`, `github_installations` 및 08 팀 채팅 관계는 ERD를 따른다. E의 모집용 테이블을 복사하거나 팀·멤버 테이블을 따로 만들지 않는다.
 4. E의 `recruit_posts.team_id`와 dev의 `chat_rooms.team_id`는 현재 FK가 없다. B SQL 준비본에는 chat_rooms의 team FK를 포함했으므로, 정식 편입 전 기존 연결되지 않은 team_id가 있는지 D와 확인한다. 데이터를 임의 삭제하지 않는다. E 모집 FK의 추가 시점과 OWNER/ADMIN 팀 선택 규칙은 E와 맞춘다. B의 전체 소속 목록을 모집글 작성 권한으로 그대로 간주하면 안 된다. D의 채팅 제목·팀 전송 권한 연결은 D 범위이며 이번 조회 보완에서 수정하지 않았다.
@@ -53,10 +53,10 @@ mock 모드는 유지하되 07 팀 목록 응답의 joinedAt·nextCursor·보관
 
 | 확인한 브랜치/PR | 마이그레이션 현황 | 이번 처리 |
 | --- | --- | --- |
-| dev / D #206·#210·#212 | V2 chat_rooms, V3 client_message_id, V4 edited_at | 그대로 반영·사용, 파일 수정 없음 |
-| E feat/59-e-backend | V2 recruit_list, V3 post_editor, V4 post_detail, V5 feed | 미머지. D 버전과 중복, 번호·적용 이력 조율 필요 |
-| A #211 | V4 github_social_login | 미머지. dev V4와 버전 중복 |
-| A #213 | V5 user_agreements, V6 onboarding_profile | 미머지. 머지 순서와 E V5 충돌 조율 필요 |
+| 이 브랜치 #219 | V1–V9 유지. V4는 github_social_login. 채팅 edited_at은 V10 | 채팅 스크립트 번호만 이동. SQL 내용은 수정하지 않음 |
+| E feat/59-e-backend | V2 recruit_list, V3 post_editor, V4 post_detail, V5 feed | 미머지. 현재 V2–V5와 번호 조율 필요 |
+| A #211 | V4 github_social_login | dev에 머지됨. 이 브랜치의 V4 |
+| A #213 | V5 user_agreements, V6 onboarding_profile | dev에 머지됨 |
 | C #208 | issue-cache.sql 준비본, 정식 Flyway 미편입 | dev에 머지. 이슈 캐시 조회 투영과 생성 API를 함께 반영. 07 내 이슈 API 구현 완료로 간주하지 않음 |
 
 GitHub의 텍스트 병합 가능 여부만으로 Flyway 충돌을 검출할 수는 없다. 위 현황은 확인 시점의 기록이며 후속 PR 머지 직전에 다시 확인한다.
@@ -65,8 +65,8 @@ GitHub의 텍스트 병합 가능 여부만으로 Flyway 충돌을 검출할 수
 
 [B SQL 준비본](../../../backend/src/main/resources/db/team-schema/team-foundation.sql)은 ERD의 github_installations·teams·team_members와 chat_rooms의 팀 FK를 정의한다.
 [저장소 연결 준비본](../../../backend/src/main/resources/db/team-schema/team-repositories.sql)은 E가 먼저 정의한 공유 github_repos가 존재한 뒤 적용할 team_repos와 FK·중복 제약을 정의한다. github_repos를 복제 생성하지 않는다.
-Flyway가 자동 검색하는 `db/migration` 밖에 두었으며, 통합 테스트의 격리 DB에서 현재 dev V1~V4 이후에만 실행한다.
-채팅 테이블은 **실제 dev의 Flyway V2~V4**를 사용한다. D 테이블·엔티티·서비스를 복제하지 않는다.
+Flyway가 자동 검색하는 `db/migration` 밖에 두었으며, 통합 테스트의 격리 DB에서 이 브랜치의 V1–V10 이후에만 실행한다.
+채팅 테이블은 **Flyway V2·V3·V10**을 사용한다. D 테이블·엔티티·서비스를 복제하지 않는다.
 V1 웹훅 delivery의 installation_id는 외부 GitHub 설치 ID라는 기존 계약을 유지하며, 이번 내부 설치 테이블 FK로 임의 변경하지 않는다.
 정식 번호·적용 순서를 확정하면 준비본을 검토해 main migration으로 편입하고, 테스트도 별도 ResourceDatabasePopulator 없이 정식 Flyway만으로 준비되도록 바꿔야 한다.
 이 파일을 개발/공용 DB에 수동 적용하는 방식으로 우회하지 않는다.
