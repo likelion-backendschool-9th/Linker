@@ -1356,4 +1356,3 @@ overdue?: string;
 export type ListAppealsParams = {
 status?: string;
 };
-
