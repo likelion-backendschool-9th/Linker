@@ -10,6 +10,7 @@ import com.linker.backend.dto.chat.request.ShareChatCardRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
+import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
@@ -100,6 +101,16 @@ public class UserChatController {
 			@RequestParam(required = false) Long after
 	) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.messages(user, roomId, before, after));
+	}
+
+	@GetMapping("/chat-rooms/{roomId}/mention-candidates")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "listChatMentionCandidates")
+	public ResponseEntity<ChatMentionCandidatesResponse> mentionCandidates(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.mentionCandidates(user, roomId));
 	}
 
 	@PostMapping("/chat-rooms/{roomId}/share-cards")
