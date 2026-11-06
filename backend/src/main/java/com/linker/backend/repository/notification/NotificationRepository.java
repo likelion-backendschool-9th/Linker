@@ -1,6 +1,7 @@
 package com.linker.backend.repository.notification;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 import com.linker.backend.entity.notification.Notification;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -55,7 +57,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			select notification from Notification notification
 			where notification.pushedAt is null
 			  and notification.user.pushEnabled = true
-			  and notification.notificationType <> 'CHAT'
+			  and exists (select 1 from PushToken token where token.user.id = notification.user.id)
+			  and notification.notificationType not in ('CHAT', 'CHAT_MENTION')
 			  and notification.deliverAfter is not null
 			  and notification.deliverAfter <= :now
 			order by notification.user.id, notification.createdAt, notification.id
@@ -66,15 +69,16 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			select notification from Notification notification
 			where notification.pushedAt is null
 			  and notification.user.pushEnabled = true
-			  and notification.notificationType = 'CHAT'
+			  and exists (select 1 from PushToken token where token.user.id = notification.user.id)
+			  and notification.notificationType in ('CHAT', 'CHAT_MENTION')
 			  and notification.deliverAfter is null
-			and not exists (
+			  and (notification.notificationType = 'CHAT_MENTION' or not exists (
 				select member from ChatRoomMember member
 				where member.room.id = notification.targetId
 				  and member.userId = notification.user.id
 				  and member.leftAt is null
 				  and member.muted = true
-			)
+			))
 			order by notification.user.id, notification.createdAt, notification.id
 			""")
 	List<Notification> findDueChat(Pageable pageable);
@@ -88,4 +92,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			  and (notification.deliverAfter is null or notification.deliverAfter <= :now)
 			""")
 	int markVisibleUnread(@Param("userId") long userId, @Param("now") Instant now);
+
+	/** Records a push as sent. A direct UPDATE, so it does not depend on the caller's persistence context. */
+	@Transactional
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			update Notification notification
+			set notification.pushedAt = :now
+			where notification.id in :ids
+			  and notification.pushedAt is null
+			""")
+	int markPushed(@Param("ids") Collection<Long> ids, @Param("now") Instant now);
 }

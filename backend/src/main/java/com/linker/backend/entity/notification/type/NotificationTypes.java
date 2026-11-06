@@ -2,11 +2,13 @@ package com.linker.backend.entity.notification.type;
 
 /**
  * Known {@code notifications.notification_type} values. Producers may add more strings;
- * quiet-hours rules only special-case {@link #CHAT} and {@link #MARKETING}.
+ * quiet-hours rules only special-case chat types ({@link #isChat}) and {@link #MARKETING}.
  */
 public final class NotificationTypes {
 
 	public static final String CHAT = "CHAT";
+	/** Team chat {@code @person} mention. Pushed even when the room is muted (Policy ch. 8). */
+	public static final String CHAT_MENTION = "CHAT_MENTION";
 	public static final String ISSUE_ASSIGNED = "ISSUE_ASSIGNED";
 	public static final String DUE_SOON = "DUE_SOON";
 	public static final String APPLICATION_RECEIVED = "APPLICATION_RECEIVED";
@@ -27,5 +29,10 @@ public final class NotificationTypes {
 	public static final String MARKETING = "MARKETING";
 
 	private NotificationTypes() {
+	}
+
+	/** Chat notifications skip quiet hours and are pushed by the chat delivery job. */
+	public static boolean isChat(String type) {
+		return CHAT.equals(type) || CHAT_MENTION.equals(type);
 	}
 }
