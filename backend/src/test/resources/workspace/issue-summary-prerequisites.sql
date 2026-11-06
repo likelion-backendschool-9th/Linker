@@ -1,4 +1,4 @@
--- TEST ONLY: minimal read projection of E's shared github_repos (V3__post_editor.sql).
+-- TEST ONLY: minimal read projection of E's shared github_repos (V11__post_editor.sql).
 -- Does not replace E's real migration or define another production repository table.
 -- B's real prepared team_repos and C's real prepared issue-cache SQL are loaded afterward.
 CREATE TABLE github_repos (

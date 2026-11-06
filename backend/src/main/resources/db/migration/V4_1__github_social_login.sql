@@ -1,4 +1,5 @@
 -- Page 01 GitHub login. banned_github_ids is the page-01 table in ERD 7-2.
+-- Version is 4.1 so it does not collide with chat V4__chat_message_edited_at.
 -- sanction_id has no FK: sanctions is created with page 25.
 
 CREATE TABLE banned_github_ids (
