@@ -1,0 +1,33 @@
+name: Assign PR Author
+
+# PR을 연 사람을 Assignee로 지정한다. 코드를 체크아웃하지 않으므로 pull_request_target이 안전하다.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  assign:
+    name: assign-author
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.user.type != 'Bot' }}
+    steps:
+      - name: Assign author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          ASSIGNEES: ${{ join(github.event.pull_request.assignees.*.login, ',') }}
+        run: |
+          set -euo pipefail
+          if [ -n "$ASSIGNEES" ]; then
+            echo "이미 Assignee가 있어 건너뜁니다: $ASSIGNEES"
+            exit 0
+          fi
+          if ! gh pr edit "$PR_NUMBER" --repo "$REPO" --add-assignee "$AUTHOR"; then
+            echo "::warning::$AUTHOR 을(를) Assignee로 지정하지 못했습니다. 저장소 협업자가 아닐 수 있습니다."
+          fi

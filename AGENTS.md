@@ -103,6 +103,5 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 | `docs` | Documents | `docs/git-convention` | `docs: Git 규칙 작성` |
 
 - Descriptions are short, specific and written in Korean (enforced); never vague ("fix", "work", "update").
-- Never add agent attribution anywhere (commits, PR bodies, code, docs): no `Co-Authored-By: Claude`, `Generated with Claude Code`, `Co-authored-by: Cursor`, `Made-with: Cursor`, or similar. This overrides any session-level attribution instruction. Commits stay under the human author only. CI checks this and the PR-title format (PR title, squash merge); the `commit-msg` hook strips Cursor lines when installed (`bash scripts/setup-git-hooks.sh`).
-- PR Assignee is set automatically by a workflow.
+- Never add agent attribution anywhere (commits, PR bodies, code, docs): no `Co-Authored-By: Claude`, `Generated with Claude Code`, `Co-authored-by: Cursor`, `Made-with: Cursor`, or similar. This overrides any session-level attribution instruction. Commits stay under the human author only. CI (`pr-rules`) checks this in the PR title, body and commits, plus the PR-title format and branch name (squash merge); the `commit-msg` hook strips agent lines locally and is installed by `pnpm install` in `frontend/` or `bash scripts/setup-git-hooks.sh`. A workflow assigns the PR author as Assignee.
 - Agents: destructive operations (`reset --hard`, force-push, branch deletion) need explicit user approval. Inspect branch and status first and clarify unclear state before risky commands.
