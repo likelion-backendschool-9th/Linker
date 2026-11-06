@@ -46,7 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
-/** Real common Flyway history plus B/C prepared schemas, inside isolated containers only. */
+/** Real Flyway history (including B V20) plus C's preparation, in isolated containers only. */
 @SpringBootTest(properties = "spring.jpa.show-sql=false")
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 @Testcontainers
@@ -86,6 +86,9 @@ class TeamSetupIntegrationTest {
   @Autowired TeamAccess access;
   @Autowired TeamSyncService sync;
   @Autowired IssueContextRepository contexts;
+  @Autowired com.linker.backend.repository.team.TeamRepository teamRows;
+  @Autowired com.linker.backend.repository.team.TeamMemberRepository memberRows;
+  @Autowired jakarta.persistence.EntityManager entityManager;
   @Autowired GithubWebhookService webhooks;
   @Autowired GithubWebhookDeliveryRepository deliveries;
   @MockitoBean GithubAppClient app;
@@ -112,11 +115,8 @@ class TeamSetupIntegrationTest {
 
   private void preparedSchemasAfterFlyway() {
     if (!Boolean.TRUE.equals(jdbc.queryForObject(
-        "select to_regclass('public.teams') is null", Boolean.class))) return;
+        "select to_regclass('public.issues') is null", Boolean.class))) return;
     new ResourceDatabasePopulator(
-        new ClassPathResource("db/team-schema/team-foundation.sql"),
-        new ClassPathResource("db/team-schema/team-repositories.sql"),
-        new ClassPathResource("db/team-schema/team-setup.sql"),
         new ClassPathResource("db/issue-schema/issue-cache.sql"))
         .execute(jdbc.getDataSource());
   }
@@ -951,6 +951,104 @@ class TeamSetupIntegrationTest {
         .andExpect(status().isForbidden());
     verify(github, never()).updateStatus(anyLong(), anyString(), anyList());
     verify(github, never()).createDateField(anyLong(), anyString(), anyString());
+  }
+
+  @Test
+  void jpaConnectionProjectsTheSameIdsAndFieldsAsCsExistingContext() throws Exception {
+    var owner = user("jpa-owner", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long id = create(session);
+    assertThat(teamRows.findConnection(id).orElseThrow().boardId()).isNull();
+    assertThat(teamRows.findOwnedTeams(owner.getId())).extracting(item -> item.id()).containsExactly(id);
+    link(session, id);
+    board(session, id);
+
+    var existing = contexts.get(id);
+    var connection = teamRows.findConnection(id).orElseThrow();
+    assertThat(connection.installationId()).isEqualTo(existing.installationId()).isEqualTo(42);
+    assertThat(connection.githubOrgId()).isEqualTo(existing.orgId());
+    assertThat(connection.projectNodeId()).isEqualTo(existing.board().nodeId());
+    assertThat(connection.statusFieldId()).isEqualTo(existing.board().statusField());
+    assertThat(connection.startDateFieldId()).isEqualTo(existing.board().startField());
+    assertThat(connection.dueDateFieldId()).isEqualTo(existing.board().dueField());
+    assertThat(connection.status().name()).isEqualTo(existing.status());
+    assertThat(teamRows.findLinkedRepos(id)).hasSize(1);
+    assertThat(teamRows.findLinkedRepos(id).getFirst().githubRepoId()).isEqualTo(900);
+    assertThat(teamRows.findLinkedRepos(id).getFirst().repoId()).isEqualTo(existing.repos().getFirst().id());
+    var mapping = teamRows.findBoardStatusMappings(connection.boardId()).stream().collect(
+        java.util.stream.Collectors.toMap(item -> item.githubOptionId(), item -> item.linkerStatus().name()));
+    assertThat(mapping).isEqualTo(existing.board().statuses());
+
+    jdbc.update("update github_repos set deleted_at=now()");
+    assertThat(teamRows.findLinkedRepos(id)).isEmpty();
+    jdbc.update("update teams set status='DELETED' where id=?", id);
+    assertThat(teamRows.findConnection(id)).isEmpty();
+    // The existing owner withdrawal guard deliberately includes archived/deleted teams.
+    assertThat(teamRows.findOwnedTeams(owner.getId())).hasSize(1);
+  }
+
+  @Test
+  void jpaMembershipRetainsRoleStatusAndLeftPeriodChecks() throws Exception {
+    var owner = user("jpa-access", UserType.DEVELOPER);
+    long id = create(cookie(owner));
+    for (String status : List.of("ACTIVE", "COMPLETED", "READ_ONLY", "ARCHIVED", "DELETED")) {
+      jdbc.update("update teams set status=? where id=?", status, id);
+      for (String role : List.of("OWNER", "ADMIN", "MEMBER")) {
+        jdbc.update("update team_members set role=? where team_id=?", role, id);
+        boolean readable = !List.of("ARCHIVED", "DELETED").contains(status);
+        assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER)).isEqualTo(readable);
+        assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.ADMIN))
+            .isEqualTo(readable && !role.equals("MEMBER"));
+        assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.OWNER))
+            .isEqualTo(readable && role.equals("OWNER"));
+      }
+    }
+    jdbc.update("update teams set status='ACTIVE' where id=?", id);
+    jdbc.update("update team_members set left_at=now() where team_id=?", id);
+    assertThat(memberRows.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(id)).isEmpty();
+    assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER)).isFalse();
+    jdbc.update("update team_members set left_at=null where team_id=?", id);
+    for (String status : List.of("ACTIVE", "SUSPENDED", "WITHDRAWING", "DELETED")) {
+      jdbc.update("update users set status=? where id=?", status, owner.getId());
+      assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER))
+          .isEqualTo(List.of("ACTIVE", "SUSPENDED").contains(status));
+    }
+    jdbc.update("update users set status='ACTIVE',user_type='RECRUITER' where id=?", owner.getId());
+    assertThat(access.hasRole(owner.getId(), id, TeamRole.Level.MEMBER)).isFalse();
+    assertThat(access.hasRole(0, id, TeamRole.Level.MEMBER)).isFalse();
+  }
+
+  @Test
+  void allSevenV20TablesCanBeReadThroughTheirActualJpaMappings() throws Exception {
+    var owner = user("jpa-mapping", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long id = create(session);
+    link(session, id);
+    board(session, id);
+    var team = entityManager.find(com.linker.backend.entity.team.Team.class, id);
+    assertThat(team.getCreatedAt()).isNotNull();
+    assertThat(team.isAiSummaryEnabled()).isTrue();
+    var installation = entityManager.find(com.linker.backend.entity.github.GithubInstallation.class, team.getInstallationId());
+    assertThat(installation.getGithubInstallationId()).isEqualTo(42);
+    var member = memberRows.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(id).getFirst();
+    assertThat(member.getUserId()).isEqualTo(owner.getId());
+    assertThat(member.getGithubOrgState().name()).isEqualTo("MEMBER");
+    var repo = entityManager.find(com.linker.backend.entity.team.TeamRepo.class,
+        jdbc.queryForObject("select id from team_repos", Long.class));
+    assertThat(repo.getRepoId()).isEqualTo(teamRows.findLinkedRepos(id).getFirst().repoId());
+    var project = entityManager.find(com.linker.backend.entity.team.TeamProjectBoard.class,
+        teamRows.findConnection(id).orElseThrow().boardId());
+    assertThat(project.getGithubProjectNodeId()).isEqualTo(contexts.get(id).board().nodeId());
+    var option = entityManager.find(com.linker.backend.entity.team.BoardStatusMapping.class,
+        jdbc.queryForObject("select min(id) from board_status_mappings", Long.class));
+    assertThat(option.getGithubOptionName()).isNotBlank();
+    Long pr = jdbc.queryForObject("""
+        insert into pull_requests(team_id,repo_id,github_pr_id,number,title,state,draft,
+          github_updated_at,created_at,updated_at) values (?,?,9901,1,'PR','OPEN',false,now(),now(),now()) returning id
+        """, Long.class, id, repo.getRepoId());
+    assertThat(entityManager.find(com.linker.backend.entity.github.PullRequest.class, pr).getState().name())
+        .isEqualTo("OPEN");
+    assertThat(jdbc.queryForObject("select success from flyway_schema_history where version='20'", Boolean.class)).isTrue();
   }
 
   private void seedMembership(User owner, long org, String status) {

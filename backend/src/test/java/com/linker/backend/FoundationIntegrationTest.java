@@ -950,22 +950,6 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.items").isEmpty());
 
 		jdbc.execute("""
-				CREATE TABLE teams (
-				    id bigint PRIMARY KEY,
-				    name varchar(80) NOT NULL,
-				    avatar_url varchar(2048),
-				    status varchar(16) NOT NULL
-				)
-				""");
-		jdbc.execute("""
-				CREATE TABLE team_members (
-				    id bigint PRIMARY KEY,
-				    team_id bigint NOT NULL,
-				    user_id bigint NOT NULL,
-				    left_at timestamptz
-				)
-				""");
-		jdbc.execute("""
 				CREATE TABLE completion_records (
 				    id bigint PRIMARY KEY,
 				    user_id bigint NOT NULL,
@@ -975,14 +959,16 @@ class FoundationIntegrationTest {
 				)
 				""");
 		try {
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (1, 'Linker', 'https://avatars.githubusercontent.com/u/1', 'ACTIVE')");
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (2, 'Done', NULL, 'COMPLETED')");
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (3, 'Paused', NULL, 'READ_ONLY')");
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (4, 'Left', NULL, 'ACTIVE')");
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (1, 1, ?, NULL)", user.getId());
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (2, 2, ?, NULL)", user.getId());
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (3, 3, ?, NULL)", user.getId());
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (4, 4, ?, now())", user.getId());
+			for (String[] fixture : new String[][] {{"Linker", "ACTIVE"}, {"Done", "COMPLETED"},
+					{"Paused", "READ_ONLY"}, {"Left", "ACTIVE"}}) {
+				long teamId = com.linker.backend.support.TeamTestFixtures.team(jdbc, user.getId(), fixture[0], fixture[1]);
+				jdbc.update("""
+						INSERT INTO team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at)
+						VALUES (?,?,'OWNER','MEMBER',now(),now(),now())
+						""", teamId, user.getId());
+			}
+			jdbc.update("UPDATE teams SET avatar_url='https://avatars.githubusercontent.com/u/1' WHERE name='Linker'");
+			jdbc.update("UPDATE team_members SET left_at=now() WHERE team_id=4");
 			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (1, ?, 'COMPLETED', 4, 2)", user.getId());
 			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (2, ?, 'DROPPED', 2, 0)", user.getId());
 
@@ -1001,7 +987,7 @@ class FoundationIntegrationTest {
 					.andExpect(jsonPath("$.nextCursor").value(org.hamcrest.Matchers.nullValue()));
 		}
 		finally {
-			jdbc.execute("DROP TABLE IF EXISTS completion_records, team_members, teams");
+			jdbc.execute("DROP TABLE IF EXISTS completion_records");
 		}
 	}
 
