@@ -57,6 +57,9 @@ export function StartScreen() {
           <span aria-hidden="true">·</span>
           <Link href="/legal/privacy">개인정보 처리방침</Link>
         </nav>
+        <p className={styles.recruiter}>
+          <Link href="/recruiter/login">채용 담당자이신가요?</Link>
+        </p>
       </div>
     </section>
   );
