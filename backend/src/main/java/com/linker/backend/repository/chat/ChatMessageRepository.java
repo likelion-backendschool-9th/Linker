@@ -12,7 +12,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long>, ChatMessageRepositoryCustom {
+
+	@Query("select m.room.id from ChatMessage m where m.id = :id")
+	Optional<Long> findRoomId(@Param("id") long id);
 
 	@Query("""
 			select m from ChatMessage m
