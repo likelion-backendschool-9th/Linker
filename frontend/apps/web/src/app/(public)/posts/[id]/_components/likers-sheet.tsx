@@ -45,7 +45,7 @@ function Likers({ postId, overlay }: { postId: string; overlay: OverlayControl }
           <button
             type="button"
             className={styles.person}
-            onClick={() => void overlay.closeThen(`/u/${user.login}` as Route)}
+            onClick={() => void overlay.closeThen(`/user/${user.login}` as Route)}
           >
             <Image
               src={user.avatarUrl}

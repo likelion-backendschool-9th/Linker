@@ -59,7 +59,7 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
                 className={`${styles.iconButton} ${styles.mobileOnly}`}
               />
               <Link
-                href={(login ? `/u/${login}` : '/feed') as Route}
+                href={(login ? `/user/${login}` : '/feed') as Route}
                 className={`${styles.iconButton} ${styles.mobileOnly}`}
               >
                 <UserRound aria-hidden />
@@ -67,7 +67,7 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
               </Link>
               <NotificationBell initiallyUnread={hasUnread} className={styles.softPillButton} />
               <Link
-                href={(login ? `/u/${login}` : '/feed') as Route}
+                href={(login ? `/user/${login}` : '/feed') as Route}
                 className={styles.profileButton}
               >
                 <UserRound aria-hidden />

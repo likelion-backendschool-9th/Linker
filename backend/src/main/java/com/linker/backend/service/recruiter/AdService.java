@@ -141,7 +141,7 @@ public class AdService {
 					null,
 					null,
 					null,
-					"/u/" + recruiter.getUsername(),
+					"/user/" + recruiter.getUsername(),
 					"{\"message\":\"채용 광고가 마감돼 노출을 멈췄어요\"}",
 					null));
 		}

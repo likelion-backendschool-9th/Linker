@@ -10,7 +10,7 @@ describe('foundation sitemap mock contract', () => {
     const page = await mockFetch<SitemapPage>('/api/v1/public/sitemap/users?page=1');
     expect(page).toMatchObject({ kind: 'users', page: 1 });
     expect(page.items.map((item) => item.id)).toEqual(DEVELOPERS.map((user) => user.id));
-    expect(page.items.every((item) => item.url.startsWith('/u/') && item.updatedAt)).toBe(true);
+    expect(page.items.every((item) => item.url.startsWith('/user/') && item.updatedAt)).toBe(true);
     expect((await mockFetch<SitemapPage>('/api/v1/public/sitemap/users?page=2')).items).toEqual([]);
   });
 

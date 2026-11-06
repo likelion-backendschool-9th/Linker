@@ -297,12 +297,12 @@ test('recruiter offer filter remains in the URL across refresh and unavailable u
   await expect(page.getByText('볼 수 없는 사용자')).toBeVisible();
   await page.getByRole('button', { name: /응답 대기/ }).click();
   await expect(page).toHaveURL(/status=WAITING/);
-  await page.locator('a[href^="/u/"]').first().click();
-  await expect(page).toHaveURL(/\/u\//);
+  await page.locator('a[href^="/user/"]').first().click();
+  await expect(page).toHaveURL(/\/user\//);
   await page.goBack();
   await expect(page).toHaveURL(/\/recruiter\/offers\?status=WAITING/);
   await page.goForward();
-  await expect(page).toHaveURL(/\/u\//);
+  await expect(page).toHaveURL(/\/user\//);
 });
 
 test('admin filters reports and exercises delete, dismiss, and restore actions individually', async ({ page }) => {
@@ -354,7 +354,7 @@ test('assigned page routes fit all documented widths and pass axe WCAG checks', 
     { path: '/auth/callback?error=access_denied', role: 'guest' },
     { path: '/onboarding', role: 'newcomer' },
     { path: '/legal/terms', role: 'guest' },
-    { path: '/u/seoyeon-park', role: 'guest' },
+    { path: '/user/seoyeon-park', role: 'guest' },
     { path: '/settings/profile', role: 'developer' },
     { path: '/settings', role: 'recruiter' },
     { path: '/admin/reports', role: 'operator' },

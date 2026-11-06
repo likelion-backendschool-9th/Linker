@@ -19,7 +19,7 @@ async function loadProfile(login: string) {
     const profile = await getPublicProfile(login);
     if (profile.isBlockedByMe) return null;
     if (profile.redirectedFrom && profile.login !== login) {
-      permanentRedirect(`/u/${encodeURIComponent(profile.login)}`);
+      permanentRedirect(`/user/${encodeURIComponent(profile.login)}`);
     }
     return profile;
   } catch (error) {
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: ProfileRouteProps): Promise<M
     return buildMetadata({
       title: HIDDEN_PROFILE,
       description: HIDDEN_PROFILE,
-      path: `/u/${login}`,
+      path: `/user/${login}`,
     });
   }
   const isDeveloper = profile.kind === 'DEVELOPER';
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: ProfileRouteProps): Promise<M
   return buildMetadata({
     title,
     description,
-    path: `/u/${profile.login}`,
+    path: `/user/${profile.login}`,
     indexable: isDeveloper,
   });
 }

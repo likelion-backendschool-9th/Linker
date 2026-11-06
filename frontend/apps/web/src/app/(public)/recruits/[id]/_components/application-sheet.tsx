@@ -240,7 +240,7 @@ function ApplicantProfile({ data }: { data: ApplicationDetail }) {
       </section>
 
       <Button variant="soft" block asChild>
-        <Link href={`/u/${data.applicant.login}` as Route}>프로필 전체 보기</Link>
+        <Link href={`/user/${data.applicant.login}` as Route}>프로필 전체 보기</Link>
       </Button>
     </>
   );

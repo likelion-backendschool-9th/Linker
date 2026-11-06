@@ -170,7 +170,7 @@ function OfferCard({ offer, onShowMessage }: { offer: Offer; onShowMessage: () =
             )}
             <div className={styles.personInfo}>
               {developer && !offer.unavailable ? (
-                <Link className={styles.personLink} href={`/u/${encodeURIComponent(developer.login)}`}>
+                <Link className={styles.personLink} href={`/user/${encodeURIComponent(developer.login)}`}>
                   {visibleName}
                 </Link>
               ) : (

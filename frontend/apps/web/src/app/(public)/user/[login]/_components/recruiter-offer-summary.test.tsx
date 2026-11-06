@@ -29,6 +29,6 @@ it('shows the offer counts, latest developers, and the full list', async () => {
   expect(await screen.findByText('대화 중 1')).toBeInTheDocument();
   expect(screen.getByText('응답 대기 2')).toBeInTheDocument();
   expect(screen.getByText('오늘 남은 제안 7/10')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /에이다/ })).toHaveAttribute('href', '/u/ada');
+  expect(screen.getByRole('link', { name: /에이다/ })).toHaveAttribute('href', '/user/ada');
   expect(screen.getByRole('link', { name: '전체 보기' })).toHaveAttribute('href', '/recruiter/offers');
 });

@@ -11,7 +11,7 @@ export function siteUrl(path: string): string {
 
 /** Status/role filtering belongs to Spring. Accept only canonical URLs for the requested kind here. */
 export function sitemapEntries(kind: SitemapKind, items: SitemapItem[]): MetadataRoute.Sitemap {
-  const pattern = kind === 'users' ? /^\/u\/[^/]+$/ : new RegExp(`^/${kind}/[0-9]+$`);
+  const pattern = kind === 'users' ? /^\/user\/[^/]+$/ : new RegExp(`^/${kind}/[0-9]+$`);
   const origin = new URL(siteUrl('/')).origin;
   return items.map((item) => {
     const url = new URL(item.url, origin);

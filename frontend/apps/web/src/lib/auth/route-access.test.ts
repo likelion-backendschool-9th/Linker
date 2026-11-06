@@ -12,6 +12,7 @@ describe('resolveAccess', () => {
     ['/', 'allow', 'home', 'home', 'home'],
     ['/auth/callback', 'allow', 'allow', 'allow', 'allow'],
     ['/feed', 'allow', 'allow', 'allow', 'allow'],
+    ['/user/ada', 'allow', 'allow', 'allow', 'allow'],
     ['/posts/12', 'allow', 'allow', 'allow', 'allow'],
     ['/posts/new', 'login', 'allow', 'home', 'allow'],
     ['/posts/12/edit', 'login', 'allow', 'home', 'allow'],

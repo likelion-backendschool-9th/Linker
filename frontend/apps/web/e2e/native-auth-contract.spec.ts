@@ -211,7 +211,7 @@ test('normal-mode sitemap routes and robots use public cookie-free API partition
   expect(rules).toContain('Disallow: /admin');
   expect(rules).toContain('Disallow: /api/');
   for (const [kind, path] of [
-    ['users', '/u/bridge-contract'],
+    ['users', '/user/bridge-contract'],
     ['posts', '/posts/701'],
     ['recruits', '/recruits/701'],
   ]) {

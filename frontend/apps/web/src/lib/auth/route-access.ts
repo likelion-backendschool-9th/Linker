@@ -38,7 +38,7 @@ export const ROUTE_ACCESS: readonly AccessRule[] = [
   { page: '01', match: /^\/auth\/callback$/, allow: 'all' },
   { page: '02', match: /^\/onboarding$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
   { page: '03', match: /^\/legal\/[^/]+$/, allow: 'all' },
-  { page: '04', match: /^\/u\/[^/]+$/, allow: 'all' },
+  { page: '04', match: /^\/user\/[^/]+$/, allow: 'all' },
   { page: '05', match: /^\/settings\/profile$/, allow: MEMBERS, deny: 'login' },
   { page: '29', match: /^\/settings\/subscription$/, allow: MEMBERS, deny: 'login' },
   { page: '06', match: /^\/settings$/, allow: MEMBERS, deny: 'login' },
