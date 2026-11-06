@@ -73,13 +73,77 @@ describe('mockFetch', () => {
     expect(await errorOf(mockFetch('/api/v1/admin/audit-logs'))).toMatchObject({ status: 403 });
   });
 
-  it('lists report cases for an operator without OTP', async () => {
+  it('keeps admin routes closed until mock OTP and clears that state on role change or idle', async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-06T00:00:00Z'));
     try {
       loginAs('operator');
-      const cases = mockFetch<{ items: unknown[] }>('/api/v1/admin/report-cases?status=PENDING');
+      const denied = mockFetch('/api/v1/admin/report-cases?status=PENDING');
+      const deniedResult = expect(denied).rejects.toMatchObject({ status: 403, code: 'OTP_REQUIRED' });
       await vi.advanceTimersByTimeAsync(150);
-      await expect(cases).resolves.toMatchObject({ items: expect.any(Array) });
+      await deniedResult;
+
+      const invalid = mockFetch('/api/v1/admin/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ code: '000000' }),
+      });
+      const invalidResult = expect(invalid).rejects.toMatchObject({ status: 400, code: 'OTP_INVALID' });
+      await vi.advanceTimersByTimeAsync(150);
+      await invalidResult;
+
+      const verified = mockFetch('/api/v1/admin/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ code: '123456' }),
+      });
+      const verifiedResult = expect(verified).resolves.toEqual({ verified: true });
+      await vi.advanceTimersByTimeAsync(150);
+      await verifiedResult;
+
+      const cases = mockFetch<{ items: unknown[] }>('/api/v1/admin/report-cases?status=PENDING');
+      const casesResult = expect(cases).resolves.toMatchObject({ items: expect.any(Array) });
+      await vi.advanceTimersByTimeAsync(150);
+      await casesResult;
+
+      loginAs('developer');
+      const switched = mockFetch('/api/v1/user/me');
+      const switchedResult = expect(switched).resolves.toMatchObject({ userType: 'DEVELOPER' });
+      await vi.advanceTimersByTimeAsync(150);
+      await switchedResult;
+      loginAs('operator');
+      const reset = mockFetch('/api/v1/admin/report-cases');
+      const resetResult = expect(reset).rejects.toMatchObject({ status: 403, code: 'OTP_REQUIRED' });
+      await vi.advanceTimersByTimeAsync(150);
+      await resetResult;
+
+      const restored = mockFetch('/api/v1/admin/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ code: '123456' }),
+      });
+      const restoredResult = expect(restored).resolves.toEqual({ verified: true });
+      await vi.advanceTimersByTimeAsync(150);
+      await restoredResult;
+      const logout = mockFetch('/api/v1/user/auth/logout', { method: 'POST' });
+      const logoutResult = expect(logout).resolves.toBeUndefined();
+      await vi.advanceTimersByTimeAsync(150);
+      await logoutResult;
+      loginAs('operator');
+      const afterLogout = mockFetch('/api/v1/admin/report-cases');
+      const afterLogoutResult = expect(afterLogout).rejects.toMatchObject({ status: 403, code: 'OTP_REQUIRED' });
+      await vi.advanceTimersByTimeAsync(150);
+      await afterLogoutResult;
+
+      const again = mockFetch('/api/v1/admin/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ code: '123456' }),
+      });
+      const againResult = expect(again).resolves.toEqual({ verified: true });
+      await vi.advanceTimersByTimeAsync(150);
+      await againResult;
+      await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+      const idle = mockFetch('/api/v1/admin/report-cases');
+      const idleResult = expect(idle).rejects.toMatchObject({ status: 403, code: 'OTP_REQUIRED' });
+      await vi.advanceTimersByTimeAsync(150);
+      await idleResult;
     } finally {
       vi.useRealTimers();
     }
