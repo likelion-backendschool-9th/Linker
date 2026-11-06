@@ -81,6 +81,11 @@ class IssueReadIntegrationTest {
   static volatile boolean ignoreEdit, failDueOnce, redirectDetail, missingDetail, failAfterEditOnce;
   static volatile String redirectLocation;
   static volatile boolean moveConnected, movedIdentityWrong, emptyChildren, selfChild, rateLimited;
+  static final java.util.concurrent.atomic.AtomicReference<String> LAST_AUTHORIZATION =
+      new java.util.concurrent.atomic.AtomicReference<>();
+  @Autowired GithubTokenCipher tokenCipher;
+  @Autowired PersistedGithubUserAccessTokenSource persistedTokens;
+  @Autowired com.linker.backend.global.config.GithubAppProperties githubProperties;
   @Autowired UserIssueDetailService details;
   static volatile String issueTitle = "로그인 오류", updated = "2026-11-05T01:00:00Z";
   @Autowired MockMvc mvc;
@@ -123,6 +128,7 @@ class IssueReadIntegrationTest {
         "/",
         exchange -> {
           String path = exchange.getRequestURI().toString();
+          LAST_AUTHORIZATION.set(exchange.getRequestHeaders().getFirst("Authorization"));
           REQUESTS.add(exchange.getRequestMethod() + " " + path);
           int status = 200;
           Object response;
@@ -334,6 +340,9 @@ class IssueReadIntegrationTest {
     registry.add("linker.github.webhook-secret", () -> "issue-test-secret");
     registry.add("linker.github.app.id", () -> "123");
     registry.add("linker.github.app.slug", () -> "test-app");
+    registry.add(
+        "linker.github.app.token-encryption-key",
+        () -> Base64.getEncoder().encodeToString(new byte[32]));
     registry.add("linker.github.app.private-key", KEYS::privatePem);
     registry.add(
         "linker.github.app.api-base-url",
@@ -1612,5 +1621,25 @@ class IssueReadIntegrationTest {
     REQUESTS.clear();
     details.retryDue();
     assertThat(REQUESTS).isEmpty();
+  }
+
+  @Test
+  void page12UsesExistingATokenDecryptionForActualCWriteTransport() {
+    firstIssue();
+    String synthetic = "synthetic-c12-user-access-token";
+    String encrypted = tokenCipher.encrypt(synthetic);
+    jdbc.update(
+        "INSERT INTO"
+            + " github_tokens(user_id,access_token_enc,access_expires_at,created_at,updated_at)"
+            + " VALUES(1,?,'2099-01-01',now(),now())",
+        encrypted);
+    var connected = new GithubIssueClient(githubProperties, persistedTokens);
+    assertThat(connected.canWrite(contexts.get(10).repos().getFirst(), 1)).isTrue();
+    var result =
+        connected.editIssue(contexts.get(10).repos().getFirst(), 1, Map.of("state", "closed"), 1);
+    assertThat(result.state()).isEqualTo("CLOSED");
+    assertThat(LAST_AUTHORIZATION.get()).isEqualTo("Bearer " + synthetic);
+    assertThat(encrypted).isNotEqualTo(synthetic);
+    assertThat(JSON.writeValueAsString(result)).doesNotContain(synthetic, encrypted);
   }
 }
