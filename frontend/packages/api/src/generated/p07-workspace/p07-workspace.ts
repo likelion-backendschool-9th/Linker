@@ -24,6 +24,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiErrorBody,
+  GetMyIssuesParams,
+  MyIssuesResponse,
   MyTeamsResponse
 } from '../openAPIDefinition.schemas';
 
@@ -211,6 +214,183 @@ export function useGetMyTeamsSuspense<TData = Awaited<ReturnType<typeof getMyTea
  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetMyTeamsSuspenseQueryOptions(options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetMyIssuesUrl = (params: GetMyIssuesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/user/me/issues?${stringifiedParams}` : `/api/v1/user/me/issues`
+}
+
+/**
+ * 내가 속한 팀만 고를 수 있다(아니면 400). 마감 지남(오래된 순) → 마감 임박 → 마감 없음 순으로 전부 반환한다.
+ * @summary 선택한 팀에서 나에게 배정된 열린 이슈 조회
+ */
+export const getMyIssues = async (params: GetMyIssuesParams, options?: Parameters<typeof apiFetch>[1]): Promise<MyIssuesResponse> => {
+
+  return apiFetch<MyIssuesResponse>(getGetMyIssuesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyIssuesQueryKey = (params?: GetMyIssuesParams,) => {
+    return [
+    `/api/v1/user/me/issues`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMyIssuesQueryOptions = <TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(params: GetMyIssuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyIssuesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyIssues>>> = ({ signal }) => getMyIssues(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyIssuesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyIssues>>>
+export type GetMyIssuesQueryError = ApiErrorBody
+
+
+export function useGetMyIssues<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyIssues>>,
+          TError,
+          Awaited<ReturnType<typeof getMyIssues>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyIssues<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyIssues>>,
+          TError,
+          Awaited<ReturnType<typeof getMyIssues>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyIssues<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 선택한 팀에서 나에게 배정된 열린 이슈 조회
+ */
+
+export function useGetMyIssues<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyIssuesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+/**
+ * @summary 선택한 팀에서 나에게 배정된 열린 이슈 조회
+ */
+export const prefetchGetMyIssuesQuery = async <TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ queryClient: QueryClient, params: GetMyIssuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+
+  ): Promise<QueryClient> => {
+
+  const queryOptions = getGetMyIssuesQueryOptions(params,options)
+
+  await queryClient.query(queryOptions).catch(() => {});
+
+  return queryClient;
+}
+
+
+
+
+
+export const getGetMyIssuesSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(params: GetMyIssuesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyIssuesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyIssues>>> = ({ signal }) => getMyIssues(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetMyIssuesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getMyIssues>>>
+export type GetMyIssuesSuspenseQueryError = ApiErrorBody
+
+
+export function useGetMyIssuesSuspense<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyIssuesSuspense<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyIssuesSuspense<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 선택한 팀에서 나에게 배정된 열린 이슈 조회
+ */
+
+export function useGetMyIssuesSuspense<TData = Awaited<ReturnType<typeof getMyIssues>>, TError = ApiErrorBody>(
+ params: GetMyIssuesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyIssues>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyIssuesSuspenseQueryOptions(params,options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
