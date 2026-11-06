@@ -791,7 +791,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: "채팅에 공유" (Share to chat) `[Included]` → 17's send message (issue card type)
 - Tables: new issue_sync_jobs · shared issues, issue_assignees, issue_labels, team_members, notifications
 - [ ] Server: retry via `issue_sync_jobs` when applying to GitHub fails; show in response when `sync_status = FAILED`
-- C12 implementation and isolated verification: [c-page12-implementation.md](plans/c-page12-implementation.md). Detail edits also use `SET_ASSIGNEES`/`SET_LABELS` retry steps; real A/B integration and versioned migration remain separate.
+- C12 implementation: `issueId` is the Linker internal DB ID (not the GitHub number); responses are no-store with method tag `p12-issue-detail`. Writes need an ACTIVE account and real GitHub write permission (operators do not bypass team rules). GitHub HTTP calls run outside DB transactions under the existing team advisory lock. Detail edits use `SET_ASSIGNEES`/`SET_LABELS`/`SET_START`/`SET_STATUS` retry jobs: max 3 attempts, 60 s apart for transient failures, 409 for a new change while a job is running, 429/rate-limit 403 honor Retry-After, other 4xx stop retrying. New assignees are notified through `UserNotificationService.create` after the change is confirmed. Real A/B integration and versioned migration remain separate.
 - [ ] Frontend: 4 sheets (assignee, label, date, status) as shared components (reused in 13, 14, 15), disabled + toast without write permission, "일정이 GitHub에 반영되지 않았어요" (Schedule not applied to GitHub)
 
 </details>
@@ -809,7 +809,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: 12's assignee and label option APIs, 11's `issue-filters` (repo list)
 - Creation has no issueId yet: reuse the same candidate/label rules through the existing template-list response (`assigneeCandidates`, `labelOptions`, `maxAssignees`), not a fabricated `/issues/0` call. No extra REST endpoint is added. Page 12 issue-scoped edit APIs stay unchanged.
-- C13 backend contract and isolated verification: [c-page13-implementation.md](plans/c-page13-implementation.md). `requestId` is a UUID retained for the same draft; changing the draft requires a new ID. Job progress returns the internal Linker issueId/detailPath after GitHub creation is confirmed.
+- C13 backend contract: `requestId` is a UUID retained for the same draft; changing the draft requires a new ID. Job progress returns the internal Linker issueId/detailPath after GitHub creation is confirmed.
 - Tables: new none · shared issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens
 - [ ] Server: parse issue form YAML, form answers → GitHub body (`### Question`, empty `_No response_`), retry queue for mid-way failures, never create Linker-only issues
 - [ ] Frontend: stepped (repo & template → content), dynamic form field rendering (react-hook-form + zod), reuse 12's sheets, on failure save draft on device + resend, enter with body prefilled from 17 "이슈로 만들기" (Make an issue)
@@ -829,7 +829,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: status change → 12's `PUT .../issues/{issueId}/status`, filter options → 11's `issue-filters`
 - Tables: new none · shared issues, board_status_mappings, issue_sync_jobs
-- C14 backend contract and isolated verification: [c-page14-implementation.md](plans/c-page14-implementation.md). Only issues on the team's Projects board; 5 fixed columns; `NONE` (no Status value) cards go to "기타" with their own status kept; cards ordered by due urgency (past due oldest first, then soonest, then none); `canWrite` uses 11's rule.
+- C14 backend contract: Only issues on the team's Projects board; 5 fixed columns; `NONE` (no Status value) cards go to "기타" with their own status kept; cards ordered by due urgency (past due oldest first, then soonest, then none); `canWrite` uses 11's rule.
 - [ ] Frontend: dnd-kit drag (long-press drag on mobile), optimistic move, revert to original column + notice on failure, horizontally scrolling columns, no drag without write permission
 
 </details>
@@ -847,7 +847,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Tables: new none · shared issues, issue_assignees, notifications
 - [ ] Server: 9 AM scheduler notifying assignees the day before the due date
-- C15 backend contract and isolated verification: [c-page15-implementation.md](plans/c-page15-implementation.md). Inclusive KST dates and overlapping period bars; due-only dots; no due date/off-project items excluded; existing 12 schedule API reused. Reminder production uses the existing user notification service with per-issue/due-date/recipient transaction-safe deduplication. Android push delivery remains D-owned; see the documented current immediate-non-chat delivery gap.
+- C15 backend contract: Inclusive KST dates and overlapping period bars; due-only dots; no due date/off-project items excluded; existing 12 schedule API reused. Reminder production uses the existing user notification service with per-issue/due-date/recipient transaction-safe deduplication. Android push delivery remains D-owned; see the documented current immediate-non-chat delivery gap.
 - [ ] Frontend: month/week views, range bars and dots, tap a date → that day's issues sheet → 12, guide for issues without due dates
 
 </details>

@@ -31,7 +31,7 @@
 - [ ] **E** 모노레포·Next·tokens·`radix-ui` 골격 머지
 - [ ] **E** `packages/api`(orval) + `lib/api/api-fetch` + 공통 에러 코드 처리 + `Providers`
 - [ ] **A B C D** E의 fetch/orval/Provider 경로만 사용 (각자 `fetch` 금지)
-- [x] **전원** OpenAPI `@Tag` ↔ orval 파일 규칙 합의·문서화 — [00 OpenAPI 태그](plans/00-openapi-tags.md)
+- [x] **전원** OpenAPI `@Tag` ↔ orval 파일 규칙 합의·문서화 — 태그는 메서드에 붙여 한 컨트롤러가 여러 페이지를 가져도 메서드별로 유지한다. 현재 공개된 00 엔드포인트는 `p00-common`, 이후는 해당 페이지의 `pNN-…`다. orval은 `tags-split`이라 태그 이름을 바꾸면 생성 파일 경로가 바뀌므로 변경은 전원 멘션 후 반영한다.
 
 ---
 
@@ -56,7 +56,7 @@
 
 ### B (인프라 선행)
 - [ ] 호스트·Postgres·Redis·서울 리전 결정 (웹훅·STOMP 스파이크 전)
-- [ ] **B → A·D** 접속 정보·환경 변수 키 이름 공유 — A의 1차 확인은 [인프라 접속 기록](plans/00-infra-access-log.md)
+- [ ] **B → A·D** 접속 정보·환경 변수 키 이름 공유 — A의 1차 확인(2026-11-05): Redis `PONG` 확인, SSH는 공개 키 인증 실패, Spring `backend` 모드와 Flyway `V1` 이력은 미확인. D의 접속 확인은 A의 기록으로 대신하지 않는다
 
 ---
 
@@ -72,26 +72,26 @@
 - [ ] 공통 시트: 신고, 차단, 외부링크, 삭제확인, 한도, 초안복구
 - [ ] 업로드 API + 업로더 UI
 - [x] 신고·차단 규칙 + `user_blocks` 기간 모델 (삭제가 아니라 기간 닫기)
-- [x] **E → D** 차단 스키마·“활성 기간” 의미 freeze (DM은 기간 전체 소비) → `plans/e-block-contract-freeze.md`
+- [x] **E → D** 차단 스키마·“활성 기간” 의미 freeze (DM은 기간 전체 소비) → `POST /blocks`는 기간을 열고(`unblocked_at=null`, 활성 중 멱등), `DELETE`는 기간을 닫으며(행 삭제 금지), 재차단은 새 기간 행을 추가한다
 
 ### B
 - [ ] GitHub App 등록 (PRD ch.8 + Email read), 웹훅 서명·큐, smee
 - [ ] 스파이크: 설치 → Setup URL 복귀 → `GET /user/installations` 검증
 - [ ] bridge + Expo WebView (`linker://auth`, Android back)
-- [ ] **B ↔ A** 웹 로그인 콜백과 앱 딥링크 복귀 시나리오 한 장으로 맞춤 (JWT 브릿지 금지) — 코드 대조는 [00 스파이크](plans/00-foundation-spikes.md) §5. 로그아웃 문구는 열림
+- [ ] **B ↔ A** 웹 로그인 콜백과 앱 딥링크 복귀 시나리오 한 장으로 맞춤 (JWT 브릿지 금지) — 코드 대조 결과: 복귀 `linker://auth`(`AUTH_REDIRECT_URL`), 앱 저장값은 `userId`·`userType`만, `PUSH_TOKEN.token`은 기기 푸시 토큰이며 세션 JWT가 아니다. `GET /api/v1/public/auth/github/authorize-url`은 페이지 01에서 만든다. 로그아웃 문구는 열림
 
 ### C
-- [ ] 스파이크: Projects 보드, Status Blocked, start/due 필드, `projects_v2_item` 웹훅 — 조회 결론만 [00 스파이크](plans/00-foundation-spikes.md) §1
+- [ ] 스파이크: Projects 보드, Status Blocked, start/due 필드, `projects_v2_item` 웹훅 — 조회 결론만: 조회한 기존 보드에는 `Blocked`가 없고 날짜 필드 이름은 `Target date`다(필드 ID는 하드코딩하지 않음). 날짜 쓰기·Blocked 전환·설치 토큰 조회·`projects_v2_item` 수신은 하지 않았다
 - [ ] Vitest + axe, Playwright + axe, MSW 골격
 - [ ] **C ↔ B** 웹훅 이벤트 목록·페이로드 필드 freeze — 큐 값 설명은 같은 문서 §2. 수신 샘플 전이라 공동 freeze는 아님
 
 ### D
-- [ ] STOMP 설정·인증 인터셉터·재연결 — 브라우저 확인은 못 함. [00 스파이크](plans/00-foundation-spikes.md) §3
+- [ ] STOMP 설정·인증 인터셉터·재연결 — 브라우저 확인은 못 함. 프로토콜 근거는 `StompConnectionTest` 5건(테스트가 띄운 서버이며 브라우저가 아님)이다.
 - [ ] `NotificationService.create()` **시그니처 D2 freeze**
 - [ ] Redis `@RateLimit`, `PlanLimits` (숫자는 Policy / `policy.ts`와 동일 출처)
-- [ ] 스파이크: Toss 테스트 결제 → confirm → cancel — 키 없음. [00 스파이크](plans/00-foundation-spikes.md) §4
+- [ ] 스파이크: Toss 테스트 결제 → confirm → cancel — 키 없음. `TossPaymentClientTest` 3건(mock 서버)만 통과했고 라이브 호출은 하지 않았다.
 - [ ] 프론트 `lib/realtime` STOMP 클라이언트
-- [ ] **D → 전원** 알림 create 인자·에러 코드 공유 (이후 시그니처 변경 자제) — [공유 안내·담당별 확인 양식](plans/d-notification-create-contract.md) 작성 완료. 실제 전달·이슈 고정·소비자 확인은 별도.
+- [ ] **D → 전원** 알림 create 인자·에러 코드 공유 (이후 시그니처 변경 자제) — 인자 계약은 백엔드 청사진 §4.1에 정리했다. 실제 전달·이슈 고정·소비자 확인은 별도.
 
 ---
 
@@ -131,13 +131,13 @@
 
 아래를 이슈/스레드에 붙여 두고 “변경 시 전원 멘션”으로 운영합니다.
 
-- [x] JWT claim 필드·의미·재발급 시점 (**A**) — [00 구현 계약 freeze](plans/00-foundation-contract-freeze.md) §1–§2
+- [x] JWT claim 필드·의미·재발급 시점 (**A**) — 구현 기준은 `JwtSessionTokens`, `SessionCookies`, `SessionClaims` 코드다
 - [x] 공통 에러 코드 + `api-fetch` 매핑 (**E**; `LOGIN_REQUIRED`↔A) — 같은 문서 §3
 - [x] `NotificationService.create()` 인자 (**D**) — 같은 문서 §6
-- [x] `user_blocks` 열기/닫기 의미 (**E**; D 소비) — see `plans/e-block-contract-freeze.md`
-- [ ] 웹훅 이벤트·큐 페이로드 (**B**; C 소비) — [B 전달 계약·C 확인 대기 항목](plans/b-backend-cross-contracts.md). 작성과 공동 freeze를 구분
-- [x] OpenAPI `@Tag` 규칙 (**전원**) — [00 OpenAPI 태그](plans/00-openapi-tags.md)
-- [x] `policy.ts` 키 (**C**) — [00 구현 계약 freeze](plans/00-foundation-contract-freeze.md) §5
+- [x] `user_blocks` 열기/닫기 의미 (**E**; D 소비) — `POST /blocks`는 기간을 열고 `DELETE`는 기간을 닫으며(행 삭제 금지), 재차단은 새 기간 행을 추가한다. 1:1 DM은 메시지 `created_at`이 `[created_at, unblocked_at)` 안이면 숨기고 팀 채팅은 제외한다
+- [ ] 웹훅 이벤트·큐 페이로드 (**B**; C 소비) — 이벤트 목록과 큐 페이로드는 [GitHub App 운영 안내](../operations/06-github-app.md)의 「B → C 웹훅 전달 계약」에 있다. 작성과 공동 freeze를 구분
+- [x] OpenAPI `@Tag` 규칙 (**전원**) — 태그는 메서드에 붙여 한 컨트롤러가 여러 페이지를 가져도 메서드별로 유지한다. 현재 공개된 00 엔드포인트는 `p00-common`, 이후는 해당 페이지의 `pNN-…`다. orval은 `tags-split`이라 태그 이름을 바꾸면 생성 파일 경로가 바뀌므로 변경은 전원 멘션 후 반영한다.
+- [x] `policy.ts` 키 (**C**) — 값은 `frontend/apps/web/src/lib/policy.ts`와 백엔드 `PlanLimits`에 둔다
 - [x] Tech tags / job categories public API 형태 (**A**; 시트 소비자는 그대로) — 같은 문서 §4
 
 ---
@@ -156,7 +156,7 @@
 ### 6 스파이크
 - [ ] WebView GitHub 로그인 복귀 (**B↔A**)
 - [ ] App 설치 콜백 검증 (**B**)
-- [ ] Projects Blocked + 날짜 필드 (**C**) — 조회 결론만 [00 스파이크](plans/00-foundation-spikes.md) §1
+- [ ] Projects Blocked + 날짜 필드 (**C**) — 조회 결론만: 조회한 기존 보드에는 `Blocked`가 없고 날짜 필드 이름은 `Target date`다(필드 ID는 하드코딩하지 않음). 날짜 쓰기·Blocked 전환·설치 토큰 조회·`projects_v2_item` 수신은 하지 않았다
 - [ ] 웹훅 수신 (**B**, C 소비 가능) — smee ping 없음. 같은 문서 §2
 - [ ] STOMP 재연결 (**D**) — 브라우저 확인 없음. 같은 문서 §3
 - [ ] Toss confirm/cancel (**D**) — 키 없음. 같은 문서 §4
@@ -184,7 +184,7 @@
 - [x] D1 오전 api-fetch/orval/Providers
 - [x] overlay + 공통 시트 + 업로더
 - [x] 신고/차단 API·필터·기간 모델
-- [x] D와 차단 계약 freeze → `docs/development/plans/e-block-contract-freeze.md`, `UserModerationService.hidesDirectMessage`
+- [x] D와 차단 계약 freeze → `UserModerationService.hidesDirectMessage(viewerId, senderId, messageCreatedAt)`(1:1 DM만, 팀 채팅 제외)
 - [ ] Vercel 배포 파이프 초안
 
 ### A 이슈 체크
@@ -199,7 +199,7 @@
 - [ ] 설치 콜백 스파이크
 - [ ] bridge + Expo 셸
 - [ ] C와 웹훅 이벤트 freeze
-- [ ] A와 auth 딥링크 정렬 — 페이지 전 경계는 [00 페이지 착수 경계](plans/00-page-gate.md)
+- [ ] A와 auth 딥링크 정렬 — 페이지 전 경계: GitHub `authorize-url`·`callback`·사용자 토큰 복호화와 WebView 로그인 복귀는 페이지 01에서, 로그아웃은 06에서 닫는다
 
 ### C 이슈 체크
 - [ ] policy/format/SEO/image
@@ -284,7 +284,7 @@ Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여�
 
 ## D 차단 적용 지점 (2026-11-05)
 
-메시지 저장은 만들지 않는다. 기준은 `docs/development/plans/e-block-contract-freeze.md`이고, 조회는 이미 있는 `UserModerationService`를 쓴다. 페이지 16·17에서 아래 지점에 연결한다.
+메시지 저장은 만들지 않는다. 기준은 1:1 DM에서 메시지 `created_at`이 차단 기간 `[created_at, unblocked_at)` 안이면 숨기는 규칙(열린 기간은 이후 전체, 팀 채팅 제외)이고, 조회는 이미 있는 `UserModerationService`를 쓴다. 페이지 16·17에서 아래 지점에 연결한다.
 
 ### 호출 지점
 
