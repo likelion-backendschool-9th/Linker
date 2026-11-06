@@ -378,6 +378,8 @@
 
 **신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 UserModerationService가 활성 운영자별 AdminNotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
 
+페이지 18 목록은 `{items, nextCursor}`다. 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 8시 배치, Expo 발송, `pushed_at` 기록은 아직 없다.
+
 
 **시스템 주담당:** D · **REST:** 7개
 
@@ -827,6 +829,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: status change → 12's `PUT .../issues/{issueId}/status`, filter options → 11's `issue-filters`
 - Tables: new none · shared issues, board_status_mappings, issue_sync_jobs
+- C14 backend contract and isolated verification: [c-page14-implementation.md](plans/c-page14-implementation.md). Only issues on the team's Projects board; 5 fixed columns; `NONE` (no Status value) cards go to "기타" with their own status kept; cards ordered by due urgency (past due oldest first, then soonest, then none); `canWrite` uses 11's rule.
 - [ ] Frontend: dnd-kit drag (long-press drag on mobile), optimistic move, revert to original column + notice on failure, horizontally scrolling columns, no drag without write permission
 
 </details>
@@ -844,6 +847,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Tables: new none · shared issues, issue_assignees, notifications
 - [ ] Server: 9 AM scheduler notifying assignees the day before the due date
+- C15 backend contract and isolated verification: [c-page15-implementation.md](plans/c-page15-implementation.md). Inclusive KST dates and overlapping period bars; due-only dots; no due date/off-project items excluded; existing 12 schedule API reused. Reminder production uses the existing user notification service with per-issue/due-date/recipient transaction-safe deduplication. Android push delivery remains D-owned; see the documented current immediate-non-chat delivery gap.
 - [ ] Frontend: month/week views, range bars and dots, tap a date → that day's issues sheet → 12, guide for issues without due dates
 
 </details>
@@ -899,6 +903,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Tables: new push_tokens · shared notifications, users, appeals (after 25 — A creates the table in 25; the appeal API is wired on D7)
+- 목록·단건 읽음·모두 읽음·Android 토큰 저장과 삭제, 본인 제재 이의 1회는 구현한다. `deliver_after` 전 행은 목록과 미독 수에서 빠지고 모두 읽음도 바꾸지 않는다. 8시 배치와 Expo 발송은 아직 없다.
 - [ ] Server: non-chat notifications between 10 PM and 8 AM batched and sent in the morning, Expo push sending (Android; skipped while `push_enabled` is off)
 - [ ] Frontend: list (incl. `TEAM_INVITE` → `/invite/[code]`), navigation, read state, live bell badge, appeal sheet, push permission prompt (Android app; iOS out of MVP)
 

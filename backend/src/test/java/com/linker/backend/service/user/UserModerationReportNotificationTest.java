@@ -71,7 +71,7 @@ class UserModerationReportNotificationTest {
 	@BeforeEach
 	void setUp() {
 		service = new UserModerationService(
-				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, follows, Clock.systemUTC());
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, null, follows, Clock.systemUTC());
 	}
 
 	@Test

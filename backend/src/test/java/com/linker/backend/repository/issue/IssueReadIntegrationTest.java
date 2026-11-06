@@ -60,6 +60,13 @@ import tools.jackson.databind.json.JsonMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class IssueReadIntegrationTest {
   static final RsaMaterial KEYS = RsaMaterial.generate();
+  static final Instant DEFAULT_NOW = Instant.parse("2026-11-05T15:30:00Z");
+  static final java.util.concurrent.atomic.AtomicReference<Instant> CALENDAR_NOW =
+      new java.util.concurrent.atomic.AtomicReference<>(DEFAULT_NOW);
+  static volatile String deniedCalendarLogin;
+  static volatile boolean failCalendarPermission;
+  @Autowired UserIssueReminderService dueReminders;
+
   static final String SCHEMA = "issue_page_" + UUID.randomUUID().toString().replace("-", "");
   static PostgreSQLContainer postgres;
   static GenericContainer<?> redisContainer;
@@ -240,7 +247,13 @@ class IssueReadIntegrationTest {
             response = moved;
           } else if (path.startsWith("/repos/acme/web/collaborators/")) {
             String login = path.split("/")[5];
-            response = Map.of("user", Map.of("login", login), "permission", "read");
+            if (failCalendarPermission) {
+              status = 503;
+              response = Map.of("message", "unavailable");
+            } else if (login.equals(deniedCalendarLogin)) {
+              status = 404;
+              response = Map.of("message", "not found");
+            } else response = Map.of("user", Map.of("login", login), "permission", "read");
           } else if (path.startsWith("/repos/acme/web/labels")) {
             response =
                 List.of(
@@ -516,6 +529,29 @@ class IssueReadIntegrationTest {
             fields));
   }
 
+  static class CalendarClock extends Clock {
+    private final ZoneId zone;
+
+    CalendarClock(ZoneId zone) {
+      this.zone = zone;
+    }
+
+    @Override
+    public ZoneId getZone() {
+      return zone;
+    }
+
+    @Override
+    public Clock withZone(ZoneId zone) {
+      return new CalendarClock(zone);
+    }
+
+    @Override
+    public Instant instant() {
+      return CALENDAR_NOW.get();
+    }
+  }
+
   @TestConfiguration
   static class Contracts {
     // TEST ONLY substitute for B's not-yet-merged membership persistence. No production bypass.
@@ -541,7 +577,7 @@ class IssueReadIntegrationTest {
     @Bean
     @Primary
     Clock issueClock() {
-      return Clock.fixed(Instant.parse("2026-11-05T15:30:00Z"), ZoneOffset.UTC);
+      return new CalendarClock(ZoneOffset.UTC);
     }
   }
 
@@ -559,6 +595,9 @@ class IssueReadIntegrationTest {
 
   @BeforeEach
   void seed() {
+    CALENDAR_NOW.set(DEFAULT_NOW);
+    deniedCalendarLogin = null;
+    failCalendarPermission = false;
     createdDraft = null;
     createdProject = false;
     createLostResponse = false;
@@ -1124,6 +1163,168 @@ class IssueReadIntegrationTest {
                     + " team_progress_snapshots WHERE team_id=10",
                 Integer.class))
         .isZero();
+  }
+
+  void boardIssue(
+      long id,
+      long team,
+      long repo,
+      int number,
+      String state,
+      String status,
+      String item,
+      String due,
+      boolean deleted) {
+    jdbc.update(
+        "INSERT INTO issues(id,team_id,repo_id,github_issue_id,github_node_id,number,title,state,"
+            + "board_status,project_item_id,due_date,github_updated_at,deleted_at)"
+            + " VALUES(?,?,?,?,?,?,?,?,?,?,CAST(? AS date),now(),CASE WHEN ? THEN now() END)",
+        id,
+        team,
+        repo,
+        id * 10,
+        "NODE" + id,
+        number,
+        "보드 " + number,
+        state,
+        status,
+        item,
+        due,
+        deleted);
+  }
+
+  void seedBoard() {
+    boardIssue(901, 10, 100, 11, "OPEN", "TODO", "ITEM11", "2026-11-08", false);
+    boardIssue(902, 10, 100, 12, "OPEN", "TODO", "ITEM12", "2026-11-01", false);
+    boardIssue(903, 10, 100, 13, "OPEN", "TODO", "ITEM13", null, false);
+    boardIssue(904, 10, 100, 14, "OPEN", "BLOCKED", "ITEM14", "2026-11-10", false);
+    boardIssue(905, 10, 100, 15, "CLOSED", "IN_PROGRESS", "ITEM15", "2026-11-02", false);
+    boardIssue(906, 10, 100, 16, "OPEN", "NONE", "ITEM16", "2026-11-07", false);
+    boardIssue(907, 10, 100, 17, "OPEN", "OTHER", "ITEM17", null, false);
+    boardIssue(908, 10, 100, 18, "OPEN", "TODO", null, "2026-11-03", false);
+    boardIssue(909, 10, 100, 19, "OPEN", "TODO", "ITEM19", "2026-11-03", true);
+    boardIssue(910, 20, 200, 20, "OPEN", "TODO", "ITEM20", "2026-11-09", false);
+    jdbc.update("INSERT INTO issue_labels(issue_id,name,color) VALUES(901,'bug','d73a4a')");
+    jdbc.update(
+        "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id)"
+            + " VALUES(902,101,'kim',1)");
+  }
+
+  @Test
+  void page14BoardGroupsProjectIssuesIntoFiveColumnsByDueUrgency() throws Exception {
+    seedBoard();
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Cache-Control", "no-store"))
+        .andExpect(jsonPath("$.canWrite").value(true))
+        .andExpect(jsonPath("$.writePermissionReason").doesNotExist())
+        .andExpect(jsonPath("$.columns.length()").value(5))
+        .andExpect(
+            jsonPath("$.columns[*].status")
+                .value(
+                    org.hamcrest.Matchers.contains(
+                        "TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER")))
+        .andExpect(
+            jsonPath("$.columns[*].label")
+                .value(org.hamcrest.Matchers.contains("작업 전", "작업 중", "작업 중단", "작업 완료", "기타")))
+        // Past due first, then soonest, then no due date; off-board, deleted and other teams' out
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number")
+                .value(org.hamcrest.Matchers.contains(12, 11, 13)))
+        .andExpect(jsonPath("$.columns[0].cards[0].overdue").value(true))
+        .andExpect(jsonPath("$.columns[0].cards[0].assignees[0].login").value("kim"))
+        .andExpect(jsonPath("$.columns[0].cards[1].labels[0].name").value("bug"))
+        .andExpect(jsonPath("$.columns[1].cards.length()").value(0))
+        .andExpect(
+            jsonPath("$.columns[2].cards[*].number").value(org.hamcrest.Matchers.contains(14)))
+        // A closed issue is done whatever its board value; done cards are never overdue
+        .andExpect(
+            jsonPath("$.columns[3].cards[*].number").value(org.hamcrest.Matchers.contains(15)))
+        .andExpect(jsonPath("$.columns[3].cards[0].status").value("DONE"))
+        .andExpect(jsonPath("$.columns[3].cards[0].overdue").value(false))
+        // No Status value shows in "기타" but keeps NONE so the screen can tell it apart
+        .andExpect(
+            jsonPath("$.columns[4].cards[*].number").value(org.hamcrest.Matchers.contains(16, 17)))
+        .andExpect(
+            jsonPath("$.columns[4].cards[*].status")
+                .value(org.hamcrest.Matchers.contains("NONE", "OTHER")))
+        .andExpect(jsonPath("$.columns[4].cards[0].inProject").value(true));
+  }
+
+  @Test
+  void page14BoardReusesPageElevenFiltersExceptStatus() throws Exception {
+    seedBoard();
+    var cookie = login(1);
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("label", "bug"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number").value(org.hamcrest.Matchers.contains(11)))
+        .andExpect(jsonPath("$.columns[4].cards.length()").value(0));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("assignee", "kim"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number").value(org.hamcrest.Matchers.contains(12)));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("open", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[3].cards.length()").value(0))
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(3));
+    // Another team's repo never widens the scope; status is not a board filter
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("repo", "200"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(0));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("status", "DONE"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(3));
+    for (String key : List.of("repo", "open"))
+      mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param(key, "bad"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("label", "' OR 1=1 --"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(0));
+  }
+
+  @Test
+  void page14BoardRequiresTeamMembershipAndReportsReadOnlyTeams() throws Exception {
+    seedBoard();
+    mvc.perform(get("/api/v1/user/teams/10/board")).andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(3)))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("TEAM_ROLE_REQUIRED"));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(4)))
+        .andExpect(status().isForbidden());
+    // A read-only team still shows its board, but no drag (Policy ch. 7, Page TODO 14)
+    mvc.perform(get("/api/v1/user/teams/20/board").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.canWrite").value(false))
+        .andExpect(jsonPath("$.writePermissionReason").value("READ_ONLY_TEAM"))
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number").value(org.hamcrest.Matchers.contains(20)));
+    writable = false;
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.canWrite").value(false))
+        .andExpect(jsonPath("$.writePermissionReason").value("NO_REPOSITORY_WRITE_PERMISSION"));
+  }
+
+  @Test
+  void page14OpenApiTagsTheBoardAndWritesTheClientInput() throws Exception {
+    var result =
+        mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/board'].get.tags[0]")
+                    .value("p14-board"))
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/board'].get.operationId")
+                    .value("getTeamIssueBoard"))
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/issues'].get.tags[0]")
+                    .value("p11-issue-list"))
+            .andReturn();
+    Path path = Path.of("build/openapi/page14.json");
+    Files.createDirectories(path.getParent());
+    Files.writeString(path, result.getResponse().getContentAsString(StandardCharsets.UTF_8));
   }
 
   @AfterAll
@@ -2169,9 +2370,409 @@ class IssueReadIntegrationTest {
     assertThat(count).isEqualTo(4);
   }
 
-  @Test void missingStatusFieldIsRejectedBeforeCreatingGithubIssue() throws Exception {
+  @Test
+  void missingStatusFieldIsRejectedBeforeCreatingGithubIssue() throws Exception {
     jdbc.update("UPDATE team_project_boards SET status_field_id=NULL WHERE team_id=10");
-    mvc.perform(post(createUrl()).cookie(login(1)).contentType("application/json").content(JSON.writeValueAsBytes(createInput(UUID.randomUUID().toString())))).andExpect(status().isConflict());
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(createInput(UUID.randomUUID().toString()))))
+        .andExpect(status().isConflict());
     assertThat(CREATIONS.get()).isZero();
+  }
+
+  private String calendarUrl() {
+    return "/api/v1/user/teams/10/calendar";
+  }
+
+  private void calendarIssue(long id, int number, String start, String due) {
+    boardIssue(id, 10, 100, number, "OPEN", "TODO", "ITEM" + id, due, false);
+    jdbc.update("UPDATE issues SET start_date=CAST(? AS date) WHERE id=?", start, id);
+  }
+
+  private void seedCalendar() {
+    calendarIssue(1001, 21, "2026-10-30", "2026-11-04");
+    calendarIssue(1002, 22, null, "2026-11-02");
+    calendarIssue(1003, 23, "2026-11-28", "2026-12-03");
+    calendarIssue(1004, 24, "2026-10-01", "2026-12-30");
+    calendarIssue(1005, 25, "2026-12-01", "2026-12-08");
+    calendarIssue(1006, 26, "2026-10-15", "2026-10-31");
+    calendarIssue(1007, 27, "2026-11-11", null);
+    calendarIssue(1008, 28, null, "2026-11-09");
+    jdbc.update("UPDATE issues SET project_item_id=NULL WHERE id=1008");
+    calendarIssue(1009, 29, null, "2026-11-07");
+    jdbc.update("UPDATE issues SET deleted_at=now() WHERE id=1009");
+    boardIssue(1010, 20, 200, 30, "OPEN", "TODO", "OTHER", "2026-11-05", false);
+    calendarIssue(1011, 31, null, "2026-11-05");
+    jdbc.update("UPDATE issues SET state='CLOSED',board_status='DONE' WHERE id=1011");
+    calendarIssue(1012, 32, null, "2026-11-05");
+    jdbc.update("UPDATE issues SET board_status='BLOCKED' WHERE id=1012");
+    jdbc.update(
+        "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id)"
+            + " VALUES(1002,101,'kim',1),(1003,102,'former',2)");
+  }
+
+  @Test
+  void page15CalendarIncludesOverlappingBarsAndDueOnlyDots() throws Exception {
+    seedCalendar();
+    var body =
+        mvc.perform(
+                get(calendarUrl())
+                    .param("from", "2026-11-01")
+                    .param("to", "2026-11-30")
+                    .cookie(login(1)))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.from").value("2026-11-01"))
+            .andExpect(jsonPath("$.to").value("2026-11-30"))
+            .andExpect(
+                jsonPath("$.items[*].id")
+                    .value(
+                        org.hamcrest.Matchers.containsInAnyOrder(
+                            1001, 1002, 1003, 1004, 1011, 1012)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    var parsed = JSON.readTree(body);
+    var bar =
+        java.util.stream.StreamSupport.stream(parsed.path("items").spliterator(), false)
+            .filter(i -> i.path("id").asLong() == 1001)
+            .findFirst()
+            .orElseThrow();
+    assertThat(bar.path("startDate").asString()).isEqualTo("2026-10-30");
+    assertThat(bar.path("dueDate").asString()).isEqualTo("2026-11-04");
+    var dot =
+        java.util.stream.StreamSupport.stream(parsed.path("items").spliterator(), false)
+            .filter(i -> i.path("id").asLong() == 1002)
+            .findFirst()
+            .orElseThrow();
+    assertThat(dot.path("startDate").isNull()).isTrue();
+  }
+
+  @Test
+  void page15CalendarHandlesSingleDayAndMonthWeekBoundaries() throws Exception {
+    seedCalendar();
+    mvc.perform(
+            get(calendarUrl())
+                .param("from", "2026-11-02")
+                .param("to", "2026-11-02")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.items[*].id")
+                .value(org.hamcrest.Matchers.containsInAnyOrder(1001, 1002, 1004)));
+    mvc.perform(
+            get(calendarUrl())
+                .param("from", "2026-11-30")
+                .param("to", "2026-12-01")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.items[*].id")
+                .value(org.hamcrest.Matchers.containsInAnyOrder(1003, 1004, 1005)));
+  }
+
+  @Test
+  void page15CalendarFiltersAssigneeAndTreatsInjectionAsAValue() throws Exception {
+    seedCalendar();
+    mvc.perform(
+            get(calendarUrl())
+                .param("from", "2026-11-01")
+                .param("to", "2026-11-30")
+                .param("assignee", "kim")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[*].id").value(org.hamcrest.Matchers.contains(1002)))
+        .andExpect(jsonPath("$.items[0].assignees[0].login").value("kim"));
+    mvc.perform(
+            get(calendarUrl())
+                .param("from", "2026-11-01")
+                .param("to", "2026-11-30")
+                .param("assignee", "' OR 1=1 --")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(0));
+    jdbc.update("UPDATE github_repos SET deleted_at=now() WHERE id=100");
+    mvc.perform(
+            get(calendarUrl())
+                .param("from", "2026-11-01")
+                .param("to", "2026-11-30")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(0));
+  }
+
+  @Test
+  void page15OverdueUsesKstDayAndClosedIssuesStayNotOverdue() throws Exception {
+    seedCalendar();
+    var body =
+        mvc.perform(
+                get(calendarUrl())
+                    .param("from", "2026-11-05")
+                    .param("to", "2026-11-05")
+                    .cookie(login(1)))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    for (var item : JSON.readTree(body).path("items")) {
+      if (item.path("id").asLong() == 1012) assertThat(item.path("overdue").asBoolean()).isTrue();
+      if (item.path("id").asLong() == 1011) {
+        assertThat(item.path("overdue").asBoolean()).isFalse();
+        assertThat(item.path("status").asString()).isEqualTo("DONE");
+      }
+    }
+    assertThat(DEFAULT_NOW.atZone(ZoneOffset.UTC).toLocalDate())
+        .isEqualTo(LocalDate.parse("2026-11-05"));
+  }
+
+  @Test
+  void page15CalendarRequiresDatesAndRejectsInvalidRange() throws Exception {
+    mvc.perform(get(calendarUrl()).param("to", "2026-11-30").cookie(login(1)))
+        .andExpect(status().isBadRequest());
+    for (String[] dates :
+        List.of(
+            new String[] {"2026-11-30", "2026-11-01"},
+            new String[] {"bad", "2026-11-30"},
+            new String[] {"2026-02-30", "2026-11-30"},
+            new String[] {"0000-01-01", "2026-11-30"}))
+      mvc.perform(get(calendarUrl()).param("from", dates[0]).param("to", dates[1]).cookie(login(1)))
+          .andExpect(status().isBadRequest());
+    mvc.perform(
+            get(calendarUrl())
+                .param("from", "2026-11-01")
+                .param("to", "2026-11-30")
+                .param("assignee", "x".repeat(40))
+                .cookie(login(1)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void page15CalendarChecksLoginRoleAndTeamWithoutGithubWrites() throws Exception {
+    mvc.perform(get(calendarUrl()).param("from", "2026-11-01").param("to", "2026-11-30"))
+        .andExpect(status().isUnauthorized());
+    for (int user : List.of(3, 4))
+      mvc.perform(
+              get(calendarUrl())
+                  .param("from", "2026-11-01")
+                  .param("to", "2026-11-30")
+                  .cookie(login(user)))
+          .andExpect(status().isForbidden());
+    var cookie = login(1);
+    REQUESTS.clear();
+    mvc.perform(
+            get("/api/v1/user/teams/20/calendar")
+                .param("from", "2026-11-01")
+                .param("to", "2026-11-30")
+                .cookie(cookie))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(0));
+    assertThat(REQUESTS).isEmpty();
+  }
+
+  @Test
+  void page15CalendarOpenApiAddsOnlyItsReadOperation() throws Exception {
+    var result =
+        mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/calendar'].get.tags[0]")
+                    .value("p15-calendar"))
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/calendar'].get.operationId")
+                    .value("getTeamIssueCalendar"))
+            .andReturn();
+    Path path = Path.of("build/openapi/page15.json");
+    Files.createDirectories(path.getParent());
+    Files.writeString(path, result.getResponse().getContentAsString(StandardCharsets.UTF_8));
+  }
+
+  private void dueAssignment(long issue, long github, String login, Long user) {
+    jdbc.update(
+        "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id) VALUES(?,?,?,?)",
+        issue,
+        github,
+        login,
+        user);
+  }
+
+  private void dueAtNine() {
+    CALENDAR_NOW.set(Instant.parse("2026-11-06T00:00:00Z"));
+  }
+
+  private void seedDue() {
+    calendarIssue(2001, 41, null, "2026-11-07");
+    dueAssignment(2001, 101, "kim", 1L);
+  }
+
+  @Test
+  void page15ReminderRunsAtNineKstAndIsIdempotent() throws Exception {
+    seedDue();
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    dueAtNine();
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM notifications WHERE notification_type='DUE_SOON'",
+                Integer.class))
+        .isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT link_path FROM notifications WHERE notification_type='DUE_SOON'",
+                String.class))
+        .isEqualTo("/teams/10/issues/2001");
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT actor_id FROM notifications WHERE notification_type='DUE_SOON'",
+                Long.class))
+        .isNull();
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT deliver_after FROM notifications WHERE notification_type='DUE_SOON'",
+                java.sql.Timestamp.class))
+        .isNull();
+    var payload =
+        JSON.readTree(
+            jdbc.queryForObject(
+                "SELECT payload::text FROM notifications WHERE notification_type='DUE_SOON'",
+                String.class));
+    assertThat(payload.path("dueDate").asString()).isEqualTo("2026-11-07");
+  }
+
+  @Test
+  void page15ReminderExcludesClosedDoneDeletedFormerAndExternalAssignees() {
+    dueAtNine();
+    seedDue();
+    dueAssignment(2001, 102, "former", 2L);
+    dueAssignment(2001, 999, "external", null);
+    calendarIssue(2002, 42, null, "2026-11-07");
+    jdbc.update("UPDATE issues SET state='CLOSED' WHERE id=2002");
+    dueAssignment(2002, 101, "kim", 1L);
+    calendarIssue(2003, 43, null, "2026-11-07");
+    jdbc.update("UPDATE issues SET board_status='DONE' WHERE id=2003");
+    dueAssignment(2003, 101, "kim", 1L);
+    calendarIssue(2004, 44, null, null);
+    dueAssignment(2004, 101, "kim", 1L);
+    calendarIssue(2005, 45, null, "2026-11-08");
+    dueAssignment(2005, 101, "kim", 1L);
+    calendarIssue(2006, 46, null, "2026-11-07");
+    jdbc.update("UPDATE issues SET project_item_id=NULL WHERE id=2006");
+    dueAssignment(2006, 101, "kim", 1L);
+    calendarIssue(2007, 47, null, "2026-11-07");
+    jdbc.update("UPDATE issues SET deleted_at=now() WHERE id=2007");
+    dueAssignment(2007, 101, "kim", 1L);
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+    assertThat(
+            jdbc.queryForList(
+                "SELECT user_id FROM notifications WHERE notification_type='DUE_SOON'", Long.class))
+        .containsExactly(1L);
+  }
+
+  @Test
+  void page15ReminderRetriesAfterPermissionFailureButNeverLeaksToRevokedUser() {
+    dueAtNine();
+    seedDue();
+    failCalendarPermission = true;
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    failCalendarPermission = false;
+    deniedCalendarLogin = "kim";
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    deniedCalendarLogin = null;
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+  }
+
+  @Test
+  void page15ReminderRechecksMembershipAccountAndRepository() {
+    dueAtNine();
+    seedDue();
+    jdbc.update("UPDATE team_members SET left_at=now() WHERE user_id=1 AND team_id=10");
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    jdbc.update(
+        "UPDATE team_members SET left_at=NULL,github_org_state='PENDING' WHERE user_id=1 AND"
+            + " team_id=10");
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    jdbc.update("UPDATE team_members SET github_org_state='MEMBER' WHERE user_id=1 AND team_id=10");
+    jdbc.update("UPDATE users SET status='WITHDRAWING' WHERE id=1");
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    jdbc.update("UPDATE users SET status='ACTIVE' WHERE id=1");
+    jdbc.update("UPDATE github_repos SET deleted_at=now() WHERE id=100");
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+  }
+
+  @Test
+  void page15ReminderUsesDueDateAndRecipientInItsDeduplicationKey() {
+    dueAtNine();
+    seedDue();
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+    jdbc.update("UPDATE issues SET due_date='2026-11-08' WHERE id=2001");
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    CALENDAR_NOW.set(Instant.parse("2026-11-07T00:00:00Z"));
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+    jdbc.update("UPDATE team_members SET left_at=NULL WHERE user_id=2 AND team_id=10");
+    dueAssignment(2001, 102, "former", 2L);
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+    assertThat(dueReminders.remindDueTomorrow()).isZero();
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM notifications WHERE notification_type='DUE_SOON'",
+                Integer.class))
+        .isEqualTo(3);
+  }
+
+  @Test
+  void page15ReminderKeepsInAppNotificationWhenPushIsDisabled() throws Exception {
+    dueAtNine();
+    seedDue();
+    jdbc.update("UPDATE users SET push_enabled=false WHERE id=1");
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+    mvc.perform(get("/api/v1/user/notifications").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].type").value("DUE_SOON"))
+        .andExpect(jsonPath("$.items[0].targetUrl").value("/teams/10/issues/2001"));
+  }
+
+  @Test
+  void page15ReminderRollsBackFailedNotificationAndCanRetry() {
+    dueAtNine();
+    seedDue();
+    jdbc.execute(
+        "CREATE FUNCTION reject_due_reminder() RETURNS trigger AS $$ BEGIN IF"
+            + " NEW.notification_type='DUE_SOON' THEN RAISE EXCEPTION 'test failure'; END IF;"
+            + " RETURN NEW; END; $$ LANGUAGE plpgsql");
+    jdbc.execute(
+        "CREATE TRIGGER reject_due BEFORE INSERT ON notifications FOR EACH ROW EXECUTE FUNCTION"
+            + " reject_due_reminder()");
+    try {
+      assertThat(dueReminders.remindDueTomorrow()).isZero();
+      assertThat(jdbc.queryForObject("SELECT count(*) FROM notifications", Integer.class)).isZero();
+    } finally {
+      jdbc.execute("DROP TRIGGER reject_due ON notifications");
+      jdbc.execute("DROP FUNCTION reject_due_reminder()");
+    }
+    assertThat(dueReminders.remindDueTomorrow()).isEqualTo(1);
+  }
+
+  @Test
+  void page15ConcurrentReminderWorkersProduceOnlyOneNotification() throws Exception {
+    dueAtNine();
+    seedDue();
+    var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+    try {
+      var a = pool.submit(() -> dueReminders.remindDueTomorrow());
+      var b = pool.submit(() -> dueReminders.remindDueTomorrow());
+      assertThat(
+              a.get(20, java.util.concurrent.TimeUnit.SECONDS)
+                  + b.get(20, java.util.concurrent.TimeUnit.SECONDS))
+          .isEqualTo(1);
+    } finally {
+      pool.shutdownNow();
+    }
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM notifications WHERE notification_type='DUE_SOON'",
+                Integer.class))
+        .isEqualTo(1);
   }
 }

@@ -58,6 +58,15 @@ public class Sanction extends BaseTimeEntity {
 	protected Sanction() {
 	}
 
+	public static Sanction issue(User user, SanctionType type, Admin admin, Instant startsAt) {
+		Sanction sanction = new Sanction();
+		sanction.user = user;
+		sanction.sanctionType = type;
+		sanction.admin = admin;
+		sanction.startsAt = startsAt;
+		return sanction;
+	}
+
 	public static Sanction reportRestriction(User user, ReportCase reportCase, Admin admin, Instant startsAt, Instant endsAt) {
 		Sanction sanction = new Sanction();
 		sanction.user = user;

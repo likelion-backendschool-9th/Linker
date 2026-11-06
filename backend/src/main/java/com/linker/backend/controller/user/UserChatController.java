@@ -6,6 +6,7 @@ import java.util.Map;
 import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
+import com.linker.backend.dto.chat.request.ShareChatCardRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
@@ -101,6 +102,17 @@ public class UserChatController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.messages(user, roomId, before, after));
 	}
 
+	@PostMapping("/chat-rooms/{roomId}/share-cards")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "shareChatCard")
+	public ResponseEntity<ChatMessageResponse> shareCard(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@RequestBody ShareChatCardRequest request
+	) {
+		return ResponseEntity.ok().body(chat.shareCard(user, roomId, request));
+	}
+
 	@PostMapping("/chat-rooms/{roomId}/read")
 	@Tag(name = "p17-chat-room")
 	@Operation(operationId = "markChatRead")
@@ -160,6 +172,18 @@ public class UserChatController {
 			@RequestBody UpdateChatNotificationRequest request
 	) {
 		chat.updateNotification(user, roomId, request);
+		return ResponseEntity.noContent().build();
+	}
+
+	@DeleteMapping("/chat-rooms/{roomId}/members/me")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "leaveChatRoom")
+	@ApiResponse(responseCode = "204", description = "Chat room membership ended")
+	public ResponseEntity<Void> leave(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId
+	) {
+		chat.leave(user, roomId);
 		return ResponseEntity.noContent().build();
 	}
 

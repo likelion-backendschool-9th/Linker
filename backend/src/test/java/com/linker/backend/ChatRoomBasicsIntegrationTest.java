@@ -644,7 +644,8 @@ class ChatRoomBasicsIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/notification'].patch.operationId").value("updateChatNotification"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get.operationId").value("getChatRoom"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get.tags[0]").value("p17-chat-room"))
-				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete").doesNotExist());
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete.operationId").value("leaveChatRoom"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete.tags[0]").value("p17-chat-room"));
 	}
 
 	private void stale(ChatRoom room, ChatMessage message, String event, String text) {

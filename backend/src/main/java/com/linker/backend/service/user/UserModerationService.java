@@ -10,7 +10,9 @@ import com.linker.backend.dto.moderation.response.BlockView;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
+import com.linker.backend.entity.moderation.Appeal;
 import com.linker.backend.entity.moderation.Report;
+import com.linker.backend.entity.moderation.Sanction;
 import com.linker.backend.entity.moderation.ReportCase;
 import com.linker.backend.entity.moderation.ReportReason;
 import com.linker.backend.entity.moderation.ReportTargetType;
@@ -22,6 +24,7 @@ import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
+import com.linker.backend.repository.moderation.AppealRepository;
 import com.linker.backend.repository.moderation.BlockInserter;
 import com.linker.backend.repository.moderation.ReportCaseOpener;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
@@ -30,6 +33,7 @@ import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.service.admin.AdminNotificationService;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +54,7 @@ public class UserModerationService {
 	private final AdminRepository admins;
 	private final AdminNotificationService adminNotifications;
 	private final SanctionRepository sanctions;
+	private final AppealRepository appeals;
 	private final FollowRepository follows;
 	private final Clock clock;
 
@@ -63,6 +68,7 @@ public class UserModerationService {
 			AdminRepository admins,
 			AdminNotificationService adminNotifications,
 			SanctionRepository sanctions,
+			AppealRepository appeals,
 			FollowRepository follows,
 			Clock clock
 	) {
@@ -75,6 +81,7 @@ public class UserModerationService {
 		this.admins = admins;
 		this.adminNotifications = adminNotifications;
 		this.sanctions = sanctions;
+		this.appeals = appeals;
 		this.follows = follows;
 		this.clock = clock;
 	}
@@ -108,6 +115,36 @@ public class UserModerationService {
 			return;
 		}
 		inserter.insertActive(blockerId, blockedId, DatabaseInstant.now(clock));
+	}
+
+	/**
+	 * One appeal per sanction for the sanctioned user. Does not accept or reject it.
+	 */
+	@Transactional
+	public long appeal(long userId, Long sanctionId, String body) {
+		if (sanctionId == null || body == null || body.isBlank()) {
+			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+		}
+		Sanction sanction = sanctions.findById(sanctionId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "대상을 찾을 수 없어요"));
+		if (!sanction.getUser().getId().equals(userId)) {
+			throw new ApiException(404, "NOT_FOUND", "대상을 찾을 수 없어요");
+		}
+		if (sanction.getRevokedAt() != null) {
+			throw new ApiException(409, "STATE_CONFLICT", "취소된 제재는 이의 제기할 수 없어요");
+		}
+		if (appeals.existsBySanction_Id(sanction.getId())) {
+			throw new ApiException(409, "ALREADY_APPEALED", "이미 이의 제기를 접수했어요.");
+		}
+		User account = users.findById(userId)
+				.filter(user -> user.getStatus() != UserStatus.DELETED && user.getDeletedAt() == null)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		try {
+			return appeals.saveAndFlush(Appeal.open(account, sanction, body.trim())).getId();
+		}
+		catch (DataIntegrityViolationException exception) {
+			throw new ApiException(409, "ALREADY_APPEALED", "이미 이의 제기를 접수했어요.");
+		}
 	}
 
 	@Transactional

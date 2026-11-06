@@ -23,6 +23,7 @@ import com.linker.backend.dto.chat.event.ChatTranscriptChanged;
 import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
+import com.linker.backend.dto.chat.request.ShareChatCardRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatCounterpartResponse;
 import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
@@ -35,6 +36,7 @@ import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
@@ -53,6 +55,7 @@ import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.global.realtime.ChatRoomAccess;
 import com.linker.backend.global.realtime.StompAuthException;
+import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
@@ -65,6 +68,8 @@ import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessage
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
+import com.linker.backend.repository.chat.ChatShareCardQuery;
+import com.linker.backend.entity.notification.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
@@ -73,6 +78,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserChatController}.
@@ -113,6 +120,10 @@ public class UserChatService {
 	private final UserModerationService moderation;
 	private final UserUploadService uploads;
 	private final ChatMessageImageRepository imageLinks;
+	private final UserNotificationService notifications;
+	private final ChatShareCardQuery shareCards;
+	private final JsonMapper json = JsonMapper.builder().build();
+	private final TeamChatAccess teamChat;
 
 	public UserChatService(
 			ChatRoomAccess chatRooms,
@@ -128,7 +139,10 @@ public class UserChatService {
 			PlatformTransactionManager transactions,
 			UserModerationService moderation,
 			UserUploadService uploads,
-			ChatMessageImageRepository imageLinks
+			ChatMessageImageRepository imageLinks,
+			UserNotificationService notifications,
+			ChatShareCardQuery shareCards,
+			TeamChatAccess teamChat
 	) {
 		this.chatRooms = chatRooms;
 		this.lists = lists;
@@ -144,6 +158,9 @@ public class UserChatService {
 		this.moderation = moderation;
 		this.uploads = uploads;
 		this.imageLinks = imageLinks;
+		this.notifications = notifications;
+		this.shareCards = shareCards;
+		this.teamChat = teamChat;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -205,8 +222,21 @@ public class UserChatService {
 				.filter(member -> member.getHiddenAt() == null)
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
 		ChatRoom room = membership.getRoom();
-		if (room.getRoomType() != RoomType.DIRECT) {
-			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		if (room.getRoomType() == RoomType.TEAM) {
+			if (room.getTeamId() == null) {
+				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+			}
+			TeamChatAccess.TeamView team = teamChat.readableBy(user.userId(), room.getTeamId());
+			if (team == null) {
+				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+			}
+			List<ChatMemberResponse> people = members.findActiveInRoom(roomId).stream()
+					.map(member -> accounts.findById(member.getUserId()).orElse(null))
+					.filter(Objects::nonNull)
+					.map(UserChatService::memberView)
+					.toList();
+			return new ChatRoomInfoResponse(room.getId(), "TEAM", team.name(), null, membership.isMuted(), people,
+					Map.of("id", team.id(), "status", team.status()), PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
 		}
 		String kind;
 		String direction;
@@ -347,12 +377,40 @@ public class UserChatService {
 		boolean capped = after != null && more;
 		Long nextAfter = capped && !rows.isEmpty() ? rows.get(rows.size() - 1).id() : null;
 		return new ChatMessagePageResponse(
-				toMessages(rows),
+				toMessages(user.userId(), rows),
 				more,
 				capped,
 				nextAfter,
 				team ? new ChatHistoryLimitResponse(FREE_HISTORY, false) : null
 		);
+	}
+
+	@Transactional
+	public ChatMessageResponse shareCard(AuthenticatedUser principal, long roomId, ShareChatCardRequest request) {
+		Participant participant = requireParticipant(principal, roomId);
+		if (request == null || request.targetType() == null || request.targetId() == null
+				|| request.targetId() < 1 || request.clientMessageId() == null
+				|| !canonicalUuid(request.clientMessageId())) {
+			throw new ApiException(400, "VALIDATION_ERROR", "공유할 대상을 확인해 주세요");
+		}
+		String targetType = request.targetType().trim().toUpperCase();
+		if (!Set.of("POST", "RECRUIT_POST", "PROFILE").contains(targetType)) {
+			throw new ApiException(400, "VALIDATION_ERROR", "공유할 대상을 확인해 주세요");
+		}
+		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire("chat.share", participant.account().getId(), PlanLimits.CHAT_SHARES_PER_MINUTE, 1);
+		if (!decision.allowed()) {
+			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요");
+		}
+		String payload = "{\"targetType\":\"" + targetType + "\",\"targetId\":" + request.targetId() + "}";
+		ChatMessage message = messages.saveAndFlush(ChatMessage.shareCard(participant.member().getRoom(), participant.account().getId(), payload, request.clientMessageId()));
+		Instant createdAt = DatabaseInstant.now(clock);
+		messages.assignCreatedAt(message.getId(), createdAt);
+		message.alignCreatedAt(createdAt);
+		participant.member().getRoom().markLastMessage(message.getId(), createdAt);
+		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != principal.userId()).count();
+		ChatMessageResponse response = toMessage(message, participant.account(), unread, List.of());
+		events.publishEvent(new ChatMessageReady(roomId, response));
+		return response;
 	}
 
 	@Transactional
@@ -471,6 +529,15 @@ public class UserChatService {
 		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
 	}
 
+	@Transactional
+	public void leave(AuthenticatedUser principal, long roomId) {
+		User account = requireActive(principal);
+		ChatRoomMember member = members.lockActive(roomId, account.getId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		member.leave(DatabaseInstant.now(clock));
+		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
+	}
+
 	/**
 	 * Current safe row for a subscriber. Delivery may reorder frames, so a snapshot taken at
 	 * commit is not what the socket sends.
@@ -507,8 +574,9 @@ public class UserChatService {
 		if (members.findActive(roomId, current.getId()).isEmpty() || !room.admitsSender()) {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
-		if (room.getRoomType() == RoomType.TEAM) {
-			reject(current.getId(), roomId, command.clientMessageId(), "TEAM_STATE_UNAVAILABLE", "팀 상태를 확인할 수 없어요", false, null);
+		if (room.getRoomType() == RoomType.TEAM
+				&& (room.getTeamId() == null || !teamChat.writableBy(current.getId(), room.getTeamId()))) {
+			reject(current.getId(), roomId, command.clientMessageId(), "FORBIDDEN", "팀 채팅에 메시지를 보낼 수 없어요", false, null);
 			return false;
 		}
 		ChatMessage existing = messages.findBySenderIdAndClientMessageId(current.getId(), command.clientMessageId()).orElse(null);
@@ -548,9 +616,28 @@ public class UserChatService {
 			imageUrls.add(file.getUrl());
 		}
 		room.markLastMessage(message.getId(), createdAt);
-		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != current.getId()).count();
+		List<Long> recipientIds = members.findActiveUserIds(roomId).stream()
+				.filter(id -> id != current.getId())
+				.filter(id -> messageQuery.visibleTo(id, roomId, room.getRoomType() == RoomType.TEAM,
+						historyStart(room.getRoomType() == RoomType.TEAM), message.getId()))
+				.toList();
+		long unread = recipientIds.size();
 		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread, imageUrls)));
 		boolean team = room.getRoomType() == RoomType.TEAM;
+		if (!team) {
+			for (Long recipientId : recipientIds) {
+				notifications.create(new CreateNotificationCommand(
+						recipientId,
+						NotificationTypes.CHAT,
+						current.getId(),
+						"CHAT_ROOM",
+						roomId,
+						"/chats/" + roomId,
+						"{\"roomId\":" + roomId + ",\"messageId\":" + message.getId() + "}",
+						"chat:" + roomId
+				));
+			}
+		}
 		for (Long memberId : members.findActiveUserIds(roomId)) {
 			boolean visible = memberId == current.getId()
 					|| messageQuery.visibleTo(memberId, roomId, team, historyStart(team), message.getId());
@@ -729,14 +816,32 @@ public class UserChatService {
 		return clock.instant().minus(Duration.ofDays(PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE));
 	}
 
-	private List<ChatMessageResponse> toMessages(List<ChatMessageRow> rows) {
+	private List<ChatMessageResponse> toMessages(long viewerId, List<ChatMessageRow> rows) {
 		if (rows.isEmpty()) {
 			return List.of();
 		}
 		Map<Long, List<String>> urls = messageQuery.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
 		return rows.stream()
-				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of())))
+				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of()), cardPayload(viewerId, row)))
 				.toList();
+	}
+
+	private Object cardPayload(long viewerId, ChatMessageRow row) {
+		if (!"SHARE_CARD".equals(row.type()) || row.payload() == null || row.payload().isBlank()) {
+			return row.payload();
+		}
+		try {
+			JsonNode payload = json.readTree(row.payload());
+			String targetType = payload.path("targetType").asText();
+			long targetId = payload.path("targetId").asLong();
+			if (targetType.isBlank() || targetId < 1) {
+				return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable(targetType, targetId);
+			}
+			return shareCards.resolve(viewerId, targetType, targetId);
+		}
+		catch (RuntimeException exception) {
+			return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable("UNKNOWN", 0);
+		}
 	}
 
 	private static SendCommand sendCommand(Map<String, Object> payload) {
@@ -878,7 +983,7 @@ public class UserChatService {
 				message.getMessageType().name(),
 				message.getBody(),
 				imageUrls,
-				null,
+				message.getPayload(),
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				null,
@@ -886,7 +991,7 @@ public class UserChatService {
 		);
 	}
 
-	private static ChatMessageResponse toMessage(ChatMessageRow row, List<String> imageUrls) {
+	private static ChatMessageResponse toMessage(ChatMessageRow row, List<String> imageUrls, Object payload) {
 		boolean redacted = row.deletedAt() != null || "HIDDEN".equals(row.visibility());
 		String text = row.deletedAt() != null ? DELETED_PREVIEW : "HIDDEN".equals(row.visibility()) ? HIDDEN_PREVIEW : row.body();
 		boolean withdrawn = "DELETED".equals(row.senderStatus());
@@ -905,7 +1010,7 @@ public class UserChatService {
 				row.type(),
 				text,
 				redacted ? List.of() : imageUrls,
-				null,
+				redacted ? null : payload,
 				row.createdAt(),
 				row.editedAt(),
 				row.deletedAt(),

@@ -132,7 +132,19 @@ public class Notification extends BaseTimeEntity {
 		return pushedAt;
 	}
 
+	public void markPushed(Instant when) {
+		if (this.pushedAt == null) {
+			this.pushedAt = when;
+		}
+	}
+
 	public Instant getReadAt() {
 		return readAt;
+	}
+
+	public void markRead(Instant when) {
+		if (this.readAt == null) {
+			this.readAt = when;
+		}
 	}
 }

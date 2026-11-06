@@ -87,11 +87,14 @@ public class ChatRoom extends BaseTimeEntity {
 		this.respondedAt = when;
 	}
 
-	public boolean admitsSubscriber() {
+	public boolean admitsSubscriber(Instant now) {
 		if (roomType == RoomType.TEAM) {
 			return true;
 		}
-		return dmStatus == DmStatus.ACCEPTED || dmStatus == DmStatus.REQUESTED;
+		return dmStatus == DmStatus.ACCEPTED
+				|| (dmStatus == DmStatus.REQUESTED
+						&& requestExpiresAt != null
+						&& requestExpiresAt.isAfter(now));
 	}
 
 	public boolean admitsSender() {
@@ -107,6 +110,10 @@ public class ChatRoom extends BaseTimeEntity {
 
 	public RoomType getRoomType() {
 		return roomType;
+	}
+
+	public Long getTeamId() {
+		return teamId;
 	}
 
 	public DmStatus getDmStatus() {

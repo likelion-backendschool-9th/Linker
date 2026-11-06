@@ -1,6 +1,7 @@
 package com.linker.backend.service.user;
 
 import com.linker.backend.dto.issue.request.IssueListQuery;
+import com.linker.backend.dto.issue.response.IssueBoardResponse;
 import com.linker.backend.dto.issue.response.IssueDetailResponse;
 import com.linker.backend.dto.issue.response.IssueFilterOptionsResponse;
 import com.linker.backend.dto.issue.response.IssueListResponse;
@@ -14,7 +15,10 @@ import com.linker.backend.repository.issue.IssueReadRepository;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -62,24 +66,7 @@ public class UserIssueService {
       AuthenticatedUser user, long teamId, IssueListQuery query, boolean unscheduled) {
     requireMember(user, teamId);
     var context = contexts.get(teamId);
-    boolean canWrite = false;
-    String reason = "NO_REPOSITORY_WRITE_PERMISSION";
-    if (!context.writable()) reason = "READ_ONLY_TEAM";
-    else if (user.status() == UserStatus.SUSPENDED) reason = "SUSPENDED";
-    else
-      for (var repo : context.repos()) {
-        try {
-          if (source.canWrite(repo, user.userId())) {
-            canWrite = true;
-            reason = null;
-            break;
-          }
-        } catch (ApiException e) {
-          reason = "GITHUB_PERMISSION_UNAVAILABLE";
-        }
-      }
-    boolean allowed = canWrite;
-    String why = reason;
+    var permission = writePermission(user, context);
     return read.execute(
         status -> {
           requireMember(user, teamId);
@@ -88,8 +75,106 @@ public class UserIssueService {
           var page =
               issues.list(
                   teamId, query, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
-          return new IssueListResponse(page.items(), page.nextCursor(), page.total(), allowed, why);
+          return new IssueListResponse(
+              page.items(),
+              page.nextCursor(),
+              page.total(),
+              permission.allowed(),
+              permission.why());
         });
+  }
+
+  /**
+   * Page 14 status board. Same membership, team-binding and write-permission rules as the page 11
+   * list; moves borrow page 12's status API. A card without a Status value ({@code NONE}) is shown
+   * in "기타" so it can still be moved; its own status stays {@code NONE}.
+   */
+  public IssueBoardResponse board(AuthenticatedUser user, long teamId, IssueListQuery query) {
+    requireMember(user, teamId);
+    var context = contexts.get(teamId);
+    var permission = writePermission(user, context);
+    return read.execute(
+        status -> {
+          requireMember(user, teamId);
+          if (!contexts.get(teamId).equals(context))
+            throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
+          var cards =
+              issues.board(teamId, query, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
+          List<IssueBoardResponse.Column> columns = new ArrayList<>();
+          for (var column : BOARD_COLUMNS.entrySet()) {
+            String key = column.getKey();
+            columns.add(
+                new IssueBoardResponse.Column(
+                    key,
+                    column.getValue(),
+                    cards.stream()
+                        .filter(card -> key.equals(boardColumn(card.status())))
+                        .toList()));
+          }
+          return new IssueBoardResponse(
+              permission.allowed(), permission.why(), List.copyOf(columns));
+        });
+  }
+
+  public com.linker.backend.dto.issue.response.IssueCalendarResponse calendar(
+      AuthenticatedUser user, long teamId, LocalDate from, LocalDate to, String assignee) {
+    requireMember(user, teamId);
+    // Transport/database-compatible ISO dates, not a product limit on the visible range.
+    if (from == null || to == null || from.isAfter(to) || from.getYear() < 1 || to.getYear() > 9999)
+      throw IssueListQuery.invalid();
+    var query =
+        new IssueListQuery(null, null, assignee, null, false, null, IssueListQuery.MAX_SIZE);
+    var context = contexts.get(teamId);
+    return read.execute(
+        st -> {
+          requireMember(user, teamId);
+          if (!contexts.get(teamId).equals(context))
+            throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
+          return new com.linker.backend.dto.issue.response.IssueCalendarResponse(
+              from,
+              to,
+              issues.calendar(
+                  teamId,
+                  from,
+                  to,
+                  query.assignee(),
+                  LocalDate.now(clock.withZone(PlanLimits.APP_ZONE))));
+        });
+  }
+
+  /** Column order and labels from Policy POL-I-3 / Page TODO 14. */
+  private static final Map<String, String> BOARD_COLUMNS = boardColumns();
+
+  private static Map<String, String> boardColumns() {
+    Map<String, String> columns = new LinkedHashMap<>();
+    columns.put("TODO", "작업 전");
+    columns.put("IN_PROGRESS", "작업 중");
+    columns.put("BLOCKED", "작업 중단");
+    columns.put("DONE", "작업 완료");
+    columns.put("OTHER", "기타");
+    return Collections.unmodifiableMap(columns);
+  }
+
+  private static String boardColumn(String status) {
+    return "NONE".equals(status) ? "OTHER" : status;
+  }
+
+  private record WritePermission(boolean allowed, String why) {}
+
+  /** Repo write on any linked repo, an active account and a writable team (Policy ch. 7). */
+  private WritePermission writePermission(
+      AuthenticatedUser user, IssueContextRepository.Context context) {
+    if (!context.writable()) return new WritePermission(false, "READ_ONLY_TEAM");
+    if (user.status() == UserStatus.SUSPENDED) return new WritePermission(false, "SUSPENDED");
+    String reason = "NO_REPOSITORY_WRITE_PERMISSION";
+    for (var repo : context.repos()) {
+      try {
+        if (source.canWrite(repo, user.userId())) return new WritePermission(true, null);
+      } catch (ApiException e) {
+        reason = "GITHUB_PERMISSION_UNAVAILABLE";
+      }
+    }
+    return new WritePermission(false, reason);
   }
 
   public IssueFilterOptionsResponse options(AuthenticatedUser user, long teamId) {

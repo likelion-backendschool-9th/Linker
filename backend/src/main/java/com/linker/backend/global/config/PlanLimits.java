@@ -37,6 +37,8 @@ public final class PlanLimits {
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
 	/** Policy ch. 6 — archived teams do not consume this personal membership cap. */
 	public static final int TEAMS_PER_USER_MAX = 10;
+	/** Policy ch. 6 — archive after this many days in read-only following App removal. */
+	public static final int TEAM_READ_ONLY_ARCHIVE_DAYS = 30;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
 	/** List page size for recruit feeds (WBS cursor pages). */
 	public static final int RECRUIT_PAGE_SIZE = 20;
@@ -193,6 +195,9 @@ public final class PlanLimits {
 	public static final int ISSUE_ASSIGNEES_MAX = 10;
 	/** Policy ch.2: issue creation per author per KST day. */
 	public static final int ISSUE_CREATES_PER_DAY = 100;
+	/** Policy POL-N-1 / Page 15: one day before due, 09:00 KST. */
+	public static final int ISSUE_DUE_REMINDER_DAYS_BEFORE = 1;
+	public static final int ISSUE_DUE_REMINDER_HOUR = 9;
 
 	private PlanLimits() {
 	}
