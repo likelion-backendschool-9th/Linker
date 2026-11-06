@@ -622,7 +622,7 @@ erDiagram
   issue_sync_jobs {
     bigint id PK
     bigint issue_id FK
-    varchar step "ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN"
+    varchar step "ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN, SET_ASSIGNEES, SET_LABELS"
     jsonb payload
     varchar status "PENDING, RUNNING, DONE, FAILED"
     int attempts
@@ -1147,7 +1147,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | issues | 🟢 | GitHub issues + Projects date/status cache | I-1~I-5 |
 | issue_assignees | 🟢 | Assignees, max 10 | I-2, I-5 |
 | issue_labels | 🟢 | Labels | I-2 |
-| issue_sync_jobs | 🟢 | Per-step retries after issue creation: add to project, dates, status | POL ch. 7 sync |
+| issue_sync_jobs | 🟢 | Per-step retries after creation and detail edits: project, dates, status, assignees, labels | POL ch. 7 sync |
 | pull_requests | 🟢 | PR cache, team chat PR list tab | C-3 |
 | team_progress_snapshots | 🟡 | Daily per-team status counts for the project progress graph (last 14 days trend) | T-7, S-9, POL-T-7 |
 
@@ -1167,7 +1167,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 
 **issue_assignees**: Stores GitHub assignees as-is and links `user_id` if that GitHub user is a Linker member. If an assignee leaves the team, the row stays and the UI shows "팀 밖 사용자" (Outside the team).
 
-**issue_sync_jobs**: Creating one issue needs 3–5 GitHub calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
+**issue_sync_jobs**: Page 12 also persists failed assignee/label edits as `SET_ASSIGNEES`/`SET_LABELS`; schedule/status jobs retain the full desired value and replay idempotently, then verify source reads. Retry attempts are bounded operationally; no token is stored in payload. Creating one issue needs 3–5 GitHub calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
 
 **team_progress_snapshots**: Columns are `team_id`, `snapshot_date` (UK together), `todo_count`, `in_progress_count`, `blocked_count`, `done_count`, `overdue_count`. A batch at 00:00 KST counts `issues.board_status` (excluding OTHER and NONE) per team. Stored for every team regardless of Flex; only the screen is Flex-only. Today's value isn't stored; it's counted from `issues` when the screen opens. Issue status change history is not stored, so metrics like cycle time (days spent In Progress) belong to the phase 2 bottleneck dashboard (T-6) with its own event table. Rows older than 1 year are deleted.
 
