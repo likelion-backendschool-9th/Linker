@@ -1,15 +1,13 @@
 package com.linker.backend.service.user;
 
 import com.linker.backend.dto.issue.request.IssueListQuery;
+import com.linker.backend.dto.issue.response.IssueDetailResponse;
 import com.linker.backend.dto.issue.response.IssueFilterOptionsResponse;
 import com.linker.backend.dto.issue.response.IssueListResponse;
 import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.global.security.TeamAccess;
-import com.linker.backend.global.security.TeamRole;
 import com.linker.backend.integration.github.IssueSource;
 import com.linker.backend.repository.issue.IssueContextRepository;
 import com.linker.backend.repository.issue.IssueReadRepository;
@@ -27,7 +25,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 @Transactional(propagation = Propagation.NEVER)
 public class UserIssueService {
-  private final TeamAccess teams;
+  private final UserIssueAccess access;
+  private final UserIssueDetailService detail;
   private final IssueReadRepository issues;
   private final Clock clock;
   private final IssueContextRepository contexts;
@@ -35,13 +34,15 @@ public class UserIssueService {
   private final TransactionTemplate read;
 
   public UserIssueService(
-      TeamAccess teams,
+      UserIssueAccess access,
+      UserIssueDetailService detail,
       IssueReadRepository issues,
       Clock clock,
       IssueContextRepository contexts,
       IssueSource source,
       PlatformTransactionManager manager) {
-    this.teams = teams;
+    this.access = access;
+    this.detail = detail;
     this.issues = issues;
     this.clock = clock;
     this.contexts = contexts;
@@ -120,13 +121,42 @@ public class UserIssueService {
 
   @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
   public void requireMember(AuthenticatedUser user, long teamId) {
-    if (user == null) throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
-    if (teamId <= 0) throw IssueListQuery.invalid();
-    if (user.userType() != UserType.DEVELOPER)
-      throw new ApiException(403, "DEVELOPER_ONLY", "개발자만 사용할 수 있어요");
-    if (user.status() == UserStatus.DELETED || user.status() == UserStatus.WITHDRAWING)
-      throw new ApiException(403, "FORBIDDEN", "이 계정으로는 조회할 수 없어요");
-    if (!teams.hasRole(user.userId(), teamId, TeamRole.Level.MEMBER))
-      throw new ApiException(403, "TEAM_ROLE_REQUIRED", "팀 권한이 필요해요");
+    access.member(user, teamId);
+  }
+
+  public IssueDetailResponse detail(AuthenticatedUser u, long t, long i) {
+    return detail.detail(u, t, i);
+  }
+
+  public IssueDetailResponse.Candidates candidates(AuthenticatedUser u, long t, long i) {
+    return detail.candidates(u, t, i);
+  }
+
+  public IssueDetailResponse.LabelOptions labelOptions(AuthenticatedUser u, long t, long i) {
+    return detail.labels(u, t, i);
+  }
+
+  public IssueDetailResponse.SubIssues subIssues(AuthenticatedUser u, long t, long i) {
+    return detail.subIssues(u, t, i);
+  }
+
+  public IssueDetailResponse.AssigneesResult assignees(
+      AuthenticatedUser u, long t, long i, java.util.List<Long> ids) {
+    return detail.assignees(u, t, i, ids);
+  }
+
+  public IssueDetailResponse.LabelsResult labels(
+      AuthenticatedUser u, long t, long i, java.util.List<String> labels) {
+    return detail.labels(u, t, i, labels);
+  }
+
+  public IssueDetailResponse.ScheduleResult schedule(
+      AuthenticatedUser u, long t, long i, java.time.LocalDate start, java.time.LocalDate due) {
+    return detail.schedule(u, t, i, start, due);
+  }
+
+  public IssueDetailResponse.StatusResult status(
+      AuthenticatedUser u, long t, long i, String value) {
+    return detail.status(u, t, i, value);
   }
 }

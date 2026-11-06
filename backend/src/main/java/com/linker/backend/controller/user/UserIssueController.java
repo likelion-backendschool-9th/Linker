@@ -1,6 +1,8 @@
 package com.linker.backend.controller.user;
 
+import com.linker.backend.dto.issue.request.IssueEditRequest;
 import com.linker.backend.dto.issue.request.IssueListQuery;
+import com.linker.backend.dto.issue.response.IssueDetailResponse;
 import com.linker.backend.dto.issue.response.IssueFilterOptionsResponse;
 import com.linker.backend.dto.issue.response.IssueListResponse;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -174,5 +176,117 @@ public class UserIssueController {
                 days == null
                     ? com.linker.backend.global.config.PlanLimits.ISSUE_PROGRESS_DAYS
                     : days));
+  }
+
+  @GetMapping("/issues/{issueId}")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "detailTeamIssue", summary = "이슈 상세 조회")
+  public ResponseEntity<IssueDetailResponse> detail(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.detail(user, teamId, issueId));
+  }
+
+  @GetMapping("/issues/{issueId}/assignee-candidates")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "candidatesTeamIssue", summary = "이슈 담당자 후보 조회")
+  public ResponseEntity<IssueDetailResponse.Candidates> candidates(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.candidates(user, teamId, issueId));
+  }
+
+  @GetMapping("/issues/{issueId}/label-options")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "labelOptionsTeamIssue", summary = "저장소 라벨 선택지 조회")
+  public ResponseEntity<IssueDetailResponse.LabelOptions> labelOptions(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.labelOptions(user, teamId, issueId));
+  }
+
+  @GetMapping("/issues/{issueId}/sub-issues")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "subIssuesTeamIssue", summary = "하위 이슈 진행 조회")
+  public ResponseEntity<IssueDetailResponse.SubIssues> subIssues(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.subIssues(user, teamId, issueId));
+  }
+
+  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/assignees")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "updateTeamIssueAssignees", summary = "이슈 담당자 변경")
+  public ResponseEntity<IssueDetailResponse.AssigneesResult> updateAssignees(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId,
+      @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+          IssueEditRequest.Assignees request) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.assignees(user, teamId, issueId, request.userIds()));
+  }
+
+  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/labels")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "updateTeamIssueLabels", summary = "이슈 라벨 변경")
+  public ResponseEntity<IssueDetailResponse.LabelsResult> updateLabels(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId,
+      @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+          IssueEditRequest.Labels request) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.labels(user, teamId, issueId, request.labels()));
+  }
+
+  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/schedule")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "updateTeamIssueSchedule", summary = "이슈 시작일·마감일 변경")
+  public ResponseEntity<IssueDetailResponse.ScheduleResult> updateSchedule(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId,
+      @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+          IssueEditRequest.Schedule request) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.schedule(user, teamId, issueId, request.startDate(), request.dueDate()));
+  }
+
+  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/status")
+  @DeveloperOnly
+  @Tag(name = "p12-issue-detail")
+  @Operation(operationId = "updateTeamIssueStatus", summary = "이슈 상태 변경")
+  public ResponseEntity<IssueDetailResponse.StatusResult> updateStatus(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long issueId,
+      @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+          IssueEditRequest.Status request) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.status(user, teamId, issueId, request.status()));
   }
 }

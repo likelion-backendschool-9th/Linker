@@ -789,6 +789,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: "채팅에 공유" (Share to chat) `[Included]` → 17's send message (issue card type)
 - Tables: new issue_sync_jobs · shared issues, issue_assignees, issue_labels, team_members, notifications
 - [ ] Server: retry via `issue_sync_jobs` when applying to GitHub fails; show in response when `sync_status = FAILED`
+- C12 implementation and isolated verification: [c-page12-implementation.md](plans/c-page12-implementation.md). Detail edits also use `SET_ASSIGNEES`/`SET_LABELS` retry steps; real A/B integration and versioned migration remain separate.
 - [ ] Frontend: 4 sheets (assignee, label, date, status) as shared components (reused in 13, 14, 15), disabled + toast without write permission, "일정이 GitHub에 반영되지 않았어요" (Schedule not applied to GitHub)
 
 </details>
