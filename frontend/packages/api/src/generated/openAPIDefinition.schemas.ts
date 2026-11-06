@@ -4,6 +4,10 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+export interface AcceptChatRequestResponse {
+  roomId?: number;
+}
+
 export type ApiErrorBodyDetail = {[key: string]: unknown};
 
 export interface ApiErrorBody {
@@ -12,219 +16,9 @@ export interface ApiErrorBody {
   detail?: ApiErrorBodyDetail;
 }
 
-export interface OnboardingProfileRequest {
-  name?: string;
-  bio?: string;
-  blogUrl?: string;
-  techStack?: string[];
-  lookingForTeam?: boolean;
-  jobStatus?: string;
-}
-
-export interface OnboardingEmailRequest {
-  email?: string;
-}
-
-export interface RecruiterAdRequest {
-  jobCategory?: string;
-  title?: string;
-  url?: string;
-  closesOn?: string;
-}
-
-export interface Ad {
-  id?: number;
-  status?: string;
-  jobCategory?: string;
-  title?: string;
-  url?: string;
-  closesOn?: string;
-}
-
-export interface RecruiterAdResponse {
-  subscribed?: boolean;
-  ad?: Ad;
-}
-
-export interface CreateUploadRequest {
-  type?: string;
-  purpose?: string;
-  contentType?: string;
-  size?: number;
-}
-
-export interface CreateUploadResponse {
-  fileId?: string;
-  uploadUrl?: string;
-}
-
-export interface CompleteUploadResponse {
-  fileId?: string;
-  url?: string;
-}
-
-export interface IssueRefreshResponse {
-  refreshedAt: string;
-  updatedCount: number;
-}
-
-export interface VerifyInstallationRequest {
-  /**
-     * @minLength 1
-     * @pattern [0-9]{1,19}
-     */
-  installationId: string;
-  /**
-     * @minLength 0
-     * @maxLength 128
-     */
-  state: string;
-  /** @pattern install|update */
-  setupAction?: string;
-}
-
-export interface Organization {
-  id?: number;
-  login?: string;
-  avatarUrl?: string;
-}
-
-export interface VerifyInstallationResponse {
-  result?: string;
-  org?: Organization;
-  installationId?: string;
-}
-
-export interface CreateReportRequest {
-  targetType?: string;
-  targetId?: unknown;
+export interface AppealDecisionRequest {
+  accept?: boolean;
   reason?: string;
-  detail?: string;
-}
-
-export interface OnboardingAgreementsRequest {
-  ageConfirmed?: boolean;
-  termsAccepted?: boolean;
-  privacyAccepted?: boolean;
-  marketingAccepted?: boolean;
-  termsVersion?: string;
-}
-
-export interface WithdrawalResponse {
-  deletesOn?: string;
-}
-
-export interface GithubProfileSyncResponse {
-  kind?: string;
-  name?: string;
-  bio?: string;
-  blogUrl?: string;
-  techStack?: string[];
-  lookingForTeam?: boolean;
-  jobStatus?: string;
-  jobCategories?: string[];
-  syncedAt?: string;
-}
-
-export interface MarkChatReadRequest {
-  lastReadMessageId?: number;
-}
-
-export interface AcceptChatRequestResponse {
-  roomId?: number;
-}
-
-export interface CreateBlockRequest {
-  userId?: number;
-}
-
-export interface Consents {
-  ageConfirmed?: boolean;
-  termsAccepted?: boolean;
-  businessTermsAccepted?: boolean;
-  personalDataAccepted?: boolean;
-  marketingAccepted?: boolean;
-}
-
-export interface RecruiterSignupRequest {
-  signupToken?: string;
-  password?: string;
-  name?: string;
-  company?: string;
-  jobTitle?: string;
-  websiteUrl?: string;
-  consents?: Consents;
-}
-
-export interface RecruiterSignupResponse {
-  login?: string;
-}
-
-export interface RecruiterEmailCodeRequest {
-  email?: string;
-}
-
-export interface RecruiterEmailCodeResponse {
-  sent?: boolean;
-  resendAfterSeconds?: number;
-  validMinutes?: number;
-}
-
-export interface RecruiterEmailCodeVerifyRequest {
-  email?: string;
-  code?: string;
-}
-
-export interface RecruiterEmailCodeVerifyResponse {
-  signupToken?: string;
-  emailDomain?: string;
-}
-
-export interface RecruiterPasswordChangeRequest {
-  token?: string;
-  newPassword?: string;
-}
-
-export interface RecruiterPasswordResetRequest {
-  email?: string;
-}
-
-export interface RecruiterPasswordResetResponse {
-  sent?: boolean;
-}
-
-export interface RecruiterLoginRequest {
-  email?: string;
-  password?: string;
-  returnTo?: string;
-}
-
-export interface RecruiterLoginResponse {
-  restored?: boolean;
-  returnTo?: string;
-}
-
-export interface GithubCallbackRequest {
-  code?: string;
-  state?: string;
-  returnTo?: string;
-}
-
-export interface GithubCallbackResponse {
-  isNew?: boolean;
-  restored?: boolean;
-  returnTo?: string;
-}
-
-export interface ReportActionRequest {
-  action?: string;
-  reason?: string;
-}
-
-export interface ChatLine {
-  sender?: string;
-  text?: string;
-  reported?: boolean;
 }
 
 export interface Person {
@@ -236,82 +30,29 @@ export interface Person {
   jobStatus?: string;
 }
 
-export interface ReasonCount {
-  reason?: string;
-  count?: number;
-}
-
-export interface ReportCaseView {
+export interface AppealView {
   id?: number;
   status?: string;
-  targetType?: string;
-  targetSummary?: string;
-  reasons?: ReasonCount[];
-  reporterCount?: number;
-  autoHidden?: boolean;
-  receivedAt?: string;
-  overdue?: boolean;
-  target?: Person;
-  chatContext?: ChatLine[];
-  handledAction?: string;
-}
-
-export interface OtpVerifyRequest {
-  code?: string;
-}
-
-export interface OtpVerifyResponse {
-  verified?: boolean;
-}
-
-export interface AppealDecisionRequest {
-  accept?: boolean;
+  user?: Person;
+  caseId?: number;
   reason?: string;
+  createdAt?: string;
+  originalHandler?: string;
 }
 
-export interface PushNotificationRequest {
-  pushEnabled?: boolean;
+export interface AppealListResponse {
+  items?: AppealView[];
 }
 
-export interface PushNotificationResponse {
-  pushEnabled?: boolean;
-}
-
-export interface ProfileUpdateRequest {
+export interface UserCard {
+  id?: number;
+  login?: string;
   name?: string;
-  bio?: string;
-  blogUrl?: string;
-  techStack?: string[];
-  lookingForTeam?: boolean;
-  jobStatus?: string;
-  jobCategories?: string[];
 }
 
-export interface ProfileEditResponse {
-  kind?: string;
-  name?: string;
-  bio?: string;
-  blogUrl?: string;
-  techStack?: string[];
-  lookingForTeam?: boolean;
-  jobStatus?: string;
-  jobCategories?: string[];
-}
-
-export interface NotificationEmailRequest {
-  email?: string;
-}
-
-export interface NotificationEmailResponse {
-  notificationEmail?: string;
-}
-
-export interface UpdateChatNotificationRequest {
-  muted?: boolean;
-}
-
-export interface EditChatMessageRequest {
-  text?: string;
+export interface BlockView {
+  user?: UserCard;
+  blockedAt?: string;
 }
 
 export interface ChatMemberResponse {
@@ -337,53 +78,183 @@ export interface ChatMessageResponse {
   visibility?: string;
 }
 
-export interface RecruiterAdStatusRequest {
-  status?: string;
+export interface ChatHistoryLimitResponse {
+  applied?: string;
+  flexSupported?: boolean;
 }
 
-export interface ProfilePeopleResponse {
-  items?: Person[];
+export interface ChatMessagePageResponse {
+  items?: ChatMessageResponse[];
+  hasMore?: boolean;
+  catchUpLimited?: boolean;
+  nextAfter?: number;
+  history?: ChatHistoryLimitResponse;
+}
+
+export interface ChatRoomInfoResponse {
+  id?: number;
+  kind?: string;
+  title?: string;
+  requestDirection?: string;
+  muted?: boolean;
+  members?: ChatMemberResponse[];
+  team?: unknown;
+  historyLimitDays?: number;
+}
+
+export interface ChatCounterpartResponse {
+  avatarUrl?: string;
+}
+
+export interface ChatLastMessageResponse {
+  text?: string;
+  createdAt?: string;
+}
+
+export interface ChatRoomItemResponse {
+  id?: number;
+  kind?: string;
+  title?: string;
+  counterpart?: ChatCounterpartResponse;
+  requestKind?: string;
+  requestDirection?: string;
+  companyName?: string;
+  muted?: boolean;
+  unreadCount?: number;
+  lastMessage?: ChatLastMessageResponse;
+}
+
+export interface ChatRoomPageResponse {
+  items?: ChatRoomItemResponse[];
   nextCursor?: string;
 }
 
-export interface IssueProgressCompletion {
-  done: number;
-  total: number;
-  rate: number;
+export interface CompleteTeamSetupRequest {
+  retry?: boolean;
 }
 
-export interface IssueProgressCounts {
-  todo: number;
-  inProgress: number;
-  blocked: number;
-  done: number;
+export interface CompleteUploadResponse {
+  fileId?: string;
+  url?: string;
 }
 
-export interface IssueProgressDay {
-  date: string;
-  /** @nullable */
-  todo: number | null;
-  /** @nullable */
-  inProgress: number | null;
-  /** @nullable */
-  blocked: number | null;
-  /** @nullable */
-  done: number | null;
+export interface Day {
+  date?: string;
+  count?: number;
 }
 
-export interface IssueProgressWorkload {
-  userId: number;
+export interface ContributionMonthResponse {
+  month?: string;
+  days?: Day[];
+  asOf?: string;
+}
+
+export interface CreateAppealRequest {
+  sanctionId?: number;
+  body?: string;
+}
+
+export interface CreateAppealResponse {
+  appealId?: number;
+}
+
+export interface CreateBlockRequest {
+  userId?: number;
+}
+
+export interface CreateReportRequest {
+  targetType?: string;
+  targetId?: unknown;
+  reason?: string;
+  detail?: string;
+}
+
+export interface CreateTeamRequest {
+  /**
+     * @minLength 1
+     * @pattern [0-9]{1,19}
+     */
+  installationId: string;
+  /**
+     * @minLength 0
+     * @maxLength 255
+     */
+  name: string;
+  description?: string;
+}
+
+export interface CreateUploadRequest {
+  type?: string;
+  purpose?: string;
+  contentType?: string;
+  size?: number;
+}
+
+export interface CreateUploadResponse {
+  fileId?: string;
+  uploadUrl?: string;
+}
+
+export interface EditChatMessageRequest {
+  text?: string;
+}
+
+export interface FirstMessage {
+  roomId?: number;
+  text?: string;
+  sentAt?: string;
+}
+
+export interface GithubAuthorizeResponse {
+  authorizeUrl?: string;
+  state?: string;
+}
+
+export interface GithubCallbackRequest {
+  code?: string;
+  state?: string;
+  returnTo?: string;
+}
+
+export interface GithubCallbackResponse {
+  isNew?: boolean;
+  restored?: boolean;
+  returnTo?: string;
+}
+
+export interface GithubProfileSyncResponse {
+  kind?: string;
+  name?: string;
+  bio?: string;
+  blogUrl?: string;
+  techStack?: string[];
+  lookingForTeam?: boolean;
+  jobStatus?: string;
+  jobCategories?: string[];
+  syncedAt?: string;
+}
+
+export interface InstallUrlResponse {
+  installUrl?: string;
+  state?: string;
+}
+
+export interface IssueDetailPerson {
+  /** @nullable */
+  id: number | null;
   login: string;
-  openCount: number;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
 }
 
-export interface IssueProgressResponse {
-  completion: IssueProgressCompletion;
-  counts: IssueProgressCounts;
-  history: IssueProgressDay[];
-  openByAssignee: IssueProgressWorkload[];
-  overdueCount: number;
-  dueSoonCount: number;
+export interface IssueAssigneeCandidates {
+  items: IssueDetailPerson[];
+  max: number;
+}
+
+export interface IssueAssigneesRequest {
+  userIds: number[];
 }
 
 export interface IssueAssignee {
@@ -396,9 +267,155 @@ export interface IssueAssignee {
   inTeam: boolean;
 }
 
+export interface IssueAssigneesResult {
+  assignees: IssueAssignee[];
+}
+
+export type IssueCreateRequestAnswers = {[key: string]: string[]};
+
+export interface IssueCreateRequest {
+  requestId: string;
+  /** @exclusiveMinimum 0 */
+  repoId?: number;
+  /** @minLength 1 */
+  title: string;
+  body?: string;
+  templateKey?: string;
+  answers?: IssueCreateRequestAnswers;
+  assigneeIds?: number[];
+  labels?: string[];
+  startDate?: string;
+  dueDate?: string;
+  status?: string;
+}
+
+export interface IssueCreateResponse {
+  jobId?: number;
+  status?: string;
+  step?: string;
+  issueId?: number;
+  detailPath?: string;
+  errorCode?: string;
+  retryScheduled?: boolean;
+  retryAfterSeconds?: number;
+}
+
+export type IssueDetailResponseStatus = typeof IssueDetailResponseStatus[keyof typeof IssueDetailResponseStatus];
+
+
+export const IssueDetailResponseStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+  OTHER: 'OTHER',
+  NONE: 'NONE',
+} as const;
+
+export type IssueDetailResponseState = typeof IssueDetailResponseState[keyof typeof IssueDetailResponseState];
+
+
+export const IssueDetailResponseState = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+} as const;
+
+export type IssueDetailResponseSyncStatus = typeof IssueDetailResponseSyncStatus[keyof typeof IssueDetailResponseSyncStatus];
+
+
+export const IssueDetailResponseSyncStatus = {
+  SYNCED: 'SYNCED',
+  PENDING: 'PENDING',
+  FAILED: 'FAILED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type IssueDetailResponseDeletedOrMoved = typeof IssueDetailResponseDeletedOrMoved[keyof typeof IssueDetailResponseDeletedOrMoved] | null;
+
+
+export const IssueDetailResponseDeletedOrMoved = {
+  DELETED: 'DELETED',
+  MOVED: 'MOVED',
+} as const;
+
 export interface IssueLabel {
   name: string;
   color: string;
+}
+
+export interface IssueSubIssueCounts {
+  total: number;
+  done: number;
+}
+
+export interface IssueDetailResponse {
+  id: number;
+  teamId: number;
+  number: number;
+  repoId: number;
+  repoName: string;
+  title: string;
+  body: string;
+  status: IssueDetailResponseStatus;
+  state: IssueDetailResponseState;
+  assignees: IssueAssignee[];
+  labels: IssueLabel[];
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+  overdue: boolean;
+  inProject: boolean;
+  author: IssueDetailPerson;
+  /** @nullable */
+  githubUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  subIssues: IssueSubIssueCounts;
+  canWrite: boolean;
+  /** @nullable */
+  writePermissionReason: string | null;
+  syncFailed: boolean;
+  syncStatus: IssueDetailResponseSyncStatus;
+  /** @nullable */
+  deletedOrMoved: IssueDetailResponseDeletedOrMoved;
+  /** @nullable */
+  movedToIssueId: number | null;
+}
+
+export interface IssueRepositoryOption {
+  id: number;
+  name: string;
+}
+
+export interface IssueMemberOption {
+  id: number;
+  login: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+}
+
+export interface IssueFilterOptionsResponse {
+  repos: IssueRepositoryOption[];
+  labels: IssueLabel[];
+  members: IssueMemberOption[];
+  /** TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE */
+  statuses: string[];
+}
+
+export interface IssueLabelOptions {
+  items: IssueLabel[];
+}
+
+export interface IssueLabelsRequest {
+  labels: string[];
+}
+
+export interface IssueLabelsResult {
+  labels: IssueLabel[];
 }
 
 export type IssueListItemStatus = typeof IssueListItemStatus[keyof typeof IssueListItemStatus];
@@ -462,51 +479,175 @@ export interface IssueListResponse {
   writePermissionReason: string | null;
 }
 
-export interface IssueRepositoryOption {
-  id: number;
-  name: string;
+export interface IssueProgressCompletion {
+  done: number;
+  total: number;
+  rate: number;
 }
 
-export interface IssueMemberOption {
-  id: number;
-  login: string;
-  name: string;
+export interface IssueProgressCounts {
+  todo: number;
+  inProgress: number;
+  blocked: number;
+  done: number;
+}
+
+export interface IssueProgressDay {
+  date: string;
   /** @nullable */
-  avatarUrl: string | null;
+  todo: number | null;
+  /** @nullable */
+  inProgress: number | null;
+  /** @nullable */
+  blocked: number | null;
+  /** @nullable */
+  done: number | null;
 }
 
-export interface IssueFilterOptionsResponse {
-  repos: IssueRepositoryOption[];
-  labels: IssueLabel[];
-  members: IssueMemberOption[];
-  /** TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE */
-  statuses: string[];
+export interface IssueProgressWorkload {
+  userId: number;
+  login: string;
+  openCount: number;
 }
 
-export interface InstallUrlResponse {
-  installUrl?: string;
-  state?: string;
+export interface IssueProgressResponse {
+  completion: IssueProgressCompletion;
+  counts: IssueProgressCounts;
+  history: IssueProgressDay[];
+  openByAssignee: IssueProgressWorkload[];
+  overdueCount: number;
+  dueSoonCount: number;
 }
 
-export interface Defaults {
+export interface IssueRefreshResponse {
+  refreshedAt: string;
+  updatedCount: number;
+}
+
+/**
+ * PUT replaces both dates; null clears the field
+ */
+export interface IssueScheduleRequest {
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+}
+
+export interface IssueScheduleResult {
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+}
+
+export type IssueStatusRequestStatus = typeof IssueStatusRequestStatus[keyof typeof IssueStatusRequestStatus];
+
+
+export const IssueStatusRequestStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+} as const;
+
+export interface IssueStatusRequest {
+  status: IssueStatusRequestStatus;
+}
+
+export interface IssueStatusResult {
+  status: string;
+  state: string;
+}
+
+export interface IssueSubIssue {
+  /** @nullable */
+  id: number | null;
+  number: number;
+  title: string;
+  state: string;
+  githubUrl: string;
+}
+
+export interface IssueSubIssues {
+  items: IssueSubIssue[];
+  total: number;
+  done: number;
+}
+
+export interface Field {
+  id?: string;
+  type?: string;
+  label?: string;
+  description?: string;
+  value?: string;
+  options?: string[];
+  requiredOptions?: number[];
+  required?: boolean;
+  multiple?: boolean;
+  render?: string;
+  defaultValues?: string[];
+  placeholder?: string;
+}
+
+export interface IssueTemplateResponse {
+  key?: string;
   name?: string;
-  bio?: string;
-  blogUrl?: string;
-  techStack?: string[];
-  lookingForTeam?: boolean;
-  jobStatus?: string;
+  description?: string;
+  format?: string;
+  source?: string;
+  title?: string;
+  body?: string;
+  fields?: Field[];
+  labels?: string[];
+  assignees?: string[];
+  projects?: string[];
+  issueType?: string;
+  fallback?: boolean;
 }
 
-export interface OnboardingResponse {
-  done?: boolean;
-  step?: string;
-  defaults?: Defaults;
-  emailRequired?: boolean;
-  termsVersion?: string;
+export interface JobCategoryResponse {
+  key?: string;
+  label?: string;
 }
 
-export interface UnreadCountResponse {
-  count?: number;
+export interface LegalDocumentResponse {
+  slug?: string;
+  title?: string;
+  version?: string;
+  effectiveDate?: string;
+  body?: string;
+}
+
+export interface LegalDocumentSummaryResponse {
+  slug?: string;
+  title?: string;
+  version?: string;
+  effectiveDate?: string;
+}
+
+export interface Choice {
+  key?: string;
+  name?: string;
+  description?: string;
+  format?: string;
+  source?: string;
+}
+
+export interface Label {
+  name?: string;
+  color?: string;
+}
+
+export interface ListResponse {
+  templates?: Choice[];
+  assigneeCandidates?: IssueDetailPerson[];
+  labelOptions?: Label[];
+  maxAssignees?: number;
+}
+
+export interface MarkChatReadRequest {
+  lastReadMessageId?: number;
 }
 
 export interface MeResponse {
@@ -517,15 +658,6 @@ export interface MeResponse {
   status?: string;
   onboarded?: boolean;
   suspendedUntil?: string;
-}
-
-export interface OwnedTeamResponse {
-  id?: number;
-  name?: string;
-}
-
-export interface WithdrawalCheckResponse {
-  ownedTeams?: OwnedTeamResponse[];
 }
 
 export type TeamItemStatus = typeof TeamItemStatus[keyof typeof TeamItemStatus];
@@ -589,85 +721,39 @@ export interface MyTeamsResponse {
   nextCursor: string | null;
 }
 
-export interface Github {
-  login?: string;
-  connected?: boolean;
+export interface NotificationEmailRequest {
+  email?: string;
 }
 
-export interface Plan {
-  name?: string;
-  label?: string;
-  kind?: string;
-}
-
-export interface SettingsResponse {
-  github?: Github;
+export interface NotificationEmailResponse {
   notificationEmail?: string;
-  pushEnabled?: boolean;
-  plan?: Plan;
 }
 
-export interface UserCard {
+export interface AppealState {
+  sanctionId?: number;
+  submitted?: boolean;
+}
+
+export interface NotificationItemResponse {
   id?: number;
-  login?: string;
-  name?: string;
-}
-
-export interface BlockView {
-  user?: UserCard;
-  blockedAt?: string;
-}
-
-export interface ChatCounterpartResponse {
-  avatarUrl?: string;
-}
-
-export interface ChatLastMessageResponse {
-  text?: string;
-  createdAt?: string;
-}
-
-export interface ChatRoomItemResponse {
-  id?: number;
-  kind?: string;
+  type?: string;
   title?: string;
-  counterpart?: ChatCounterpartResponse;
-  requestKind?: string;
-  requestDirection?: string;
-  companyName?: string;
-  muted?: boolean;
-  unreadCount?: number;
-  lastMessage?: ChatLastMessageResponse;
+  body?: string;
+  targetUrl?: string;
+  read?: boolean;
+  createdAt?: string;
+  appeal?: AppealState;
 }
 
-export interface ChatRoomPageResponse {
-  items?: ChatRoomItemResponse[];
+export interface NotificationPageResponse {
+  items?: NotificationItemResponse[];
   nextCursor?: string;
 }
 
-export interface ChatHistoryLimitResponse {
-  applied?: string;
-  flexSupported?: boolean;
-}
-
-export interface ChatMessagePageResponse {
-  items?: ChatMessageResponse[];
-  hasMore?: boolean;
-  catchUpLimited?: boolean;
-  nextAfter?: number;
-  history?: ChatHistoryLimitResponse;
-}
-
-export interface UnreadMembersResponse {
-  items?: ChatMemberResponse[];
-}
-
-export interface UnreadSummaryResponse {
-  TEAM?: number;
-  DIRECT?: number;
-  REQUEST?: number;
-  requestCount?: number;
-  total?: number;
+export interface OfferCounts {
+  TALKING?: number;
+  WAITING?: number;
+  NO_RESPONSE?: number;
 }
 
 export interface Developer {
@@ -694,12 +780,6 @@ export interface OfferList {
   nextCursor?: string;
 }
 
-export interface FirstMessage {
-  roomId?: number;
-  text?: string;
-  sentAt?: string;
-}
-
 export interface LatestOffer {
   roomId?: number;
   developer?: Developer;
@@ -717,10 +797,76 @@ export interface OfferSummary {
   latest?: LatestOffer[];
 }
 
-export interface OfferCounts {
-  TALKING?: number;
-  WAITING?: number;
-  NO_RESPONSE?: number;
+export interface OnboardingAgreementsRequest {
+  ageConfirmed?: boolean;
+  termsAccepted?: boolean;
+  privacyAccepted?: boolean;
+  marketingAccepted?: boolean;
+  termsVersion?: string;
+}
+
+export interface OnboardingEmailRequest {
+  email?: string;
+}
+
+export interface OnboardingProfileRequest {
+  name?: string;
+  bio?: string;
+  blogUrl?: string;
+  techStack?: string[];
+  lookingForTeam?: boolean;
+  jobStatus?: string;
+}
+
+export interface Defaults {
+  name?: string;
+  bio?: string;
+  blogUrl?: string;
+  techStack?: string[];
+  lookingForTeam?: boolean;
+  jobStatus?: string;
+}
+
+export interface OnboardingResponse {
+  done?: boolean;
+  step?: string;
+  defaults?: Defaults;
+  emailRequired?: boolean;
+  termsVersion?: string;
+}
+
+export interface OtpVerifyRequest {
+  code?: string;
+}
+
+export interface OtpVerifyResponse {
+  verified?: boolean;
+}
+
+export interface ProfileEditResponse {
+  kind?: string;
+  name?: string;
+  bio?: string;
+  blogUrl?: string;
+  techStack?: string[];
+  lookingForTeam?: boolean;
+  jobStatus?: string;
+  jobCategories?: string[];
+}
+
+export interface ProfilePeopleResponse {
+  items?: Person[];
+  nextCursor?: string;
+}
+
+export interface ProfileUpdateRequest {
+  name?: string;
+  bio?: string;
+  blogUrl?: string;
+  techStack?: string[];
+  lookingForTeam?: boolean;
+  jobStatus?: string;
+  jobCategories?: string[];
 }
 
 export interface Completion {
@@ -761,20 +907,207 @@ export interface PublicTeamsResponse {
   nextCursor?: string;
 }
 
-export interface Day {
-  date?: string;
+export interface PushNotificationRequest {
+  pushEnabled?: boolean;
+}
+
+export interface PushNotificationResponse {
+  pushEnabled?: boolean;
+}
+
+export interface RecruiterAdRequest {
+  jobCategory?: string;
+  title?: string;
+  url?: string;
+  closesOn?: string;
+}
+
+export interface Ad {
+  id?: number;
+  status?: string;
+  jobCategory?: string;
+  title?: string;
+  url?: string;
+  closesOn?: string;
+}
+
+export interface RecruiterAdResponse {
+  subscribed?: boolean;
+  ad?: Ad;
+}
+
+export interface RecruiterAdStatusRequest {
+  status?: string;
+}
+
+export interface RecruiterEmailCodeRequest {
+  email?: string;
+}
+
+export interface RecruiterEmailCodeResponse {
+  sent?: boolean;
+  resendAfterSeconds?: number;
+  validMinutes?: number;
+}
+
+export interface RecruiterEmailCodeVerifyRequest {
+  email?: string;
+  code?: string;
+}
+
+export interface RecruiterEmailCodeVerifyResponse {
+  signupToken?: string;
+  emailDomain?: string;
+}
+
+export interface RecruiterLoginRequest {
+  email?: string;
+  password?: string;
+  returnTo?: string;
+}
+
+export interface RecruiterLoginResponse {
+  restored?: boolean;
+  returnTo?: string;
+}
+
+export interface RecruiterPasswordChangeRequest {
+  token?: string;
+  newPassword?: string;
+}
+
+export interface RecruiterPasswordResetRequest {
+  email?: string;
+}
+
+export interface RecruiterPasswordResetResponse {
+  sent?: boolean;
+}
+
+export interface RecruiterPasswordResetStatusResponse {
+  valid?: boolean;
+}
+
+export interface RecruiterPasswordUpdateRequest {
+  currentPassword?: string;
+  newPassword?: string;
+}
+
+export interface RecruiterProfileResponse {
+  kind?: string;
+  name?: string;
+  company?: string;
+  jobTitle?: string;
+  websiteUrl?: string;
+  companyEmail?: string;
+}
+
+export interface RecruiterProfileUpdateRequest {
+  name?: string;
+  company?: string;
+  jobTitle?: string;
+  websiteUrl?: string;
+}
+
+export interface Consents {
+  ageConfirmed?: boolean;
+  termsAccepted?: boolean;
+  businessTermsAccepted?: boolean;
+  personalDataAccepted?: boolean;
+  marketingAccepted?: boolean;
+}
+
+export interface RecruiterSignupRequest {
+  signupToken?: string;
+  password?: string;
+  name?: string;
+  company?: string;
+  jobTitle?: string;
+  websiteUrl?: string;
+  consents?: Consents;
+}
+
+export interface RecruiterSignupResponse {
+  login?: string;
+}
+
+export interface RegisterPushTokenRequest {
+  token?: string;
+  platform?: string;
+}
+
+export interface ReportActionRequest {
+  action?: string;
+  reason?: string;
+}
+
+export interface ReasonCount {
+  reason?: string;
   count?: number;
 }
 
-export interface ContributionMonthResponse {
-  month?: string;
-  days?: Day[];
-  asOf?: string;
+export interface ChatLine {
+  sender?: string;
+  text?: string;
+  reported?: boolean;
 }
 
-export interface TechTagResponse {
+export interface ReportCaseView {
   id?: number;
+  status?: string;
+  targetType?: string;
+  targetSummary?: string;
+  reasons?: ReasonCount[];
+  reporterCount?: number;
+  autoHidden?: boolean;
+  receivedAt?: string;
+  overdue?: boolean;
+  target?: Person;
+  chatContext?: ChatLine[];
+  handledAction?: string;
+}
+
+export interface ReportCaseListResponse {
+  items?: ReportCaseView[];
+}
+
+export interface SaveTeamReposRequest {
+  /** @items.exclusiveMinimum 0 */
+  repoIds: number[];
+}
+
+export interface Github {
+  login?: string;
+  connected?: boolean;
+}
+
+export interface Plan {
   name?: string;
+  label?: string;
+  kind?: string;
+}
+
+export interface SettingsResponse {
+  github?: Github;
+  notificationEmail?: string;
+  pushEnabled?: boolean;
+  plan?: Plan;
+}
+
+export type SetupBoardRequestMode = typeof SetupBoardRequestMode[keyof typeof SetupBoardRequestMode];
+
+
+export const SetupBoardRequestMode = {
+  NEW: 'NEW',
+  EXISTING: 'EXISTING',
+} as const;
+
+export type SetupBoardRequestStatusMapping = {[key: string]: string};
+
+export interface SetupBoardRequest {
+  mode: SetupBoardRequestMode;
+  boardId?: string;
+  statusMapping?: SetupBoardRequestStatusMapping;
 }
 
 export interface SitemapItem {
@@ -789,52 +1122,165 @@ export interface SitemapPage {
   items?: SitemapItem[];
 }
 
-export interface RecruiterPasswordResetStatusResponse {
-  valid?: boolean;
+export interface TeamCreatedResponse {
+  id: number;
+  name: string;
+  chatRoomId: number;
 }
 
-export interface LegalDocumentSummaryResponse {
-  slug?: string;
-  title?: string;
-  version?: string;
-  effectiveDate?: string;
+export interface TeamSetupBoardSaved {
+  boardId: string;
+  name: string;
 }
 
-export interface LegalDocumentResponse {
-  slug?: string;
-  title?: string;
-  version?: string;
-  effectiveDate?: string;
-  body?: string;
+export interface TeamSetupStatusOption {
+  id: string;
+  name: string;
 }
 
-export interface JobCategoryResponse {
-  key?: string;
-  label?: string;
+export interface TeamSetupBoardPreview {
+  id: string;
+  name: string;
+  cardCount: number;
+  statusColumns: string[];
+  statusOptions: TeamSetupStatusOption[];
 }
 
-export interface GithubAuthorizeResponse {
-  authorizeUrl?: string;
-  state?: string;
+export interface TeamSetupBoards {
+  items: TeamSetupBoardPreview[];
 }
 
-export interface ReportCaseListResponse {
-  items?: ReportCaseView[];
+export type TeamSetupPermissionBasePermission = typeof TeamSetupPermissionBasePermission[keyof typeof TeamSetupPermissionBasePermission];
+
+
+export const TeamSetupPermissionBasePermission = {
+  NONE: 'NONE',
+  READ: 'READ',
+  WRITE: 'WRITE',
+  ADMIN: 'ADMIN',
+} as const;
+
+export interface TeamSetupPermission {
+  basePermission: TeamSetupPermissionBasePermission;
+  settingsUrl: string;
 }
 
-export interface AppealView {
+export type TeamSetupProgressState = typeof TeamSetupProgressState[keyof typeof TeamSetupProgressState];
+
+
+export const TeamSetupProgressState = {
+  QUEUED: 'QUEUED',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  STALE: 'STALE',
+} as const;
+
+export interface TeamSetupProgress {
+  queued: boolean;
+  state: TeamSetupProgressState;
+  /** @nullable */
+  failedStep: string | null;
+}
+
+export interface TeamSetupRepository {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+}
+
+export interface TeamSetupRepositories {
+  items: TeamSetupRepository[];
+  /** @nullable */
+  notInstalledCount: number | null;
+  settingsUrl: string;
+}
+
+export interface TechTagResponse {
   id?: number;
-  status?: string;
-  user?: Person;
-  caseId?: number;
-  reason?: string;
-  createdAt?: string;
-  originalHandler?: string;
+  name?: string;
 }
 
-export interface AppealListResponse {
-  items?: AppealView[];
+export interface UnreadCountResponse {
+  count?: number;
 }
+
+export interface UnreadMembersResponse {
+  items?: ChatMemberResponse[];
+}
+
+export interface UnreadSummaryResponse {
+  TEAM?: number;
+  DIRECT?: number;
+  REQUEST?: number;
+  requestCount?: number;
+  total?: number;
+}
+
+export interface UpdateChatNotificationRequest {
+  muted?: boolean;
+}
+
+export interface VerifyInstallationRequest {
+  /** @pattern [0-9]{1,19} */
+  installationId?: string;
+  /**
+     * @minLength 0
+     * @maxLength 128
+     */
+  state: string;
+  /** @pattern install|update|request */
+  setupAction?: string;
+}
+
+export type VerifyInstallationResponseResult = typeof VerifyInstallationResponseResult[keyof typeof VerifyInstallationResponseResult];
+
+
+export const VerifyInstallationResponseResult = {
+  INSTALLED: 'INSTALLED',
+  REQUESTED_FROM_OWNER: 'REQUESTED_FROM_OWNER',
+  ALREADY_LINKED: 'ALREADY_LINKED',
+} as const;
+
+export interface Organization {
+  id?: number;
+  login?: string;
+  avatarUrl?: string;
+}
+
+export interface VerifyInstallationResponse {
+  result: VerifyInstallationResponseResult;
+  /** @nullable */
+  org: Organization;
+  /** @nullable */
+  installationId: string | null;
+  /** @nullable */
+  teamId: number | null;
+}
+
+export interface OwnedTeamResponse {
+  id?: number;
+  name?: string;
+}
+
+export interface WithdrawalCheckResponse {
+  ownedTeams?: OwnedTeamResponse[];
+}
+
+export interface WithdrawalResponse {
+  deletesOn?: string;
+}
+
+export type ListTeamIssuesParams = {
+repo?: number;
+status?: string;
+assignee?: string;
+label?: string;
+open?: boolean;
+cursor?: string;
+size?: number;
+};
 
 export type RefreshTeamIssuesParams = {
 repo?: number;
@@ -857,19 +1303,21 @@ export type GetTeamIssueProgressParams = {
 days?: number;
 };
 
-export type ListTeamIssuesParams = {
-repo?: number;
-status?: string;
-assignee?: string;
-label?: string;
-open?: boolean;
+export type ListUnscheduledTeamIssuesParams = {
 cursor?: string;
 size?: number;
 };
 
-export type ListUnscheduledTeamIssuesParams = {
+export type ListIssueTemplatesParams = {
+repoId: number;
+};
+
+export type GetIssueTemplateParams = {
+repoId: number;
+};
+
+export type ListNotificationsParams = {
 cursor?: string;
-size?: number;
 };
 
 export type ListChatRoomsParams = {
@@ -907,259 +1355,6 @@ overdue?: string;
 
 export type ListAppealsParams = {
 status?: string;
-};
-
-export interface IssueDetailPerson {
-  /** @nullable */
-  id: number | null;
-  login: string;
-  name: string;
-  /** @nullable */
-  avatarUrl: string | null;
-}
-
-export interface IssueAssigneeCandidates {
-  items: IssueDetailPerson[];
-  max: number;
-}
-
-export interface IssueAssigneesRequest {
-  userIds: number[];
-}
-
-export interface IssueAssigneesResult {
-  assignees: IssueAssignee[];
-}
-
-export type IssueDetailResponseStatus =
-  (typeof IssueDetailResponseStatus)[keyof typeof IssueDetailResponseStatus];
-
-export const IssueDetailResponseStatus = {
-  TODO: 'TODO',
-  IN_PROGRESS: 'IN_PROGRESS',
-  BLOCKED: 'BLOCKED',
-  DONE: 'DONE',
-  OTHER: 'OTHER',
-  NONE: 'NONE',
-} as const;
-
-export type IssueDetailResponseState =
-  (typeof IssueDetailResponseState)[keyof typeof IssueDetailResponseState];
-
-export const IssueDetailResponseState = {
-  OPEN: 'OPEN',
-  CLOSED: 'CLOSED',
-} as const;
-
-export type IssueDetailResponseSyncStatus =
-  (typeof IssueDetailResponseSyncStatus)[keyof typeof IssueDetailResponseSyncStatus];
-
-export const IssueDetailResponseSyncStatus = {
-  SYNCED: 'SYNCED',
-  PENDING: 'PENDING',
-  FAILED: 'FAILED',
-} as const;
-
-/**
- * @nullable
- */
-export type IssueDetailResponseDeletedOrMoved =
-  (typeof IssueDetailResponseDeletedOrMoved)[keyof typeof IssueDetailResponseDeletedOrMoved] | null;
-
-export const IssueDetailResponseDeletedOrMoved = {
-  DELETED: 'DELETED',
-  MOVED: 'MOVED',
-} as const;
-
-export interface IssueSubIssueCounts {
-  total: number;
-  done: number;
-}
-
-export interface IssueDetailResponse {
-  id: number;
-  teamId: number;
-  number: number;
-  repoId: number;
-  repoName: string;
-  title: string;
-  body: string;
-  status: IssueDetailResponseStatus;
-  state: IssueDetailResponseState;
-  assignees: IssueAssignee[];
-  labels: IssueLabel[];
-  /** @nullable */
-  startDate: string | null;
-  /** @nullable */
-  dueDate: string | null;
-  overdue: boolean;
-  inProject: boolean;
-  author: IssueDetailPerson;
-  /** @nullable */
-  githubUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-  subIssues: IssueSubIssueCounts;
-  canWrite: boolean;
-  /** @nullable */
-  writePermissionReason: string | null;
-  syncFailed: boolean;
-  syncStatus: IssueDetailResponseSyncStatus;
-  /** @nullable */
-  deletedOrMoved: IssueDetailResponseDeletedOrMoved;
-  /** @nullable */
-  movedToIssueId: number | null;
-}
-
-export interface IssueLabelOptions {
-  items: IssueLabel[];
-}
-
-export interface IssueLabelsRequest {
-  labels: string[];
-}
-
-export interface IssueLabelsResult {
-  labels: IssueLabel[];
-}
-
-/**
- * PUT replaces both dates; null clears the field
- */
-export interface IssueScheduleRequest {
-  /** @nullable */
-  startDate: string | null;
-  /** @nullable */
-  dueDate: string | null;
-}
-
-export interface IssueScheduleResult {
-  /** @nullable */
-  startDate: string | null;
-  /** @nullable */
-  dueDate: string | null;
-}
-
-export type IssueStatusRequestStatus =
-  (typeof IssueStatusRequestStatus)[keyof typeof IssueStatusRequestStatus];
-
-export const IssueStatusRequestStatus = {
-  TODO: 'TODO',
-  IN_PROGRESS: 'IN_PROGRESS',
-  BLOCKED: 'BLOCKED',
-  DONE: 'DONE',
-} as const;
-
-export interface IssueStatusRequest {
-  status: IssueStatusRequestStatus;
-}
-
-export interface IssueStatusResult {
-  status: string;
-  state: string;
-}
-
-export interface IssueSubIssue {
-  /** @nullable */
-  id: number | null;
-  number: number;
-  title: string;
-  state: string;
-  githubUrl: string;
-}
-
-export interface IssueSubIssues {
-  items: IssueSubIssue[];
-  total: number;
-  done: number;
-}
-
-export type IssueCreateRequestAnswers = { [key: string]: string[] };
-
-export interface IssueCreateRequest {
-  requestId: string;
-  /** @exclusiveMinimum 0 */
-  repoId?: number;
-  /** @minLength 1 */
-  title: string;
-  body?: string;
-  templateKey?: string;
-  answers?: IssueCreateRequestAnswers;
-  assigneeIds?: number[];
-  labels?: string[];
-  startDate?: string;
-  dueDate?: string;
-  status?: string;
-}
-
-export interface IssueCreateResponse {
-  jobId?: number;
-  status?: string;
-  step?: string;
-  issueId?: number;
-  detailPath?: string;
-  errorCode?: string;
-  retryScheduled?: boolean;
-  retryAfterSeconds?: number;
-}
-
-export interface Choice {
-  key?: string;
-  name?: string;
-  description?: string;
-  format?: string;
-  source?: string;
-}
-
-export interface Label {
-  name?: string;
-  color?: string;
-}
-
-export interface ListResponse {
-  templates?: Choice[];
-  assigneeCandidates?: IssueDetailPerson[];
-  labelOptions?: Label[];
-  maxAssignees?: number;
-}
-
-export interface Field {
-  id?: string;
-  type?: string;
-  label?: string;
-  description?: string;
-  value?: string;
-  options?: string[];
-  requiredOptions?: number[];
-  required?: boolean;
-  multiple?: boolean;
-  render?: string;
-  defaultValues?: string[];
-  placeholder?: string;
-}
-
-export interface IssueTemplateResponse {
-  key?: string;
-  name?: string;
-  description?: string;
-  format?: string;
-  source?: string;
-  title?: string;
-  body?: string;
-  fields?: Field[];
-  labels?: string[];
-  assignees?: string[];
-  projects?: string[];
-  issueType?: string;
-  fallback?: boolean;
-}
-
-export type ListIssueTemplatesParams = {
-  repoId: number;
-};
-
-export type GetIssueTemplateParams = {
-  repoId: number;
 };
 
 export type IssueBoardColumnStatus =

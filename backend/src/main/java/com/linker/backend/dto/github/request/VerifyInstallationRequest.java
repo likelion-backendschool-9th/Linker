@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record VerifyInstallationRequest(
-		@NotBlank @Pattern(regexp = "[0-9]{1,19}") String installationId,
+		@Pattern(regexp = "[0-9]{1,19}") String installationId,
 		@NotBlank @Size(max = 128) String state,
-		@Pattern(regexp = "install|update") String setupAction
+		@Pattern(regexp = "install|update|request") String setupAction
 ) {
 }
