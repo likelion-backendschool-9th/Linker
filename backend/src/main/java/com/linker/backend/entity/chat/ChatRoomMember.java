@@ -84,4 +84,8 @@ public class ChatRoomMember extends BaseTimeEntity {
 	public Long getLastReadMessageId() {
 		return lastReadMessageId;
 	}
+
+	public Instant getHiddenAt() {
+		return hiddenAt;
+	}
 }

@@ -24,6 +24,7 @@ it('enforces the maximum across selections before React renders', () => {
   });
   expect(result.current.items).toHaveLength(2);
   expect(uploadImage).toHaveBeenCalledTimes(2);
+  expect(uploadImage).toHaveBeenCalledWith(expect.any(File), expect.any(Function), undefined);
 });
 it('does not resurrect removed files when a new selection follows reset in the same event', () => {
   const { result } = renderHook(() => useImageUpload(2));

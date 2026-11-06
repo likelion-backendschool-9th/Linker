@@ -63,6 +63,27 @@ it('manual retry reuses the ID and restored pending messages require user action
   expect(outbox.getSnapshot()).toEqual([]);
 });
 
+it('does not open a second row for the same client id, and a rejection is not an ACK', () => {
+  const send = vi.fn<(item: PendingMessage) => boolean>(() => true);
+  const outbox = new MessageOutbox(send, { ackTimeoutMs: 1000, retryDelayMs: 5 });
+  outbox.enqueue(message);
+  outbox.enqueue({ ...message, text: '다른 내용' });
+  vi.advanceTimersByTime(0);
+  expect(outbox.getSnapshot()).toHaveLength(1);
+  expect(send).toHaveBeenCalledTimes(1);
+  outbox.reject(message.clientMessageId, false);
+  expect(outbox.getSnapshot()).toEqual([
+    expect.objectContaining({ clientMessageId: message.clientMessageId, text: '안녕하세요', status: 'failed' }),
+  ]);
+  vi.advanceTimersByTime(60_000);
+  expect(send).toHaveBeenCalledTimes(1);
+  outbox.reject(message.clientMessageId, true);
+  vi.advanceTimersByTime(1000);
+  expect(send).toHaveBeenCalledTimes(2);
+  expect(send.mock.calls[1]?.[0].clientMessageId).toBe(message.clientMessageId);
+  outbox.dispose();
+});
+
 it('preserves uploaded images through automatic retry, restore and manual retry', () => {
   const send = vi.fn<(item: PendingMessage) => boolean>(() => false);
   const outbox = new MessageOutbox(send, { ackTimeoutMs: 10, retryDelayMs: 5 });

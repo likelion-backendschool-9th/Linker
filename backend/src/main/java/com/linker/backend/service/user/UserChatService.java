@@ -10,6 +10,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ import com.linker.backend.dto.chat.response.ChatLastMessageResponse;
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
+import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
@@ -74,8 +76,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserChatController}.
- * Page 16 reads chat rows. Page 17 stores DIRECT text and chat images, plus the caller's own edit, delete, read, and mute.
- * Team titles and deleting someone else's message stay closed until a real team role source exists.
+ * Page 16 reads chat rows. Page 17 stores DIRECT text and chat images, opens DIRECT and request rooms,
+ * and handles the caller's own edit, delete, read, and mute.
+ * Team room info and deleting someone else's message stay closed until a real team role source exists.
  */
 @Service
 public class UserChatService {
@@ -194,6 +197,61 @@ public class UserChatService {
 			next = encodeCursor(user.userId(), tab, last.sortAt(), last.roomId());
 		}
 		return new ChatRoomPageResponse(page.stream().map(row -> toItem(tab, row)).toList(), next);
+	}
+
+	@Transactional(readOnly = true)
+	public ChatRoomInfoResponse room(AuthenticatedUser user, long roomId) {
+		ChatRoomMember membership = members.findActive(roomId, user.userId())
+				.filter(member -> member.getHiddenAt() == null)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		ChatRoom room = membership.getRoom();
+		if (room.getRoomType() != RoomType.DIRECT) {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		String kind;
+		String direction;
+		if (room.getDmStatus() == DmStatus.ACCEPTED) {
+			kind = "DIRECT";
+			direction = null;
+		}
+		else if (room.getDmStatus() == DmStatus.REQUESTED
+				&& room.getRequestExpiresAt() != null
+				&& room.getRequestExpiresAt().isAfter(clock.instant())) {
+			kind = "REQUEST";
+			direction = Objects.equals(room.getRequesterId(), user.userId()) ? "SENT" : "RECEIVED";
+		}
+		else {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		List<ChatMemberResponse> people = new ArrayList<>();
+		ChatMemberResponse counterpart = null;
+		for (ChatRoomMember member : members.findActiveInRoom(roomId)) {
+			User person = accounts.findById(member.getUserId()).orElse(null);
+			if (person == null) {
+				continue;
+			}
+			if (!person.getId().equals(user.userId()) && moderation.blockedEitherWay(user.userId(), person.getId())) {
+				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+			}
+			ChatMemberResponse view = memberView(person);
+			people.add(view);
+			if (counterpart == null && !person.getId().equals(user.userId())) {
+				counterpart = view;
+			}
+		}
+		if (counterpart == null) {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		return new ChatRoomInfoResponse(
+				room.getId(),
+				kind,
+				counterpart.name(),
+				direction,
+				membership.isMuted(),
+				people,
+				null,
+				null
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -798,6 +856,16 @@ public class UserChatService {
 		catch (IllegalArgumentException exception) {
 			return false;
 		}
+	}
+
+	private static ChatMemberResponse memberView(User person) {
+		boolean withdrawn = person.getStatus() == UserStatus.DELETED;
+		return new ChatMemberResponse(
+				person.getId(),
+				withdrawn ? null : person.getUsername(),
+				withdrawn ? WITHDRAWN_MEMBER : person.visibleName(),
+				withdrawn ? null : person.getAvatarUrl()
+		);
 	}
 
 	private static ChatMessageResponse toMessage(ChatMessage message, User sender, long unreadCount, List<String> imageUrls) {

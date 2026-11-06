@@ -57,6 +57,17 @@ export class MessageOutbox {
     this.attempts.delete(id);
     this.update(this.snapshot.filter((item) => item.clientMessageId !== id));
   };
+  /** Server rejection is not an ACK. A non-retryable frame stays failed. */
+  reject = (id: string, retryable: boolean) => {
+    if (!this.snapshot.some((item) => item.clientMessageId === id)) return;
+    clearTimeout(this.timers.get(id));
+    this.timers.delete(id);
+    if (!retryable) {
+      this.change(id, 'failed');
+      return;
+    }
+    this.failed(id);
+  };
   discard = this.acknowledge;
   retry = (id: string) => {
     if (!this.snapshot.some((item) => item.clientMessageId === id && item.status === 'failed'))
