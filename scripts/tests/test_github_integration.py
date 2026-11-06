@@ -7,6 +7,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -126,6 +127,24 @@ class GithubIntegrationSafetyTest(unittest.TestCase):
             self.settings["GITHUB_APP_CLIENT_SECRET"] = ""
             with self.assertRaises(runner.SetupError):
                 runner.backend_environment(self.directory, self.settings, True)
+
+    def test_build_process_does_not_receive_backend_credentials(self):
+        args = SimpleNamespace(command="backend", enable_sync=False, build=True)
+        jar = self.directory / "backend/build/libs/test-SNAPSHOT.jar"
+        jar.parent.mkdir(parents=True)
+        jar.touch()
+        with patch.object(runner, "ROOT", self.directory):
+            with patch.object(runner.subprocess, "run") as build:
+                with patch.object(runner.os, "chdir"):
+                    with patch.object(runner.os, "execvpe", side_effect=RuntimeError("intercepted launch")) as launch:
+                        with self.assertRaises(RuntimeError):
+                            runner.launch(args, self.directory, self.settings)
+        build_env = build.call_args.kwargs["env"]
+        runtime_env = launch.call_args.args[2]
+        self.assertNotIn("GITHUB_APP_PRIVATE_KEY", build_env)
+        self.assertNotIn("DB_PASSWORD", build_env)
+        self.assertNotIn("JWT_PRIVATE_KEY", build_env)
+        self.assertEqual(runtime_env["GITHUB_APP_PRIVATE_KEY"], self.settings["GITHUB_APP_PRIVATE_KEY"])
 
     def test_prepared_schema_refuses_unmarked_existing_team_tables(self):
         answers = ["linker_github_test", "t", "1", "t"]

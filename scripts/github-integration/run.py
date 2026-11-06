@@ -287,9 +287,12 @@ def smoke(directory, settings):
 def launch(args, directory, settings):
     if args.command == "backend":
         env = backend_environment(directory, settings, args.enable_sync)
+        if args.enable_sync:
+            # A marker alone is insufficient if the selected local DB/volume changed.
+            prepare_schema(directory, settings)
         if args.build:
             subprocess.run([str(ROOT / "backend/gradlew"), "bootJar"], cwd=ROOT / "backend",
-                           env=env, check=True)
+                           env=system_environment(), check=True)
         jars = list((ROOT / "backend/build/libs").glob("*-SNAPSHOT.jar"))
         if len(jars) != 1:
             raise SetupError("Build backend bootJar first, or pass backend --build")
