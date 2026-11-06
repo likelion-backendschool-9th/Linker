@@ -17,7 +17,7 @@ import com.linker.backend.integration.github.*;
 import com.linker.backend.integration.github.GithubTeamSource.*;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
-import com.linker.backend.repository.issue.IssueContextRepository;
+import com.linker.backend.repository.issue.IssueRepository;
 import com.linker.backend.service.AuthService;
 import com.linker.backend.service.user.TeamSyncService;
 import jakarta.servlet.http.Cookie;
@@ -30,11 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -85,7 +83,7 @@ class TeamSetupIntegrationTest {
   @Autowired StringRedisTemplate redis;
   @Autowired TeamAccess access;
   @Autowired TeamSyncService sync;
-  @Autowired IssueContextRepository contexts;
+  @Autowired IssueRepository issueRepository;
   @Autowired com.linker.backend.repository.team.TeamRepository teamRows;
   @Autowired com.linker.backend.repository.team.TeamMemberRepository memberRows;
   @Autowired jakarta.persistence.EntityManager entityManager;
@@ -113,16 +111,8 @@ class TeamSetupIntegrationTest {
           null,
           "main");
 
-  private void preparedSchemasAfterFlyway() {
-    if (!Boolean.TRUE.equals(
-        jdbc.queryForObject("select to_regclass('public.issues') is null", Boolean.class))) return;
-    new ResourceDatabasePopulator(new ClassPathResource("db/issue-schema/issue-cache.sql"))
-        .execute(jdbc.getDataSource());
-  }
-
   @BeforeEach
   void clean() {
-    preparedSchemasAfterFlyway();
     jdbc.execute("truncate users,github_repos restart identity cascade");
     try (var connection = redis.getConnectionFactory().getConnection()) {
       connection.serverCommands().flushDb();
@@ -322,10 +312,10 @@ class TeamSetupIntegrationTest {
         .andExpect(jsonPath("$.notInstalledCount").doesNotExist());
     link(session, team);
     board(session, team);
-    assertThat(contexts.get(team).installationId()).isEqualTo(42);
-    assertThat(contexts.get(team).board().statuses().values())
+    assertThat(issueRepository.context(team).installationId()).isEqualTo(42);
+    assertThat(issueRepository.context(team).board().statuses().values())
         .containsExactlyInAnyOrder("TODO", "IN_PROGRESS", "BLOCKED", "DONE");
-    assertThat(contexts.get(team).repos().getFirst().githubId()).isEqualTo(900);
+    assertThat(issueRepository.context(team).repos().getFirst().githubId()).isEqualTo(900);
     mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.basePermission").value("READ"));
@@ -650,7 +640,7 @@ class TeamSetupIntegrationTest {
             jdbc.queryForObject(
                 "select full_name from github_repos where id=?", String.class, repoId))
         .isEqualTo("new-org/api");
-    assertThat(contexts.get(team).repos().getFirst().owner()).isEqualTo("new-org");
+    assertThat(issueRepository.context(team).repos().getFirst().owner()).isEqualTo("new-org");
   }
 
   @Test
@@ -925,7 +915,7 @@ class TeamSetupIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(command))
         .andExpect(status().isOk());
-    assertThat(contexts.get(team).board().statuses().get("e")).isEqualTo("OTHER");
+    assertThat(issueRepository.context(team).board().statuses().get("e")).isEqualTo("OTHER");
     verify(github, never()).updateStatus(anyLong(), anyString(), anyList());
     mvc.perform(
             post("/api/v1/user/teams/{id}/setup/board", team)
@@ -964,7 +954,7 @@ class TeamSetupIntegrationTest {
     link(session, id);
     board(session, id);
 
-    var existing = contexts.get(id);
+    var existing = issueRepository.context(id);
     var connection = teamRows.findConnection(id).orElseThrow();
     assertThat(connection.installationId()).isEqualTo(existing.installationId()).isEqualTo(42);
     assertThat(connection.githubOrgId()).isEqualTo(existing.orgId());
@@ -1049,7 +1039,7 @@ class TeamSetupIntegrationTest {
         entityManager.find(
             com.linker.backend.entity.team.TeamProjectBoard.class,
             teamRows.findConnection(id).orElseThrow().boardId());
-    assertThat(project.getGithubProjectNodeId()).isEqualTo(contexts.get(id).board().nodeId());
+    assertThat(project.getGithubProjectNodeId()).isEqualTo(issueRepository.context(id).board().nodeId());
     var option =
         entityManager.find(
             com.linker.backend.entity.team.BoardStatusMapping.class,

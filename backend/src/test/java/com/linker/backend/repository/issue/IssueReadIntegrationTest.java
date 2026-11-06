@@ -41,7 +41,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -108,20 +107,16 @@ class IssueReadIntegrationTest {
   static final AtomicInteger CREATIONS = new AtomicInteger();
   static volatile String templateFile, templateContent, orgTemplateContent;
   @Autowired IssueCreateService creation;
-  @Autowired IssueCreateJobRepository createJobs;
+  @Autowired IssueSyncJobRepository createJobs;
   static volatile String issueTitle = "로그인 오류", updated = "2026-11-05T01:00:00Z";
   @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
-  @Autowired NamedParameterJdbcTemplate named;
   @Autowired UserRepository users;
   @Autowired AuthService sessions;
   @Autowired IssueSyncService sync;
   @Autowired IssueService reads;
   @Autowired IssueProgressService progress;
-  @Autowired IssueContextRepository contexts;
-  @Autowired IssueCacheRepository cache;
-  @Autowired IssueReadRepository repository;
-  @Autowired IssueSyncLock locks;
+  @Autowired IssueRepository issueRepository;
   @Autowired StringRedisTemplate redis;
   @Autowired PlatformTransactionManager manager;
   @Autowired IssueSource source;
@@ -591,10 +586,6 @@ class IssueReadIntegrationTest {
     try (var connection = jdbc.getDataSource().getConnection()) {
       ScriptUtils.executeSqlScript(
           connection, new ClassPathResource("issue/issue-read-fixture.sql"));
-      ScriptUtils.executeSqlScript(
-          connection, new ClassPathResource("db/issue-schema/issue-cache.sql"));
-      ScriptUtils.executeSqlScript(
-          connection, new ClassPathResource("db/issue-schema/issue-sync-jobs.sql"));
     }
   }
 
@@ -725,17 +716,17 @@ class IssueReadIntegrationTest {
   @Test
   void cursorIsStableAndScopedToFiltersAndTeam() {
     sync.fullSync(10);
-    var first = repository.list(10, query(null, null, 1), false, LocalDate.of(2026, 11, 6));
+    var first = issueRepository.list(10, query(null, null, 1), false, LocalDate.of(2026, 11, 6));
     var second =
-        repository.list(10, query(null, first.nextCursor(), 1), false, LocalDate.of(2026, 11, 6));
+        issueRepository.list(10, query(null, first.nextCursor(), 1), false, LocalDate.of(2026, 11, 6));
     assertThat(second.items().getFirst().id()).isNotEqualTo(first.items().getFirst().id());
     assertThat(second.total()).isEqualTo(2);
     assertThat(second.nextCursor()).isNull();
     assertThatThrownBy(
-            () -> repository.list(20, query(null, first.nextCursor(), 1), false, LocalDate.now()))
+            () -> issueRepository.list(20, query(null, first.nextCursor(), 1), false, LocalDate.now()))
         .isInstanceOf(ApiException.class);
     assertThatThrownBy(
-            () -> repository.list(10, query("null", first.nextCursor(), 1), false, LocalDate.now()))
+            () -> issueRepository.list(10, query("null", first.nextCursor(), 1), false, LocalDate.now()))
         .isInstanceOf(ApiException.class);
   }
 
@@ -859,7 +850,7 @@ class IssueReadIntegrationTest {
 
   @Test
   void sameTeamLockCoversEveryEntryAndRejectsOuterTransaction() {
-    locks.team(
+    issueRepository.withTeamLock(
         10,
         () -> {
           assertThatThrownBy(() -> sync.fullSync(10)).isInstanceOf(ApiException.class);
@@ -871,7 +862,7 @@ class IssueReadIntegrationTest {
 
   @Test
   void duplicateWebhookRequeriesAndMissingBindingsAreNotAcknowledged() {
-    var handler = new GithubIssueWebhookHandler(sync, contexts, named);
+    var handler = new GithubIssueWebhookHandler(sync, issueRepository);
     var delivery =
         GithubWebhookDelivery.received(
             "delivery",
@@ -987,7 +978,7 @@ class IssueReadIntegrationTest {
 
   @Test
   void sourcePaginationExcludesPullRequestsAndReadsAllProjectFieldPages() {
-    var context = contexts.get(10);
+    var context = issueRepository.context(10);
     bulk = true;
     assertThat(source.list(context.repos().getFirst(), "installation-read"))
         .hasSize(100)
@@ -1019,7 +1010,7 @@ class IssueReadIntegrationTest {
 
   @Test
   void adapterRejectsNetworkInsideTransaction() {
-    var repo = contexts.get(10).repos().getFirst();
+    var repo = issueRepository.context(10).repos().getFirst();
     REQUESTS.clear();
     assertThatThrownBy(
             () ->
@@ -1067,11 +1058,11 @@ class IssueReadIntegrationTest {
 
   @Test
   void changedTeamBindingPreventsStaleCacheCommit() {
-    var old = contexts.get(10);
+    var old = issueRepository.context(10);
     jdbc.update("UPDATE team_project_boards SET due_date_field_id='CHANGED' WHERE team_id=10");
     assertThatThrownBy(
             () ->
-                cache.apply(
+                issueRepository.apply(
                     old,
                     new IssueSource.Snapshot(
                         List.of(
@@ -1902,19 +1893,6 @@ class IssueReadIntegrationTest {
   }
 
   @Test
-  void page12MissingCandidateSchemaReturnsReadinessError() throws Exception {
-    long id = firstIssue();
-    jdbc.execute("ALTER TABLE team_members RENAME COLUMN github_org_state TO staged_org_state");
-    try {
-      mvc.perform(get(detailUrl(id) + "/assignee-candidates").cookie(login(1)))
-          .andExpect(status().isServiceUnavailable())
-          .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
-    } finally {
-      jdbc.execute("ALTER TABLE team_members RENAME COLUMN staged_org_state TO github_org_state");
-    }
-  }
-
-  @Test
   void page12MutationsNeverRunExternalCallsInsideCallerTransaction() {
     long id = firstIssue();
     REQUESTS.clear();
@@ -1950,7 +1928,7 @@ class IssueReadIntegrationTest {
         .isEqualTo("DONE");
   }
 
-  @Autowired IssueEditJobRepository editJobs;
+  @Autowired IssueSyncJobRepository editJobs;
 
   @Test
   void page12LateFailureCannotRequeueAnAlreadyCommittedChange() {
@@ -1960,9 +1938,9 @@ class IssueReadIntegrationTest {
     new TransactionTemplate(manager)
         .executeWithoutResult(
             status ->
-                editJobs.failed(
+                editJobs.failEdit(
                     job, issue, false, "LOST_COMMIT_ACK", Instant.parse("2020-01-01T00:00:00Z")));
-    assertThat(editJobs.get(job).status()).isEqualTo("DONE");
+    assertThat(editJobs.edit(job).status()).isEqualTo("DONE");
     assertThat(
             jdbc.queryForObject("SELECT sync_status FROM issues WHERE id=?", String.class, issue))
         .isEqualTo("SYNCED");
@@ -1982,9 +1960,9 @@ class IssueReadIntegrationTest {
             + " VALUES(1,?,'2099-01-01',now(),now())",
         encrypted);
     var connected = new GithubIssueClient(githubProperties, persistedTokens);
-    assertThat(connected.canWrite(contexts.get(10).repos().getFirst(), 1)).isTrue();
+    assertThat(connected.canWrite(issueRepository.context(10).repos().getFirst(), 1)).isTrue();
     var result =
-        connected.editIssue(contexts.get(10).repos().getFirst(), 1, Map.of("state", "closed"), 1);
+        connected.editIssue(issueRepository.context(10).repos().getFirst(), 1, Map.of("state", "closed"), 1);
     assertThat(result.state()).isEqualTo("CLOSED");
     assertThat(LAST_AUTHORIZATION.get()).isEqualTo("Bearer " + synthetic);
     assertThat(encrypted).isNotEqualTo(synthetic);
@@ -2103,9 +2081,9 @@ class IssueReadIntegrationTest {
   @Test
   void creationCompletesAndLinksToRealDetailWithInternalId() throws Exception {
     long job = submitCreate(createInput(UUID.randomUUID().toString()));
-    assertThat(createJobs.get(job).status()).isEqualTo("DONE");
+    assertThat(createJobs.creation(job).status()).isEqualTo("DONE");
     assertThat(CREATIONS.get()).isEqualTo(1);
-    long issue = createJobs.get(job).issue();
+    long issue = createJobs.creation(job).issue();
     assertThat(
             jdbc.queryForObject("SELECT github_issue_id FROM issues WHERE id=?", Long.class, issue))
         .isEqualTo(103);
@@ -2144,11 +2122,11 @@ class IssueReadIntegrationTest {
   void projectFailureResumesWithoutCreatingAnotherIssue() throws Exception {
     failMutation = true;
     long id = submitCreate(createInput(UUID.randomUUID().toString()));
-    assertThat(createJobs.get(id).status()).isEqualTo("PENDING");
-    assertThat(createJobs.get(id).issue()).isNotNull();
+    assertThat(createJobs.creation(id).status()).isEqualTo("PENDING");
+    assertThat(createJobs.creation(id).issue()).isNotNull();
     failMutation = false;
     makeDue(id);
-    assertThat(createJobs.get(id).status()).isEqualTo("DONE");
+    assertThat(createJobs.creation(id).status()).isEqualTo("DONE");
     assertThat(CREATIONS.get()).isEqualTo(1);
   }
 
@@ -2156,9 +2134,9 @@ class IssueReadIntegrationTest {
   void dateFailureResumesUsingExistingProjectItem() throws Exception {
     failDueOnce = true;
     long id = submitCreate(createInput(UUID.randomUUID().toString()));
-    assertThat(createJobs.get(id).status()).isEqualTo("PENDING");
+    assertThat(createJobs.creation(id).status()).isEqualTo("PENDING");
     makeDue(id);
-    assertThat(createJobs.get(id).status()).isEqualTo("DONE");
+    assertThat(createJobs.creation(id).status()).isEqualTo("DONE");
     assertThat(CREATIONS.get()).isEqualTo(1);
     assertThat(MUTATIONS.get()).isEqualTo(1);
   }
@@ -2167,10 +2145,10 @@ class IssueReadIntegrationTest {
   void lostCreationResponseFindsMarkerAndNeverReposts() throws Exception {
     createLostResponse = true;
     long id = submitCreate(createInput(UUID.randomUUID().toString()));
-    assertThat(createJobs.get(id).issue()).isNull();
+    assertThat(createJobs.creation(id).issue()).isNull();
     assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
     makeDue(id);
-    assertThat(createJobs.get(id).status()).isEqualTo("DONE");
+    assertThat(createJobs.creation(id).status()).isEqualTo("DONE");
     assertThat(CREATIONS.get()).isEqualTo(1);
   }
 
@@ -2180,8 +2158,8 @@ class IssueReadIntegrationTest {
     hideCreated = true;
     long id = submitCreate(createInput(UUID.randomUUID().toString()));
     makeDue(id);
-    assertThat(createJobs.get(id).status()).isEqualTo("FAILED");
-    assertThat(createJobs.get(id).error()).isEqualTo("CREATE_OUTCOME_UNKNOWN");
+    assertThat(createJobs.creation(id).status()).isEqualTo("FAILED");
+    assertThat(createJobs.creation(id).error()).isEqualTo("CREATE_OUTCOME_UNKNOWN");
     assertThat(CREATIONS.get()).isEqualTo(1);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
   }
@@ -2190,7 +2168,7 @@ class IssueReadIntegrationTest {
   void deniedCreateNeverCreatesLocalIssueOrRetries() throws Exception {
     failCreate = true;
     long id = submitCreate(createInput(UUID.randomUUID().toString()));
-    assertThat(createJobs.get(id).status()).isEqualTo("FAILED");
+    assertThat(createJobs.creation(id).status()).isEqualTo("FAILED");
     makeDue(id);
     assertThat(CREATIONS.get()).isEqualTo(1);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
@@ -2271,7 +2249,7 @@ class IssueReadIntegrationTest {
     jdbc.update("UPDATE team_project_boards SET github_project_node_id='CHANGED' WHERE team_id=10");
     makeDue(id);
     assertThat(CREATIONS.get()).isEqualTo(1);
-    assertThat(createJobs.get(id).status()).isNotEqualTo("DONE");
+    assertThat(createJobs.creation(id).status()).isNotEqualTo("DONE");
   }
 
   @Test
@@ -2283,8 +2261,8 @@ class IssueReadIntegrationTest {
     makeDue(id);
     makeDue(id);
     makeDue(id);
-    assertThat(createJobs.get(id).status()).isEqualTo("FAILED");
-    assertThat(createJobs.get(id).attempts()).isEqualTo(3);
+    assertThat(createJobs.creation(id).status()).isEqualTo("FAILED");
+    assertThat(createJobs.creation(id).attempts()).isEqualTo(3);
     assertThat(CREATIONS.get()).isEqualTo(1);
   }
 
@@ -2315,10 +2293,10 @@ class IssueReadIntegrationTest {
     input.remove("labels");
     input.put("answers", Map.of("symptom", List.of("가입 실패")));
     long job = submitCreate(input);
-    assertThat(createJobs.get(job).status()).isEqualTo("DONE");
+    assertThat(createJobs.creation(job).status()).isEqualTo("DONE");
     assertThat((String) createdDraft.get("body"))
         .contains("### 증상\n\n가입 실패", "### 추가 내용\n\n_No response_");
-    mvc.perform(get("/api/v1/user/teams/10/issues/" + createJobs.get(job).issue()).cookie(login(1)))
+    mvc.perform(get("/api/v1/user/teams/10/issues/" + createJobs.creation(job).issue()).cookie(login(1)))
         .andExpect(status().isOk())
         .andExpect(
             jsonPath("$.body")
@@ -2368,7 +2346,7 @@ class IssueReadIntegrationTest {
   void githubDroppingCreationMetadataIsNotReportedAsSuccess() throws Exception {
     ignoreCreateLabels = true;
     long job = submitCreate(createInput(UUID.randomUUID().toString()));
-    assertThat(createJobs.get(job).status()).isNotEqualTo("DONE");
+    assertThat(createJobs.creation(job).status()).isNotEqualTo("DONE");
     assertThat(CREATIONS.get()).isEqualTo(1);
     makeDue(job);
     assertThat(CREATIONS.get()).isEqualTo(1);

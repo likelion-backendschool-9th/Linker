@@ -7,10 +7,9 @@ import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.GithubAppClient;
 import com.linker.backend.integration.github.IssueSource;
-import com.linker.backend.repository.issue.IssueCacheRepository;
-import com.linker.backend.repository.issue.IssueContextRepository;
-import com.linker.backend.repository.issue.IssueContextRepository.Context;
-import com.linker.backend.repository.issue.IssueSyncLock;
+import com.linker.backend.dto.issue.response.IssuePersistenceView;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.Context;
+import com.linker.backend.repository.issue.IssueRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -26,9 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service("userIssueSyncService")
 @Transactional(propagation = Propagation.NEVER)
 public class IssueSyncService {
-  private final IssueContextRepository contexts;
-  private final IssueCacheRepository cache;
-  private final IssueSyncLock locks;
+  private final IssueRepository issueRepository;
   private final IssueSource source;
   private final GithubAppClient installations;
   private final IssueService reads;
@@ -36,17 +33,13 @@ public class IssueSyncService {
   private final Clock clock;
 
   public IssueSyncService(
-      IssueContextRepository contexts,
-      IssueCacheRepository cache,
-      IssueSyncLock locks,
+      IssueRepository issueRepository,
       IssueSource source,
       GithubAppClient installations,
       IssueService reads,
       StringRedisTemplate redis,
       Clock clock) {
-    this.contexts = contexts;
-    this.cache = cache;
-    this.locks = locks;
+    this.issueRepository = issueRepository;
     this.source = source;
     this.installations = installations;
     this.reads = reads;
@@ -60,16 +53,16 @@ public class IssueSyncService {
   }
 
   public int fullSync(long teamId) {
-    return locks.team(
+    return issueRepository.withTeamLock(
         teamId,
         () -> {
-          var context = contexts.get(teamId);
+          var context = issueRepository.context(teamId);
           requireSyncable(context);
           String token = installations.installationReadToken(context.installationId());
           var project = source.project(context, token);
           List<IssueSource.RepositoryIssues> parts = new ArrayList<>();
           java.util.Set<Long> confirmedMissing = new java.util.HashSet<>();
-          var old = cache.cached(teamId);
+          var old = issueRepository.cached(teamId);
           for (var repo : context.repos()) {
             var current = new ArrayList<>(source.list(repo, token));
             var ids =
@@ -90,7 +83,7 @@ public class IssueSyncService {
             parts.add(new IssueSource.RepositoryIssues(repo, List.copyOf(current)));
           }
           int count =
-              cache.apply(
+              issueRepository.apply(
                   context,
                   new IssueSource.Snapshot(List.copyOf(parts), project, confirmedMissing),
                   true,
@@ -115,14 +108,14 @@ public class IssueSyncService {
           "RATE_LIMITED",
           "잠시 후 다시 시도해 주세요",
           Map.of("retryAfterSeconds", PlanLimits.ISSUE_REFRESH_INTERVAL_SECONDS));
-    return locks.team(
+    return issueRepository.withTeamLock(
         teamId,
         () -> {
           reads.requireMember(user, teamId);
-          var context = contexts.get(teamId);
+          var context = issueRepository.context(teamId);
           requireSyncable(context);
           Set<Long> ids = Set.copyOf(reads.matchingIds(teamId, query, unscheduled));
-          var selected = cache.cached(teamId).stream().filter(i -> ids.contains(i.id())).toList();
+          var selected = issueRepository.cached(teamId).stream().filter(i -> ids.contains(i.id())).toList();
           if (selected.isEmpty()) return new IssueRefreshResponse(clock.instant(), 0);
           int count = refreshSelected(context, selected);
           return new IssueRefreshResponse(clock.instant(), count);
@@ -133,14 +126,14 @@ public class IssueSyncService {
     reads.requireMember(user, teamId);
     if (user.status() != com.linker.backend.entity.account.type.UserStatus.ACTIVE)
       throw new ApiException(403, "SUSPENDED", "정지된 계정은 이 기능을 쓸 수 없어요");
-    locks.team(
+    issueRepository.withTeamLock(
         teamId,
         () -> {
           reads.requireMember(user, teamId);
-          var context = contexts.get(teamId);
+          var context = issueRepository.context(teamId);
           requireSyncable(context);
           var issue =
-              cache.cached(teamId).stream()
+              issueRepository.cached(teamId).stream()
                   .filter(i -> i.id() == issueId)
                   .findFirst()
                   .orElseThrow(() -> new ApiException(404, "NOT_FOUND", "이슈를 찾을 수 없어요"));
@@ -165,23 +158,23 @@ public class IssueSyncService {
           try {
             refreshSelected(context, List.of(issue));
             String confirmed =
-                cache.cached(teamId).stream()
+                issueRepository.cached(teamId).stream()
                     .filter(row -> row.id() == issue.id())
-                    .map(IssueCacheRepository.Cached::itemId)
+                    .map(IssuePersistenceView.Cached::itemId)
                     .filter(java.util.Objects::nonNull)
                     .findFirst()
                     .orElse(null);
             if (!item.equals(confirmed))
               throw new ApiException(503, "SERVICE_UNAVAILABLE", "프로젝트 추가 결과를 다시 확인하고 있어요");
           } catch (RuntimeException e) {
-            cache.failedAdd(context, issue.id(), item);
+            issueRepository.failedAdd(context, issue.id(), item);
             throw e;
           }
           return null;
         });
   }
 
-  private int refreshSelected(Context context, List<IssueCacheRepository.Cached> selected) {
+  private int refreshSelected(Context context, List<IssuePersistenceView.Cached> selected) {
     String token = installations.installationReadToken(context.installationId());
     var items = source.project(context, token);
     List<IssueSource.RepositoryIssues> parts = new ArrayList<>();
@@ -195,14 +188,14 @@ public class IssueSyncService {
         }
       if (!issues.isEmpty()) parts.add(new IssueSource.RepositoryIssues(repo, List.copyOf(issues)));
     }
-    return cache.apply(
+    return issueRepository.apply(
         context, new IssueSource.Snapshot(List.copyOf(parts), items), false, clock.instant());
   }
 
   public void syncDueTeams() {
-    for (long team : contexts.syncTeams()) {
+    for (long team : issueRepository.syncTeams()) {
       try {
-        var context = contexts.get(team);
+        var context = issueRepository.context(team);
         String last = redis.opsForValue().get(lastKey(team));
         Duration interval =
             "ACTIVE".equals(context.status())
