@@ -4,8 +4,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 
 import com.linker.backend.entity.chat.ChatMessage;
-import com.linker.backend.entity.moderation.AdminActionType;
-import com.linker.backend.entity.moderation.ReportTargetType;
+import com.linker.backend.entity.moderation.type.AdminActionType;
+import com.linker.backend.entity.moderation.type.ReportTargetType;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 

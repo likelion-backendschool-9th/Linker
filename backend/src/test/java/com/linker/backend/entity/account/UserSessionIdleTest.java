@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.time.Instant;
 
+import com.linker.backend.entity.account.type.UserType;
+
 import org.junit.jupiter.api.Test;
 
 class UserSessionIdleTest {

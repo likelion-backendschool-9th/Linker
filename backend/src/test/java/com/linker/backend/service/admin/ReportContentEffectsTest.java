@@ -9,11 +9,11 @@ import java.util.Optional;
 
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatRoom;
-import com.linker.backend.entity.chat.DmStatus;
-import com.linker.backend.entity.chat.MessageVisibility;
-import com.linker.backend.entity.chat.RequestKind;
-import com.linker.backend.entity.moderation.AdminActionType;
-import com.linker.backend.entity.moderation.ReportTargetType;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.MessageVisibility;
+import com.linker.backend.entity.chat.type.RequestKind;
+import com.linker.backend.entity.moderation.type.AdminActionType;
+import com.linker.backend.entity.moderation.type.ReportTargetType;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 

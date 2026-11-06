@@ -17,15 +17,13 @@ import java.util.stream.Stream;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.notification.Notification;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.notification.NotificationRepository;
-import com.linker.backend.service.admin.AdminNotificationService;
-import com.linker.backend.service.recruiter.RecruiterNotificationService;
-import com.linker.backend.service.user.UserNotificationService;
+import com.linker.backend.service.admin.NotificationService;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,9 +40,9 @@ class RoleNotificationServiceTest {
 	private Function<CreateNotificationCommand, Notification> creator(Role role, String time) {
 		Clock clock = Clock.fixed(kst(time), PlanLimits.APP_ZONE);
 		return switch (role) {
-			case USER -> new UserNotificationService(users, notifications, clock, null, null, null)::create;
-			case RECRUITER -> new RecruiterNotificationService(users, notifications, clock)::create;
-			case ADMIN -> new AdminNotificationService(users, notifications, clock)::create;
+			case USER -> new com.linker.backend.service.user.NotificationService(users, notifications, clock, null, null, null)::create;
+			case RECRUITER -> new com.linker.backend.service.recruiter.NotificationService(users, notifications, clock)::create;
+			case ADMIN -> new NotificationService(users, notifications, clock)::create;
 		};
 	}
 

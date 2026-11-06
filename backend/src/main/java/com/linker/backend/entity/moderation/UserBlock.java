@@ -2,18 +2,18 @@ package com.linker.backend.entity.moderation;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "user_blocks")
-public class UserBlock extends BaseTimeEntity {
+public class UserBlock {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,6 +26,14 @@ public class UserBlock extends BaseTimeEntity {
 	private Long blockedId;
 
 	private Instant unblockedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected UserBlock() {
 	}
@@ -52,5 +60,13 @@ public class UserBlock extends BaseTimeEntity {
 
 	public Instant getCreatedAtValue() {
 		return getCreatedAt();
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

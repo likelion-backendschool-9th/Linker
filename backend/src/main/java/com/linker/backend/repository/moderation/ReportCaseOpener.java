@@ -1,6 +1,6 @@
 package com.linker.backend.repository.moderation;
 
-import com.linker.backend.entity.moderation.ReportTargetType;
+import com.linker.backend.entity.moderation.type.ReportTargetType;
 
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Repository;

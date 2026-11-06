@@ -3,7 +3,6 @@ package com.linker.backend.entity.notification;
 import java.time.Instant;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,10 +13,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "push_tokens")
-public class PushToken extends BaseTimeEntity {
+public class PushToken {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +39,14 @@ public class PushToken extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private Instant lastUsedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected PushToken() {
 	}
@@ -70,5 +79,13 @@ public class PushToken extends BaseTimeEntity {
 
 	public String getPlatform() {
 		return platform;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

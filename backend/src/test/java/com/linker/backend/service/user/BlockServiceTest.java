@@ -15,7 +15,6 @@ import com.linker.backend.repository.moderation.ReportCaseOpener;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
-import com.linker.backend.service.admin.AdminNotificationService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,18 +47,18 @@ class BlockServiceTest {
 	AdminRepository admins;
 
 	@Mock
-	AdminNotificationService adminNotifications;
+	com.linker.backend.service.admin.NotificationService adminNotifications;
 	@Mock
 	com.linker.backend.repository.moderation.SanctionRepository sanctions;
 
 	@Mock
 	com.linker.backend.repository.profile.FollowRepository follows;
 
-	UserModerationService service;
+	ModerationService service;
 
 	@BeforeEach
 	void setUp() {
-		service = new UserModerationService(
+		service = new ModerationService(
 				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, null, follows, Clock.systemUTC());
 	}
 

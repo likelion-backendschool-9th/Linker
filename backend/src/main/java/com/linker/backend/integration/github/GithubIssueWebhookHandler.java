@@ -3,7 +3,7 @@ package com.linker.backend.integration.github;
 import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.issue.IssueContextRepository;
-import com.linker.backend.service.user.UserIssueSyncService;
+import com.linker.backend.service.user.IssueSyncService;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,13 +15,13 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 @ConditionalOnProperty(name = "linker.issues.webhook-enabled", havingValue = "true")
 public class GithubIssueWebhookHandler implements GithubWebhookHandler {
-  private final UserIssueSyncService sync;
+  private final IssueSyncService sync;
   private final IssueContextRepository contexts;
   private final NamedParameterJdbcTemplate jdbc;
   private final JsonMapper json = JsonMapper.builder().build();
 
   public GithubIssueWebhookHandler(
-      UserIssueSyncService sync, IssueContextRepository contexts, NamedParameterJdbcTemplate jdbc) {
+      IssueSyncService sync, IssueContextRepository contexts, NamedParameterJdbcTemplate jdbc) {
     this.sync = sync;
     this.contexts = contexts;
     this.jdbc = jdbc;

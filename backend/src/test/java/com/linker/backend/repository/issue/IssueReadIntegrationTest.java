@@ -5,8 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.linker.backend.dto.issue.request.IssueListQuery;
-import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -14,8 +14,13 @@ import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.global.security.TeamAccess;
 import com.linker.backend.integration.github.*;
 import com.linker.backend.repository.account.UserRepository;
-import com.linker.backend.service.PublicAuthService;
-import com.linker.backend.service.user.*;
+import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.IssueCreateService;
+import com.linker.backend.service.user.IssueDetailService;
+import com.linker.backend.service.user.IssueProgressService;
+import com.linker.backend.service.user.IssueReminderService;
+import com.linker.backend.service.user.IssueService;
+import com.linker.backend.service.user.IssueSyncService;
 import com.sun.net.httpserver.HttpServer;
 import jakarta.servlet.http.Cookie;
 import java.net.InetSocketAddress;
@@ -65,7 +70,7 @@ class IssueReadIntegrationTest {
       new java.util.concurrent.atomic.AtomicReference<>(DEFAULT_NOW);
   static volatile String deniedCalendarLogin;
   static volatile boolean failCalendarPermission;
-  @Autowired UserIssueReminderService dueReminders;
+  @Autowired IssueReminderService dueReminders;
 
   static final String SCHEMA = "issue_page_" + UUID.randomUUID().toString().replace("-", "");
   static PostgreSQLContainer postgres;
@@ -93,7 +98,7 @@ class IssueReadIntegrationTest {
   @Autowired GithubTokenCipher tokenCipher;
   @Autowired PersistedGithubUserAccessTokenSource persistedTokens;
   @Autowired com.linker.backend.global.config.GithubAppProperties githubProperties;
-  @Autowired UserIssueDetailService details;
+  @Autowired IssueDetailService details;
   static volatile Map<String, Object> createdDraft;
   static volatile boolean createdProject,
       createLostResponse,
@@ -102,17 +107,17 @@ class IssueReadIntegrationTest {
       ignoreCreateLabels;
   static final AtomicInteger CREATIONS = new AtomicInteger();
   static volatile String templateFile, templateContent, orgTemplateContent;
-  @Autowired UserIssueCreateService creation;
+  @Autowired IssueCreateService creation;
   @Autowired IssueCreateJobRepository createJobs;
   static volatile String issueTitle = "로그인 오류", updated = "2026-11-05T01:00:00Z";
   @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
   @Autowired NamedParameterJdbcTemplate named;
   @Autowired UserRepository users;
-  @Autowired PublicAuthService sessions;
-  @Autowired UserIssueSyncService sync;
-  @Autowired UserIssueService reads;
-  @Autowired UserIssueProgressService progress;
+  @Autowired AuthService sessions;
+  @Autowired IssueSyncService sync;
+  @Autowired IssueService reads;
+  @Autowired IssueProgressService progress;
   @Autowired IssueContextRepository contexts;
   @Autowired IssueCacheRepository cache;
   @Autowired IssueReadRepository repository;

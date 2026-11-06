@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 /**
  * One SQL statement computes a page, and one computes the summary.
  * Visible 1:1 messages use the same half-open block period as
- * {@code UserModerationService.hidesDirectMessage}. Team rooms skip that predicate.
+ * {@code ModerationService.hidesDirectMessage}. Team rooms skip that predicate.
  */
 @Repository
 public class ChatListQueryRepository {

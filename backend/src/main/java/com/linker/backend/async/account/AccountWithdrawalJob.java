@@ -3,7 +3,7 @@ package com.linker.backend.async.account;
 import java.time.Clock;
 import java.time.Instant;
 
-import com.linker.backend.service.user.UserAccountService;
+import com.linker.backend.service.user.AccountService;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class AccountWithdrawalJob {
 
-	private final UserAccountService accounts;
+	private final AccountService accounts;
 	private final Clock clock;
 
-	public AccountWithdrawalJob(UserAccountService accounts, Clock clock) {
+	public AccountWithdrawalJob(AccountService accounts, Clock clock) {
 		this.accounts = accounts;
 		this.clock = clock;
 	}

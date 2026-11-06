@@ -3,7 +3,6 @@ package com.linker.backend.entity.notification;
 import java.time.Instant;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +13,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 /**
@@ -23,7 +24,7 @@ import org.hibernate.type.SqlTypes;
  */
 @Entity
 @Table(name = "notifications")
-public class Notification extends BaseTimeEntity {
+public class Notification {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,6 +61,14 @@ public class Notification extends BaseTimeEntity {
 	private Instant pushedAt;
 
 	private Instant readAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected Notification() {
 	}
@@ -146,5 +155,13 @@ public class Notification extends BaseTimeEntity {
 		if (this.readAt == null) {
 			this.readAt = when;
 		}
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

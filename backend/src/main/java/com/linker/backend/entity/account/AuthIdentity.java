@@ -2,7 +2,7 @@ package com.linker.backend.entity.account;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.account.type.AuthProvider;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,10 +15,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "auth_identities")
-public class AuthIdentity extends BaseTimeEntity {
+public class AuthIdentity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +52,14 @@ public class AuthIdentity extends BaseTimeEntity {
 	private Instant lockedUntil;
 
 	private Instant lastLoginAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected AuthIdentity() {
 	}
@@ -128,5 +138,13 @@ public class AuthIdentity extends BaseTimeEntity {
 
 	public User getUser() {
 		return user;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

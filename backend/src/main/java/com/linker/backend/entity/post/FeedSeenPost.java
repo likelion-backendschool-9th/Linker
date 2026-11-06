@@ -3,7 +3,6 @@ package com.linker.backend.entity.post;
 import java.time.Instant;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +14,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(
@@ -24,7 +25,7 @@ import jakarta.persistence.UniqueConstraint;
 				columnNames = {"user_id", "post_id"}
 		)
 )
-public class FeedSeenPost extends BaseTimeEntity {
+public class FeedSeenPost {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +41,14 @@ public class FeedSeenPost extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private Instant seenAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected FeedSeenPost() {
 	}
@@ -70,5 +79,13 @@ public class FeedSeenPost extends BaseTimeEntity {
 
 	public Instant getSeenAt() {
 		return seenAt;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

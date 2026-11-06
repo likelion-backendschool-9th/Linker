@@ -5,7 +5,7 @@ import java.time.LocalDate;
 
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.service.ProfileVisitRecorder;
-import com.linker.backend.service.recruiter.RecruiterAdService;
+import com.linker.backend.service.recruiter.AdService;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -14,11 +14,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProfileIncludedSchedule {
 
-	private final RecruiterAdService ads;
+	private final AdService ads;
 	private final ProfileVisitRecorder visits;
 	private final Clock clock;
 
-	public ProfileIncludedSchedule(RecruiterAdService ads, ProfileVisitRecorder visits, Clock clock) {
+	public ProfileIncludedSchedule(AdService ads, ProfileVisitRecorder visits, Clock clock) {
 		this.ads = ads;
 		this.visits = visits;
 		this.clock = clock;

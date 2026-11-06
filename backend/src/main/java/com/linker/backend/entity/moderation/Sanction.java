@@ -3,7 +3,7 @@ package com.linker.backend.entity.moderation;
 import java.time.Instant;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.moderation.type.SanctionType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,10 +16,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "sanctions")
-public class Sanction extends BaseTimeEntity {
+public class Sanction {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,6 +56,14 @@ public class Sanction extends BaseTimeEntity {
 	private Instant revokedAt;
 
 	private Long revokedBy;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected Sanction() {
 	}
@@ -108,5 +118,13 @@ public class Sanction extends BaseTimeEntity {
 
 	public Instant getRevokedAt() {
 		return revokedAt;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

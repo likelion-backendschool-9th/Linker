@@ -3,7 +3,7 @@ package com.linker.backend.repository.account;
 import java.util.Optional;
 
 import com.linker.backend.entity.account.AuthIdentity;
-import com.linker.backend.entity.account.AuthProvider;
+import com.linker.backend.entity.account.type.AuthProvider;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

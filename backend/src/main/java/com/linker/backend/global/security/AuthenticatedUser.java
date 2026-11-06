@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

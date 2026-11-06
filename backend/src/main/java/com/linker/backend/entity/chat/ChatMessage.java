@@ -2,7 +2,8 @@ package com.linker.backend.entity.chat;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.chat.type.MessageType;
+import com.linker.backend.entity.chat.type.MessageVisibility;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,12 +16,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "chat_messages")
-public class ChatMessage extends BaseTimeEntity {
+public class ChatMessage {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,6 +56,14 @@ public class ChatMessage extends BaseTimeEntity {
 	private String clientMessageId;
 
 	private Instant editedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected ChatMessage() {
 	}
@@ -159,6 +170,14 @@ public class ChatMessage extends BaseTimeEntity {
 	}
 
 	public void alignCreatedAt(Instant createdAt) {
-		replaceCreatedAt(createdAt);
+		this.createdAt = createdAt;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

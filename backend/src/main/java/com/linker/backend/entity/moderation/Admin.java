@@ -3,7 +3,7 @@ package com.linker.backend.entity.moderation;
 import java.time.Instant;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.moderation.type.AdminRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,10 +16,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "admins")
-public class Admin extends BaseTimeEntity {
+public class Admin {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,6 +38,14 @@ public class Admin extends BaseTimeEntity {
 	private String otpSecretEnc;
 
 	private Instant otpEnrolledAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected Admin() {
 	}
@@ -71,5 +81,13 @@ public class Admin extends BaseTimeEntity {
 	public void enrollOtp(String secretEnc, Instant when) {
 		this.otpSecretEnc = secretEnc;
 		this.otpEnrolledAt = when;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

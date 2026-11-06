@@ -1,8 +1,8 @@
 package com.linker.backend.async.schedule;
 
 import com.linker.backend.repository.issue.IssueContextRepository;
-import com.linker.backend.service.user.UserIssueProgressService;
-import com.linker.backend.service.user.UserIssueSyncService;
+import com.linker.backend.service.user.IssueProgressService;
+import com.linker.backend.service.user.IssueSyncService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,19 +10,19 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "linker.issues.sync-enabled", havingValue = "true")
 public class IssueSyncSchedule {
-  private final UserIssueSyncService sync;
-  private final com.linker.backend.service.user.UserIssueReminderService reminders;
-  private final com.linker.backend.service.user.UserIssueCreateService creation;
-  private final com.linker.backend.service.user.UserIssueDetailService edits;
-  private final UserIssueProgressService progress;
+  private final IssueSyncService sync;
+  private final com.linker.backend.service.user.IssueReminderService reminders;
+  private final com.linker.backend.service.user.IssueCreateService creation;
+  private final com.linker.backend.service.user.IssueDetailService edits;
+  private final IssueProgressService progress;
   private final IssueContextRepository contexts;
 
   public IssueSyncSchedule(
-      UserIssueSyncService sync,
-      com.linker.backend.service.user.UserIssueReminderService reminders,
-      com.linker.backend.service.user.UserIssueCreateService creation,
-      com.linker.backend.service.user.UserIssueDetailService edits,
-      UserIssueProgressService progress,
+      IssueSyncService sync,
+      com.linker.backend.service.user.IssueReminderService reminders,
+      com.linker.backend.service.user.IssueCreateService creation,
+      com.linker.backend.service.user.IssueDetailService edits,
+      IssueProgressService progress,
       IssueContextRepository contexts) {
     this.sync = sync;
     this.reminders = reminders;

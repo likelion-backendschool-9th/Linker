@@ -35,14 +35,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
-import com.linker.backend.entity.chat.DmStatus;
-import com.linker.backend.entity.chat.MessageType;
-import com.linker.backend.entity.chat.MessageVisibility;
-import com.linker.backend.entity.chat.RequestKind;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.MessageType;
+import com.linker.backend.entity.chat.type.MessageVisibility;
+import com.linker.backend.entity.chat.type.RequestKind;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.RsaMaterial;
@@ -50,9 +50,9 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
-import com.linker.backend.service.PublicAuthService;
-import com.linker.backend.service.user.UserChatService;
-import com.linker.backend.service.user.UserModerationService;
+import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.ChatService;
+import com.linker.backend.service.user.ModerationService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -126,7 +126,7 @@ class ChatTextIntegrationTest {
 	@Autowired
 	private UserRepository users;
 	@Autowired
-	private PublicAuthService sessions;
+	private AuthService sessions;
 	@Autowired
 	private ChatRoomRepository rooms;
 	@Autowired
@@ -136,9 +136,9 @@ class ChatTextIntegrationTest {
 	@MockitoSpyBean
 	private TeamChatAccess teamChat;
 	@Autowired
-	private UserChatService chat;
+	private ChatService chat;
 	@Autowired
-	private UserModerationService moderation;
+	private ModerationService moderation;
 	@Autowired
 	private PlatformTransactionManager transactions;
 

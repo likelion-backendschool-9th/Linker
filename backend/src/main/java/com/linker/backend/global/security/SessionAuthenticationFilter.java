@@ -2,7 +2,8 @@ package com.linker.backend.global.security;
 
 import java.io.IOException;
 
-import com.linker.backend.service.PublicAuthService;
+import com.linker.backend.global.config.ApiPaths;
+import com.linker.backend.service.AuthService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,9 +19,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class SessionAuthenticationFilter extends OncePerRequestFilter {
 
 	private final SessionCookies cookies;
-	private final PublicAuthService auth;
+	private final AuthService auth;
 
-	public SessionAuthenticationFilter(SessionCookies cookies, PublicAuthService auth) {
+	public SessionAuthenticationFilter(SessionCookies cookies, AuthService auth) {
 		this.cookies = cookies;
 		this.auth = auth;
 	}
@@ -30,7 +31,7 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
 			throws ServletException, IOException {
 		String token = cookies.read(request);
 		if (token != null) {
-			boolean refresh = "/api/v1/public/auth/refresh".equals(request.getRequestURI());
+			boolean refresh = ApiPaths.AUTH_REFRESH.equals(request.getRequestURI());
 			auth.authenticate(token, !refresh).ifPresent(authenticated -> {
 				AuthenticatedUser user = authenticated.user();
 				var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

@@ -1,6 +1,6 @@
 package com.linker.backend.async.schedule;
 
-import com.linker.backend.service.user.UserRecruitmentService;
+import com.linker.backend.service.user.RecruitmentService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +16,9 @@ public class RecruitAutoCloseJob {
 
 	private static final Logger log = LoggerFactory.getLogger(RecruitAutoCloseJob.class);
 
-	private final UserRecruitmentService recruitment;
+	private final RecruitmentService recruitment;
 
-	public RecruitAutoCloseJob(UserRecruitmentService recruitment) {
+	public RecruitAutoCloseJob(RecruitmentService recruitment) {
 		this.recruitment = recruitment;
 	}
 

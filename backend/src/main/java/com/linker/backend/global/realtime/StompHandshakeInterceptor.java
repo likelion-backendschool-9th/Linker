@@ -2,7 +2,7 @@ package com.linker.backend.global.realtime;
 
 import java.util.Map;
 
-import com.linker.backend.entity.account.UserStatus;
+import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.global.security.AuthenticatedUser;
 
 import org.springframework.http.HttpStatus;
