@@ -41,7 +41,7 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 | `docs/development/02-wbs.md` | Endpoints, controllers, ownership, permissions, schedule |
 | `docs/development/05-backend-blueprint.md` | Backend architecture, packages (§3), 29 controllers + paired entry services (§4) |
 | `docs/development/03-frontend-blueprint.md` | Frontend implementation rules; Policy, Page TODO and WBS take precedence |
-| `docs/development/04-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/src/styles/tokens/` |
+| `docs/development/04-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/styles/tokens/` |
 | `docs/improvements/` | Stage-by-stage cleanup plan (0–4): status, owners and decisions; written in Korean, not a translation |
 
 - Search for the relevant page number, feature, table, or controller instead of reading every document.
