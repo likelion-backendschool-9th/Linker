@@ -721,6 +721,11 @@ export interface MyTeamsResponse {
   nextCursor: string | null;
 }
 
+export interface MyIssuesResponse {
+  teamId: number;
+  items: IssueListItem[];
+}
+
 export interface NotificationEmailRequest {
   email?: string;
 }
@@ -1271,6 +1276,10 @@ export interface WithdrawalCheckResponse {
 export interface WithdrawalResponse {
   deletesOn?: string;
 }
+
+export type GetMyIssuesParams = {
+teamId: number;
+};
 
 export type ListTeamIssuesParams = {
 repo?: number;

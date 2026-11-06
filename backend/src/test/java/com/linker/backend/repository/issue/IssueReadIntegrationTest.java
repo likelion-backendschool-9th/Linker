@@ -1320,6 +1320,105 @@ class IssueReadIntegrationTest {
         .andExpect(jsonPath("$.writePermissionReason").value("NO_REPOSITORY_WRITE_PERMISSION"));
   }
 
+  /** Page 07 "내 이슈" fixture. KST today is 2026-11-06 (DEFAULT_NOW). */
+  void seedMyIssues() {
+    boardIssue(921, 10, 100, 21, "OPEN", "TODO", "ITEM21", "2026-11-01", false);
+    boardIssue(922, 10, 100, 22, "OPEN", "IN_PROGRESS", "ITEM22", "2026-11-04", false);
+    boardIssue(923, 10, 100, 23, "OPEN", "TODO", null, "2026-11-07", false);
+    boardIssue(924, 10, 100, 24, "OPEN", "TODO", "ITEM24", null, false);
+    boardIssue(925, 10, 100, 25, "OPEN", "BLOCKED", "ITEM25", "2026-11-06", false);
+    boardIssue(926, 10, 100, 26, "CLOSED", "DONE", "ITEM26", "2026-10-01", false);
+    boardIssue(927, 10, 100, 27, "OPEN", "TODO", "ITEM27", "2026-11-02", false);
+    boardIssue(928, 10, 100, 28, "OPEN", "TODO", "ITEM28", "2026-11-03", true);
+    boardIssue(929, 20, 200, 29, "OPEN", "TODO", "ITEM29", "2026-11-02", false);
+    jdbc.update(
+        "INSERT INTO github_repos(id,github_repo_id,owner_login,name,full_name,created_at,updated_at)"
+            + " VALUES(300,3000,'acme','old','acme/old',now(),now())");
+    boardIssue(930, 10, 300, 30, "OPEN", "TODO", "ITEM30", "2026-11-01", false);
+    for (long issue : List.of(921L, 922L, 923L, 924L, 925L, 926L, 928L, 929L, 930L))
+      jdbc.update(
+          "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id)"
+              + " VALUES(?,101,'kim',1)",
+          issue);
+    jdbc.update(
+        "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id)"
+            + " VALUES(927,102,'former',2),(921,999,'outsider',NULL)");
+    jdbc.update("INSERT INTO issue_labels(issue_id,name,color) VALUES(921,'bug','d73a4a')");
+  }
+
+  @Test
+  void page07MyIssuesListsOnlyMyOpenIssuesInTheSelectedTeamByDueUrgency() throws Exception {
+    seedMyIssues();
+    mvc.perform(get("/api/v1/user/me/issues").param("teamId", "10").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Cache-Control", "no-store"))
+        .andExpect(jsonPath("$.teamId").value(10))
+        // Overdue oldest first, then today/soonest, then no due date. Off-board issues count too.
+        .andExpect(
+            jsonPath("$.items[*].number")
+                .value(org.hamcrest.Matchers.contains(21, 22, 25, 23, 24)))
+        .andExpect(
+            jsonPath("$.items[*].overdue")
+                .value(org.hamcrest.Matchers.contains(true, true, false, false, false)))
+        .andExpect(jsonPath("$.items[0].repoName").value("web"))
+        .andExpect(jsonPath("$.items[0].status").value("TODO"))
+        .andExpect(jsonPath("$.items[0].dueDate").value("2026-11-01"))
+        .andExpect(jsonPath("$.items[0].labels[0].name").value("bug"))
+        // The shared 11 card keeps every assignee, including someone outside Linker.
+        .andExpect(
+            jsonPath("$.items[0].assignees[*].login")
+                .value(org.hamcrest.Matchers.contains("kim", "outsider")))
+        .andExpect(jsonPath("$.items[0].assignees[0].inTeam").value(true))
+        .andExpect(jsonPath("$.items[2].inProject").value(true))
+        .andExpect(jsonPath("$.items[3].inProject").value(false));
+    // Another of my teams (read-only is still readable) lists only its own issues.
+    mvc.perform(get("/api/v1/user/me/issues").param("teamId", "20").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[*].number").value(org.hamcrest.Matchers.contains(29)));
+  }
+
+  @Test
+  void page07MyIssuesIsEmptyWithoutAssignments() throws Exception {
+    mvc.perform(get("/api/v1/user/me/issues").param("teamId", "10").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(0));
+  }
+
+  @Test
+  void page07MyIssuesRequiresADeveloperAndOneOfMyCurrentTeams() throws Exception {
+    seedMyIssues();
+    mvc.perform(get("/api/v1/user/me/issues").param("teamId", "10"))
+        .andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/v1/user/me/issues").param("teamId", "10").cookie(login(4)))
+        .andExpect(status().isForbidden());
+    // Not my team, a team I left, an unknown team, missing or malformed teamId: invalid filter.
+    for (long user : List.of(3L, 2L))
+      mvc.perform(get("/api/v1/user/me/issues").param("teamId", "10").cookie(login(user)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    for (String teamId : List.of("999", "0", "abc"))
+      mvc.perform(get("/api/v1/user/me/issues").param("teamId", teamId).cookie(login(1)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    mvc.perform(get("/api/v1/user/me/issues").cookie(login(1)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+  }
+
+  @Test
+  void page07MyIssuesOpenApiIsTaggedForTheWorkspace() throws Exception {
+    mvc.perform(get("/v3/api-docs"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.paths['/api/v1/user/me/issues'].get.tags[0]").value("p07-workspace"))
+        .andExpect(
+            jsonPath("$.paths['/api/v1/user/me/issues'].get.operationId").value("getMyIssues"))
+        .andExpect(jsonPath("$.paths['/api/v1/user/me/teams'].get.tags[0]").value("p07-workspace"))
+        // Moving the class mapping to /user kept every team issue URL.
+        .andExpect(
+            jsonPath("$.paths['/api/v1/user/teams/{teamId}/issues/{issueId}/status'].put.tags[0]")
+                .value("p12-issue-detail"));
+  }
+
   @Test
   void page14OpenApiTagsTheBoardAndWritesTheClientInput() throws Exception {
     var result =

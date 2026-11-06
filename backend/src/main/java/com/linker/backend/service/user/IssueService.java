@@ -139,6 +139,23 @@ public class IssueService {
         });
   }
 
+  /**
+   * Page 07 "내 이슈" (WBS 07, POL-I-5): open issues assigned to me in the selected team. Read in
+   * one repeatable-read transaction together with the membership check, like 11/14/15. Needs no
+   * GitHub call or board, so a team still in setup simply has no rows.
+   */
+  public com.linker.backend.dto.issue.response.MyIssuesResponse myIssues(
+      AuthenticatedUser user, long teamId) {
+    return read.execute(
+        status -> {
+          access.ownTeam(user, teamId);
+          return new com.linker.backend.dto.issue.response.MyIssuesResponse(
+              teamId,
+              issueRepository.assignedToMe(
+                  teamId, user.userId(), LocalDate.now(clock.withZone(PlanLimits.APP_ZONE))));
+        });
+  }
+
   /** Column order and labels from Policy POL-I-3 / Page TODO 14. */
   private static final Map<String, String> BOARD_COLUMNS = boardColumns();
 

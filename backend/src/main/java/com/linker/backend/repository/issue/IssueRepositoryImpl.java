@@ -600,6 +600,26 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
     return rows.isEmpty() ? List.of() : items(teamId, rows, today);
   }
 
+  @Override
+  public List<IssueListResponse.Item> assignedToMe(long teamId, long userId, LocalDate today) {
+    var rows =
+        listed(
+            entityManager
+                .createQuery(
+                    "select"
+                        + CARD
+                        + VISIBLE
+                        + " and i.state = 'OPEN' and exists (select 1 from IssueAssignee a"
+                        + " where a.issueId = i.id and a.userId = :me)"
+                        // Ascending due date already puts overdue (earlier) dates first.
+                        + " order by i.dueDate asc nulls last, i.id asc",
+                    Object[].class)
+                .setParameter("team", teamId)
+                .setParameter("me", userId)
+                .getResultList());
+    return rows.isEmpty() ? List.of() : items(teamId, rows, today);
+  }
+
   /** 11/14 filters shared by list and board: open only, assignee login, label name. */
   private static String filters(IssueListQuery query, Map<String, Object> params) {
     String where = "";
