@@ -1,12 +1,15 @@
 package com.linker.backend.repository.post;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.entity.post.Comment;
+import com.linker.backend.entity.post.type.PostVisibility;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -53,4 +56,16 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 			group by c.post.id
 			""")
 	List<Object[]> countNonAuthorByPostIds(@Param("postIds") Collection<Long> postIds);
+
+	// Report hide, delete, or restore. A bulk update leaves updatedAt unchanged.
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update Comment c
+			set c.visibility = :visibility, c.deletedAt = :deletedAt
+			where c.id = :id
+			""")
+	int updateReportedVisibility(
+			@Param("id") long id,
+			@Param("visibility") PostVisibility visibility,
+			@Param("deletedAt") Instant deletedAt);
 }
