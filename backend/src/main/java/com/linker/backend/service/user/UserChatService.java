@@ -23,6 +23,7 @@ import com.linker.backend.dto.chat.event.ChatTranscriptChanged;
 import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
+import com.linker.backend.dto.chat.request.ShareChatCardRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatCounterpartResponse;
 import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
@@ -358,6 +359,34 @@ public class UserChatService {
 				nextAfter,
 				team ? new ChatHistoryLimitResponse(FREE_HISTORY, false) : null
 		);
+	}
+
+	@Transactional
+	public ChatMessageResponse shareCard(AuthenticatedUser principal, long roomId, ShareChatCardRequest request) {
+		Participant participant = requireParticipant(principal, roomId);
+		if (request == null || request.targetType() == null || request.targetId() == null
+				|| request.targetId() < 1 || request.clientMessageId() == null
+				|| !canonicalUuid(request.clientMessageId())) {
+			throw new ApiException(400, "VALIDATION_ERROR", "공유할 대상을 확인해 주세요");
+		}
+		String targetType = request.targetType().trim().toUpperCase();
+		if (!Set.of("POST", "RECRUIT_POST", "PROFILE").contains(targetType)) {
+			throw new ApiException(400, "VALIDATION_ERROR", "공유할 대상을 확인해 주세요");
+		}
+		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire("chat.share", participant.account().getId(), PlanLimits.CHAT_SHARES_PER_MINUTE, 1);
+		if (!decision.allowed()) {
+			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요");
+		}
+		String payload = "{\"targetType\":\"" + targetType + "\",\"targetId\":" + request.targetId() + "}";
+		ChatMessage message = messages.saveAndFlush(ChatMessage.shareCard(participant.member().getRoom(), participant.account().getId(), payload, request.clientMessageId()));
+		Instant createdAt = DatabaseInstant.now(clock);
+		messages.assignCreatedAt(message.getId(), createdAt);
+		message.alignCreatedAt(createdAt);
+		participant.member().getRoom().markLastMessage(message.getId(), createdAt);
+		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != principal.userId()).count();
+		ChatMessageResponse response = toMessage(message, participant.account(), unread, List.of());
+		events.publishEvent(new ChatMessageReady(roomId, response));
+		return response;
 	}
 
 	@Transactional

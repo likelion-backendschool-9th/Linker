@@ -6,6 +6,7 @@ import java.util.Map;
 import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
+import com.linker.backend.dto.chat.request.ShareChatCardRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
@@ -99,6 +100,17 @@ public class UserChatController {
 			@RequestParam(required = false) Long after
 	) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.messages(user, roomId, before, after));
+	}
+
+	@PostMapping("/chat-rooms/{roomId}/share-cards")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "shareChatCard")
+	public ResponseEntity<ChatMessageResponse> shareCard(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@RequestBody ShareChatCardRequest request
+	) {
+		return ResponseEntity.ok().body(chat.shareCard(user, roomId, request));
 	}
 
 	@PostMapping("/chat-rooms/{roomId}/read")
