@@ -1126,6 +1126,162 @@ class IssueReadIntegrationTest {
         .isZero();
   }
 
+  void boardIssue(
+      long id, long team, long repo, int number, String state, String status, String item,
+      String due, boolean deleted) {
+    jdbc.update(
+        "INSERT INTO issues(id,team_id,repo_id,github_issue_id,github_node_id,number,title,state,"
+            + "board_status,project_item_id,due_date,github_updated_at,deleted_at)"
+            + " VALUES(?,?,?,?,?,?,?,?,?,?,CAST(? AS date),now(),CASE WHEN ? THEN now() END)",
+        id,
+        team,
+        repo,
+        id * 10,
+        "NODE" + id,
+        number,
+        "보드 " + number,
+        state,
+        status,
+        item,
+        due,
+        deleted);
+  }
+
+  void seedBoard() {
+    boardIssue(901, 10, 100, 11, "OPEN", "TODO", "ITEM11", "2026-11-08", false);
+    boardIssue(902, 10, 100, 12, "OPEN", "TODO", "ITEM12", "2026-11-01", false);
+    boardIssue(903, 10, 100, 13, "OPEN", "TODO", "ITEM13", null, false);
+    boardIssue(904, 10, 100, 14, "OPEN", "BLOCKED", "ITEM14", "2026-11-10", false);
+    boardIssue(905, 10, 100, 15, "CLOSED", "IN_PROGRESS", "ITEM15", "2026-11-02", false);
+    boardIssue(906, 10, 100, 16, "OPEN", "NONE", "ITEM16", "2026-11-07", false);
+    boardIssue(907, 10, 100, 17, "OPEN", "OTHER", "ITEM17", null, false);
+    boardIssue(908, 10, 100, 18, "OPEN", "TODO", null, "2026-11-03", false);
+    boardIssue(909, 10, 100, 19, "OPEN", "TODO", "ITEM19", "2026-11-03", true);
+    boardIssue(910, 20, 200, 20, "OPEN", "TODO", "ITEM20", "2026-11-09", false);
+    jdbc.update("INSERT INTO issue_labels(issue_id,name,color) VALUES(901,'bug','d73a4a')");
+    jdbc.update(
+        "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id)"
+            + " VALUES(902,101,'kim',1)");
+  }
+
+  @Test
+  void page14BoardGroupsProjectIssuesIntoFiveColumnsByDueUrgency() throws Exception {
+    seedBoard();
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Cache-Control", "no-store"))
+        .andExpect(jsonPath("$.canWrite").value(true))
+        .andExpect(jsonPath("$.writePermissionReason").doesNotExist())
+        .andExpect(jsonPath("$.columns.length()").value(5))
+        .andExpect(
+            jsonPath("$.columns[*].status")
+                .value(
+                    org.hamcrest.Matchers.contains(
+                        "TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER")))
+        .andExpect(
+            jsonPath("$.columns[*].label")
+                .value(org.hamcrest.Matchers.contains("작업 전", "작업 중", "작업 중단", "작업 완료", "기타")))
+        // Past due first, then soonest, then no due date; off-board, deleted and other teams' out
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number")
+                .value(org.hamcrest.Matchers.contains(12, 11, 13)))
+        .andExpect(jsonPath("$.columns[0].cards[0].overdue").value(true))
+        .andExpect(jsonPath("$.columns[0].cards[0].assignees[0].login").value("kim"))
+        .andExpect(jsonPath("$.columns[0].cards[1].labels[0].name").value("bug"))
+        .andExpect(jsonPath("$.columns[1].cards.length()").value(0))
+        .andExpect(
+            jsonPath("$.columns[2].cards[*].number").value(org.hamcrest.Matchers.contains(14)))
+        // A closed issue is done whatever its board value; done cards are never overdue
+        .andExpect(
+            jsonPath("$.columns[3].cards[*].number").value(org.hamcrest.Matchers.contains(15)))
+        .andExpect(jsonPath("$.columns[3].cards[0].status").value("DONE"))
+        .andExpect(jsonPath("$.columns[3].cards[0].overdue").value(false))
+        // No Status value shows in "기타" but keeps NONE so the screen can tell it apart
+        .andExpect(
+            jsonPath("$.columns[4].cards[*].number")
+                .value(org.hamcrest.Matchers.contains(16, 17)))
+        .andExpect(
+            jsonPath("$.columns[4].cards[*].status")
+                .value(org.hamcrest.Matchers.contains("NONE", "OTHER")))
+        .andExpect(jsonPath("$.columns[4].cards[0].inProject").value(true));
+  }
+
+  @Test
+  void page14BoardReusesPageElevenFiltersExceptStatus() throws Exception {
+    seedBoard();
+    var cookie = login(1);
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("label", "bug"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number").value(org.hamcrest.Matchers.contains(11)))
+        .andExpect(jsonPath("$.columns[4].cards.length()").value(0));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("assignee", "kim"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number").value(org.hamcrest.Matchers.contains(12)));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("open", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[3].cards.length()").value(0))
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(3));
+    // Another team's repo never widens the scope; status is not a board filter
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("repo", "200"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(0));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("status", "DONE"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(3));
+    for (String key : List.of("repo", "open"))
+      mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param(key, "bad"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(cookie).param("label", "' OR 1=1 --"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.columns[0].cards.length()").value(0));
+  }
+
+  @Test
+  void page14BoardRequiresTeamMembershipAndReportsReadOnlyTeams() throws Exception {
+    seedBoard();
+    mvc.perform(get("/api/v1/user/teams/10/board")).andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(3)))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("TEAM_ROLE_REQUIRED"));
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(4)))
+        .andExpect(status().isForbidden());
+    // A read-only team still shows its board, but no drag (Policy ch. 7, Page TODO 14)
+    mvc.perform(get("/api/v1/user/teams/20/board").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.canWrite").value(false))
+        .andExpect(jsonPath("$.writePermissionReason").value("READ_ONLY_TEAM"))
+        .andExpect(
+            jsonPath("$.columns[0].cards[*].number").value(org.hamcrest.Matchers.contains(20)));
+    writable = false;
+    mvc.perform(get("/api/v1/user/teams/10/board").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.canWrite").value(false))
+        .andExpect(jsonPath("$.writePermissionReason").value("NO_REPOSITORY_WRITE_PERMISSION"));
+  }
+
+  @Test
+  void page14OpenApiTagsTheBoardAndWritesTheClientInput() throws Exception {
+    var result =
+        mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/board'].get.tags[0]")
+                    .value("p14-board"))
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/board'].get.operationId")
+                    .value("getTeamIssueBoard"))
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/issues'].get.tags[0]")
+                    .value("p11-issue-list"))
+            .andReturn();
+    Path path = Path.of("build/openapi/page14.json");
+    Files.createDirectories(path.getParent());
+    Files.writeString(path, result.getResponse().getContentAsString(StandardCharsets.UTF_8));
+  }
+
   @AfterAll
   void cleanup() {
     if (server != null) server.stop(0);

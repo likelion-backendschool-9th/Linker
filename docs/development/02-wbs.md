@@ -827,6 +827,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: status change → 12's `PUT .../issues/{issueId}/status`, filter options → 11's `issue-filters`
 - Tables: new none · shared issues, board_status_mappings, issue_sync_jobs
+- C14 backend contract and isolated verification: [c-page14-implementation.md](plans/c-page14-implementation.md). Only issues on the team's Projects board; 5 fixed columns; `NONE` (no Status value) cards go to "기타" with their own status kept; cards ordered by due urgency (past due oldest first, then soonest, then none); `canWrite` uses 11's rule.
 - [ ] Frontend: dnd-kit drag (long-press drag on mobile), optimistic move, revert to original column + notice on failure, horizontally scrolling columns, no drag without write permission
 
 </details>

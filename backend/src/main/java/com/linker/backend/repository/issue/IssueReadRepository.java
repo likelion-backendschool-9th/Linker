@@ -74,27 +74,72 @@ public class IssueReadRepository {
                 + where
                 + " ORDER BY sort_updated DESC, i.id DESC LIMIT :limit",
             params,
-            (rs, n) ->
-                new Row(
-                    rs.getLong("id"),
-                    rs.getInt("number"),
-                    rs.getLong("repo_id"),
-                    rs.getString("repo_name"),
-                    rs.getString("title"),
-                    rs.getString("board_status"),
-                    rs.getString("state"),
-                    date(rs, "start_date"),
-                    date(rs, "due_date"),
-                    rs.getString("project_item_id") != null,
-                    "FAILED".equals(rs.getString("sync_status")),
-                    rs.getTimestamp("sort_updated").toInstant(),
-                    rs.getString("sync_status"),
-                    rs.getTimestamp("synced_at") == null
-                        ? null
-                        : rs.getTimestamp("synced_at").toInstant()));
+            IssueReadRepository::row);
     boolean more = rows.size() > query.size();
     var page = rows.subList(0, Math.min(rows.size(), query.size()));
     if (page.isEmpty()) return new IssueListResponse(List.of(), null, total, false, "NOT_CHECKED");
+    var items = items(teamId, page, today);
+    Row last = page.getLast();
+    // Unknown until repository-write authorization lands; never infer it from team membership.
+    return new IssueListResponse(
+        items, more ? encode(scope, last.updated(), last.id()) : null, total, false, "NOT_CHECKED");
+  }
+
+  /**
+   * Page 14 cards: every live issue of the team that is on the team's Projects board, with 11's
+   * filters except status (the columns are the statuses). Issues off the board stay in 11's
+   * "일정 없음". Ordered by due urgency: past due (oldest first), then soonest, then no due date.
+   */
+  public List<IssueListResponse.Item> board(long teamId, IssueListQuery query, LocalDate today) {
+    var params = new MapSqlParameterSource("team", teamId);
+    String sql =
+        "SELECT i.*, r.name AS repo_name, COALESCE(i.github_updated_at, TIMESTAMPTZ '1970-01-01"
+            + " 00:00:00+00') AS sort_updated"
+            + " FROM issues i JOIN github_repos r ON r.id = i.repo_id"
+            + " JOIN team_repos tr ON tr.repo_id = i.repo_id AND tr.team_id = i.team_id"
+            + " WHERE i.team_id = :team AND i.deleted_at IS NULL AND r.deleted_at IS NULL"
+            + " AND i.project_item_id IS NOT NULL";
+    if (query.repo() != null) {
+      sql += " AND i.repo_id = :repo";
+      params.addValue("repo", query.repo());
+    }
+    if (query.open()) sql += " AND i.state = 'OPEN'";
+    if (query.assignee() != null) {
+      sql +=
+          " AND EXISTS (SELECT 1 FROM issue_assignees a WHERE a.issue_id = i.id AND a.github_login"
+              + " = :assignee)";
+      params.addValue("assignee", query.assignee());
+    }
+    if (query.label() != null) {
+      sql +=
+          " AND EXISTS (SELECT 1 FROM issue_labels l WHERE l.issue_id = i.id AND l.name = :label)";
+      params.addValue("label", query.label());
+    }
+    sql += " ORDER BY i.due_date ASC NULLS LAST, i.id ASC";
+    var rows = jdbc.query(sql, params, IssueReadRepository::row);
+    return rows.isEmpty() ? List.of() : items(teamId, rows, today);
+  }
+
+  private static Row row(ResultSet rs, int n) throws SQLException {
+    return new Row(
+        rs.getLong("id"),
+        rs.getInt("number"),
+        rs.getLong("repo_id"),
+        rs.getString("repo_name"),
+        rs.getString("title"),
+        rs.getString("board_status"),
+        rs.getString("state"),
+        date(rs, "start_date"),
+        date(rs, "due_date"),
+        rs.getString("project_item_id") != null,
+        "FAILED".equals(rs.getString("sync_status")),
+        rs.getTimestamp("sort_updated").toInstant(),
+        rs.getString("sync_status"),
+        rs.getTimestamp("synced_at") == null ? null : rs.getTimestamp("synced_at").toInstant());
+  }
+
+  /** Shared 11/14 card: assignees (with team membership), labels and the KST overdue mark. */
+  private List<IssueListResponse.Item> items(long teamId, List<Row> page, LocalDate today) {
     List<Long> ids = page.stream().map(Row::id).toList();
     var children = new MapSqlParameterSource("ids", ids).addValue("team", teamId);
     Map<Long, List<IssueListResponse.Assignee>> assignees = new HashMap<>();
@@ -127,8 +172,7 @@ public class IssueReadRepository {
               .computeIfAbsent(rs.getLong("issue_id"), k -> new ArrayList<>())
               .add(new IssueListResponse.Label(rs.getString("name"), rs.getString("color")));
         });
-    var items =
-        page.stream()
+    return page.stream()
             .map(row ->
                 new IssueListResponse.Item(
                     row.id(),
@@ -151,10 +195,6 @@ public class IssueReadRepository {
                     row.syncStatus(),
                     row.syncedAt()))
             .toList();
-    Row last = page.getLast();
-    // Unknown until repository-write authorization lands; never infer it from team membership.
-    return new IssueListResponse(
-        items, more ? encode(scope, last.updated(), last.id()) : null, total, false, "NOT_CHECKED");
   }
 
   public IssueFilterOptionsResponse options(long teamId) {
