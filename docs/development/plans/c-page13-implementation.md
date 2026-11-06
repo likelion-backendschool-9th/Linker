@@ -4,7 +4,7 @@
 
 ## 범위와 재사용
 
-C 담당 13번 백엔드만 구현한다. 14·15 API, 화면, B의 팀 생성·권한 공급, D의 구독 구현은 추가하지 않는다. `UserIssueController → UserIssueService → UserIssueTemplateService/UserIssueCreateService`이며 기존 GitHub 클라이언트·팀 잠금·캐시·역할별 알림 계약을 재사용한다.
+C 담당 13번 백엔드만 구현한다. 14·15 API, 화면, B의 팀 생성·권한 공급, D의 구독 구현은 추가하지 않는다. `user.IssueController → user.IssueService → user.IssueTemplateService/user.IssueCreateService`이며 기존 GitHub 클라이언트·팀 잠금·캐시·역할별 알림 계약을 재사용한다.
 
 | 메서드 | 경로 (기본 `/api/v1/user/teams/{teamId}`) | 동작 |
 | --- | --- | --- |

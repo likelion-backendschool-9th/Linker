@@ -23,7 +23,7 @@
 
 ## 동기화와 저장
 
-- B의 설정 저장 커밋 이후 `UserIssueSyncService.initialSync(teamId)`를 호출한다. 자동 주기 갱신도 최초 미동기화 팀을 찾는다.
+- B의 설정 저장 커밋 이후 `user.IssueSyncService.initialSync(teamId)`를 호출한다. 자동 주기 갱신도 최초 미동기화 팀을 찾는다.
 - REST 이슈는 PR을 제외하고 전 페이지를 읽는다. Projects 항목과 각 항목의 fieldValues도 페이지를 끝까지 읽는다.
 - 실제 저장된 필드 ID와 옵션 ID를 쓴다. `Blocked`, `Due date`, 특정 보드 ID를 기본값으로 하드코딩하지 않는다.
 - 같은 팀의 최초·주기·수동·웹훅·프로젝트 추가가 모두 PostgreSQL **세션** advisory lock에 참여한다. 원본 조회 전 획득, DB 커밋 후 해제한다.

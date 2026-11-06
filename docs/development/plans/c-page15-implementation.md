@@ -6,7 +6,7 @@
 
 WBS S08·P15, Page TODO 15, Policy 7장·POL-N-1에 따라 C 담당 캘린더 GET과 마감 전날 09시 알림 생산자를 구현한다. 화면 교체·일정 드래그·AI·07 내 이슈는 포함하지 않는다. Page TODO의 07 연결 항목은 별도 [#78](https://github.com/likelion-backendschool-9th/Linker/issues/78)에서 추적하며 이번 PR에 섞지 않는다.
 
-기존 `UserIssueController → UserIssueService → IssueReadRepository`를 사용한다. `UserIssueReminderService → IssueReminderRepository`는 같은 user 그룹의 실제 백그라운드 업무이며 기존 `UserNotificationService.create(CreateNotificationCommand)`를 호출한다. 새 컨트롤러·테이블·REST 계약은 추가하지 않으며 기존 205개 중 P15의 1개를 구현한다.
+기존 `user.IssueController → user.IssueService → IssueReadRepository`를 사용한다. `user.IssueReminderService → IssueReminderRepository`는 같은 user 그룹의 실제 백그라운드 업무이며 기존 `user.NotificationService.create(CreateNotificationCommand)`를 호출한다. 새 컨트롤러·테이블·REST 계약은 추가하지 않으며 기존 205개 중 P15의 1개를 구현한다.
 
 ## 캘린더 계약
 
@@ -43,7 +43,7 @@ WBS S08·P15, Page TODO 15, Policy 7장·POL-N-1에 따라 C 담당 캘린더 GE
 - bootJar 빌드·API 및 웹 typecheck·API 생성 파이프라인 검사 통과.
 - 기간 전체를 감싸는 이슈·월/주 경계·단일 날짜·담당자·삭제/다른 팀 제외·KST overdue·필수/잘못된 날짜·권한을 실제 HTTP 응답으로 검증했다.
 - 09시 KST, 전날 대상, 인앱 목록 표시, 푸시 꺼짐, 탈퇴/초대 미수락/저장소 권한 상실, 마감일/담당자 변경, 동시 실행, 생성 실패의 롤백/재실행과 중복 방지를 검증했다.
-- 필수 날짜 누락이 기존 전역 예외 경로에서 500이 되는 것을 발견했다. UserIssueController 안에서만 MissingServletRequestParameterException을 400 입력 오류로 처리했다.
+- 필수 날짜 누락이 기존 전역 예외 경로에서 500이 되는 것을 발견했다. user.IssueController 안에서만 MissingServletRequestParameterException을 400 입력 오류로 처리했다.
 - 기존 모든 생성 API·Zod/MSW 파일은 유지하고 p15 생성물·새 스키마·barrel만 추가했다. 참조하는 기존 스키마는 TypeScript AST로 의미가 같음을 확인했다.
 - 격리 PostgreSQL/Redis·모의 GitHub·실제 Security/Notification 생성 서비스를 사용했다. 자동 Flyway 파일·실제 App·개발/공용 DB에는 쓰지 않았다. 전체 백엔드 테스트·실 GitHub·화면 E2E·Android 실제 푸시는 미검증이다.
 - 커밋·push·PR 생성은 하지 않았다. 검토 후 제목 `feat/15-page-api: 15 캘린더 조회·마감 전날 알림 구현 (#94)`, 관련 이슈 `Refs #94`를 사용한다.

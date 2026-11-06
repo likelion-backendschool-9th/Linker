@@ -31,7 +31,7 @@
 
 ### 최신 변경 반영
 
-- 09의 POST /api/v1/user/teams/{teamId}/invite-links/{linkId}/notify를 포함해 **205개 REST**다. UserTeamService는 UserNotificationService.create로 TEAM_INVITE와 link_path=/invite/{code}를 생성한다. 읽기는 18의 기존 API를 사용한다.
+- 09의 POST /api/v1/user/teams/{teamId}/invite-links/{linkId}/notify를 포함해 **205개 REST**다. user.TeamService는 user.NotificationService.create로 TEAM_INVITE와 link_path=/invite/{code}를 생성한다. 읽기는 18의 기존 API를 사용한다.
 - 28 요금제는 체험 자격을 포함한 개인화 응답이다. 서버 Cache-Control: private, no-store, 프론트 서버 no-store·계정별 TanStack Query를 유지한다.
 - 07의 /workspace/issues는 소속 팀 하나로 한정하며 joinedAt 기본 선택·/workspace 복귀 계약을 유지한다.
 - 차단 해제는 user_blocks의 기간을 삭제하지 않으며 과거 DM 표시 판단에 활용한다.
@@ -75,14 +75,14 @@
 | S11 | 모집·지원 | `RecruitmentController` | E | 17 | 19, 20, 21 |
 | S12 | 작업물·피드·반응 | `PostController` | E | 21 | 04, 22, 23, 24 |
 | S13 | 신고·차단·이의 제기 | `ModerationController` | E | 5 | 00, 18 |
-| S14 | 운영·감사 | `AdminController` | A | 13 | 25, 26, 27 |
+| S14 | 운영·감사 | `admin.ModerationController` | A | 13 | 25, 26, 27 |
 | S15 | 구독·결제 | `SubscriptionController` | D | 11 | 26, 28, 29 |
 | S16 | 개인 통계 | `StatsController` | B | 3 | 30 |
-| S17 | 채용 광고 | `RecruiterAdController` | A | 7 | 04, 24 |
+| S17 | 채용 광고 | `recruiter.AdController` | A | 7 | 04, 24 |
 | S18 | 검색 색인 | `SitemapController` | B | 1 | 00 |
 | 합계 | 18개 시스템 | 실제 HTTP 컨트롤러 29개 | | 205 | 00~33 |
 
-회원 신고·차단은 UserModerationService, 운영 조치는 AdminService에서 각각 처리하며 데이터 계층을 공유한다. 운영 환불은 AdminSubscriptionController → AdminSubscriptionService로 배치한다. 중립 공용 서비스나 다른 역할의 서비스를 경유하지 않는다. 단, 신고 자동숨김의 시스템 운영자 알림은 청사진 §4의 명시적 예외다.
+회원 신고·차단은 user.ModerationService, 운영 조치는 admin.ModerationService에서 각각 처리하며 데이터 계층을 공유한다. 운영 환불은 admin.SubscriptionController → admin.SubscriptionService로 배치한다. 중립 공용 서비스나 다른 역할의 서비스를 경유하지 않는다. 단, 신고 자동숨김의 시스템 운영자 알림은 청사진 §4의 명시적 예외다.
 
 ## 2. API·구현 규칙
 
@@ -92,7 +92,7 @@
 2. public은 비로그인 읽기·선택적 인증, user는 로그인 회원이다. 개발자 전용 동작의 @DeveloperOnly, 팀 API의 @TeamRole, 작성자·방 참가자·저장소 권한을 각각 보존한다. 운영 권한으로 타인의 대화·팀에 접근하지 않는다.
 3. 컨트롤러는 public 루트 또는 user/recruiter/admin으로 나누고 원래 HTTP 역할 경로를 유지한다. 클래스가 폴더와 같은 권한을 자동 부여하지 않는다. user 전체를 개발자 전용이나 admin 전용으로 막지 않는다.
 4. Controller → Service → Repository, com.linker.backend와 Blueprint의 레이어를 유지한다. 서비스는 공통 기능도 역할별 이름·폴더에서 각각 구현한다. 저장소·Entity·DTO·정책 상수는 업무별로 공유할 수 있고 DTO는 dto 아래에 둔다. 페이지 번호 패키지나 domain 혼합 배치로 되돌리지 않는다.
-5. 공개 컨트롤러는 `controller` 루트에 접두어 없이 둔다(`AuthController`). user/recruiter/admin 폴더 클래스는 `User*`/`Recruiter*`/`Admin*` 접두어를 쓴다. `public` / `public_` / `open` / `multi` 패키지는 쓰지 않는다. 로그인·채용·운영 API는 `controller.user` / `controller.recruiter` / `controller.admin`에 둔다. GitHub 웹훅 HTTP 진입은 `integration.github`에 둔다. 컨트롤러마다 같은 분류의 대응 진입 서비스를 둔다. 0단계 내부 역할 서비스는 실제 기능과 함께 컨트롤러 없이 추가할 수 있다. 빈 진입 서비스·빈 컨트롤러는 만들지 않는다. 공통 기반도 해당 시스템으로 통합하며 고정된 common 7개 규칙을 폐지한다. 구체적인 클래스 배치는 백엔드 Blueprint §3–§4를 따른다.
+5. 공개 컨트롤러는 `controller` 루트에 접두어 없이 둔다(`AuthController`). user/recruiter/admin 폴더 클래스도 역할 접두어를 쓰지 않고, 폴더로 시작하는 빈 이름을 클래스마다 명시한다(`@Service("userTeamService")`). `public` / `public_` / `open` / `multi` 패키지는 쓰지 않는다. 로그인·채용·운영 API는 `controller.user` / `controller.recruiter` / `controller.admin`에 둔다. GitHub 웹훅 HTTP 진입은 `integration.github`에 둔다. 컨트롤러마다 같은 분류의 대응 진입 서비스를 둔다. 0단계 내부 역할 서비스는 실제 기능과 함께 컨트롤러 없이 추가할 수 있다. 빈 진입 서비스·빈 컨트롤러는 만들지 않는다. 공통 기반도 해당 시스템으로 통합하며 고정된 common 7개 규칙을 폐지한다. 구체적인 클래스 배치는 백엔드 Blueprint §3–§4를 따른다.
 6. 기존 pNN OpenAPI 태그는 메서드별로 보존한다. 통합한 모든 태그를 클래스 전체에 붙이지 않는다. 태그 개편·Orval 재생성은 별도 합의다.
 7. 메서드·경로·쿼리·권한·동작은 4장 원문 계약을 따른다. 클래스 통합을 이유로 API를 추가·병합하거나 권한을 넓히지 않는다.
 8. ID는 Linker ID, 목록은 cursor/size와 {items, nextCursor}. 성공은 wrapper 없이 응답, 생성 201·비동기 접수 202, 오류는 {code, message, detail}. 기존 코드·한국어 문구를 유지한다.
@@ -155,7 +155,7 @@
 
 - **범위:** GitHub 로그인, 회사 이메일 가입·로그인·비밀번호, 세션·로그아웃
 - **주요 참조 데이터:** users, auth_identities, github_tokens, user_sessions, email_verifications. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 가입·복구·재발급·로그아웃이 동일한 세션 규칙을 따른다. 운영 OTP는 AdminService에서 운영 인증을 처리하고 세션 데이터 계약·보안 기반을 따른다.
+- **완료 기준:** 가입·복구·재발급·로그아웃이 동일한 세션 규칙을 따른다. 운영 OTP는 admin.ModerationService에서 운영 인증을 처리하고 세션 데이터 계약·보안 기반을 따른다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -257,7 +257,7 @@
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/members/{userId}/github-invitation` | GitHub org invite (team owner who is also a GitHub org owner, daily limit error) | team OWNER + org owner |
 | 17 | B | GET | `/api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR sheet (open, merged) | team MEMBER |
 
-00의 B 설치 스파이크는 위 08의 `install-url`·`installations/verify` 경로를 `UserGithubController` → `UserGithubService`로 먼저 제공한다. 현재 설치 확인 성공(`INSTALLED`)만 서버 토큰으로 확인하며, 오너 승인 대기·기존 팀 연결 결과와 영속 팀 생성은 08에서 연결한다. A의 사용자 토큰 공급 경로와 실제 App 검증이 필요하다. 자세한 연결·재시도 기준은 [GitHub App 운영 안내](../operations/06-github-app.md)를 따른다. API 소유·원래 페이지·205개 합계는 유지한다.
+00의 B 설치 스파이크는 위 08의 `install-url`·`installations/verify` 경로를 `user.GithubController` → `user.GithubService`로 먼저 제공한다. 현재 설치 확인 성공(`INSTALLED`)만 서버 토큰으로 확인하며, 오너 승인 대기·기존 팀 연결 결과와 영속 팀 생성은 08에서 연결한다. A의 사용자 토큰 공급 경로와 실제 App 검증이 필요하다. 자세한 연결·재시도 기준은 [GitHub App 운영 안내](../operations/06-github-app.md)를 따른다. API 소유·원래 페이지·205개 합계는 유지한다.
 
 ### 4-7. 팀·초대·완주 — `TeamController`
 
@@ -265,7 +265,7 @@
 
 - **범위:** 팀·멤버·역할·저장소/보드 연결·초대·오너 이전·완주
 - **주요 참조 데이터:** teams, team_members, team_repos, team_invite_links, team_project_boards, board_status_mappings, team_ownership_transfers, team_completions, completion_records. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 팀 권한·정원·완주 기준을 유지한다. 초대 알림은 TEAM_INVITE와 /invite/{code}로 UserNotificationService.create를 사용한다.
+- **완료 기준:** 팀 권한·정원·완주 기준을 유지한다. 초대 알림은 TEAM_INVITE와 /invite/{code}로 user.NotificationService.create를 사용한다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -374,9 +374,9 @@
 
 ### 4-10. 알림·푸시 — `NotificationController`
 
-**0단계 생성 계약 복원:** UserNotificationService·RecruiterNotificationService·AdminNotificationService가 각각 `create(CreateNotificationCommand)`를 제공한다. 접두사는 생성 업무의 접근 경계이며 수신자 계정 종류가 아니다. 입력 DTO·Entity·Repository·정책 상수는 공유하고 서비스는 다른 역할을 호출하지 않는다(아래 신고 자동숨김 예외 제외). 호출 인자·오류·트랜잭션·야간 지연·미정 사항은 [백엔드 청사진 §4](05-backend-blueprint.md#4-controller--service-11)를 따른다. 기존 작업 목록의 NotificationService 표기는 이 역할별 계약으로 읽는다. 목록/읽음/푸시 API는 페이지 18에서 구현하며 이번 복원은 REST 205개·테이블 69개를 늘리지 않는다.
+**0단계 생성 계약 복원:** user.NotificationService·recruiter.NotificationService·admin.NotificationService가 각각 `create(CreateNotificationCommand)`를 제공한다. 폴더(user/recruiter/admin)는 생성 업무의 접근 경계이며 수신자 계정 종류가 아니다. 입력 DTO·Entity·Repository·정책 상수는 공유하고 서비스는 다른 역할을 호출하지 않는다(아래 신고 자동숨김 예외 제외). 호출 인자·오류·트랜잭션·야간 지연·미정 사항은 [백엔드 청사진 §4](05-backend-blueprint.md#4-controller--service-11)를 따른다. 기존 작업 목록의 NotificationService 표기는 이 역할별 계약으로 읽는다. 목록/읽음/푸시 API는 페이지 18에서 구현하며 이번 복원은 REST 205개·테이블 69개를 늘리지 않는다.
 
-**신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 UserModerationService가 활성 운영자별 AdminNotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
+**신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 user.ModerationService가 활성 운영자별 admin.NotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
 
 페이지 18 목록은 `{items, nextCursor}`다. 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 8시 배치, Expo 발송, `pushed_at` 기록은 아직 없다.
 
@@ -473,7 +473,7 @@
 | 00 | E | DELETE | `/api/v1/user/blocks/{userId}` | Close the active blocking period; retain history for DM filtering | user |
 | 18 | D | POST | `/api/v1/user/appeals` | Appeal a sanction (once) | user |
 
-### 4-14. 운영·감사 — `AdminController`
+### 4-14. 운영·감사 — `admin.ModerationController`
 
 **시스템 주담당:** A · **REST:** 13개
 
@@ -533,7 +533,7 @@
 | 30 | B | GET | `/api/v1/user/me/stats/recruiter-views?weeks=8` | Pro: recruiter view count (this week, by week). Count only, never who | user · developers only · Pro |
 | 30 | B | GET | `/api/v1/user/me/stats/posts?days=30` | Pro: per-post views by traffic source, 30-day trend, README expands | user · developers only · Pro |
 
-### 4-17. 채용 광고 — `RecruiterAdController`
+### 4-17. 채용 광고 — `recruiter.AdController`
 
 **시스템 주담당:** A · **REST:** 7개
 
@@ -637,7 +637,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 **담당:** A · **일정:** 1st pass D5 (1 day), 2nd pass D8 afternoon (0.5 day), recruiter side D10 morning (incl. job ad sheet) · **선행:** 02; 2nd pass 22; recruiter side 31; job ad 28 · **근거:** A-2, A-4, A-5, A-6, P-5, P-7, C-4, H-7, S-10
 
-**API 소속:** `AccountController`, `PostController`, `TeamController`, `RecruiterAdController`
+**API 소속:** `AccountController`, `PostController`, `TeamController`, `recruiter.AdController`
 
 <details>
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
@@ -791,7 +791,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: "채팅에 공유" (Share to chat) `[Included]` → 17's send message (issue card type)
 - Tables: new issue_sync_jobs · shared issues, issue_assignees, issue_labels, team_members, notifications
 - [ ] Server: retry via `issue_sync_jobs` when applying to GitHub fails; show in response when `sync_status = FAILED`
-- C12 implementation: `issueId` is the Linker internal DB ID (not the GitHub number); responses are no-store with method tag `p12-issue-detail`. Writes need an ACTIVE account and real GitHub write permission (operators do not bypass team rules). GitHub HTTP calls run outside DB transactions under the existing team advisory lock. Detail edits use `SET_ASSIGNEES`/`SET_LABELS`/`SET_START`/`SET_STATUS` retry jobs: max 3 attempts, 60 s apart for transient failures, 409 for a new change while a job is running, 429/rate-limit 403 honor Retry-After, other 4xx stop retrying. New assignees are notified through `UserNotificationService.create` after the change is confirmed. Real A/B integration and versioned migration remain separate.
+- C12 implementation: `issueId` is the Linker internal DB ID (not the GitHub number); responses are no-store with method tag `p12-issue-detail`. Writes need an ACTIVE account and real GitHub write permission (operators do not bypass team rules). GitHub HTTP calls run outside DB transactions under the existing team advisory lock. Detail edits use `SET_ASSIGNEES`/`SET_LABELS`/`SET_START`/`SET_STATUS` retry jobs: max 3 attempts, 60 s apart for transient failures, 409 for a new change while a job is running, 429/rate-limit 403 honor Retry-After, other 4xx stop retrying. New assignees are notified through `user.NotificationService.create` after the change is confirmed. Real A/B integration and versioned migration remain separate.
 - [ ] Frontend: 4 sheets (assignee, label, date, status) as shared components (reused in 13, 14, 15), disabled + toast without write permission, "일정이 GitHub에 반영되지 않았어요" (Schedule not applied to GitHub)
 
 </details>
@@ -1000,7 +1000,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 **담당:** E · **일정:** D9 (1 day), job ad card D10 morning · **선행:** 23; job ad needs the 04 job ad sheet · **근거:** P-4, H-9
 
-**API 소속:** `PostController`, `RecruiterAdController`
+**API 소속:** `PostController`, `recruiter.AdController`
 
 <details>
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
@@ -1020,7 +1020,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 **담당:** A · **일정:** D6 afternoon–D7 morning (1 day) · **선행:** 00, 23 · **근거:** O-1, O-2, O-4
 
-**API 소속:** `AdminController`
+**API 소속:** `admin.ModerationController`
 
 <details>
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
@@ -1038,7 +1038,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 **담당:** B · **일정:** D8 (1 day) · **선행:** 25 · **근거:** O-3
 
-**API 소속:** `AdminController`, `SubscriptionController`
+**API 소속:** `admin.ModerationController`, `SubscriptionController`
 
 <details>
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
@@ -1055,7 +1055,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 **담당:** B · **일정:** D9 morning (0.5 day) · **선행:** 25, 26 · **근거:** O-5
 
-**API 소속:** `AdminController`
+**API 소속:** `admin.ModerationController`
 
 <details>
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>

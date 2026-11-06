@@ -8,10 +8,10 @@
 
 | 생산 업무 | 호출 서비스 |
 | --- | --- |
-| 로그인 사용자 업무(팀 초대 등) | `service.user.UserNotificationService` |
-| 채용 담당자 전용 업무 | `service.recruiter.RecruiterNotificationService` |
-| 운영자 업무 | `service.admin.AdminNotificationService` |
-| 신고 최초 자동숨김의 시스템 운영자 알림 | E의 `UserModerationService` → `AdminNotificationService` (명시적 예외) |
+| 로그인 사용자 업무(팀 초대 등) | `service.user.NotificationService` |
+| 채용 담당자 전용 업무 | `service.recruiter.NotificationService` |
+| 운영자 업무 | `service.admin.NotificationService` |
+| 신고 최초 자동숨김의 시스템 운영자 알림 | E의 `user.ModerationService` → `admin.NotificationService` (명시적 예외) |
 
 서비스 선택은 **수신자 계정 종류가 아니라 생산 업무** 기준이다. 중립 NotificationService나 역할 간 위임을 새로 만들지 않는다.
 
