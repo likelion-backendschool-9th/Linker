@@ -60,6 +60,8 @@ class UserChatCursorTest {
 				null,
 				null,
 				mock(PlatformTransactionManager.class),
+				null,
+				null,
 				null
 		);
 		AuthenticatedUser user = new AuthenticatedUser(
