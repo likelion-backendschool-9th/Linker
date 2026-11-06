@@ -60,16 +60,13 @@ import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
-import com.linker.backend.repository.chat.ChatListQueryRepository;
-import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListRow;
-import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListSummary;
+import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListRow;
+import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListSummary;
 import com.linker.backend.repository.chat.ChatMessageImageRepository;
-import com.linker.backend.repository.chat.ChatMessageQueryRepository;
-import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessageRow;
+import com.linker.backend.repository.chat.ChatMessageRepositoryCustom.ChatMessageRow;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
-import com.linker.backend.repository.chat.ChatShareCardQuery;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -108,59 +105,50 @@ public class ChatService {
 	static final String HIDDEN_PREVIEW = "운영 정책에 따라 숨겨진 메시지예요";
 
 	private final ChatRoomAccess chatRooms;
-	private final ChatListQueryRepository lists;
 	private final ChatRoomRepository rooms;
 	private final ChatRoomMemberRepository members;
 	private final ApplicationEventPublisher events;
 	private final Clock clock;
 	private final UserRepository accounts;
 	private final ChatMessageRepository messages;
-	private final ChatMessageQueryRepository messageQuery;
 	private final RedisRateLimiter rateLimiter;
 	private final TransactionTemplate transactions;
 	private final ModerationService moderation;
 	private final UploadService uploads;
 	private final ChatMessageImageRepository imageLinks;
 	private final NotificationService notifications;
-	private final ChatShareCardQuery shareCards;
 	private final JsonMapper json = JsonMapper.builder().build();
 	private final TeamChatAccess teamChat;
 
 	public ChatService(
 			ChatRoomAccess chatRooms,
-			ChatListQueryRepository lists,
 			ChatRoomRepository rooms,
 			ChatRoomMemberRepository members,
 			ApplicationEventPublisher events,
 			Clock clock,
 			UserRepository accounts,
 			ChatMessageRepository messages,
-			ChatMessageQueryRepository messageQuery,
 			RedisRateLimiter rateLimiter,
 			PlatformTransactionManager transactions,
 			ModerationService moderation,
 			UploadService uploads,
 			ChatMessageImageRepository imageLinks,
 			NotificationService notifications,
-			ChatShareCardQuery shareCards,
 			TeamChatAccess teamChat
 	) {
 		this.chatRooms = chatRooms;
-		this.lists = lists;
 		this.rooms = rooms;
 		this.members = members;
 		this.events = events;
 		this.clock = clock;
 		this.accounts = accounts;
 		this.messages = messages;
-		this.messageQuery = messageQuery;
 		this.rateLimiter = rateLimiter;
 		this.transactions = new TransactionTemplate(transactions);
 		this.moderation = moderation;
 		this.uploads = uploads;
 		this.imageLinks = imageLinks;
 		this.notifications = notifications;
-		this.shareCards = shareCards;
 		this.teamChat = teamChat;
 	}
 
@@ -199,7 +187,7 @@ public class ChatService {
 		String tab = resolveTab(user, rawTab);
 		Instant now = clock.instant();
 		Cursor cursor = decodeCursor(user.userId(), tab, rawCursor, now);
-		List<ChatListRow> rows = lists.page(
+		List<ChatListRow> rows = rooms.listPage(
 				user.userId(),
 				tab,
 				now,
@@ -287,7 +275,7 @@ public class ChatService {
 
 	@Transactional(readOnly = true)
 	public UnreadSummaryResponse unreadSummary(AuthenticatedUser user) {
-		ChatListSummary summary = lists.summary(user.userId(), clock.instant());
+		ChatListSummary summary = rooms.listSummary(user.userId(), clock.instant());
 		if (user.userType() == UserType.RECRUITER) {
 			return new UnreadSummaryResponse(0, summary.directUnread(), 0, 0, summary.directUnread());
 		}
@@ -362,10 +350,10 @@ public class ChatService {
 		}
 		int limit = after == null ? MESSAGE_PAGE_SIZE : PlanLimits.CHAT_CATCH_UP_MAX;
 		List<ChatMessageRow> rows = new ArrayList<>(after != null
-				? messageQuery.after(user.userId(), roomId, team, start, after, limit + 1)
+				? messages.after(user.userId(), roomId, team, start, after, limit + 1)
 				: before != null
-						? messageQuery.before(user.userId(), roomId, team, start, before, limit + 1)
-						: messageQuery.latest(user.userId(), roomId, team, start, limit + 1));
+						? messages.before(user.userId(), roomId, team, start, before, limit + 1)
+						: messages.latest(user.userId(), roomId, team, start, limit + 1));
 		boolean more = rows.size() > limit;
 		if (more) {
 			if (after != null) {
@@ -424,7 +412,7 @@ public class ChatService {
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
 		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
 		requireAnchor(roomId, messageId);
-		if (!messageQuery.visibleTo(user.userId(), roomId, team, historyStart(team), messageId)) {
+		if (!messages.visibleTo(user.userId(), roomId, team, historyStart(team), messageId)) {
 			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
 		}
 		Long current = member.getLastReadMessageId();
@@ -519,7 +507,7 @@ public class ChatService {
 				continue;
 			}
 			boolean team = true;
-			if (!messageQuery.visibleTo(member.getUserId(), roomId, team, historyStart(team), message.getId())) {
+			if (!messages.visibleTo(member.getUserId(), roomId, team, historyStart(team), message.getId())) {
 				continue;
 			}
 			User account = accounts.findById(member.getUserId()).orElse(null);
@@ -578,7 +566,7 @@ public class ChatService {
 			return false;
 		}
 		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
-		return messageQuery.visibleTo(viewerId, roomId, team, historyStart(team), messageId);
+		return messages.visibleTo(viewerId, roomId, team, historyStart(team), messageId);
 	}
 
 	private boolean storeNewText(User account, long roomId, SendCommand command) {
@@ -640,7 +628,7 @@ public class ChatService {
 		room.markLastMessage(message.getId(), createdAt);
 		List<Long> recipientIds = members.findActiveUserIds(roomId).stream()
 				.filter(id -> id != current.getId())
-				.filter(id -> messageQuery.visibleTo(id, roomId, room.getRoomType() == RoomType.TEAM,
+				.filter(id -> messages.visibleTo(id, roomId, room.getRoomType() == RoomType.TEAM,
 						historyStart(room.getRoomType() == RoomType.TEAM), message.getId()))
 				.toList();
 		long unread = recipientIds.size();
@@ -662,7 +650,7 @@ public class ChatService {
 		}
 		for (Long memberId : members.findActiveUserIds(roomId)) {
 			boolean visible = memberId == current.getId()
-					|| messageQuery.visibleTo(memberId, roomId, team, historyStart(team), message.getId());
+					|| messages.visibleTo(memberId, roomId, team, historyStart(team), message.getId());
 			if (visible) {
 				events.publishEvent(new ChatRoomsChanged(memberId, roomId));
 			}
@@ -773,8 +761,8 @@ public class ChatService {
 
 	private void assertVisible(Participant participant, long roomId, long messageId) {
 		boolean team = participant.member().getRoom().getRoomType() == RoomType.TEAM;
-		Long owner = messageQuery.roomIdOf(messageId);
-		if (owner == null || owner != roomId || !messageQuery.visibleTo(
+		Long owner = messages.findRoomId(messageId).orElse(null);
+		if (owner == null || owner != roomId || !messages.visibleTo(
 				participant.account().getId(),
 				roomId,
 				team,
@@ -825,7 +813,7 @@ public class ChatService {
 	}
 
 	private void requireAnchor(long roomId, long messageId) {
-		Long owner = messageQuery.roomIdOf(messageId);
+		Long owner = messages.findRoomId(messageId).orElse(null);
 		if (owner == null || owner != roomId) {
 			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
 		}
@@ -842,7 +830,7 @@ public class ChatService {
 		if (rows.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, List<String>> urls = messageQuery.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
+		Map<Long, List<String>> urls = messages.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
 		return rows.stream()
 				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of()), cardPayload(viewerId, row)))
 				.toList();
@@ -859,7 +847,7 @@ public class ChatService {
 			if (targetType.isBlank() || targetId < 1) {
 				return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable(targetType, targetId);
 			}
-			return shareCards.resolve(viewerId, targetType, targetId);
+			return messages.resolveShareCard(viewerId, targetType, targetId);
 		}
 		catch (RuntimeException exception) {
 			return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable("UNKNOWN", 0);
@@ -1074,7 +1062,7 @@ public class ChatService {
 		if (parsed.version() != CURSOR_VERSION || parsed.userId() != userId || !parsed.tab().equals(tab)) {
 			throw badCursor();
 		}
-		if (!lists.containedInTab(userId, tab, parsed.roomId(), now)) {
+		if (!rooms.containedInTab(userId, tab, parsed.roomId(), now)) {
 			throw badCursor();
 		}
 		return new Cursor(parsed.sortAt(), parsed.roomId());
