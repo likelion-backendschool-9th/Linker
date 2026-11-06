@@ -76,4 +76,10 @@ public class RecruiterProfile extends BaseTimeEntity {
 	public String getCompanyUrl() {
 		return companyUrl;
 	}
+
+	public void update(String companyName, String jobTitle, String companyUrl) {
+		this.companyName = companyName;
+		this.jobTitle = jobTitle;
+		this.companyUrl = companyUrl;
+	}
 }
