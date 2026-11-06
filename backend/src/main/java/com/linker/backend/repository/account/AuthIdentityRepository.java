@@ -20,4 +20,14 @@ public interface AuthIdentityRepository extends JpaRepository<AuthIdentity, Long
 	Optional<AuthIdentity> findByProviderAndProviderUserId(
 			@Param("provider") AuthProvider provider,
 			@Param("providerUserId") String providerUserId);
+
+	@Query("""
+			select identity from AuthIdentity identity
+			join fetch identity.user
+			where identity.user.id = :userId
+			  and identity.provider = :provider
+			""")
+	Optional<AuthIdentity> findByUserIdAndProvider(
+			@Param("userId") long userId,
+			@Param("provider") AuthProvider provider);
 }

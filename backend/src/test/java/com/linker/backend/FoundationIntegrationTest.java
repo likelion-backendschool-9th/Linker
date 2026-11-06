@@ -1205,8 +1205,55 @@ class FoundationIntegrationTest {
 		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(recruiterCookie)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items").isEmpty());
+		mockMvc.perform(get("/api/v1/recruiter/me/profile").cookie(cookie(recruiterCookie)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.kind").value("RECRUITER"))
+				.andExpect(jsonPath("$.name").value("송지현"))
+				.andExpect(jsonPath("$.company").value("넥스트랩"))
+				.andExpect(jsonPath("$.companyEmail").value("recruiter@nextlab.example"));
+		mockMvc.perform(patch("/api/v1/recruiter/me/profile")
+						.cookie(cookie(recruiterCookie))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"name\":\"송지현\",\"company\":\"새 회사\",\"jobTitle\":\"테크 리크루터\",\"websiteUrl\":\"\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.company").value("새 회사"))
+				.andExpect(jsonPath("$.jobTitle").value("테크 리크루터"))
+				.andExpect(jsonPath("$.websiteUrl").value(""))
+				.andExpect(jsonPath("$.companyEmail").value("recruiter@nextlab.example"));
+		mockMvc.perform(get("/api/v1/public/users/" + login))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.name").value("송지현"))
+				.andExpect(jsonPath("$.company").value("새 회사"));
+		User recruiter = users.findByUsername(login).orElseThrow();
+		String otherSession = sessions.issue(recruiter, "other", "127.0.0.1").rawToken();
+		mockMvc.perform(patch("/api/v1/recruiter/me/password")
+						.cookie(cookie(recruiterCookie))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"currentPassword\":\"wrong1234\",\"newPassword\":\"changed1234\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("INVALID_PASSWORD"));
+		mockMvc.perform(patch("/api/v1/recruiter/me/password")
+						.cookie(cookie(recruiterCookie))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"currentPassword\":\"password1234\",\"newPassword\":\"changed1234\"}"))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(otherSession)))
+				.andExpect(status().isUnauthorized());
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(recruiterCookie)))
+				.andExpect(status().isOk());
 
 		User developer = saveUser("offeree", UserType.DEVELOPER);
+		String developerToken = sessions.issue(developer, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(patch("/api/v1/recruiter/me/profile")
+						.cookie(cookie(developerToken))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"name\":\"송지현\",\"company\":\"새 회사\",\"jobTitle\":\"테크 리크루터\"}"))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(patch("/api/v1/recruiter/me/password")
+						.cookie(cookie(developerToken))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"currentPassword\":\"password1234\",\"newPassword\":\"changed1234\"}"))
+				.andExpect(status().isForbidden());
 		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(sessions.issue(developer, "JUnit", "127.0.0.1").rawToken())))
 				.andExpect(status().isForbidden());
 
