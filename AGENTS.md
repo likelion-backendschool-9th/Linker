@@ -63,7 +63,7 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 - `user` means authenticated accounts, not developers only. Developer-only actions use method-level checks (`@DeveloperOnly`), not a package.
 - `GithubWebhookController` and its service live in `integration.github` (not a fifth access group). Do not add `controller.multi/open/auth/member`, `/member` URLs, `service.support`, `global.exception`, `global.response`, `api/common`, page-number packages (`p01_login`), or a `domain` package mixing controllers and entities. Keep `global.error`.
 - DTOs go under `dto` (`request`/`response` subpackages), never beside controllers. Controllers never return entities.
-- `/api/v1` is added only in `WebConfig` via `PathMatchConfigurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.linker.backend.controller"))`. `@RequestMapping` must not contain it, and it is not a package. The webhook is outside this prefix; do not change its registered GitHub App URL.
+- `/api/v1` is added only in `WebConfig` via `PathMatchConfigurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.linker.backend.controller"))`. `@RequestMapping` must not contain it, and it is not a package. The webhook is outside this prefix: `GithubWebhookController` keeps its own explicit `@RequestMapping("/api/v1")` (path `/api/v1/webhook/github`); do not change the URL registered in the GitHub App.
 - Keep HTTP paths, permissions, OpenAPI `@Tag` names (for example `p11-issue-list`) and STOMP destinations when classes move. The common STOMP SEND is on `UserChatController`.
 
 ## Entity and repository
