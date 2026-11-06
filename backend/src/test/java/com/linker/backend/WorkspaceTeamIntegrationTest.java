@@ -73,11 +73,12 @@ class WorkspaceTeamIntegrationTest {
 		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.teams') is null", Boolean.class))) {
 			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-foundation.sql")).execute(dataSource);
 		}
-		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.github_repos') is null", Boolean.class))) {
-			new ResourceDatabasePopulator(
-					new ClassPathResource("workspace/issue-summary-prerequisites.sql"),
-					new ClassPathResource("db/team-schema/team-repositories.sql"),
-					new ClassPathResource("db/issue-schema/issue-cache.sql")).execute(dataSource);
+		// github_repos comes from Flyway V11; still load B/C prepared schemas when missing.
+		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.team_repos') is null", Boolean.class))) {
+			new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/team-repositories.sql")).execute(dataSource);
+		}
+		if (Boolean.TRUE.equals(jdbc.queryForObject("select to_regclass('public.issues') is null", Boolean.class))) {
+			new ResourceDatabasePopulator(new ClassPathResource("db/issue-schema/issue-cache.sql")).execute(dataSource);
 		}
 		jdbc.execute("TRUNCATE users, github_repos RESTART IDENTITY CASCADE");
 		org = 100;
@@ -185,7 +186,7 @@ class WorkspaceTeamIntegrationTest {
 				insert into chat_rooms(room_type,team_id,created_at,updated_at)
 				values ('TEAM',999999,now(),now())
 				""")).isInstanceOf(DataIntegrityViolationException.class);
-		assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success", Long.class)).isEqualTo(4);
+		assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success", Long.class)).isEqualTo(14);
 		assertThat(jdbc.queryForObject("""
 				select count(*) from information_schema.columns
 				where table_name='chat_messages' and column_name in ('client_message_id','edited_at')
@@ -359,7 +360,12 @@ class WorkspaceTeamIntegrationTest {
 		assertThat(item.path("openIssueCount").isNull()).isTrue();
 	}
 	private long repo(long team, User owner, boolean connected) {
-		long id = jdbc.queryForObject("insert into github_repos(github_repo_id,name) values (?,'test-repo') returning id", Long.class, org++);
+		long githubRepoId = org++;
+		String name = "test-repo-" + githubRepoId;
+		long id = jdbc.queryForObject("""
+				insert into github_repos(github_repo_id,owner_login,name,full_name,created_at,updated_at)
+				values (?,'acme',?,?,now(),now()) returning id
+				""", Long.class, githubRepoId, name, "acme/" + name);
 		if (connected) {
 			jdbc.update("insert into team_repos(team_id,repo_id,connected_by,created_at,updated_at) values (?,?,?,now(),now())", team, id, owner.getId());
 		}

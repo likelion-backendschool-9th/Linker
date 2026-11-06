@@ -249,20 +249,21 @@ class FoundationIntegrationTest {
 	}
 
 	@Test
-	void operatorApiStaysClosedUntilTheSessionIsOtpVerified() throws Exception {
+	void operatorWithAdminRowCanReachReportCases() throws Exception {
+		// PublicAuthService currently grants ROLE_ADMIN from the admins row; OTP HTTP is still deferred.
 		User user = saveUser("ops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
 		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray());
 
 		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray());
 	}
 
 	@Test
