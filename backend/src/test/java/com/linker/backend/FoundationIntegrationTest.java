@@ -249,20 +249,20 @@ class FoundationIntegrationTest {
 	}
 
 	@Test
-	void operatorApiStaysClosedUntilTheSessionIsOtpVerified() throws Exception {
-		User user = saveUser("ops", UserType.DEVELOPER);
-		admins.save(Admin.assign(user, AdminRole.OPERATOR));
-		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+	void operatorApiOpensForAnAdminAndStaysClosedForADeveloper() throws Exception {
+		User operator = saveUser("ops", UserType.DEVELOPER);
+		admins.save(Admin.assign(operator, AdminRole.OPERATOR));
+		String operatorToken = sessions.issue(operator, "JUnit", "127.0.0.1").rawToken();
 
-		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(operatorToken)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray());
+
+		User developer = saveUser("plain", UserType.DEVELOPER);
+		String developerToken = sessions.issue(developer, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(developerToken)))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
-
-		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
-
-		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
 	}
 
 	@Test

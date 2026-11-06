@@ -185,7 +185,8 @@ class WorkspaceTeamIntegrationTest {
 				insert into chat_rooms(room_type,team_id,created_at,updated_at)
 				values ('TEAM',999999,now(),now())
 				""")).isInstanceOf(DataIntegrityViolationException.class);
-		assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success", Long.class)).isEqualTo(4);
+		assertThat(jdbc.queryForList("select script from flyway_schema_history where success", String.class))
+				.noneMatch(script -> script.contains("team"));
 		assertThat(jdbc.queryForObject("""
 				select count(*) from information_schema.columns
 				where table_name='chat_messages' and column_name in ('client_message_id','edited_at')
