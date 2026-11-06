@@ -168,6 +168,16 @@ export function useChatRoom(roomId: number) {
       room.kind === 'REQUEST' ||
       (room.team !== null && ['READ_ONLY', 'ARCHIVED'].includes(room.team.status)));
 
+  function markMessageRead(id: number) {
+    if (id <= lastSeen.current || suspended) return;
+    lastSeen.current = id;
+    read.mutate(id);
+  }
+
+  function retryReadMark() {
+    read.mutate(lastSeen.current);
+  }
+
   return {
     roomId,
     viewer,
@@ -185,7 +195,8 @@ export function useChatRoom(roomId: number) {
     readPosition,
     read,
     catchUp,
-    lastSeen,
+    markMessageRead,
+    retryReadMark,
     suspended,
     readOnly,
     room,

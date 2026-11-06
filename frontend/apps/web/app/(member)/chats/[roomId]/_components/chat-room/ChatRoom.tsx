@@ -35,7 +35,8 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     readPosition,
     read,
     catchUp,
-    lastSeen,
+    markMessageRead,
+    retryReadMark,
     suspended,
     readOnly,
     room,
@@ -119,11 +120,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         readPosition={readPosition}
         onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
         onMenu={(id) => messageMenu.open(String(id))}
-        onRead={(id) => {
-          if (id <= lastSeen.current || suspended) return;
-          lastSeen.current = id;
-          read.mutate(id);
-        }}
+        onRead={markMessageRead}
       />
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
@@ -131,7 +128,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
       {read.isError && (
         <div role="alert">
           <p>읽음 상태를 저장하지 못했어요.</p>
-          <Button variant="soft" onClick={() => read.mutate(lastSeen.current)}>
+          <Button variant="soft" onClick={retryReadMark}>
             다시 시도
           </Button>
         </div>
