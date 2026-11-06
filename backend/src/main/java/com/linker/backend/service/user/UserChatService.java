@@ -67,6 +67,7 @@ import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessage
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
+import com.linker.backend.repository.chat.ChatShareCardQuery;
 import com.linker.backend.entity.notification.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -76,6 +77,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserChatController}.
@@ -117,6 +120,8 @@ public class UserChatService {
 	private final UserUploadService uploads;
 	private final ChatMessageImageRepository imageLinks;
 	private final UserNotificationService notifications;
+	private final ChatShareCardQuery shareCards;
+	private final JsonMapper json = JsonMapper.builder().build();
 
 	public UserChatService(
 			ChatRoomAccess chatRooms,
@@ -133,7 +138,8 @@ public class UserChatService {
 			UserModerationService moderation,
 			UserUploadService uploads,
 			ChatMessageImageRepository imageLinks,
-			UserNotificationService notifications
+			UserNotificationService notifications,
+			ChatShareCardQuery shareCards
 	) {
 		this.chatRooms = chatRooms;
 		this.lists = lists;
@@ -150,6 +156,7 @@ public class UserChatService {
 		this.uploads = uploads;
 		this.imageLinks = imageLinks;
 		this.notifications = notifications;
+		this.shareCards = shareCards;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -353,7 +360,7 @@ public class UserChatService {
 		boolean capped = after != null && more;
 		Long nextAfter = capped && !rows.isEmpty() ? rows.get(rows.size() - 1).id() : null;
 		return new ChatMessagePageResponse(
-				toMessages(rows),
+				toMessages(user.userId(), rows),
 				more,
 				capped,
 				nextAfter,
@@ -782,14 +789,32 @@ public class UserChatService {
 		return clock.instant().minus(Duration.ofDays(PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE));
 	}
 
-	private List<ChatMessageResponse> toMessages(List<ChatMessageRow> rows) {
+	private List<ChatMessageResponse> toMessages(long viewerId, List<ChatMessageRow> rows) {
 		if (rows.isEmpty()) {
 			return List.of();
 		}
 		Map<Long, List<String>> urls = messageQuery.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
 		return rows.stream()
-				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of())))
+				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of()), cardPayload(viewerId, row)))
 				.toList();
+	}
+
+	private Object cardPayload(long viewerId, ChatMessageRow row) {
+		if (!"SHARE_CARD".equals(row.type()) || row.payload() == null || row.payload().isBlank()) {
+			return row.payload();
+		}
+		try {
+			JsonNode payload = json.readTree(row.payload());
+			String targetType = payload.path("targetType").asText();
+			long targetId = payload.path("targetId").asLong();
+			if (targetType.isBlank() || targetId < 1) {
+				return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable(targetType, targetId);
+			}
+			return shareCards.resolve(viewerId, targetType, targetId);
+		}
+		catch (RuntimeException exception) {
+			return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable("UNKNOWN", 0);
+		}
 	}
 
 	private static SendCommand sendCommand(Map<String, Object> payload) {
@@ -939,7 +964,7 @@ public class UserChatService {
 		);
 	}
 
-	private static ChatMessageResponse toMessage(ChatMessageRow row, List<String> imageUrls) {
+	private static ChatMessageResponse toMessage(ChatMessageRow row, List<String> imageUrls, Object payload) {
 		boolean redacted = row.deletedAt() != null || "HIDDEN".equals(row.visibility());
 		String text = row.deletedAt() != null ? DELETED_PREVIEW : "HIDDEN".equals(row.visibility()) ? HIDDEN_PREVIEW : row.body();
 		boolean withdrawn = "DELETED".equals(row.senderStatus());
@@ -958,7 +983,7 @@ public class UserChatService {
 				row.type(),
 				text,
 				redacted ? List.of() : imageUrls,
-				redacted ? null : row.payload(),
+				redacted ? null : payload,
 				row.createdAt(),
 				row.editedAt(),
 				row.deletedAt(),
