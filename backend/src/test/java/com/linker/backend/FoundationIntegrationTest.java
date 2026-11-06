@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Set;
 import javax.crypto.Mac;
@@ -44,6 +45,8 @@ import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.service.PublicAuthService;
+import com.linker.backend.service.admin.TotpCodes;
+import com.linker.backend.integration.github.GithubTokenCipher;
 import com.linker.backend.integration.github.GithubWebhookHandler;
 import com.linker.backend.integration.github.GithubWebhookService;
 import com.linker.backend.service.user.UserModerationService;
@@ -82,6 +85,10 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class FoundationIntegrationTest {
 
 	private static final RsaMaterial KEYS = RsaMaterial.generate();
+	private static final String ENCRYPTION_KEY = Base64.getEncoder().encodeToString(new byte[] {
+			7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+	});
 
 	@Container
 	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
@@ -98,6 +105,7 @@ class FoundationIntegrationTest {
 		registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
 		registry.add("linker.storage.mode", () -> "local");
 		registry.add("linker.github.webhook-secret", () -> "test-webhook-secret");
+		registry.add("linker.github.app.token-encryption-key", () -> ENCRYPTION_KEY);
 		registry.add("linker.session.jwt-private-key", KEYS::privatePem);
 		registry.add("linker.session.jwt-public-key", KEYS::publicPem);
 		registry.add("linker.webhook.consumer-enabled", () -> "false");
@@ -128,6 +136,8 @@ class FoundationIntegrationTest {
 	private GithubWebhookDeliveryRepository deliveries;
 	@Autowired
 	private GithubWebhookService webhooks;
+	@Autowired
+	private GithubTokenCipher otpSecrets;
 
 
 	@Autowired
@@ -280,6 +290,79 @@ class FoundationIntegrationTest {
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void operatorOtpVerifyOpensOnlyThatSession() throws Exception {
+		User operator = saveUser("otpops", UserType.DEVELOPER);
+		Admin admin = admins.save(Admin.assign(operator, AdminRole.OPERATOR));
+		PublicAuthService.IssuedSession issued = sessions.issue(operator, "JUnit", "127.0.0.1");
+		String body = "{\"code\":\"000000\"}";
+
+		mockMvc.perform(post("/api/v1/admin/otp/verify").contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_REQUIRED"));
+
+		User developer = saveUser("otpplain", UserType.DEVELOPER);
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+				.cookie(cookie(sessions.issue(developer, "JUnit", "127.0.0.1").rawToken()))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+				.cookie(cookie(issued.rawToken()))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("OTP_NOT_ENROLLED"));
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isForbidden());
+
+		String secret = "JBSWY3DPEHPK3PXP";
+		admin.enrollOtp(otpSecrets.encrypt(secret), Instant.now());
+		admins.save(admin);
+		String code = TotpCodes.code(secret, Instant.now());
+		String wrong = code.substring(0, 5) + (code.charAt(5) == '0' ? "1" : "0");
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+				.cookie(cookie(issued.rawToken()))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"code\":\"" + wrong + "\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("OTP_INVALID"));
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+				.cookie(cookie(issued.rawToken()))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"code\":\"" + code + "\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.verified").value(true));
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
+				.andExpect(status().isOk());
+
+		PublicAuthService.IssuedSession other = sessions.issue(operator, "JUnit", "127.0.0.1");
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(other.rawToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+		User paused = saveUser("otppaused", UserType.DEVELOPER);
+		paused.suspendUntil(Instant.now().plusSeconds(3600));
+		users.save(paused);
+		Admin pausedAdmin = admins.save(Admin.assign(paused, AdminRole.OPERATOR));
+		pausedAdmin.enrollOtp(otpSecrets.encrypt(secret), Instant.now());
+		admins.save(pausedAdmin);
+		String pausedToken = sessions.issue(paused, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+				.cookie(cookie(pausedToken))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"code\":\"" + TotpCodes.code(secret, Instant.now()) + "\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.verified").value(true));
+		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(pausedToken)))
 				.andExpect(status().isOk());
 	}
 
@@ -760,6 +843,8 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/user/team-setup/install-url'].get.operationId").value("getInstallUrl"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/team-setup/installations/verify'].post.operationId").value("verifyInstallation"))
 				.andExpect(jsonPath("$.paths['/api/v1/webhook/github'].post.operationId").value("receiveGithubWebhook"))
+				.andExpect(jsonPath("$.paths['/api/v1/admin/otp/verify'].post.operationId").value("verifyAdminOtp"))
+				.andExpect(jsonPath("$.paths['/api/v1/admin/otp/verify'].post.tags[0]").value("p25-admin-reports"))
 				.andReturn();
 		String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
 		assertThat(body).doesNotContain("/uploads/{fileId}/content");

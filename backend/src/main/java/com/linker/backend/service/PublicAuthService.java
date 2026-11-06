@@ -190,7 +190,7 @@ public class PublicAuthService {
 	}
 
 	/**
-	 * Used by a later operator OTP step. No HTTP API in this step sets the timestamp.
+	 * Marks this session as OTP-verified. HTTP verification is {@link com.linker.backend.service.admin.AdminService#verifyOtp}.
 	 */
 	@Transactional
 	public void markOperatorVerified(long sessionId, Instant when) {

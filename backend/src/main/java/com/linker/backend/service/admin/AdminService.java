@@ -12,9 +12,11 @@ import java.util.Map;
 import java.util.Set;
 
 import com.linker.backend.dto.moderation.request.AppealDecisionRequest;
+import com.linker.backend.dto.moderation.request.OtpVerifyRequest;
 import com.linker.backend.dto.moderation.request.ReportActionRequest;
 import com.linker.backend.dto.moderation.response.AppealListResponse;
 import com.linker.backend.dto.moderation.response.AppealListResponse.AppealView;
+import com.linker.backend.dto.moderation.response.OtpVerifyResponse;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.ChatLine;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.Person;
@@ -23,6 +25,7 @@ import com.linker.backend.dto.moderation.response.ReportCaseListResponse.ReportC
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.JobSeekingStatus;
 import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.account.UserSession;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.moderation.Admin;
 import com.linker.backend.entity.moderation.AdminAction;
@@ -42,7 +45,9 @@ import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.integration.github.GithubTokenCipher;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.account.UserSessionRepository;
 import com.linker.backend.repository.moderation.AdminActionRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.AppealRepository;
@@ -74,6 +79,8 @@ public class AdminService {
 	private final AdminRepository admins;
 	private final UserRepository users;
 	private final AdminNotificationService notifications;
+	private final GithubTokenCipher otpSecrets;
+	private final UserSessionRepository sessions;
 	private final java.time.Clock clock;
 
 	public AdminService(
@@ -86,6 +93,8 @@ public class AdminService {
 			AdminRepository admins,
 			UserRepository users,
 			AdminNotificationService notifications,
+			GithubTokenCipher otpSecrets,
+			UserSessionRepository sessions,
 			java.time.Clock clock) {
 		this.cases = cases;
 		this.reports = reports;
@@ -96,7 +105,46 @@ public class AdminService {
 		this.admins = admins;
 		this.users = users;
 		this.notifications = notifications;
+		this.otpSecrets = otpSecrets;
+		this.sessions = sessions;
 		this.clock = clock;
+	}
+
+	/**
+	 * Opens this session for {@code /api/v1/admin/**}. The caller is a logged-in operator candidate;
+	 * {@code ROLE_ADMIN} is granted only after this succeeds. Secret enrollment has no HTTP route yet.
+	 */
+	@Transactional
+	public OtpVerifyResponse verifyOtp(AuthenticatedUser principal, OtpVerifyRequest request) {
+		if (principal == null) {
+			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
+		}
+		Admin admin = admins.findByUser_Id(principal.userId())
+				.orElseThrow(() -> new ApiException(403, "FORBIDDEN", "운영자만 쓸 수 있어요"));
+		if (admin.getOtpSecretEnc() == null || admin.getOtpEnrolledAt() == null) {
+			throw new ApiException(403, "OTP_NOT_ENROLLED", "운영자 OTP가 아직 등록되지 않았어요");
+		}
+		String code = request == null ? null : request.code();
+		if (!TotpCodes.matches(decryptOtpSecret(admin), code, Instant.now(clock))) {
+			throw new ApiException(400, "OTP_INVALID", "인증 코드가 맞지 않아요");
+		}
+		UserSession session = sessions.findById(principal.sessionId())
+				.filter(row -> row.getRevokedAt() == null)
+				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
+		session.markOtpVerified(Instant.now(clock));
+		return new OtpVerifyResponse(true);
+	}
+
+	private String decryptOtpSecret(Admin admin) {
+		try {
+			return otpSecrets.decrypt(admin.getOtpSecretEnc());
+		}
+		catch (ApiException exception) {
+			if (exception.getStatus() == 503) {
+				throw new ApiException(503, "SERVICE_UNAVAILABLE", "운영자 OTP 확인이 아직 준비되지 않았어요");
+			}
+			throw exception;
+		}
 	}
 
 	@Transactional(readOnly = true)

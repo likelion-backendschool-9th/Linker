@@ -30,7 +30,8 @@ public class AccountStateFilter extends OncePerRequestFilter {
 		if (safe(request)
 				|| "/api/v1/public/auth/refresh".equals(request.getRequestURI())
 				|| "/api/v1/user/auth/logout".equals(request.getRequestURI())
-				|| "/api/v1/user/me/withdrawal".equals(request.getRequestURI())) {
+				|| "/api/v1/user/me/withdrawal".equals(request.getRequestURI())
+				|| "/api/v1/admin/otp/verify".equals(request.getRequestURI())) {
 			filterChain.doFilter(request, response);
 			return;
 		}
