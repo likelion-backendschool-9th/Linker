@@ -64,6 +64,7 @@ class UserChatCursorTest {
 				null,
 				null,
 				null,
+				null,
 				null
 		);
 		AuthenticatedUser user = new AuthenticatedUser(
