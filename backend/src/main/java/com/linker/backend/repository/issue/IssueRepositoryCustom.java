@@ -61,6 +61,14 @@ public interface IssueRepositoryCustom {
 
   IssueFilterOptionsResponse options(long teamId);
 
+  // Page 07 my issues
+
+  /**
+   * Open issues of the team assigned to the user (issue_assignees.user_id), due urgency first:
+   * overdue (oldest due first), then soonest due, then no due date; ties by id.
+   */
+  List<IssueListResponse.Item> assignedToMe(long teamId, long userId, LocalDate today);
+
   // Page 12 detail
 
   Row detail(long team, long id);
