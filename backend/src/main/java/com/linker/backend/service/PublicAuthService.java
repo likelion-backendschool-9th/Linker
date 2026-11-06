@@ -237,7 +237,8 @@ public class PublicAuthService {
 
 	private AuthenticatedUser toPrincipal(UserSession session, User user) {
 		boolean adminRegistered = adminRegistered(user);
-		boolean operatorAuthorized = adminRegistered;
+		// Registration and this session's OTP are separate. The JWT adm claim stays registration-only.
+		boolean operatorAuthorized = adminRegistered && session.getOtpVerifiedAt() != null;
 		return new AuthenticatedUser(
 				user.getId(),
 				user.getUsername(),
