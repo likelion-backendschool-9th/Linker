@@ -20,14 +20,26 @@ const following = new Set<number>([2, 4]);
 let pinnedPostIds: number[] = [1];
 
 // One recruiter job ad, ACTIVE (04 POL-H-7)
-const ad = {
-  id: 1,
-  status: 'ACTIVE' as 'ACTIVE' | 'PAUSED' | 'ENDED' | 'HIDDEN',
-  jobCategory: 'FRONTEND',
-  title: '[넥스트랩] 프론트엔드 개발자 (React/Next.js)',
-  url: 'https://www.wanted.co.kr/wd/12345',
-  closesOn: dateOnly(21),
+const ad: {
+  subscribed: boolean;
+  ad: {
+    id: number;
+    status: 'ACTIVE' | 'PAUSED' | 'ENDED' | 'HIDDEN';
+    jobCategory: string;
+    title: string;
+    url: string;
+    closesOn: string;
+  } | null;
+} = {
   subscribed: true,
+  ad: {
+    id: 1,
+    status: 'ACTIVE',
+    jobCategory: 'FRONTEND',
+    title: '[넥스트랩] 프론트엔드 개발자 (React/Next.js)',
+    url: 'https://www.wanted.co.kr/wd/12345',
+    closesOn: dateOnly(21),
+  },
 };
 
 function profileOf(target: MockUser, viewerId: number | null, viewerRole: string) {
@@ -156,16 +168,18 @@ export const routes: MockRoute[] = [
   // Recruiter job ad (`[Included]`)
   get('/api/v1/recruiter/me/ad', () => ad),
   put('/api/v1/recruiter/me/ad', ({ body }) => {
-    Object.assign(ad, {
-      jobCategory: body.jobCategory ?? ad.jobCategory,
-      title: body.title ?? ad.title,
-      url: body.url ?? ad.url,
-      closesOn: body.closesOn ?? ad.closesOn,
-    });
+    ad.ad = {
+      id: ad.ad?.id ?? 1,
+      status: 'ACTIVE',
+      jobCategory: String(body.jobCategory ?? ad.ad?.jobCategory ?? 'FRONTEND'),
+      title: String(body.title ?? ad.ad?.title ?? ''),
+      url: String(body.url ?? ad.ad?.url ?? ''),
+      closesOn: String(body.closesOn ?? ad.ad?.closesOn ?? ''),
+    };
     return ad;
   }),
   patch('/api/v1/recruiter/me/ad/status', ({ body }) => {
-    ad.status = body.status === 'PAUSED' ? 'PAUSED' : 'ACTIVE';
+    if (ad.ad) ad.ad.status = body.status === 'PAUSED' ? 'PAUSED' : 'ACTIVE';
     return ad;
   }),
 ];

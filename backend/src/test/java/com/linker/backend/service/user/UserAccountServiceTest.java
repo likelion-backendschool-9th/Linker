@@ -31,6 +31,9 @@ import com.linker.backend.entity.profile.TechTag;
 import com.linker.backend.entity.profile.UserTechTag;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.integration.github.GithubTokenCipher;
+import com.linker.backend.integration.github.GithubUserAuthClient;
+import com.linker.backend.repository.account.GithubTokenRepository;
 import com.linker.backend.repository.account.UserAgreementRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
@@ -38,6 +41,7 @@ import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.profile.UserJobCategoryRepository;
 import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.service.PublicLegalService;
 
@@ -45,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,6 +71,9 @@ class UserAccountServiceTest {
 	private UserTechTagRepository selectedTags;
 
 	@Mock
+	private UserJobCategoryRepository jobCategories;
+
+	@Mock
 	private PublicLegalService legal;
 
 	@Mock
@@ -79,6 +87,18 @@ class UserAccountServiceTest {
 
 	@Mock
 	private UserNotificationService notifications;
+
+	@Mock
+	private GithubTokenRepository githubTokens;
+
+	@Mock
+	private GithubTokenCipher githubCipher;
+
+	@Mock
+	private GithubUserAuthClient githubUsers;
+
+	@Mock
+	private PlatformTransactionManager transactions;
 
 	@Test
 	void onboardingStartsAtAgreementsUsingTheLegalVersion() {
@@ -260,8 +280,8 @@ class UserAccountServiceTest {
 
 	private UserAccountService service() {
 		return new UserAccountService(
-				users, agreements, techTags, selectedTags, legal, ownedTeams, sessions, follows, notifications,
-				Clock.fixed(NOW, ZoneOffset.UTC));
+				users, agreements, techTags, selectedTags, jobCategories, legal, ownedTeams, sessions, follows, notifications,
+				githubTokens, githubCipher, githubUsers, transactions, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
 	@Test
@@ -328,7 +348,7 @@ class UserAccountServiceTest {
 		assertThat(current.jobStatus()).isEqualTo("SEEKING");
 		assertThat(current.jobCategories()).isEmpty();
 		assertThatThrownBy(() -> service().updateProfile(principal(), new ProfileUpdateRequest(
-				"새 이름", "소개", "http://blog.example", List.of("Spring"), false, "OPEN")))
+				"새 이름", "소개", "http://blog.example", List.of("Spring"), false, "OPEN", null)))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("블로그 주소는 https로 시작해야 해요.");
 
@@ -340,7 +360,7 @@ class UserAccountServiceTest {
 		when(selectedTags.findSelected(7L)).thenReturn(List.of(savedTag));
 
 		ProfileEditResponse saved = service().updateProfile(principal(), new ProfileUpdateRequest(
-				"새 이름", "소개", "https://notes.example", List.of("Spring"), false, "OPEN"));
+				"새 이름", "소개", "https://notes.example", List.of("Spring"), false, "OPEN", null));
 
 		assertThat(saved.name()).isEqualTo("새 이름");
 		assertThat(saved.blogUrl()).isEqualTo("https://notes.example");

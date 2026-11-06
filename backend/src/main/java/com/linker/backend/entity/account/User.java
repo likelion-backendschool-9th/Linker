@@ -125,6 +125,14 @@ public class User extends BaseTimeEntity {
 		this.lastActiveAt = when;
 	}
 
+	public void markContributionSynced(Instant when) {
+		this.contributionSyncedAt = when;
+	}
+
+	public Instant getContributionSyncedAt() {
+		return contributionSyncedAt;
+	}
+
 	public void clearLookingForTeam() {
 		this.lookingForTeam = false;
 	}
@@ -161,6 +169,14 @@ public class User extends BaseTimeEntity {
 			this.jobSeekingStatus = jobStatus;
 			this.jobSeekingUpdatedAt = now;
 		}
+	}
+
+	/** Reloads the GitHub fields on the profile form. Tech stack and job status stay. */
+	public void refreshFromGithub(String name, String bio, String blogUrl, String avatarUrl) {
+		useGithubDisplayName(name);
+		this.bio = blankToNull(bio);
+		this.blogUrl = blankToNull(blogUrl);
+		refreshAvatar(avatarUrl);
 	}
 
 	public void keepNotificationEmail(String email) {
