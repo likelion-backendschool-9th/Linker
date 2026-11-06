@@ -202,6 +202,14 @@ Linker/
 
 ## 로컬 실행
 
+에이전트(Claude, Cursor 등)의 공동 작성자·생성 표시(`Co-Authored-By: Claude`, `Generated with Claude Code`, `Co-authored-by: Cursor`, `Made-with: Cursor`)는 커밋 메시지, PR 본문, 코드, 문서 어디에도 넣지 않습니다. 클론 후 한 번만 Git 훅을 연결하면 현재는 Cursor 줄만 커밋에서 자동 제거됩니다. 나머지는 직접 넣지 않아야 하며, CI 검사는 추가 예정입니다.
+
+```bash
+bash scripts/setup-git-hooks.sh
+```
+
+Cursor IDE에서는 **Settings → Git & Pull Requests → Attribution**의 Commit/PR Attribution도 끕니다. (이미 머지된 히스토리의 컨트리뷰터 목록은 히스토리 재작성 없이는 지워지지 않습니다.)
+
 ### 프론트엔드 화면만 확인
 
 Node.js 22 이상과 pnpm 10.15.0이 필요합니다. CI는 Node.js 24를 사용합니다.

@@ -57,6 +57,11 @@ server:
     include-binding-errors: never
 
 linker:
+  # Activate after migration order is agreed and B/C prepared schemas are formally applied.
+  team-setup:
+    worker-enabled: ${TEAM_SETUP_WORKER_ENABLED:false}
+    webhook-enabled: ${TEAM_SETUP_WEBHOOK_ENABLED:false}
+    poll-delay-ms: ${TEAM_SETUP_POLL_DELAY_MS:5000}
   # Activate only after B's shared schema + C schema and payload contract are ready.
   issues:
     sync-enabled: ${ISSUE_SYNC_ENABLED:false}
@@ -106,3 +111,25 @@ linker:
     secret-key: ${TOSS_SECRET_KEY:}
     client-key: ${TOSS_CLIENT_KEY:}
     base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
+  # SMTP only. Leave host empty until a relay is chosen. Dev compose points host at Mailpit.
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    from: ${MAIL_FROM:Linker <noreply@linker.local>}
+    public-base-url: ${MAIL_PUBLIC_BASE_URL:http://localhost:3000}
+    free-domains:
+      - gmail.com
+      - googlemail.com
+      - naver.com
+      - daum.net
+      - kakao.com
+      - hanmail.net
+      - outlook.com
+      - hotmail.com
+      - live.com
+      - yahoo.com
+      - icloud.com
+      - me.com
+      - mac.com

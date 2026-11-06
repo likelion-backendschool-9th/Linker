@@ -3,6 +3,8 @@ package com.linker.backend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -28,26 +30,27 @@ import java.util.concurrent.TimeUnit;
 
 import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
-import com.linker.backend.entity.chat.DmStatus;
-import com.linker.backend.entity.chat.MessageType;
-import com.linker.backend.entity.chat.MessageVisibility;
-import com.linker.backend.entity.chat.RequestKind;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.MessageType;
+import com.linker.backend.entity.chat.type.MessageVisibility;
+import com.linker.backend.entity.chat.type.RequestKind;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
+import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
-import com.linker.backend.service.PublicAuthService;
-import com.linker.backend.service.user.UserChatService;
-import com.linker.backend.service.user.UserModerationService;
+import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.ChatService;
+import com.linker.backend.service.user.ModerationService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -68,6 +71,7 @@ import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -126,17 +130,19 @@ class ChatRoomBasicsIntegrationTest {
 	@Autowired
 	private UserRepository users;
 	@Autowired
-	private PublicAuthService sessions;
+	private AuthService sessions;
 	@Autowired
 	private ChatRoomRepository rooms;
 	@Autowired
 	private ChatRoomMemberRepository members;
+	@MockitoSpyBean
+	private TeamChatAccess teamChat;
 	@Autowired
 	private ChatMessageRepository messages;
 	@Autowired
-	private UserChatService chat;
+	private ChatService chat;
 	@Autowired
-	private UserModerationService moderation;
+	private ModerationService moderation;
 	@Autowired
 	private PlatformTransactionManager transactions;
 	@Autowired
@@ -268,6 +274,22 @@ class ChatRoomBasicsIntegrationTest {
 		assertThat(history(author, room.getId())).contains("운영 정책에 따라 숨겨진 메시지예요").doesNotContain("숨긴 뒤 삭제");
 		authorSocket.disconnect();
 		otherSocket.disconnect();
+	}
+
+	@Test
+	void teamOwnerOrAdminCanDeleteAnotherMembersVisibleMessage() throws Exception {
+		User owner = user("team-owner-delete");
+		User sender = user("team-member-delete");
+		ChatRoom room = team(owner, sender);
+		ChatMessage message = messages.saveAndFlush(ChatMessage.text(room, sender.getId(), "운영 삭제"));
+		try {
+			doReturn(true).when(teamChat).canModerate(owner.getId(), room.getTeamId());
+			mockMvc.perform(delete(messagePath(room, message)).cookie(cookie(owner))).andExpect(status().isNoContent());
+			assertThat(jdbc.queryForObject("select deleted_at is not null from chat_messages where id=?", Boolean.class, message.getId())).isTrue();
+		}
+		finally {
+			reset(teamChat);
+		}
 	}
 
 	@Test
@@ -644,7 +666,10 @@ class ChatRoomBasicsIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/notification'].patch.operationId").value("updateChatNotification"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get.operationId").value("getChatRoom"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}'].get.tags[0]").value("p17-chat-room"))
-				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete").doesNotExist());
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/mention-candidates'].get.operationId").value("listChatMentionCandidates"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/mention-candidates'].get.tags[0]").value("p17-chat-room"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete.operationId").value("leaveChatRoom"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete.tags[0]").value("p17-chat-room"));
 	}
 
 	private void stale(ChatRoom room, ChatMessage message, String event, String text) {

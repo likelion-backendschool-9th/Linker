@@ -14,7 +14,8 @@
     "test": "turbo run test",
     "generate": "turbo run generate",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "node ../scripts/install-git-hooks.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.10",

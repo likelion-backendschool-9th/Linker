@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.entity.moderation.ReportCase;
-import com.linker.backend.entity.moderation.ReportCaseStatus;
-import com.linker.backend.entity.moderation.ReportTargetType;
+import com.linker.backend.entity.moderation.type.ReportCaseStatus;
+import com.linker.backend.entity.moderation.type.ReportTargetType;
 
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;

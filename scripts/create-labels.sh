@@ -13,7 +13,6 @@ gh label create "docs"           --color "0075CA" --description "문서 변경" 
 # 종류
 gh label create "feat"           --color "A2EEEF" --description "새 기능" --force
 gh label create "fix"            --color "D73A4A" --description "버그 수정" --force
-gh label create "refactor"       --color "FBCA04" --description "리팩토링" --force
 gh label create "chore"          --color "CFD3D7" --description "설정·빌드·기타" --force
 
 # 상태

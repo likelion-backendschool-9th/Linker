@@ -470,37 +470,37 @@ Web and app share these types and zod schemas. Envelope: `{ v: BRIDGE_VERSION (1
 
 ## 13. Folder structure double-check
 ### 13-1. All 33 pages
-Matched against 07 paths, 04 access table and the [backend blueprint](05-backend-blueprint.md) **29 HTTP controller** classes (still under WBS S01–S18 maintainers); no new URLs. Access: Guest / Developer / Recruiter / Operator ("prompt" = login-prompt sheet). The controller column lists owning **HTTP** classes (`Public*` / `User*` / `Recruiter*` / `Admin*`); business-system ownership stays in WBS. Keep method-level OpenAPI tags as the page slug (`pNN-…`).
+Matched against 07 paths, 04 access table and the [backend blueprint](05-backend-blueprint.md) **29 HTTP controller** classes (still under WBS S01–S18 maintainers); no new URLs. Access: Guest / Developer / Recruiter / Operator ("prompt" = login-prompt sheet). The controller column lists owning **HTTP** classes (folder-qualified: `user.` / `recruiter.` / `admin.`); business-system ownership stays in WBS. Keep method-level OpenAPI tags as the page slug (`pNN-…`).
 
 | # | Path (07) | Group | Access (04) | HTTP controller · tag |
 | --- | --- | --- | --- | --- |
-| 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | PublicAuthController · p01 |
-| 02 | `/onboarding` | (developer) | × / ○ / × / ○ | UserAccountController · p02 |
-| 03 | `/legal/[slug]` | (public) | ○ everyone | PublicLegalController · p03 |
-| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | PublicAccountController, UserAccountController, PublicPostController, PublicTeamController, RecruiterAdController (+ UserChat / RecruiterChat as borrowed) · p04 |
-| 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | UserAccountController · p05 |
-| 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | UserAccountController, UserSessionController, UserNotificationController (+ RecruiterAuthController for password) · p06 |
-| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | UserTeamController, UserIssueController · p07 |
-| 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | UserTeamController, UserGithubController · p08 |
-| 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | UserTeamController, UserGithubController · p09 |
-| 10 | `/invite/[code]` | (public) | slim landing / ○ / × message / ○ | PublicTeamController, UserTeamController · p10 |
-| 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | UserIssueController · p11–p15 |
-| 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | UserChatController · p16 |
-| 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | UserChatController (+ UserGithub / UserIssue as borrowed) · p17 |
-| 18 | `/notifications` | (member) | prompt / ○ / ○ / ○ | UserNotificationController, UserModerationController · p18 |
-| 19 | `/recruits` | (public) | view / ○ / view / ○ | PublicRecruitmentController · p19 |
-| 20 | `/recruits/new`, `/recruits/[id]/edit` | (developer) | prompt / ○ / × / ○ | UserRecruitmentController · p20 |
-| 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | PublicRecruitmentController, UserRecruitmentController · p21 |
-| 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | UserPostController · p22 |
-| 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PublicPostController, UserPostController · p23 |
-| 24 | `/feed` | (public) | view / ○ / view / ○ | PublicPostController, UserPostController, RecruiterAdController · p24 |
-| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | AdminController (+ AdminSubscriptionController for 26 refund) · p25–p27 |
-| 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | UserSubscriptionController · p28 |
-| 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | UserSubscriptionController · p29 |
-| 30 | `/me/stats` | (developer) | prompt / ○ / × / ○ | UserStatsController · p30 |
-| 31 | `/recruiter/signup` | (auth) | ○ / × / →feed / × | PublicAuthController · p31 |
-| 32 | `/recruiter/login`, `/recruiter/reset` | (auth) | ○ / × / →feed / × | PublicAuthController · p32 |
-| 33 | `/recruiter/offers` | (recruiter) | × / × / ○ / × ※3 | RecruiterChatController · p33 |
+| 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | AuthController · p01 |
+| 02 | `/onboarding` | (developer) | × / ○ / × / ○ | user.AccountController · p02 |
+| 03 | `/legal/[slug]` | (public) | ○ everyone | LegalController · p03 |
+| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController, user.AccountController, PostController, TeamController, recruiter.AdController (+ UserChat / RecruiterChat as borrowed) · p04 |
+| 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | user.AccountController · p05 |
+| 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | user.AccountController, user.SessionController, user.NotificationController (+ recruiter.AuthController for password) · p06 |
+| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | user.TeamController, user.IssueController · p07 |
+| 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | user.TeamController, user.GithubController · p08 |
+| 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | user.TeamController, user.GithubController · p09 |
+| 10 | `/invite/[code]` | (public) | slim landing / ○ / × message / ○ | TeamController, user.TeamController · p10 |
+| 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | user.IssueController · p11–p15 |
+| 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | user.ChatController · p16 |
+| 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | user.ChatController (+ UserGithub / UserIssue as borrowed) · p17 |
+| 18 | `/notifications` | (member) | prompt / ○ / ○ / ○ | user.NotificationController, user.ModerationController · p18 |
+| 19 | `/recruits` | (public) | view / ○ / view / ○ | RecruitmentController · p19 |
+| 20 | `/recruits/new`, `/recruits/[id]/edit` | (developer) | prompt / ○ / × / ○ | user.RecruitmentController · p20 |
+| 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | RecruitmentController, user.RecruitmentController · p21 |
+| 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | user.PostController · p22 |
+| 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PostController, user.PostController · p23 |
+| 24 | `/feed` | (public) | view / ○ / view / ○ | PostController, user.PostController, recruiter.AdController · p24 |
+| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | admin.ModerationController (+ admin.SubscriptionController for 26 refund) · p25–p27 |
+| 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | user.SubscriptionController · p28 |
+| 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | user.SubscriptionController · p29 |
+| 30 | `/me/stats` | (developer) | prompt / ○ / × / ○ | user.StatsController · p30 |
+| 31 | `/recruiter/signup` | (auth) | ○ / × / →feed / × | AuthController · p31 |
+| 32 | `/recruiter/login`, `/recruiter/reset` | (auth) | ○ / × / →feed / × | AuthController · p32 |
+| 33 | `/recruiter/offers` | (recruiter) | × / × / ○ / × ※3 | recruiter.ChatController · p33 |
 
 - ※1 Guest "×" = login-prompt sheet + `returnTo` (04 Policy aligned 2026-10-29); logged-in "×" → `/feed`.
 - ※2 The admin OTP gate is inside `(admin)/admin/layout.tsx`, no separate URL.
@@ -545,9 +545,9 @@ MSW handles Vitest requests; browser/SSR mock mode uses the existing `src/mocks/
 - **CORS**: `api.` allows `credentials: true` for the `app.` origin; the STOMP handshake uses the same cookie.
 - **orval tags**: `@Tag(name = "pNN-…")` per controller; renaming breaks frontend imports.
 - **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
-- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to `PublicAuthController` (S01, page 01; not in WBS yet).
+- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to `AuthController` (S01, page 01; not in WBS yet).
 - **GitHub App callback URLs**: register web `/auth/callback` and app (`?client=app` or a separate URL).
-- **Search**: sitemap lists from `PublicSitemapController` (WBS S18, foundation 00) (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
-- **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens` (`UserNotificationController`).
+- **Search**: sitemap lists from `SitemapController` (WBS S18, foundation 00) (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
+- **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens` (`user.NotificationController`).
 - **Feed ad items** (WBS 24): `items` = `{ type: 'POST', … } | { type: 'AD', adId, companyName, title, jobCategory, closesOn }`. No URL in the item; tap → `POST /api/v1/user/ads/{adId}/click` returns it; open with the `features/external-link` confirm sheet.
-- **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to `UserUploadController` (WBS S05, foundation 00; resize, EXIF strip).
+- **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to `user.UploadController` (WBS S05, foundation 00; resize, EXIF strip).

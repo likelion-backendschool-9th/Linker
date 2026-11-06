@@ -10,16 +10,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
-import com.linker.backend.entity.chat.DmStatus;
-import com.linker.backend.entity.chat.RequestKind;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.RequestKind;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
-import com.linker.backend.service.PublicAuthService;
+import com.linker.backend.service.AuthService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +80,7 @@ class StompConnectionTest {
 	private UserRepository users;
 
 	@Autowired
-	private PublicAuthService sessions;
+	private AuthService sessions;
 
 	@Autowired
 	private ChatRoomRepository rooms;

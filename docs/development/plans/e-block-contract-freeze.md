@@ -14,7 +14,7 @@
 
 ## D consumption (1:1 DM)
 
-Call `UserModerationService.hidesDirectMessage(viewerId, senderId, messageCreatedAt)`.
+Call `user.ModerationService.hidesDirectMessage(viewerId, senderId, messageCreatedAt)`.
 
 - Hide when the viewer owns a period covering the message: `message.created_at ∈ [created_at, unblocked_at)`.
 - Open period (`unblocked_at IS NULL`) covers every instant at or after `created_at`.

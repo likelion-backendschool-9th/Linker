@@ -1,0 +1,37 @@
+name: GitHub integration tools
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'scripts/github-integration/**'
+      - 'scripts/tests/test_github_integration.py'
+      - '.github/workflows/github-integration-tools.yml'
+  push:
+    branches: [dev]
+    paths:
+      - 'scripts/github-integration/**'
+      - 'scripts/tests/test_github_integration.py'
+      - '.github/workflows/github-integration-tools.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  safety:
+    name: github-integration-tools
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      DB_PASSWORD: compose-validation-only
+      TEST_DB_PORT: '55432'
+      TEST_REDIS_PORT: '56379'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify credential and database isolation
+        run: python3 -m unittest discover -s scripts/tests -p 'test_github_integration.py' -v
+      - name: Validate dedicated Compose
+        run: docker compose --env-file /dev/null -f scripts/github-integration/compose.yml config --quiet

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserStatus;
+import com.linker.backend.entity.account.type.UserStatus;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,19 +19,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	@Query("""
 			select u from User u
-			where u.userType = com.linker.backend.entity.account.UserType.DEVELOPER
+			where u.userType = com.linker.backend.entity.account.type.UserType.DEVELOPER
 			  and u.deletedAt is null
-			  and u.status <> com.linker.backend.entity.account.UserStatus.DELETED
+			  and u.status <> com.linker.backend.entity.account.type.UserStatus.DELETED
 			  and coalesce(u.lastActiveAt, u.createdAt) <= :inactiveSince
 			  and (u.lookingForTeam = true
-			       or u.jobSeekingStatus <> com.linker.backend.entity.account.JobSeekingStatus.OFF)
+			       or u.jobSeekingStatus <> com.linker.backend.entity.account.type.JobSeekingStatus.OFF)
 			""")
 	List<User> findInactiveDevelopers(Instant inactiveSince);
 
 	@Query("""
 			select u from User u
-			where u.userType = com.linker.backend.entity.account.UserType.DEVELOPER
-			  and u.status = com.linker.backend.entity.account.UserStatus.ACTIVE
+			where u.userType = com.linker.backend.entity.account.type.UserType.DEVELOPER
+			  and u.status = com.linker.backend.entity.account.type.UserStatus.ACTIVE
 			  and u.deletedAt is null
 			""")
 	List<User> findIndexable(Pageable pageable);

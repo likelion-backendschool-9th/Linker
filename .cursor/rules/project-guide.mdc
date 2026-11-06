@@ -10,4 +10,3 @@ Read and follow the repository-root AGENTS.md before acting. It is the shared ru
 
 Before backend changes, read docs/development/05-backend-blueprint.md sections 3–4, especially the mandatory role-specific service generation rule referenced from AGENTS.md.
 Before frontend changes, read frontend/AGENTS.md and any closer AGENTS.md.
-If .local-notes/agents/README.md exists, follow its active-work and handoff procedure. Local notes may be absent in another checkout; they do not override tracked rules.

@@ -10,15 +10,20 @@ type PostCardProps = {
   post: FeedPost;
   /** One line, the highest-priority reason (04 ch. 4 "Why shown") */
   whyShown: string | null;
+  /** Traffic source stored when the detail page is opened (page 23). */
+  from?: 'feed' | 'profile';
+  /** Profile sections already use h2, so their cards drop to h3. */
+  titleLevel?: 2 | 3;
 };
 
 /**
  * Feed card (07 TODO 24): cover (or the repo card), author with the "구직 중" badge, intro, counts.
  * The title link stretches over the whole card and opens 23.
  */
-export function PostCard({ post, whyShown }: PostCardProps) {
+export function PostCard({ post, whyShown, from = 'feed', titleLevel = 2 }: PostCardProps) {
   const titleId = `feed-post-${post.id}-title`;
   const repoName = post.repoFullName.split('/')[1] ?? post.repoFullName;
+  const Title = titleLevel === 3 ? 'h3' : 'h2';
 
   return (
     <article aria-labelledby={titleId} className={styles.card} data-post-id={post.id}>
@@ -45,11 +50,11 @@ export function PostCard({ post, whyShown }: PostCardProps) {
           </div>
         )}
       </div>
-      <h2 id={titleId} className={styles.title}>
-        <Link href={`/posts/${post.id}?from=feed` as Route} className={styles.link}>
+      <Title id={titleId} className={styles.title}>
+        <Link href={`/posts/${post.id}?from=${from}` as Route} className={styles.link}>
           {post.intro}
         </Link>
-      </h2>
+      </Title>
       <div className={styles.foot}>
         <p className={styles.author}>
           <Image

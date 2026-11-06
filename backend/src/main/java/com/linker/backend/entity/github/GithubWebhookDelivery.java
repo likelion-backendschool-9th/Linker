@@ -2,7 +2,7 @@ package com.linker.backend.entity.github;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.github.type.WebhookStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,12 +12,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "github_webhook_deliveries")
-public class GithubWebhookDelivery extends BaseTimeEntity {
+public class GithubWebhookDelivery {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,6 +50,14 @@ public class GithubWebhookDelivery extends BaseTimeEntity {
 	private String error;
 
 	private Instant processedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected GithubWebhookDelivery() {
 	}
@@ -121,5 +131,13 @@ public class GithubWebhookDelivery extends BaseTimeEntity {
 
 	public Instant getProcessedAt() {
 		return processedAt;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

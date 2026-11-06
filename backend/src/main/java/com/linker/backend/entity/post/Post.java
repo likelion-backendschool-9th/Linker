@@ -7,7 +7,7 @@ import java.util.List;
 
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.github.GithubRepo;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.post.type.PostVisibility;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -23,10 +23,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "posts")
-public class Post extends BaseTimeEntity {
+public class Post {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -90,6 +92,14 @@ public class Post extends BaseTimeEntity {
 
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PostTag> tags = new ArrayList<>();
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected Post() {
 	}
@@ -290,5 +300,13 @@ public class Post extends BaseTimeEntity {
 
 	public List<PostTag> getTags() {
 		return tags;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

@@ -1,6 +1,6 @@
 package com.linker.backend.entity.moderation;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,10 +8,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "banned_github_ids")
-public class BannedGithubId extends BaseTimeEntity {
+public class BannedGithubId {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +23,14 @@ public class BannedGithubId extends BaseTimeEntity {
 	private String githubUserId;
 
 	private Long sanctionId;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected BannedGithubId() {
 	}
@@ -37,5 +47,13 @@ public class BannedGithubId extends BaseTimeEntity {
 
 	public String getGithubUserId() {
 		return githubUserId;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

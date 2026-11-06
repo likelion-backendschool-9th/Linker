@@ -7,7 +7,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
-import com.linker.backend.service.user.UserChatService;
+import com.linker.backend.service.user.ChatService;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -25,11 +25,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ChatDeliveryGuard implements ChannelInterceptor {
 
-	private final UserChatService chat;
+	private final ChatService chat;
 	private final StompSessionUsers sessions;
 	private final ObjectMapper mapper;
 
-	public ChatDeliveryGuard(UserChatService chat, StompSessionUsers sessions, ObjectMapper mapper) {
+	public ChatDeliveryGuard(ChatService chat, StompSessionUsers sessions, ObjectMapper mapper) {
 		this.chat = chat;
 		this.sessions = sessions;
 		this.mapper = mapper;

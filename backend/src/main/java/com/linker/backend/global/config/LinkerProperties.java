@@ -1,5 +1,7 @@
 package com.linker.backend.global.config;
 
+import java.util.List;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "linker")
@@ -9,7 +11,8 @@ public record LinkerProperties(
 		Storage storage,
 		Github github,
 		Webhook webhook,
-		Payment payment
+		Payment payment,
+		Mail mail
 ) {
 
 	public record Session(
@@ -49,6 +52,21 @@ public record LinkerProperties(
 			String secretKey,
 			String clientKey,
 			String baseUrl
+	) {
+	}
+
+	/**
+	 * Generic SMTP. Dev points this at Mailpit. Empty host means mail is not configured.
+	 * Username and password are optional and do not choose a production vendor.
+	 */
+	public record Mail(
+			String host,
+			int port,
+			String username,
+			String password,
+			String from,
+			String publicBaseUrl,
+			List<String> freeDomains
 	) {
 	}
 }

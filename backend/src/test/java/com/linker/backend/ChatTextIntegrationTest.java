@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,23 +35,24 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
-import com.linker.backend.entity.chat.DmStatus;
-import com.linker.backend.entity.chat.MessageType;
-import com.linker.backend.entity.chat.MessageVisibility;
-import com.linker.backend.entity.chat.RequestKind;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.MessageType;
+import com.linker.backend.entity.chat.type.MessageVisibility;
+import com.linker.backend.entity.chat.type.RequestKind;
 import com.linker.backend.global.config.PlanLimits;
+import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
-import com.linker.backend.service.PublicAuthService;
-import com.linker.backend.service.user.UserChatService;
-import com.linker.backend.service.user.UserModerationService;
+import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.ChatService;
+import com.linker.backend.service.user.ModerationService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -124,17 +126,19 @@ class ChatTextIntegrationTest {
 	@Autowired
 	private UserRepository users;
 	@Autowired
-	private PublicAuthService sessions;
+	private AuthService sessions;
 	@Autowired
 	private ChatRoomRepository rooms;
 	@Autowired
 	private ChatRoomMemberRepository members;
 	@MockitoSpyBean
 	private ChatMessageRepository messages;
+	@MockitoSpyBean
+	private TeamChatAccess teamChat;
 	@Autowired
-	private UserChatService chat;
+	private ChatService chat;
 	@Autowired
-	private UserModerationService moderation;
+	private ModerationService moderation;
 	@Autowired
 	private PlatformTransactionManager transactions;
 
@@ -318,7 +322,7 @@ class ChatTextIntegrationTest {
 	}
 
 	@Test
-	void teamHistoryIsFreeWindowAndTeamSendIsRejected() throws Exception {
+	void teamHistoryIsFreeWindowAndTeamSendWithoutReadableTeamStateIsRejected() throws Exception {
 		User member = user("team-member");
 		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(null));
 		members.saveAndFlush(ChatRoomMember.join(team, member.getId()));
@@ -337,10 +341,39 @@ class ChatTextIntegrationTest {
 		StompSession socket = connect(member);
 		List<String> rejected = frames(socket, "/user/queue/chat-rooms");
 		send(socket, team.getId(), UUID.randomUUID().toString(), "팀 전송", Map.of());
-		waitUntil(() -> rejected.stream().anyMatch(frame -> frame.contains("TEAM_STATE_UNAVAILABLE") && frame.contains("retryable=false")));
+		waitUntil(() -> rejected.stream().anyMatch(frame -> frame.contains("FORBIDDEN") && frame.contains("retryable=false")));
 		assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id = ? and body = ?", Long.class, team.getId(), "팀 전송"))
 				.isZero();
 		socket.disconnect();
+	}
+
+	@Test
+	void allMentionRequiresTeamOwnerOrAdmin() throws Exception {
+		User owner = user("team-owner-all");
+		User member = user("team-member-all");
+		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(91001L));
+		members.saveAndFlush(ChatRoomMember.join(team, owner.getId()));
+		members.saveAndFlush(ChatRoomMember.join(team, member.getId()));
+		try {
+			doReturn(true).when(teamChat).writableBy(anyLong(), eq(91001L));
+			doReturn(false).when(teamChat).canModerate(member.getId(), 91001L);
+			StompSession memberSocket = connect(member);
+			List<String> rejected = frames(memberSocket, "/user/queue/chat-rooms");
+			send(memberSocket, team.getId(), UUID.randomUUID().toString(), "@all 공지", Map.of());
+			waitUntil(() -> rejected.stream().anyMatch(frame -> frame.contains("FORBIDDEN") && frame.contains("@전체 멘션")));
+			assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, team.getId())).isZero();
+			memberSocket.disconnect();
+
+			doReturn(true).when(teamChat).canModerate(owner.getId(), 91001L);
+			StompSession ownerSocket = connect(owner);
+			send(ownerSocket, team.getId(), UUID.randomUUID().toString(), "@전체 공지", Map.of());
+			waitUntil(() -> jdbc.queryForObject(
+					"select count(*) from chat_messages where room_id=? and body=?", Long.class, team.getId(), "@전체 공지") == 1L);
+			ownerSocket.disconnect();
+		}
+		finally {
+			reset(teamChat);
+		}
 	}
 
 	@Test
@@ -603,9 +636,7 @@ class ChatTextIntegrationTest {
 		Map<String, Object> body = new HashMap<>();
 		body.put("clientMessageId", clientId);
 		body.put("text", text);
-		if (extra.get("senderId") != null) {
-			body.put("senderId", extra.get("senderId"));
-		}
+		body.putAll(extra);
 		StompHeaders headers = new StompHeaders();
 		headers.setDestination("/app/chat-rooms/" + roomId + "/messages");
 		session.send(headers, body);

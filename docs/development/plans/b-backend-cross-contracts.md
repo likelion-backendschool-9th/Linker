@@ -7,7 +7,7 @@
 | --- | --- | --- |
 | A ↔ B 로그인·딥링크 | A 초안의 B 딥링크 항목 및 계약 변경 시 A·B 공유 규칙을 #180에서 체크 | 실제 GitHub 로그인·쿠키 수신은 페이지 01 구현 및 실환경 스파이크에서 확인. 로그아웃 설명 차이는 아래 참고 |
 | B ↔ C 웹훅 | 아래 이벤트·DB 필드·큐·전달 경계를 B 측에서 공유. C PR #184의 소비안에 대한 B 검토는 §7 | 실제 수신 샘플·보관 처리 정책·직렬화 구현 수단 확인 전 전체 공동 freeze 미완료 |
-| D → B 알림 | 현행 `UserNotificationService.create(CreateNotificationCommand)` 인자 확인·기록 | 이번 단계에서는 알림 생성·발송하지 않음. D 계약 변경 시 함께 재확인 |
+| D → B 알림 | 현행 `user.NotificationService.create(CreateNotificationCommand)` 인자 확인·기록 | 이번 단계에서는 알림 생성·발송하지 않음. D 계약 변경 시 함께 재확인 |
 
 ## 1. A 시나리오에 대한 B 확인
 
@@ -99,7 +99,7 @@ PRD §8·[GitHub App 운영 안내](../../operations/06-github-app.md)의 설정
 ## 5. D → B 알림 인자 기록
 
 현재 계약은 [CreateNotificationCommand](../../../backend/src/main/java/com/linker/backend/dto/notification/request/CreateNotificationCommand.java)와
-[UserNotificationService.create](../../../backend/src/main/java/com/linker/backend/service/user/UserNotificationService.java)다.
+[user.NotificationService.create](../../../backend/src/main/java/com/linker/backend/service/user/user.NotificationService.java)다.
 
 | 인자 | Java 타입 |
 | --- | --- |

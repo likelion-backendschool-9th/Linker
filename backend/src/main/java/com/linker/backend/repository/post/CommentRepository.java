@@ -36,6 +36,14 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 	long countByParentId(long parentId);
 
 	@Query("""
+			select c from Comment c
+			join fetch c.post p
+			join fetch p.author
+			where c.author.id = :authorId
+			""")
+	List<Comment> findByAuthorId(@Param("authorId") long authorId);
+
+	@Query("""
 			select c.post.id, count(c)
 			from Comment c
 			join c.post p

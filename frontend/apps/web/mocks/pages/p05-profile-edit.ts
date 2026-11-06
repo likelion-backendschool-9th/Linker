@@ -39,8 +39,9 @@ export const routes: MockRoute[] = [
   post('/api/v1/user/me/profile/github-sync', () => ({ ...form, syncedAt: daysAgo(0) }), {
     only: 'developer',
   }),
+  get('/api/v1/recruiter/me/profile', () => ({ kind: 'RECRUITER', ...recruiterForm })),
   patch('/api/v1/recruiter/me/profile', ({ body }) => {
     Object.assign(recruiterForm, body);
-    return recruiterForm;
+    return { kind: 'RECRUITER', ...recruiterForm };
   }),
 ];

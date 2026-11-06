@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.entity.recruit.RecruitPost;
-import com.linker.backend.entity.recruit.RecruitRoleType;
-import com.linker.backend.entity.recruit.RecruitStatus;
-import com.linker.backend.entity.recruit.RecruitVisibility;
-import com.linker.backend.entity.recruit.WorkMode;
+import com.linker.backend.entity.recruit.type.RecruitRoleType;
+import com.linker.backend.entity.recruit.type.RecruitStatus;
+import com.linker.backend.entity.recruit.type.RecruitVisibility;
+import com.linker.backend.entity.recruit.type.WorkMode;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

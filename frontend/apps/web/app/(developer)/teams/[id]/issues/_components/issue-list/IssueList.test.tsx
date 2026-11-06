@@ -125,7 +125,11 @@ it('waits a minute between refreshes, also after RATE_LIMITED', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/1/issues/refresh?view=all', {
     method: 'POST',
   });
-  const waiting = await screen.findByRole('button', { name: /60초 후 새로 고침/ });
+  const waiting = await screen.findByRole('button', { name: /\d+초 후 새로 고침/ });
+  // The label counts down in real time, so CI may already show 59.
+  const seconds = Number(waiting.textContent?.match(/(\d+)초/)?.[1]);
+  expect(seconds).toBeLessThanOrEqual(60);
+  expect(seconds).toBeGreaterThan(50);
   // aria-disabled keeps it focusable; tapping only says how long to wait
   expect(waiting).toHaveAttribute('aria-disabled', 'true');
   await user.click(waiting);
@@ -146,8 +150,9 @@ it('keeps the button waiting for the server-given seconds when rate limited', as
   renderWithProviders(<IssueList teamId="1" />, { viewer: { role: 'developer', login: 'me' } });
   await screen.findByText('피드 카드 컴포넌트');
   await user.click(screen.getByRole('button', { name: '새로 고침' }));
-  expect(await screen.findByRole('button', { name: /30초 후 새로 고침/ })).toHaveAttribute(
-    'aria-disabled',
-    'true',
-  );
+  const waiting = await screen.findByRole('button', { name: /\d+초 후 새로 고침/ });
+  const seconds = Number(waiting.textContent?.match(/(\d+)초/)?.[1]);
+  expect(seconds).toBeLessThanOrEqual(30);
+  expect(seconds).toBeGreaterThan(20);
+  expect(waiting).toHaveAttribute('aria-disabled', 'true');
 });

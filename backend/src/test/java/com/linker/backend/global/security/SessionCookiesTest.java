@@ -16,7 +16,8 @@ class SessionCookiesTest {
 				new LinkerProperties.Storage("unconfigured", ""),
 				new LinkerProperties.Github(""),
 				new LinkerProperties.Webhook(false, "queue"),
-				new LinkerProperties.Payment("", "", ""));
+				new LinkerProperties.Payment("", "", ""),
+				new LinkerProperties.Mail("", 1025, "", "", "Linker <noreply@linker.local>", "http://localhost:3000", java.util.List.of()));
 
 		String cleared = new SessionCookies(properties).clear();
 

@@ -1,7 +1,7 @@
 package com.linker.backend.service.user;
 
-import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.TeamAccess;

@@ -2,7 +2,8 @@ package com.linker.backend.entity.chat;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.chat.type.MessageType;
+import com.linker.backend.entity.chat.type.MessageVisibility;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,10 +16,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "chat_messages")
-public class ChatMessage extends BaseTimeEntity {
+public class ChatMessage {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +42,10 @@ public class ChatMessage extends BaseTimeEntity {
 	@Column(columnDefinition = "text")
 	private String body;
 
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(columnDefinition = "jsonb")
+	private String payload;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 16)
 	private MessageVisibility visibility;
@@ -47,6 +56,14 @@ public class ChatMessage extends BaseTimeEntity {
 	private String clientMessageId;
 
 	private Instant editedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected ChatMessage() {
 	}
@@ -63,6 +80,13 @@ public class ChatMessage extends BaseTimeEntity {
 
 	public static ChatMessage clientImage(ChatRoom room, long senderId, String clientMessageId) {
 		ChatMessage message = create(room, senderId, MessageType.IMAGE, "", MessageVisibility.VISIBLE);
+		message.clientMessageId = clientMessageId;
+		return message;
+	}
+
+	public static ChatMessage shareCard(ChatRoom room, long senderId, String payload, String clientMessageId) {
+		ChatMessage message = create(room, senderId, MessageType.SHARE_CARD, "", MessageVisibility.VISIBLE);
+		message.payload = payload;
 		message.clientMessageId = clientMessageId;
 		return message;
 	}
@@ -100,6 +124,11 @@ public class ChatMessage extends BaseTimeEntity {
 		this.visibility = MessageVisibility.HIDDEN;
 	}
 
+	public void restore() {
+		this.visibility = MessageVisibility.VISIBLE;
+		this.deletedAt = null;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -114,6 +143,10 @@ public class ChatMessage extends BaseTimeEntity {
 
 	public String getBody() {
 		return body;
+	}
+
+	public String getPayload() {
+		return payload;
 	}
 
 	public MessageType getMessageType() {
@@ -137,6 +170,14 @@ public class ChatMessage extends BaseTimeEntity {
 	}
 
 	public void alignCreatedAt(Instant createdAt) {
-		replaceCreatedAt(createdAt);
+		this.createdAt = createdAt;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

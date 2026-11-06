@@ -10,6 +10,8 @@ import type { PublicProfile } from '@/features/profile/profile-types';
 import { profileQueryKey } from '@/features/profile/profile-types';
 
 import { ContributionCalendar } from '../_components/contribution-calendar/ContributionCalendar';
+import { ProfilePosts } from '../_components/profile-posts/ProfilePosts';
+import { ProfileTeams } from '../_components/profile-teams/ProfileTeams';
 import styles from '../_components/profile.module.css';
 
 export function DeveloperProfileView({
@@ -60,11 +62,7 @@ export function DeveloperProfileView({
         )}
         <ul className={styles.links}>
           <li>
-            <a
-              href={profile.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a href={profile.githubUrl} target="_blank" rel="noreferrer">
               GitHub @{profile.login}
             </a>
           </li>
@@ -98,6 +96,8 @@ export function DeveloperProfileView({
         )}
       </section>
 
+      <ProfilePosts login={profile.login} />
+      <ProfileTeams login={profile.login} />
       <ContributionCalendar login={profile.login} />
     </article>
   );

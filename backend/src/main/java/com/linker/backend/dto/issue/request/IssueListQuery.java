@@ -12,6 +12,9 @@ public record IssueListQuery(
     boolean open,
     String cursor,
     int size) {
+  /** Largest page size; also the placeholder size for the page 14 board, which has no paging. */
+  public static final int MAX_SIZE = 100;
+
   public static final Set<String> STATUSES =
       Set.of("TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER", "NONE");
 
@@ -23,7 +26,7 @@ public record IssueListQuery(
     if ((repo != null && repo <= 0)
         || (status != null && !STATUSES.contains(status))
         || size < 1
-        || size > 100
+        || size > MAX_SIZE
         || (assignee != null && assignee.length() > 39)
         || (label != null && label.length() > 255)
         || (cursor != null && cursor.length() > 1024)) {

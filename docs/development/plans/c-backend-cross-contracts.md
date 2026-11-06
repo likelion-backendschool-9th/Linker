@@ -129,7 +129,7 @@
 | `payloadJson` | String | 선택 |
 | `groupKey` | String | 선택 |
 
-C의 이후 로그인 사용자 작업은 `UserNotificationService.create(command)`를 사용한다.
+C의 이후 로그인 사용자 작업은 `user.NotificationService.create(command)`를 사용한다.
 역할별 서비스는 수신자 종류가 아니라 알림을 생산하는 use case 기준이며 중립 NotificationService를 새로 만들지 않는다.
 create는 생산 트랜잭션에 참여해 DB에 저장하고 푸시/STOMP는 보내지 않는다. 호출 전 업무 권한·차단 등 적용 조건은 생산자가 확인한다.
 조용한 시간은 D 구현을 재사용한다. `TEAM_INVITE` → `/invite/{code}`는 B 초대 흐름의 공유 기준으로 기록만 한다.

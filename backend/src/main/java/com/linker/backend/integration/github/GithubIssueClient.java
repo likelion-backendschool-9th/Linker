@@ -236,7 +236,9 @@ pageInfo{hasNextPage endCursor} nodes{__typename
                 if (raw == null || raw.has("pull_request")) throw unavailable();
                 return new Detail(
                     parse(raw),
-                    raw.path("body").asString(""),
+                    raw.path("body")
+                        .asString("")
+                        .replaceAll("(?s)\\s*<!-- linker-create:[0-9a-fA-F-]{36} -->", ""),
                     null,
                     null,
                     instant(raw, "created_at"),
@@ -245,6 +247,160 @@ pageInfo{hasNextPage endCursor} nodes{__typename
     } catch (RestClientException e) {
       throw unavailable();
     }
+  }
+
+  public void validateTemplateProjects(Context context, List<String> references, long user) {
+    if (references.isEmpty()) return;
+    var node =
+        graphql(
+                "query($id:ID!){node(id:$id){... on ProjectV2{id number owner{... on"
+                    + " Organization{login}}}}}",
+                Map.of("id", context.board().nodeId()),
+                userTokens.tokenFor(user))
+            .path("node");
+    if (!context.board().nodeId().equals(text(node, "id"))
+        || !context.orgLogin().equalsIgnoreCase(text(node.path("owner"), "login")))
+      throw unavailable();
+    String allowed = context.orgLogin() + "/" + node.path("number").asInt();
+    for (String ref : references)
+      if (!ref.equalsIgnoreCase(allowed))
+        throw new ApiException(409, "STATE_CONFLICT", "템플릿의 프로젝트가 팀에 연결된 보드와 달라요");
+  }
+
+  public void verifyCreatedContent(
+      Repo repo, int number, String title, String body, String type, String token) {
+    var raw =
+        get("/repos/{owner}/{repo}/issues/{number}", token, repo.owner(), repo.name(), number);
+    if (!title.equals(raw.path("title").asString())
+        || !body.equals(raw.path("body").asString())
+        || !type.isBlank() && !type.equals(raw.path("type").path("name").asString()))
+      throw new ApiException(409, "STATE_CONFLICT", "생성된 GitHub 본문·유형을 확인하지 못했어요");
+  }
+
+  public record TemplateFile(String name, String content) {}
+
+  public List<TemplateFile> templates(Repo repo, String token) {
+    verifyRepository(repo, token);
+    return templateDirectory(repo.owner(), repo.name(), token);
+  }
+
+  public List<TemplateFile> organizationTemplates(String owner, String token) {
+    // GitHub's inherited .github templates must be public.
+    var repository = optionalGet("/repos/{owner}/.github", token, owner);
+    if (repository == null
+        || !repository.path("private").isBoolean()
+        || repository.path("private").asBoolean()) return List.of();
+    if (!repository.path("full_name").asString("").equalsIgnoreCase(owner + "/.github"))
+      throw unavailable();
+    return templateDirectory(owner, ".github", token);
+  }
+
+  private List<TemplateFile> templateDirectory(String owner, String repo, String token) {
+    var listing =
+        optionalGet("/repos/{owner}/{repo}/contents/.github/ISSUE_TEMPLATE", token, owner, repo);
+    if (listing == null) return List.of();
+    if (!listing.isArray() || listing.size() > 1000) throw unavailable();
+    List<TemplateFile> files = new ArrayList<>();
+    for (var entry : listing) {
+      String name = entry.path("name").asString("");
+      if (!name.matches("[a-zA-Z0-9_. -]+\\.(md|yml|yaml)")
+          || name.equalsIgnoreCase("config.yml")
+          || name.equalsIgnoreCase("config.yaml")
+          || !entry.path("type").asString("").equals("file")) continue;
+      var file =
+          optionalGet(
+              "/repos/{owner}/{repo}/contents/.github/ISSUE_TEMPLATE/{file}",
+              token,
+              owner,
+              repo,
+              name);
+      if (file == null
+          || !file.path("encoding").asString("").equals("base64")
+          || file.path("size").asInt() > 256_000
+          || file.path("content").asString("").length() > 350_000) continue;
+      try {
+        String content =
+            new String(
+                java.util.Base64.getDecoder()
+                    .decode(file.path("content").asString("").replace("\n", "").replace("\r", "")),
+                java.nio.charset.StandardCharsets.UTF_8);
+        files.add(new TemplateFile(name, content));
+      } catch (IllegalArgumentException ignored) {
+        /* Invalid file falls back to built-in templates. */
+      }
+    }
+    return List.copyOf(files);
+  }
+
+  private JsonNode optionalGet(String uri, String token, Object... args) {
+    outside();
+    try {
+      return http.get()
+          .uri(uri, args)
+          .headers(h -> h.setBearerAuth(token))
+          .exchange(
+              (req, res) -> {
+                if (res.getStatusCode().value() == 404) return null;
+                if (res.getStatusCode().isError())
+                  throw upstream(res.getStatusCode().value(), res.getHeaders());
+                return res.bodyTo(JsonNode.class);
+              });
+    } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  public Issue createIssue(Repo repo, Map<String, Object> fields, long user) {
+    String token = userTokens.tokenFor(user);
+    verifyRepository(repo, token);
+    outside();
+    try {
+      var result =
+          http.post()
+              .uri("/repos/{owner}/{repo}/issues", repo.owner(), repo.name())
+              .headers(h -> h.setBearerAuth(token))
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(fields)
+              .retrieve()
+              .onStatus(
+                  s -> s.isError(),
+                  (req, res) -> {
+                    throw upstream(res.getStatusCode().value(), res.getHeaders());
+                  })
+              .body(JsonNode.class);
+      if (result == null || result.has("pull_request")) throw unavailable();
+      if (fields.containsKey("type")
+          && !fields.get("type").equals(result.path("type").path("name").asString("")))
+        throw unavailable();
+      return parse(result);
+    } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  /** Recover an ambiguous POST by its opaque draft marker. Never blindly re-POST. */
+  public Issue createdWithMarker(Repo repo, String marker, Instant since, long user) {
+    String token = userTokens.tokenFor(user);
+    verifyRepository(repo, token);
+    Issue found = null;
+    for (int page = 1; page <= MAX_PAGES; page++) {
+      var list =
+          get(
+              "/repos/{owner}/{repo}/issues?state=all&since={since}&per_page=100&page={page}",
+              token,
+              repo.owner(),
+              repo.name(),
+              since.toString(),
+              page);
+      if (!list.isArray()) throw unavailable();
+      for (var item : list)
+        if (!item.has("pull_request") && item.path("body").asString("").contains(marker)) {
+          if (found != null) throw unavailable();
+          found = parse(item);
+        }
+      if (list.size() < 100) return found;
+    }
+    throw unavailable();
   }
 
   public record MovedTarget(Repo repo, int number) {}

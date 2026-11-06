@@ -170,11 +170,57 @@ class GithubSocialLoginIntegrationTest {
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM users", Long.class)).isZero();
 	}
 
+	@Test
+	void profileGithubSyncReloadsGithubFieldsAndRefreshesAnExpiredToken() throws Exception {
+		stubGithub(42, "octocat", "ghu_test");
+		String token = cookie(callback(authorize("web", "/settings/profile"), "code-1").getResponse().getHeader("Set-Cookie"));
+		jdbc.update("""
+				UPDATE users
+				SET display_name = '기존이름', bio = '이전소개', blog_url = 'https://old.example',
+				    looking_for_team = true, job_seeking_status = 'OPEN'
+				WHERE username = 'octocat'
+				""");
+		String bio = "b".repeat(180);
+		when(github.account(eq("ghu_test"))).thenReturn(new GithubAccount(
+				42, "octocat", "Display Name That Is Longer Than Twenty",
+				"https://avatars.githubusercontent.com/u/42", "other@example.com", bio, "https://blog.example"));
+
+		mockMvc.perform(post("/api/v1/user/me/profile/github-sync").cookie(new Cookie("linker_session", token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.kind").value("DEVELOPER"))
+				.andExpect(jsonPath("$.name").value("Display Name That Is"))
+				.andExpect(jsonPath("$.bio").value("b".repeat(160)))
+				.andExpect(jsonPath("$.blogUrl").value("https://blog.example"))
+				.andExpect(jsonPath("$.lookingForTeam").value(true))
+				.andExpect(jsonPath("$.jobStatus").value("SEEKING"))
+				.andExpect(jsonPath("$.syncedAt").exists());
+		assertThat(jdbc.queryForObject("SELECT email FROM users WHERE username = 'octocat'", String.class)).isEqualTo("octo@example.com");
+		assertThat(jdbc.queryForObject("SELECT avatar_url FROM users WHERE username = 'octocat'", String.class))
+				.isEqualTo("https://avatars.githubusercontent.com/u/42");
+
+		jdbc.update("UPDATE github_tokens SET access_expires_at = now() - interval '1 minute' WHERE user_id = 1");
+		when(github.refresh(eq("ghr_octocat"))).thenReturn(new GithubUserSession(
+				"ghu_fresh", Instant.now().plusSeconds(3600), "ghr_fresh", Instant.now().plus(Duration.ofDays(30))));
+		when(github.account(eq("ghu_fresh"))).thenReturn(new GithubAccount(
+				42, "octocat", "Fresh Name", "https://avatars.githubusercontent.com/u/42",
+				"other@example.com", "새 소개", "http://not-https.example"));
+
+		mockMvc.perform(post("/api/v1/user/me/profile/github-sync").cookie(new Cookie("linker_session", token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.name").value("Fresh Name"))
+				.andExpect(jsonPath("$.bio").value("새 소개"))
+				.andExpect(jsonPath("$.blogUrl").value(""))
+				.andExpect(jsonPath("$.lookingForTeam").value(true));
+		assertThat(userTokens.tokenFor(1L)).isEqualTo("ghu_fresh");
+		assertThat(jdbc.queryForObject("SELECT blog_url FROM users WHERE username = 'octocat'", String.class)).isNull();
+	}
+
 	private void stubGithub(long id, String login, String access) {
 		when(github.exchange(anyString(), anyString())).thenReturn(new GithubUserSession(
 				access, Instant.now().plusSeconds(3600), "ghr_" + login, Instant.now().plus(Duration.ofDays(30))));
 		when(github.account(eq(access))).thenReturn(new GithubAccount(
-				id, login, "Display Name That Is Longer Than Twenty", "https://avatars.githubusercontent.com/u/" + id, "octo@example.com"));
+				id, login, "Display Name That Is Longer Than Twenty", "https://avatars.githubusercontent.com/u/" + id,
+				"octo@example.com", null, null));
 	}
 
 	private String authorize(String client, String returnTo) throws Exception {

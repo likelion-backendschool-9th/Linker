@@ -6,8 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.global.security.AuthenticatedUser;
 
 import org.junit.jupiter.api.BeforeEach;

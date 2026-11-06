@@ -3,7 +3,7 @@ package com.linker.backend.entity.moderation;
 import java.time.Instant;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.moderation.type.AppealStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,10 +16,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "appeals")
-public class Appeal extends BaseTimeEntity {
+public class Appeal {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,6 +47,14 @@ public class Appeal extends BaseTimeEntity {
 	private Admin reviewer;
 
 	private Instant decidedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected Appeal() {
 	}
@@ -88,5 +98,13 @@ public class Appeal extends BaseTimeEntity {
 
 	public AppealStatus getStatus() {
 		return status;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

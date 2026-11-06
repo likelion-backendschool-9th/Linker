@@ -2,7 +2,9 @@ package com.linker.backend.entity.account;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.account.type.JobSeekingStatus;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,10 +14,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "users")
-public class User extends BaseTimeEntity {
+public class User {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -78,6 +82,14 @@ public class User extends BaseTimeEntity {
 	/** Set when the onboarding profile step is saved. Drives the session {@code onb} claim. */
 	private Instant onboardedAt;
 
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
 	protected User() {
 	}
 
@@ -125,6 +137,14 @@ public class User extends BaseTimeEntity {
 		this.lastActiveAt = when;
 	}
 
+	public void markContributionSynced(Instant when) {
+		this.contributionSyncedAt = when;
+	}
+
+	public Instant getContributionSyncedAt() {
+		return contributionSyncedAt;
+	}
+
 	public void clearLookingForTeam() {
 		this.lookingForTeam = false;
 	}
@@ -161,6 +181,14 @@ public class User extends BaseTimeEntity {
 			this.jobSeekingStatus = jobStatus;
 			this.jobSeekingUpdatedAt = now;
 		}
+	}
+
+	/** Reloads the GitHub fields on the profile form. Tech stack and job status stay. */
+	public void refreshFromGithub(String name, String bio, String blogUrl, String avatarUrl) {
+		useGithubDisplayName(name);
+		this.bio = blankToNull(bio);
+		this.blogUrl = blankToNull(blogUrl);
+		refreshAvatar(avatarUrl);
 	}
 
 	public void keepNotificationEmail(String email) {
@@ -313,5 +341,13 @@ public class User extends BaseTimeEntity {
 			return username;
 		}
 		return displayName;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

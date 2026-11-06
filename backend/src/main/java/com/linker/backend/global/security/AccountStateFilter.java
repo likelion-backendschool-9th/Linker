@@ -2,7 +2,8 @@ package com.linker.backend.global.security;
 
 import java.io.IOException;
 
-import com.linker.backend.entity.account.UserStatus;
+import com.linker.backend.global.config.ApiPaths;
+import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.global.error.ErrorResponseWriter;
 
 import jakarta.servlet.FilterChain;
@@ -28,9 +29,11 @@ public class AccountStateFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		if (safe(request)
-				|| "/api/v1/public/auth/refresh".equals(request.getRequestURI())
-				|| "/api/v1/user/auth/logout".equals(request.getRequestURI())
-				|| "/api/v1/user/me/withdrawal".equals(request.getRequestURI())) {
+				|| ApiPaths.AUTH_REFRESH.equals(request.getRequestURI())
+				|| ApiPaths.AUTH_LOGOUT.equals(request.getRequestURI())
+				|| ApiPaths.WITHDRAWAL.equals(request.getRequestURI())
+				|| ApiPaths.ADMIN_OTP_VERIFY.equals(request.getRequestURI())
+				|| appeal(request)) {
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -46,5 +49,10 @@ public class AccountStateFilter extends OncePerRequestFilter {
 	private boolean safe(HttpServletRequest request) {
 		String method = request.getMethod();
 		return HttpMethod.GET.matches(method) || HttpMethod.HEAD.matches(method) || HttpMethod.OPTIONS.matches(method);
+	}
+
+	private boolean appeal(HttpServletRequest request) {
+		return HttpMethod.POST.matches(request.getMethod())
+				&& ApiPaths.APPEALS.equals(request.getRequestURI());
 	}
 }

@@ -261,7 +261,7 @@ export function AccountPlan({ settings }: { settings: SettingsData }) {
       <h2 id="plan-heading">요금제 및 구독</h2>
       <div className={styles.row}>
         <div className={styles.rowInfo}><span className={styles.label}>{settings.plan.label}</span><span className={styles.description}>{settings.plan.renewsOn ? `다음 결제일 ${settings.plan.renewsOn}` : settings.plan.kind === 'SCOUT' ? '채용 담당자용 Scout 요금제' : '이용 중인 요금제'}</span></div>
-        <span className={styles.description}>구독 관리 화면은 준비 중이에요.</span>
+        <Link className={styles.link} href="/settings/subscription">구독 관리</Link>
       </div>
     </section>
   );

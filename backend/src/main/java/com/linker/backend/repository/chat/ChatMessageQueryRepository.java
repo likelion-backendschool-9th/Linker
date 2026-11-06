@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * History rows for one member. Block periods match {@code UserModerationService.hidesDirectMessage}.
+ * History rows for one member. Block periods match {@code ModerationService.hidesDirectMessage}.
  * Deleted and hidden rows stay in the page; the service replaces their text.
  */
 @Repository
@@ -25,7 +25,7 @@ public class ChatMessageQueryRepository {
 
 	private static final String SELECT = """
 			SELECT
-			  m.id, m.room_id, m.sender_id, m.message_type, m.body, m.visibility, m.deleted_at,
+			  m.id, m.room_id, m.sender_id, m.message_type, m.body, m.payload, m.visibility, m.deleted_at,
 			  m.created_at, m.edited_at, m.client_message_id,
 			  u.username, u.display_name, u.avatar_url, u.status AS sender_status,
 			  (
@@ -150,6 +150,7 @@ public class ChatMessageQueryRepository {
 				rs.getString("sender_status"),
 				rs.getString("message_type"),
 				rs.getString("body"),
+				rs.getString("payload"),
 				rs.getString("visibility"),
 				deleted == null ? null : deleted.toInstant(),
 				rs.getTimestamp("created_at").toInstant(),
@@ -169,6 +170,7 @@ public class ChatMessageQueryRepository {
 			String senderStatus,
 			String type,
 			String body,
+			String payload,
 			String visibility,
 			Instant deletedAt,
 			Instant createdAt,

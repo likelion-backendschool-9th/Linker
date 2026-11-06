@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-fetch';
+import { listPublicContributions } from '@linker/api/p04-profile/p04-profile';
 
 export type ContributionResponse = {
   month: string;
@@ -6,8 +6,11 @@ export type ContributionResponse = {
   asOf: string;
 };
 
-export function fetchContributions(login: string, month: string) {
-  return apiFetch<ContributionResponse>(
-    `/api/v1/public/users/${encodeURIComponent(login)}/contributions?month=${month}`,
+export async function fetchContributions(login: string, month: string): Promise<ContributionResponse | null> {
+  const data = await listPublicContributions(login, { month });
+  if (!data.month || !data.asOf) return null;
+  const days = (data.days ?? []).flatMap((day) =>
+    day.date != null && day.count != null ? [{ date: day.date, count: day.count }] : [],
   );
+  return { month: data.month, asOf: data.asOf, days };
 }

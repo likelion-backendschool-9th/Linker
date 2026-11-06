@@ -41,7 +41,7 @@ bash scripts/create-labels.sh
 
 생성되는 라벨
 - 범위: `frontend`, `backend`, `docs`
-- 종류: `feat`, `fix`, `refactor`, `chore`
+- 종류: `feat`, `fix`, `chore` (커밋·브랜치 타입은 `feat`/`fix`/`chore`/`docs` 4개만 쓰고 `refactor`는 `chore`로 통합. 스크립트의 `refactor` 라벨 정리는 별도 chore 작업)
 - 상태: `in progress`, `review needed`
 
 > **반드시 2번보다 먼저.** 라벨이 없으면 이슈 템플릿·labeler가 라벨을 못 붙임

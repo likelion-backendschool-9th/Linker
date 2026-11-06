@@ -1,9 +1,10 @@
 package com.linker.backend.entity.post;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.post.type.PostViewSource;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +18,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(
@@ -26,7 +29,7 @@ import jakarta.persistence.UniqueConstraint;
 				columnNames = {"post_id", "viewer_id", "view_date"}
 		)
 )
-public class PostView extends BaseTimeEntity {
+public class PostView {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,6 +52,14 @@ public class PostView extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private boolean readmeExpanded;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected PostView() {
 	}
@@ -77,5 +88,13 @@ public class PostView extends BaseTimeEntity {
 
 	public boolean isReadmeExpanded() {
 		return readmeExpanded;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

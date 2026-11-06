@@ -7,7 +7,7 @@ import java.util.List;
 
 import com.linker.backend.async.webhook.WebhookQueue;
 import com.linker.backend.entity.github.GithubWebhookDelivery;
-import com.linker.backend.entity.github.WebhookStatus;
+import com.linker.backend.entity.github.type.WebhookStatus;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.config.GithubWebhookSettings;
 import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;

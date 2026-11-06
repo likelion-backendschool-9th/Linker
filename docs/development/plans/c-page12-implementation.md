@@ -6,7 +6,7 @@
 
 [WBS P12/S08](../02-wbs.md), [Policy 7장](../../planning/04-policy.md), [ERD](../01-erd.md)에 따른 **12번 C 담당 백엔드**다. 기존 11번의 권한·캐시·잠금을 재사용한다. 13–15 API, 프론트 화면 교체, B의 팀 생성·TeamAccess 구현, A의 로그인 구현, D의 알림 API·구독 기능은 추가하지 않는다.
 
-`UserIssueController → UserIssueService → UserIssueDetailService`를 사용한다. 같은 접근 그룹의 `UserIssueAccess`를 11/12가 공유하며, 외부 통신과 DB 트랜잭션을 분리한다.
+`user.IssueController → user.IssueService → user.IssueDetailService`를 사용한다. 같은 접근 그룹의 `UserIssueAccess`를 11/12가 공유하며, 외부 통신과 DB 트랜잭션을 분리한다.
 
 ## 구현한 API 8개
 
@@ -41,7 +41,7 @@
 - 최대 시도는 최초 포함 3회, 일반 일시 장애는 60초 간격이다. 서버 종료 후 RUNNING lease가 만료되어도 네 번째 외부 쓰기를 하지 않는다. 진행 중 작업이 있으면 새로운 변경은 409다.
 - GitHub 429 및 한도 소진 403은 권한 거절과 구분한다. Retry-After/reset을 반영하고 재시도 간격을 늘려 서버가 지정한 대기 전에는 호출하지 않는다. 일반 권한·입력·연결 충돌 4xx는 자동 재시도를 중단한다. 이 수치는 운영 보호값이며 상품 정책을 바꾸지 않는다.
 - 실패 응답에는 jobId·syncStatus·retryScheduled를, 재시도 시에는 retryAfterSeconds도 반환한다. 일반 11번 재조회가 미해결 실패 표시를 지우지 않는다.
-- 실제 반영 확인 후 기존 `UserNotificationService.create(CreateNotificationCommand)`로 새 담당자에게 알린다. 요청 전 담당자 ID를 보존해 웹훅 경합·재조회 실패 후에도 새 담당자를 판별한다. 캐시·알림·job DONE은 한 트랜잭션으로 커밋한다. 자기 자신/기존 담당자는 알리지 않는다.
+- 실제 반영 확인 후 기존 `user.NotificationService.create(CreateNotificationCommand)`로 새 담당자에게 알린다. 요청 전 담당자 ID를 보존해 웹훅 경합·재조회 실패 후에도 새 담당자를 판별한다. 캐시·알림·job DONE은 한 트랜잭션으로 커밋한다. 자기 자신/기존 담당자는 알리지 않는다.
 - 커밋 성공 후 늦게 실패가 보고되어도 DONE을 PENDING으로 되돌리지 않는다. 완료된 작업이 다시 실행되어 알림이 중복되는 것을 막는다. 기존 sync-enabled=false 기본값을 유지한다.
 
 ## 기존 구현 재사용과 남은 외부 선행

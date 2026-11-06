@@ -2,7 +2,7 @@
 
 > 2026-11-05. 이슈 [#193](https://github.com/likelion-backendschool-9th/Linker/issues/193). 코드를 바꾸지 않고 현재 구현을 기준 문장으로 고정한다.  
 > 변경은 이 문서와 연결 이슈에 적고 전원 멘션 후 반영한다. claim만으로 서버 권한을 부여하지 않는다.  
-> 근거: `JwtSessionTokens`, `SessionCookies`, `SessionClaims`, `ApiErrorBody`, `handleApiError`, `PlanLimits`, `policy.ts`, `CreateNotificationCommand`, `PublicCatalogService`.
+> 근거: `JwtSessionTokens`, `SessionCookies`, `SessionClaims`, `ApiErrorBody`, `handleApiError`, `PlanLimits`, `policy.ts`, `CreateNotificationCommand`, `CatalogService`.
 
 ## 1. JWT claim
 
@@ -88,10 +88,10 @@ JWT와 GitHub 토큰은 브리지와 URL에 넣지 않는다.
 
 | 생산 업무 | 서비스 |
 | --- | --- |
-| 로그인 사용자 업무 | `UserNotificationService` |
-| 채용 담당자 업무 | `RecruiterNotificationService` |
-| 운영자 업무 | `AdminNotificationService` |
-| 신고 최초 자동숨김 | `UserModerationService`가 `AdminNotificationService.create` 호출 |
+| 로그인 사용자 업무 | `user.NotificationService` |
+| 채용 담당자 업무 | `recruiter.NotificationService` |
+| 운영자 업무 | `admin.NotificationService` |
+| 신고 최초 자동숨김 | `user.ModerationService`가 `admin.NotificationService.create` 호출 |
 
 인자는 `CreateNotificationCommand` 순서대로 `recipientUserId`, `notificationType`, `actorUserId`, `targetType`, `targetId`, `linkPath`, `payloadJson`, `groupKey`다. 상세 동작은 [알림 생성 계약](d-notification-create-contract.md)과 청사진 §4를 유지한다. 이 freeze는 호출부를 추가하지 않는다.
 

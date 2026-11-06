@@ -36,7 +36,7 @@ export default async function EditProfilePage() {
   }
 
   if (session.userType === 'RECRUITER') {
-    const initial = await apiFetch<RecruiterProfileValues>('/api/v1/user/me/profile');
+    const initial = await apiFetch<RecruiterProfileValues>('/api/v1/recruiter/me/profile');
     return (
       <PageFrame title="프로필 수정" variant="stack" backHref={`/users/${session.login}` as Route}>
         <RecruiterProfileForm initial={initial} login={session.login} avatarUrl={avatarUrl} />

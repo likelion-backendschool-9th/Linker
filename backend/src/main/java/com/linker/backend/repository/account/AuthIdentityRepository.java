@@ -3,7 +3,7 @@ package com.linker.backend.repository.account;
 import java.util.Optional;
 
 import com.linker.backend.entity.account.AuthIdentity;
-import com.linker.backend.entity.account.AuthProvider;
+import com.linker.backend.entity.account.type.AuthProvider;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +20,14 @@ public interface AuthIdentityRepository extends JpaRepository<AuthIdentity, Long
 	Optional<AuthIdentity> findByProviderAndProviderUserId(
 			@Param("provider") AuthProvider provider,
 			@Param("providerUserId") String providerUserId);
+
+	@Query("""
+			select identity from AuthIdentity identity
+			join fetch identity.user
+			where identity.user.id = :userId
+			  and identity.provider = :provider
+			""")
+	Optional<AuthIdentity> findByUserIdAndProvider(
+			@Param("userId") long userId,
+			@Param("provider") AuthProvider provider);
 }

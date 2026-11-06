@@ -12,10 +12,10 @@ import java.time.Instant;
 import javax.sql.DataSource;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
-import com.linker.backend.service.PublicAuthService;
+import com.linker.backend.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ class WorkspaceTeamIntegrationTest {
 	@Autowired JdbcTemplate jdbc;
 	@Autowired DataSource dataSource;
 	@Autowired UserRepository users;
-	@Autowired PublicAuthService sessions;
+	@Autowired AuthService sessions;
 	@Autowired ObjectMapper json;
 	int org;
 

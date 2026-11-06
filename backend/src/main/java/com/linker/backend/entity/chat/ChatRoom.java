@@ -2,7 +2,9 @@ package com.linker.backend.entity.chat;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.RequestKind;
+import com.linker.backend.entity.chat.type.RoomType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,10 +14,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "chat_rooms")
-public class ChatRoom extends BaseTimeEntity {
+public class ChatRoom {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,6 +51,14 @@ public class ChatRoom extends BaseTimeEntity {
 	private Long lastMessageId;
 
 	private Instant lastMessageAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected ChatRoom() {
 	}
@@ -87,11 +99,14 @@ public class ChatRoom extends BaseTimeEntity {
 		this.respondedAt = when;
 	}
 
-	public boolean admitsSubscriber() {
+	public boolean admitsSubscriber(Instant now) {
 		if (roomType == RoomType.TEAM) {
 			return true;
 		}
-		return dmStatus == DmStatus.ACCEPTED || dmStatus == DmStatus.REQUESTED;
+		return dmStatus == DmStatus.ACCEPTED
+				|| (dmStatus == DmStatus.REQUESTED
+						&& requestExpiresAt != null
+						&& requestExpiresAt.isAfter(now));
 	}
 
 	public boolean admitsSender() {
@@ -107,6 +122,10 @@ public class ChatRoom extends BaseTimeEntity {
 
 	public RoomType getRoomType() {
 		return roomType;
+	}
+
+	public Long getTeamId() {
+		return teamId;
 	}
 
 	public DmStatus getDmStatus() {
@@ -132,5 +151,13 @@ public class ChatRoom extends BaseTimeEntity {
 	public void markLastMessage(long messageId, Instant at) {
 		this.lastMessageId = messageId;
 		this.lastMessageAt = at;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }
