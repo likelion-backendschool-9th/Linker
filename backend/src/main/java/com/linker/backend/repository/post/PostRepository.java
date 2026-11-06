@@ -1,12 +1,15 @@
 package com.linker.backend.repository.post;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import com.linker.backend.entity.post.Post;
+import com.linker.backend.entity.post.type.PostVisibility;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -72,4 +75,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 			order by p.createdAt desc, p.id desc
 			""")
 	List<Post> findVisibleForFeed();
+
+	// Report hide, delete, or restore. A bulk update leaves updatedAt unchanged.
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update Post p
+			set p.visibility = :visibility, p.deletedAt = :deletedAt
+			where p.id = :id
+			""")
+	int updateReportedVisibility(
+			@Param("id") long id,
+			@Param("visibility") PostVisibility visibility,
+			@Param("deletedAt") Instant deletedAt);
 }

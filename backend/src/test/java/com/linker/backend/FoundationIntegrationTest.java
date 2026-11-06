@@ -1096,14 +1096,23 @@ class FoundationIntegrationTest {
 				VALUES (?, 'BACKEND', '광고', 'https://example.com/job', 'example.com', CURRENT_DATE, 'ACTIVE', now(), now())
 				RETURNING id
 				""", Long.class, author.getId());
+		long recruitId = jdbc.queryForObject("""
+				INSERT INTO recruit_posts (
+				    author_id, title, description, work_mode, deadline, status, visibility, sort_at, created_at, updated_at)
+				VALUES (?, '모집', '설명', 'ONLINE', CURRENT_DATE, 'OPEN', 'VISIBLE', now(), now(), now())
+				RETURNING id
+				""", Long.class, author.getId());
 		try {
 			long postCase = insertCase("POST", postId, author.getId());
+			Object postUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM posts WHERE id = ?", Object.class, postId);
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + postCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"action\":\"HIDE\",\"reason\":\"숨김\"}"))
 					.andExpect(status().isOk());
 			assertThat(jdbc.queryForObject("SELECT visibility FROM posts WHERE id = ?", String.class, postId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM posts WHERE id = ?", Object.class, postId)).isNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM posts WHERE id = ?", Object.class, postId)).isEqualTo(postUpdatedAt);
 
 			long missing = insertCase("POST", postId + 100_000L, author.getId());
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + missing + "/actions")
@@ -1115,15 +1124,20 @@ class FoundationIntegrationTest {
 			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, missing)).isEqualTo("PENDING");
 
 			long adCase = insertCase("RECRUITER_AD", adId, author.getId());
+			Object adUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM recruiter_ads WHERE id = ?", Object.class, adId);
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + adCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"action\":\"DELETE\",\"reason\":\"광고 삭제\"}"))
 					.andExpect(status().isOk());
 			assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = ?", String.class, adId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT hidden_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
 			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isEqualTo(adUpdatedAt);
+			assertThat(jdbc.queryForObject("SELECT ended_reason FROM recruiter_ads WHERE id = ?", String.class, adId)).isNull();
 
 			long commentCase = insertCase("COMMENT", commentId, author.getId());
+			Object commentUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM comments WHERE id = ?", Object.class, commentId);
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + commentCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
@@ -1131,10 +1145,38 @@ class FoundationIntegrationTest {
 					.andExpect(status().isOk());
 			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, commentCase)).isEqualTo("ACTIONED");
 			assertThat(jdbc.queryForObject("SELECT visibility FROM comments WHERE id = ?", String.class, commentId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM comments WHERE id = ?", Object.class, commentId)).isNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM comments WHERE id = ?", Object.class, commentId)).isEqualTo(commentUpdatedAt);
+
+			long recruitCase = insertCase("RECRUIT_POST", recruitId, author.getId());
+			Object recruitUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM recruit_posts WHERE id = ?", Object.class, recruitId);
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + recruitCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"HIDE\",\"reason\":\"모집 숨김\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruit_posts WHERE id = ?", Object.class, recruitId)).isNull();
+			assertThat(jdbc.queryForObject("SELECT status FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("OPEN");
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + recruitCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"RESTORE\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("VISIBLE");
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + recruitCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"DELETE\",\"reason\":\"모집 삭제\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruit_posts WHERE id = ?", Object.class, recruitId)).isNotNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM recruit_posts WHERE id = ?", Object.class, recruitId)).isEqualTo(recruitUpdatedAt);
 		}
 		finally {
 			jdbc.update("DELETE FROM comments WHERE id = ?", commentId);
 			jdbc.update("DELETE FROM recruiter_ads WHERE id = ?", adId);
+			jdbc.update("DELETE FROM recruit_posts WHERE id = ?", recruitId);
 			jdbc.update("DELETE FROM posts WHERE id = ?", postId);
 			jdbc.update("DELETE FROM github_repos WHERE id = ?", repoId);
 		}
