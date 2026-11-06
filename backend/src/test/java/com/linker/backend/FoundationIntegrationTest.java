@@ -1077,32 +1077,37 @@ class FoundationIntegrationTest {
 				.andExpect(status().isOk());
 		assertThat(jdbc.queryForObject("SELECT visibility FROM chat_messages WHERE id = ?", String.class, dismissId)).isEqualTo("VISIBLE");
 
-		jdbc.execute("""
-				CREATE TABLE posts (
-				    id bigint PRIMARY KEY,
-				    visibility varchar(16) NOT NULL,
-				    deleted_at timestamptz
-				)
-				""");
-		jdbc.execute("""
-				CREATE TABLE recruiter_ads (
-				    id bigint PRIMARY KEY,
-				    status varchar(16) NOT NULL,
-				    hidden_at timestamptz,
-				    deleted_at timestamptz
-				)
-				""");
+		long repoId = jdbc.queryForObject("""
+				INSERT INTO github_repos (github_repo_id, owner_login, name, full_name, created_at, updated_at)
+				VALUES (?, 'mod', 'post', ?, now(), now())
+				RETURNING id
+				""", Long.class, 900_000L + author.getId(), "mod/post-" + author.getId());
+		long postId = jdbc.queryForObject("""
+				INSERT INTO posts (author_id, repo_id, summary, body, visibility, created_at, updated_at)
+				VALUES (?, ?, '요약', '본문', 'VISIBLE', now(), now())
+				RETURNING id
+				""", Long.class, author.getId(), repoId);
+		long commentId = jdbc.queryForObject("""
+				INSERT INTO comments (post_id, author_id, body, visibility, created_at, updated_at)
+				VALUES (?, ?, '댓글', 'VISIBLE', now(), now())
+				RETURNING id
+				""", Long.class, postId, author.getId());
+		long adId = jdbc.queryForObject("""
+				INSERT INTO recruiter_ads (
+				    recruiter_id, job_category, title, url, url_host, closes_on, status, created_at, updated_at)
+				VALUES (?, 'BACKEND', '광고', 'https://example.com/job', 'example.com', CURRENT_DATE, 'ACTIVE', now(), now())
+				RETURNING id
+				""", Long.class, author.getId());
 		try {
-			jdbc.update("INSERT INTO posts (id, visibility) VALUES (9, 'VISIBLE')");
-			long postCase = insertCase("POST", 9L, author.getId());
+			long postCase = insertCase("POST", postId, author.getId());
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + postCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"action\":\"HIDE\",\"reason\":\"숨김\"}"))
 					.andExpect(status().isOk());
-			assertThat(jdbc.queryForObject("SELECT visibility FROM posts WHERE id = 9", String.class)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT visibility FROM posts WHERE id = ?", String.class, postId)).isEqualTo("HIDDEN");
 
-			long missing = insertCase("POST", 99L, author.getId());
+			long missing = insertCase("POST", postId + 100_000L, author.getId());
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + missing + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
@@ -1111,27 +1116,30 @@ class FoundationIntegrationTest {
 					.andExpect(jsonPath("$.code").value("NOT_FOUND"));
 			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, missing)).isEqualTo("PENDING");
 
-			jdbc.update("INSERT INTO recruiter_ads (id, status) VALUES (4, 'ACTIVE')");
-			long adCase = insertCase("RECRUITER_AD", 4L, author.getId());
+			long adCase = insertCase("RECRUITER_AD", adId, author.getId());
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + adCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"action\":\"DELETE\",\"reason\":\"광고 삭제\"}"))
 					.andExpect(status().isOk());
-			assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = 4", String.class)).isEqualTo("HIDDEN");
-			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = 4", Object.class)).isNotNull();
+			assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = ?", String.class, adId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
+
+			long commentCase = insertCase("COMMENT", commentId, author.getId());
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + commentCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"HIDE\",\"reason\":\"댓글\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, commentCase)).isEqualTo("ACTIONED");
+			assertThat(jdbc.queryForObject("SELECT visibility FROM comments WHERE id = ?", String.class, commentId)).isEqualTo("HIDDEN");
 		}
 		finally {
-			jdbc.execute("DROP TABLE IF EXISTS posts, recruiter_ads");
+			jdbc.update("DELETE FROM comments WHERE id = ?", commentId);
+			jdbc.update("DELETE FROM recruiter_ads WHERE id = ?", adId);
+			jdbc.update("DELETE FROM posts WHERE id = ?", postId);
+			jdbc.update("DELETE FROM github_repos WHERE id = ?", repoId);
 		}
-
-		long commentCase = insertCase("COMMENT", 3L, author.getId());
-		mockMvc.perform(post("/api/v1/admin/report-cases/" + commentCase + "/actions")
-						.cookie(cookie(token))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"action\":\"HIDE\",\"reason\":\"댓글\"}"))
-				.andExpect(status().isOk());
-		assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, commentCase)).isEqualTo("ACTIONED");
 	}
 
 	private long insertCase(String targetType, long targetId, long targetUserId) {
