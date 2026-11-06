@@ -55,6 +55,7 @@ import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.global.realtime.ChatRoomAccess;
 import com.linker.backend.global.realtime.StompAuthException;
+import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
@@ -122,6 +123,7 @@ public class UserChatService {
 	private final UserNotificationService notifications;
 	private final ChatShareCardQuery shareCards;
 	private final JsonMapper json = JsonMapper.builder().build();
+	private final TeamChatAccess teamChat;
 
 	public UserChatService(
 			ChatRoomAccess chatRooms,
@@ -139,7 +141,8 @@ public class UserChatService {
 			UserUploadService uploads,
 			ChatMessageImageRepository imageLinks,
 			UserNotificationService notifications,
-			ChatShareCardQuery shareCards
+			ChatShareCardQuery shareCards,
+			TeamChatAccess teamChat
 	) {
 		this.chatRooms = chatRooms;
 		this.lists = lists;
@@ -157,6 +160,7 @@ public class UserChatService {
 		this.imageLinks = imageLinks;
 		this.notifications = notifications;
 		this.shareCards = shareCards;
+		this.teamChat = teamChat;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -218,8 +222,21 @@ public class UserChatService {
 				.filter(member -> member.getHiddenAt() == null)
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
 		ChatRoom room = membership.getRoom();
-		if (room.getRoomType() != RoomType.DIRECT) {
-			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		if (room.getRoomType() == RoomType.TEAM) {
+			if (room.getTeamId() == null) {
+				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+			}
+			TeamChatAccess.TeamView team = teamChat.readableBy(user.userId(), room.getTeamId());
+			if (team == null) {
+				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+			}
+			List<ChatMemberResponse> people = members.findActiveInRoom(roomId).stream()
+					.map(member -> accounts.findById(member.getUserId()).orElse(null))
+					.filter(Objects::nonNull)
+					.map(UserChatService::memberView)
+					.toList();
+			return new ChatRoomInfoResponse(room.getId(), "TEAM", team.name(), null, membership.isMuted(), people,
+					Map.of("id", team.id(), "status", team.status()), PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
 		}
 		String kind;
 		String direction;
@@ -512,6 +529,15 @@ public class UserChatService {
 		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
 	}
 
+	@Transactional
+	public void leave(AuthenticatedUser principal, long roomId) {
+		User account = requireActive(principal);
+		ChatRoomMember member = members.lockActive(roomId, account.getId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		member.leave(DatabaseInstant.now(clock));
+		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
+	}
+
 	/**
 	 * Current safe row for a subscriber. Delivery may reorder frames, so a snapshot taken at
 	 * commit is not what the socket sends.
@@ -548,8 +574,9 @@ public class UserChatService {
 		if (members.findActive(roomId, current.getId()).isEmpty() || !room.admitsSender()) {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
-		if (room.getRoomType() == RoomType.TEAM) {
-			reject(current.getId(), roomId, command.clientMessageId(), "TEAM_STATE_UNAVAILABLE", "팀 상태를 확인할 수 없어요", false, null);
+		if (room.getRoomType() == RoomType.TEAM
+				&& (room.getTeamId() == null || !teamChat.writableBy(current.getId(), room.getTeamId()))) {
+			reject(current.getId(), roomId, command.clientMessageId(), "FORBIDDEN", "팀 채팅에 메시지를 보낼 수 없어요", false, null);
 			return false;
 		}
 		ChatMessage existing = messages.findBySenderIdAndClientMessageId(current.getId(), command.clientMessageId()).orElse(null);

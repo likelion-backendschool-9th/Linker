@@ -112,6 +112,10 @@ public class ChatRoom extends BaseTimeEntity {
 		return roomType;
 	}
 
+	public Long getTeamId() {
+		return teamId;
+	}
+
 	public DmStatus getDmStatus() {
 		return dmStatus;
 	}
