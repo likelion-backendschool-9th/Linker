@@ -513,6 +513,46 @@ class ChatTextIntegrationTest {
 	}
 
 	@Test
+	void sixthSendInOneSecondIsRejectedAsRetryableAndTheSameIdSucceedsAfterTheWindow() throws Exception {
+		User sender = user("rate-sender");
+		User other = user("rate-other");
+		ChatRoom room = direct(sender, other, DmStatus.ACCEPTED);
+		StompSession senderSocket = connect(sender);
+		StompSession otherSocket = connect(other);
+		List<String> topic = frames(otherSocket, "/topic/chat-rooms/" + room.getId());
+		List<String> rejected = frames(senderSocket, "/user/queue/chat-rooms");
+		// A fixed one-second window could split a burst in two; seed the counter so the cut is exact.
+		String key = "rate:chat.send:" + sender.getId();
+		redis.opsForValue().set(key, String.valueOf(PlanLimits.CHAT_SENDS_PER_SECOND - 1), Duration.ofSeconds(30));
+		String fifth = UUID.randomUUID().toString();
+		String sixth = UUID.randomUUID().toString();
+		try {
+			send(senderSocket, room.getId(), fifth, "다섯째", Map.of());
+			waitUntil(() -> topic.stream().anyMatch(frame -> frame.contains("다섯째") && frame.contains(fifth)));
+			send(senderSocket, room.getId(), sixth, "여섯째", Map.of());
+			waitUntil(() -> rejected.stream().anyMatch(frame ->
+					frame.contains("RATE_LIMITED") && frame.contains("retryable=true") && frame.contains(sixth)));
+			assertThat(senderSocket.isConnected()).isTrue();
+			assertThat(topic.stream().noneMatch(frame -> frame.contains("여섯째"))).isTrue();
+			assertThat(jdbc.queryForObject(
+					"select count(*) from chat_messages where sender_id = ? and client_message_id = ?",
+					Long.class, sender.getId(), sixth)).isZero();
+			assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id = ?", Long.class, room.getId()))
+					.isEqualTo(1L);
+		}
+		finally {
+			redis.delete(key);
+		}
+		send(senderSocket, room.getId(), sixth, "여섯째", Map.of());
+		waitUntil(() -> topic.stream().anyMatch(frame -> frame.contains("여섯째") && frame.contains(sixth)));
+		assertThat(jdbc.queryForObject(
+				"select count(*) from chat_messages where sender_id = ? and client_message_id = ?",
+				Long.class, sender.getId(), sixth)).isEqualTo(1L);
+		senderSocket.disconnect();
+		otherSocket.disconnect();
+	}
+
+	@Test
 	void readMovesForwardOnlyAndSuspendedWriteFails() throws Exception {
 		User viewer = user("read-viewer");
 		User sender = user("read-sender");
