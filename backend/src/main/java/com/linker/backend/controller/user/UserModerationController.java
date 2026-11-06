@@ -2,9 +2,11 @@ package com.linker.backend.controller.user;
 
 import java.util.List;
 
+import com.linker.backend.dto.moderation.request.CreateAppealRequest;
 import com.linker.backend.dto.moderation.request.CreateBlockRequest;
 import com.linker.backend.dto.moderation.request.CreateReportRequest;
 import com.linker.backend.dto.moderation.response.BlockView;
+import com.linker.backend.dto.moderation.response.CreateAppealResponse;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.service.user.UserModerationService;
@@ -59,6 +61,18 @@ public class UserModerationController {
 	public ResponseEntity<Void> unblock(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long userId) {
 		moderation.unblock(user.userId(), userId);
 		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/appeals")
+	@Tag(name = "p18-notifications")
+	@Operation(operationId = "createAppeal")
+	public ResponseEntity<CreateAppealResponse> appeal(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestBody CreateAppealRequest request
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(new CreateAppealResponse(moderation.appeal(user.userId(), request.sanctionId(), request.body())));
 	}
 
 	@PostMapping("/reports")

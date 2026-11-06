@@ -42,7 +42,7 @@ class RoleNotificationServiceTest {
 	private Function<CreateNotificationCommand, Notification> creator(Role role, String time) {
 		Clock clock = Clock.fixed(kst(time), PlanLimits.APP_ZONE);
 		return switch (role) {
-			case USER -> new UserNotificationService(users, notifications, clock)::create;
+			case USER -> new UserNotificationService(users, notifications, clock, null, null, null)::create;
 			case RECRUITER -> new RecruiterNotificationService(users, notifications, clock)::create;
 			case ADMIN -> new AdminNotificationService(users, notifications, clock)::create;
 		};
