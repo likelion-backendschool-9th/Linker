@@ -777,7 +777,8 @@ class ChatRoomBasicsIntegrationTest {
 	}
 
 	private ChatRoom team(User... people) {
-		ChatRoom room = rooms.saveAndFlush(ChatRoom.team(System.nanoTime()));
+		long teamId = com.linker.backend.support.TeamTestFixtures.team(jdbc, people[0].getId(), "JUnit team", "ACTIVE");
+		ChatRoom room = rooms.saveAndFlush(ChatRoom.team(teamId));
 		for (User person : people) {
 			members.saveAndFlush(ChatRoomMember.join(room, person.getId()));
 		}

@@ -8,16 +8,16 @@ import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.repository.team.WorkspaceTeamRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service("userTeamService")
 public class TeamService {
-  private final WorkspaceTeamRepository teams;
+  private final TeamRepository teams;
   private final TeamSetupService setup;
 
-  public TeamService(WorkspaceTeamRepository teams, TeamSetupService setup) {
+  public TeamService(TeamRepository teams, TeamSetupService setup) {
     this.teams = teams;
     this.setup = setup;
   }

@@ -1,4 +1,5 @@
--- B-owned ERD schema preparation for pages 07/08. NOT auto-applied by Flyway.
+-- Historical preparation snapshot. Superseded by V20__team_foundation.sql.
+-- Do not apply after Flyway V20. Retained for review of old isolated DBs only.
 -- Assign the official migration version ONLY after A/D/E confirm versions and DB history.
 -- Prerequisite: current dev V1-V4. Do not run manually on a shared/development DB.
 -- Chat storage comes from D's migrations; this file only attaches its team FK.

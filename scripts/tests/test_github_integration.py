@@ -146,7 +146,7 @@ class GithubIntegrationSafetyTest(unittest.TestCase):
         self.assertNotIn("JWT_PRIVATE_KEY", build_env)
         self.assertEqual(runtime_env["GITHUB_APP_PRIVATE_KEY"], self.settings["GITHUB_APP_PRIVATE_KEY"])
 
-    def test_prepared_schema_refuses_unmarked_existing_team_tables(self):
+    def test_prepared_schema_refuses_unmarked_existing_issue_tables(self):
         answers = ["linker_github_test", "t", "1", "t"]
         with patch.object(runner, "database", side_effect=answers) as database:
             with patch.object(runner, "SQL_ROOT", self.directory):
@@ -156,6 +156,20 @@ class GithubIntegrationSafetyTest(unittest.TestCase):
                     runner.prepare_schema(self.directory, self.settings)
         self.assertEqual(database.call_count, 4)
         self.assertFalse((self.directory / "schema.json").exists())
+
+    def test_preparation_does_not_reapply_formal_team_tables(self):
+        history = "\n".join(p.name.split("__")[0][1:]
+                            for p in (runner.SQL_ROOT / "migration").glob("V*__*.sql"))
+        with patch.object(runner, "database", side_effect=["linker_github_test", "t", history, "f", ""]) as database:
+            runner.prepare_schema(self.directory, self.settings)
+        applied = database.call_args.args[2]
+        self.assertIn("CREATE TABLE issues", applied)
+        self.assertIn("CREATE TABLE issue_sync_jobs", applied)
+        self.assertNotIn("CREATE TABLE teams", applied)
+        self.assertNotIn("ALTER TABLE chat_rooms", applied)
+        self.assertTrue(applied.startswith("BEGIN;"))
+        self.assertTrue(applied.endswith("COMMIT;\n"))
+        self.assertTrue(runner.schema_matches(self.directory))
 
     def test_prepared_sql_hash_change_does_not_reapply_sql(self):
         (self.directory / "schema.json").write_text("{}")

@@ -1,4 +1,5 @@
--- B-owned ERD link table preparation, NOT an automatically discovered Flyway migration.
+-- Historical preparation snapshot. Superseded by V20__team_foundation.sql.
+-- Do not apply after Flyway V20. Retained for review of old isolated DBs only.
 -- Prerequisites: B team-foundation.sql and the shared github_repos table first opened by E.
 -- E's V12__post_editor.sql already defines github_repos: NEVER create another copy here.
 -- Assign the official version/order only after A/D/E and existing DB histories are checked.
