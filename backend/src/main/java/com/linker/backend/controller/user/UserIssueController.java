@@ -112,6 +112,27 @@ public class UserIssueController {
                 true));
   }
 
+  @GetMapping("/board")
+  @DeveloperOnly
+  @Tag(name = "p14-board")
+  @Operation(operationId = "getTeamIssueBoard", summary = "팀 상태 보드 조회")
+  public ResponseEntity<com.linker.backend.dto.issue.response.IssueBoardResponse> board(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @RequestParam(required = false) Long repo,
+      @RequestParam(required = false) String assignee,
+      @RequestParam(required = false) String label,
+      @RequestParam(defaultValue = "false") boolean open) {
+    // Same filters as page 11 except status: the columns are the statuses (WBS 4-8).
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(
+            issues.board(
+                user,
+                teamId,
+                new IssueListQuery(repo, null, assignee, label, open, null, IssueListQuery.MAX_SIZE)));
+  }
+
   @GetMapping("/issue-filters")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
