@@ -567,7 +567,8 @@ public class ChatService {
 		}
 		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire("chat.share", participant.account().getId(), PlanLimits.CHAT_SHARES_PER_MINUTE, 1);
 		if (!decision.allowed()) {
-			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요");
+			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요",
+					Map.of("retryAfterSeconds", decision.retryAfterSeconds()));
 		}
 		String payload = "{\"targetType\":\"" + targetType + "\",\"targetId\":" + request.targetId() + "}";
 		ChatMessage message = messages.saveAndFlush(ChatMessage.shareCard(participant.member().getRoom(), participant.account().getId(), payload, request.clientMessageId()));
@@ -959,19 +960,22 @@ public class ChatService {
 	}
 
 	private User requireKnown(AuthenticatedUser principal) {
+		// LOGIN_REQUIRED opens the login sheet; UNAUTHORIZED is reserved for webhook signatures.
 		if (principal == null) {
-			throw new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요");
+			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
 		}
 		return accounts.findById(principal.userId())
-				.orElseThrow(() -> new ApiException(401, "UNAUTHORIZED", "로그인이 필요해요"));
+				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
 	}
 
 	private User requireActive(AuthenticatedUser principal) {
 		User account = requireKnown(principal);
+		// A token issued before the suspension passes AccountStateFilter; answer with the same code.
+		if (account.getStatus() == UserStatus.SUSPENDED) {
+			throw new ApiException(403, "SUSPENDED", "정지된 계정은 이 기능을 쓸 수 없어요");
+		}
 		if (account.getStatus() != UserStatus.ACTIVE) {
-			throw new ApiException(403, "FORBIDDEN", account.getStatus() == UserStatus.SUSPENDED
-					? "정지된 계정은 이 기능을 쓸 수 없어요"
-					: "이 기능을 사용할 수 없어요");
+			throw new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요");
 		}
 		return account;
 	}
