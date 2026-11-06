@@ -13,7 +13,7 @@ export function teamPostCreateHref(teamId: number): Route {
 }
 
 export function profileHref(login: string): Route {
-  return `/u/${encodeURIComponent(login)}` as Route;
+  return `/user/${encodeURIComponent(login)}` as Route;
 }
 
 export function teamPlanHref(teamId: number, plan: 'FREE' | 'FLEX'): Route {

@@ -794,7 +794,7 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.kind").value("users"))
 				.andExpect(jsonPath("$.items.length()").value(1))
 				.andExpect(jsonPath("$.items[0].id").value(developer.getId()))
-				.andExpect(jsonPath("$.items[0].url").value("/u/ada"));
+				.andExpect(jsonPath("$.items[0].url").value("/user/ada"));
 		mockMvc.perform(get("/api/v1/public/sitemap/posts"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items.length()").value(0));

@@ -26,8 +26,8 @@
 | 백엔드 영향 | 1단계/2단계는 URL, `@Tag`, `operationId`를 바꾸지 않는다. 생성 클라이언트에 영향이 없다 |
 
 경고 6개 위치
-- `app/(public)/u/[login]/_components/contribution-calendar.tsx` : 미사용 `ContributionResponse`
-- `app/(public)/u/[login]/_components/profile-posts.test.tsx` : `<img>` 사용
+- `app/(public)/user/[login]/_components/contribution-calendar.tsx` : 미사용 `ContributionResponse`
+- `app/(public)/user/[login]/_components/profile-posts.test.tsx` : `<img>` 사용
 - `lib/api/api-fetch.test.ts` : 미사용 `_input`, `_init` 4개
 
 ## 3. 먼저 정해야 할 것 (원래 노트가 모호한 부분)

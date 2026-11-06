@@ -25,7 +25,7 @@
 | 01 | Start / login | `/`, `/auth/callback` | Required | 00 |
 | 02 | Onboarding | `/onboarding` | Required | 01 |
 | 03 | Legal documents | `/legal/[slug]` | Required | 00 |
-| 04 | Profile | `/u/[login]` | Required | 02 |
+| 04 | Profile | `/user/[login]` | Required | 02 |
 | 05 | Edit profile | `/settings/profile` | Required | 04 |
 | 06 | Settings | `/settings` | Required | 01 |
 | 07 | Workspace home / my issues | `/workspace`, `/workspace/issues` | Required | 01 |
@@ -91,7 +91,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Test setup: Vitest + vitest-axe, Playwright + axe, MSW (orval mocks) (blueprint ch. 14)
 - [ ] Mock data mode for frontend work before the backend is live: `pnpm dev:mock`, one mock file per page with the WBS endpoints, role switcher (guest / developer / recruiter / operator) (blueprint §1-2)
 - [ ] App layout: 4 bottom tabs (Home / Find Team / Workspace / Chat), top header (bell + unread count + profile icon; "로그인" button and "설정" icon in their place for guests). Keep the tab list as an array switchable by member type (recruiter: Home / Chat, after 31)
-- [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/u/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
+- [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/user/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
 - [ ] Common components: bottom sheet, confirm modal, toast, empty state, error state, skeleton
 - [ ] `error.tsx` (unexpected error, retry), `not-found.tsx` ("삭제되었거나 볼 수 없는 콘텐츠예요" — deleted or unavailable content). Replace the screen map's "error" and "unavailable content" pages
 - [ ] Common banners: offline ("인터넷 연결이 끊겼어요…"), GitHub unstable ("최신 정보가 아닐 수 있어요"), suspended ("N월 N일까지 이용이 제한됐어요 · 이의 제기하기")
@@ -189,7 +189,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Linked from onboarding (02) and settings (06)
 - [ ] No contact page; a mail link instead (replaces the screen map's "contact us" page)
 
-### 04. Profile `[Required]` · `/u/[login]`
+### 04. Profile `[Required]` · `/user/[login]`
 
 > Basis: A-2, A-4, A-5, A-6, P-5, P-7, C-4, H-7, S-10 · Needs first: 02 · Merged: followers/following pages → sheet
 > Built in two passes. Pass 1 now (header, graph, completion record); pass 2 after 22 (post list, pinned posts, message button).

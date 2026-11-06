@@ -77,7 +77,7 @@ export function RecruiterOfferSummary() {
               {summary.data.latest.map((offer) => (
                 <li key={offer.roomId}>
                   {offer.developer?.login ? (
-                    <Link className={styles.offerPerson} href={`/u/${encodeURIComponent(offer.developer.login)}`}>
+                    <Link className={styles.offerPerson} href={`/user/${encodeURIComponent(offer.developer.login)}`}>
                       <span>{offer.developer.name}</span>
                       <span className={styles.handle}>@{offer.developer.login}</span>
                       <span className={styles.badge}>{STATUS_LABEL[offer.status]}</span>

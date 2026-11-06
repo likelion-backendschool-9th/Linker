@@ -102,7 +102,7 @@ function AuthorRow({ post }: { post: Detail }) {
   const menu = useOverlay('post-menu');
   return (
     <div className={styles.authorRow}>
-      <Link href={`/u/${post.author.login}` as Route} className={styles.author}>
+      <Link href={`/user/${post.author.login}` as Route} className={styles.author}>
         <Image
           src={post.author.avatarUrl}
           alt=""

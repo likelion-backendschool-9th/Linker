@@ -216,7 +216,7 @@ function ProfilePeopleSheet({
           <ul className={styles.peopleList}>
             {people.data.items.map(({ user }) => (
               <li key={user.id}>
-                <Link href={`/u/${encodeURIComponent(user.login)}`} onClick={overlay.close}>
+                <Link href={`/user/${encodeURIComponent(user.login)}`} onClick={overlay.close}>
                   <span className={styles.personAvatar}>
                     {user.avatarUrl && <Image src={user.avatarUrl} alt="" fill sizes="32px" />}
                   </span>

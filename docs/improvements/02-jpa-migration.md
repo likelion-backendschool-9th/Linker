@@ -12,7 +12,7 @@
 | C (준영님) | 이슈 테이블을 정식 Flyway로 옮기고, 이슈 Entity를 만들고, 이슈 레포지토리 7개를 JdbcTemplate에서 JPA로 전환 |
 | D (윤수님) | 채팅 레포지토리 4개 JPA 전환, 채팅 Entity와 Enum 정리(테이블 개수와 맞추기) |
 | B (도균님) | 팀 레포지토리 3개 JPA 전환 |
-| A (명석님) | 프로필 쿼리 JPA 전환, 프론트 URL `/u/[login]` 변경(WBS와 시드도 함께) |
+| A (명석님) | 프로필 쿼리 JPA 전환, 프론트 URL `/u/[login]` → `/user/[login]`(WBS와 시드도 함께) |
 | E (준호님) | 23번 `comment-menu-sheet` 등 컴포넌트를 hook, api, 화면, 스타일로 분리 |
 
 원래 계획의 "모두: Entity 폴더에서 테이블이 아닌 것 빼고 Enum을 Entity 옆으로"는 1단계 PR #244에서 끝났다(`entity/{업무}/type/`). 2단계에서 다시 할 필요 없다.
@@ -205,7 +205,7 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 | service/recruiter/AdService | 4 | 없음 (서비스 안 SQL → Repository로) — **배정 필요(A로 추정)** |
 | service/admin/ReportContentEffects | 6 | 없음 (서비스 안 SQL → Repository로) — **배정 필요(A로 추정)** |
 
-**프론트 URL `/u/[login]` 변경**: 원래 계획에 "WBS와 시드도 함께"라고만 적혀 있고 변경 후 URL은 문서에 없다. A가 새 URL 형태를 먼저 정하고 `docs/planning/07-page-todo.md`, `docs/development/02-wbs.md`, Policy 접근표, 시드 데이터, 백엔드의 프로필 링크 생성 코드와 sitemap을 함께 확인한다. URL이 바뀌면 AGENTS.md "Page/URL/screen changes" 규칙대로 TODO, WBS, Policy, 블루프린트를 갱신한다. 백엔드 JPA 전환과 **별도 PR**로 한다.
+**프론트 URL `/u/[login]` 변경**: 확정된 경로는 `/user/[login]`이다. `docs/planning/07-page-todo.md`, `docs/development/02-wbs.md`, Policy 접근표, 백엔드의 프로필 링크 생성 코드와 sitemap을 함께 맞춘다. URL이 바뀌면 AGENTS.md "Page/URL/screen changes" 규칙대로 TODO, WBS, Policy, 블루프린트를 갱신한다. 백엔드 JPA 전환과 **별도 PR**로 한다.
 `PublicProfileQuery`가 읽는 완료 기록·팀 멤버십 테이블은 팀 스키마(B)에 있어 Entity가 B의 선행 작업에 의존한다. 이 파일은 B의 Entity가 생긴 뒤에 전환한다.
 
 ### E (준호님) — 컴포넌트 분리, 이름 정리
@@ -284,4 +284,4 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 | 첫 Custom/Impl 패턴 작성자 | E (`BlockInserter`/`ReportCaseOpener`). 단 E의 주 업무는 프론트이므로 먼저 시작하는 사람이 맡아도 된다 | 팀 |
 | 배정 필요 7개 파일(5절) | 추정 담당자 확인 | 팀 |
 | B의 팀 스키마 Flyway·Entity 작업 포함 여부 | 포함 | B |
-| `/u/[login]` 새 URL | A가 제안 후 팀 확인 | A |
+| `/u/[login]` 새 URL | `/user/[login]` | A |

@@ -160,7 +160,7 @@ function CommentItem({ post, comment, editing, canReply, onReply, onEditDone }: 
       />
       <div className={styles.body}>
         <div className={styles.head}>
-          <Link id={nameId} href={`/u/${comment.author.login}` as Route} className={styles.name}>
+          <Link id={nameId} href={`/user/${comment.author.login}` as Route} className={styles.name}>
             {comment.author.name}
           </Link>
           {byPostAuthor && <span className={styles.badge}>작성자</span>}

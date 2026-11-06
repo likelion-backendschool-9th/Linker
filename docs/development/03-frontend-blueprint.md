@@ -168,7 +168,7 @@ Don't split the URL; `page.tsx` reads the session and picks a view. If only butt
 
 | Page | `_views/` | Picked by |
 | --- | --- | --- |
-| 04 `/u/[login]` | `developer-profile-view.tsx`, `recruiter-profile-view.tsx`, `recruiter-my-page-view.tsx` | Owner type × is it mine. Viewer role only changes buttons in `profile-actions.tsx` |
+| 04 `/user/[login]` | `developer-profile-view.tsx`, `recruiter-profile-view.tsx`, `recruiter-my-page-view.tsx` | Owner type × is it mine. Viewer role only changes buttons in `profile-actions.tsx` |
 | 06 `/settings` | `developer-settings-view.tsx`, `recruiter-settings-view.tsx` | My type (recruiter: no GitHub, Scout only, password change) |
 | 05 `/settings/profile` | `developer-profile-form.tsx`, `recruiter-profile-form.tsx` | My type (job categories developer-only) |
 | 28, 29 | none | Server returns only that type's plans (Pro·Flex / Scout) |
@@ -320,7 +320,7 @@ export function useOverlay(key: OverlayKey) {
 | 01 `/`, 03 `/legal/[slug]`, 24 `/feed`, 19 `/recruits` | Yes | Yes |
 | 23 `/posts/[id]` | Yes | Yes (`lastModified`) |
 | 21 `/recruits/[id]` | Yes (closed too; 404 if deleted) | Open posts only |
-| 04 `/u/[login]` developer | Yes | Yes |
+| 04 `/user/[login]` developer | Yes | Yes |
 | 04 recruiter, 10 `/invite/[code]`, `(auth)` callback/recruiter screens, all `(member)` `(developer)` `(recruiter)` | `noindex` | No |
 | `/admin/*` | `noindex, nofollow` + `X-Robots-Tag` | No |
 | Hidden/deleted/suspended/withdrawing/blocked content | `notFound()` → 404 | No |
@@ -466,7 +466,7 @@ Matched against 07 paths, 04 access table and the [backend blueprint](05-backend
 | 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | AuthController · p01 |
 | 02 | `/onboarding` | (developer) | × / ○ / × / ○ | user.AccountController · p02 |
 | 03 | `/legal/[slug]` | (public) | ○ everyone | LegalController · p03 |
-| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController, user.AccountController, PostController, TeamController, recruiter.AdController (+ UserChat / RecruiterChat as borrowed) · p04 |
+| 04 | `/user/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController, user.AccountController, PostController, TeamController, recruiter.AdController (+ UserChat / RecruiterChat as borrowed) · p04 |
 | 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | user.AccountController · p05 |
 | 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | user.AccountController, user.SessionController, user.NotificationController (+ recruiter.AuthController for password) · p06 |
 | 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | user.TeamController, user.IssueController · p07 |
@@ -493,7 +493,7 @@ Matched against 07 paths, 04 access table and the [backend blueprint](05-backend
 
 - ※1 Guest "×" = login-prompt sheet + `returnTo` (04 Policy aligned 2026-10-29); logged-in "×" → `/feed`.
 - ※2 The admin OTP gate is inside `(admin)/admin/layout.tsx`, no separate URL.
-- ※3 The recruiter my page is `_views/recruiter-my-page-view.tsx` of `/u/[login]`, no new URL.
+- ※3 The recruiter my page is `_views/recruiter-my-page-view.tsx` of `/user/[login]`, no new URL.
 - Same URL prefix may span groups (`/recruits`, `/posts`, `/recruiter`). 28 and 29 are in `(member)` because recruiters pay for Scout (2026-10-30).
 
 ## 14. Page completion checklist (before a PR)

@@ -660,7 +660,7 @@ public class AccountService {
 				follower.getId(),
 				"USER",
 				follower.getId(),
-				"/u/" + follower.getUsername(),
+				"/user/" + follower.getUsername(),
 				null,
 				null));
 	}

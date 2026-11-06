@@ -42,7 +42,7 @@ public class SitemapService {
 			case USERS -> users.findIndexable(PageRequest.of(page - 1, size, Sort.by("id").ascending())).stream()
 					.map(user -> new SitemapItem(
 							user.getId(),
-							"/u/" + URLEncoder.encode(user.getUsername(), StandardCharsets.UTF_8).replace("+", "%20"),
+							"/user/" + URLEncoder.encode(user.getUsername(), StandardCharsets.UTF_8).replace("+", "%20"),
 							user.getUpdatedAt()
 					))
 					.toList();
