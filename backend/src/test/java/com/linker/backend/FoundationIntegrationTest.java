@@ -1,10 +1,16 @@
 package com.linker.backend;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Set;
@@ -34,6 +41,7 @@ import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.entity.github.WebhookStatus;
 import com.linker.backend.entity.moderation.Admin;
 import com.linker.backend.entity.moderation.AdminRole;
+import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.security.DeveloperOnly;
 import com.linker.backend.global.security.JwtSessionTokens;
 import com.linker.backend.global.security.RsaMaterial;
@@ -47,6 +55,7 @@ import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.service.PublicAuthService;
 import com.linker.backend.service.admin.TotpCodes;
 import com.linker.backend.integration.github.GithubTokenCipher;
+import com.linker.backend.integration.mail.SmtpMailGateway;
 import com.linker.backend.integration.github.GithubWebhookHandler;
 import com.linker.backend.integration.github.GithubWebhookService;
 import com.linker.backend.service.user.UserModerationService;
@@ -66,6 +75,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.mockito.ArgumentCaptor;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -148,6 +159,9 @@ class FoundationIntegrationTest {
 	private AdminNotificationService adminNotifications;
 	@Autowired
 	private PlatformTransactionManager transactionManager;
+
+	@MockitoBean
+	private SmtpMailGateway mail;
 
 	enum NotificationProducer { USER, RECRUITER, ADMIN }
 
@@ -449,7 +463,8 @@ class FoundationIntegrationTest {
 		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(developerToken)))
 				.andExpect(status().isForbidden());
 		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(recruiterToken)))
-				.andExpect(status().isNotFound());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isEmpty());
 	}
 
 	@Test
@@ -845,6 +860,20 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/webhook/github'].post.operationId").value("receiveGithubWebhook"))
 				.andExpect(jsonPath("$.paths['/api/v1/admin/otp/verify'].post.operationId").value("verifyAdminOtp"))
 				.andExpect(jsonPath("$.paths['/api/v1/admin/otp/verify'].post.tags[0]").value("p25-admin-reports"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/profile/github-sync'].post.operationId").value("syncMyProfileFromGithub"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/profile/github-sync'].post.tags[0]").value("p05-profile-edit"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/teams'].get.operationId").value("listPublicTeams"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/teams'].get.tags[0]").value("p04-profile"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/recruiter-signup/email-codes'].post.operationId").value("requestRecruiterEmailCode"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/recruiter-auth/login'].post.operationId").value("loginRecruiter"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers'].get.operationId").value("listRecruiterOffers"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers/counts'].get.operationId").value("countRecruiterOffers"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers/summary'].get.operationId").value("summarizeRecruiterOffers"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers/{roomId}/first-message'].get.operationId").value("getRecruiterOfferFirstMessage"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/contributions'].get.operationId").value("listPublicContributions"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/me/ad'].get.operationId").value("getMyJobAd"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/me/ad'].put.operationId").value("saveMyJobAd"))
+				.andExpect(jsonPath("$.paths['/api/v1/recruiter/me/ad/status'].patch.operationId").value("updateMyJobAdStatus"))
 				.andReturn();
 		String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
 		assertThat(body).doesNotContain("/uploads/{fileId}/content");
@@ -909,6 +938,432 @@ class FoundationIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
 				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 커뮤니티 정책")));
+	}
+
+	@Test
+	void publicProfileReadsTeamsAndCompletionWhenThoseTablesExist() throws Exception {
+		User user = saveUser("octocat", UserType.DEVELOPER);
+		mockMvc.perform(get("/api/v1/public/users/octocat"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.completion.projectCount").value(0))
+				.andExpect(jsonPath("$.completion.issueCompletionRate").value(0));
+		mockMvc.perform(get("/api/v1/public/users/octocat/teams"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isEmpty());
+
+		jdbc.execute("""
+				CREATE TABLE teams (
+				    id bigint PRIMARY KEY,
+				    name varchar(80) NOT NULL,
+				    avatar_url varchar(2048),
+				    status varchar(16) NOT NULL
+				)
+				""");
+		jdbc.execute("""
+				CREATE TABLE team_members (
+				    id bigint PRIMARY KEY,
+				    team_id bigint NOT NULL,
+				    user_id bigint NOT NULL,
+				    left_at timestamptz
+				)
+				""");
+		jdbc.execute("""
+				CREATE TABLE completion_records (
+				    id bigint PRIMARY KEY,
+				    user_id bigint NOT NULL,
+				    result varchar(16) NOT NULL,
+				    assigned_issue_count integer NOT NULL,
+				    done_issue_count integer NOT NULL
+				)
+				""");
+		try {
+			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (1, 'Linker', 'https://avatars.githubusercontent.com/u/1', 'ACTIVE')");
+			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (2, 'Done', NULL, 'COMPLETED')");
+			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (3, 'Paused', NULL, 'READ_ONLY')");
+			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (4, 'Left', NULL, 'ACTIVE')");
+			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (1, 1, ?, NULL)", user.getId());
+			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (2, 2, ?, NULL)", user.getId());
+			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (3, 3, ?, NULL)", user.getId());
+			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (4, 4, ?, now())", user.getId());
+			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (1, ?, 'COMPLETED', 4, 2)", user.getId());
+			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (2, ?, 'DROPPED', 2, 0)", user.getId());
+
+			mockMvc.perform(get("/api/v1/public/users/octocat"))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.completion.projectCount").value(1))
+					.andExpect(jsonPath("$.completion.issueCompletionRate").value(org.hamcrest.Matchers.closeTo(2.0 / 6.0, 0.000001)));
+			mockMvc.perform(get("/api/v1/public/users/octocat/teams"))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.items.length()").value(2))
+					.andExpect(jsonPath("$.items[0].id").value(1))
+					.andExpect(jsonPath("$.items[0].name").value("Linker"))
+					.andExpect(jsonPath("$.items[0].orgAvatarUrl").value("https://avatars.githubusercontent.com/u/1"))
+					.andExpect(jsonPath("$.items[0].status").value("ACTIVE"))
+					.andExpect(jsonPath("$.items[1].status").value("COMPLETED"))
+					.andExpect(jsonPath("$.nextCursor").value(org.hamcrest.Matchers.nullValue()));
+		}
+		finally {
+			jdbc.execute("DROP TABLE IF EXISTS completion_records, team_members, teams");
+		}
+	}
+
+	@Test
+	void operatorActionChangesExistingContent() throws Exception {
+		User operator = saveUser("modops", UserType.DEVELOPER);
+		Admin admin = admins.save(Admin.assign(operator, AdminRole.OPERATOR));
+		String secret = "JBSWY3DPEHPK3PXP";
+		admin.enrollOtp(otpSecrets.encrypt(secret), Instant.now());
+		admins.save(admin);
+		String token = sessions.issue(operator, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"code\":\"" + TotpCodes.code(secret, Instant.now()) + "\"}"))
+				.andExpect(status().isOk());
+
+		User author = saveUser("msgauthor", UserType.DEVELOPER);
+		long roomId = jdbc.queryForObject("""
+				INSERT INTO chat_rooms (room_type, dm_key, dm_status, requester_id, created_at, updated_at)
+				VALUES ('DIRECT', 'mod-room', 'ACCEPTED', ?, now(), now())
+				RETURNING id
+				""", Long.class, author.getId());
+		long messageId = jdbc.queryForObject("""
+				INSERT INTO chat_messages (room_id, sender_id, message_type, body, visibility, created_at, updated_at)
+				VALUES (?, ?, 'TEXT', 'hello', 'VISIBLE', now(), now())
+				RETURNING id
+				""", Long.class, roomId, author.getId());
+		long caseId = insertCase("TEAM_MESSAGE", messageId, author.getId());
+
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + caseId + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"HIDE\",\"reason\":\"욕설\"}"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("SELECT visibility FROM chat_messages WHERE id = ?", String.class, messageId)).isEqualTo("HIDDEN");
+		assertThat(jdbc.queryForObject("SELECT deleted_at FROM chat_messages WHERE id = ?", Object.class, messageId)).isNull();
+
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + caseId + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"RESTORE\"}"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("SELECT visibility FROM chat_messages WHERE id = ?", String.class, messageId)).isEqualTo("VISIBLE");
+
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + caseId + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"DELETE\",\"reason\":\"삭제\"}"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("SELECT visibility FROM chat_messages WHERE id = ?", String.class, messageId)).isEqualTo("HIDDEN");
+		assertThat(jdbc.queryForObject("SELECT deleted_at FROM chat_messages WHERE id = ?", Object.class, messageId)).isNotNull();
+
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + caseId + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"RESTORE\"}"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("SELECT deleted_at FROM chat_messages WHERE id = ?", Object.class, messageId)).isNull();
+
+		long dismissId = jdbc.queryForObject("""
+				INSERT INTO chat_messages (room_id, sender_id, message_type, body, visibility, created_at, updated_at)
+				VALUES (?, ?, 'TEXT', 'keep', 'VISIBLE', now(), now())
+				RETURNING id
+				""", Long.class, roomId, author.getId());
+		long dismissed = insertCase("DM_MESSAGE", dismissId, author.getId());
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + dismissed + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"DISMISS\"}"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("SELECT visibility FROM chat_messages WHERE id = ?", String.class, dismissId)).isEqualTo("VISIBLE");
+
+		jdbc.execute("""
+				CREATE TABLE posts (
+				    id bigint PRIMARY KEY,
+				    visibility varchar(16) NOT NULL,
+				    deleted_at timestamptz
+				)
+				""");
+		jdbc.execute("""
+				CREATE TABLE recruiter_ads (
+				    id bigint PRIMARY KEY,
+				    status varchar(16) NOT NULL,
+				    hidden_at timestamptz,
+				    deleted_at timestamptz
+				)
+				""");
+		try {
+			jdbc.update("INSERT INTO posts (id, visibility) VALUES (9, 'VISIBLE')");
+			long postCase = insertCase("POST", 9L, author.getId());
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + postCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"HIDE\",\"reason\":\"숨김\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM posts WHERE id = 9", String.class)).isEqualTo("HIDDEN");
+
+			long missing = insertCase("POST", 99L, author.getId());
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + missing + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"HIDE\",\"reason\":\"없음\"}"))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, missing)).isEqualTo("PENDING");
+
+			jdbc.update("INSERT INTO recruiter_ads (id, status) VALUES (4, 'ACTIVE')");
+			long adCase = insertCase("RECRUITER_AD", 4L, author.getId());
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + adCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"DELETE\",\"reason\":\"광고 삭제\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = 4", String.class)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = 4", Object.class)).isNotNull();
+		}
+		finally {
+			jdbc.execute("DROP TABLE IF EXISTS posts, recruiter_ads");
+		}
+
+		long commentCase = insertCase("COMMENT", 3L, author.getId());
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + commentCase + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"HIDE\",\"reason\":\"댓글\"}"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, commentCase)).isEqualTo("ACTIONED");
+	}
+
+	private long insertCase(String targetType, long targetId, long targetUserId) {
+		return jdbc.queryForObject("""
+				INSERT INTO report_cases (target_type, target_id, target_user_id, reporter_count, status, created_at, updated_at)
+				VALUES (?, ?, ?, 1, 'PENDING', now(), now())
+				RETURNING id
+				""", Long.class, targetType, targetId, targetUserId);
+	}
+
+	@Test
+	void recruiterCanSignUpLogInAndReadSentOffers() throws Exception {
+		when(mail.configured()).thenReturn(true);
+		when(mail.freeDomains()).thenReturn(java.util.List.of(
+				"gmail.com", "naver.com", "daum.net", "kakao.com", "hanmail.net",
+				"outlook.com", "hotmail.com", "yahoo.com", "icloud.com"));
+		when(mail.publicBaseUrl()).thenReturn("http://localhost:3000");
+		mockMvc.perform(post("/api/v1/public/recruiter-signup/email-codes")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"someone@gmail.com\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("FREE_EMAIL_DOMAIN"));
+
+		mockMvc.perform(post("/api/v1/public/recruiter-signup/email-codes")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"recruiter@nextlab.example\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.sent").value(true))
+				.andExpect(jsonPath("$.validMinutes").value(10));
+		ArgumentCaptor<String> mailBody = ArgumentCaptor.forClass(String.class);
+		verify(mail).send(eq("recruiter@nextlab.example"), anyString(), mailBody.capture());
+		String code = mailBody.getValue().replaceAll("(?s).*코드는 (\\d{6}).*", "$1");
+		String wrongCode = "000000".equals(code) ? "000001" : "000000";
+
+		mockMvc.perform(post("/api/v1/public/recruiter-signup/email-codes/verify")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"recruiter@nextlab.example\",\"code\":\"" + wrongCode + "\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("CODE_MISMATCH"));
+		MvcResult verified = mockMvc.perform(post("/api/v1/public/recruiter-signup/email-codes/verify")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"recruiter@nextlab.example\",\"code\":\"" + code + "\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.emailDomain").value("nextlab.example"))
+				.andReturn();
+		String signupToken = verified.getResponse().getContentAsString(StandardCharsets.UTF_8).replaceAll(".*\"signupToken\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+
+		MvcResult signed = mockMvc.perform(post("/api/v1/public/recruiter-signup")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"signupToken":"%s","password":"password1234","name":"송지현","company":"넥스트랩","jobTitle":"리크루터","websiteUrl":"https://nextlab.example","consents":{"ageConfirmed":true,"termsAccepted":true,"businessTermsAccepted":true,"personalDataAccepted":true,"marketingAccepted":false}}
+								""".formatted(signupToken)))
+				.andExpect(status().isOk())
+				.andExpect(header().exists("Set-Cookie"))
+				.andReturn();
+		String login = signed.getResponse().getContentAsString(StandardCharsets.UTF_8).replaceAll(".*\"login\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+		assertThat(login).startsWith("r-");
+		String recruiterCookie = cookieValue(signed.getResponse().getHeader("Set-Cookie"));
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(recruiterCookie)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.userType").value("RECRUITER"))
+				.andExpect(jsonPath("$.onboarded").value(true));
+		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(recruiterCookie)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isEmpty());
+
+		User developer = saveUser("offeree", UserType.DEVELOPER);
+		mockMvc.perform(get("/api/v1/recruiter/offers").cookie(cookie(sessions.issue(developer, "JUnit", "127.0.0.1").rawToken())))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"recruiter@nextlab.example\",\"password\":\"wrong1234\",\"returnTo\":\"/recruiter/offers\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_FAILED"));
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"missing@nextlab.example\",\"password\":\"password1234\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 맞지 않아요"));
+
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/password-reset-requests")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"missing@nextlab.example\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.sent").value(true));
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/password-reset-requests")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"recruiter@nextlab.example\"}"))
+				.andExpect(status().isOk());
+		verify(mail, org.mockito.Mockito.atLeastOnce()).send(eq("recruiter@nextlab.example"), anyString(), mailBody.capture());
+		String resetToken = mailBody.getValue().replaceAll("(?s).*token=([^\\s]+).*", "$1");
+		mockMvc.perform(get("/api/v1/public/recruiter-auth/password-reset/" + resetToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.valid").value(true));
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/password-reset")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"token\":\"" + resetToken + "\",\"newPassword\":\"newpass1234\"}"))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/api/v1/user/me").cookie(cookie(recruiterCookie)))
+				.andExpect(status().isUnauthorized());
+		MvcResult loggedIn = mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"recruiter@nextlab.example\",\"password\":\"newpass1234\",\"returnTo\":\"/recruiter/offers\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.restored").value(false))
+				.andExpect(jsonPath("$.returnTo").value("/recruiter/offers"))
+				.andReturn();
+		String session = cookieValue(loggedIn.getResponse().getHeader("Set-Cookie"));
+
+		long recruiterId = jdbc.queryForObject("SELECT id FROM users WHERE username = ?", Long.class, login);
+		long waiting = recruitingRoom(recruiterId, developer.getId(), "wait-room", "REQUESTED", "now() + interval '20 days'");
+		long talking = recruitingRoom(recruiterId, developer.getId(), "talk-room", "ACCEPTED", "null");
+		User quiet = saveUser("quietdev", UserType.DEVELOPER);
+		recruitingRoom(recruiterId, quiet.getId(), "quiet-room", "REQUESTED", "now() - interval '1 day'");
+		jdbc.update("""
+				INSERT INTO chat_messages (room_id, sender_id, message_type, body, visibility, created_at, updated_at)
+				VALUES (?, ?, 'TEXT', '안녕하세요', 'VISIBLE', now(), now())
+				""", waiting, recruiterId);
+
+		mockMvc.perform(get("/api/v1/recruiter/offers").param("status", "WAITING").cookie(cookie(session)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].roomId").value(waiting))
+				.andExpect(jsonPath("$.items[0].developer.login").value("offeree"))
+				.andExpect(jsonPath("$.items[0].firstMessage").value("안녕하세요"));
+		mockMvc.perform(get("/api/v1/recruiter/offers").param("status", "TALKING").cookie(cookie(session)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].roomId").value(talking));
+		mockMvc.perform(get("/api/v1/recruiter/offers/counts").cookie(cookie(session)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.TALKING").value(1))
+				.andExpect(jsonPath("$.WAITING").value(1))
+				.andExpect(jsonPath("$.NO_RESPONSE").value(1));
+		mockMvc.perform(get("/api/v1/recruiter/offers/" + waiting + "/first-message").cookie(cookie(session)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.text").value("안녕하세요"));
+		mockMvc.perform(get("/api/v1/recruiter/offers/summary").cookie(cookie(session)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.todayLimit").value(10))
+				.andExpect(jsonPath("$.scoutTodayLimit").value(50))
+				.andExpect(jsonPath("$.scoutSubscribed").value(false))
+				.andExpect(jsonPath("$.todayUsed").value(3));
+	}
+
+	private long recruitingRoom(long recruiterId, long developerId, String dmKey, String status, String expiresSql) {
+		long roomId = jdbc.queryForObject("""
+				INSERT INTO chat_rooms (room_type, dm_key, dm_status, request_kind, requester_id, request_expires_at, created_at, updated_at)
+				VALUES ('DIRECT', ?, '%s', 'RECRUITING', ?, %s, now(), now())
+				RETURNING id
+				""".formatted(status, expiresSql), Long.class, dmKey, recruiterId);
+		jdbc.update("""
+				INSERT INTO chat_room_members (room_id, user_id, muted, joined_at, created_at, updated_at)
+				VALUES (?, ?, false, now(), now(), now())
+				""", roomId, recruiterId);
+		jdbc.update("""
+				INSERT INTO chat_room_members (room_id, user_id, muted, joined_at, created_at, updated_at)
+				VALUES (?, ?, false, now(), now(), now())
+				""", roomId, developerId);
+		return roomId;
+	}
+
+	@Test
+	void includedProfileDataAndJobAdFollowThePolicy() throws Exception {
+		User developer = saveUser("octo", UserType.DEVELOPER);
+		developer.markContributionSynced(Instant.now());
+		users.saveAndFlush(developer);
+		LocalDate day = LocalDate.now(PlanLimits.APP_ZONE).withDayOfMonth(2);
+		jdbc.update("""
+				insert into contribution_days (user_id, day, contribution_count, created_at, updated_at)
+				values (?, ?, 4, now(), now())
+				""", developer.getId(), day);
+		mockMvc.perform(get("/api/v1/public/users/octo/contributions").param("month", day.toString().substring(0, 7)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.month").value(day.toString().substring(0, 7)))
+				.andExpect(jsonPath("$.days[0].count").value(4));
+
+		jdbc.update("""
+				insert into username_redirects (old_username, user_id, expires_at, created_at, updated_at)
+				values ('old-octo', ?, now() + interval '90 days', now(), now())
+				""", developer.getId());
+		mockMvc.perform(get("/api/v1/public/users/old-octo"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.login").value("octo"))
+				.andExpect(jsonPath("$.redirectedFrom").value("old-octo"));
+
+		Cookie developerCookie = cookie(sessions.issue(developer, "JUnit", "127.0.0.1").rawToken());
+		mockMvc.perform(patch("/api/v1/user/me/profile")
+						.cookie(developerCookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"name":"옥토","bio":"","blogUrl":"","techStack":[],"lookingForTeam":false,"jobStatus":"OFF","jobCategories":["FRONTEND","BACKEND"]}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.jobCategories[0]").value("FRONTEND"))
+				.andExpect(jsonPath("$.jobCategories[1]").value("BACKEND"));
+
+		User recruiter = saveUser("r-ad", UserType.RECRUITER);
+		recruiter.completeOnboarding(Instant.now());
+		users.saveAndFlush(recruiter);
+		jdbc.update("""
+				insert into recruiter_profiles
+				    (user_id, company_name, company_email_domain, job_title, company_url, email_verified_at, created_at, updated_at)
+				values (?, '넥스트랩', 'nextlab.example', '리쿠르터', null, now(), now(), now())
+				""", recruiter.getId());
+		Cookie recruiterCookie = cookie(sessions.issue(recruiter, "JUnit", "127.0.0.1").rawToken());
+		mockMvc.perform(get("/api/v1/public/users/octo").cookie(recruiterCookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.jobStatus").exists());
+		Integer visits = jdbc.queryForObject(
+				"select count(*) from profile_visits where profile_user_id = ? and visitor_id = ?",
+				Integer.class,
+				developer.getId(),
+				recruiter.getId());
+		assertThat(visits).isEqualTo(1);
+		mockMvc.perform(get("/api/v1/public/users/r-ad"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.company").value("넥스트랩"))
+				.andExpect(jsonPath("$.companyEmailDomain").value("nextlab.example"));
+
+		mockMvc.perform(get("/api/v1/recruiter/me/ad").cookie(recruiterCookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.subscribed").value(false))
+				.andExpect(jsonPath("$.ad").value(nullValue()));
+		mockMvc.perform(put("/api/v1/recruiter/me/ad")
+						.cookie(recruiterCookie)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"jobCategory":"FRONTEND","title":"프론트엔드 개발자","url":"https://www.wanted.co.kr/wd/1","closesOn":"%s"}
+								""".formatted(LocalDate.now(PlanLimits.APP_ZONE).plusDays(10))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("Scout를 구독하면 관심 직군이 맞는 개발자의 피드에 채용 광고를 띄울 수 있어요."));
 	}
 
 	@Test

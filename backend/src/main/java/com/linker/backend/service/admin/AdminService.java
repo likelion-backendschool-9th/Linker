@@ -61,7 +61,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.admin.AdminController}.
- * Content rows for posts, comments and recruit posts are left unchanged until those tables exist.
+ * Hide, delete, and restore change the reported row when that table exists.
  */
 @Service
 public class AdminService {
@@ -81,6 +81,7 @@ public class AdminService {
 	private final AdminNotificationService notifications;
 	private final GithubTokenCipher otpSecrets;
 	private final UserSessionRepository sessions;
+	private final ReportContentEffects content;
 	private final java.time.Clock clock;
 
 	public AdminService(
@@ -95,6 +96,7 @@ public class AdminService {
 			AdminNotificationService notifications,
 			GithubTokenCipher otpSecrets,
 			UserSessionRepository sessions,
+			ReportContentEffects content,
 			java.time.Clock clock) {
 		this.cases = cases;
 		this.reports = reports;
@@ -107,6 +109,7 @@ public class AdminService {
 		this.notifications = notifications;
 		this.otpSecrets = otpSecrets;
 		this.sessions = sessions;
+		this.content = content;
 		this.clock = clock;
 	}
 
@@ -207,6 +210,7 @@ public class AdminService {
 			}
 			default -> throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
 		}
+		content.apply(row.getTargetType(), row.getTargetId(), action, now);
 		actions.save(AdminAction.record(admin, action, row.getTargetType().name(), row.getTargetId(), row, reason));
 		notifyOutcome(row, action, reason);
 		boolean appealed = appeals.findPendingCaseIds().contains(caseId);
@@ -249,6 +253,7 @@ public class AdminService {
 			sanction.revoke(now, admin.getId());
 			ReportCase row = sanction.getReportCase();
 			if (row != null && row.getStatus() != ReportCaseStatus.PENDING) {
+				content.apply(row.getTargetType(), row.getTargetId(), AdminActionType.RESTORE, now);
 				row.reopen();
 				actions.save(AdminAction.record(admin, AdminActionType.RESTORE, row.getTargetType().name(), row.getTargetId(), row, reason));
 			}

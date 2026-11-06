@@ -5,6 +5,8 @@ public record GithubAccount(
 		String login,
 		String name,
 		String avatarUrl,
-		String email
+		String email,
+		String bio,
+		String blog
 ) {
 }

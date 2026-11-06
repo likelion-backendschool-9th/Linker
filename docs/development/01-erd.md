@@ -178,7 +178,7 @@ erDiagram
   user_agreements {
     bigint id PK
     bigint user_id FK
-    varchar agreement_type "TERMS, PRIVACY, AGE_14, MARKETING"
+    varchar agreement_type "TERMS, PRIVACY, AGE_14, AGE_19, BUSINESS_TERMS, MARKETING"
     varchar version "terms version"
     timestamptz agreed_at
     timestamptz withdrawn_at "marketing withdrawn"

@@ -72,6 +72,8 @@ class AdminServiceTest {
 	private GithubTokenCipher otpSecrets;
 	@Mock
 	private UserSessionRepository sessions;
+	@Mock
+	private ReportContentEffects content;
 
 	@Test
 	void hideRequiresAReasonAndDoesNotRecordAnAction() {
@@ -155,7 +157,7 @@ class AdminServiceTest {
 	private AdminService service() {
 		return new AdminService(
 				cases, reports, snapshots, sanctions, appeals, actions, admins, users, notifications,
-				otpSecrets, sessions, Clock.fixed(NOW, ZoneOffset.UTC));
+				otpSecrets, sessions, content, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
 	private static Admin operator(long id) {
