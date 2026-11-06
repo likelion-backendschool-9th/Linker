@@ -51,6 +51,27 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			Pageable pageable
 	);
 
+	@Query("""
+			select notification from Notification notification
+			where notification.pushedAt is null
+			  and notification.user.pushEnabled = true
+			  and notification.notificationType <> 'CHAT'
+			  and notification.deliverAfter is not null
+			  and notification.deliverAfter <= :now
+			order by notification.user.id, notification.createdAt, notification.id
+			""")
+	List<Notification> findDueDeferred(@Param("now") Instant now, Pageable pageable);
+
+	@Query("""
+			select notification from Notification notification
+			where notification.pushedAt is null
+			  and notification.user.pushEnabled = true
+			  and notification.notificationType = 'CHAT'
+			  and notification.deliverAfter is null
+			order by notification.user.id, notification.createdAt, notification.id
+			""")
+	List<Notification> findDueChat(Pageable pageable);
+
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("""
 			update Notification notification
