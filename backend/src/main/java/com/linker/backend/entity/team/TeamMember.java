@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import com.linker.backend.entity.team.type.TeamMemberRole;
+import com.linker.backend.entity.team.type.TeamRole;
 import com.linker.backend.entity.team.type.GithubOrgState;
 import com.linker.backend.entity.team.type.TeamLeaveType;
 
@@ -33,7 +33,7 @@ public class TeamMember {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 16)
-	private TeamMemberRole role;
+	private TeamRole role;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 16)
@@ -71,7 +71,7 @@ public class TeamMember {
 		return userId;
 	}
 
-	public TeamMemberRole getRole() {
+	public TeamRole getRole() {
 		return role;
 	}
 

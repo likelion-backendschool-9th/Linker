@@ -1,5 +1,5 @@
 package com.linker.backend.entity.team.type;
 
-public enum TeamMemberRole {
+public enum TeamRole {
 	OWNER, ADMIN, MEMBER
 }

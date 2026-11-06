@@ -1,7 +1,7 @@
 package com.linker.backend.repository.team;
 
 import com.linker.backend.entity.team.TeamMember;
-import com.linker.backend.entity.team.type.TeamMemberRole;
+import com.linker.backend.entity.team.type.TeamRole;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +14,7 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
         and t.status not in ('ARCHIVED', 'DELETED') and u.userType = 'DEVELOPER'
         and u.deletedAt is null and u.status not in ('DELETED', 'WITHDRAWING')
       """)
-  List<TeamMemberRole> findCurrentAccessRoles(long userId, long teamId);
+  List<TeamRole> findCurrentAccessRoles(long userId, long teamId);
 
   List<TeamMember> findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(long teamId);
 }

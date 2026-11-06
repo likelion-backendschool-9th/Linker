@@ -1,6 +1,5 @@
 package com.linker.backend.global.security;
 
-import com.linker.backend.entity.team.type.TeamMemberRole;
 import com.linker.backend.repository.team.TeamMemberRepository;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +20,9 @@ public class MembershipTeamAccess implements TeamAccess {
             role ->
                 switch (required) {
                   case MEMBER -> true;
-                  case ADMIN -> role == TeamMemberRole.OWNER || role == TeamMemberRole.ADMIN;
-                  case OWNER -> role == TeamMemberRole.OWNER;
+                  case ADMIN -> role == com.linker.backend.entity.team.type.TeamRole.OWNER
+                      || role == com.linker.backend.entity.team.type.TeamRole.ADMIN;
+                  case OWNER -> role == com.linker.backend.entity.team.type.TeamRole.OWNER;
                 });
   }
 }

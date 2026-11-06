@@ -21,7 +21,7 @@
 | --- | --- |
 | 팀·현재 멤버·저장소 연결·보드·상태 매핑 Entity | `entity/team/` |
 | 설치·PR Entity | `entity/github/GithubInstallation`, `PullRequest` |
-| enum | 각 Entity 업무의 `type/` (`TeamStatus`, `TeamMemberRole`, `BoardStatus` 등) |
+| enum | 각 Entity 업무의 `type/` (`TeamStatus`, `TeamRole`, `BoardStatus` 등). 보안 어노테이션 `global.security.TeamRole`과 구분 |
 | 팀·설치·보드 연결 조회 | `repository/team/TeamRepository.findConnection(teamId)` |
 | 연결된 미삭제 저장소 | `TeamRepository.findLinkedRepos(teamId)` (Linker repo ID 순) |
 | 상태 매핑 | `TeamRepository.findBoardStatusMappings(boardId)` (GitHub option ID 순) |
