@@ -40,8 +40,10 @@ function useCooldown() {
   return {
     left,
     start: (seconds: number) => {
-      setNow(Date.now());
-      setUntil(Date.now() + seconds * 1000);
+      // One clock read: two reads a millisecond apart round up to seconds + 1.
+      const started = Date.now();
+      setNow(started);
+      setUntil(started + seconds * 1000);
     },
   };
 }
