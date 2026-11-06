@@ -318,7 +318,7 @@ class ChatTextIntegrationTest {
 	}
 
 	@Test
-	void teamHistoryIsFreeWindowAndTeamSendIsRejected() throws Exception {
+	void teamHistoryIsFreeWindowAndTeamSendWithoutReadableTeamStateIsRejected() throws Exception {
 		User member = user("team-member");
 		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(null));
 		members.saveAndFlush(ChatRoomMember.join(team, member.getId()));
@@ -337,7 +337,7 @@ class ChatTextIntegrationTest {
 		StompSession socket = connect(member);
 		List<String> rejected = frames(socket, "/user/queue/chat-rooms");
 		send(socket, team.getId(), UUID.randomUUID().toString(), "팀 전송", Map.of());
-		waitUntil(() -> rejected.stream().anyMatch(frame -> frame.contains("TEAM_STATE_UNAVAILABLE") && frame.contains("retryable=false")));
+		waitUntil(() -> rejected.stream().anyMatch(frame -> frame.contains("FORBIDDEN") && frame.contains("retryable=false")));
 		assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id = ? and body = ?", Long.class, team.getId(), "팀 전송"))
 				.isZero();
 		socket.disconnect();

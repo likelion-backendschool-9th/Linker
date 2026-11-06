@@ -175,6 +175,18 @@ public class UserChatController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@DeleteMapping("/chat-rooms/{roomId}/members/me")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "leaveChatRoom")
+	@ApiResponse(responseCode = "204", description = "Chat room membership ended")
+	public ResponseEntity<Void> leave(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId
+	) {
+		chat.leave(user, roomId);
+		return ResponseEntity.noContent().build();
+	}
+
 	@PostMapping("/chat-requests/{roomId}/accept")
 	@Tag(name = "p16-chat-list")
 	@Operation(operationId = "acceptChatRequest")
