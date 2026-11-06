@@ -1,0 +1,39 @@
+name: PR Rules
+
+# AGENTS.md "Git workflow" 규칙 검사: PR 제목 형식, 한국어 설명, 브랜치 이름, 에이전트 표시
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-rules-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    name: pr-rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Collect commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git log --format='%B%x00' "$BASE_SHA..$HEAD_SHA" > "$RUNNER_TEMP/commits.txt"
+      - name: Check PR rules
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          COMMITS_FILE: ${{ runner.temp }}/commits.txt
+        run: python3 scripts/check_pr_rules.py
+      - name: Run rule tests
+        run: python3 -m unittest scripts/tests/test_check_pr_rules.py
