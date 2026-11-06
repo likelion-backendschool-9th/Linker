@@ -1,7 +1,7 @@
 # Linker Frontend Blueprint
 
 > **What structure and rules do AI (and humans) follow when writing Linker frontend code?**
-> Sources of truth: pages and paths → [07 Page TODO](../planning/07-page-todo.md), APIs and controllers → [02 WBS](02-wbs.md), access and numbers → [04 Policy](../planning/04-policy.md). This document turns them into folder, component and code rules; **if it disagrees with a source, the source wins.** Look and feel → [04 Design Guide](04-design-guide.md); token values → `frontend/apps/web/src/styles/tokens/`.
+> Sources of truth: pages and paths → [07 Page TODO](../planning/07-page-todo.md), APIs and controllers → [02 WBS](02-wbs.md), access and numbers → [04 Policy](../planning/04-policy.md). This document turns them into folder, component and code rules; **if it disagrees with a source, the source wins.** Look and feel → [04 Design Guide](04-design-guide.md); token values → `frontend/apps/web/styles/tokens/`.
 >
 > `MUST` / `NEVER` are followed without exception; `RECOMMENDED` needs judgment. Work in 07 page order (00 → 01 → … → 33); no page work before §1-1 is done. For a page: ① ch. 13 row → ② 07 checklist with the same number → ③ finish with ch. 14.
 >
@@ -32,9 +32,9 @@
 8. Per page: 1 `header`, 1 `main`, 1 main-menu `nav`, exactly one `h1` (ch. 6).
 9. Actions are `<button>`, navigation is `<Link>`. `div onClick` NEVER.
 10. Numbers (character counts, limits, plan values) come from `src/lib/policy.ts` (values from 04 Policy), never hard-coded.
-11. Mobile first: base styles at 360px, widen with `@media (min-width: 600px | 1024px)` (tablet, desktop).
+11. App UI is a **mobile column**: implement 360–600px. Below 600px = full width of the viewport column; at/above 600px = `max-width: var(--content-max-width)` (**600px**), centered. **NEVER** add tablet/desktop app layouts that are not in Figma. **Admin (25–27) only** may use a wide / two-column shell from 1024px.
 12. APIs only through orval hooks/functions. Direct `fetch('/api/v1/...')` NEVER outside `src/lib/api/`.
-13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + Design Guide first. No CSS-in-JS, no utility-class framework.
+13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + Design Guide first. No CSS-in-JS, no utility-class framework. **Visual authority:** page Figma → tokens → Design Guide. Mobbin is retired as an authority (Design Guide ch. 6).
 
 ### 1-1. Foundation built before pages (the most important work)
 Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](../planning/07-page-todo.md); owners/dates: [02 WBS ch. 3](02-wbs.md).
@@ -264,16 +264,20 @@ All overlays are Radix `Dialog` (styled in `components/overlay/`): focus trap, `
 
 ### 6-5. Other musts
 - Contrast: text 4.5:1, large text/icons 3:1 (measured values in Design Guide ch. 1).
-- Never remove `focus-visible` rings. Touch targets ≥ 44×44px. Never block zoom (no `maximumScale`/`userScalable: false`).
+- Never remove `focus-visible` rings. Never block zoom (no `maximumScale`/`userScalable: false`).
+- Touch targets (Design Guide §3-3): primary CTA / list rows / bottom tabs / form controls ≥ **44×44px** (`--touch-target-min`); dense header/toolbar **icon clusters** ≥ **24×24px** hit (`--touch-target-icon`) with **Figma visual size** — never enlarge the visible icon box to 44px just to satisfy hit area.
 - Drag has a button alternative: board "상태 바꾸기", photos "앞으로/뒤로"; dnd-kit `KeyboardSensor` + Korean `announcements`.
 - `<MotionConfig reducedMotion="user">`; GIFs play only on tap.
 - Infinite lists end with a "더 보기" button; virtualized items get `aria-setsize`/`aria-posinset`.
 - Every page needs a unique `title` (Next route announcer reads it).
 
-### 6-6. Mobile first
-- Base = 360px (mobile 360–599, tablet from 600, desktop from 1024). App screens use `max-width: var(--content-max-width)` (1440px, centered); side gutter is `var(--page-gutter)`. Bottom tab bar on all sizes; the top bar is shared by mobile and tablet. The admin shell is separate and goes two-column at 1024px.
-- `100dvh`; bottom tabs/input bars use `padding-bottom: env(safe-area-inset-bottom)`; `viewportFit: 'cover'`.
+### 6-6. Mobile column (app) and admin exception
+- **App screens (all non-admin):** one mobile layout. QA at **360** and **600**. Viewport width **&lt; 600** → column fills the width; **≥ 600** → column `max-width: var(--content-max-width)` (**600px**), centered; outside the column is canvas only. Side gutter `var(--page-gutter)` (16px). Header and bottom tab bar share that same centered column — do not full-bleed chrome across a wide browser.
+- **Safe areas:** `env(safe-area-inset-top)` on the sticky header; `env(safe-area-inset-bottom)` on bottom tabs, composers, sheets, and toasts. Main content clears `--header-height` + top inset and `--tab-bar-height` (or composer) + bottom inset so chrome never covers actions.
+- **Admin (25–27) only:** separate shell; two-column from 1024px (`--admin-aside-width`). Not constrained to the 600px app column.
+- `100dvh`; `viewportFit: 'cover'`.
 - Input font ≥ 16px. No hover-only UI; long-press has a "더보기" button alternative.
+- Match the page’s **Figma** frame. Do not invent desktop top-nav / text-only GNB / multi-column app grids absent from Figma.
 
 ## 7. Overlays and back navigation
 ### 7-1. What causes trapping
@@ -391,12 +395,12 @@ export function useOverlay(key: OverlayKey) {
 
 ## 10. Images
 ### 10-1. Install and config
-`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 600, 1024, 1440]`; `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
+`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 600]` (app column; admin may still request larger if needed); `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
 
 ### 10-2. Usage
 | Image | Rule |
 | --- | --- |
-| Feed cover | `sizes="(min-width: 1024px) 480px, (min-width: 600px) 50vw, 100vw"`; only the first card `preload` |
+| Feed cover | `sizes="600px"` (app column cap) or `100vw` under 600; only the first card `preload` |
 | Post gallery | First image `preload`, rest lazy; `fill` + fixed-ratio parent |
 | Avatar | Fixed size 24–96; GitHub `?s=` param |
 | Chat photo | Thumbnail `sizes="240px"`; large in the viewer |
@@ -535,7 +539,8 @@ MSW handles Vitest requests; browser/SSR mock mode uses the existing `src/mocks/
 - [ ] No browser API access during render; no hydration warnings in `pnpm build`
 - [ ] As a guest: reading works, actions show the login-prompt sheet
 - [ ] Checked with recruiter and developer seed accounts (multi-role pages)
-- [ ] No horizontal scroll at 360px; everything works by keyboard
+- [ ] No horizontal scroll at 360px or 600px; above 600 the app column stays 600 centered (admin exempt); everything works by keyboard
+- [ ] Safe-area + header/tab (or composer) clearance; icon clusters use 24px hit without blowing up Figma gaps
 - [ ] 0 axe violations (Vitest + vitest-axe, Playwright + axe)
 - [ ] Works with `pnpm dev:mock` as each role the page allows; a field the page needs is in the page's mock file (§1-2)
 - [ ] Numbers come from `policy.ts`; passes the [04 Design Guide](04-design-guide.md) ch. 8 checklist

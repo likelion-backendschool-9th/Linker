@@ -28,10 +28,12 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 - Actions use buttons; navigation uses Link. Never `div onClick`. Follow §6-2 semantics (`ul > li > article`, `<time>`, etc.).
 - Inputs need visible labels; errors use `aria-invalid` + `aria-describedby`; focus first invalid field after failed submission.
 - Icon buttons need sr-only text; toggles use `aria-pressed`; state cannot rely on color alone.
-- Contrast ≥ 4.5:1 for text, 3:1 for large text/icons; retain focus-visible rings; targets ≥ 44×44px; provide button alternatives to dragging.
+- Contrast ≥ 4.5:1 for text, 3:1 for large text/icons; retain focus-visible rings; provide button alternatives to dragging.
+- Touch: primary CTA / list rows / tabs / inputs ≥ 44×44px; dense header icon clusters ≥ 24×24px hit with Figma visual size (do not enlarge icons to 44).
 - Honor reduced motion with `MotionConfig reducedMotion="user"`; allow zoom; no hover-only interaction.
-- Base layout targets 360px, widening with `@media (min-width: 600px | 1024px)` (tablet, desktop) in CSS Modules (no Tailwind or other utility-class framework). App screens use `max-width: var(--content-max-width)` (1440px, centered) with `var(--page-gutter)`; tablet follows mobile (bottom tab bar on every size). Only admin becomes two-column at 1024px.
-- Use `100dvh`, safe-area padding for bottom tabs/input bars, and input fonts ≥ 16px.
+- App UI = mobile column only (CSS Modules, no utility-class framework). Implement 360–600px; at/above 600px use `max-width: var(--content-max-width)` (600px) centered — header and bottom tabs stay in that column. Do not invent tablet/desktop app layouts. Only admin (25–27) is two-column from 1024px.
+- Visual authority: page Figma → `styles/tokens/` → Design Guide. Mobbin is retired. Prefer page `_components/` over growing a shared kit.
+- Use `100dvh`, `viewportFit: cover`, safe-area on header (top) and tabs/composers/sheets/toasts (bottom), and input fonts ≥ 16px.
 
 ## Navigation and overlays
 - Open sheets/modals/drawers/photo viewers only via `useOverlay()`, never plain `useState` or Intercepting/Parallel Routes.

@@ -1,7 +1,7 @@
 # Linker Design Guide
 
 > Question this document answers: **Which colors, type sizes, spacing, shapes and component looks does Linker use, and how are they written in CSS?**
-> Structure and code rules are in [03 Frontend Blueprint](03-frontend-blueprint.md); this document only covers how things look. Token values live in code at `frontend/apps/web/src/styles/tokens/` (`color.css`, `typography.css`, `layout.css`). If this document and the token files disagree, fix them together in the same change.
+> Structure and code rules are in [03 Frontend Blueprint](03-frontend-blueprint.md); this document only covers how things look. Token values live in code at `frontend/apps/web/styles/tokens/` (`color.css`, `typography.css`, `layout.css`). If this document and the token files disagree, fix them together in the same change.
 >
 > `MUST` and `NEVER` are followed without exception. `RECOMMENDED` needs judgment.
 
@@ -9,12 +9,15 @@
 
 ## 0. Rules at a glance
 
-1. **MUST** style with CSS Modules (`*.module.css` next to the component) and read every color, size, space and radius through `var(--token)`. **NEVER** write a hex color, a font size or a radius as a raw value in a component.
-2. **MUST NOT** add a new color, font size or radius in a component. Add the token first (token file + this guide), then use it.
-3. Mobile first: base styles target a 360px screen; widen with `@media (min-width: 600px | 1024px)` (tablet, desktop). No `max-width` queries for layout.
-4. Source order when values conflict: **text color and type** (ch. 2) over **palette** (ch. 1) over **everything else** (ch. 3–5). Text on a white surface uses the `--color-text-*` tokens only.
-5. Shadow-free. Depth comes from fill differences and 1px hairlines (ch. 4). The only shadow token is `--shadow-segment-active`.
-6. Never signal state by color alone. Pair color with text, an icon or a border (WCAG 1.4.1).
+1. **Visual authority (conflict order):** **① the page’s Figma frame** → **② `styles/tokens/`** (if Figma differs, update the token first, then use it) → **③ this guide’s recipes**. **NEVER** invent tablet/desktop layout variants that are not in Figma. The old Mobbin-based look is **retired** as an authority (see ch. 6).
+2. **MUST** style with CSS Modules (`*.module.css` next to the component) and read every color, size, space and radius through `var(--token)`. **NEVER** write a hex color, a font size or a radius as a raw value in a component.
+3. **MUST NOT** add a new color, font size or radius in a component. Add the token first (token file + this guide), then use it.
+4. **App screens = mobile column only.** Design and implement for **360–600px**. Below 600px the column is full width; **above 600px** the app column is **`max-width: var(--content-max-width)` (600px), centered**, with canvas showing outside. **NEVER** add a separate tablet/desktop app layout. **Ops / admin (pages 25–27)** is the only exception (wide / two-column shell).
+5. Header and bottom tab bar live **inside the same 600px column** as the page (not full-bleed across a wide browser).
+6. Source order when token roles conflict: **text color and type** (ch. 2) over **palette** (ch. 1) over **everything else** (ch. 3–5). Text on a white surface uses the `--color-text-*` tokens only.
+7. Shadow-free. Depth comes from fill differences and 1px hairlines (ch. 4). The only shadow token is `--shadow-segment-active`.
+8. Never signal state by color alone. Pair color with text, an icon or a border (WCAG 1.4.1).
+9. No hover-only UI. Input/textarea font **≥ 16px** (iOS zoom). Prefer `100dvh` and `viewportFit: cover`.
 
 ## 1. Color
 
@@ -28,14 +31,14 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-on-primary` | `#ffffff` | Text and icons on `--color-primary` (18.4:1) |
 | `--color-accent` | `#0066ff` | Popular/new badges, savings emphasis. **NEVER** a CTA fill |
 | `--color-gnb-current` | `#005fed` | Current GNB label/icon on the gray pill (4.90:1 on `--color-canvas-soft`); preserves blue emphasis with readable mobile text |
-| `--color-canvas` | `#ffffff` | Page and card background |
+| `--color-canvas` | `#ffffff` | Page and card background; also the area outside the 600px column on wide browsers |
 | `--color-canvas-soft` | `#f3f3f3` | Nav pill, featured card, accordion row, toggle track, soft pill |
 | `--color-field` | `#f0f0f0` | Input fill |
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
-| `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill of the scrolled top nav, with `--blur-header-scroll` |
-| `--color-gnb-pill` | `rgb(244 244 244 / 0.8)` | Tablet/desktop bottom GNB frosted fill, with `--blur-header-scroll` |
+| `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill when a scrolled top chrome needs it (only if Figma specifies) |
+| `--color-gnb-pill` | `rgb(244 244 244 / 0.8)` | Frosted GNB fill when Figma specifies blur |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -86,13 +89,13 @@ Measured ratios, so nobody has to recompute:
 
 ## 2. Typography
 
-Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. Mobile sizes by default; desktop sizes from 1024px (the tokens switch themselves). Tablets keep mobile sizes.
+Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **App screens use one type scale (mobile sizes only)** — do not bump title sizes on wide browsers.
 
-| Role | Size m / d | Weight | Line height | Tokens |
+| Role | Size | Weight | Line height | Tokens |
 | --- | --- | --- | --- | --- |
-| Page title | 24 / 32px | 700 | 1.3 | `--font-size-page-title`, `--font-weight-bold`, `--line-height-page-title` |
-| Section title | 20 / 24px | 600 | 1.4 | `--font-size-section-title`, `--font-weight-semibold`, `--line-height-title` |
-| Card / group title | 18 / 20px | 600 | 1.4 | `--font-size-card-title`, `--font-weight-semibold`, `--line-height-title` |
+| Page title | 24px | 700 | 1.3 | `--font-size-page-title`, `--font-weight-bold`, `--line-height-page-title` |
+| Section title | 20px | 600 | 1.4 | `--font-size-section-title`, `--font-weight-semibold`, `--line-height-title` |
+| Card / group title | 18px | 600 | 1.4 | `--font-size-card-title`, `--font-weight-semibold`, `--line-height-title` |
 | Body | 16px | 400 | 1.6 | `--font-size-body`, `--font-weight-regular`, `--line-height-body` |
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
@@ -100,7 +103,7 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. Mob
 - Buttons and inputs: 16px; button weight 600, input value weight 400. Inputs smaller than 16px make iOS zoom in.
 - Error and notice messages: 14px at minimum, never the 13px meta size.
 - Hierarchy comes from size, weight and spacing together, not from small gray differences alone.
-- Do not enlarge body text on desktop. Adjust titles and spacing first.
+- If Figma specifies a different size, update the token + this table in the same change.
 - Placeholders never replace a visible label (blueprint §6-3).
 - Heading elements are chosen for the document outline (blueprint ch. 6), then sized with these roles; the size does not decide `h1`–`h6`.
 
@@ -117,33 +120,62 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 | `--space-lg` | 24px | Card padding, gap between groups |
 | `--space-xl` | 32px | Gap between form blocks |
 | `--space-xxl` | 48px | Large gap inside a section |
-| `--space-section` | 48px → 80px at 1024px | Gap between page sections |
-| `--space-section-lg` | 80px → 120px at 1024px | Gap between major blocks |
+| `--space-section` | 48px | Gap between page sections |
+| `--space-section-lg` | 80px | Gap between major blocks |
 
-The two section tokens are Linker's mobile adaptation: the source guide's fixed 80/120px is too tall for a 360px screen.
+### 3-1. App column (non-admin)
+
+- **Supported width:** 360–600px for layout QA. Figma frames are the visual source; implement the frame, then verify at 360 and 600.
+- **`< 600px`:** column = 100% of the viewport (minus nothing except gutters inside the column).
+- **`≥ 600px`:** column = `--content-max-width` (**600px**), horizontally centered. Outside the column: `--color-canvas` only — **NEVER** stretch page content, header, or GNB to the full desktop width.
+- **Page gutter** `--page-gutter`: **16px** inside the app column (match Figma; do not grow gutter just because the browser is wide).
+- **Admin (25–27):** outside this rule — own shell, two columns from 1024px, aside `--admin-aside-width` (blueprint §6-6).
+
+### 3-2. Safe areas and chrome clearance
+
+Apply on app screens (WebView and mobile Safari):
+
+| Layer | Rule |
+| --- | --- |
+| Top safe zone | `env(safe-area-inset-top)` on the sticky header / status area so content clears the notch |
+| Bottom home indicator | `env(safe-area-inset-bottom)` on the bottom tab bar, chat/composer bars, sheets, and toasts |
+| Header clearance | Main content top padding accounts for `--header-height` + top safe inset when the header is sticky |
+| Tab / composer clearance | Main content (and toasts) sit above `--tab-bar-height` (or the composer height) + bottom safe inset |
+| Sheets | Cap height with `--sheet-max-height`; respect top/bottom safe insets so grabber and actions stay tappable |
+| Viewport | `viewportFit: 'cover'`; prefer `100dvh` over `100vh` |
+
+**NEVER** let fixed chrome cover primary actions or message input without compensating padding.
+
+### 3-3. Touch targets (WCAG 2.2 AA)
+
+| Control | Minimum hit size | Visual size |
+| --- | --- | --- |
+| Primary CTA, text buttons, list rows, bottom tabs, form controls | `--touch-target-min` (**44px**); buttons/inputs often `--control-height` (48px) | Per Figma |
+| Dense header / toolbar **icon clusters** (bell, more, search, close in a tight group) | `--touch-target-icon` (**24px**) hit area | **Exactly Figma** (e.g. 24px icon). **NEVER** enlarge the visible icon box to 44px — that blows up gaps |
+| Segmented controls | At least 44px high per option | Per Figma |
+
+- Hit area may use transparent padding around a smaller glyph.
+- Icon-cluster spacing follows **Figma gaps**; overlapping hit areas are allowed when needed to keep that spacing.
+- Long-press-only actions **MUST** also have a visible control (e.g. “더보기”).
+
+### 3-4. Other frame tokens
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Page gutter** is `--page-gutter`: 16px on mobile, 24px from 600px, 32px from 1024px.
-- **Container:** app screens fill the width up to `--content-max-width` (1440px) and are centered beyond it. Admin screens are outside this rule and keep their own shell (list + detail two columns at 1024px, blueprint §6-6). The bottom GNB also uses `--content-max-width`, but as a floating bar outside the page's content column with its own fixed `--space-md` (16px) inset (not `--page-gutter`).
-- **Breakpoints:** mobile `360–599px` (base), tablet from `600px`, desktop from `1024px` (desktop type, `--space-section*`, `--page-gutter`). The bottom GNB's own mobile/tablet split is at `640px`. Admin keeps `1024px` two-column and `1280px` default grid. Custom properties cannot be used in `@media`, so write the px value.
-- **Tablet follows mobile:** same nav and type sizes as mobile; only content width, column count (cards 1 → 2) and gutter grow. Desktop adds more columns and the desktop type sizes.
-- **Collapsing:** multi-column grids drop one column at a time as the screen narrows (3 → 2 → 1). Two-panel layouts drop the secondary panel on narrow screens.
-- **Touch targets:** at least `--touch-target-min` (44px). Buttons and inputs are `--control-height` (48px).
-- **Frame sizes:** `--header-height` 56px (top bar), 80px from 1024px (room for the desktop search field); `--header-search-width` 512px (desktop top nav search field); `--badge-dot-size` 6px (unread dot); `--tab-bar-height` 96px (bottom GNB's total footprint — mobile and desktop differ, this covers the taller desktop pill — for other elements' clearance, plus the safe-area inset), `--content-max-width` 1440px, `--sheet-max-width` 640px, `--form-max-width` 720px (single-column writing forms such as the recruit and post editors, centered so lines stay readable on desktop), `--sheet-max-height` 85dvh, `--dialog-max-width` 400px, `--admin-aside-width` 400px, `--icon-size` 24px, `--icon-size-sm` 16px (icon inside a small control, e.g. the search clear button).
+- **Frame sizes:** `--header-height` 56px; `--badge-dot-size` 6px; `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px.
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts, and for the top nav's scroll transition; globals.css turns it off under `prefers-reduced-motion`. `--blur-header-scroll` (`blur(20px)`) is the backdrop blur shared by the scrolled top nav and the tablet/desktop bottom GNB.
-- **Images:** screenshots and mockups keep a fixed aspect ratio and `--radius-md` corners at every size. Use `next/image` (blueprint ch. 10).
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
+- **Images:** keep a fixed aspect ratio and `--radius-md` corners unless Figma says otherwise. Use `next/image` (blueprint ch. 10).
 
 ## 4. Shape and elevation
 
 | Token | Value | Use |
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
-| `--radius-xs` | 8px | The floating mobile bottom GNB pill |
+| `--radius-xs` | 8px | Floating mobile bottom GNB pill (if Figma uses it) |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
-| `--radius-lg` | 20px | Floating frosted pills: the scrolled top nav, the tablet/desktop bottom GNB |
+| `--radius-lg` | 20px | Frosted pills when Figma uses them |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
-| `--radius-full` | 9999px | Every pill: buttons, badges, toggles, nav pill |
+| `--radius-full` | 9999px | Pills: buttons, badges, toggles |
 
 Avatars are circles (`--radius-full`).
 
@@ -155,11 +187,11 @@ Avatars are circles (`--radius-full`).
 | Inverse | `--color-primary` fill, `--color-text-inverse` text | Footer, primary CTA |
 
 - No drop shadow on cards, buttons or nav. The one exception is the active segment of a segmented control (`--shadow-segment-active`).
-- Bottom sheets, dialogs and drawers are separated from the page by `--color-scrim`, not by a shadow. Sheets use `--radius-md` on their top corners.
+- Bottom sheets, dialogs and drawers are separated from the page by `--color-scrim`, not by a shadow. Sheets use `--radius-md` on their top corners unless Figma specifies otherwise.
 
 ## 5. Components
 
-Each item says what it is made of. Write them as `*.module.css` using the tokens above. A component not listed is composed from ch. 1–4 without new values.
+Each item says the default Linker recipe. **When Figma for that screen conflicts, Figma wins** — update tokens if needed, then match the frame. Write components as `*.module.css` using tokens. A component not listed is composed from ch. 1–4 without new values. Prefer page `_components/` over growing a large shared kit during MVP.
 
 **Button, primary** — the single CTA style.
 - Fill `--color-primary`, label `--color-on-primary`, 16px / 600, `--radius-full`, height `--control-height`, padding `0 var(--space-md)`.
@@ -186,57 +218,56 @@ Each item says what it is made of. Write them as `*.module.css` using the tokens
 - Full-width `--color-canvas-soft` bar, `--radius-sm`, question in body size with a trailing chevron, rows `--space-sm` apart. It is a `<button>` with `aria-expanded` (blueprint ch. 6).
 
 **Badge**
-- Highlight badge: `--color-accent` fill, `--color-on-primary` label, `--radius-full`. The only blue element on a screen.
+- Highlight badge: `--color-accent` fill, `--color-on-primary` label, `--radius-full`. The only blue element on a screen unless Figma adds more.
 - Neutral badge (counts, status): `--color-canvas-soft` fill with `--color-text-secondary` label.
 
 **Segmented control** (tab-like toggle)
-- Track `--color-canvas-soft`, `--radius-full`. Active option is a `--color-canvas` pill with `--shadow-segment-active`; inactive label `--color-text-secondary`. Each option is a full pill-sized target (at least 44px high).
+- Track `--color-canvas-soft`, `--radius-full`. Active option is a `--color-canvas` pill with `--shadow-segment-active`; inactive label `--color-text-secondary`. Each option is at least 44px high.
 
-**Top nav** — sticky, content up to `--content-max-width`. Contains the logo, search, notifications and settings (my page). Mobile and tablet share one layout: logo + icon-only buttons (`--touch-target-min` targets) — a search icon that reveals the input below it, then "설정" (guests) or "알람" + profile (members). Desktop (1024px+) swaps the icons for a persistent search field and text pills: guests get "설정" next to a "무료로 시작하기" CTA, members get "알람" next to a circular profile link instead.
-- Desktop search field: `--color-field` fill, `--radius-full` (pill, not the standard input's `--radius-sm`), height `--control-height`, width up to `--header-search-width`, centered between the logo and the right-hand actions. Leading `--icon-size` search icon, `--space-sm` gap to the placeholder/value text (`--font-size-body`). Shown for guests and members alike.
-- Focus/active: fill stays `--color-field` (never turns white), 2px `--color-focus-ring` border (reserved as transparent at rest so focusing doesn't shift layout) — the field's Figma reference shows an ad hoc blue (`#2563eb`) here instead; we kept the global focus-ring token for consistency with every other control rather than add a one-off color. Active (has a value): trailing clear button, `--icon-size` circle, `--color-hairline` fill, `--color-text-body` `X` icon at `--icon-size-sm`, clears the field and refocuses it.
-- "설정" / "알람" share one pill style: `--color-field` fill (not the generic soft-pill's `--color-canvas-soft`, per the Figma reference), `--color-text-heading` label; "무료로 시작하기" is the primary button. All three: `--control-height`, `--radius-full`, `--space-md` horizontal padding, `--font-size-body` / `--font-weight-semibold` label.
-- Desktop profile link (members only): circular, `--control-height` diameter, `--color-canvas-soft` fill, 1px `--color-hairline-soft` border, `UserRound` icon until a real avatar is wired in.
-- Unread notifications: a `--badge-dot-size` `--color-accent` dot at the top-right corner of the bell icon (mobile) or "알람" pill (desktop) (ch. 5 "Badge" highlight style), `--space-xs` inset from each edge. Paired with sr-only text, never the dot alone.
-- Scrolled (past `8px`, desktop only — mobile and tablet have no scroll animation): the bar's own background goes transparent and the row inside becomes a floating pill — `--color-scroll-header` fill, `--blur-header-scroll` backdrop blur, `--radius-lg` corners, `--space-sm` top margin, animated with `--duration-overlay`/`--ease-standard`. The row is already capped at `--content-max-width`, so this is the cap becoming visible, not a width change. The search field and "설정"/"알람" pill switch to a plain `--color-canvas` fill so they read against the frosted bar; the CTA and profile link don't change.
-- Mobile/tablet search: tapping the search icon swaps it for an `X` (closes it) and drops a full-width `HeaderSearch` row below the header — `--page-gutter` side padding, `--space-sm` bottom padding, `--color-canvas` background. Same field look and focus/active behavior as the desktop search field, just without the `--header-search-width` cap or centering.
+**Top nav** — sticky, width capped with the app column (`--content-max-width`). Logo + icon actions per Figma (search, notifications, profile/settings). Icon clusters use §3-3 (24px hit, Figma visual). Unread: `--badge-dot-size` accent dot + sr-only text. **NEVER** switch to a desktop search-field layout on wide browsers.
 
 **Footer**
-- `--color-primary` band with `--radius-md` top corners. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
+- `--color-primary` band with `--radius-md` top corners when used. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — a floating pill, inset `--space-md` (16px) from the viewport edges at every width (fixed outer wrapper with that padding), capped at `--content-max-width` (1440px) and centered beyond it; safe-area inset at the bottom. Profile is not one of these tabs — it lives in the top header on every size. Inactive label `--color-text-body` / icon via `currentColor`, current `--color-gnb-current` with a semibold label (not color alone). The dedicated blue token fixes the original accent's 4.36:1 contrast on the gray mobile pill without changing the shared GNB layout.
-- Mobile (base, below 640px): icon (`--icon-size`) over a caption-size label, `--color-canvas-soft` fill, `--radius-xs` corners.
-- Tablet/desktop (640px+, one shared layout): text only, no icons — `--color-gnb-pill` frosted fill with `--blur-header-scroll` backdrop blur, `--radius-lg` corners, card-title-size label.
+**Bottom tab bar** — sits in the same centered app column; bottom safe-area inset. Icon + label per Figma; current tab `--color-gnb-current` with a semibold label (not color alone). Profile is not a tab — it lives in the header. **NEVER** replace icons with a desktop text-only GNB on wide browsers.
 
-**Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`, close is a 44px icon button.
+**Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`, safe-area aware. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`. Close control: Figma visual + §3-3 hit rules.
 
-**Toast** — inverse surface like the footer: `--color-primary` fill, `--color-text-inverse` caption text, `--radius-sm`, above the bottom tab bar. Focus ring inside uses `--color-focus-ring-on-dark`.
+**Toast** — inverse surface: `--color-primary` fill, `--color-text-inverse` caption text, `--radius-sm`, above the bottom tab bar + safe-area. Focus ring inside uses `--color-focus-ring-on-dark`.
 
 **Disabled button** — 50% opacity with `not-allowed` cursor; the reason is given in text, never by the dimming alone.
 
 **Destructive button** — the outline button with a `--color-status-error` label (delete, leave, block). Never a red fill.
 
-**Not defined yet** — calendar cells, chat bubbles, dark mode. Compose from ch. 1–4 for now; when a decision is made, add it here (and the token if one is needed) in the same change.
+**Not defined yet** — calendar cells, chat bubbles, dark mode. Prefer the screen’s Figma; otherwise compose from ch. 1–4 and add a token here in the same change when a value is new.
 
-## 6. Left out of the source design reference on purpose
+## 6. Mobbin reference — retired
 
-The Mobbin-based reference this guide was built from contains parts Linker does not use. They are not tokens or components here:
+The earlier Mobbin-based visual system is **no longer an authority**. Do not restore its desktop top-nav, text-only wide GNB, 1440px app shell, or 1024px type bumps for app screens.
 
-- Its font (Saans), display type sizes and text colors (replaced by Pretendard and the typography guide).
-- Pricing/testimonial/award/portrait/comparison-table layouts, marquee strips, glass-pillar gradients, grayscale photo treatment and the `badge-overlay` scrim (its translucent gray under white text cannot guarantee 4.5:1 over photos).
-- App-icon squircles and the `ex-*` illustrative surfaces.
+Still kept on purpose:
+
+- Token **infrastructure** (`color` / `typography` / `layout`) and the CSS Modules + `var(--token)` rule
+- Minimal shared UI (`Button`, empty/error states, overlays shell, layout frames)
+- Accessibility and Policy/Page TODO product rules
+
+When implementing a page: match **Figma** first; put one-off UI in that page’s `_components/`.
 
 ## 7. Open points
 
 - **Input boundary contrast.** The input fill (`#f0f0f0`) is 1.14:1 against white, below the 3:1 WCAG 1.4.11 asks for when a control's shape is the only cue. The visible label and the focus ring cover it today; if the team wants strict compliance, add a 1px border token of about `#8a8a8a` and update ch. 5. Decision pending.
 - **Hairline outlines** (`#e0e0e0`, `#f0f0f0`) are decoration, not identification: every outlined control also carries a text label.
+- **Figma ↔ token sync.** When a new frame introduces a color/size not in tokens, add the token in the same PR as the screen — do not leave raw values in the module.
 
 ## 8. Checklist before a screen is done
 
-- [ ] No raw hex, font size, spacing or radius in the module CSS; everything is `var(--…)`.
-- [ ] Text on tinted or dark surfaces uses the on-tint / inverse tokens (ch. 1-2).
-- [ ] Accent is not used for text on a tinted surface or as a CTA fill.
-- [ ] Layout written for 360px first, widened at 600 / 1024.
-- [ ] Buttons and inputs are at least 44px; input font is 16px.
-- [ ] Error, success and warning states have a message, not color alone.
-- [ ] No shadow except `--shadow-segment-active`.
+- [ ] Matched the page’s **Figma** frame (no invented desktop/tablet app layout)
+- [ ] No raw hex, font size, spacing or radius in the module CSS; everything is `var(--…)`
+- [ ] Text on tinted or dark surfaces uses the on-tint / inverse tokens (ch. 1-2)
+- [ ] Accent is not used for text on a tinted surface or as a CTA fill
+- [ ] App column works at **360** and **600**; above 600 the column stays **600 centered** (admin exempt)
+- [ ] Top/bottom **safe-area** + header/tab (or composer) clearance applied
+- [ ] Primary controls ≥ 44px hit; icon clusters use **24px hit** without enlarging Figma visuals
+- [ ] Input font is 16px; no hover-only interaction
+- [ ] Error, success and warning states have a message, not color alone
+- [ ] No shadow except `--shadow-segment-active`

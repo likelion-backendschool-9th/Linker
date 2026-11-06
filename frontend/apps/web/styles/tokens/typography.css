@@ -1,6 +1,6 @@
 /*
- * Typography tokens (Pretendard typography guide): mobile sizes by default,
- * desktop sizes from 1024px. Tablet keeps the mobile sizes.
+ * Typography tokens: one mobile type scale for app screens (design guide ch. 2).
+ * Do not bump title sizes on wide browsers — the app column caps at 600px.
  */
 
 :root {
@@ -8,7 +8,7 @@
     'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
     'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 
-  /* Size — mobile (default) */
+  /* Size */
   --font-size-page-title: 1.5rem; /* 24px */
   --font-size-section-title: 1.25rem; /* 20px */
   --font-size-card-title: 1.125rem; /* 18px */
@@ -26,12 +26,4 @@
   --line-height-title: 1.4; /* section and card titles */
   --line-height-body: 1.6;
   --line-height-caption: 1.5; /* caption and meta */
-}
-
-@media (min-width: 1024px) {
-  :root {
-    --font-size-page-title: 2rem; /* 32px */
-    --font-size-section-title: 1.5rem; /* 24px */
-    --font-size-card-title: 1.25rem; /* 20px */
-  }
 }
