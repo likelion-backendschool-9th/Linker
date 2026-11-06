@@ -1013,7 +1013,7 @@ erDiagram
 
 **github_tokens**: `user_id` UK (1:1). Tokens are stored AES-encrypted and never sent to the app or frontend. When expired, the server refreshes with the refresh token; if that fails, it asks the user to log in again.
 
-**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes the session. OTP enrollment is still a later step, so an `admins` row is enough to open the back office until then.
+**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when this session passed operator 2FA. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes that session. An `admins` row is registration only. `/api/v1/admin/**` also requires this session's `otp_verified_at`. The JWT `adm` claim stays the registration flag. OTP secret enrollment is still a later step. There is no HTTP verify route yet.
 
 **recruiter_profiles**: `user_id` UK (1:1). `company_email_domain` is used for the profile's "회사 메일 인증(@domain)" (Company email verified) label and for operator checks. When operator company verification is added in phase 3, create a `companies` table and add `company_id`.
 
@@ -1191,7 +1191,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | room_type | TEAM uses `team_id` (UK), DIRECT uses `dm_key` (UK) |
 | dm_key | The two user ids joined as small:large. Ensures only one room per pair |
 | dm_status | ACCEPTED from the start for mutual follows or teammates. Otherwise REQUESTED (first message only) → ACCEPTED / REJECTED / EXPIRED (30 days) |
-| last_message_id, last_message_at | Denormalized latest message. Page 16 list still computes the viewer-visible message. Text send writes the pointer only after checking the message is in that room. An edit does not move this pointer. `team_id` has no FK until `teams` exists (page 08). V3 adds `client_message_id` (unique with `sender_id`). `payload` stays deferred. V4 adds `edited_at` |
+| last_message_id, last_message_at | Denormalized latest message. Page 16 list still computes the viewer-visible message. Text send writes the pointer only after checking the message is in that room. An edit does not move this pointer. `team_id` has no FK until `teams` exists (page 08). V3 adds `client_message_id` (unique with `sender_id`). `payload` stays deferred. V10 adds `edited_at` |
 | request_kind | Drives the "채용 제안" (Recruiting offer) label in the request inbox. RECRUITING for rooms created by recruiters, otherwise GENERAL. Kept after acceptance for stats (offer acceptance rate) and the recruiter my page "보낸 채용 제안" (Sent offers) list. List status maps dm_status for display: ACCEPTED → 대화 중 (In conversation), REQUESTED / REJECTED (within 30 days) → 응답 대기 (Awaiting reply), EXPIRED / REJECTED (after 30 days) → 응답 없음 (No reply). Index `(requester_id, request_kind, created_at desc)`. 10/day (Scout 50) limit in Redis |
 
 **chat_room_members**: Unread count = messages in the room with `id > last_read_message_id`. Team chat "unread by N people" = number of members whose `last_read_message_id` is less than the message id. Leaving the team sets `left_at`, and later messages are not visible.
