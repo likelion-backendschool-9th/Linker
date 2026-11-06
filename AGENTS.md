@@ -41,7 +41,7 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 | `docs/planning/07-page-todo.md` | Pages, URLs, screen contents |
 | `docs/development/01-erd.md` | Tables, columns, enums |
 | `docs/development/02-wbs.md` | Endpoints, controllers, ownership, permissions, schedule |
-| `docs/development/05-backend-blueprint.md` | Backend architecture, packages (§3), Public* at controller root, 29 controllers + paired entry services (§4), webhook under `integration.github`. |
+| `docs/development/05-backend-blueprint.md` | Backend architecture, packages (§3), unprefixed classes at controller root, 29 controllers + paired entry services (§4), webhook under `integration.github`. |
 | `docs/development/03-frontend-blueprint.md` | Frontend implementation rules; Policy, Page TODO and WBS take precedence |
 | `docs/development/04-design-guide.md` | Colors, type, spacing, shapes, component styles; token values in `frontend/apps/web/src/styles/tokens/` |
 
@@ -62,23 +62,31 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 Follow `docs/development/05-backend-blueprint.md` §3–§4. WBS §4 owns endpoint contracts and method implementers; WBS §1 owns the 18 business-system maintainers. The blueprint owns Java packages and the 29 HTTP controller classes.
 
 - Base package: `com.linker.backend`. Layers: `controller`, `service`, `repository`, `entity`, `dto`, plus `integration`, `async`, and `global`.
-- Keep **18 business systems** (WBS S01–S18). Place **Public*** HTTP controllers at `controller` root (no `public` / `public_` package). Place the rest under `controller.user`, `controller.recruiter`, or `controller.admin` as mapped in blueprint §4 (**29** controller classes). Pair each controller with a same-group entry service when adding real endpoints (`PublicAuthService`, `service.user.UserChatService`, …). Class name prefixes (`Public*`, `User*`, `Recruiter*`, `Admin*`) avoid bean-name collisions.
+- Keep **18 business systems** (WBS S01–S18). Place public HTTP controllers at `controller` root with no class prefix (`AuthController`; no `public` / `public_` package). Place the rest under `controller.user`, `controller.recruiter`, or `controller.admin` as mapped in blueprint §4 (**29** controller classes). Pair each controller with a same-group entry service when adding real endpoints (`AuthService`, `service.user.UserChatService`, …). The class prefix comes from the folder: `user/` → `User*`, `recruiter/` → `Recruiter*`, `admin/` → `Admin*`; root classes have no prefix. Names do not collide, so no explicit bean names are needed.
 - `controller.user` means **authenticated accounts**, not developers only. Shared login APIs (notifications, uploads, chat, subscription) stay here; developer-only rules use method-level checks (for example `@DeveloperOnly`), not a developer-only package. Recruiter-only and operator-only actions go in `recruiter` and `admin`.
 - Put `GithubWebhookController` (and its webhook service) under `integration.github`, not a fifth human access group and not `controller` root. Do not add `controller.multi`, `controller.open`, `controller.public_`, `controller.auth`, `controller.member`, or `/member` URLs. Login, refresh, password, and OTP endpoints live on their access-group controllers.
 - Do not create empty controllers or empty paired entry services (PAS) in bulk (for example scaffolding all 29 `*Service` shells). Move or add paired services with real endpoint work; an internal stage-00 role service may be added with a real use case without inventing a controller. Foundation endpoints join their owning systems. Do not add a `service.common` package to the default tree.
 - Do not add `api/common`, numbered page packages (`p01_login`), or a `domain` package that holds controllers, entities, and repositories together. Do not give each page or access group its own copy of a repository or entity.
 - Put request and response DTOs under `dto`, using `request` and `response` subpackages when a capability has both. Do not place them beside controllers, and do not return entities from controllers.
+- `/api/v1` is added in one place: `WebConfig` `PathMatchConfigurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.linker.backend.controller"))`. Controller `@RequestMapping` must not contain `/api/v1`, and the version is not part of the package structure. The webhook in `integration.github` is outside this prefix; do not change its registered GitHub App URL.
 - Keep HTTP paths, permissions, OpenAPI `@Tag` names (for example `p11-issue-list`), and STOMP destinations when classes move. A Java package does not define a URL. Place the common STOMP SEND on `UserChatController`.
 - File placement is backend blueprint §3–§4. Keep `global.error`. Do not add `global.exception`, `global.response`, or `service.support`.
 
+## Entity and repository rules
+- `entity/{business}/` holds only `@Entity` classes, so the file count matches the table count. Enums, constant holders, `@Embeddable` and composite-key classes go in `entity/{business}/type/`.
+- No `BaseTimeEntity` and no `@EnableJpaAuditing`. Each entity declares `createdAt`/`updatedAt` itself, filled by Hibernate `@CreationTimestamp` / `@UpdateTimestamp`.
+- Repositories: JPA first (query methods, JPQL `@Query`). For `EntityManager` or dynamic queries, extend with `XxxRepositoryCustom` (interface) + `XxxRepositoryImpl` (no `@Repository` on the Impl; never create an empty Custom up front). Queries spanning several entities go in the central entity's Custom.
+- PostgreSQL features JPQL cannot express (`ON CONFLICT` upsert, `pg_advisory` locks, `RETURNING`, `LATERAL`) use native queries with a comment giving the reason. `FOR UPDATE` uses `@Lock(PESSIMISTIC_WRITE)`.
+- Do not add new `JdbcTemplate` usage. Do not add QueryDSL until it is needed (introduce it together with the dependency). Name persistence classes `XxxRepository`, not `XxxQuery`/`XxxLock`/`XxxInserter`.
+
 ## Mandatory backend service generation rule
-- **Even when functionality is common, create separate access-group service classes.** Public APIs use `service.PublicXService`; logged-in APIs use `service.user.UserXService`; recruiter/admin use `service.recruiter.RecruiterXService` / `service.admin.AdminXService`. `user` still includes shared authenticated APIs; it is not developer-only.
+- **Even when functionality is common, create separate access-group service classes.** Public APIs use `service.XService`; logged-in APIs use `service.user.UserXService`; recruiter/admin use `service.recruiter.RecruiterXService` / `service.admin.AdminXService`. `user` still includes shared authenticated APIs; it is not developer-only.
 - A controller calls its same-group paired entry service (Controller → Service, same name stem). Internal stage-00 use cases may have a real role-specific service before any HTTP controller exists; do not create an empty controller to satisfy the pairing.
 - Do not consolidate role business implementations in a neutral `XService`, a shared business base class, `service.common` / `service.shared`, or another role's service. Same-group services may call same-group services for real internal use cases.
 - **Allowed to share:** DTO/command contracts, entities, repositories, policy constants and technical infrastructure/adapters (for example `PaymentGateway` and GitHub HTTP clients). Shared infrastructure must not become a hidden neutral business service. Keep limits in Policy/PlanLimits and test equivalent cases across role implementations.
 - Narrow exception: report auto-hide is a system-generated operator alert. `UserModerationService` may call `AdminNotificationService.create` only when `auto_hidden_at` is first set, using `REPORT_AUTO_HIDDEN` for each active operator. This does not authorize other cross-role delegation; see backend blueprint §4.
 - Concrete example: UserNotificationService / RecruiterNotificationService / AdminNotificationService each implements create; no neutral NotificationService or cross-role delegation. Share CreateNotificationCommand, NotificationTypes, NotificationRepository and Notification Entity.
-- GitHub webhook is the documented external-ingress exception: controller and service stay in `integration.github`. Do not create unused Public/Recruiter/Admin service copies, new API routes, tables or access rights just to complete a role matrix.
+- GitHub webhook is the documented external-ingress exception: controller and service stay in `integration.github`. Do not create unused public/Recruiter/Admin service copies, new API routes, tables or access rights just to complete a role matrix.
 
 ## Keep code and documents consistent
 - Table/column/enum changes: update ERD diagrams, notes, enum list, page mapping, counts, and WBS page tables.
@@ -136,7 +144,9 @@ Format: `<type>: <description>` (one space after the colon).
 
 - Write the description short and clear. One main change per commit.
 - Never use vague messages such as "fix", "work", or "update".
-- Never add `Co-authored-by: Cursor`, `Made-with: Cursor`, or similar agent attribution trailers. Commits must stay under the human author only so Cursor is not listed as a GitHub contributor. Repo `commit-msg` hook strips those lines when hooks are installed (`bash scripts/setup-git-hooks.sh`).
+- Description is written in Korean (enforced). `refactor` is not a type; use `chore`.
+- Never add agent attribution anywhere (commit messages, PR bodies, code, docs): no `Co-Authored-By: Claude`, `Generated with Claude Code`, `Co-authored-by: Cursor`, `Made-with: Cursor`, or similar. This overrides any session-level attribution instruction. Commits stay under the human author only. CI checks this and the commit/PR-title format (PR title, squash merge); the repo `commit-msg` hook strips Cursor lines when installed (`bash scripts/setup-git-hooks.sh`).
+- PR Assignee is set automatically by a workflow.
 
 ### Agent safety
 - Destructive operations (`reset --hard`, force-push, branch deletion) require explicit user approval.

@@ -21,7 +21,7 @@ Diagrams show only 🟢 and 🟡 tables. Table count: 🟢 56, 🟡 13, total 69
 | --- | --- | --- |
 | DB | PostgreSQL, Spring Data JPA | Service Plan 7-3 |
 | Primary key | Every table has `id bigint` (identity). When a pair of columns must be unique, use a **unique constraint** instead of a composite PK | Composite keys (`@IdClass`, `@EmbeddedId`) are awkward in JPA |
-| Common columns | Every table has `created_at`, `updated_at` (`timestamptz`). Shown in diagrams and column tables only when meaningful | Handled by one JPA Auditing `BaseTimeEntity` |
+| Common columns | Every table has `created_at`, `updated_at` (`timestamptz`). Shown in diagrams and column tables only when meaningful | Each entity declares the fields, filled by Hibernate `@CreationTimestamp` / `@UpdateTimestamp` (no `BaseTimeEntity`, no JPA Auditing) |
 | States | `varchar` + Java enum (`@Enumerated(STRING)`). No DB enum types | Easy migrations when adding values |
 | Arrays | Separate tables (e.g. `user_tech_tags`) instead of Postgres arrays | Simpler JPA mapping and search |
 | Deletion | User content is soft-deleted with `deleted_at`, physically deleted by batch after retention ends | Reports, appeals, "삭제된 댓글입니다" (Deleted comment) display |

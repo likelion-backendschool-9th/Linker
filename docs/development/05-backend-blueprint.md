@@ -20,7 +20,7 @@
 
 AGENTS follows this layout. Implemented controllers already use paired entry services under `service` / `service.user`; helpers for those features live in the same access packages (not legacy `service.catalog`-style folders).
 
-**Forbidden:** creating the full set of empty paired entry services (PAS) or empty controllers “for structure” (for example scaffolding all 29 `Public*Service` / `User*Service` classes with no endpoints). Add a paired entry service with real endpoint work; a role-specific internal stage-00 service may be added with its actual use case without creating a controller. Neither case permits empty scaffolding.
+**Forbidden:** creating the full set of empty paired entry services (PAS) or empty controllers “for structure” (for example scaffolding all 29 `*Service` / `User*Service` classes with no endpoints). Add a paired entry service with real endpoint work; a role-specific internal stage-00 service may be added with its actual use case without creating a controller. Neither case permits empty scaffolding.
 
 
 ## 2. Architecture and layer boundaries
@@ -40,7 +40,7 @@ Keep `com.linker.backend`, Java 21 and the existing Gradle project. The inspecte
 | async | Queue consumption, post-commit delivery, scheduled entry points | Duplicated rules outside services |
 | global | Config, security, errors and JPA infrastructure | Unrelated feature helpers |
 
-Use Controller → (paired) Service → Repository. Keep `global.error`, shared `BaseTimeEntity`, and business-based repositories/entities. Do not create mixed-layer `domain`, page-number packages, `service.support`, `global.exception`, or `global.response`.
+Use Controller → (paired) Service → Repository. Keep `global.error` and business-based repositories/entities. Do not create mixed-layer `domain`, page-number packages, `service.support`, `global.exception`, or `global.response`.
 
 
 ## 3. Package structure
@@ -49,15 +49,16 @@ Use Controller → (paired) Service → Repository. Keep `global.error`, shared 
 com.linker.backend/
 ├── BackendApplication.java
 ├── controller/
-│   ├── PublicAuthController.java
-│   ├── PublicAccountController.java
+│   ├── AuthController.java       # root classes have no prefix
+│   ├── AccountController.java
 │   ├── …                         # other public API controllers (no public_ package)
+│   │                             # user/ → User*, recruiter/ → Recruiter*, admin/ → Admin*
 │   ├── user/
 │   ├── recruiter/
 │   └── admin/
 ├── service/
-│   ├── PublicAuthService.java
-│   ├── PublicAccountService.java
+│   ├── AuthService.java
+│   ├── AccountService.java
 │   ├── …                         # paired public entry services
 │   ├── user/
 │   ├── recruiter/
@@ -69,13 +70,17 @@ com.linker.backend/
 │   │   └── …                     # GitHub HTTP/GraphQL adapters
 │   └── payment|mail|push|storage|ai/
 ├── repository/{business}/
-├── entity/{business}/
+├── entity/{business}/            # @Entity only; enums/constants/@Embeddable/composite keys in type/
 ├── dto/{business}/request|response/
 ├── async/webhook|notification|schedule/
-└── global/config|security|error|jpa/
+└── global/config|security|error/
 ```
 
 - **`public` is an HTTP access label only.** Do not create a Java package named `public` or `public_`. Public controllers and their paired services live at the `controller` / `service` **roots**. Keep the HTTP prefix `/api/v1/public`.
+- **Class prefix follows the folder:** `user/` → `User*`, `recruiter/` → `Recruiter*`, `admin/` → `Admin*`; `controller/` and `service/` root classes have no prefix (`AuthController`, `AuthService`). Names do not collide, so no explicit Spring bean names are needed. A later rename of `admin/AdminController` into role-specific `AdminXxxController` classes is outside this document change.
+- **API version `/api/v1`** is added once in `WebConfig` via `PathMatchConfigurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.linker.backend.controller"))`. Controller `@RequestMapping` values omit `/api/v1`; the version is not a package. The webhook under `integration.github` is not covered by this prefix and keeps its registered URL.
+- **Entity:** `entity/{business}/` contains only `@Entity` classes (count matches the tables). Enums, constant holders, `@Embeddable` and composite-key classes go in `entity/{business}/type/`. No `BaseTimeEntity`/`@EnableJpaAuditing`: each entity has `createdAt`/`updatedAt` filled by Hibernate `@CreationTimestamp`/`@UpdateTimestamp`.
+- **Repository:** JPA query methods and JPQL `@Query` first. `EntityManager`/dynamic queries use `XxxRepositoryCustom` + `XxxRepositoryImpl` (no `@Repository` on Impl, no empty Custom). Multi-entity queries live in the central entity's Custom. PostgreSQL-only features (`ON CONFLICT`, `pg_advisory`, `RETURNING`, `LATERAL`) use native queries with a reason comment; `FOR UPDATE` uses `@Lock(PESSIMISTIC_WRITE)`. No new `JdbcTemplate`; QueryDSL only when introduced with its dependency.
 - `user` means **authenticated accounts**, not developers only. Notifications, uploads, chat and subscription may serve developers and recruiters. Apply `@DeveloperOnly` (and team/resource checks) at method level. Never make the whole `user` package developer-only.
 - `recruiter` holds recruiter-only actions; `admin` holds operator actions. An operator is a developer with `admins` permissions and follows normal developer rules outside admin APIs.
 - Do not add `controller.member`, a member account role, `/member` URLs, or `controller.auth`. Login, refresh, password and OTP stay on their access-group controllers; authentication service classes follow the same access-group naming rule; DTOs, repositories and entities remain shared.
@@ -98,7 +103,7 @@ AdminSubscriptionController → AdminSubscriptionService → PaymentGateway
 - Keep access checks and business transactions explicit. When rules repeat across roles, cover all implementations with the same policy cases so they cannot silently diverge.
 - Notification creation is a stage-00 internal use case, so it does not require an empty notification controller or a new REST API. The implemented producers are `service.user.UserNotificationService`, `service.recruiter.RecruiterNotificationService`, and `service.admin.AdminNotificationService`.
 - Each exposes `create(dto.notification.request.CreateNotificationCommand)`, validates recipient/optional actor, calculates quiet hours from PlanLimits, and saves through the existing NotificationRepository in the caller’s transaction.
-- The service prefix identifies the producing use-case boundary, **not the recipient’s account type**. A logged-in user flow calls `UserNotificationService` (team invite is this case). A recruiter flow calls `RecruiterNotificationService`. An operator flow calls `AdminNotificationService`. Role notification services do not delegate to each other; the report auto-hide producer exception below is explicit. Anonymous creation has no use case, so there is no `PublicNotificationService`.
+- The service prefix identifies the producing use-case boundary, **not the recipient’s account type**. A logged-in user flow calls `UserNotificationService` (team invite is this case). A recruiter flow calls `RecruiterNotificationService`. An operator flow calls `AdminNotificationService`. Role notification services do not delegate to each other; the report auto-hide producer exception below is explicit. Anonymous creation has no use case, so there is no `NotificationService`.
 - Callers check their own use-case permission and, for `MARKETING`, marketing consent before building the command. The service does not grant permission by name. `create` does not suppress senders the recipient has blocked; that filter stays at the call site (DM and notification suppression are still to be wired with chat).
 - `CreateNotificationCommand` requires `recipientUserId` and `notificationType`. Optional fields are `actorUserId`, `targetType`, `targetId`, `linkPath`, `payloadJson`, and `groupKey`. A blank `notificationType` throws `IllegalArgumentException`. Blank optional strings are stored as null. `NotificationTypes` holds known strings (`CHAT`, `ISSUE_ASSIGNED`, `DUE_SOON`, `APPLICATION_RECEIVED`, `APPLICATION_ACCEPTED`, `APPLICATION_REJECTED`, `COMMENT`, `FOLLOW`, `MESSAGE_REQUEST`, `TEAM_INVITE`, `REPORT_AUTO_HIDDEN`, `MARKETING`); producers may pass another string. These strings are not a database enum.
 - A missing or deleted recipient, or a present but missing or deleted actor, throws `404 NOT_FOUND` with message `사용자를 찾을 수 없어요`. Deleted means `UserStatus.DELETED` or `deletedAt` set.
@@ -131,7 +136,7 @@ userNotifications.create(new CreateNotificationCommand(
 
 | Placement | Controllers / entry services | REST |
 | --- | ---: | ---: |
-| controller / service roots (Public*) | 8 / 8 | 27 |
+| controller / service roots (no prefix) | 8 / 8 | 27 |
 | controller.user / service.user | 14 / 14 | 153 |
 | controller.recruiter / service.recruiter | 4 / 4 | 10 |
 | controller.admin / service.admin | 2 / 2 | 14 |
@@ -147,8 +152,8 @@ Keep each API’s method, path, query, permission, DTO, status, error code, page
 
 | Action | Controller | Required check |
 | --- | --- | --- |
-| GitHub/company-email sign-up, login and reset | PublicAuthController | State, verification/reset tokens, allowed return URL, failure limits |
-| Refresh | PublicAuthController | Valid session/refresh eligibility despite public URL |
+| GitHub/company-email sign-up, login and reset | AuthController | State, verification/reset tokens, allowed return URL, failure limits |
+| Refresh | AuthController | Valid session/refresh eligibility despite public URL |
 | Current session and logout | UserSessionController | Authenticated account and own session |
 | Change recruiter password | RecruiterAuthController | Authenticated recruiter, own account |
 | Operator OTP | AdminController | Logged-in registered operator candidate; permit pre-OTP verification |
@@ -210,7 +215,7 @@ Public controllers/services remain at `controller`/`service` roots, authenticate
 
 ## 9. Migration and unresolved decisions
 
-1. Done for existing classes: Public* → `controller` root (no `public_`); webhook → `integration.github` with webhook service; paired entry services for the controllers that already exist. Routes unchanged.
+1. Done for existing classes: public classes → `controller` root (no `public_`); webhook → `integration.github` with webhook service; paired entry services for the controllers that already exist. Routes unchanged.
 2. Add paired entry services only with real endpoints in the same change; never bulk-scaffold empty PAS. Use role-named services for real use cases and keep shared DTO/repository/entity contracts.
 3. Keep routes, permissions, DTOs, OpenAPI tags and STOMP destinations stable. Never register old and new controllers on the same path.
 4. Verify build, security, transactions and STOMP after moves.

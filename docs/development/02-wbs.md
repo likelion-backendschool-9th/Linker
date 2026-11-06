@@ -92,7 +92,7 @@
 2. public은 비로그인 읽기·선택적 인증, user는 로그인 회원이다. 개발자 전용 동작의 @DeveloperOnly, 팀 API의 @TeamRole, 작성자·방 참가자·저장소 권한을 각각 보존한다. 운영 권한으로 타인의 대화·팀에 접근하지 않는다.
 3. 컨트롤러는 public 루트 또는 user/recruiter/admin으로 나누고 원래 HTTP 역할 경로를 유지한다. 클래스가 폴더와 같은 권한을 자동 부여하지 않는다. user 전체를 개발자 전용이나 admin 전용으로 막지 않는다.
 4. Controller → Service → Repository, com.linker.backend와 Blueprint의 레이어를 유지한다. 서비스는 공통 기능도 역할별 이름·폴더에서 각각 구현한다. 저장소·Entity·DTO·정책 상수는 업무별로 공유할 수 있고 DTO는 dto 아래에 둔다. 페이지 번호 패키지나 domain 혼합 배치로 되돌리지 않는다.
-5. 공개(Public*) 컨트롤러는 `controller` 루트에 둔다. `public` / `public_` / `open` / `multi` 패키지는 쓰지 않는다. 로그인·채용·운영 API는 `controller.user` / `controller.recruiter` / `controller.admin`에 둔다. GitHub 웹훅 HTTP 진입은 `integration.github`에 둔다. 컨트롤러마다 같은 분류의 대응 진입 서비스를 둔다. 0단계 내부 역할 서비스는 실제 기능과 함께 컨트롤러 없이 추가할 수 있다. 빈 진입 서비스·빈 컨트롤러는 만들지 않는다. 공통 기반도 해당 시스템으로 통합하며 고정된 common 7개 규칙을 폐지한다. 구체적인 클래스 배치는 백엔드 Blueprint §3–§4를 따른다.
+5. 공개 컨트롤러는 `controller` 루트에 접두어 없이 둔다(`AuthController`). user/recruiter/admin 폴더 클래스는 `User*`/`Recruiter*`/`Admin*` 접두어를 쓴다. `public` / `public_` / `open` / `multi` 패키지는 쓰지 않는다. 로그인·채용·운영 API는 `controller.user` / `controller.recruiter` / `controller.admin`에 둔다. GitHub 웹훅 HTTP 진입은 `integration.github`에 둔다. 컨트롤러마다 같은 분류의 대응 진입 서비스를 둔다. 0단계 내부 역할 서비스는 실제 기능과 함께 컨트롤러 없이 추가할 수 있다. 빈 진입 서비스·빈 컨트롤러는 만들지 않는다. 공통 기반도 해당 시스템으로 통합하며 고정된 common 7개 규칙을 폐지한다. 구체적인 클래스 배치는 백엔드 Blueprint §3–§4를 따른다.
 6. 기존 pNN OpenAPI 태그는 메서드별로 보존한다. 통합한 모든 태그를 클래스 전체에 붙이지 않는다. 태그 개편·Orval 재생성은 별도 합의다.
 7. 메서드·경로·쿼리·권한·동작은 4장 원문 계약을 따른다. 클래스 통합을 이유로 API를 추가·병합하거나 권한을 넓히지 않는다.
 8. ID는 Linker ID, 목록은 cursor/size와 {items, nextCursor}. 성공은 wrapper 없이 응답, 생성 201·비동기 접수 202, 오류는 {code, message, detail}. 기존 코드·한국어 문구를 유지한다.

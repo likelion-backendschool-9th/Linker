@@ -2,7 +2,7 @@
 
 > 2026-11-05. 이슈 [#193](https://github.com/likelion-backendschool-9th/Linker/issues/193). 코드를 바꾸지 않고 현재 구현을 기준 문장으로 고정한다.  
 > 변경은 이 문서와 연결 이슈에 적고 전원 멘션 후 반영한다. claim만으로 서버 권한을 부여하지 않는다.  
-> 근거: `JwtSessionTokens`, `SessionCookies`, `SessionClaims`, `ApiErrorBody`, `handleApiError`, `PlanLimits`, `policy.ts`, `CreateNotificationCommand`, `PublicCatalogService`.
+> 근거: `JwtSessionTokens`, `SessionCookies`, `SessionClaims`, `ApiErrorBody`, `handleApiError`, `PlanLimits`, `policy.ts`, `CreateNotificationCommand`, `CatalogService`.
 
 ## 1. JWT claim
 

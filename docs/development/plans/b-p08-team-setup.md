@@ -8,7 +8,7 @@
 
 ## 공통 변경 범위
 
-- 공통 ERD·WBS·태그 계약·운영 안내와 A/C/D 업무 구현은 최신 dev를 그대로 보존한다. PublicAuthService·FoundationIntegrationTest·WorkspaceTeamIntegrationTest·mock-fetch.ts도 dev와 동일하다.
+- 공통 ERD·WBS·태그 계약·운영 안내와 A/C/D 업무 구현은 최신 dev를 그대로 보존한다. AuthService·FoundationIntegrationTest·WorkspaceTeamIntegrationTest·mock-fetch.ts도 dev와 동일하다.
 - TeamAccess SPI의 임시 거절 구현을 DB 멤버십 구현으로 교체한다. 삭제/탈퇴/역할/보관 상태를 검증한다. JWT claim·쿠키·오류 코드·알림 생성 시그니처는 변경하지 않는다.
 - PlanLimits에는 기존 Policy의 읽기 전용 30일 보관 값만 추가한다. B worker/webhook 설정만 기본 false로 추가하고 C 플래그는 유지한다.
 - 서버 스펙으로 SDK를 재생성한다. 기존 페이지별 SDK와 기존 모델 내보내기는 모두 보존하고 p08·공통 설치 검증 계약을 연결한다. 공용 모델 파일에는 최신 서버 응답 모델도 포함된다.
