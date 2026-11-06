@@ -1,7 +1,7 @@
 package com.linker.backend.integration.github;
 
-import com.linker.backend.repository.issue.IssueContextRepository.Context;
-import com.linker.backend.repository.issue.IssueContextRepository.Repo;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.Context;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.Repo;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;

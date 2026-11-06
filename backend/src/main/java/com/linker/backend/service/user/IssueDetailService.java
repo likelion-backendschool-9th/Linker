@@ -22,14 +22,11 @@ import com.linker.backend.integration.github.GithubAppClient;
 import com.linker.backend.integration.github.GithubIssueClient;
 import com.linker.backend.integration.github.IssueMarkdown;
 import com.linker.backend.integration.github.IssueSource;
-import com.linker.backend.repository.issue.IssueCacheRepository;
-import com.linker.backend.repository.issue.IssueContextRepository;
-import com.linker.backend.repository.issue.IssueContextRepository.Context;
-import com.linker.backend.repository.issue.IssueContextRepository.Repo;
-import com.linker.backend.repository.issue.IssueDetailRepository;
-import com.linker.backend.repository.issue.IssueDetailRepository.Row;
-import com.linker.backend.repository.issue.IssueEditJobRepository;
-import com.linker.backend.repository.issue.IssueSyncLock;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.Context;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.Repo;
+import com.linker.backend.dto.issue.response.IssuePersistenceView.Row;
+import com.linker.backend.repository.issue.IssueRepository;
+import com.linker.backend.repository.issue.IssueSyncJobRepository;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -52,11 +49,8 @@ public class IssueDetailService {
   // Operational retry bound, not a product entitlement. Authorization failures are terminal.
   static final int MAX_ATTEMPTS = 3;
   private final UserIssueAccess access;
-  private final IssueContextRepository contexts;
-  private final IssueDetailRepository rows;
-  private final IssueCacheRepository cache;
-  private final IssueEditJobRepository jobs;
-  private final IssueSyncLock locks;
+  private final IssueRepository issueRepository;
+  private final IssueSyncJobRepository syncJobs;
   private final GithubIssueClient github;
   private final GithubAppClient app;
   private final NotificationService notifications;
@@ -66,22 +60,16 @@ public class IssueDetailService {
 
   public IssueDetailService(
       UserIssueAccess access,
-      IssueContextRepository contexts,
-      IssueDetailRepository rows,
-      IssueCacheRepository cache,
-      IssueEditJobRepository jobs,
-      IssueSyncLock locks,
+      IssueRepository issueRepository,
+      IssueSyncJobRepository syncJobs,
       GithubIssueClient github,
       GithubAppClient app,
       NotificationService notifications,
       Clock clock,
       PlatformTransactionManager manager) {
     this.access = access;
-    this.contexts = contexts;
-    this.rows = rows;
-    this.cache = cache;
-    this.jobs = jobs;
-    this.locks = locks;
+    this.issueRepository = issueRepository;
+    this.syncJobs = syncJobs;
     this.github = github;
     this.app = app;
     this.notifications = notifications;
@@ -93,15 +81,15 @@ public class IssueDetailService {
 
   private Selected select(AuthenticatedUser user, long team, long issue, boolean write) {
     access.member(user, team);
-    var ctx = contexts.get(team);
-    var row = rows.get(team, issue);
+    var ctx = issueRepository.context(team);
+    var row = issueRepository.detail(team, issue);
     var repo =
         ctx.repos().stream()
             .filter(r -> r.id() == row.repoId())
             .findFirst()
             .orElseThrow(() -> new ApiException(404, "NOT_FOUND", "연결된 이슈를 찾을 수 없어요"));
     if (write) {
-      var actor = rows.actor(user.userId());
+      var actor = issueRepository.actor(user.userId());
       if (actor.status() != UserStatus.ACTIVE || actor.userType() != UserType.DEVELOPER)
         throw new ApiException(403, "SUSPENDED", "정지된 계정은 이슈를 변경할 수 없어요");
       if (!ctx.writable() || row.deleted()) throw conflict("읽기 전용이거나 이동·삭제된 이슈예요");
@@ -128,7 +116,7 @@ public class IssueDetailService {
   }
 
   public IssueDetailResponse detail(AuthenticatedUser user, long team, long issue) {
-    return locks.team(
+    return issueRepository.withTeamLock(
         team,
         () -> {
           var original = select(user, team, issue, false);
@@ -142,7 +130,7 @@ public class IssueDetailService {
               throw verifying("이슈 최신 내용을 다시 확인하고 있어요");
             var project = github.project(s.context, token);
             access.member(user, team);
-            cache.apply(
+            issueRepository.apply(
                 s.context,
                 new IssueSource.Snapshot(
                     List.of(new IssueSource.RepositoryIssues(s.repo, List.of(live.issue()))),
@@ -150,7 +138,7 @@ public class IssueDetailService {
                 false,
                 clock.instant());
           }
-          var row = rows.get(team, issue);
+          var row = issueRepository.detail(team, issue);
           boolean canWrite = false;
           String reason = null;
           if (view.disposition() != null || row.deleted()) reason = "ISSUE_UNAVAILABLE";
@@ -183,15 +171,15 @@ public class IssueDetailService {
                     IssueMarkdown.sanitize(live.body()),
                     row.status(),
                     row.state(),
-                    rows.assignees(team, issue),
-                    rows.labels(issue),
+                    issueRepository.assignees(team, issue),
+                    issueRepository.labels(issue),
                     row.start(),
                     row.due(),
                     row.due() != null
                         && row.due().isBefore(LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)))
                         && !"DONE".equals(row.status()),
                     row.itemId() != null,
-                    rows.author(live.authorGithubId(), author),
+                    issueRepository.author(live.authorGithubId(), author),
                     row.url(),
                     live.created() == null ? row.created() : live.created(),
                     row.updated(),
@@ -210,7 +198,7 @@ public class IssueDetailService {
     var s = select(user, team, issue, false);
     String token = app.installationReadToken(s.context.installationId());
     var result =
-        rows.candidates(team).stream()
+        issueRepository.assigneeCandidates(team).stream()
             .filter(p -> github.candidateCanRead(s.repo, p.login(), token))
             .toList();
     recheck(user, s);
@@ -226,7 +214,7 @@ public class IssueDetailService {
   }
 
   public SubIssues subIssues(AuthenticatedUser user, long team, long issue) {
-    return locks.team(team, () -> loadSubIssues(user, team, issue));
+    return issueRepository.withTeamLock(team, () -> loadSubIssues(user, team, issue));
   }
 
   private SubIssues loadSubIssues(AuthenticatedUser user, long team, long issue) {
@@ -251,7 +239,7 @@ public class IssueDetailService {
             .map(
                 i ->
                     new SubIssue(
-                        rows.linkedId(team, i.githubId()),
+                        issueRepository.linkedId(team, i.githubId()),
                         i.number(),
                         i.title(),
                         i.state(),
@@ -269,7 +257,7 @@ public class IssueDetailService {
     tx.executeWithoutResult(
         status -> {
           recheck(user, s);
-          rows.subIssues(team, issue, summary);
+          issueRepository.subIssues(team, issue, summary);
         });
     return summary;
   }
@@ -285,7 +273,7 @@ public class IssueDetailService {
         issue,
         "SET_ASSIGNEES",
         Map.of("userIds", ids),
-        () -> new AssigneesResult(rows.assignees(team, issue)));
+        () -> new AssigneesResult(issueRepository.assignees(team, issue)));
   }
 
   public LabelsResult labels(AuthenticatedUser user, long team, long issue, List<String> labels) {
@@ -298,7 +286,7 @@ public class IssueDetailService {
         issue,
         "SET_LABELS",
         Map.of("labels", labels),
-        () -> new LabelsResult(rows.labels(issue)));
+        () -> new LabelsResult(issueRepository.labels(issue)));
   }
 
   public ScheduleResult schedule(
@@ -314,7 +302,7 @@ public class IssueDetailService {
         "SET_START",
         values,
         () -> {
-          var r = rows.get(team, issue);
+          var r = issueRepository.detail(team, issue);
           return new ScheduleResult(r.start(), r.due());
         });
   }
@@ -329,7 +317,7 @@ public class IssueDetailService {
         "SET_STATUS",
         Map.of("status", status),
         () -> {
-          var r = rows.get(team, issue);
+          var r = issueRepository.detail(team, issue);
           return new StatusResult(r.status(), r.state());
         });
   }
@@ -341,7 +329,7 @@ public class IssueDetailService {
       String step,
       Map<String, ?> payload,
       java.util.function.Supplier<T> result) {
-    return locks.team(
+    return issueRepository.withTeamLock(
         team,
         () -> {
           var s = select(user, team, issue, true);
@@ -351,7 +339,7 @@ public class IssueDetailService {
           if (step.equals("SET_ASSIGNEES"))
             durable.put(
                 "previousUserIds",
-                rows.assignees(team, issue).stream()
+                issueRepository.assignees(team, issue).stream()
                     .map(IssueListResponse.Assignee::id)
                     .filter(Objects::nonNull)
                     .toList());
@@ -359,7 +347,7 @@ public class IssueDetailService {
               tx.execute(
                   status -> {
                     recheck(user, s);
-                    return jobs.create(
+                    return syncJobs.queueEdit(
                         issue,
                         user.userId(),
                         step,
@@ -402,18 +390,18 @@ public class IssueDetailService {
   }
 
   private void execute(long id, AuthenticatedUser user) {
-    var job = jobs.get(id);
+    var job = syncJobs.edit(id);
     if ("DONE".equals(job.status()) || "FAILED".equals(job.status())) return;
     if (job.attempts() >= MAX_ATTEMPTS) {
       tx.executeWithoutResult(
-          status -> jobs.failed(id, job.issue(), true, "RETRY_EXHAUSTED", clock.instant()));
+          status -> syncJobs.failEdit(id, job.issue(), true, "RETRY_EXHAUSTED", clock.instant()));
       throw new ApiException(
           503,
           "SERVICE_UNAVAILABLE",
           "자동 재시도를 마쳤어요. 동기화 상태를 확인해 주세요",
           Map.of("jobId", id, "syncStatus", "FAILED", "retryScheduled", false));
     }
-    tx.executeWithoutResult(status -> jobs.start(id, clock.instant().plusSeconds(60)));
+    tx.executeWithoutResult(status -> syncJobs.startEdit(id, clock.instant().plusSeconds(60)));
     try {
       var s = select(user, job.team(), job.issue(), true);
       var payload = json.readTree(job.payload());
@@ -536,20 +524,20 @@ public class IssueDetailService {
       tx.executeWithoutResult(
           status -> {
             recheck(user, s);
-            var currentActor = rows.actor(user.userId());
+            var currentActor = issueRepository.actor(user.userId());
             if (currentActor.status() != UserStatus.ACTIVE
                 || currentActor.userType() != UserType.DEVELOPER)
               throw new ApiException(403, "FORBIDDEN", "현재 계정 권한으로 변경을 완료할 수 없어요");
             var previous = new HashSet<Long>();
             payload.path("previousUserIds").forEach(v -> previous.add(v.asLong()));
-            cache.apply(
+            issueRepository.apply(
                 s.context,
                 new IssueSource.Snapshot(
                     List.of(new IssueSource.RepositoryIssues(s.repo, List.of(actual))), project),
                 false,
                 clock.instant());
             if (job.step().equals("SET_ASSIGNEES"))
-              for (var assigned : rows.assignees(job.team(), job.issue()))
+              for (var assigned : issueRepository.assignees(job.team(), job.issue()))
                 if (assigned.id() != null
                     && assigned.inTeam()
                     && !previous.contains(assigned.id())
@@ -565,11 +553,11 @@ public class IssueDetailService {
                           null,
                           "issue-assigned:" + job.id() + ":" + assigned.id()));
                 }
-            jobs.done(id, job.issue());
+            syncJobs.finishEdit(id, job.issue());
           });
     } catch (RuntimeException e) {
       // A commit acknowledgement can be lost after DB success. DONE must remain terminal.
-      var persisted = jobs.get(id);
+      var persisted = syncJobs.edit(id);
       if ("DONE".equals(persisted.status())) return;
       boolean terminal =
           persisted.attempts() >= MAX_ATTEMPTS
@@ -577,7 +565,7 @@ public class IssueDetailService {
       long retrySeconds = retrySeconds(e, persisted.attempts());
       tx.executeWithoutResult(
           status ->
-              jobs.failed(
+              syncJobs.failEdit(
                   id,
                   job.issue(),
                   terminal,
@@ -595,16 +583,16 @@ public class IssueDetailService {
   }
 
   public void retryDue() {
-    for (long id : jobs.due(clock.instant())) {
+    for (long id : syncJobs.dueEdits(clock.instant())) {
       try {
-        var job = jobs.get(id);
-        locks.team(
+        var job = syncJobs.edit(id);
+        issueRepository.withTeamLock(
             job.team(),
             () -> {
-              var current = jobs.get(id);
+              var current = syncJobs.edit(id);
               if (!List.of("PENDING", "RUNNING").contains(current.status())
                   || current.nextRetry().isAfter(clock.instant())) return null;
-              var user = rows.actor(current.actor());
+              var user = issueRepository.actor(current.actor());
               execute(id, user);
               return null;
             });
@@ -617,7 +605,7 @@ public class IssueDetailService {
 
   private void recheck(AuthenticatedUser user, Selected selected) {
     access.member(user, selected.context.teamId());
-    if (!contexts.get(selected.context.teamId()).equals(selected.context))
+    if (!issueRepository.context(selected.context.teamId()).equals(selected.context))
       throw conflict("팀 연결 정보가 바뀌었어요");
   }
 
