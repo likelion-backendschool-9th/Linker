@@ -8,8 +8,9 @@ import type { RoomInfo, RoomMessage } from '../_lib/room-api';
 import { ChatRoom } from './chat-room';
 
 const subscription = vi.hoisted(() => ({
-  handlers: new Map<string, (event: { event?: string; type?: string; roomId?: number; clientMessageId?: string; message?: object }) => void>(),
+  handlers: new Map<string, (event: { event?: string; type?: string; roomId?: number; clientMessageId?: string; retryable?: boolean; message?: object }) => void>(),
   acknowledge: vi.fn(),
+  reject: vi.fn(),
 }));
 vi.mock('@/lib/realtime/use-stomp', () => ({
   useStompConnectionState: () => 'idle',
@@ -19,12 +20,16 @@ vi.mock('@/lib/realtime/use-stomp', () => ({
       type?: string;
       roomId?: number;
       clientMessageId?: string;
+      retryable?: boolean;
       message?: object;
     }) => void);
   },
 }));
 vi.mock('../_hooks/use-message-outbox', () => ({
-  useMessageOutbox: () => ({ outbox: { acknowledge: subscription.acknowledge }, pending: [] }),
+  useMessageOutbox: () => ({
+    outbox: { acknowledge: subscription.acknowledge, reject: subscription.reject },
+    pending: [],
+  }),
 }));
 vi.mock('./message-timeline', () => ({
   MessageTimeline: ({ messages, onUnread }: { messages: RoomMessage[]; onUnread: (id: number) => void }) => (
@@ -70,6 +75,26 @@ it('acknowledges a stored send from the existing user queue', async () => {
     clientMessageId: 'saved-1',
   }));
   expect(subscription.acknowledge).toHaveBeenCalledWith('saved-1');
+});
+
+it('fails a rejected send without acknowledging it', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (path) => {
+    if (path === '/api/v1/user/chat-rooms/1') return room;
+    if (path === '/api/v1/user/chat-rooms/1/messages') return { items: [message], hasMore: false };
+    throw new Error(`unexpected API: ${path}`);
+  });
+  subscription.acknowledge.mockClear();
+  subscription.reject.mockClear();
+  renderWithProviders(<ChatRoom roomId={1} />, { viewer: { login: 'me', role: 'developer' } });
+  await screen.findByRole('button', { name: '안 읽음 2명' });
+  act(() => subscription.handlers.get('/user/queue/chat-rooms')?.({
+    type: 'CHAT_SEND_REJECTED',
+    roomId: 1,
+    clientMessageId: 'saved-1',
+    retryable: false,
+  }));
+  expect(subscription.acknowledge).not.toHaveBeenCalled();
+  expect(subscription.reject).toHaveBeenCalledWith('saved-1', false);
 });
 
 it('merges an EDIT into the cached message without refetching history', async () => {

@@ -38,6 +38,59 @@ public final class PlanLimits {
 	/** Policy ch. 6 — archived teams do not consume this personal membership cap. */
 	public static final int TEAMS_PER_USER_MAX = 10;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
+	/** List page size for recruit feeds (WBS cursor pages). */
+	public static final int RECRUIT_PAGE_SIZE = 20;
+	/** POL-R-1 — concurrent OPEN recruit posts (subscriptions/#124 later unlocks Pro). */
+	public static final int OPEN_RECRUIT_POSTS_FREE = 3;
+	public static final int OPEN_RECRUIT_POSTS_PRO = 10;
+	/** Policy ch. 2 — recruit post creates per user per rolling day. */
+	public static final int RECRUIT_POSTS_PER_DAY = 5;
+	public static final int RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
+	/** POL-R-1 field bounds. */
+	public static final int RECRUIT_TITLE_MAX = 40;
+	public static final int RECRUIT_INTRO_MAX = 1000;
+	public static final int RECRUIT_HEADCOUNT_MIN = 1;
+	public static final int RECRUIT_HEADCOUNT_MAX = 10;
+	public static final int RECRUIT_TECH_TAGS_MAX = 10;
+	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
+	/** POL-R-3 — apply message and daily cap. */
+	public static final int APPLICATION_MESSAGE_MAX = 300;
+	public static final int APPLICATIONS_PER_DAY = 20;
+	public static final int APPLICATIONS_PER_DAY_WINDOW_SECONDS = 86_400;
+	/** POL-R-3 — one re-apply after cancel (attempt 1 then 2). */
+	public static final int APPLICATION_MAX_ATTEMPTS = 2;
+	/** POL-R-4 — unhandled pending applications expire after this many days. */
+	public static final int APPLICATION_EXPIRE_DAYS = 14;
+	/** Policy ch. 11 — free team member cap (Flex unlimited later). */
+	public static final int TEAM_MEMBERS_FREE = 6;
+	/** POL-P-2 / ch. 2 — project post writes and photo caps. */
+	public static final int POSTS_PER_DAY = 10;
+	public static final int POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
+	public static final int POST_INTRO_MIN = 1;
+	public static final int POST_INTRO_MAX = 60;
+	public static final int POST_BODY_MAX = 2_000;
+	public static final int POST_ROLE_MAX = 40;
+	public static final int POST_DEMO_LINKS_MAX = 3;
+	public static final int POST_TAGS_MAX = 5;
+	public static final int POST_TEAM_SIZE_MIN = 1;
+	public static final int POST_TEAM_SIZE_MAX = 50;
+	public static final int POST_PHOTOS_FREE = 5;
+	public static final int POST_PHOTOS_PRO = 10;
+	/** POL-P-4 / FE p24 mock — home feed cursor page size. */
+	public static final int FEED_PAGE_SIZE = 10;
+	/** POL-P-4 — following posts per one recommendation slot. */
+	public static final int FEED_FOLLOWING_PER_RECOMMENDATION = 4;
+	/** POL-P-4 — max consecutive posts from the same author. */
+	public static final int FEED_MAX_CONSECUTIVE_SAME_AUTHOR = 2;
+	/** POL-P-4 — recommendation pool window and new-account like exclusion. */
+	public static final int FEED_RECOMMENDATION_DAYS = 7;
+	public static final int FEED_NEW_ACCOUNT_LIKE_EXCLUSION_DAYS = 7;
+	/** POL-P-5 / ch. 2 — comment rate and length. */
+	public static final int POST_COMMENT_MAX = 500;
+	public static final int POST_COMMENTS_PER_MINUTE = 10;
+	public static final int POST_COMMENTS_PER_MINUTE_WINDOW_SECONDS = 60;
+	public static final int POST_COMMENTS_PER_DAY = 300;
+	public static final int POST_COMMENTS_PER_DAY_WINDOW_SECONDS = 86_400;
 	/** Policy ch. 9 — chat report evidence: reported message ± this many neighbors. */
 	public static final int REPORT_CHAT_CONTEXT_MESSAGES = 10;
 	public static final int ADMIN_OTP_IDLE_MINUTES = 30;
@@ -136,6 +189,10 @@ public final class PlanLimits {
 	public static final int ISSUE_REFRESH_INTERVAL_SECONDS = 60;
 	public static final int ISSUE_ACTIVE_SYNC_MINUTES = 15;
 	public static final int ISSUE_PROGRESS_DAYS = 14;
+	/** Policy POL-I-2: GitHub maximum, not a team-size limit. */
+	public static final int ISSUE_ASSIGNEES_MAX = 10;
+	/** Policy ch.2: issue creation per author per KST day. */
+	public static final int ISSUE_CREATES_PER_DAY = 100;
 
 	private PlanLimits() {
 	}

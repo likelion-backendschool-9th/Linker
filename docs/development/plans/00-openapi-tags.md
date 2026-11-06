@@ -41,7 +41,7 @@ orval은 `tags-split`이다. `p00-common`은 `frontend/packages/api/src/generate
 
 페이지 16 목록은 `p16-chat-list`로 공개한다. operationId는 `listChatRooms`, `unreadChatSummary`, `acceptChatRequest`, `deleteChatRequest`다. 삭제는 204다.
 
-페이지 17은 `p17-chat-room`이다. operationId는 `listChatMessages`, `markChatRead`, `editChatMessage`, `deleteChatMessage`, `listUnreadChatMembers`, `updateChatNotification`이다. 읽음·삭제·음소거는 204다. 방 정보 GET은 아직 없다. STOMP SEND와 토픽 이벤트는 스펙에 넣지 않는다. 토픽 이벤트는 `MESSAGE`, `EDIT`, `DELETE`, `READ`다. 본인 큐는 `CHAT_ROOMS_CHANGED`, `CHAT_SEND_REJECTED`, `CHAT_SEND_ACCEPTED`다.
+페이지 17은 `p17-chat-room`이다. operationId는 `getChatRoom`, `listChatMessages`, `markChatRead`, `editChatMessage`, `deleteChatMessage`, `listUnreadChatMembers`, `updateChatNotification`이다. 읽음·삭제·음소거는 204다. `getChatRoom`은 DIRECT와 유효한 요청 방만 연다. 팀 방과 나가기는 아직 없다. STOMP SEND와 토픽 이벤트는 스펙에 넣지 않는다. 토픽 이벤트는 `MESSAGE`, `EDIT`, `DELETE`, `READ`다. 본인 큐는 `CHAT_ROOMS_CHANGED`, `CHAT_SEND_REJECTED`, `CHAT_SEND_ACCEPTED`다.
 
 페이지 03 약관은 `p03-legal`로 공개한다. operationId는 `listLegalDocuments`, `getLegalDocument`다. 목록은 `{slug, title, version, effectiveDate}`이고 본문 조회는 같은 필드에 `body`를 더한다. 로그인이 필요 없다.
 

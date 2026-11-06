@@ -73,6 +73,7 @@ it('waits for upload completion, then sends photos without text and clears the p
   await act(async () => finish(image));
   expect(await screen.findByRole('button', { name: '사진 1장 · 전송 준비 완료' })).toBeVisible();
   await user.click(screen.getByRole('button', { name: '보내기' }));
+  expect(upload).toHaveBeenCalledWith(expect.any(File), expect.any(Function), 'CHAT');
   expect(send).toHaveBeenCalledExactlyOnceWith({ text: '', images: [image] });
   expect(screen.queryByAltText('선택한 사진 1')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '사진 1장 · 전송 준비 완료' })).not.toBeInTheDocument();

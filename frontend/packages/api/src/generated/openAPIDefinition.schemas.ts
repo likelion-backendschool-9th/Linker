@@ -909,3 +909,255 @@ export type ListAppealsParams = {
 status?: string;
 };
 
+export interface IssueDetailPerson {
+  /** @nullable */
+  id: number | null;
+  login: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+}
+
+export interface IssueAssigneeCandidates {
+  items: IssueDetailPerson[];
+  max: number;
+}
+
+export interface IssueAssigneesRequest {
+  userIds: number[];
+}
+
+export interface IssueAssigneesResult {
+  assignees: IssueAssignee[];
+}
+
+export type IssueDetailResponseStatus =
+  (typeof IssueDetailResponseStatus)[keyof typeof IssueDetailResponseStatus];
+
+export const IssueDetailResponseStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+  OTHER: 'OTHER',
+  NONE: 'NONE',
+} as const;
+
+export type IssueDetailResponseState =
+  (typeof IssueDetailResponseState)[keyof typeof IssueDetailResponseState];
+
+export const IssueDetailResponseState = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+} as const;
+
+export type IssueDetailResponseSyncStatus =
+  (typeof IssueDetailResponseSyncStatus)[keyof typeof IssueDetailResponseSyncStatus];
+
+export const IssueDetailResponseSyncStatus = {
+  SYNCED: 'SYNCED',
+  PENDING: 'PENDING',
+  FAILED: 'FAILED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type IssueDetailResponseDeletedOrMoved =
+  (typeof IssueDetailResponseDeletedOrMoved)[keyof typeof IssueDetailResponseDeletedOrMoved] | null;
+
+export const IssueDetailResponseDeletedOrMoved = {
+  DELETED: 'DELETED',
+  MOVED: 'MOVED',
+} as const;
+
+export interface IssueSubIssueCounts {
+  total: number;
+  done: number;
+}
+
+export interface IssueDetailResponse {
+  id: number;
+  teamId: number;
+  number: number;
+  repoId: number;
+  repoName: string;
+  title: string;
+  body: string;
+  status: IssueDetailResponseStatus;
+  state: IssueDetailResponseState;
+  assignees: IssueAssignee[];
+  labels: IssueLabel[];
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+  overdue: boolean;
+  inProject: boolean;
+  author: IssueDetailPerson;
+  /** @nullable */
+  githubUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  subIssues: IssueSubIssueCounts;
+  canWrite: boolean;
+  /** @nullable */
+  writePermissionReason: string | null;
+  syncFailed: boolean;
+  syncStatus: IssueDetailResponseSyncStatus;
+  /** @nullable */
+  deletedOrMoved: IssueDetailResponseDeletedOrMoved;
+  /** @nullable */
+  movedToIssueId: number | null;
+}
+
+export interface IssueLabelOptions {
+  items: IssueLabel[];
+}
+
+export interface IssueLabelsRequest {
+  labels: string[];
+}
+
+export interface IssueLabelsResult {
+  labels: IssueLabel[];
+}
+
+/**
+ * PUT replaces both dates; null clears the field
+ */
+export interface IssueScheduleRequest {
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+}
+
+export interface IssueScheduleResult {
+  /** @nullable */
+  startDate: string | null;
+  /** @nullable */
+  dueDate: string | null;
+}
+
+export type IssueStatusRequestStatus =
+  (typeof IssueStatusRequestStatus)[keyof typeof IssueStatusRequestStatus];
+
+export const IssueStatusRequestStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+} as const;
+
+export interface IssueStatusRequest {
+  status: IssueStatusRequestStatus;
+}
+
+export interface IssueStatusResult {
+  status: string;
+  state: string;
+}
+
+export interface IssueSubIssue {
+  /** @nullable */
+  id: number | null;
+  number: number;
+  title: string;
+  state: string;
+  githubUrl: string;
+}
+
+export interface IssueSubIssues {
+  items: IssueSubIssue[];
+  total: number;
+  done: number;
+}
+
+export type IssueCreateRequestAnswers = { [key: string]: string[] };
+
+export interface IssueCreateRequest {
+  requestId: string;
+  /** @exclusiveMinimum 0 */
+  repoId?: number;
+  /** @minLength 1 */
+  title: string;
+  body?: string;
+  templateKey?: string;
+  answers?: IssueCreateRequestAnswers;
+  assigneeIds?: number[];
+  labels?: string[];
+  startDate?: string;
+  dueDate?: string;
+  status?: string;
+}
+
+export interface IssueCreateResponse {
+  jobId?: number;
+  status?: string;
+  step?: string;
+  issueId?: number;
+  detailPath?: string;
+  errorCode?: string;
+  retryScheduled?: boolean;
+  retryAfterSeconds?: number;
+}
+
+export interface Choice {
+  key?: string;
+  name?: string;
+  description?: string;
+  format?: string;
+  source?: string;
+}
+
+export interface Label {
+  name?: string;
+  color?: string;
+}
+
+export interface ListResponse {
+  templates?: Choice[];
+  assigneeCandidates?: IssueDetailPerson[];
+  labelOptions?: Label[];
+  maxAssignees?: number;
+}
+
+export interface Field {
+  id?: string;
+  type?: string;
+  label?: string;
+  description?: string;
+  value?: string;
+  options?: string[];
+  requiredOptions?: number[];
+  required?: boolean;
+  multiple?: boolean;
+  render?: string;
+  defaultValues?: string[];
+  placeholder?: string;
+}
+
+export interface IssueTemplateResponse {
+  key?: string;
+  name?: string;
+  description?: string;
+  format?: string;
+  source?: string;
+  title?: string;
+  body?: string;
+  fields?: Field[];
+  labels?: string[];
+  assignees?: string[];
+  projects?: string[];
+  issueType?: string;
+  fallback?: boolean;
+}
+
+export type ListIssueTemplatesParams = {
+  repoId: number;
+};
+
+export type GetIssueTemplateParams = {
+  repoId: number;
+};

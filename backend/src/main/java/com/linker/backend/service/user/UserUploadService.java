@@ -107,7 +107,11 @@ public class UserUploadService {
 		return new CompletedUpload(Long.toString(file.getId()), url);
 	}
 
-	@Transactional(readOnly = true)
+	/**
+	 * Ownership and completion only. {@link ApiException} is an input error, so a caller can
+	 * reject that file and still commit its own transaction.
+	 */
+	@Transactional(readOnly = true, noRollbackFor = ApiException.class)
 	public UploadedFile requireReady(long fileId, long userId) {
 		UploadedFile file = owned(userId, fileId);
 		if (!file.isComplete()) {

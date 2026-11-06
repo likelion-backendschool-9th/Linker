@@ -32,7 +32,7 @@ import {
   type MessagePage,
   type RoomMessage,
 } from '../_lib/room-api';
-import { storedSendClientId, type StoredSendEvent } from '../_lib/stored-send';
+import { rejectedSend, storedSendClientId, type StoredSendEvent } from '../_lib/stored-send';
 import { ChatPhotoViewer } from './chat-photo-viewer';
 import { ChatComposer } from './chat-composer';
 import { PendingBubble } from './pending-bubble';
@@ -136,9 +136,14 @@ export function ChatRoom({ roomId }: { roomId: number }) {
   }, [connection, catchUp]);
   useStompSubscription<StoredSendEvent>('/user/queue/chat-rooms', (event) => {
     const clientMessageId = storedSendClientId(event, roomId);
-    if (!clientMessageId) return;
-    outbox.acknowledge(clientMessageId);
-    void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+    if (clientMessageId) {
+      outbox.acknowledge(clientMessageId);
+      void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+      return;
+    }
+    const rejected = rejectedSend(event, roomId);
+    if (!rejected) return;
+    outbox.reject(rejected.clientMessageId, rejected.retryable);
   });
   useStompSubscription<{ event: string; message?: RoomMessage }>(
     `/topic/chat-rooms/${roomId}`,

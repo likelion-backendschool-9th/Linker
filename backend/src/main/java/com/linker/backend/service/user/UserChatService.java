@@ -7,8 +7,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import com.linker.backend.dto.chat.event.ChatMessageReady;
@@ -27,6 +30,7 @@ import com.linker.backend.dto.chat.response.ChatLastMessageResponse;
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
+import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
@@ -35,12 +39,15 @@ import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
 import com.linker.backend.entity.chat.ChatMessage;
+import com.linker.backend.entity.chat.ChatMessageImage;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.chat.DmStatus;
 import com.linker.backend.entity.chat.MessageType;
 import com.linker.backend.entity.chat.MessageVisibility;
 import com.linker.backend.entity.chat.RoomType;
+import com.linker.backend.entity.file.UploadPurpose;
+import com.linker.backend.entity.file.UploadedFile;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.time.DatabaseInstant;
@@ -52,6 +59,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatListQueryRepository;
 import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListRow;
 import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListSummary;
+import com.linker.backend.repository.chat.ChatMessageImageRepository;
 import com.linker.backend.repository.chat.ChatMessageQueryRepository;
 import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessageRow;
 import com.linker.backend.repository.chat.ChatMessageRepository;
@@ -68,8 +76,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.UserChatController}.
- * Page 16 reads chat rows. Page 17 stores text and the caller's own edit, delete, read, and mute.
- * Team titles and deleting someone else's message stay closed until a real team role source exists.
+ * Page 16 reads chat rows. Page 17 stores DIRECT text and chat images, opens DIRECT and request rooms,
+ * and handles the caller's own edit, delete, read, and mute.
+ * Team room info and deleting someone else's message stay closed until a real team role source exists.
  */
 @Service
 public class UserChatService {
@@ -102,6 +111,8 @@ public class UserChatService {
 	private final RedisRateLimiter rateLimiter;
 	private final TransactionTemplate transactions;
 	private final UserModerationService moderation;
+	private final UserUploadService uploads;
+	private final ChatMessageImageRepository imageLinks;
 
 	public UserChatService(
 			ChatRoomAccess chatRooms,
@@ -115,7 +126,9 @@ public class UserChatService {
 			ChatMessageQueryRepository messageQuery,
 			RedisRateLimiter rateLimiter,
 			PlatformTransactionManager transactions,
-			UserModerationService moderation
+			UserModerationService moderation,
+			UserUploadService uploads,
+			ChatMessageImageRepository imageLinks
 	) {
 		this.chatRooms = chatRooms;
 		this.lists = lists;
@@ -129,13 +142,15 @@ public class UserChatService {
 		this.rateLimiter = rateLimiter;
 		this.transactions = new TransactionTemplate(transactions);
 		this.moderation = moderation;
+		this.uploads = uploads;
+		this.imageLinks = imageLinks;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
 		if (!chatRooms.canSend(userId, roomId)) {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
-		TextCommand command = textCommand(payload);
+		SendCommand command = sendCommand(payload);
 		User account = accounts.findById(userId).orElseThrow(() -> new StompAuthException("로그인이 필요해요"));
 		if (account.getStatus() != UserStatus.ACTIVE) {
 			transactions.executeWithoutResult(status -> reject(
@@ -182,6 +197,61 @@ public class UserChatService {
 			next = encodeCursor(user.userId(), tab, last.sortAt(), last.roomId());
 		}
 		return new ChatRoomPageResponse(page.stream().map(row -> toItem(tab, row)).toList(), next);
+	}
+
+	@Transactional(readOnly = true)
+	public ChatRoomInfoResponse room(AuthenticatedUser user, long roomId) {
+		ChatRoomMember membership = members.findActive(roomId, user.userId())
+				.filter(member -> member.getHiddenAt() == null)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		ChatRoom room = membership.getRoom();
+		if (room.getRoomType() != RoomType.DIRECT) {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		String kind;
+		String direction;
+		if (room.getDmStatus() == DmStatus.ACCEPTED) {
+			kind = "DIRECT";
+			direction = null;
+		}
+		else if (room.getDmStatus() == DmStatus.REQUESTED
+				&& room.getRequestExpiresAt() != null
+				&& room.getRequestExpiresAt().isAfter(clock.instant())) {
+			kind = "REQUEST";
+			direction = Objects.equals(room.getRequesterId(), user.userId()) ? "SENT" : "RECEIVED";
+		}
+		else {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		List<ChatMemberResponse> people = new ArrayList<>();
+		ChatMemberResponse counterpart = null;
+		for (ChatRoomMember member : members.findActiveInRoom(roomId)) {
+			User person = accounts.findById(member.getUserId()).orElse(null);
+			if (person == null) {
+				continue;
+			}
+			if (!person.getId().equals(user.userId()) && moderation.blockedEitherWay(user.userId(), person.getId())) {
+				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+			}
+			ChatMemberResponse view = memberView(person);
+			people.add(view);
+			if (counterpart == null && !person.getId().equals(user.userId())) {
+				counterpart = view;
+			}
+		}
+		if (counterpart == null) {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		return new ChatRoomInfoResponse(
+				room.getId(),
+				kind,
+				counterpart.name(),
+				direction,
+				membership.isMuted(),
+				people,
+				null,
+				null
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -277,7 +347,7 @@ public class UserChatService {
 		boolean capped = after != null && more;
 		Long nextAfter = capped && !rows.isEmpty() ? rows.get(rows.size() - 1).id() : null;
 		return new ChatMessagePageResponse(
-				rows.stream().map(UserChatService::toMessage).toList(),
+				toMessages(rows),
 				more,
 				capped,
 				nextAfter,
@@ -427,7 +497,7 @@ public class UserChatService {
 		return messageQuery.visibleTo(viewerId, roomId, team, historyStart(team), messageId);
 	}
 
-	private boolean storeNewText(User account, long roomId, TextCommand command) {
+	private boolean storeNewText(User account, long roomId, SendCommand command) {
 		User current = accounts.findById(account.getId()).orElseThrow(() -> new StompAuthException("로그인이 필요해요"));
 		if (current.getStatus() != UserStatus.ACTIVE) {
 			reject(current.getId(), roomId, command.clientMessageId(), "FORBIDDEN", "이 기능을 사용할 수 없어요", false, null);
@@ -446,6 +516,10 @@ public class UserChatService {
 			confirmStored(current.getId(), roomId, command);
 			return false;
 		}
+		List<UploadedFile> files = readyChatFiles(current.getId(), roomId, command);
+		if (files == null) {
+			return false;
+		}
 		RedisRateLimiter.Decision decision;
 		try {
 			decision = rateLimiter.tryAcquire(CHAT_SEND_BUCKET, current.getId(), PlanLimits.CHAT_SENDS_PER_SECOND, 1);
@@ -459,15 +533,23 @@ public class UserChatService {
 			return false;
 		}
 		Instant createdAt = DatabaseInstant.now(clock);
-		ChatMessage message = messages.saveAndFlush(ChatMessage.clientText(room, current.getId(), command.text(), command.clientMessageId()));
+		ChatMessage message = messages.saveAndFlush(command.type() == MessageType.IMAGE
+				? ChatMessage.clientImage(room, current.getId(), command.clientMessageId())
+				: ChatMessage.clientText(room, current.getId(), command.body(), command.clientMessageId()));
 		messages.assignCreatedAt(message.getId(), createdAt);
 		message.alignCreatedAt(createdAt);
 		if (!message.getRoom().getId().equals(room.getId())) {
 			throw new IllegalStateException("message room mismatch");
 		}
+		List<String> imageUrls = new ArrayList<>();
+		for (int index = 0; index < files.size(); index++) {
+			UploadedFile file = files.get(index);
+			imageLinks.saveAndFlush(ChatMessageImage.link(message, file, index));
+			imageUrls.add(file.getUrl());
+		}
 		room.markLastMessage(message.getId(), createdAt);
 		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != current.getId()).count();
-		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread)));
+		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread, imageUrls)));
 		boolean team = room.getRoomType() == RoomType.TEAM;
 		for (Long memberId : members.findActiveUserIds(roomId)) {
 			boolean visible = memberId == current.getId()
@@ -479,7 +561,7 @@ public class UserChatService {
 		return true;
 	}
 
-	private void confirmStored(long userId, long roomId, TextCommand command) {
+	private void confirmStored(long userId, long roomId, SendCommand command) {
 		ChatMessage existing = messages.findBySenderIdAndClientMessageId(userId, command.clientMessageId()).orElse(null);
 		if (existing == null || !sameRequest(existing, roomId, command)) {
 			reject(userId, roomId, command.clientMessageId(), "CONFLICT", "이미 사용한 메시지 식별자예요", false, null);
@@ -488,10 +570,36 @@ public class UserChatService {
 		events.publishEvent(new ChatSendAccepted(userId, roomId, command.clientMessageId(), existing.getId()));
 	}
 
-	private static boolean sameRequest(ChatMessage existing, long roomId, TextCommand command) {
-		return existing.getMessageType() == MessageType.TEXT
-				&& command.text().equals(existing.getBody())
-				&& existing.getRoom().getId().equals(roomId);
+	private boolean sameRequest(ChatMessage existing, long roomId, SendCommand command) {
+		String storedBody = existing.getBody() == null ? "" : existing.getBody();
+		return existing.getMessageType() == command.type()
+				&& command.body().equals(storedBody)
+				&& existing.getRoom().getId().equals(roomId)
+				&& imageLinks.findFileIds(existing.getId()).equals(command.fileIds());
+	}
+
+	/**
+	 * @return completed CHAT files in request order, or null when the send was rejected
+	 */
+	private List<UploadedFile> readyChatFiles(long userId, long roomId, SendCommand command) {
+		if (command.fileIds().isEmpty()) {
+			return List.of();
+		}
+		try {
+			List<UploadedFile> files = new ArrayList<>();
+			for (Long fileId : command.fileIds()) {
+				UploadedFile file = uploads.requireReady(fileId, userId);
+				if (file.getPurpose() != UploadPurpose.CHAT || file.getUrl() == null || file.getUrl().isBlank()) {
+					throw new ApiException(400, "VALIDATION_ERROR", "파일 용도를 확인해 주세요");
+				}
+				files.add(file);
+			}
+			return files;
+		}
+		catch (ApiException exception) {
+			reject(userId, roomId, command.clientMessageId(), exception.getCode(), exception.getMessage(), false, null);
+			return null;
+		}
 	}
 
 	private void reject(
@@ -569,6 +677,7 @@ public class UserChatService {
 	}
 
 	private ChatMessageResponse present(ChatMessage message) {
+		boolean redacted = message.getDeletedAt() != null || message.getVisibility() != MessageVisibility.VISIBLE;
 		String text = message.getDeletedAt() != null
 				? DELETED_PREVIEW
 				: message.getVisibility() == MessageVisibility.HIDDEN ? HIDDEN_PREVIEW : message.getBody();
@@ -586,7 +695,7 @@ public class UserChatService {
 				),
 				message.getMessageType().name(),
 				text,
-				List.of(),
+				redacted ? List.of() : imageLinks.findUrls(message.getId()),
 				null,
 				message.getCreatedAt(),
 				message.getEditedAt(),
@@ -620,28 +729,106 @@ public class UserChatService {
 		return clock.instant().minus(Duration.ofDays(PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE));
 	}
 
-	private static TextCommand textCommand(Map<String, Object> payload) {
+	private List<ChatMessageResponse> toMessages(List<ChatMessageRow> rows) {
+		if (rows.isEmpty()) {
+			return List.of();
+		}
+		Map<Long, List<String>> urls = messageQuery.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
+		return rows.stream()
+				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of())))
+				.toList();
+	}
+
+	private static SendCommand sendCommand(Map<String, Object> payload) {
 		if (payload == null || unsupportedAttachment(payload)) {
 			throw new StompAuthException(payload == null || !unsupportedAttachment(payload)
 					? "메시지 내용을 확인해 주세요" : "텍스트 메시지만 보낼 수 있어요");
 		}
 		Object textValue = payload.get("text");
-		if (!(textValue instanceof String text) || text.isBlank()) {
+		final String text;
+		if (textValue == null) {
+			text = "";
+		}
+		else if (textValue instanceof String value) {
+			text = value;
+		}
+		else {
 			throw new StompAuthException("메시지 내용을 확인해 주세요");
 		}
 		if (text.codePointCount(0, text.length()) > PlanLimits.CHAT_MESSAGE_MAX_CHARS) {
 			throw new StompAuthException("메시지는 2000자까지 쓸 수 있어요");
 		}
+		List<Long> fileIds = fileIds(payload.get("fileIds"));
+		if (text.isBlank() && fileIds.isEmpty()) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
 		Object rawId = payload.get("clientMessageId");
 		if (!(rawId instanceof String clientId) || !canonicalUuid(clientId)) {
 			throw new StompAuthException("메시지 식별자를 확인해 주세요");
 		}
-		return new TextCommand(clientId, text);
+		if (text.isBlank()) {
+			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds);
+		}
+		return new SendCommand(clientId, MessageType.TEXT, text, fileIds);
+	}
+
+	private static List<Long> fileIds(Object raw) {
+		if (raw == null) {
+			return List.of();
+		}
+		if (!(raw instanceof List<?> list)) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
+		if (list.isEmpty()) {
+			return List.of();
+		}
+		if (list.size() > PlanLimits.CHAT_IMAGES_PER_SEND) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
+		List<Long> ids = new ArrayList<>();
+		Set<Long> seen = new HashSet<>();
+		for (Object item : list) {
+			long id = fileId(item);
+			if (!seen.add(id)) {
+				throw new StompAuthException("메시지 내용을 확인해 주세요");
+			}
+			ids.add(id);
+		}
+		return List.copyOf(ids);
+	}
+
+	private static long fileId(Object raw) {
+		if (raw instanceof String text) {
+			return canonicalFileId(text);
+		}
+		if (raw instanceof Integer || raw instanceof Long) {
+			long value = ((Number) raw).longValue();
+			if (value < 1) {
+				throw new StompAuthException("메시지 내용을 확인해 주세요");
+			}
+			return value;
+		}
+		throw new StompAuthException("메시지 내용을 확인해 주세요");
+	}
+
+	private static long canonicalFileId(String text) {
+		try {
+			if (text.isEmpty() || text.length() > 19 || text.chars().anyMatch(ch -> ch < '0' || ch > '9')) {
+				throw new NumberFormatException();
+			}
+			long value = Long.parseLong(text);
+			if (value < 1 || !Long.toString(value).equals(text)) {
+				throw new NumberFormatException();
+			}
+			return value;
+		}
+		catch (NumberFormatException exception) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
 	}
 
 	private static boolean unsupportedAttachment(Map<String, Object> payload) {
-		return present(payload.get("fileIds"))
-				|| present(payload.get("mentionedUserIds"))
+		return present(payload.get("mentionedUserIds"))
 				|| present(payload.get("issueRefs"))
 				|| Boolean.TRUE.equals(payload.get("mentionAll"))
 				|| foreignType(payload.get("messageType"))
@@ -659,7 +846,7 @@ public class UserChatService {
 	}
 
 	private static boolean foreignType(Object value) {
-		return value instanceof String text && !text.isBlank() && !"TEXT".equals(text);
+		return value instanceof String text && !text.isBlank() && !"TEXT".equals(text) && !"IMAGE".equals(text);
 	}
 
 	private static boolean canonicalUuid(String raw) {
@@ -671,7 +858,17 @@ public class UserChatService {
 		}
 	}
 
-	private static ChatMessageResponse toMessage(ChatMessage message, User sender, long unreadCount) {
+	private static ChatMemberResponse memberView(User person) {
+		boolean withdrawn = person.getStatus() == UserStatus.DELETED;
+		return new ChatMemberResponse(
+				person.getId(),
+				withdrawn ? null : person.getUsername(),
+				withdrawn ? WITHDRAWN_MEMBER : person.visibleName(),
+				withdrawn ? null : person.getAvatarUrl()
+		);
+	}
+
+	private static ChatMessageResponse toMessage(ChatMessage message, User sender, long unreadCount, List<String> imageUrls) {
 		return new ChatMessageResponse(
 				message.getId(),
 				message.getRoom().getId(),
@@ -680,7 +877,7 @@ public class UserChatService {
 				new ChatMemberResponse(sender.getId(), sender.getUsername(), sender.visibleName(), sender.getAvatarUrl()),
 				message.getMessageType().name(),
 				message.getBody(),
-				List.of(),
+				imageUrls,
 				null,
 				message.getCreatedAt(),
 				message.getEditedAt(),
@@ -689,7 +886,8 @@ public class UserChatService {
 		);
 	}
 
-	private static ChatMessageResponse toMessage(ChatMessageRow row) {
+	private static ChatMessageResponse toMessage(ChatMessageRow row, List<String> imageUrls) {
+		boolean redacted = row.deletedAt() != null || "HIDDEN".equals(row.visibility());
 		String text = row.deletedAt() != null ? DELETED_PREVIEW : "HIDDEN".equals(row.visibility()) ? HIDDEN_PREVIEW : row.body();
 		boolean withdrawn = "DELETED".equals(row.senderStatus());
 		ChatMemberResponse sender = row.senderId() == null ? null : new ChatMemberResponse(
@@ -706,7 +904,7 @@ public class UserChatService {
 				sender,
 				row.type(),
 				text,
-				List.of(),
+				redacted ? List.of() : imageUrls,
 				null,
 				row.createdAt(),
 				row.editedAt(),
@@ -873,6 +1071,6 @@ public class UserChatService {
 	private record ParsedCursor(int version, long userId, String tab, Instant sortAt, long roomId) {
 	}
 
-	private record TextCommand(String clientMessageId, String text) {
+	private record SendCommand(String clientMessageId, MessageType type, String body, List<Long> fileIds) {
 	}
 }
