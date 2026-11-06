@@ -34,7 +34,7 @@ import type {
   GithubCallbackResponse
 } from '../openAPIDefinition.schemas';
 
-import { apiFetch } from '../../../../../apps/web/src/lib/api/api-fetch';
+import { apiFetch } from '../../../../../apps/web/lib/api/api-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 

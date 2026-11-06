@@ -279,8 +279,8 @@
 | 10 | TeamController | `GET /api/v1/public/invites/{code}`, `POST /api/v1/user/invites/{code}/accept` | 미리보기·수락 |
 | 17 / D | GithubController | `GET /api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR 목록, 기존 방 구독으로 이벤트 수신 |
 | 26 | admin.ModerationController | `GET /api/v1/admin/users`, `GET /api/v1/admin/users/{userId}` | 검색/필터·상세 |
-| 26 | admin.ModerationController | `POST .../users/{userId}/sanctions`, `DELETE .../users/{userId}/sanctions/{sanctionId}` | 제재·해제 |
-| 26 | admin.ModerationController | `POST .../users/{userId}/email-reveal` | 사유 기록 열람 |
+| 26 | admin.ModerationController | `POST .../user/{userId}/sanctions`, `DELETE .../user/{userId}/sanctions/{sanctionId}` | 제재·해제 |
+| 26 | admin.ModerationController | `POST .../user/{userId}/email-reveal` | 사유 기록 열람 |
 | 26 | SubscriptionController | `POST /api/v1/admin/payments/{paymentId}/refund` | Included 환불 |
 | 27 | admin.ModerationController | `GET /api/v1/admin/audit-logs`, `GET /api/v1/admin/audit-logs/filters` | 기록·필터 선택지 |
 | 30 | StatsController | `GET /api/v1/user/me/stats/summary`, `GET .../stats/recruiter-views?weeks=8`, `GET .../stats/posts?days=30` | 기본·Pro 통계 |
