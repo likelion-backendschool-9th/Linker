@@ -54,6 +54,7 @@ export const OVERLAY_KEYS = [
   'post-menu',
   'post-likers',
   'ad-menu',
+  'recruiter-ad',
   'comment-menu',
 ] as const;
 

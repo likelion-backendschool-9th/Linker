@@ -18,6 +18,7 @@ import com.linker.backend.dto.account.request.OnboardingAgreementsRequest;
 import com.linker.backend.dto.account.request.OnboardingEmailRequest;
 import com.linker.backend.dto.account.request.OnboardingProfileRequest;
 import com.linker.backend.dto.account.request.ProfileUpdateRequest;
+import com.linker.backend.dto.account.response.GithubProfileSyncResponse;
 import com.linker.backend.dto.account.response.NotificationEmailResponse;
 import com.linker.backend.dto.account.response.OnboardingResponse;
 import com.linker.backend.dto.account.response.ProfileEditResponse;
@@ -26,6 +27,7 @@ import com.linker.backend.dto.account.response.SettingsResponse;
 import com.linker.backend.dto.account.response.WithdrawalCheckResponse;
 import com.linker.backend.dto.account.response.WithdrawalResponse;
 import com.linker.backend.entity.account.AgreementType;
+import com.linker.backend.entity.account.GithubToken;
 import com.linker.backend.entity.account.JobSeekingStatus;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
@@ -35,22 +37,32 @@ import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.notification.NotificationTypes;
 import com.linker.backend.entity.profile.Follow;
 import com.linker.backend.entity.profile.TechTag;
+import com.linker.backend.entity.profile.JobCategory;
+import com.linker.backend.entity.profile.UserJobCategory;
 import com.linker.backend.entity.profile.UserTechTag;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.integration.github.GithubAccount;
+import com.linker.backend.integration.github.GithubTokenCipher;
+import com.linker.backend.integration.github.GithubUserAuthClient;
+import com.linker.backend.integration.github.GithubUserSession;
+import com.linker.backend.repository.account.GithubTokenRepository;
 import com.linker.backend.repository.account.UserAgreementRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.profile.UserJobCategoryRepository;
 import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.service.PublicLegalService;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** Paired entry for {@link com.linker.backend.controller.user.UserAccountController}. */
 @Service
@@ -66,11 +78,16 @@ public class UserAccountService {
 	private final UserAgreementRepository agreements;
 	private final TechTagRepository techTags;
 	private final UserTechTagRepository selectedTags;
+	private final UserJobCategoryRepository jobCategories;
 	private final PublicLegalService legal;
 	private final OwnedTeamLookup ownedTeams;
 	private final UserSessionRepository sessions;
 	private final FollowRepository follows;
 	private final UserNotificationService notifications;
+	private final GithubTokenRepository githubTokens;
+	private final GithubTokenCipher githubCipher;
+	private final GithubUserAuthClient githubUsers;
+	private final PlatformTransactionManager transactions;
 	private final Clock clock;
 
 	public UserAccountService(
@@ -78,21 +95,31 @@ public class UserAccountService {
 			UserAgreementRepository agreements,
 			TechTagRepository techTags,
 			UserTechTagRepository selectedTags,
+			UserJobCategoryRepository jobCategories,
 			PublicLegalService legal,
 			OwnedTeamLookup ownedTeams,
 			UserSessionRepository sessions,
 			FollowRepository follows,
 			UserNotificationService notifications,
+			GithubTokenRepository githubTokens,
+			GithubTokenCipher githubCipher,
+			GithubUserAuthClient githubUsers,
+			PlatformTransactionManager transactions,
 			Clock clock) {
 		this.users = users;
 		this.agreements = agreements;
 		this.techTags = techTags;
 		this.selectedTags = selectedTags;
+		this.jobCategories = jobCategories;
 		this.legal = legal;
 		this.ownedTeams = ownedTeams;
 		this.sessions = sessions;
 		this.follows = follows;
 		this.notifications = notifications;
+		this.githubTokens = githubTokens;
+		this.githubCipher = githubCipher;
+		this.githubUsers = githubUsers;
+		this.transactions = transactions;
 		this.clock = clock;
 	}
 
@@ -328,6 +355,57 @@ public class UserAccountService {
 		return value;
 	}
 
+	private StoredGithubToken loadGithubToken(AuthenticatedUser principal) {
+		User user = requireDeveloper(principal);
+		GithubToken token = githubTokens.findByUser_Id(user.getId()).orElseThrow(this::loginAgain);
+		return new StoredGithubToken(
+				token.getAccessTokenEnc(),
+				token.getAccessExpiresAt(),
+				token.getRefreshTokenEnc(),
+				token.getRefreshExpiresAt());
+	}
+
+	private User requireDeveloper(AuthenticatedUser principal) {
+		if (principal == null) {
+			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
+		}
+		User user = requireUser(principal);
+		if (user.getUserType() != UserType.DEVELOPER) {
+			throw new ApiException(403, "DEVELOPER_ONLY", "개발자만 사용할 수 있어요");
+		}
+		return user;
+	}
+
+	private static String githubBio(String raw) {
+		String value = raw == null ? "" : raw.trim();
+		if (value.length() > PlanLimits.PROFILE_BIO_MAX) {
+			value = value.substring(0, PlanLimits.PROFILE_BIO_MAX);
+		}
+		return value;
+	}
+
+	private static String githubBlog(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		String value = raw.trim();
+		if (value.length() > BLOG_URL_MAX || !httpsUrl(value)) {
+			return null;
+		}
+		return value;
+	}
+
+	private ApiException loginAgain() {
+		return new ApiException(401, "LOGIN_REQUIRED", "GitHub에 다시 로그인해 주세요");
+	}
+
+	private record StoredGithubToken(
+			String accessTokenEnc,
+			Instant accessExpiresAt,
+			String refreshTokenEnc,
+			Instant refreshExpiresAt) {
+	}
+
 	private static String blogUrl(String raw) {
 		if (raw == null || raw.isBlank()) {
 			return null;
@@ -424,7 +502,45 @@ public class UserAccountService {
 				jobSeeking(request.jobStatus()),
 				Instant.now(clock));
 		replaceTechStack(user, techNames(request.techStack()));
+		replaceJobCategories(user, request.jobCategories());
 		return profileOf(user);
+	}
+
+	/**
+	 * Reloads name, bio, blog, and avatar from the stored GitHub user token.
+	 * GitHub HTTP stays outside the write transaction. Tech stack and job status stay.
+	 */
+	public GithubProfileSyncResponse syncFromGithub(AuthenticatedUser principal) {
+		StoredGithubToken stored = new TransactionTemplate(transactions).execute(status -> loadGithubToken(principal));
+		if (stored == null) {
+			throw loginAgain();
+		}
+		Instant now = Instant.now(clock);
+		String access = githubCipher.decrypt(stored.accessTokenEnc());
+		GithubUserSession rotated = null;
+		if (stored.accessExpiresAt() != null && !stored.accessExpiresAt().isAfter(now)) {
+			if (stored.refreshTokenEnc() == null
+					|| (stored.refreshExpiresAt() != null && !stored.refreshExpiresAt().isAfter(now))) {
+				throw loginAgain();
+			}
+			rotated = githubUsers.refresh(githubCipher.decrypt(stored.refreshTokenEnc()));
+			access = rotated.accessToken();
+		}
+		GithubAccount account = githubUsers.account(access);
+		GithubUserSession saved = rotated;
+		return new TransactionTemplate(transactions).execute(status -> {
+			User user = requireDeveloper(principal);
+			user.refreshFromGithub(account.name(), githubBio(account.bio()), githubBlog(account.blog()), account.avatarUrl());
+			if (saved != null) {
+				GithubToken token = githubTokens.findByUser_Id(user.getId()).orElseThrow(this::loginAgain);
+				token.replace(
+						githubCipher.encrypt(saved.accessToken()),
+						saved.accessExpiresAt(),
+						githubCipher.encrypt(saved.refreshToken()),
+						saved.refreshExpiresAt());
+			}
+			return GithubProfileSyncResponse.from(profileOf(user), now);
+		});
 	}
 
 	@Transactional
@@ -465,8 +581,34 @@ public class UserAccountService {
 				null));
 	}
 
+	private void replaceJobCategories(User user, List<String> raw) {
+		if (raw == null) {
+			return;
+		}
+		LinkedHashSet<JobCategory> picked = new LinkedHashSet<>();
+		for (String item : raw) {
+			if (item == null || item.isBlank()) {
+				throw new ApiException(400, "VALIDATION_ERROR", "관심 직군을 다시 선택해 주세요.");
+			}
+			try {
+				picked.add(JobCategory.valueOf(item.trim()));
+			}
+			catch (IllegalArgumentException exception) {
+				throw new ApiException(400, "VALIDATION_ERROR", "관심 직군을 다시 선택해 주세요.");
+			}
+		}
+		if (picked.size() > PlanLimits.JOB_CATEGORIES_MAX) {
+			throw new ApiException(400, "VALIDATION_ERROR", "관심 직군은 " + PlanLimits.JOB_CATEGORIES_MAX + "개까지 선택할 수 있어요.");
+		}
+		jobCategories.deleteByUserId(user.getId());
+		for (JobCategory category : picked) {
+			jobCategories.save(UserJobCategory.pick(user, category));
+		}
+	}
+
 	private ProfileEditResponse profileOf(User user) {
 		List<String> techStack = selectedTags.findSelected(user.getId()).stream().map(UserTechTag::tagName).toList();
+		List<String> categories = jobCategories.findByUser_IdOrderByIdAsc(user.getId()).stream().map(UserJobCategory::key).toList();
 		return new ProfileEditResponse(
 				"DEVELOPER",
 				user.visibleName(),
@@ -475,7 +617,7 @@ public class UserAccountService {
 				techStack,
 				user.isLookingForTeam(),
 				jobStatus(user.getJobSeekingStatus()),
-				List.of());
+				categories);
 	}
 
 	@Transactional(readOnly = true)

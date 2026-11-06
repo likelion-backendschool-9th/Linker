@@ -3,6 +3,9 @@ package com.linker.backend.integration.github;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.linker.backend.global.config.GithubAppProperties;
@@ -63,7 +66,62 @@ public class GithubUserAuthClient {
 		if (avatar.length() > 2048) {
 			avatar = "";
 		}
-		return new GithubAccount(id, login, body.path("name").asString(""), avatar, body.path("email").asString(""));
+		String bio = body.path("bio").asString("");
+		if (bio.length() > 2000) {
+			bio = bio.substring(0, 2000);
+		}
+		String blog = body.path("blog").asString("");
+		if (blog.length() > 2048) {
+			blog = "";
+		}
+		return new GithubAccount(id, login, body.path("name").asString(""), avatar, body.path("email").asString(""), bio, blog);
+	}
+
+	/**
+	 * Public contribution days for one window. GitHub applies the account's private-contribution setting.
+	 */
+	public List<GithubContribution> contributions(String accessToken, String login, String from, String to) {
+		outsideTransaction();
+		JsonNode data = request(() -> http.post().uri(properties.apiBaseUrl() + "/graphql")
+				.headers(headers -> headers.setBearerAuth(accessToken))
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(Map.of(
+						"query", """
+								query($login: String!, $from: DateTime!, $to: DateTime!) {
+								  user(login: $login) {
+								    contributionsCollection(from: $from, to: $to) {
+								      contributionCalendar {
+								        weeks { contributionDays { date contributionCount } }
+								      }
+								    }
+								  }
+								}
+								""",
+						"variables", Map.of("login", login, "from", from, "to", to)))
+				.retrieve()
+				.onStatus(status -> status.isError(), (req, res) -> {
+					throw failed();
+				})
+				.body(JsonNode.class));
+		JsonNode user = data.path("data").path("user");
+		if (data.has("errors") || user.isMissingNode() || user.isNull()) {
+			throw failed();
+		}
+		JsonNode weeks = user.path("contributionsCollection").path("contributionCalendar").path("weeks");
+		if (!weeks.isArray()) {
+			throw failed();
+		}
+		List<GithubContribution> days = new ArrayList<>();
+		for (JsonNode week : weeks) {
+			for (JsonNode day : week.path("contributionDays")) {
+				String date = day.path("date").asString("");
+				if (date.length() < 10) {
+					continue;
+				}
+				days.add(new GithubContribution(LocalDate.parse(date.substring(0, 10)), Math.max(0, day.path("contributionCount").asInt(0))));
+			}
+		}
+		return days;
 	}
 
 	private JsonNode postToken(Map<String, String> form) {

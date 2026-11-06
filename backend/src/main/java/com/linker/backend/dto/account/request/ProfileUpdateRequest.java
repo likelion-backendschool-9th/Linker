@@ -8,6 +8,7 @@ public record ProfileUpdateRequest(
 		String blogUrl,
 		List<String> techStack,
 		Boolean lookingForTeam,
-		String jobStatus
+		String jobStatus,
+		List<String> jobCategories
 ) {
 }

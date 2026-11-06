@@ -100,6 +100,11 @@ public class ChatMessage extends BaseTimeEntity {
 		this.visibility = MessageVisibility.HIDDEN;
 	}
 
+	public void restore() {
+		this.visibility = MessageVisibility.VISIBLE;
+		this.deletedAt = null;
+	}
+
 	public Long getId() {
 		return id;
 	}

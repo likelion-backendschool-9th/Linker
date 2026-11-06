@@ -6,224 +6,204 @@
  */
 import * as zod from 'zod';
 
+
 /**
  * @summary 팀 프로젝트에 이슈 추가
  */
 export const AddTeamIssueToProjectParams = zod.object({
-  teamId: zod.int(),
-  issueId: zod.int(),
-});
+  "teamId": zod.int(),
+  "issueId": zod.int()
+})
 
-export const AddTeamIssueToProjectResponse = zod.void();
+export const AddTeamIssueToProjectResponse = zod.void()
 
 /**
  * @summary 현재 필터에 해당하는 이슈 갱신
  */
 export const RefreshTeamIssuesParams = zod.object({
-  teamId: zod.int(),
-});
+  "teamId": zod.int()
+})
 
 export const refreshTeamIssuesQueryOpenDefault = false;
 export const refreshTeamIssuesQueryViewDefault = `all`;
 
 export const RefreshTeamIssuesQueryParams = zod.object({
-  repo: zod.int().optional(),
-  status: zod.string().optional(),
-  assignee: zod.string().optional(),
-  label: zod.string().optional(),
-  open: zod.boolean().default(refreshTeamIssuesQueryOpenDefault),
-  view: zod.string().default(refreshTeamIssuesQueryViewDefault),
-});
+  "repo": zod.int().optional(),
+  "status": zod.string().optional(),
+  "assignee": zod.string().optional(),
+  "label": zod.string().optional(),
+  "open": zod.boolean().default(refreshTeamIssuesQueryOpenDefault),
+  "view": zod.string().default(refreshTeamIssuesQueryViewDefault)
+})
 
 export const RefreshTeamIssuesResponse = zod.object({
-  refreshedAt: zod.iso.datetime({ offset: true }),
-  updatedCount: zod.int(),
-});
+  "refreshedAt": zod.iso.datetime({"offset":true}),
+  "updatedCount": zod.int()
+})
 
 /**
  * @summary Flex 팀 진행 현황 조회
  */
 export const GetTeamIssueProgressParams = zod.object({
-  teamId: zod.int(),
-});
+  "teamId": zod.int()
+})
 
 export const GetTeamIssueProgressQueryParams = zod.object({
-  days: zod.int().optional(),
-});
+  "days": zod.int().optional()
+})
 
 export const GetTeamIssueProgressResponse = zod.object({
-  completion: zod.object({
-    done: zod.int(),
-    total: zod.int(),
-    rate: zod.int(),
-  }),
-  counts: zod.object({
-    todo: zod.int(),
-    inProgress: zod.int(),
-    blocked: zod.int(),
-    done: zod.int(),
-  }),
-  history: zod.array(
-    zod.object({
-      date: zod.iso.date(),
-      todo: zod.int().nullable(),
-      inProgress: zod.int().nullable(),
-      blocked: zod.int().nullable(),
-      done: zod.int().nullable(),
-    }),
-  ),
-  openByAssignee: zod.array(
-    zod.object({
-      userId: zod.int(),
-      login: zod.string(),
-      openCount: zod.int(),
-    }),
-  ),
-  overdueCount: zod.int(),
-  dueSoonCount: zod.int(),
-});
+  "completion": zod.object({
+  "done": zod.int(),
+  "total": zod.int(),
+  "rate": zod.int()
+}),
+  "counts": zod.object({
+  "todo": zod.int(),
+  "inProgress": zod.int(),
+  "blocked": zod.int(),
+  "done": zod.int()
+}),
+  "history": zod.array(zod.object({
+  "date": zod.iso.date(),
+  "todo": zod.int().nullable(),
+  "inProgress": zod.int().nullable(),
+  "blocked": zod.int().nullable(),
+  "done": zod.int().nullable()
+})),
+  "openByAssignee": zod.array(zod.object({
+  "userId": zod.int(),
+  "login": zod.string(),
+  "openCount": zod.int()
+})),
+  "overdueCount": zod.int(),
+  "dueSoonCount": zod.int()
+})
 
 /**
  * @summary 팀 이슈 목록 조회
  */
 export const ListTeamIssuesParams = zod.object({
-  teamId: zod.int(),
-});
+  "teamId": zod.int()
+})
 
 export const listTeamIssuesQueryOpenDefault = false;
 export const listTeamIssuesQuerySizeDefault = 20;
 
 export const ListTeamIssuesQueryParams = zod.object({
-  repo: zod.int().optional(),
-  status: zod.string().optional(),
-  assignee: zod.string().optional(),
-  label: zod.string().optional(),
-  open: zod.boolean().default(listTeamIssuesQueryOpenDefault),
-  cursor: zod.string().optional(),
-  size: zod.int().default(listTeamIssuesQuerySizeDefault),
-});
+  "repo": zod.int().optional(),
+  "status": zod.string().optional(),
+  "assignee": zod.string().optional(),
+  "label": zod.string().optional(),
+  "open": zod.boolean().default(listTeamIssuesQueryOpenDefault),
+  "cursor": zod.string().optional(),
+  "size": zod.int().default(listTeamIssuesQuerySizeDefault)
+})
 
 export const ListTeamIssuesResponse = zod.object({
-  items: zod.array(
-    zod.object({
-      id: zod.int(),
-      number: zod.int(),
-      repoId: zod.int(),
-      repoName: zod.string(),
-      title: zod.string(),
-      status: zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
-      state: zod.enum(['OPEN', 'CLOSED']),
-      assignees: zod.array(
-        zod.object({
-          id: zod.int().nullable(),
-          login: zod.string(),
-          name: zod.string(),
-          avatarUrl: zod.string().nullable(),
-          inTeam: zod.boolean(),
-        }),
-      ),
-      labels: zod.array(
-        zod.object({
-          name: zod.string(),
-          color: zod.string(),
-        }),
-      ),
-      startDate: zod.iso.date().nullable(),
-      dueDate: zod.iso.date().nullable(),
-      overdue: zod.boolean(),
-      inProject: zod.boolean(),
-      scheduleSyncFailed: zod.boolean(),
-      syncStatus: zod.enum(['SYNCED', 'PENDING', 'FAILED']),
-      syncedAt: zod.iso.datetime({ offset: true }).nullable(),
-    }),
-  ),
-  nextCursor: zod.string().nullable(),
-  total: zod.int(),
-  canWrite: zod.boolean(),
-  writePermissionReason: zod.string().nullable(),
-});
+  "items": zod.array(zod.object({
+  "id": zod.int(),
+  "number": zod.int(),
+  "repoId": zod.int(),
+  "repoName": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "state": zod.enum(['OPEN', 'CLOSED']),
+  "assignees": zod.array(zod.object({
+  "id": zod.int().nullable(),
+  "login": zod.string(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullable(),
+  "inTeam": zod.boolean()
+})),
+  "labels": zod.array(zod.object({
+  "name": zod.string(),
+  "color": zod.string()
+})),
+  "startDate": zod.iso.date().nullable(),
+  "dueDate": zod.iso.date().nullable(),
+  "overdue": zod.boolean(),
+  "inProject": zod.boolean(),
+  "scheduleSyncFailed": zod.boolean(),
+  "syncStatus": zod.enum(['SYNCED', 'PENDING', 'FAILED']),
+  "syncedAt": zod.iso.datetime({"offset":true}).nullable()
+})),
+  "nextCursor": zod.string().nullable(),
+  "total": zod.int(),
+  "canWrite": zod.boolean(),
+  "writePermissionReason": zod.string().nullable()
+})
 
 /**
  * @summary 일정 없는 팀 이슈 조회
  */
 export const ListUnscheduledTeamIssuesParams = zod.object({
-  teamId: zod.int(),
-});
+  "teamId": zod.int()
+})
 
 export const listUnscheduledTeamIssuesQuerySizeDefault = 20;
 
 export const ListUnscheduledTeamIssuesQueryParams = zod.object({
-  cursor: zod.string().optional(),
-  size: zod.int().default(listUnscheduledTeamIssuesQuerySizeDefault),
-});
+  "cursor": zod.string().optional(),
+  "size": zod.int().default(listUnscheduledTeamIssuesQuerySizeDefault)
+})
 
 export const ListUnscheduledTeamIssuesResponse = zod.object({
-  items: zod.array(
-    zod.object({
-      id: zod.int(),
-      number: zod.int(),
-      repoId: zod.int(),
-      repoName: zod.string(),
-      title: zod.string(),
-      status: zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
-      state: zod.enum(['OPEN', 'CLOSED']),
-      assignees: zod.array(
-        zod.object({
-          id: zod.int().nullable(),
-          login: zod.string(),
-          name: zod.string(),
-          avatarUrl: zod.string().nullable(),
-          inTeam: zod.boolean(),
-        }),
-      ),
-      labels: zod.array(
-        zod.object({
-          name: zod.string(),
-          color: zod.string(),
-        }),
-      ),
-      startDate: zod.iso.date().nullable(),
-      dueDate: zod.iso.date().nullable(),
-      overdue: zod.boolean(),
-      inProject: zod.boolean(),
-      scheduleSyncFailed: zod.boolean(),
-      syncStatus: zod.enum(['SYNCED', 'PENDING', 'FAILED']),
-      syncedAt: zod.iso.datetime({ offset: true }).nullable(),
-    }),
-  ),
-  nextCursor: zod.string().nullable(),
-  total: zod.int(),
-  canWrite: zod.boolean(),
-  writePermissionReason: zod.string().nullable(),
-});
+  "items": zod.array(zod.object({
+  "id": zod.int(),
+  "number": zod.int(),
+  "repoId": zod.int(),
+  "repoName": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "state": zod.enum(['OPEN', 'CLOSED']),
+  "assignees": zod.array(zod.object({
+  "id": zod.int().nullable(),
+  "login": zod.string(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullable(),
+  "inTeam": zod.boolean()
+})),
+  "labels": zod.array(zod.object({
+  "name": zod.string(),
+  "color": zod.string()
+})),
+  "startDate": zod.iso.date().nullable(),
+  "dueDate": zod.iso.date().nullable(),
+  "overdue": zod.boolean(),
+  "inProject": zod.boolean(),
+  "scheduleSyncFailed": zod.boolean(),
+  "syncStatus": zod.enum(['SYNCED', 'PENDING', 'FAILED']),
+  "syncedAt": zod.iso.datetime({"offset":true}).nullable()
+})),
+  "nextCursor": zod.string().nullable(),
+  "total": zod.int(),
+  "canWrite": zod.boolean(),
+  "writePermissionReason": zod.string().nullable()
+})
 
 /**
  * @summary 팀 이슈 필터 선택지 조회
  */
 export const GetTeamIssueFilterOptionsParams = zod.object({
-  teamId: zod.int(),
-});
+  "teamId": zod.int()
+})
 
 export const GetTeamIssueFilterOptionsResponse = zod.object({
-  repos: zod.array(
-    zod.object({
-      id: zod.int(),
-      name: zod.string(),
-    }),
-  ),
-  labels: zod.array(
-    zod.object({
-      name: zod.string(),
-      color: zod.string(),
-    }),
-  ),
-  members: zod.array(
-    zod.object({
-      id: zod.int(),
-      login: zod.string(),
-      name: zod.string(),
-      avatarUrl: zod.string().nullable(),
-    }),
-  ),
-  statuses: zod.array(zod.string()).describe('TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE'),
-});
+  "repos": zod.array(zod.object({
+  "id": zod.int(),
+  "name": zod.string()
+})),
+  "labels": zod.array(zod.object({
+  "name": zod.string(),
+  "color": zod.string()
+})),
+  "members": zod.array(zod.object({
+  "id": zod.int(),
+  "login": zod.string(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullable()
+})),
+  "statuses": zod.array(zod.string()).describe('TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE')
+})
+

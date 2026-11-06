@@ -178,7 +178,7 @@ erDiagram
   user_agreements {
     bigint id PK
     bigint user_id FK
-    varchar agreement_type "TERMS, PRIVACY, AGE_14, MARKETING"
+    varchar agreement_type "TERMS, PRIVACY, AGE_14, AGE_19, BUSINESS_TERMS, MARKETING"
     varchar version "terms version"
     timestamptz agreed_at
     timestamptz withdrawn_at "marketing withdrawn"
@@ -1017,7 +1017,7 @@ erDiagram
 
 **github_tokens**: `user_id` UK (1:1). Tokens are stored AES-encrypted and never sent to the app or frontend. When expired, the server refreshes with the refresh token; if that fails, it asks the user to log in again.
 
-**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when this session passed operator 2FA. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes that session. An `admins` row is registration only. `/api/v1/admin/**` also requires this session's `otp_verified_at`. The JWT `adm` claim stays the registration flag. OTP secret enrollment is still a later step. There is no HTTP verify route yet.
+**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when this session passed operator 2FA. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes that session. An `admins` row is registration only. `/api/v1/admin/**` also requires this session's `otp_verified_at`, except `POST /api/v1/admin/otp/verify`, which a logged-in registered operator may call before OTP. That call checks the encrypted TOTP secret and then sets `otp_verified_at` on this session only. The JWT `adm` claim stays the registration flag. OTP secret enrollment still has no HTTP route.
 
 **recruiter_profiles**: `user_id` UK (1:1). `company_email_domain` is used for the profile's "회사 메일 인증(@domain)" (Company email verified) label and for operator checks. When operator company verification is added in phase 3, create a `companies` table and add `company_id`.
 

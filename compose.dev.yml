@@ -1,6 +1,21 @@
 # Opt in: docker compose -f compose.yml -f compose.dev.yml up --build --watch
 # Validated with Docker Compose 5.6.0; CI installs the same version.
 services:
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+  backend:
+    environment:
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      MAIL_PUBLIC_BASE_URL: http://localhost:3000
+    depends_on:
+      mailpit:
+        condition: service_started
+
   web:
     build:
       target: development
