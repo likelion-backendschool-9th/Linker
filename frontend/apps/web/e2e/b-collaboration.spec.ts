@@ -53,7 +53,7 @@ test('completed teams hand off to E and member profiles hand off to A with docum
   );
   await expect(page.getByRole('link', { name: '한서준 프로필 보기' })).toHaveAttribute(
     'href',
-    '/u/seojun-han',
+    '/users/seojun-han',
   );
 });
 
@@ -73,10 +73,10 @@ test('profile handoff closes the stats sheet before navigation and back does not
   await page.goto('/me/stats');
   await page.getByRole('button', { name: '대표 작업물로 고정' }).click();
   const link = page.getByRole('link', { name: '내 프로필에서 확인' });
-  await expect(link).toHaveAttribute('href', '/u/seojun-han');
+  await expect(link).toHaveAttribute('href', '/users/seojun-han');
   await link.click();
   // This checks the URL/history handoff; profile page contents are owned by A.
-  await expect(page).toHaveURL('/u/seojun-han');
+  await expect(page).toHaveURL('/users/seojun-han');
   await page.goBack();
   await expect(page).toHaveURL('/me/stats');
   await expect(page.getByRole('dialog')).toBeHidden();

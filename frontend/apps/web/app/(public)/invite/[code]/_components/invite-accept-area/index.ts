@@ -1,0 +1,1 @@
+export { InviteAcceptArea } from './InviteAcceptArea';

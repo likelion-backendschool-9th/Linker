@@ -1,0 +1,33 @@
+/* Segmented control (guide ch. 5) */
+.nav {
+  margin-bottom: var(--space-lg);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-xxs);
+  padding: var(--space-xxs);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.tabItem {
+  flex: 1;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target-min);
+  padding: var(--space-xs);
+  color: var(--color-text-subtle-on-tint);
+  border-radius: var(--radius-full);
+}
+
+.tab[aria-current='page'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas);
+  box-shadow: var(--shadow-segment-active);
+}

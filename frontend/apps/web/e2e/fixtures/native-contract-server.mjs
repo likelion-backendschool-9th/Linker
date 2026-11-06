@@ -132,7 +132,7 @@ createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/v1/public/sitemap/')) {
     const kind = url.pathname.split('/').at(-1);
     const page = Number(url.searchParams.get('page') ?? 1);
-    const paths = { users: '/u/bridge-contract', posts: '/posts/701', recruits: '/recruits/701' };
+    const paths = { users: '/users/bridge-contract', posts: '/posts/701', recruits: '/recruits/701' };
     if (!(kind in paths)) return send(400, { code: 'VALIDATION_ERROR' });
     return send(200, {
       kind,

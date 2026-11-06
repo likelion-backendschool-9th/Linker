@@ -1,0 +1,1 @@
+export { RecruitEditor } from './RecruitEditor';
