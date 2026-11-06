@@ -90,7 +90,39 @@ A는 서버 내부 `GithubUserAccessTokenSource` bean에서 사용자 토큰을 
 - 수신 전 네트워크 실패는 DB에 기록되지 않는다. GitHub의 자동 재전송을 전제하지 않고 GitHub Recent deliveries의 수동/API redelivery로 확인한다. 처리 완료 기록의 30일 정리는 ERD 기준 후속 운영 작업이며 이번 스파이크 완료에 포함하지 않는다.
 
 새 PROCESSING 상태·테이블·컬럼은 추가하지 않았다. C의 보드/이슈 매핑과 이전 별도 캐시 연결 요청을 이 구현에 포함하지 않는다. 이벤트 의미의 최종 freeze는 B↔C 확인 후 진행한다.
-순서 4의 이벤트·필드 목록, A 이슈 #180의 B 확인 결과와 D 알림 인자 기록은 [B 교차 계약 확인](../development/plans/b-backend-cross-contracts.md)을 따른다. 이 계약 정리는 새 API 구현이나 실환경 스파이크 통과를 뜻하지 않는다.
+### B → C 웹훅 전달 계약
+
+이 계약 정리는 새 API 구현이나 실환경 스파이크 통과를 뜻하지 않는다. 이벤트 의미의 최종 freeze는 실제 수신 샘플과 C 확인 후 진행한다.
+
+| event | B 전달 / 소비 경계 |
+| --- | --- |
+| `issues` | action과 이슈·저장소 원문 전달. C가 지원 action·필요 필드·삭제/이동 처리를 확인 |
+| `projects_v2_item` | action과 프로젝트 항목 원문 전달. C가 보드·item·연결 이슈 식별과 상태·날짜 갱신 기준을 확인 |
+| `pull_request` | PR 원문 전달. B의 후속 PR 캐시·채팅 연계 범위이며 C Projects 핸들러에 넣지 않음 |
+| `organization` / `installation` | 원문 전달. B의 후속 조직·멤버·설치 상태 연계 범위 |
+| `ping` | `GithubPingWebhookHandler`가 부수 효과 없이 처리 |
+
+- 인입은 이 목록으로 allowlist를 만들지 않는다. `supports(String event)`는 이벤트 단위이고 action 필터링은 소비자가 한다. 현재 실행 핸들러는 ping뿐이며 빈 핸들러로 성공을 표시하지 않는다.
+- 진입은 `POST /api/v1/webhook/github`다. HMAC-SHA256 원문 서명 검증 후 수신 저장을 커밋하고 큐에 넣는다. 신규 수신은 202, 동일 delivery는 200이며 큐 장애로 503이어도 커밋된 수신 기록은 복구 대상이다.
+- 큐에는 `github_webhook_deliveries.id`의 10진 문자열 하나만 넣는다 (`WebhookQueue.enqueue(long)`).
+
+| 필드 | 의미 |
+| --- | --- |
+| `id` / `deliveryRowId` | Linker DB 행 ID |
+| `deliveryId` | `X-GitHub-Delivery`. GitHub의 중복 식별자이며 DB 행 ID와 구분 |
+| `event`, `action` | `X-GitHub-Event`, 원문 최상위 `action`(없거나 문자열이 아니면 null, 저장 최대 128자) |
+| `installationId` | 원문 `installation.id`(없으면 null). **외부 GitHub 설치 ID**이며 내부 `github_installations.id`가 아님 |
+| `payload` | 원본 JSON. 서명은 재직렬화 전 원본 byte로 검증하고 jsonb 저장 후에는 공백·키 순서나 서명 재검증에 의존하지 않음 |
+| `status`, `attempts`, `error`, `processedAt` | B의 처리 결과·재시도 관리용. C의 업무 상태나 이슈 갱신 시각으로 쓰지 않음 |
+
+- 원문에 없는 이슈·저장소·필드 값은 서버 재조회로 보완하며 B가 임의 ID로 채우지 않는다. 모든 이벤트에 같은 필드가 있다고 가정하거나 Projects 항목을 항상 Issue로 취급하지 않는다.
+- 서명이 유효해도 팀·저장소 권한 검증을 대신하지 않는다. 검증된 설치·조직·팀·보드·저장소 연결을 확인한 뒤 해당 캐시만 갱신한다.
+- 핸들러 연결점은 `GithubWebhookHandler.supports(event)` / `handle(delivery)`다. `dispatch()`의 `Propagation.NEVER`가 바깥 트랜잭션을 거절하므로 C도 외부 GitHub 조회를 트랜잭션 밖에서 끝내고 필요한 DB 변경만 짧은 자체 트랜잭션으로 묶는다. B는 전체 handler 성공 후 PROCESSED, 예외 시 FAILED를 별도 짧은 트랜잭션으로 저장한다.
+- 소비 핸들러가 없는 이벤트는 RECEIVED로 남고 IGNORED를 자동 설정하지 않는다. 재큐잉의 `updated_at`은 원본 업무 갱신 시각이 아니며 DB 복구 스캔은 GitHub 원본의 주기적 전체 재동기화를 대신하지 않는다.
+- 읽기 설치 토큰은 `GithubAppClient.installationReadToken(외부설치ID)`가 서버 내부에서 공급한다. 사용자 명의 쓰기 토큰은 A의 `GithubUserAccessTokenSource.tokenFor(userId)`이며 미연결이면 503이고 설치 토큰으로 대체하지 않는다. 토큰은 이슈·문서·로그·브리지에 남기지 않는다.
+- 스파이크 실패 시 08 보드를 "새로 만들기만"으로 줄일지는 B·C가 같은 이슈에서 결정한다(현재 미결정).
+- 알림 생성 인자는 백엔드 청사진 §4.1을 따른다. B의 팀 초대는 `notificationType=TEAM_INVITE`, `linkPath=/invite/{code}`를 쓴다.
+- 로그인 쿠키·claim·재발급은 A의 이슈 #180 기준이다. 앱 로그인(`linker://auth`)과 App 설치 Setup URL(`/teams/new/callback`)은 별개이며 두 state를 섞지 않는다. 로그아웃 시 푸시 토큰 삭제 순서(현재는 푸시 토큰 DELETE → 로그아웃 API → `AUTH_SESSION_CLEAR`)가 #180 문구와 같은지는 A·B가 확인한다.
 
 ## 실제 스파이크 순서
 
