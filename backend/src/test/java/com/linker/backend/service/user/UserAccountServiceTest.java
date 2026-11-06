@@ -89,6 +89,9 @@ class UserAccountServiceTest {
 	private UserNotificationService notifications;
 
 	@Mock
+	private UserPostService posts;
+
+	@Mock
 	private GithubTokenRepository githubTokens;
 
 	@Mock
@@ -260,7 +263,7 @@ class UserAccountServiceTest {
 	}
 
 	@Test
-	void expiredWithdrawalIsAnonymizedWithoutTouchingMissingContentTables() {
+	void expiredWithdrawalDeletesContentAndAnonymizesTheAccount() {
 		User user = developer();
 		user.changeDisplayName("명석");
 		user.changeNotificationEmail("me@example.com");
@@ -275,12 +278,13 @@ class UserAccountServiceTest {
 		assertThat(user.getDisplayName()).isNull();
 		assertThat(user.getEmail()).isNull();
 		assertThat(user.getUsername()).isEqualTo("octocat");
+		verify(posts).deleteAuthoredContent(7L, NOW);
 		verify(sessions).revokeActive(7L, NOW);
 	}
 
 	private UserAccountService service() {
 		return new UserAccountService(
-				users, agreements, techTags, selectedTags, jobCategories, legal, ownedTeams, sessions, follows, notifications,
+				users, agreements, techTags, selectedTags, jobCategories, legal, ownedTeams, sessions, follows, notifications, posts,
 				githubTokens, githubCipher, githubUsers, transactions, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 

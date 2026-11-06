@@ -223,6 +223,59 @@
   color: var(--color-text-secondary);
 }
 
+.span {
+  grid-column: 1 / -1;
+}
+
+.postList,
+.teamList,
+.offerList {
+  display: grid;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teamLink,
+.offerPerson {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  text-decoration: none;
+}
+
+.teamMark {
+  position: relative;
+  width: var(--control-height);
+  height: var(--control-height);
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-soft);
+}
+
+.teamName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.offerStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  margin: 0;
+  color: var(--color-text-body);
+}
+
+@media (min-width: 600px) {
+  .postList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .companyDetails {
   display: grid;
   gap: var(--space-md);

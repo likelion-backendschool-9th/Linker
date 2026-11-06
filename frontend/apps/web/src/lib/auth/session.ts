@@ -12,7 +12,7 @@ import { GUEST, type UserStatus, type Viewer } from './route-access';
 
 /**
  * `GET /api/v1/user/me` (WBS AuthController, `MeResponse`).
- * `isAdmin` is the admins-row flag. The 30-minute operator OTP gate stays in the admin layout.
+ * `isAdmin` is the admins-row flag. The report page asks for OTP before loading cases.
  * Hand-written until the controller is in OpenAPI; then replace with the orval type and function.
  */
 export type Session = {
