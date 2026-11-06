@@ -15,6 +15,18 @@ describe('public sitemap entries', () => {
     expect(staticSitemap().some((entry) => /workspace|admin|settings/.test(entry.url))).toBe(false);
   });
 
+  it('accepts canonical developer profile URLs', () => {
+    expect(sitemapEntries('users', [{ id: 1, url: '/user/ada', updatedAt }])).toEqual([
+      { url: 'https://linker.test/user/ada', lastModified: updatedAt },
+    ]);
+  });
+
+  it('rejects the previous profile path', () => {
+    expect(() => sitemapEntries('users', [{ id: 1, url: '/u/ada', updatedAt }])).toThrow(
+      'Invalid users sitemap URL',
+    );
+  });
+
   it.each(['https://evil.test/posts/1', '/admin/reports', '/recruits/1'])(
     'rejects foreign or unrelated URLs: %s',
     (url) => {

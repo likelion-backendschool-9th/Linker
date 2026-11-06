@@ -22,7 +22,7 @@ flowchart LR
 | 워크스페이스 | GitHub 조직과 팀 연결, 레포·멤버·초대·프로젝트 완료 관리          | `/workspace`, `/teams/[id]/settings`                              |
 | 협업         | GitHub 이슈 작성·담당자·라벨·상태·일정, 보드와 캘린더             | `/teams/[id]/issues`, `/teams/[id]/board`, `/teams/[id]/calendar` |
 | 채팅·알림    | 팀/개인 대화, 메시지 요청, PR 안내, 인앱 알림                     | `/chats`, `/notifications`                                        |
-| 프로필·소셜  | 기술 스택, GitHub 기여, 완료 기록, 작업물·피드·좋아요·댓글·팔로우 | `/u/[login]`, `/posts/[id]`, `/feed`                              |
+| 프로필·소셜  | 기술 스택, GitHub 기여, 완료 기록, 작업물·피드·좋아요·댓글·팔로우 | `/user/[login]`, `/posts/[id]`, `/feed`                              |
 | 리크루팅     | 기업 이메일 가입, 구직 상태 확인, 채용 제안과 보낸 제안 목록      | `/recruiter/signup`, `/recruiter/offers`                          |
 | 구독·운영    | Pro/Flex/Scout 구독, 통계, 신고·회원·운영 조치 기록               | `/subscribe`, `/me/stats`, `/admin/*`                             |
 

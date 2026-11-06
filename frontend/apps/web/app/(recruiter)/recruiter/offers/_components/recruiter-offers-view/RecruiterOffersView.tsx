@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
+import { profileHref } from '@/lib/navigation/collaboration-links';
 
 import type { Offer, OfferCounts, OfferStatus, OffersResponse } from '../../_lib/offer-types';
 import { OFFER_STATUSES } from '../../_lib/offer-types';
@@ -174,7 +175,7 @@ function OfferCard({ offer, onShowMessage }: { offer: Offer; onShowMessage: () =
               {developer && !offer.unavailable ? (
                 <Link
                   className={styles.personLink}
-                  href={`/users/${encodeURIComponent(developer.login)}`}
+                  href={profileHref(developer.login)}
                 >
                   {visibleName}
                 </Link>

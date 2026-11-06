@@ -68,7 +68,7 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
             author: {
               '@type': 'Person',
               name: post.author.name,
-              url: `/users/${post.author.login}`,
+              url: `/user/${post.author.login}`,
             },
           }}
         />

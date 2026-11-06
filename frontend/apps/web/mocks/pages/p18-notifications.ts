@@ -80,7 +80,7 @@ const items: Notification[] = [
     type: 'FOLLOW',
     title: '새 팔로워',
     body: '정하윤님이 팔로우했어요',
-    targetUrl: '/users/hayun-jung',
+    targetUrl: '/user/hayun-jung',
     read: true,
     createdAt: daysAgo(3),
   },

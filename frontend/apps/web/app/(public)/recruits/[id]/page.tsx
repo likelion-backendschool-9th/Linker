@@ -57,7 +57,7 @@ export default async function RecruitDetailPage({ params }: PageProps<'/recruits
           author: {
             '@type': 'Person',
             name: recruit.author.name,
-            url: `/users/${recruit.author.login}`,
+            url: `/user/${recruit.author.login}`,
           },
         }}
       />

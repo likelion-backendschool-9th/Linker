@@ -170,7 +170,7 @@ export function DeveloperProfileForm({
 
   function goBack() {
     if (form.formState.isDirty) leave.open();
-    else router.replace(`/users/${encodeURIComponent(login)}` as Route);
+    else router.replace(`/user/${encodeURIComponent(login)}` as Route);
   }
 
   return (
@@ -339,7 +339,7 @@ export function DeveloperProfileForm({
         description="저장하지 않은 변경 내용은 사라져요."
         confirmLabel="나가기"
         destructive
-        onConfirm={() => void leave.closeThen(`/users/${encodeURIComponent(login)}` as Route)}
+        onConfirm={() => void leave.closeThen(`/user/${encodeURIComponent(login)}` as Route)}
       />
     </>
   );

@@ -130,7 +130,7 @@ function PostView({
               sizes="24px"
               className={styles.bylineAvatar}
             />
-            <Link href={`/users/${recruit.author.login}` as Route} className={styles.bylineName}>
+            <Link href={`/user/${recruit.author.login}` as Route} className={styles.bylineName}>
               {recruit.author.name}
             </Link>
             <span aria-hidden>·</span>
@@ -243,7 +243,7 @@ function PostView({
           </div>
           {recruit.authorCard.bio && <p className={styles.authorBio}>{recruit.authorCard.bio}</p>}
           <Button variant="soft" block asChild>
-            <Link href={`/users/${recruit.authorCard.login}` as Route}>프로필 보기</Link>
+            <Link href={`/user/${recruit.authorCard.login}` as Route}>프로필 보기</Link>
           </Button>
         </section>
       </aside>

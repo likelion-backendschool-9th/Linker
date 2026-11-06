@@ -8,11 +8,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.linker.backend.dto.chat.event.ChatMessageReady;
 import com.linker.backend.dto.chat.event.ChatReadAdvanced;
@@ -43,6 +45,7 @@ import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.chat.ChatMessageImage;
+import com.linker.backend.entity.chat.ChatMessageMention;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.chat.type.DmStatus;
@@ -60,16 +63,14 @@ import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
-import com.linker.backend.repository.chat.ChatListQueryRepository;
-import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListRow;
-import com.linker.backend.repository.chat.ChatListQueryRepository.ChatListSummary;
+import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListRow;
+import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListSummary;
 import com.linker.backend.repository.chat.ChatMessageImageRepository;
-import com.linker.backend.repository.chat.ChatMessageQueryRepository;
-import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessageRow;
+import com.linker.backend.repository.chat.ChatMessageMentionRepository;
+import com.linker.backend.repository.chat.ChatMessageRepositoryCustom.ChatMessageRow;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
-import com.linker.backend.repository.chat.ChatShareCardQuery;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -98,6 +99,8 @@ public class ChatService {
 	static final int MESSAGE_PAGE_SIZE = 30;
 
 	private static final String CHAT_SEND_BUCKET = "chat.send";
+	/** Technical bound on the mention id list, not a Policy limit. The text itself is capped at 2,000 chars. */
+	private static final int MAX_MENTIONED_IDS = 100;
 	private static final String FREE_HISTORY = "FREE_60_DAYS";
 
 	/** Context binding only. The token is not an authenticator or an integrity seal. */
@@ -108,60 +111,54 @@ public class ChatService {
 	static final String HIDDEN_PREVIEW = "운영 정책에 따라 숨겨진 메시지예요";
 
 	private final ChatRoomAccess chatRooms;
-	private final ChatListQueryRepository lists;
 	private final ChatRoomRepository rooms;
 	private final ChatRoomMemberRepository members;
 	private final ApplicationEventPublisher events;
 	private final Clock clock;
 	private final UserRepository accounts;
 	private final ChatMessageRepository messages;
-	private final ChatMessageQueryRepository messageQuery;
 	private final RedisRateLimiter rateLimiter;
 	private final TransactionTemplate transactions;
 	private final ModerationService moderation;
 	private final UploadService uploads;
 	private final ChatMessageImageRepository imageLinks;
 	private final NotificationService notifications;
-	private final ChatShareCardQuery shareCards;
 	private final JsonMapper json = JsonMapper.builder().build();
 	private final TeamChatAccess teamChat;
+	private final ChatMessageMentionRepository mentions;
 
 	public ChatService(
 			ChatRoomAccess chatRooms,
-			ChatListQueryRepository lists,
 			ChatRoomRepository rooms,
 			ChatRoomMemberRepository members,
 			ApplicationEventPublisher events,
 			Clock clock,
 			UserRepository accounts,
 			ChatMessageRepository messages,
-			ChatMessageQueryRepository messageQuery,
 			RedisRateLimiter rateLimiter,
 			PlatformTransactionManager transactions,
 			ModerationService moderation,
 			UploadService uploads,
 			ChatMessageImageRepository imageLinks,
 			NotificationService notifications,
-			ChatShareCardQuery shareCards,
-			TeamChatAccess teamChat
+			TeamChatAccess teamChat,
+			ChatMessageMentionRepository mentions
 	) {
 		this.chatRooms = chatRooms;
-		this.lists = lists;
 		this.rooms = rooms;
 		this.members = members;
 		this.events = events;
 		this.clock = clock;
 		this.accounts = accounts;
 		this.messages = messages;
-		this.messageQuery = messageQuery;
 		this.rateLimiter = rateLimiter;
 		this.transactions = new TransactionTemplate(transactions);
 		this.moderation = moderation;
 		this.uploads = uploads;
 		this.imageLinks = imageLinks;
 		this.notifications = notifications;
-		this.shareCards = shareCards;
 		this.teamChat = teamChat;
+		this.mentions = mentions;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -169,6 +166,10 @@ public class ChatService {
 			throw new StompAuthException("채팅방에 참여할 수 없어요");
 		}
 		SendCommand command = sendCommand(payload);
+		if (!command.mentionedUserIds().isEmpty()
+				&& rooms.findById(roomId).map(ChatRoom::getRoomType).orElse(null) != RoomType.TEAM) {
+			throw new StompAuthException("텍스트 메시지만 보낼 수 있어요");
+		}
 		User account = accounts.findById(userId).orElseThrow(() -> new StompAuthException("로그인이 필요해요"));
 		if (account.getStatus() != UserStatus.ACTIVE) {
 			transactions.executeWithoutResult(status -> reject(
@@ -199,7 +200,7 @@ public class ChatService {
 		String tab = resolveTab(user, rawTab);
 		Instant now = clock.instant();
 		Cursor cursor = decodeCursor(user.userId(), tab, rawCursor, now);
-		List<ChatListRow> rows = lists.page(
+		List<ChatListRow> rows = rooms.listPage(
 				user.userId(),
 				tab,
 				now,
@@ -287,7 +288,7 @@ public class ChatService {
 
 	@Transactional(readOnly = true)
 	public UnreadSummaryResponse unreadSummary(AuthenticatedUser user) {
-		ChatListSummary summary = lists.summary(user.userId(), clock.instant());
+		ChatListSummary summary = rooms.listSummary(user.userId(), clock.instant());
 		if (user.userType() == UserType.RECRUITER) {
 			return new UnreadSummaryResponse(0, summary.directUnread(), 0, 0, summary.directUnread());
 		}
@@ -362,10 +363,10 @@ public class ChatService {
 		}
 		int limit = after == null ? MESSAGE_PAGE_SIZE : PlanLimits.CHAT_CATCH_UP_MAX;
 		List<ChatMessageRow> rows = new ArrayList<>(after != null
-				? messageQuery.after(user.userId(), roomId, team, start, after, limit + 1)
+				? messages.after(user.userId(), roomId, team, start, after, limit + 1)
 				: before != null
-						? messageQuery.before(user.userId(), roomId, team, start, before, limit + 1)
-						: messageQuery.latest(user.userId(), roomId, team, start, limit + 1));
+						? messages.before(user.userId(), roomId, team, start, before, limit + 1)
+						: messages.latest(user.userId(), roomId, team, start, limit + 1));
 		boolean more = rows.size() > limit;
 		if (more) {
 			if (after != null) {
@@ -424,7 +425,7 @@ public class ChatService {
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
 		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
 		requireAnchor(roomId, messageId);
-		if (!messageQuery.visibleTo(user.userId(), roomId, team, historyStart(team), messageId)) {
+		if (!messages.visibleTo(user.userId(), roomId, team, historyStart(team), messageId)) {
 			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
 		}
 		Long current = member.getLastReadMessageId();
@@ -519,7 +520,7 @@ public class ChatService {
 				continue;
 			}
 			boolean team = true;
-			if (!messageQuery.visibleTo(member.getUserId(), roomId, team, historyStart(team), message.getId())) {
+			if (!messages.visibleTo(member.getUserId(), roomId, team, historyStart(team), message.getId())) {
 				continue;
 			}
 			User account = accounts.findById(member.getUserId()).orElse(null);
@@ -578,7 +579,7 @@ public class ChatService {
 			return false;
 		}
 		boolean team = member.getRoom().getRoomType() == RoomType.TEAM;
-		return messageQuery.visibleTo(viewerId, roomId, team, historyStart(team), messageId);
+		return messages.visibleTo(viewerId, roomId, team, historyStart(team), messageId);
 	}
 
 	private boolean storeNewText(User account, long roomId, SendCommand command) {
@@ -640,12 +641,15 @@ public class ChatService {
 		room.markLastMessage(message.getId(), createdAt);
 		List<Long> recipientIds = members.findActiveUserIds(roomId).stream()
 				.filter(id -> id != current.getId())
-				.filter(id -> messageQuery.visibleTo(id, roomId, room.getRoomType() == RoomType.TEAM,
+				.filter(id -> messages.visibleTo(id, roomId, room.getRoomType() == RoomType.TEAM,
 						historyStart(room.getRoomType() == RoomType.TEAM), message.getId()))
 				.toList();
 		long unread = recipientIds.size();
 		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread, imageUrls)));
 		boolean team = room.getRoomType() == RoomType.TEAM;
+		if (team) {
+			storeMentions(message, room, current, command, recipientIds);
+		}
 		if (!team) {
 			for (Long recipientId : recipientIds) {
 				notifications.create(new CreateNotificationCommand(
@@ -662,12 +666,59 @@ public class ChatService {
 		}
 		for (Long memberId : members.findActiveUserIds(roomId)) {
 			boolean visible = memberId == current.getId()
-					|| messageQuery.visibleTo(memberId, roomId, team, historyStart(team), message.getId());
+					|| messages.visibleTo(memberId, roomId, team, historyStart(team), message.getId());
 			if (visible) {
 				events.publishEvent(new ChatRoomsChanged(memberId, roomId));
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Team rooms only notify on mentions (Policy ch. 8). A mentioned id counts only if that person is an
+	 * active team member who can read the message; anything else is dropped and the message still goes out.
+	 * {@code @person} rings even when the room is muted ({@code CHAT_MENTION}). {@code @all} is an ordinary
+	 * {@code CHAT} notification, so muted members are skipped by the push job, and someone who is also
+	 * mentioned by name gets the mention only.
+	 */
+	private void storeMentions(
+			ChatMessage message, ChatRoom room, User sender, SendCommand command, List<Long> recipientIds
+	) {
+		if (command.mentionedUserIds().isEmpty() && !command.mentionAll()) {
+			return;
+		}
+		Set<Long> mentionable = teamChat.mentionCandidates(sender.getId(), room.getTeamId()).stream()
+				.map(ChatMemberResponse::id)
+				.collect(Collectors.toSet());
+		List<Long> reachable = recipientIds.stream().filter(mentionable::contains).toList();
+		List<Long> people = command.mentionedUserIds().stream().filter(reachable::contains).toList();
+		for (Long personId : people) {
+			mentions.save(ChatMessageMention.person(message, personId));
+			notifications.create(roomNotification(personId, sender, room, message, NotificationTypes.CHAT_MENTION, "mention"));
+		}
+		if (command.mentionAll()) {
+			mentions.save(ChatMessageMention.everyone(message));
+			for (Long memberId : reachable) {
+				if (!people.contains(memberId)) {
+					notifications.create(roomNotification(memberId, sender, room, message, NotificationTypes.CHAT, "mentionAll"));
+				}
+			}
+		}
+	}
+
+	private static CreateNotificationCommand roomNotification(
+			long recipientId, User sender, ChatRoom room, ChatMessage message, String type, String flag
+	) {
+		return new CreateNotificationCommand(
+				recipientId,
+				type,
+				sender.getId(),
+				"CHAT_ROOM",
+				room.getId(),
+				"/chats/" + room.getId(),
+				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + ",\"" + flag + "\":true}",
+				"chat:" + room.getId()
+		);
 	}
 
 	private void confirmStored(long userId, long roomId, SendCommand command) {
@@ -773,8 +824,8 @@ public class ChatService {
 
 	private void assertVisible(Participant participant, long roomId, long messageId) {
 		boolean team = participant.member().getRoom().getRoomType() == RoomType.TEAM;
-		Long owner = messageQuery.roomIdOf(messageId);
-		if (owner == null || owner != roomId || !messageQuery.visibleTo(
+		Long owner = messages.findRoomId(messageId).orElse(null);
+		if (owner == null || owner != roomId || !messages.visibleTo(
 				participant.account().getId(),
 				roomId,
 				team,
@@ -825,7 +876,7 @@ public class ChatService {
 	}
 
 	private void requireAnchor(long roomId, long messageId) {
-		Long owner = messageQuery.roomIdOf(messageId);
+		Long owner = messages.findRoomId(messageId).orElse(null);
 		if (owner == null || owner != roomId) {
 			throw new ApiException(400, "VALIDATION_ERROR", "메시지 위치를 확인해 주세요");
 		}
@@ -842,7 +893,7 @@ public class ChatService {
 		if (rows.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, List<String>> urls = messageQuery.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
+		Map<Long, List<String>> urls = messages.imageUrls(rows.stream().map(ChatMessageRow::id).toList());
 		return rows.stream()
 				.map(row -> toMessage(row, urls.getOrDefault(row.id(), List.of()), cardPayload(viewerId, row)))
 				.toList();
@@ -859,7 +910,7 @@ public class ChatService {
 			if (targetType.isBlank() || targetId < 1) {
 				return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable(targetType, targetId);
 			}
-			return shareCards.resolve(viewerId, targetType, targetId);
+			return messages.resolveShareCard(viewerId, targetType, targetId);
 		}
 		catch (RuntimeException exception) {
 			return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable("UNKNOWN", 0);
@@ -894,10 +945,11 @@ public class ChatService {
 			throw new StompAuthException("메시지 식별자를 확인해 주세요");
 		}
 		boolean mentionAll = mentionAll(payload.get("mentionAll")) || hasAllMention(text);
+		List<Long> mentionedUserIds = mentionedUserIds(payload.get("mentionedUserIds"));
 		if (text.isBlank()) {
-			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds, mentionAll);
+			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds, mentionAll, mentionedUserIds);
 		}
-		return new SendCommand(clientId, MessageType.TEXT, text, fileIds, mentionAll);
+		return new SendCommand(clientId, MessageType.TEXT, text, fileIds, mentionAll, mentionedUserIds);
 	}
 
 	private static List<Long> fileIds(Object raw) {
@@ -921,6 +973,21 @@ public class ChatService {
 				throw new StompAuthException("메시지 내용을 확인해 주세요");
 			}
 			ids.add(id);
+		}
+		return List.copyOf(ids);
+	}
+
+	/** Ids picked from the autocomplete. Repeats are dropped; anything that is not a positive id is rejected. */
+	private static List<Long> mentionedUserIds(Object raw) {
+		if (raw == null) {
+			return List.of();
+		}
+		if (!(raw instanceof List<?> list) || list.size() > MAX_MENTIONED_IDS) {
+			throw new StompAuthException("메시지 내용을 확인해 주세요");
+		}
+		Set<Long> ids = new LinkedHashSet<>();
+		for (Object item : list) {
+			ids.add(fileId(item));
 		}
 		return List.copyOf(ids);
 	}
@@ -956,8 +1023,7 @@ public class ChatService {
 	}
 
 	private static boolean unsupportedAttachment(Map<String, Object> payload) {
-		return present(payload.get("mentionedUserIds"))
-				|| present(payload.get("issueRefs"))
+		return present(payload.get("issueRefs"))
 				|| foreignType(payload.get("messageType"))
 				|| foreignType(payload.get("type"));
 	}
@@ -1074,7 +1140,7 @@ public class ChatService {
 		if (parsed.version() != CURSOR_VERSION || parsed.userId() != userId || !parsed.tab().equals(tab)) {
 			throw badCursor();
 		}
-		if (!lists.containedInTab(userId, tab, parsed.roomId(), now)) {
+		if (!rooms.containedInTab(userId, tab, parsed.roomId(), now)) {
 			throw badCursor();
 		}
 		return new Cursor(parsed.sortAt(), parsed.roomId());
@@ -1212,6 +1278,9 @@ public class ChatService {
 	private record ParsedCursor(int version, long userId, String tab, Instant sortAt, long roomId) {
 	}
 
-	private record SendCommand(String clientMessageId, MessageType type, String body, List<Long> fileIds, boolean mentionAll) {
+	private record SendCommand(
+			String clientMessageId, MessageType type, String body, List<Long> fileIds, boolean mentionAll,
+			List<Long> mentionedUserIds
+	) {
 	}
 }

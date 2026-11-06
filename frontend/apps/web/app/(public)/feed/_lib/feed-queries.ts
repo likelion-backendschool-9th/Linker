@@ -77,7 +77,7 @@ export function sendSeen(postIds: number[]) {
 
 /** Borrowed from 04 */
 export function setFollow(login: string, follow: boolean) {
-  return apiFetch<void>(`/api/v1/user/users/${encodeURIComponent(login)}/follow`, {
+  return apiFetch<void>(`/api/v1/user/user/${encodeURIComponent(login)}/follow`, {
     method: follow ? 'POST' : 'DELETE',
   });
 }

@@ -40,7 +40,7 @@ function Person({ item }: { item: RecommendedUser }) {
 
   return (
     <div className={styles.person}>
-      <Link href={`/users/${item.user.login}` as Route} className={styles.personLink}>
+      <Link href={`/user/${item.user.login}` as Route} className={styles.personLink}>
         <Image
           src={item.user.avatarUrl}
           alt=""

@@ -279,8 +279,8 @@
 | 10 | TeamController | `GET /api/v1/public/invites/{code}`, `POST /api/v1/user/invites/{code}/accept` | 미리보기·수락 |
 | 17 / D | GithubController | `GET /api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR 목록, 기존 방 구독으로 이벤트 수신 |
 | 26 | admin.ModerationController | `GET /api/v1/admin/users`, `GET /api/v1/admin/users/{userId}` | 검색/필터·상세 |
-| 26 | admin.ModerationController | `POST .../users/{userId}/sanctions`, `DELETE .../users/{userId}/sanctions/{sanctionId}` | 제재·해제 |
-| 26 | admin.ModerationController | `POST .../users/{userId}/email-reveal` | 사유 기록 열람 |
+| 26 | admin.ModerationController | `POST .../user/{userId}/sanctions`, `DELETE .../user/{userId}/sanctions/{sanctionId}` | 제재·해제 |
+| 26 | admin.ModerationController | `POST .../user/{userId}/email-reveal` | 사유 기록 열람 |
 | 26 | SubscriptionController | `POST /api/v1/admin/payments/{paymentId}/refund` | Included 환불 |
 | 27 | admin.ModerationController | `GET /api/v1/admin/audit-logs`, `GET /api/v1/admin/audit-logs/filters` | 기록·필터 선택지 |
 | 30 | StatsController | `GET /api/v1/user/me/stats/summary`, `GET .../stats/recruiter-views?weeks=8`, `GET .../stats/posts?days=30` | 기본·Pro 통계 |
@@ -460,7 +460,7 @@ frontend/apps/web/src/
 | --- | --- | --- |
 | B → C 내 이슈 | `/workspace` → `/workspace/issues` → `/teams/{id}/issues/{issueId}`, 뒤로가기로 목록·워크스페이스 복귀 | 원본 C 코드를 그대로 재사용. API 생성 시 C의 `repoName` 제안 필드 확정 |
 | B ↔ C 팀 틀 | 기존 `TeamFrame`·팀 메뉴·팀 전환·이슈 진입 재사용 | 팀 상태·권한 응답 확정. 별도 팀 헤더/내 이슈 목록을 중복 구현하지 않음 |
-| B → A 프로필 | 팀 멤버 이름·운영 회원 상세·내 통계·대표 작업물 시트 → `/u/{login}` | A의 PR #26은 조회 시 미병합. URL·시트 종료/복귀 계약을 검증했으며 해당 프로필 내용의 통합 검증과 구분 |
+| B → A 프로필 | 팀 멤버 이름·운영 회원 상세·내 통계·대표 작업물 시트 → `/user/{login}` | A의 PR #26은 조회 시 미병합. URL·시트 종료/복귀 계약을 검증했으며 해당 프로필 내용의 통합 검증과 구분 |
 | B → A 신고 | 운영 회원의 “처리된 신고 목록 보기” → `/admin/reports?tab=reports&status=HANDLED` | A의 현재 소스는 상세 선택을 로컬 상태로 관리한다. 지원되지 않는 `caseId`/overlay 파라미터를 만들어 자동 선택된다고 하지 않음. 개별 신고 직접 열기는 A와 URL 계약 합의 필요 |
 | B → D 요금제 | Free 팀·초대 정원 안내 → 팀 ID/사유/복귀 경로를 전달, 내 통계 → `reason=stats`·복귀 경로 전달 | 수신 화면에서 `teamId`를 URL 상태로 읽고 서버가 반환한 결제 가능 목록 안에서만 선택. 임의 ID는 안내 후 Flex 실행 차단. 진입만으로 주문 생성 없음 |
 | D → B 복귀 | `/subscribe`와 `/settings/subscription`의 직접 진입 뒤로가기 기본 경로가 안전한 `returnTo`를 사용 | 외부 URL은 기존 `safeReturnTo`로 거절하고 `/feed`로 복귀. 기존 결제/해지/환불 API는 변경하지 않음 |

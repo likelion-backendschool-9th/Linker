@@ -159,12 +159,12 @@ describe('mockFetch', () => {
 
   it('keeps state across calls and never leaks references', async () => {
     loginAs('developer');
-    await mockFetch('/api/v1/user/users/seoyeon-park/follow', { method: 'POST' });
-    const profile = await mockFetch<{ isFollowing: boolean }>('/api/v1/public/users/seoyeon-park');
+    await mockFetch('/api/v1/user/user/seoyeon-park/follow', { method: 'POST' });
+    const profile = await mockFetch<{ isFollowing: boolean }>('/api/v1/public/user/seoyeon-park');
     expect(profile.isFollowing).toBe(true);
     profile.isFollowing = false;
     expect(
-      (await mockFetch<{ isFollowing: boolean }>('/api/v1/public/users/seoyeon-park')).isFollowing,
+      (await mockFetch<{ isFollowing: boolean }>('/api/v1/public/user/seoyeon-park')).isFollowing,
     ).toBe(true);
   });
 

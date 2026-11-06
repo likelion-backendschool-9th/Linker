@@ -76,7 +76,7 @@ export const routes: MockRoute[] = [
       case 'users':
         items = DEVELOPERS.map((user) => ({
           id: user.id,
-          url: `/users/${encodeURIComponent(user.login)}`,
+          url: `/user/${encodeURIComponent(user.login)}`,
           updatedAt: user.joinedAt,
         }));
         break;

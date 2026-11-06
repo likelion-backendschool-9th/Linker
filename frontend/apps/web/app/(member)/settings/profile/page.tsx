@@ -28,7 +28,7 @@ export default async function EditProfilePage() {
   let avatarUrl: string | null = null;
   try {
     const profile = await apiFetch<PublicProfile>(
-      `/api/v1/public/users/${encodeURIComponent(session.login)}`,
+      `/api/v1/public/user/${encodeURIComponent(session.login)}`,
     );
     avatarUrl = profile.avatarUrl;
   } catch (error) {
@@ -38,7 +38,7 @@ export default async function EditProfilePage() {
   if (session.userType === 'RECRUITER') {
     const initial = await apiFetch<RecruiterProfileValues>('/api/v1/recruiter/me/profile');
     return (
-      <PageFrame title="프로필 수정" variant="stack" backHref={`/users/${session.login}` as Route}>
+      <PageFrame title="프로필 수정" variant="stack" backHref={`/user/${session.login}` as Route}>
         <RecruiterProfileForm initial={initial} login={session.login} avatarUrl={avatarUrl} />
       </PageFrame>
     );
@@ -51,7 +51,7 @@ export default async function EditProfilePage() {
   ]);
 
   return (
-    <PageFrame title="프로필 수정" variant="stack" backHref={`/users/${session.login}` as Route}>
+    <PageFrame title="프로필 수정" variant="stack" backHref={`/user/${session.login}` as Route}>
       <DeveloperProfileForm
         initial={initial}
         login={session.login}

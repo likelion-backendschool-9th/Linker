@@ -5,7 +5,7 @@
 export const INDEXABLE = {
   '01': '/',
   '03': '/legal/[slug]',
-  '04': '/users/[login] (developer only)',
+  '04': '/user/[login] (developer only)',
   '19': '/recruits',
   '21': '/recruits/[id] (closed too; 404 when deleted)',
   '23': '/posts/[id]',

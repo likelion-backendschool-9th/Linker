@@ -794,7 +794,7 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.kind").value("users"))
 				.andExpect(jsonPath("$.items.length()").value(1))
 				.andExpect(jsonPath("$.items[0].id").value(developer.getId()))
-				.andExpect(jsonPath("$.items[0].url").value("/u/ada"));
+				.andExpect(jsonPath("$.items[0].url").value("/user/ada"));
 		mockMvc.perform(get("/api/v1/public/sitemap/posts"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items.length()").value(0));
@@ -950,22 +950,6 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.items").isEmpty());
 
 		jdbc.execute("""
-				CREATE TABLE teams (
-				    id bigint PRIMARY KEY,
-				    name varchar(80) NOT NULL,
-				    avatar_url varchar(2048),
-				    status varchar(16) NOT NULL
-				)
-				""");
-		jdbc.execute("""
-				CREATE TABLE team_members (
-				    id bigint PRIMARY KEY,
-				    team_id bigint NOT NULL,
-				    user_id bigint NOT NULL,
-				    left_at timestamptz
-				)
-				""");
-		jdbc.execute("""
 				CREATE TABLE completion_records (
 				    id bigint PRIMARY KEY,
 				    user_id bigint NOT NULL,
@@ -975,14 +959,16 @@ class FoundationIntegrationTest {
 				)
 				""");
 		try {
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (1, 'Linker', 'https://avatars.githubusercontent.com/u/1', 'ACTIVE')");
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (2, 'Done', NULL, 'COMPLETED')");
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (3, 'Paused', NULL, 'READ_ONLY')");
-			jdbc.update("INSERT INTO teams (id, name, avatar_url, status) VALUES (4, 'Left', NULL, 'ACTIVE')");
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (1, 1, ?, NULL)", user.getId());
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (2, 2, ?, NULL)", user.getId());
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (3, 3, ?, NULL)", user.getId());
-			jdbc.update("INSERT INTO team_members (id, team_id, user_id, left_at) VALUES (4, 4, ?, now())", user.getId());
+			for (String[] fixture : new String[][] {{"Linker", "ACTIVE"}, {"Done", "COMPLETED"},
+					{"Paused", "READ_ONLY"}, {"Left", "ACTIVE"}}) {
+				long teamId = com.linker.backend.support.TeamTestFixtures.team(jdbc, user.getId(), fixture[0], fixture[1]);
+				jdbc.update("""
+						INSERT INTO team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at)
+						VALUES (?,?,'OWNER','MEMBER',now(),now(),now())
+						""", teamId, user.getId());
+			}
+			jdbc.update("UPDATE teams SET avatar_url='https://avatars.githubusercontent.com/u/1' WHERE name='Linker'");
+			jdbc.update("UPDATE team_members SET left_at=now() WHERE team_id=4");
 			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (1, ?, 'COMPLETED', 4, 2)", user.getId());
 			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (2, ?, 'DROPPED', 2, 0)", user.getId());
 
@@ -1001,7 +987,7 @@ class FoundationIntegrationTest {
 					.andExpect(jsonPath("$.nextCursor").value(org.hamcrest.Matchers.nullValue()));
 		}
 		finally {
-			jdbc.execute("DROP TABLE IF EXISTS completion_records, team_members, teams");
+			jdbc.execute("DROP TABLE IF EXISTS completion_records");
 		}
 	}
 
@@ -1096,14 +1082,23 @@ class FoundationIntegrationTest {
 				VALUES (?, 'BACKEND', '광고', 'https://example.com/job', 'example.com', CURRENT_DATE, 'ACTIVE', now(), now())
 				RETURNING id
 				""", Long.class, author.getId());
+		long recruitId = jdbc.queryForObject("""
+				INSERT INTO recruit_posts (
+				    author_id, title, description, work_mode, deadline, status, visibility, sort_at, created_at, updated_at)
+				VALUES (?, '모집', '설명', 'ONLINE', CURRENT_DATE, 'OPEN', 'VISIBLE', now(), now(), now())
+				RETURNING id
+				""", Long.class, author.getId());
 		try {
 			long postCase = insertCase("POST", postId, author.getId());
+			Object postUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM posts WHERE id = ?", Object.class, postId);
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + postCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"action\":\"HIDE\",\"reason\":\"숨김\"}"))
 					.andExpect(status().isOk());
 			assertThat(jdbc.queryForObject("SELECT visibility FROM posts WHERE id = ?", String.class, postId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM posts WHERE id = ?", Object.class, postId)).isNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM posts WHERE id = ?", Object.class, postId)).isEqualTo(postUpdatedAt);
 
 			long missing = insertCase("POST", postId + 100_000L, author.getId());
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + missing + "/actions")
@@ -1115,15 +1110,20 @@ class FoundationIntegrationTest {
 			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, missing)).isEqualTo("PENDING");
 
 			long adCase = insertCase("RECRUITER_AD", adId, author.getId());
+			Object adUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM recruiter_ads WHERE id = ?", Object.class, adId);
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + adCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
 							.content("{\"action\":\"DELETE\",\"reason\":\"광고 삭제\"}"))
 					.andExpect(status().isOk());
 			assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = ?", String.class, adId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT hidden_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
 			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isEqualTo(adUpdatedAt);
+			assertThat(jdbc.queryForObject("SELECT ended_reason FROM recruiter_ads WHERE id = ?", String.class, adId)).isNull();
 
 			long commentCase = insertCase("COMMENT", commentId, author.getId());
+			Object commentUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM comments WHERE id = ?", Object.class, commentId);
 			mockMvc.perform(post("/api/v1/admin/report-cases/" + commentCase + "/actions")
 							.cookie(cookie(token))
 							.contentType(MediaType.APPLICATION_JSON)
@@ -1131,10 +1131,38 @@ class FoundationIntegrationTest {
 					.andExpect(status().isOk());
 			assertThat(jdbc.queryForObject("SELECT status FROM report_cases WHERE id = ?", String.class, commentCase)).isEqualTo("ACTIONED");
 			assertThat(jdbc.queryForObject("SELECT visibility FROM comments WHERE id = ?", String.class, commentId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM comments WHERE id = ?", Object.class, commentId)).isNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM comments WHERE id = ?", Object.class, commentId)).isEqualTo(commentUpdatedAt);
+
+			long recruitCase = insertCase("RECRUIT_POST", recruitId, author.getId());
+			Object recruitUpdatedAt = jdbc.queryForObject("SELECT updated_at FROM recruit_posts WHERE id = ?", Object.class, recruitId);
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + recruitCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"HIDE\",\"reason\":\"모집 숨김\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruit_posts WHERE id = ?", Object.class, recruitId)).isNull();
+			assertThat(jdbc.queryForObject("SELECT status FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("OPEN");
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + recruitCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"RESTORE\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("VISIBLE");
+			mockMvc.perform(post("/api/v1/admin/report-cases/" + recruitCase + "/actions")
+							.cookie(cookie(token))
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"action\":\"DELETE\",\"reason\":\"모집 삭제\"}"))
+					.andExpect(status().isOk());
+			assertThat(jdbc.queryForObject("SELECT visibility FROM recruit_posts WHERE id = ?", String.class, recruitId)).isEqualTo("HIDDEN");
+			assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruit_posts WHERE id = ?", Object.class, recruitId)).isNotNull();
+			assertThat(jdbc.queryForObject("SELECT updated_at FROM recruit_posts WHERE id = ?", Object.class, recruitId)).isEqualTo(recruitUpdatedAt);
 		}
 		finally {
 			jdbc.update("DELETE FROM comments WHERE id = ?", commentId);
 			jdbc.update("DELETE FROM recruiter_ads WHERE id = ?", adId);
+			jdbc.update("DELETE FROM recruit_posts WHERE id = ?", recruitId);
 			jdbc.update("DELETE FROM posts WHERE id = ?", postId);
 			jdbc.update("DELETE FROM github_repos WHERE id = ?", repoId);
 		}

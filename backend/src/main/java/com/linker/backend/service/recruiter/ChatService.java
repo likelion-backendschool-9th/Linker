@@ -16,9 +16,9 @@ import com.linker.backend.dto.chat.response.RecruiterOfferResponses.OfferSummary
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.repository.chat.RecruitingOfferQuery;
-import com.linker.backend.repository.chat.RecruitingOfferQuery.OfferMessage;
-import com.linker.backend.repository.chat.RecruitingOfferQuery.OfferRow;
+import com.linker.backend.repository.chat.ChatRoomRepository;
+import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.OfferMessage;
+import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.OfferRow;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 
 import org.springframework.stereotype.Service;
@@ -28,12 +28,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service("recruiterChatService")
 public class ChatService {
 
-	private final RecruitingOfferQuery offers;
+	private final ChatRoomRepository rooms;
 	private final UserBlockRepository blocks;
 	private final Clock clock;
 
-	public ChatService(RecruitingOfferQuery offers, UserBlockRepository blocks, Clock clock) {
-		this.offers = offers;
+	public ChatService(ChatRoomRepository rooms, UserBlockRepository blocks, Clock clock) {
+		this.rooms = rooms;
 		this.blocks = blocks;
 		this.clock = clock;
 	}
@@ -82,7 +82,7 @@ public class ChatService {
 		return new OfferSummary(
 				talking,
 				waiting,
-				offers.sentSince(principal.userId(), start),
+				rooms.countRecruitingOffersSince(principal.userId(), start),
 				PlanLimits.RECRUITING_OFFERS_PER_DAY_FREE,
 				PlanLimits.RECRUITING_OFFERS_PER_DAY_SCOUT,
 				false,
@@ -91,7 +91,7 @@ public class ChatService {
 
 	@Transactional(readOnly = true)
 	public FirstMessage firstMessage(AuthenticatedUser principal, long roomId) {
-		OfferMessage message = offers.firstMessage(principal.userId(), roomId);
+		OfferMessage message = rooms.firstOfferMessage(principal.userId(), roomId);
 		if (message == null) {
 			throw new ApiException(404, "NOT_FOUND", "채용 제안을 찾을 수 없어요");
 		}
@@ -102,7 +102,7 @@ public class ChatService {
 		if (principal == null) {
 			throw new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요");
 		}
-		return offers.list(principal.userId());
+		return rooms.recruitingOffers(principal.userId());
 	}
 
 	private OfferItem item(long recruiterId, OfferRow row, Instant now) {

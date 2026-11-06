@@ -148,6 +148,6 @@ it('recommends developers to follow when the feed is empty', async () => {
   await user.click(follow);
   expect(follow).toHaveAttribute('aria-pressed', 'true');
   await waitFor(() =>
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/users/serin/follow', { method: 'POST' }),
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/user/serin/follow', { method: 'POST' }),
   );
 });

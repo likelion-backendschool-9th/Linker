@@ -102,19 +102,19 @@ const peopleList = (excludeId: number) =>
     .map((user) => ({ user: brief(user), isFollowing: following.has(user.id) }));
 
 export const routes: MockRoute[] = [
-  get('/api/v1/public/users/:login', ({ params, viewer }) =>
+  get('/api/v1/public/user/:login', ({ params, viewer }) =>
     profileOf(userOr404(params.login), viewer.me?.id ?? null, viewer.role),
   ),
-  get('/api/v1/user/users/:login/followers', ({ params }) => ({
+  get('/api/v1/user/user/:login/followers', ({ params }) => ({
     items: peopleList(userOr404(params.login).id),
     nextCursor: null,
   })),
-  get('/api/v1/user/users/:login/followings', ({ params }) => ({
+  get('/api/v1/user/user/:login/followings', ({ params }) => ({
     items: peopleList(userOr404(params.login).id),
     nextCursor: null,
   })),
   post(
-    '/api/v1/user/users/:login/follow',
+    '/api/v1/user/user/:login/follow',
     ({ params }) => {
       const target = userOr404(params.login);
       if (target.userType === 'RECRUITER')
@@ -125,7 +125,7 @@ export const routes: MockRoute[] = [
     { only: 'developer' },
   ),
   del(
-    '/api/v1/user/users/:login/follow',
+    '/api/v1/user/user/:login/follow',
     ({ params }) => {
       following.delete(userOr404(params.login).id);
       return undefined;
@@ -133,11 +133,11 @@ export const routes: MockRoute[] = [
     { only: 'developer' },
   ),
 
-  get('/api/v1/public/users/:login/contributions', ({ query }) => {
+  get('/api/v1/public/user/:login/contributions', ({ query }) => {
     const month = query.get('month') ?? new Date().toISOString().slice(0, 7);
     return { month, days: contributionsFor(month), asOf: daysAgo(0) };
   }),
-  get('/api/v1/public/users/:login/posts', ({ params }) => {
+  get('/api/v1/public/user/:login/posts', ({ params }) => {
     const target = userOr404(params.login);
     const own = POSTS.filter((post) => post.author.id === target.id);
     const pinned = target.id === ME.id ? pinnedPostIds : [];
@@ -148,7 +148,7 @@ export const routes: MockRoute[] = [
       items: ordered.map((post) => ({ ...postCard(post), pinned: pinned.includes(post.id) })),
     };
   }),
-  get('/api/v1/public/users/:login/teams', ({ params }) => {
+  get('/api/v1/public/user/:login/teams', ({ params }) => {
     const target = userOr404(params.login);
     return {
       items: TEAMS.filter((team) => TEAM_MEMBERS[team.id]?.some((m) => m.user.id === target.id))

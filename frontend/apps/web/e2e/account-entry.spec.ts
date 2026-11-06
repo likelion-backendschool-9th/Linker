@@ -58,30 +58,30 @@ test('callback shows an error without OAuth parameters and completes a mock call
 });
 
 test('public profiles branch by owner type and ownership', async ({ page }) => {
-  await page.goto('/users/seoyeon-park');
+  await page.goto('/user/seoyeon-park');
   await expect(page.locator('#page-title')).toHaveText('박서연');
   await page.getByRole('button', { name: '팔로우' }).click();
   await expect(page).toHaveURL(/overlay=login/);
 
-  await page.goto('/api/mock/login/developer?returnTo=%2Fusers%2Fseoyeon-park');
+  await page.goto('/api/mock/login/developer?returnTo=%2Fuser%2Fseoyeon-park');
   await expect(page.getByRole('button', { name: '팔로우' })).toBeVisible();
   await page.getByRole('button', { name: '팔로우' }).click();
   await expect(page.getByRole('button', { name: '팔로잉', exact: true })).toBeVisible();
 
-  await page.goto('/users/r-1001');
+  await page.goto('/user/r-1001');
   await expect(page.getByText('인증된 회사 이메일')).toBeVisible();
   await expect(page.getByRole('button', { name: '팔로우' })).toHaveCount(0);
-  await page.goto('/users/seojun-han');
+  await page.goto('/user/seojun-han');
   await expect(page.getByRole('link', { name: '프로필 편집' })).toBeVisible();
-  await page.goto('/users/no-such-login');
+  await page.goto('/user/no-such-login');
   // The loading.tsx shell can stream HTTP 200 before the Server Component resolves
   // notFound(); verify the final, visible 404 state instead.
   await expect(page.getByRole('heading', { name: '볼 수 없는 콘텐츠' })).toBeVisible();
 
-  await page.goto('/api/mock/login/recruiter?returnTo=%2Fusers%2Fminjae-choi');
+  await page.goto('/api/mock/login/recruiter?returnTo=%2Fuser%2Fminjae-choi');
   await expect(page.getByText('제안 받는 중')).toBeVisible();
   await expect(page.getByRole('button', { name: '팔로우' })).toHaveCount(0);
-  await page.goto('/users/r-1001');
+  await page.goto('/user/r-1001');
   await expect(page.getByRole('link', { name: '프로필 편집' })).toBeVisible();
 });
 
@@ -95,7 +95,7 @@ test('profile edit route uses role-specific forms and respects developer-only fi
   await page.getByRole('button', { name: '뒤로' }).click();
   await expect(page.getByRole('alertdialog')).toBeVisible();
   await page.getByRole('button', { name: '나가기' }).click();
-  await expect(page).toHaveURL(/\/users\/seojun-han$/);
+  await expect(page).toHaveURL(/\/user\/seojun-han$/);
 
   await page.goto('/api/mock/login/recruiter?returnTo=%2Fsettings%2Fprofile');
   await expect(page.getByLabel('회사 이메일')).toHaveAttribute('readonly');

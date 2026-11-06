@@ -66,7 +66,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 01 | Start / login | ○ | To feed if logged in | To feed if logged in | Same as developer |
 | 02 | Onboarding | × | ○ once at sign-up | × (31 replaces it) | Same as developer |
 | 03 | Legal documents | ○ | ○ | ○ | ○ |
-| 04 | Profile | View (except follower/following lists) | ○ | View + "Send recruiting offer"; own profile is the recruiter my page (incl. job ad sheet) | Same as developer |
+| 04 | Profile (`/user/[login]`) | View (except follower/following lists) | ○ | View + "Send recruiting offer"; own profile is the recruiter my page (incl. job ad sheet) | Same as developer |
 | 05 | Edit profile | × | ○ incl. job categories of interest | ○ name, company, job title, website (company email can't change) | Same as developer |
 | 06 | Settings | × | ○ | ○ no GitHub items, subscription is Scout only, has change password | Same as developer |
 | 07 | Workspace home / my issues (`/workspace`, `/workspace/issues`) | Prompt | ○ | × | Same as developer |

@@ -304,7 +304,7 @@ class AccountServiceTest {
 		service().follow(principal(), "hubot");
 
 		verify(notifications).create(new CreateNotificationCommand(
-				8L, NotificationTypes.FOLLOW, 7L, "USER", 7L, "/u/octocat", null, null));
+				8L, NotificationTypes.FOLLOW, 7L, "USER", 7L, "/user/octocat", null, null));
 		verify(follows).save(any());
 
 		User recruiter = User.create("r-1", UserType.RECRUITER);

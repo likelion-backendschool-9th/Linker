@@ -84,7 +84,7 @@ function AuthorRow({ post }: { post: Detail }) {
   const { openMenu } = useAuthorRow();
   return (
     <div className={styles.authorRow}>
-      <Link href={`/users/${post.author.login}` as Route} className={styles.author}>
+      <Link href={`/user/${post.author.login}` as Route} className={styles.author}>
         <Image
           src={post.author.avatarUrl}
           alt=""

@@ -13,6 +13,7 @@ import { useRequireLogin } from '@/features/auth/use-require-login';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { reportTargetId } from '@/features/report/report-target';
+import { profileHref } from '@/lib/navigation/collaboration-links';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import type { Role } from '@/lib/auth/route-access';
 import type { ProfilePeopleResponse, PublicProfile } from '../profile-types';
@@ -39,7 +40,7 @@ export function ProfileInteractions({
 
   const follow = useMutation({
     mutationFn: (nextFollowing: boolean) =>
-      apiFetch<void>(`/api/v1/user/users/${encodeURIComponent(profile.login)}/follow`, {
+      apiFetch<void>(`/api/v1/user/user/${encodeURIComponent(profile.login)}/follow`, {
         method: nextFollowing ? 'POST' : 'DELETE',
       }),
     onMutate: async (nextFollowing) => {
@@ -167,7 +168,7 @@ function ProfilePeopleSheet({
   const people = useQuery({
     queryKey: ['profile-people', login, type],
     queryFn: () =>
-      apiFetch<ProfilePeopleResponse>(`/api/v1/user/users/${encodeURIComponent(login)}/${type}`),
+      apiFetch<ProfilePeopleResponse>(`/api/v1/user/user/${encodeURIComponent(login)}/${type}`),
     enabled: overlay.isOpen,
   });
 
@@ -216,7 +217,7 @@ function ProfilePeopleSheet({
           <ul className={styles.peopleList}>
             {people.data.items.map(({ user }) => (
               <li key={user.id}>
-                <Link href={`/users/${encodeURIComponent(user.login)}`} onClick={overlay.close}>
+                <Link href={profileHref(user.login)} onClick={overlay.close}>
                   <span className={styles.personAvatar}>
                     {user.avatarUrl && <Image src={user.avatarUrl} alt="" fill sizes="32px" />}
                   </span>
