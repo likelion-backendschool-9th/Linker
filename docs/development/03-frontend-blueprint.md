@@ -95,10 +95,22 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 ### 3-1. Principles
 - Used by one page → that page's private folders (`_components`, `_hooks`, `_lib`, `_views`; `_` never becomes a URL).
 - Used by 2+ pages → nearest common ancestor (e.g. `(developer)/posts/_components/post-editor/`, `teams/[id]/_components/issue-sheets/`).
-- Used across role groups → `src/features/<domain>/`.
-- `src/components/` = domain-free only (`ui/`, `layout/`, `overlay/`).
+- Used across role groups → `features/<domain>/` (under `apps/web/`, not under `src/`).
+- `components/` = domain-free only (`ui/`, `layout/`, `overlay/`).
 - Tests next to the target (`*.test.tsx`); per-screen MSW overrides in `_lib/handlers.ts`.
-- kebab-case file names, PascalCase exported component, one exported component per file.
+- **Route files** (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, …) and **route segment folders** stay kebab-case / Next conventions.
+- **All other components** use PascalCase filenames (`AdminUserActionSheet.tsx`). Exported symbol matches the file.
+- **`_components` unit folder** (one interactive unit = one folder):
+  ```
+  _components/admin-user-action-sheet/
+    AdminUserActionSheet.tsx      # view only
+    AdminUserActionSheet.module.css
+    api.ts                        # fetch / orval / query helpers
+    hook.ts                       # events and behavior
+    index.ts                      # re-export the view (and types as needed)
+    AdminUserActionSheet.test.tsx # optional
+  ```
+  Folder name is kebab-case; the view file is PascalCase. Do not leave flat `foo-bar.tsx` directly under `_components/`.
 
 ### 3-2. Role groups
 | Group | Pages | On entry |
@@ -113,33 +125,32 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 Operators = developer + operator permission: they use `(developer)`, `(member)`, `(public)` like developers, plus `(admin)`.
 
 ### 3-3. Tree (`apps/web`)
-Page paths per group are in ch. 13. Beyond them:
+Page paths per group are in ch. 13. Beyond them. Source lives next to `package.json` (no `src/` wrapper):
 ```
-next.config.ts  public/
-src/proxy.ts    (with a src/ dir Next 16 requires it next to app/)
-src/app/        layout.tsx (<html lang="ko">)  providers.tsx ('use client': QueryClient, NuqsAdapter, LazyMotion, Toaster, NativeBridgeProvider)
+next.config.ts  public/  proxy.ts
+app/            layout.tsx (<html lang="ko">)  providers.tsx ('use client': QueryClient, NuqsAdapter, LazyMotion, Toaster, NativeBridgeProvider)
                 not-found.tsx ("삭제되었거나 볼 수 없는 콘텐츠예요")  error.tsx  global-error.tsx  robots.ts  manifest.ts
+  (public)/users/[login]/                       profile URL `/users/[login]` (was `/u/[login]`)
   (public)/_components/recruiter-ad-card/          shared by 24 feed and 04 job ad sheet
   (developer)/teams/[id]/layout.tsx                team name, switcher sheet, team menu nav, chat shortcut
   (developer)/teams/[id]/_components/issue-sheets/ made by 12, used by 13–15; _lib/issue-filters.ts (11 → 14, 15)
   (developer)/{recruits,posts}/_components/{recruit,post}-editor/   shared by 20 / 22 create and edit
   (admin)/admin/layout.tsx                         operator check + OTP gate + 30-min idle logout; page.tsx → /admin/reports
-src/components/ ui/  layout/  overlay/ (OverlaySheet, OverlayDialog)
-src/features/   auth  report  block  plan-limit  share (ShareButton, ShareSheet, ShareTargetPicker, ShareCard)
-                chart (Ring, StackedBar, Line, ChartFigure)  external-link  draft-restore (7-day draft)
+components/     ui/  layout/  overlay/ (OverlaySheet, OverlayDialog) — each unit is a kebab folder + PascalCase view
+features/       auth  report  block  plan-limit  share  chart  external-link  draft-restore
                 tech-tags  job-status  job-categories  image-upload  user  chat-request
-src/hooks/      useIsClient, useMediaQuery, useInfiniteScrollTrigger
-src/lib/        api/ (api-fetch, api-error, query-client)  auth/ (session, route-access)
-                navigation/ (use-overlay, overlay-keys, nav-depth, use-app-back)  bridge/  realtime/
-                seo/ (metadata, seo-flags)  format/ (time KST, number "1.2천", text counts)  browser/ (safe-storage)  policy.ts
-src/stores/     Zustand (no server data, no overlays)
-src/mocks/      core/ (define, viewer)  fixtures/  pages/pNN-*.ts  routes.ts  mock-fetch.ts  mock-realtime.ts — dev data, ch. 1-2
-src/features/mock/  MockRoleSwitcher (mock mode only)   public/mock/  placeholder images
-src/styles/     globals.css  tokens.css  tokens/{color,typography,layout}.css
+hooks/          useIsClient, useMediaQuery, useInfiniteScrollTrigger
+lib/            api/  auth/  navigation/  bridge/  realtime/  seo/  format/  browser/  policy.ts
+stores/         Zustand (no server data, no overlays)
+mocks/          core/  fixtures/  pages/pNN-*.ts  routes.ts  mock-fetch.ts  mock-realtime.ts — ch. 1-2
+features/mock/  MockRoleSwitcher (mock mode only)   public/mock/  placeholder images
+styles/         globals.css  tokens.css  tokens/{color,typography,layout}.css
+assets/         fonts
 ```
+Path alias `@/*` maps to `apps/web/*` (see `tsconfig.json`).
 
 ### 3-4. One page folder
-`page.tsx` (server: params, prefetch, `generateMetadata`, landmarks) · `loading.tsx` (same landmarks) · `_lib/get-*.ts` (React `cache()`) · `_views/` (only for per-role screens) · `_components/` (server frames + small client leaves, e.g. `comment-section.tsx` server → `comment-form.tsx` client) · `page.test.tsx`.
+`page.tsx` (server: params, prefetch, `generateMetadata`, landmarks) · `loading.tsx` (same landmarks) · `_lib/get-*.ts` (React `cache()`) · `_views/` (PascalCase view files for per-role screens) · `_components/<kebab-unit>/` (view + `api.ts` + `hook.ts` + module CSS) · `page.test.tsx`.
 
 ## 4. Role separation and access guards
 ### 4-1. Reading the role
