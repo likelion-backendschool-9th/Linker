@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Strip Cursor agent attribution so GitHub does not list Cursor as a contributor.
-# Install once per clone: bash scripts/setup-git-hooks.sh
+# Strip AI agent attribution from commit messages (AGENTS.md "Git workflow").
+# Install once per clone: bash scripts/setup-git-hooks.sh (also runs on `pnpm install` in frontend/)
+# Keep the patterns in sync with scripts/check_pr_rules.py, which blocks the same marks in CI.
 set -euo pipefail
 
 msg_file="${1:-}"
@@ -8,7 +9,10 @@ if [[ -z "$msg_file" || ! -f "$msg_file" ]]; then
   exit 0
 fi
 
+agents='(claude|anthropic|cursor|copilot|codex|gemini|chatgpt|openai|devin|aider)'
 tmp="$(mktemp)"
-# Keep human co-authors; drop Cursor / Made-with Cursor trailers only.
-grep -viE '^(Co-authored-by:\s*Cursor\b|Made-with:\s*Cursor\b|Made with Cursor\b)' "$msg_file" >"$tmp" || true
+# Keep human co-authors; drop agent trailers and "Generated with ..." lines only.
+grep -viE "^[[:space:]]*(co-authored-by:.*${agents}|made[- ]with:?[[:space:]]*${agents}|.*generated[[:space:]]+(with|by)[[:space:]]+\[?${agents}|made with ${agents})" "$msg_file" >"$tmp" || true
+# Trim trailing blank lines left behind by removed trailers.
+sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp"
 mv "$tmp" "$msg_file"
