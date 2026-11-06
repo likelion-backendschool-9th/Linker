@@ -1,6 +1,6 @@
 # 2단계: JdbcTemplate → JPA 전환 (담당자별)
 
-상태: 시작 전 (1단계 #244, CI 규칙 #245는 머지됨)
+상태: 진행 중 (1단계 #244, CI 규칙 #245 머지. 2단계는 B #248, D #249, A #251 일부(URL 변경 #252) 머지, C는 `chore/issue-jpa`. 영역별 상태는 5절)
 
 대상 독자: 백엔드를 맡은 팀원 A–E. 각자 자기 영역 브랜치에서 진행한다.
 기준: 1단계 PR #244가 `dev`에 머지된 상태. 규칙의 원본은 루트 `AGENTS.md`(Entity and repository / Mandatory backend service rule)와 `docs/development/05-backend-blueprint.md` §3–§4. 이 문서는 그 규칙을 실제 파일에 대입한 실행 가이드다.
@@ -171,6 +171,8 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 
 선행: 2-1의 이슈 스키마 마이그레이션·Entity.
 테스트: `repository/issue/IssueReadIntegrationTest` 등이 JdbcTemplate 픽스처를 쓴다(7절 참고).
+
+**C 상태: 완료 (`chore/issue-jpa`)** — 위 9개 파일과 `IssueSyncLock` 전부. V22__issues.sql(이슈 테이블 5개), `entity/issue/` 5개, `IssueRepository`·`IssueSyncJobRepository`(Custom+Impl)·`TeamProgressSnapshotRepository`. 기록: [c-jpa-migration.md](../development/plans/c-jpa-migration.md).
 
 ### D (윤수님) — 채팅
 | 파일 | 호출 | 네이티브 후보 |

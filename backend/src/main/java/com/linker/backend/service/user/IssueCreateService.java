@@ -29,11 +29,8 @@ public class IssueCreateService {
   private final IssueTemplateService templates;
   private final UserIssueAccess access;
   private final IssueTemplateParser parser;
-  private final IssueContextRepository contexts;
-  private final IssueDetailRepository rows;
-  private final IssueCacheRepository cache;
-  private final IssueCreateJobRepository jobs;
-  private final IssueSyncLock locks;
+  private final IssueRepository issueRepository;
+  private final IssueSyncJobRepository syncJobs;
   private final GithubIssueClient github;
   private final GithubAppClient app;
   private final NotificationService notifications;
@@ -45,11 +42,8 @@ public class IssueCreateService {
       IssueTemplateService templates,
       UserIssueAccess access,
       IssueTemplateParser parser,
-      IssueContextRepository contexts,
-      IssueDetailRepository rows,
-      IssueCacheRepository cache,
-      IssueCreateJobRepository jobs,
-      IssueSyncLock locks,
+      IssueRepository issueRepository,
+      IssueSyncJobRepository syncJobs,
       GithubIssueClient github,
       GithubAppClient app,
       NotificationService notifications,
@@ -58,11 +52,8 @@ public class IssueCreateService {
     this.templates = templates;
     this.access = access;
     this.parser = parser;
-    this.contexts = contexts;
-    this.rows = rows;
-    this.cache = cache;
-    this.jobs = jobs;
-    this.locks = locks;
+    this.issueRepository = issueRepository;
+    this.syncJobs = syncJobs;
     this.github = github;
     this.app = app;
     this.notifications = notifications;
@@ -77,12 +68,11 @@ public class IssueCreateService {
         || request.repoId() <= 0
         || request.title() == null
         || request.title().isBlank()) throw invalid();
-    if (!jobs.ready()) throw IssueContextRepository.unavailable();
-    return locks.team(
+    return issueRepository.withTeamLock(
         team,
         () -> {
           String hash = requestHash(request);
-          var existing = jobs.existing(u.userId(), request.requestId());
+          var existing = syncJobs.existingCreation(u.userId(), request.requestId());
           if (existing != null) {
             if (existing.team() != team
                 || !json.readTree(existing.payload()).path("requestHash").asString().equals(hash))
@@ -158,31 +148,30 @@ public class IssueCreateService {
               tx.execute(
                   st -> {
                     recheck(u, s);
-                    return jobs.create(
+                    return syncJobs.queueCreation(
                         team,
                         u.userId(),
                         request.requestId(),
                         json.writeValueAsString(payload),
                         clock.instant());
                   });
-          var accepted = jobs.get(id);
+          var accepted = syncJobs.creation(id);
           if (accepted.team() != team
               || !json.readTree(accepted.payload()).path("requestHash").asString().equals(hash))
             throw conflict("같은 작성 요청의 내용이 달라졌어요");
           run(id);
-          return response(jobs.get(id));
+          return response(syncJobs.creation(id));
         });
   }
 
   public IssueCreateResponse progress(AuthenticatedUser u, long team, long id) {
     access.member(u, team);
-    if (!jobs.ready()) throw IssueContextRepository.unavailable();
-    var job = jobs.get(id);
+    var job = syncJobs.creation(id);
     if (job.team() != team) throw new ApiException(404, "NOT_FOUND", "생성 작업을 찾을 수 없어요");
     return response(job);
   }
 
-  private IssueCreateResponse response(IssueCreateJobRepository.Job job) {
+  private IssueCreateResponse response(IssuePersistenceView.CreationJob job) {
     var p = json.readTree(job.payload());
     boolean retry = job.status().equals("PENDING") || job.status().equals("RUNNING");
     return new IssueCreateResponse(
@@ -197,13 +186,13 @@ public class IssueCreateService {
   }
 
   public void retryDue() {
-    for (long id : jobs.due(clock.instant()))
+    for (long id : syncJobs.dueCreations(clock.instant()))
       try {
-        var j = jobs.get(id);
-        locks.team(
+        var j = syncJobs.creation(id);
+        issueRepository.withTeamLock(
             j.team(),
             () -> {
-              var now = jobs.get(id);
+              var now = syncJobs.creation(id);
               if (Set.of("PENDING", "RUNNING").contains(now.status())
                   && !now.retry().isAfter(clock.instant())) run(id);
               return null;
@@ -214,17 +203,17 @@ public class IssueCreateService {
   }
 
   private void run(long id) {
-    var job = jobs.get(id);
+    var job = syncJobs.creation(id);
     if (Set.of("DONE", "FAILED").contains(job.status())) return;
     if (job.attempts() >= MAX_ATTEMPTS) {
       fail(id, true, "RETRY_EXHAUSTED", 60);
       return;
     }
-    tx.executeWithoutResult(st -> jobs.start(id, clock.instant().plusSeconds(600)));
+    tx.executeWithoutResult(st -> syncJobs.startCreation(id, clock.instant().plusSeconds(600)));
     ObjectNode p = (ObjectNode) json.readTree(job.payload());
     Long local = job.issue();
     try {
-      var u = rows.actor(job.actor());
+      var u = issueRepository.actor(job.actor());
       var s = templates.select(u, job.team(), p.path("repoId").asLong());
       writable(u, s);
       if (!connection(s).equals(p.path("connection").asString()))
@@ -396,19 +385,19 @@ public class IssueCreateService {
     return tx.execute(
         st -> {
           recheck(u, s);
-          cache.apply(
+          issueRepository.apply(
               s.context(),
               new IssueSource.Snapshot(
                   List.of(new IssueSource.RepositoryIssues(s.repo(), List.of(issue))), items),
               false,
               clock.instant());
-          Long id = rows.linkedId(s.context().teamId(), issue.githubId());
+          Long id = issueRepository.linkedId(s.context().teamId(), issue.githubId());
           if (id == null) throw conflict("생성된 이슈 연결을 확인하지 못했어요");
-          jobs.markOrigin(id, u.userId(), finish);
-          jobs.checkpoint(job, json.writeValueAsString(p), id);
+          issueRepository.markCreatedViaLinker(id, u.userId(), finish);
+          syncJobs.checkpointCreation(job, json.writeValueAsString(p), id);
           if (finish) {
             for (var a : issue.assignees()) {
-              var person = jobs.recipients(s.context().teamId(), a.githubId());
+              var person = issueRepository.assigneeRecipients(s.context().teamId(), a.githubId());
               for (long recipient : person)
                 if (recipient != u.userId())
                   notifications.create(
@@ -422,23 +411,23 @@ public class IssueCreateService {
                           null,
                           "issue-create:" + job + ":" + recipient));
             }
-            jobs.done(job, id);
+            syncJobs.finishCreation(job, id);
           }
           return id;
         });
   }
 
   private void checkpoint(long id, ObjectNode p, Long issue) {
-    tx.executeWithoutResult(st -> jobs.checkpoint(id, json.writeValueAsString(p), issue));
+    tx.executeWithoutResult(st -> syncJobs.checkpointCreation(id, json.writeValueAsString(p), issue));
   }
 
   private void fail(long id, boolean terminal, String code, long seconds) {
     tx.executeWithoutResult(
-        st -> jobs.failed(id, terminal, code, clock.instant().plusSeconds(seconds)));
+        st -> syncJobs.failCreation(id, terminal, code, clock.instant().plusSeconds(seconds)));
   }
 
   private void writable(AuthenticatedUser u, Selection s) {
-    if (rows.actor(u.userId()).status() != UserStatus.ACTIVE)
+    if (issueRepository.actor(u.userId()).status() != UserStatus.ACTIVE)
       throw new ApiException(403, "SUSPENDED", "정지된 계정은 이슈를 만들 수 없어요");
     if (!s.context().writable()) throw conflict("읽기 전용 팀이에요");
     if (!github.canWrite(s.repo(), u.userId()))
@@ -447,9 +436,9 @@ public class IssueCreateService {
 
   private void recheck(AuthenticatedUser u, Selection s) {
     access.member(u, s.context().teamId());
-    if (rows.actor(u.userId()).status() != UserStatus.ACTIVE)
+    if (issueRepository.actor(u.userId()).status() != UserStatus.ACTIVE)
       throw new ApiException(403, "SUSPENDED", "계정 상태가 바뀌었어요");
-    if (!contexts.get(s.context().teamId()).equals(s.context())) throw conflict("팀 연결 정보가 바뀌었어요");
+    if (!issueRepository.context(s.context().teamId()).equals(s.context())) throw conflict("팀 연결 정보가 바뀌었어요");
   }
 
   private void validateLabels(Selection s, List<String> labels) {

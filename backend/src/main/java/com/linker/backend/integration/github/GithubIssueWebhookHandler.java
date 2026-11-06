@@ -2,12 +2,10 @@ package com.linker.backend.integration.github;
 
 import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.global.error.ApiException;
-import com.linker.backend.repository.issue.IssueContextRepository;
+import com.linker.backend.repository.issue.IssueRepository;
 import com.linker.backend.service.user.IssueSyncService;
-import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -16,15 +14,13 @@ import tools.jackson.databind.json.JsonMapper;
 @ConditionalOnProperty(name = "linker.issues.webhook-enabled", havingValue = "true")
 public class GithubIssueWebhookHandler implements GithubWebhookHandler {
   private final IssueSyncService sync;
-  private final IssueContextRepository contexts;
-  private final NamedParameterJdbcTemplate jdbc;
+  private final IssueRepository issueRepository;
   private final JsonMapper json = JsonMapper.builder().build();
 
   public GithubIssueWebhookHandler(
-      IssueSyncService sync, IssueContextRepository contexts, NamedParameterJdbcTemplate jdbc) {
+      IssueSyncService sync, IssueRepository issueRepository) {
     this.sync = sync;
-    this.contexts = contexts;
-    this.jdbc = jdbc;
+    this.issueRepository = issueRepository;
   }
 
   @Override
@@ -34,8 +30,8 @@ public class GithubIssueWebhookHandler implements GithubWebhookHandler {
 
   @Override
   public void handle(GithubWebhookDelivery delivery) {
-    if (!supports(delivery.getEvent()) || delivery.getInstallationId() == null || !contexts.ready())
-      throw IssueContextRepository.unavailable();
+    if (!supports(delivery.getEvent()) || delivery.getInstallationId() == null)
+      throw IssueRepository.unavailable();
     var payload = json.readTree(delivery.getPayload());
     if (!payload.isObject()
         || !payload.path("action").isString()
@@ -44,16 +40,10 @@ public class GithubIssueWebhookHandler implements GithubWebhookHandler {
     if (!action.equals(delivery.getAction())
         || payload.path("installation").path("id").asLong(0) != delivery.getInstallationId())
       throw invalid();
-    var candidates =
-        jdbc.queryForList(
-            "SELECT t.id FROM teams t JOIN github_installations gi ON gi.id=t.installation_id WHERE"
-                + " gi.github_installation_id=:installation AND gi.removed_at IS NULL AND"
-                + " gi.suspended_at IS NULL AND t.status<>'DELETED'",
-            Map.of("installation", delivery.getInstallationId()),
-            Long.class);
+    var candidates = issueRepository.webhookTeams(delivery.getInstallationId());
     boolean matched = false;
     for (long teamId : candidates) {
-      var ctx = contexts.get(teamId);
+      var ctx = issueRepository.context(teamId);
       if (payload.has("organization")
           && (!payload.path("organization").path("id").isIntegralNumber()
               || payload.path("organization").path("id").asLong(0) != ctx.orgId())) throw invalid();
@@ -99,7 +89,7 @@ public class GithubIssueWebhookHandler implements GithubWebhookHandler {
       matched = true;
       sync.fullSync(teamId);
     }
-    if (!matched) throw IssueContextRepository.unavailable();
+    if (!matched) throw IssueRepository.unavailable();
   }
 
   private static ApiException invalid() {
