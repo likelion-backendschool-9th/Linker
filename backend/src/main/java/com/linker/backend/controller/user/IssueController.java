@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
       description = "SERVICE_UNAVAILABLE")
 })
 @RestController("userIssueController")
-@RequestMapping("/user/teams/{teamId}")
+@RequestMapping("/user")
 public class IssueController {
   @org.springframework.web.bind.annotation.ExceptionHandler(
       {org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
@@ -70,7 +70,22 @@ public class IssueController {
     this.progress = progress;
   }
 
-  @GetMapping("/issues")
+  @GetMapping("/me/issues")
+  @DeveloperOnly
+  @Tag(name = "p07-workspace")
+  @Operation(
+      operationId = "getMyIssues",
+      summary = "선택한 팀에서 나에게 배정된 열린 이슈 조회",
+      description =
+          "내가 속한 팀만 고를 수 있다(아니면 400). 마감 지남(오래된 순) → 마감 임박 → 마감 없음 순으로 전부 반환한다.")
+  public ResponseEntity<com.linker.backend.dto.issue.response.MyIssuesResponse> myIssues(
+      @AuthenticationPrincipal AuthenticatedUser user, @RequestParam long teamId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.myIssues(user, teamId));
+  }
+
+  @GetMapping("/teams/{teamId}/issues")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
   @Operation(operationId = "listTeamIssues", summary = "팀 이슈 목록 조회")
@@ -94,7 +109,7 @@ public class IssueController {
                 false));
   }
 
-  @GetMapping("/issues/unscheduled")
+  @GetMapping("/teams/{teamId}/issues/unscheduled")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
   @Operation(operationId = "listUnscheduledTeamIssues", summary = "일정 없는 팀 이슈 조회")
@@ -113,7 +128,7 @@ public class IssueController {
                 true));
   }
 
-  @GetMapping("/board")
+  @GetMapping("/teams/{teamId}/board")
   @DeveloperOnly
   @Tag(name = "p14-board")
   @Operation(operationId = "getTeamIssueBoard", summary = "팀 상태 보드 조회")
@@ -135,7 +150,7 @@ public class IssueController {
                     repo, null, assignee, label, open, null, IssueListQuery.MAX_SIZE)));
   }
 
-  @GetMapping("/issue-filters")
+  @GetMapping("/teams/{teamId}/issue-filters")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
   @Operation(operationId = "getTeamIssueFilterOptions", summary = "팀 이슈 필터 선택지 조회")
@@ -146,7 +161,7 @@ public class IssueController {
         .body(issues.options(user, teamId));
   }
 
-  @org.springframework.web.bind.annotation.PostMapping("/issues/refresh")
+  @org.springframework.web.bind.annotation.PostMapping("/teams/{teamId}/issues/refresh")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
   @Operation(operationId = "refreshTeamIssues", summary = "현재 필터에 해당하는 이슈 갱신")
@@ -166,7 +181,7 @@ public class IssueController {
         .body(sync.refresh(user, teamId, query, "unscheduled".equals(view)));
   }
 
-  @org.springframework.web.bind.annotation.PostMapping("/issues/{issueId}/project-item")
+  @org.springframework.web.bind.annotation.PostMapping("/teams/{teamId}/issues/{issueId}/project-item")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
   @Operation(operationId = "addTeamIssueToProject", summary = "팀 프로젝트에 이슈 추가")
@@ -182,7 +197,7 @@ public class IssueController {
     return ResponseEntity.noContent().build();
   }
 
-  @GetMapping("/progress")
+  @GetMapping("/teams/{teamId}/progress")
   @DeveloperOnly
   @Tag(name = "p11-issue-list")
   @Operation(operationId = "getTeamIssueProgress", summary = "Flex 팀 진행 현황 조회")
@@ -201,7 +216,7 @@ public class IssueController {
                     : days));
   }
 
-  @GetMapping("/issues/{issueId}")
+  @GetMapping("/teams/{teamId}/issues/{issueId}")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "detailTeamIssue", summary = "이슈 상세 조회")
@@ -214,7 +229,7 @@ public class IssueController {
         .body(issues.detail(user, teamId, issueId));
   }
 
-  @GetMapping("/issues/{issueId}/assignee-candidates")
+  @GetMapping("/teams/{teamId}/issues/{issueId}/assignee-candidates")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "candidatesTeamIssue", summary = "이슈 담당자 후보 조회")
@@ -227,7 +242,7 @@ public class IssueController {
         .body(issues.candidates(user, teamId, issueId));
   }
 
-  @GetMapping("/issues/{issueId}/label-options")
+  @GetMapping("/teams/{teamId}/issues/{issueId}/label-options")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "labelOptionsTeamIssue", summary = "저장소 라벨 선택지 조회")
@@ -240,7 +255,7 @@ public class IssueController {
         .body(issues.labelOptions(user, teamId, issueId));
   }
 
-  @GetMapping("/issues/{issueId}/sub-issues")
+  @GetMapping("/teams/{teamId}/issues/{issueId}/sub-issues")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "subIssuesTeamIssue", summary = "하위 이슈 진행 조회")
@@ -253,7 +268,7 @@ public class IssueController {
         .body(issues.subIssues(user, teamId, issueId));
   }
 
-  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/assignees")
+  @org.springframework.web.bind.annotation.PutMapping("/teams/{teamId}/issues/{issueId}/assignees")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "updateTeamIssueAssignees", summary = "이슈 담당자 변경")
@@ -268,7 +283,7 @@ public class IssueController {
         .body(issues.assignees(user, teamId, issueId, request.userIds()));
   }
 
-  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/labels")
+  @org.springframework.web.bind.annotation.PutMapping("/teams/{teamId}/issues/{issueId}/labels")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "updateTeamIssueLabels", summary = "이슈 라벨 변경")
@@ -283,7 +298,7 @@ public class IssueController {
         .body(issues.labels(user, teamId, issueId, request.labels()));
   }
 
-  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/schedule")
+  @org.springframework.web.bind.annotation.PutMapping("/teams/{teamId}/issues/{issueId}/schedule")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "updateTeamIssueSchedule", summary = "이슈 시작일·마감일 변경")
@@ -298,7 +313,7 @@ public class IssueController {
         .body(issues.schedule(user, teamId, issueId, request.startDate(), request.dueDate()));
   }
 
-  @org.springframework.web.bind.annotation.PutMapping("/issues/{issueId}/status")
+  @org.springframework.web.bind.annotation.PutMapping("/teams/{teamId}/issues/{issueId}/status")
   @DeveloperOnly
   @Tag(name = "p12-issue-detail")
   @Operation(operationId = "updateTeamIssueStatus", summary = "이슈 상태 변경")
@@ -313,7 +328,7 @@ public class IssueController {
         .body(issues.status(user, teamId, issueId, request.status()));
   }
 
-  @GetMapping("/issue-templates")
+  @GetMapping("/teams/{teamId}/issue-templates")
   @DeveloperOnly
   @Tag(name = "p13-issue-create")
   @Operation(operationId = "listIssueTemplates", summary = "이슈 템플릿과 작성 선택지 조회")
@@ -327,7 +342,7 @@ public class IssueController {
         .body(issues.templates(u, teamId, repoId));
   }
 
-  @GetMapping("/issue-templates/{templateKey}")
+  @GetMapping("/teams/{teamId}/issue-templates/{templateKey}")
   @DeveloperOnly
   @Tag(name = "p13-issue-create")
   @Operation(operationId = "getIssueTemplate", summary = "이슈 템플릿 내용 조회")
@@ -341,7 +356,7 @@ public class IssueController {
         .body(issues.template(u, teamId, repoId, templateKey));
   }
 
-  @org.springframework.web.bind.annotation.PostMapping("/issues")
+  @org.springframework.web.bind.annotation.PostMapping("/teams/{teamId}/issues")
   @DeveloperOnly
   @Tag(name = "p13-issue-create")
   @Operation(operationId = "createTeamIssue", summary = "GitHub 이슈 생성과 보드 반영 요청")
@@ -358,7 +373,7 @@ public class IssueController {
         .body(issues.create(u, teamId, request));
   }
 
-  @GetMapping("/issue-sync-jobs/{jobId}")
+  @GetMapping("/teams/{teamId}/issue-sync-jobs/{jobId}")
   @DeveloperOnly
   @Tag(name = "p13-issue-create")
   @Operation(operationId = "getIssueCreationProgress", summary = "이슈 생성 진행 상태 조회")
@@ -371,7 +386,7 @@ public class IssueController {
         .body(issues.creationProgress(u, teamId, jobId));
   }
 
-  @GetMapping("/calendar")
+  @GetMapping("/teams/{teamId}/calendar")
   @DeveloperOnly
   @Tag(name = "p15-calendar")
   @Operation(operationId = "getTeamIssueCalendar", summary = "팀 캘린더 기간별 이슈 조회")

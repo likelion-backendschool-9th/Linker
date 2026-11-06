@@ -29,3 +29,42 @@ export const GetMyTeamsResponse = zod.object({
   "nextCursor": zod.string().nullable().describe('개인 소속 팀 전체 목록이므로 다음 커서 없음')
 })
 
+/**
+ * 내가 속한 팀만 고를 수 있다(아니면 400). 마감 지남(오래된 순) → 마감 임박 → 마감 없음 순으로 전부 반환한다.
+ * @summary 선택한 팀에서 나에게 배정된 열린 이슈 조회
+ */
+export const GetMyIssuesQueryParams = zod.object({
+  "teamId": zod.int()
+})
+
+export const GetMyIssuesResponse = zod.object({
+  "teamId": zod.int(),
+  "items": zod.array(zod.object({
+  "id": zod.int(),
+  "number": zod.int(),
+  "repoId": zod.int(),
+  "repoName": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "state": zod.enum(['OPEN', 'CLOSED']),
+  "assignees": zod.array(zod.object({
+  "id": zod.int().nullable(),
+  "login": zod.string(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullable(),
+  "inTeam": zod.boolean()
+})),
+  "labels": zod.array(zod.object({
+  "name": zod.string(),
+  "color": zod.string()
+})),
+  "startDate": zod.iso.date().nullable(),
+  "dueDate": zod.iso.date().nullable(),
+  "overdue": zod.boolean(),
+  "inProject": zod.boolean(),
+  "scheduleSyncFailed": zod.boolean(),
+  "syncStatus": zod.enum(['SYNCED', 'PENDING', 'FAILED']),
+  "syncedAt": zod.iso.datetime({"offset":true}).nullable()
+}))
+})
+
