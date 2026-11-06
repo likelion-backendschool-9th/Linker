@@ -37,7 +37,7 @@ public class WorkspaceTeamRepository {
 				 where issue.team_id = t.id and issue.state = 'OPEN' and issue.deleted_at is null)
 				""" : "cast(null as bigint)";
 		// Page-16 unread semantics: read pointer, excluding self; team chat ignores blocks.
-		// Hidden/deleted message placeholders still count, as in ChatListQueryRepository.
+		// Hidden/deleted message placeholders still count, as in ChatRoomRepositoryImpl.
 		return jdbc.query("""
 				select t.id, t.name, t.avatar_url, t.status, mine.role, mine.joined_at,
 				       (select count(*) from team_members member
