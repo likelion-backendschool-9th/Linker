@@ -1194,7 +1194,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | --- | --- |
 | room_type | TEAM uses `team_id` (UK), DIRECT uses `dm_key` (UK) |
 | dm_key | The two user ids joined as small:large. Ensures only one room per pair |
-| dm_status | ACCEPTED from the start for mutual follows or teammates. Otherwise REQUESTED (first message only) → ACCEPTED / REJECTED / EXPIRED (30 days) |
+| dm_status | ACCEPTED from the start for mutual follows or teammates. Otherwise REQUESTED (first message only) → ACCEPTED / REJECTED / EXPIRED (30 days). The pair keeps one row: a later request after expiry, 30 days after a rejection, or from the person who rejected reopens it as REQUESTED (`requester_id` and `request_expires_at` reset); becoming mutual follows or teammates turns it ACCEPTED |
 | last_message_id, last_message_at | Denormalized latest message. Page 16 list still computes the viewer-visible message. Text send writes the pointer only after checking the message is in that room. An edit does not move this pointer. `team_id` has no FK until `teams` exists (page 08). V3 adds `client_message_id` (unique with `sender_id`). `payload` stays deferred. V10 adds `edited_at` |
 | request_kind | Drives the "채용 제안" (Recruiting offer) label in the request inbox. RECRUITING for rooms created by recruiters, otherwise GENERAL. Kept after acceptance for stats (offer acceptance rate) and the recruiter my page "보낸 채용 제안" (Sent offers) list. List status maps dm_status for display: ACCEPTED → 대화 중 (In conversation), REQUESTED / REJECTED (within 30 days) → 응답 대기 (Awaiting reply), EXPIRED / REJECTED (after 30 days) → 응답 없음 (No reply). Index `(requester_id, request_kind, created_at desc)`. 10/day (Scout 50) limit in Redis |
 

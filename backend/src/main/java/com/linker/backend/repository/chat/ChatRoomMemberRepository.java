@@ -39,4 +39,11 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 			order by m.userId
 			""")
 	List<ChatRoomMember> findActiveInRoom(@Param("roomId") long roomId);
+
+	/** Includes a row that left; the pair is unique per room and user. */
+	@Query("""
+			select m from ChatRoomMember m
+			where m.room.id = :roomId and m.userId = :userId
+			""")
+	Optional<ChatRoomMember> findAnyInRoom(@Param("roomId") long roomId, @Param("userId") long userId);
 }

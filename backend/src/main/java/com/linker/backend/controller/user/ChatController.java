@@ -7,7 +7,9 @@ import com.linker.backend.dto.chat.request.EditChatMessageRequest;
 import com.linker.backend.dto.chat.request.MarkChatReadRequest;
 import com.linker.backend.dto.chat.request.UpdateChatNotificationRequest;
 import com.linker.backend.dto.chat.request.ShareChatCardRequest;
+import com.linker.backend.dto.chat.request.StartDirectChatRequest;
 import com.linker.backend.dto.chat.response.AcceptChatRequestResponse;
+import com.linker.backend.dto.chat.response.StartDirectChatResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
@@ -18,6 +20,7 @@ import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.realtime.StompPrincipal;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.global.security.DeveloperOnly;
 import com.linker.backend.service.user.ChatService;
 
 import io.swagger.v3.oas.annotations.Hidden;
@@ -196,6 +199,18 @@ public class ChatController {
 	) {
 		chat.leave(user, roomId);
 		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/chat-rooms/direct")
+	@DeveloperOnly
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "startDirectChat")
+	@ApiResponse(responseCode = "200", description = "DIRECT room, a REQUEST room, or REQUEST with no room when a first message is needed")
+	public ResponseEntity<StartDirectChatResponse> startDirect(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestBody StartDirectChatRequest request
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.startDirect(user, request));
 	}
 
 	@PostMapping("/chat-requests/{roomId}/accept")

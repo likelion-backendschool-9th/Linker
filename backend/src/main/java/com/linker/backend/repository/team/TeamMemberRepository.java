@@ -17,4 +17,14 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
   List<TeamRole> findCurrentAccessRoles(long userId, long teamId);
 
   List<TeamMember> findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(long teamId);
+
+  /** Both people are current members of one team that is not deleted (POL-C-4 "same team"). */
+  @Query("""
+      select count(t) > 0 from TeamMember a, TeamMember b, Team t
+      where a.teamId = b.teamId and t.id = a.teamId
+        and a.userId = :firstUserId and b.userId = :secondUserId
+        and a.leftAt is null and b.leftAt is null
+        and t.status <> 'DELETED'
+      """)
+  boolean existsSharedTeam(long firstUserId, long secondUserId);
 }
