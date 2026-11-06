@@ -84,6 +84,7 @@ public class UserAccountService {
 	private final UserSessionRepository sessions;
 	private final FollowRepository follows;
 	private final UserNotificationService notifications;
+	private final UserPostService posts;
 	private final GithubTokenRepository githubTokens;
 	private final GithubTokenCipher githubCipher;
 	private final GithubUserAuthClient githubUsers;
@@ -101,6 +102,7 @@ public class UserAccountService {
 			UserSessionRepository sessions,
 			FollowRepository follows,
 			UserNotificationService notifications,
+			UserPostService posts,
 			GithubTokenRepository githubTokens,
 			GithubTokenCipher githubCipher,
 			GithubUserAuthClient githubUsers,
@@ -116,6 +118,7 @@ public class UserAccountService {
 		this.sessions = sessions;
 		this.follows = follows;
 		this.notifications = notifications;
+		this.posts = posts;
 		this.githubTokens = githubTokens;
 		this.githubCipher = githubCipher;
 		this.githubUsers = githubUsers;
@@ -241,12 +244,13 @@ public class UserAccountService {
 
 	/**
 	 * Pending withdrawal older than {@link PlanLimits#ACCOUNT_WITHDRAWAL_DAYS}.
-	 * Posts and comments are deleted from this same batch once those tables exist.
+	 * Posts and comments are removed here. Team chat already shows "탈퇴한 사용자" once the account is deleted.
 	 */
 	@Transactional
 	public void anonymizeExpiredWithdrawals(Instant now) {
 		Instant deadline = now.minus(PlanLimits.ACCOUNT_WITHDRAWAL_DAYS, ChronoUnit.DAYS);
 		for (User user : users.findByStatusAndWithdrawRequestedAtLessThanEqual(UserStatus.WITHDRAWING, deadline)) {
+			posts.deleteAuthoredContent(user.getId(), now);
 			user.anonymize(now);
 			sessions.revokeActive(user.getId(), now);
 		}

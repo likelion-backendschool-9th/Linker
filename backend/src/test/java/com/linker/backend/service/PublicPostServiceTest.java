@@ -205,6 +205,34 @@ class PublicPostServiceTest {
 	}
 
 	@Test
+	void profilePostsListsVisibleCardsAndHidesABlockedAuthor() {
+		User author = User.create("octocat", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 7L);
+		when(users.findByUsername("octocat")).thenReturn(Optional.of(author));
+		when(posts.findVisibleByAuthorId(7L)).thenReturn(List.of(postWithId(5L, 7L, PostVisibility.VISIBLE, NOW)));
+		when(authors.toAuthor(any())).thenReturn(
+				new AuthorBriefResponse(7L, "octocat", "octocat", "", "DEVELOPER", "OFF"));
+
+		assertThat(service.profilePosts("octocat").items()).extracting(item -> item.id()).containsExactly(5L);
+
+		setViewer(3L, "other");
+		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(3L, 7L)).thenReturn(true);
+		assertThatThrownBy(() -> service.profilePosts("octocat"))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("볼 수 없는 프로필");
+	}
+
+	@Test
+	void profilePostsReturnsNothingForARecruiter() {
+		User recruiter = User.create("r-1", UserType.RECRUITER);
+		ReflectionTestUtils.setField(recruiter, "id", 8L);
+		when(users.findByUsername("r-1")).thenReturn(Optional.of(recruiter));
+
+		assertThat(service.profilePosts("r-1").items()).isEmpty();
+		verify(posts, never()).findVisibleByAuthorId(anyLong());
+	}
+
+	@Test
 	void feedOffersOnlyExcludesOffSeekingAuthors() {
 		Post open = postWithId(1L, 10L, PostVisibility.VISIBLE, NOW);
 		ReflectionTestUtils.setField(open.getAuthor(), "jobSeekingStatus",

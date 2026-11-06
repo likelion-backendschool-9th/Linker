@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { PublicProfile } from '@/features/profile/profile-types';
 
 import { RecruiterAdPanel } from '../_components/recruiter-ad-panel';
+import { RecruiterOfferSummary } from '../_components/recruiter-offer-summary';
 import styles from '../_components/profile.module.css';
 
 export function RecruiterMyPageView({ profile }: { profile: PublicProfile }) {
@@ -51,6 +52,7 @@ export function RecruiterMyPageView({ profile }: { profile: PublicProfile }) {
           </li>
         </ul>
       </header>
+      <RecruiterOfferSummary />
       <RecruiterAdPanel />
     </article>
   );

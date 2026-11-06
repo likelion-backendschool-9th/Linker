@@ -28,6 +28,7 @@ import com.linker.backend.dto.post.response.PostRepoCardResponse;
 import com.linker.backend.dto.recruit.response.CursorPage;
 import com.linker.backend.entity.account.JobSeekingStatus;
 import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
 import com.linker.backend.entity.post.Comment;
 import com.linker.backend.entity.post.Post;
@@ -187,6 +188,31 @@ public class PublicPostService {
 			items.add(toComment(row));
 		}
 		return new CommentListResponse(items);
+	}
+
+	/** Profile post list (page 04). Pin order waits until `pinned_posts` exists. */
+	@Transactional(readOnly = true)
+	public PostCardListResponse profilePosts(String login) {
+		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
+		if (login == null || login.isBlank()) {
+			throw new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요");
+		}
+		User author = users.findByUsername(login.trim())
+				.filter(user -> user.getStatus() != UserStatus.DELETED && user.getDeletedAt() == null)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		if (viewer != null && viewer.userId() != author.getId() && blocked(viewer.userId(), author.getId())) {
+			throw new ApiException(404, "NOT_FOUND", "볼 수 없는 프로필");
+		}
+		if (author.getUserType() != UserType.DEVELOPER) {
+			return new PostCardListResponse(List.of());
+		}
+		List<PostCardResponse> items = new ArrayList<>();
+		for (Post post : posts.findVisibleByAuthorId(author.getId())) {
+			post.getImages().size();
+			post.getTags().size();
+			items.add(toCard(post));
+		}
+		return new PostCardListResponse(items);
 	}
 
 	@Transactional(readOnly = true)

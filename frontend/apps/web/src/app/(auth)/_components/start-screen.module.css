@@ -88,6 +88,23 @@
   align-items: center;
 }
 
+.recruiter {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-sm) 0 0;
+}
+
+.recruiter a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  text-decoration: underline;
+}
+
 @media (min-width: 600px) {
   .content {
     padding: var(--space-xxl);

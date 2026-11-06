@@ -10,6 +10,8 @@ import type { PublicProfile } from '@/features/profile/profile-types';
 import { profileQueryKey } from '@/features/profile/profile-types';
 
 import { ContributionCalendar } from '../_components/contribution-calendar';
+import { ProfilePosts } from '../_components/profile-posts';
+import { ProfileTeams } from '../_components/profile-teams';
 import styles from '../_components/profile.module.css';
 
 export function DeveloperProfileView({
@@ -98,6 +100,8 @@ export function DeveloperProfileView({
         )}
       </section>
 
+      <ProfilePosts login={profile.login} />
+      <ProfileTeams login={profile.login} />
       <ContributionCalendar login={profile.login} />
     </article>
   );

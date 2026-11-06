@@ -41,6 +41,15 @@ public class PublicPostController {
 				.body(posts.feed(cursor, offersOnly));
 	}
 
+	@GetMapping("/users/{login}/posts")
+	@Tag(name = "p04-profile")
+	@Operation(operationId = "listPublicPosts")
+	public ResponseEntity<PostCardListResponse> profilePosts(@PathVariable String login) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.profilePosts(login));
+	}
+
 	@GetMapping("/posts/{postId}")
 	@Operation(tags = {"p23-post-detail"})
 	public ResponseEntity<PostDetailResponse> detail(

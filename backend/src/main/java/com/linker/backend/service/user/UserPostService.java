@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -381,9 +382,41 @@ public class UserPostService {
 		if (!isCommentAuthor && !isPostOwner) {
 			throw new ApiException(403, "FORBIDDEN", "댓글을 삭제할 수 없어요");
 		}
-		boolean hasReplies = comments.countByParentId(commentId) > 0;
-		if (hasReplies) {
-			comment.softDelete(clock.instant());
+		eraseComment(comment, post, clock.instant());
+	}
+
+	/**
+	 * Page 06 withdrawal batch. Deletes this member's posts and comments.
+	 * A comment that still has replies stays as a deleted placeholder.
+	 */
+	@Transactional
+	public void deleteAuthoredContent(long userId, Instant now) {
+		List<Comment> authored = new ArrayList<>(comments.findByAuthorId(userId));
+		authored.sort(Comparator.comparing(comment -> comment.getParent() == null));
+		for (Comment comment : authored) {
+			Post post = comment.getPost();
+			if (comment.isDeleted() || post.getAuthor().getId() == userId) {
+				continue;
+			}
+			eraseComment(comment, post, now);
+		}
+		for (Post post : posts.findByAuthor_Id(userId)) {
+			if (post.getDeletedAt() != null) {
+				continue;
+			}
+			for (Comment comment : comments.findByPostIdOrderByIdAsc(post.getId())) {
+				if (!comment.isDeleted()) {
+					comment.softDelete(now);
+				}
+			}
+			likes.deleteByPostId(post.getId());
+			post.softDelete(now);
+		}
+	}
+
+	private void eraseComment(Comment comment, Post post, Instant now) {
+		if (comments.countByParentId(comment.getId()) > 0) {
+			comment.softDelete(now);
 		}
 		else {
 			comments.delete(comment);

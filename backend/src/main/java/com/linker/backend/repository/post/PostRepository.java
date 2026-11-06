@@ -14,6 +14,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
 	boolean existsByAuthorIdAndRepoIdAndDeletedAtIsNull(long authorId, long repoId);
 
+	List<Post> findByAuthor_Id(long authorId);
+
+	@Query("""
+			select p from Post p
+			join fetch p.repo
+			join fetch p.author
+			where p.author.id = :authorId
+			  and p.deletedAt is null
+			  and p.visibility = com.linker.backend.entity.post.PostVisibility.VISIBLE
+			order by p.createdAt desc, p.id desc
+			""")
+	List<Post> findVisibleByAuthorId(@Param("authorId") long authorId);
+
 	@Query("""
 			select p.repo.id from Post p
 			where p.author.id = :authorId
