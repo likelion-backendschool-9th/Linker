@@ -1,0 +1,111 @@
+'use client';
+
+import { Check, ChevronDown, Users } from 'lucide-react';
+import Image from 'next/image';
+
+import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
+import { OverlayLink } from '@/components/overlay/overlay-link/OverlayLink';
+import { Button } from '@/components/ui/button/Button';
+import { EmptyState } from '@/components/ui/empty-state/EmptyState';
+import { ErrorState } from '@/components/ui/error-state/ErrorState';
+import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import styles from '@/features/teams/team-ui.module.css';
+import { teamEntryHref } from '@/features/teams/team-entry';
+
+import { useTeamSwitcher } from './hook';
+
+const STATUS_LABELS = {
+  ACTIVE: '활동 중',
+  COMPLETED: '완료',
+  READ_ONLY: '읽기 전용',
+  ARCHIVED: '보관됨',
+};
+
+export function TeamSwitcher({ teamId, name }: { teamId: string; name: string }) {
+  const { overlay, teams } = useTeamSwitcher();
+  return (
+    <OverlaySheet
+      overlay={overlay}
+      title="팀 전환"
+      description="이동할 팀을 선택해 주세요."
+      trigger={
+        <button type="button" className={styles.switcher} aria-label={`${name} 팀 전환`}>
+          {name}
+          <ChevronDown aria-hidden />
+          <span className="sr-only">팀 전환</span>
+        </button>
+      }
+    >
+      {teams.isPending ? (
+        <Skeleton count={3} />
+      ) : teams.isError ? (
+        <ErrorState onRetry={() => void teams.refetch()} />
+      ) : teams.data.items.length ? (
+        <ul className={styles.list}>
+          {teams.data.items.map((team) => {
+            const current = String(team.id) === teamId;
+            const href = teamEntryHref(team);
+            const content = (
+              <>
+                {team.orgAvatarUrl ? (
+                  <Image
+                    className={styles.avatar}
+                    src={team.orgAvatarUrl}
+                    alt=""
+                    width={40}
+                    height={40}
+                    sizes="40px"
+                  />
+                ) : (
+                  <Users size={40} aria-hidden className={styles.avatar} />
+                )}
+                <span className={styles.body}>
+                  {team.name}
+                  <span className={styles.meta}>
+                    {team.memberCount}명 · {STATUS_LABELS[team.status]}
+                  </span>
+                </span>
+                {current && (
+                  <>
+                    <Check aria-hidden />
+                    <span className="sr-only">현재 팀</span>
+                  </>
+                )}
+              </>
+            );
+            return (
+              <li key={team.id}>
+                {current ? (
+                  <button
+                    type="button"
+                    className={styles.picker}
+                    aria-current="true"
+                    onClick={overlay.close}
+                  >
+                    {content}
+                  </button>
+                ) : href ? (
+                  <OverlayLink overlay={overlay} href={href} className={styles.picker}>
+                    {content}
+                  </OverlayLink>
+                ) : (
+                  <div className={styles.picker} aria-disabled="true">
+                    {content}
+                    <span className={styles.meta}>채팅방을 찾지 못했어요</span>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <EmptyState title="참여 중인 팀이 없어요." />
+      )}
+      <Button asChild variant="outline">
+        <OverlayLink overlay={overlay} href="/workspace">
+          워크스페이스로 가기
+        </OverlayLink>
+      </Button>
+    </OverlaySheet>
+  );
+}

@@ -2,7 +2,7 @@ import { defineConfig } from 'orval';
 
 // springdoc /v3/api-docs → one file per controller @Tag (= page) (blueprint §2-1)
 const mutator = {
-  path: '../../apps/web/src/lib/api/api-fetch.ts',
+  path: '../../apps/web/lib/api/api-fetch.ts',
   name: 'apiFetch',
 } as const;
 

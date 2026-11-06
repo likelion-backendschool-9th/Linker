@@ -3,7 +3,7 @@ import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
-import { server } from './src/mocks/server';
+import { server } from './mocks/server';
 
 expect.extend(matchers);
 

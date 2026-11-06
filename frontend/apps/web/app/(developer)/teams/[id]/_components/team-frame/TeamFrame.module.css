@@ -1,0 +1,46 @@
+.team {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.avatar {
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+
+.name {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title);
+}
+
+/* Neutral badge (guide ch. 5) */
+.badge {
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.chat {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}

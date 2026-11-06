@@ -4,7 +4,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["../../apps/web/src/*"]
+      "@/*": ["../../apps/web/*"]
     }
   },
   "include": ["src", "orval.config.ts", "orval.pipeline.config.ts"]

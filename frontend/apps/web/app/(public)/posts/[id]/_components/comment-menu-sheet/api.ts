@@ -1,0 +1,1 @@
+/** Comment delete helpers live in `../../_lib/post-detail-queries`; import from the hook. */
