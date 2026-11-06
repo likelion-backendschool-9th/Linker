@@ -576,6 +576,7 @@ erDiagram
   users |o--o{ issue_assignees : "linked if Linker user"
   issues ||--o{ issue_labels : "labels"
   issues ||--o{ issue_sync_jobs : "GitHub sync retries"
+  teams ||--o{ issue_sync_jobs : "creation intent"
   teams ||--o{ pull_requests : "PRs"
   github_repos ||--o{ pull_requests : "repo"
   teams ||--o{ team_progress_snapshots : "progress snapshots"
@@ -621,8 +622,11 @@ erDiagram
   }
   issue_sync_jobs {
     bigint id PK
-    bigint issue_id FK
-    varchar step "ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN, SET_ASSIGNEES, SET_LABELS"
+    bigint issue_id FK "nullable until GitHub creation is confirmed"
+    bigint team_id FK "creation intent scope"
+    uuid request_key "unique with requested_by"
+    timestamptz created_at
+    varchar step "CREATE, ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN, SET_ASSIGNEES, SET_LABELS"
     jsonb payload
     varchar status "PENDING, RUNNING, DONE, FAILED"
     int attempts
@@ -1167,7 +1171,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 
 **issue_assignees**: Stores GitHub assignees as-is and links `user_id` if that GitHub user is a Linker member. If an assignee leaves the team, the row stays and the UI shows "팀 밖 사용자" (Outside the team).
 
-**issue_sync_jobs**: Page 12 also persists failed assignee/label edits as `SET_ASSIGNEES`/`SET_LABELS`; schedule/status jobs retain the full desired value and replay idempotently, then verify source reads. Retry attempts are bounded operationally; no token is stored in payload. Creating one issue needs 3–5 GitHub calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
+**issue_sync_jobs**: Page 13 also uses `step=CREATE` for a durable creation intent: `team_id`, `request_key` (unique with `requested_by`) and `created_at` let the server enforce per-author KST daily quota and idempotent draft resends before GitHub returns an issue ID. `issue_id` stays null until a real GitHub issue is confirmed; no local-only issue is inserted. The JSON payload checkpoints CREATE/CREATE_SENT/ADD_TO_PROJECT/SET_START/SET_DUE/SET_STATUS/VERIFY/DONE. A lost creation response is recovered by an opaque body marker; if its result cannot be confirmed, stop with CREATE_OUTCOME_UNKNOWN rather than POST a duplicate. Tokens are never stored. These columns extend the existing table and do not add a 70th table. Page 12 also persists failed assignee/label edits as `SET_ASSIGNEES`/`SET_LABELS`; schedule/status jobs retain the full desired value and replay idempotently, then verify source reads. Retry attempts are bounded operationally; no token is stored in payload. Creating an issue is a multi-step GitHub workflow; source verification may add read calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
 
 **team_progress_snapshots**: Columns are `team_id`, `snapshot_date` (UK together), `todo_count`, `in_progress_count`, `blocked_count`, `done_count`, `overdue_count`. A batch at 00:00 KST counts `issues.board_status` (excluding OTHER and NONE) per team. Stored for every team regardless of Flex; only the screen is Flex-only. Today's value isn't stored; it's counted from `issues` when the screen opens. Issue status change history is not stored, so metrics like cycle time (days spent In Progress) belong to the phase 2 bottleneck dashboard (T-6) with its own event table. Rows older than 1 year are deleted.
 
