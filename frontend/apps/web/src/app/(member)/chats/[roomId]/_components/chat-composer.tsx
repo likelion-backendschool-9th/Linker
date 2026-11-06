@@ -28,7 +28,7 @@ type Props = {
 };
 
 export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
-  const uploader = useImageUpload(CHAT.imagesPerSend);
+  const uploader = useImageUpload(CHAT.imagesPerSend, { purpose: 'CHAT' });
   const attachments = useOverlay('chat-attachments');
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
