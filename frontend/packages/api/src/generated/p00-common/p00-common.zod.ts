@@ -38,29 +38,28 @@ export const CompleteUploadResponse = zod.object({
   "url": zod.string().optional()
 })
 
-
-
 export const verifyInstallationBodyInstallationIdRegExp = new RegExp('[0-9]{1,19}');
 export const verifyInstallationBodyStateMin = 0;
 export const verifyInstallationBodyStateMax = 128;
 
-export const verifyInstallationBodySetupActionRegExp = new RegExp('install|update');
+export const verifyInstallationBodySetupActionRegExp = new RegExp('install|update|request');
 
 
 export const VerifyInstallationBody = zod.object({
-  "installationId": zod.string().min(1).regex(verifyInstallationBodyInstallationIdRegExp),
+  "installationId": zod.string().regex(verifyInstallationBodyInstallationIdRegExp).optional(),
   "state": zod.string().min(verifyInstallationBodyStateMin).max(verifyInstallationBodyStateMax),
   "setupAction": zod.string().regex(verifyInstallationBodySetupActionRegExp).optional()
 })
 
 export const VerifyInstallationResponse = zod.object({
-  "result": zod.string().optional(),
+  "result": zod.enum(['INSTALLED', 'REQUESTED_FROM_OWNER', 'ALREADY_LINKED']),
   "org": zod.object({
   "id": zod.int().optional(),
   "login": zod.string().optional(),
   "avatarUrl": zod.string().optional()
-}).optional(),
-  "installationId": zod.string().optional()
+}),
+  "installationId": zod.string().nullable(),
+  "teamId": zod.int().nullable()
 })
 
 export const CreateReportBody = zod.object({
