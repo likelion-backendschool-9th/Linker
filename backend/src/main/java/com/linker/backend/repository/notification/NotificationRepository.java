@@ -68,6 +68,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			  and notification.user.pushEnabled = true
 			  and notification.notificationType = 'CHAT'
 			  and notification.deliverAfter is null
+			and not exists (
+				select member from ChatRoomMember member
+				where member.room.id = notification.targetId
+				  and member.userId = notification.user.id
+				  and member.leftAt is null
+				  and member.muted = true
+			)
 			order by notification.user.id, notification.createdAt, notification.id
 			""")
 	List<Notification> findDueChat(Pageable pageable);
