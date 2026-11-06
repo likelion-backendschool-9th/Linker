@@ -66,13 +66,13 @@ public class IssueEditJobRepository {
 
   public Job get(long id) {
     return sql.queryForObject(
-        "SELECT j.*,i.team_id FROM issue_sync_jobs j JOIN issues i ON i.id=j.issue_id WHERE"
-            + " j.id=:id",
+        "SELECT j.*,i.team_id AS issue_team_id FROM issue_sync_jobs j JOIN issues i ON"
+            + " i.id=j.issue_id WHERE j.id=:id",
         Map.of("id", id),
         (rs, n) ->
             new Job(
                 rs.getLong("id"),
-                rs.getLong("team_id"),
+                rs.getLong("issue_team_id"),
                 rs.getLong("issue_id"),
                 rs.getLong("requested_by"),
                 rs.getString("step"),
@@ -85,8 +85,8 @@ public class IssueEditJobRepository {
   public List<Long> due(Instant now) {
     if (!ready()) return List.of();
     return sql.queryForList(
-        "SELECT id FROM issue_sync_jobs WHERE status IN ('PENDING','RUNNING') AND"
-            + " next_retry_at<=:now ORDER BY next_retry_at,id LIMIT 100",
+        "SELECT id FROM issue_sync_jobs WHERE step<>'CREATE' AND status IN ('PENDING','RUNNING')"
+            + " AND next_retry_at<=:now ORDER BY next_retry_at,id LIMIT 100",
         Map.of("now", Timestamp.from(now)),
         Long.class);
   }

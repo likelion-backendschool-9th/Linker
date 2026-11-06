@@ -50,7 +50,8 @@ class GithubWebhookSignatureVerifierTest {
 				new LinkerProperties.Storage("local", ""),
 				new LinkerProperties.Github(secret),
 				new LinkerProperties.Webhook(false, "linker:github:webhook"),
-				new LinkerProperties.Payment("", "", "https://api.tosspayments.com")
+				new LinkerProperties.Payment("", "", "https://api.tosspayments.com"),
+				new LinkerProperties.Mail("", 1025, "", "", "Linker <noreply@linker.local>", "http://localhost:3000", java.util.List.of())
 		));
 	}
 }

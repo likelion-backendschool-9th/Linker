@@ -1,8 +1,10 @@
 package com.linker.backend.controller.admin;
 
 import com.linker.backend.dto.moderation.request.AppealDecisionRequest;
+import com.linker.backend.dto.moderation.request.OtpVerifyRequest;
 import com.linker.backend.dto.moderation.request.ReportActionRequest;
 import com.linker.backend.dto.moderation.response.AppealListResponse;
+import com.linker.backend.dto.moderation.response.OtpVerifyResponse;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.ReportCaseView;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -29,6 +31,15 @@ public class AdminController {
 
 	public AdminController(AdminService reports) {
 		this.reports = reports;
+	}
+
+	@PostMapping("/otp/verify")
+	@Tag(name = "p25-admin-reports")
+	@Operation(operationId = "verifyAdminOtp")
+	public ResponseEntity<OtpVerifyResponse> verifyOtp(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestBody OtpVerifyRequest request) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(reports.verifyOtp(user, request));
 	}
 
 	@GetMapping("/report-cases")

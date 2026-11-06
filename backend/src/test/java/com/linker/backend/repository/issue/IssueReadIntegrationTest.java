@@ -87,6 +87,16 @@ class IssueReadIntegrationTest {
   @Autowired PersistedGithubUserAccessTokenSource persistedTokens;
   @Autowired com.linker.backend.global.config.GithubAppProperties githubProperties;
   @Autowired UserIssueDetailService details;
+  static volatile Map<String, Object> createdDraft;
+  static volatile boolean createdProject,
+      createLostResponse,
+      hideCreated,
+      failCreate,
+      ignoreCreateLabels;
+  static final AtomicInteger CREATIONS = new AtomicInteger();
+  static volatile String templateFile, templateContent, orgTemplateContent;
+  @Autowired UserIssueCreateService creation;
+  @Autowired IssueCreateJobRepository createJobs;
   static volatile String issueTitle = "로그인 오류", updated = "2026-11-05T01:00:00Z";
   @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
@@ -132,7 +142,90 @@ class IssueReadIntegrationTest {
           REQUESTS.add(exchange.getRequestMethod() + " " + path);
           int status = 200;
           Object response;
-          if (path.contains("access_tokens"))
+          if (path.equals("/repos/acme/web/contents/.github/ISSUE_TEMPLATE")) {
+            response =
+                templateFile == null
+                    ? List.of()
+                    : List.of(Map.of("name", templateFile, "type", "file"));
+          } else if (path.startsWith("/repos/acme/web/contents/.github/ISSUE_TEMPLATE/")) {
+            response =
+                Map.of(
+                    "encoding",
+                    "base64",
+                    "size",
+                    templateContent.length(),
+                    "content",
+                    Base64.getEncoder()
+                        .encodeToString(templateContent.getBytes(StandardCharsets.UTF_8)));
+          } else if (path.equals("/repos/acme/.github")) {
+            response = Map.of("full_name", "acme/.github", "private", false);
+          } else if (path.equals("/repos/acme/.github/contents/.github/ISSUE_TEMPLATE")) {
+            response =
+                orgTemplateContent == null
+                    ? List.of()
+                    : List.of(Map.of("name", "org.yml", "type", "file"));
+          } else if (path.startsWith("/repos/acme/.github/contents/.github/ISSUE_TEMPLATE/")) {
+            response =
+                Map.of(
+                    "encoding",
+                    "base64",
+                    "size",
+                    orgTemplateContent.length(),
+                    "content",
+                    Base64.getEncoder()
+                        .encodeToString(orgTemplateContent.getBytes(StandardCharsets.UTF_8)));
+          } else if (path.equals("/repos/acme/web/issues")
+              && exchange.getRequestMethod().equals("POST")) {
+            CREATIONS.incrementAndGet();
+            if (failCreate) {
+              status = 403;
+              response = Map.of("message", "denied");
+            } else {
+              var input =
+                  JSON.readTree(
+                      new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+              var created = issue(3);
+              created.put("title", input.path("title").asString());
+              created.put("body", input.path("body").asString());
+              created.put("state", "open");
+              created.put("closed_at", null);
+              List<Object> assigned = new ArrayList<>();
+              for (var a : input.path("assignees"))
+                assigned.add(Map.of("id", 101, "login", a.asString()));
+              created.put("assignees", assigned);
+              List<Object> labels = new ArrayList<>();
+              for (var label : input.path("labels"))
+                labels.add(Map.of("name", label.asString(), "color", "d73a4a"));
+              created.put("labels", ignoreCreateLabels ? List.of() : labels);
+              createdDraft = created;
+              response = created;
+              if (createLostResponse) {
+                status = 503;
+                createLostResponse = false;
+                response = Map.of("message", "lost response");
+              }
+            }
+          } else if (path.startsWith("/repos/acme/web/issues/3/sub_issues")) {
+            response = List.of();
+          } else if (path.equals("/repos/acme/web/issues/3")) {
+            if (exchange.getRequestMethod().equals("PATCH")) {
+              var input =
+                  JSON.readTree(
+                      new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+              if (input.has("state")) {
+                createdDraft.put("state", input.path("state").asString());
+                createdDraft.put(
+                    "closed_at",
+                    input.path("state").asString().equals("closed")
+                        ? "2026-11-05T01:00:00Z"
+                        : null);
+              }
+            }
+            response = createdDraft == null ? issue(3) : createdDraft;
+          } else if (createdDraft != null
+              && path.contains("/repos/acme/web/issues?state=all&since=")) {
+            response = hideCreated ? List.of() : List.of(createdDraft);
+          } else if (path.contains("access_tokens"))
             response = Map.of("token", "installation-read", "expires_at", "2099-01-01T00:00:00Z");
           else if (rateLimited && path.equals("/repos/acme/web/issues/1")) {
             status = 429;
@@ -251,19 +344,32 @@ class IssueReadIntegrationTest {
                         ? "clearProjectV2ItemFieldValue"
                         : "updateProjectV2ItemFieldValue";
                 response =
-                    Map.of("data", Map.of(op, Map.of("projectV2Item", Map.of("id", "ITEM1"))));
+                    Map.of(
+                        "data",
+                        Map.of(
+                            op,
+                            Map.of(
+                                "projectV2Item",
+                                Map.of("id", variables.path("item").asString("ITEM1")))));
               }
             } else if (body.contains("addProjectV2ItemById")) {
               MUTATIONS.incrementAndGet();
               if (failMutation) {
                 response = Map.of("errors", List.of(Map.of("message", "denied")));
               } else {
-                projectAdded = true;
+                if (JSON.readTree(body)
+                    .path("variables")
+                    .path("content")
+                    .asString()
+                    .equals("ISSUE3")) createdProject = true;
+                else projectAdded = true;
                 if (failAfterAdd) failRest = true;
                 response =
                     Map.of(
                         "data",
-                        Map.of("addProjectV2ItemById", Map.of("item", Map.of("id", "ITEM2"))));
+                        Map.of(
+                            "addProjectV2ItemById",
+                            Map.of("item", Map.of("id", createdProject ? "ITEM3" : "ITEM2"))));
               }
             } else if (body.contains("... on ProjectV2Item{fieldValues")) {
               response =
@@ -296,6 +402,7 @@ class IssueReadIntegrationTest {
               if (second) items.add(project(2));
               else {
                 items.add(project(1));
+                if (createdProject) items.add(project(3));
                 if (projectAdded && !itemPages) items.add(project(2));
               }
               Map<String, Object> pageInfo =
@@ -452,6 +559,16 @@ class IssueReadIntegrationTest {
 
   @BeforeEach
   void seed() {
+    createdDraft = null;
+    createdProject = false;
+    createLostResponse = false;
+    hideCreated = false;
+    failCreate = false;
+    ignoreCreateLabels = false;
+    CREATIONS.set(0);
+    templateFile = null;
+    templateContent = null;
+    orgTemplateContent = null;
     jdbc.execute(
         "TRUNCATE"
             + " issues,team_progress_snapshots,team_repos,team_members,board_status_mappings,team_project_boards,github_repos,teams,github_installations,subscriptions,users"
@@ -1646,5 +1763,415 @@ class IssueReadIntegrationTest {
     assertThat(LAST_AUTHORIZATION.get()).isEqualTo("Bearer " + synthetic);
     assertThat(encrypted).isNotEqualTo(synthetic);
     assertThat(JSON.writeValueAsString(result)).doesNotContain(synthetic, encrypted);
+  }
+
+  private String createUrl() {
+    return "/api/v1/user/teams/10/issues";
+  }
+
+  private Map<String, Object> createInput(String key) {
+    var r = new LinkedHashMap<String, Object>();
+    r.put("requestId", key);
+    r.put("repoId", 100);
+    r.put("title", "가입 오류 수정");
+    r.put("body", "재현 방법을 확인해 주세요.");
+    r.put("assigneeIds", List.of(1));
+    r.put("labels", List.of("bug"));
+    r.put("startDate", "2026-11-06");
+    r.put("dueDate", "2026-11-07");
+    r.put("status", "TODO");
+    return r;
+  }
+
+  private long submitCreate(Map<String, Object> input) throws Exception {
+    var body =
+        mvc.perform(
+                post(createUrl())
+                    .cookie(login(1))
+                    .contentType("application/json")
+                    .content(JSON.writeValueAsBytes(input)))
+            .andExpect(status().isAccepted())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    return JSON.readTree(body).path("jobId").asLong();
+  }
+
+  private void makeDue(long id) {
+    jdbc.update("UPDATE issue_sync_jobs SET next_retry_at=now()-interval '20 days' WHERE id=?", id);
+    creation.retryDue();
+  }
+
+  @Test
+  void createTemplatesIncludeDefaultsAndPreIssueOptions() throws Exception {
+    mvc.perform(
+            get("/api/v1/user/teams/10/issue-templates").param("repoId", "100").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.templates.length()").value(3))
+        .andExpect(jsonPath("$.templates[0].key").value("default:bug"))
+        .andExpect(jsonPath("$.assigneeCandidates[0].id").value(1))
+        .andExpect(jsonPath("$.maxAssignees").value(10));
+    assertThat(REQUESTS).noneMatch(r -> r.contains("issues/0"));
+  }
+
+  @Test
+  void repositoryTemplateWinsAndDefaultsRemain() throws Exception {
+    templateFile = "bug.yml";
+    templateContent =
+        "name: 저장소 양식\nbody:\n  - type: input\n    id: symptom\n    attributes:\n      label: 증상\n";
+    orgTemplateContent = templateContent.replace("저장소 양식", "조직 양식");
+    var result =
+        mvc.perform(
+                get("/api/v1/user/teams/10/issue-templates")
+                    .param("repoId", "100")
+                    .cookie(login(1)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.templates.length()").value(4))
+            .andExpect(jsonPath("$.templates[0].source").value("REPOSITORY"))
+            .andReturn();
+    String key =
+        JSON.readTree(result.getResponse().getContentAsString())
+            .path("templates")
+            .get(0)
+            .path("key")
+            .asString();
+    mvc.perform(
+            get("/api/v1/user/teams/10/issue-templates/" + key)
+                .param("repoId", "100")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.fields[0].id").value("symptom"));
+    assertThat(REQUESTS).noneMatch(r -> r.contains("/repos/acme/.github"));
+  }
+
+  @Test
+  void organizationTemplatesAreInheritedOnlyWithoutRepositoryFiles() throws Exception {
+    orgTemplateContent = "name: 조직 양식\nbody:\n  - type: input\n    attributes:\n      label: 내용\n";
+    mvc.perform(
+            get("/api/v1/user/teams/10/issue-templates").param("repoId", "100").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.templates[0].source").value("ORGANIZATION"));
+  }
+
+  @Test
+  void brokenTemplateDetailFallsBackWithoutSubmittingItSilently() throws Exception {
+    templateFile = "bad.yml";
+    templateContent = "name: [broken";
+    mvc.perform(
+            get("/api/v1/user/teams/10/issue-templates/missing")
+                .param("repoId", "100")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.fallback").value(true));
+    var input = createInput(UUID.randomUUID().toString());
+    input.put("templateKey", "missing");
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(input)))
+        .andExpect(status().isConflict());
+    assertThat(CREATIONS.get()).isZero();
+  }
+
+  @Test
+  void creationCompletesAndLinksToRealDetailWithInternalId() throws Exception {
+    long job = submitCreate(createInput(UUID.randomUUID().toString()));
+    assertThat(createJobs.get(job).status()).isEqualTo("DONE");
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    long issue = createJobs.get(job).issue();
+    assertThat(
+            jdbc.queryForObject("SELECT github_issue_id FROM issues WHERE id=?", Long.class, issue))
+        .isEqualTo(103);
+    mvc.perform(get("/api/v1/user/teams/10/issue-sync-jobs/" + job).cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.detailPath").value("/teams/10/issues/" + issue));
+    mvc.perform(get("/api/v1/user/teams/10/issues/" + issue).cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("가입 오류 수정"));
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM notifications", Integer.class)).isZero();
+  }
+
+  @Test
+  void sameDraftReplayNeverCreatesTwice() throws Exception {
+    var input = createInput(UUID.randomUUID().toString());
+    long id = submitCreate(input);
+    assertThat(submitCreate(input)).isEqualTo(id);
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void reusedDraftKeyWithChangedContentIsConflict() throws Exception {
+    var input = createInput(UUID.randomUUID().toString());
+    submitCreate(input);
+    input.put("title", "다른 내용");
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(input)))
+        .andExpect(status().isConflict());
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void projectFailureResumesWithoutCreatingAnotherIssue() throws Exception {
+    failMutation = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    assertThat(createJobs.get(id).status()).isEqualTo("PENDING");
+    assertThat(createJobs.get(id).issue()).isNotNull();
+    failMutation = false;
+    makeDue(id);
+    assertThat(createJobs.get(id).status()).isEqualTo("DONE");
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void dateFailureResumesUsingExistingProjectItem() throws Exception {
+    failDueOnce = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    assertThat(createJobs.get(id).status()).isEqualTo("PENDING");
+    makeDue(id);
+    assertThat(createJobs.get(id).status()).isEqualTo("DONE");
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    assertThat(MUTATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void lostCreationResponseFindsMarkerAndNeverReposts() throws Exception {
+    createLostResponse = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    assertThat(createJobs.get(id).issue()).isNull();
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
+    makeDue(id);
+    assertThat(createJobs.get(id).status()).isEqualTo("DONE");
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void unresolvedCreationOutcomeStopsRatherThanDuplicate() throws Exception {
+    createLostResponse = true;
+    hideCreated = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    makeDue(id);
+    assertThat(createJobs.get(id).status()).isEqualTo("FAILED");
+    assertThat(createJobs.get(id).error()).isEqualTo("CREATE_OUTCOME_UNKNOWN");
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
+  }
+
+  @Test
+  void deniedCreateNeverCreatesLocalIssueOrRetries() throws Exception {
+    failCreate = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    assertThat(createJobs.get(id).status()).isEqualTo("FAILED");
+    makeDue(id);
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM issues", Integer.class)).isZero();
+  }
+
+  @Test
+  void invalidDatesLabelsAndFormerMemberAreRejectedBeforePost() throws Exception {
+    for (String kind : List.of("dates", "labels", "member")) {
+      var input = createInput(UUID.randomUUID().toString());
+      if (kind.equals("dates")) input.put("startDate", "2026-11-08");
+      if (kind.equals("labels")) input.put("labels", List.of("unknown"));
+      if (kind.equals("member")) input.put("assigneeIds", List.of(2));
+      mvc.perform(
+              post(createUrl())
+                  .cookie(login(1))
+                  .contentType("application/json")
+                  .content(JSON.writeValueAsBytes(input)))
+          .andExpect(status().isBadRequest());
+    }
+    assertThat(CREATIONS.get()).isZero();
+  }
+
+  @Test
+  void missingWriteAndForeignRepoAreRejected() throws Exception {
+    var input = createInput(UUID.randomUUID().toString());
+    input.put("repoId", 200);
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(input)))
+        .andExpect(status().isNotFound());
+    writable = false;
+    input.put("repoId", 100);
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(input)))
+        .andExpect(status().isForbidden());
+    assertThat(CREATIONS.get()).isZero();
+  }
+
+  @Test
+  void creationRequiresLoginDeveloperAndTeamMembership() throws Exception {
+    byte[] body = JSON.writeValueAsBytes(createInput(UUID.randomUUID().toString()));
+    mvc.perform(post(createUrl()).contentType("application/json").content(body))
+        .andExpect(status().isUnauthorized());
+    for (int user : List.of(3, 4))
+      mvc.perform(
+              post(createUrl()).cookie(login(user)).contentType("application/json").content(body))
+          .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void creationQuotaUsesPersistedKstDayAndReplayDoesNotCountTwice() throws Exception {
+    long job = submitCreate(createInput(UUID.randomUUID().toString()));
+    for (int i = 0; i < 99; i++)
+      jdbc.update(
+          "INSERT INTO"
+              + " issue_sync_jobs(team_id,requested_by,request_key,step,payload,status,created_at)"
+              + " VALUES(10,1,?,'CREATE','{}','FAILED',?)",
+          UUID.randomUUID(),
+          java.sql.Timestamp.from(Instant.parse("2026-11-05T15:30:00Z")));
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(createInput(UUID.randomUUID().toString()))))
+        .andExpect(status().isTooManyRequests());
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void connectionChangeStopsRetryWithoutAnotherCreate() throws Exception {
+    failMutation = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    jdbc.update("UPDATE team_project_boards SET github_project_node_id='CHANGED' WHERE team_id=10");
+    makeDue(id);
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    assertThat(createJobs.get(id).status()).isNotEqualTo("DONE");
+  }
+
+  @Test
+  void creationRetriesAreBoundedAndExcludedFromEditWorker() throws Exception {
+    failMutation = true;
+    long id = submitCreate(createInput(UUID.randomUUID().toString()));
+    details.retryDue();
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    makeDue(id);
+    makeDue(id);
+    makeDue(id);
+    assertThat(createJobs.get(id).status()).isEqualTo("FAILED");
+    assertThat(createJobs.get(id).attempts()).isEqualTo(3);
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void formCreationRendersAnswersAndAppliesTemplateLabels() throws Exception {
+    templateFile = "bug.yml";
+    templateContent =
+        "name: 오류 양식\n"
+            + "labels: [bug]\n"
+            + "body:\n"
+            + "  - type: input\n"
+            + "    id: symptom\n"
+            + "    attributes:\n"
+            + "      label: 증상\n"
+            + "    validations:\n"
+            + "      required: true\n"
+            + "  - type: textarea\n"
+            + "    id: extra\n"
+            + "    attributes:\n"
+            + "      label: 추가 내용\n";
+    var input = createInput(UUID.randomUUID().toString());
+    input.put(
+        "templateKey",
+        "repo:"
+            + Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString("bug.yml".getBytes(StandardCharsets.UTF_8)));
+    input.remove("labels");
+    input.put("answers", Map.of("symptom", List.of("가입 실패")));
+    long job = submitCreate(input);
+    assertThat(createJobs.get(job).status()).isEqualTo("DONE");
+    assertThat((String) createdDraft.get("body"))
+        .contains("### 증상\n\n가입 실패", "### 추가 내용\n\n_No response_");
+    mvc.perform(get("/api/v1/user/teams/10/issues/" + createJobs.get(job).issue()).cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.body")
+                .value(
+                    org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("linker-create:"))));
+  }
+
+  @Test
+  void missingRequiredFormAnswerDoesNotCreateGithubIssue() throws Exception {
+    templateFile = "bug.yml";
+    templateContent =
+        "name: 오류 양식\n"
+            + "body:\n"
+            + "  - type: input\n"
+            + "    id: symptom\n"
+            + "    attributes:\n"
+            + "      label: 증상\n"
+            + "    validations:\n"
+            + "      required: true\n";
+    var input = createInput(UUID.randomUUID().toString());
+    input.put(
+        "templateKey",
+        "repo:"
+            + Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString("bug.yml".getBytes(StandardCharsets.UTF_8)));
+    mvc.perform(
+            post(createUrl())
+                .cookie(login(1))
+                .contentType("application/json")
+                .content(JSON.writeValueAsBytes(input)))
+        .andExpect(status().isBadRequest());
+    assertThat(CREATIONS.get()).isZero();
+  }
+
+  @Test
+  void creationJobCannotBeReadThroughAnotherTeam() throws Exception {
+    long job = submitCreate(createInput(UUID.randomUUID().toString()));
+    mvc.perform(get("/api/v1/user/teams/20/issue-sync-jobs/" + job).cookie(login(1)))
+        .andExpect(status().isNotFound());
+    mvc.perform(get("/api/v1/user/teams/10/issue-sync-jobs/" + job).cookie(login(3)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void githubDroppingCreationMetadataIsNotReportedAsSuccess() throws Exception {
+    ignoreCreateLabels = true;
+    long job = submitCreate(createInput(UUID.randomUUID().toString()));
+    assertThat(createJobs.get(job).status()).isNotEqualTo("DONE");
+    assertThat(CREATIONS.get()).isEqualTo(1);
+    makeDue(job);
+    assertThat(CREATIONS.get()).isEqualTo(1);
+  }
+
+  @Test
+  void openApiPublishesOnlyFourP13OperationsWithAcceptedResponse() throws Exception {
+    var body =
+        mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andExpect(
+                jsonPath("$.paths['/api/v1/user/teams/{teamId}/issues'].post.responses['202']")
+                    .exists())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    var paths = JSON.readTree(body).path("paths");
+    long count = 0;
+    for (var entry : paths.properties())
+      for (var operation : entry.getValue())
+        if (operation.path("tags").isArray())
+          for (var tag : operation.path("tags"))
+            if (tag.asString().equals("p13-issue-create")) count++;
+    assertThat(count).isEqualTo(4);
+  }
+
+  @Test void missingStatusFieldIsRejectedBeforeCreatingGithubIssue() throws Exception {
+    jdbc.update("UPDATE team_project_boards SET status_field_id=NULL WHERE team_id=10");
+    mvc.perform(post(createUrl()).cookie(login(1)).contentType("application/json").content(JSON.writeValueAsBytes(createInput(UUID.randomUUID().toString())))).andExpect(status().isConflict());
+    assertThat(CREATIONS.get()).isZero();
   }
 }

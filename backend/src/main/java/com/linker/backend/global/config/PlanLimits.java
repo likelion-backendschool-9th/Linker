@@ -1,6 +1,7 @@
 package com.linker.backend.global.config;
 
 import java.time.ZoneId;
+import java.util.List;
 
 /**
  * Policy numbers used by the common foundation and D chat/notification/subscription contracts.
@@ -123,6 +124,41 @@ public final class PlanLimits {
 	/** Policy ch. 11 — recruiting offer daily caps. */
 	public static final int RECRUITING_OFFERS_PER_DAY_FREE = 10;
 	public static final int RECRUITING_OFFERS_PER_DAY_SCOUT = 50;
+	/** POL-H-3. Rejection stays hidden, then looks like no reply. */
+	public static final int RECRUITING_OFFER_REPLY_DAYS = 30;
+
+	/** POL-H-1 company-email code and password. */
+	public static final int RECRUITER_EMAIL_CODE_DIGITS = 6;
+	public static final int RECRUITER_EMAIL_CODE_MINUTES = 10;
+	public static final int RECRUITER_EMAIL_CODE_ATTEMPTS = 5;
+	public static final int RECRUITER_EMAIL_RESEND_SECONDS = 60;
+	public static final int RECRUITER_PASSWORD_MIN = 8;
+	public static final int RECRUITER_PASSWORD_MAX = 64;
+	public static final int RECRUITER_LOGIN_ATTEMPTS = 5;
+	public static final int RECRUITER_LOGIN_LOCK_MINUTES = 10;
+	public static final int RECRUITER_PASSWORD_RESET_MINUTES = 30;
+	public static final int RECRUITER_COMPANY_MIN = 2;
+	public static final int RECRUITER_COMPANY_MAX = 40;
+	public static final int RECRUITER_JOB_TITLE_MAX = 30;
+
+	/** POL-H-8. Interest categories stay off the public profile. */
+	public static final int JOB_CATEGORIES_MAX = 3;
+	/** POL-A-4. One month inside the last year, refreshed once a day. */
+	public static final int CONTRIBUTION_MONTHS = 12;
+	/** Policy ch. 3. Old GitHub login keeps resolving for this many days. */
+	public static final int USERNAME_REDIRECT_DAYS = 90;
+	/** ERD profile_visits. Rows older than this are deleted. */
+	public static final int PROFILE_VISIT_RETENTION_DAYS = 90;
+	/** POL-H-7. */
+	public static final int JOB_AD_TITLE_MIN = 2;
+	public static final int JOB_AD_TITLE_MAX = 40;
+	public static final int JOB_AD_CLOSING_DAYS = 90;
+	public static final int JOB_AD_EDITS_PER_DAY = 10;
+	public static final List<String> JOB_AD_ALLOWED_HOSTS = List.of(
+			"jobkorea.co.kr",
+			"saramin.co.kr",
+			"wanted.co.kr",
+			"work24.go.kr");
 
 	/** Policy ch. 8 / ch. 11 — Flex AI daily cap per person (KST), still tentative. */
 	public static final int AI_SUMMARY_PER_DAY_FLEX = 10;
@@ -155,6 +191,8 @@ public final class PlanLimits {
 	public static final int ISSUE_PROGRESS_DAYS = 14;
 	/** Policy POL-I-2: GitHub maximum, not a team-size limit. */
 	public static final int ISSUE_ASSIGNEES_MAX = 10;
+	/** Policy ch.2: issue creation per author per KST day. */
+	public static final int ISSUE_CREATES_PER_DAY = 100;
 
 	private PlanLimits() {
 	}

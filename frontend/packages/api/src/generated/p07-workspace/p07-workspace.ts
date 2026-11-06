@@ -7,7 +7,7 @@
 import {
   queryOptions as queryOptionsBuilder,
   useQuery,
-  useSuspenseQuery,
+  useSuspenseQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
@@ -20,18 +20,23 @@ import type {
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
-  UseSuspenseQueryResult,
+  UseSuspenseQueryResult
 } from '@tanstack/react-query';
 
-import type { MyTeamsResponse } from '../openAPIDefinition.schemas';
+import type {
+  MyTeamsResponse
+} from '../openAPIDefinition.schemas';
 
 import { apiFetch } from '../../../../../apps/web/src/lib/api/api-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
@@ -49,102 +54,96 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 export const getGetMyTeamsUrl = () => {
-  return `/api/v1/user/me/teams`;
-};
+
+
+
+
+  return `/api/v1/user/me/teams`
+}
 
 /**
  * @summary 현재 참여 중인 본인의 팀 목록
  */
-export const getMyTeams = async (
-  options?: Parameters<typeof apiFetch>[1],
-): Promise<MyTeamsResponse> => {
-  return apiFetch<MyTeamsResponse>(getGetMyTeamsUrl(), {
+export const getMyTeams = async ( options?: Parameters<typeof apiFetch>[1]): Promise<MyTeamsResponse> => {
+
+  return apiFetch<MyTeamsResponse>(getGetMyTeamsUrl(),
+  {
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
 
 export const getGetMyTeamsQueryKey = () => {
-  return [`/api/v1/user/me/teams`] as const;
-};
+    return [
+    `/api/v1/user/me/teams`
+    ] as const;
+    }
 
-export const getGetMyTeamsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-  request?: SecondParameter<typeof apiFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetMyTeamsQueryKey();
+export const getGetMyTeamsQueryOptions = <TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTeams>>> = ({ signal }) =>
-    getMyTeams({ signal, ...requestOptions });
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getMyTeams>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTeamsQueryKey();
 
-export type GetMyTeamsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTeams>>>;
-export type GetMyTeamsQueryError = unknown;
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTeams>>> = ({ signal }) => getMyTeams({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyTeamsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTeams>>>
+export type GetMyTeamsQueryError = unknown
+
 
 export function useGetMyTeams<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>> &
-      Pick<
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getMyTeams>>,
           TError,
           Awaited<ReturnType<typeof getMyTeams>>
-        >,
-        'initialData'
-      >;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyTeams<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>> &
-      Pick<
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getMyTeams>>,
           TError,
           Awaited<ReturnType<typeof getMyTeams>>
-        >,
-        'initialData'
-      >;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyTeams<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 현재 참여 중인 본인의 팀 목록
  */
 
 export function useGetMyTeams<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetMyTeamsQueryOptions(options);
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
+  const queryOptions = getGetMyTeamsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
@@ -152,101 +151,74 @@ export function useGetMyTeams<TData = Awaited<ReturnType<typeof getMyTeams>>, TE
 /**
  * @summary 현재 참여 중인 본인의 팀 목록
  */
-export const prefetchGetMyTeamsQuery = async <
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(
-  queryClient: QueryClient,
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-): Promise<QueryClient> => {
-  const queryOptions = getGetMyTeamsQueryOptions(options);
+export const prefetchGetMyTeamsQuery = async <TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
+ queryClient: QueryClient,  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+
+  ): Promise<QueryClient> => {
+
+  const queryOptions = getGetMyTeamsQueryOptions(options)
 
   await queryClient.query(queryOptions).catch(() => {});
 
   return queryClient;
-};
+}
 
-export const getGetMyTeamsSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-  request?: SecondParameter<typeof apiFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetMyTeamsQueryKey();
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTeams>>> = ({ signal }) =>
-    getMyTeams({ signal, ...requestOptions });
 
-  return queryOptionsBuilder({
-    queryKey,
-    ...queryOptions,
-    queryFn: queryOptions?.queryFn ?? queryFn,
-  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  } & {
-    throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never };
-  };
-};
 
-export type GetMyTeamsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTeams>>>;
-export type GetMyTeamsSuspenseQueryError = unknown;
+export const getGetMyTeamsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
 
-export function useGetMyTeamsSuspense<
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(
-  options: {
-    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-export function useGetMyTeamsSuspense<
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-export function useGetMyTeamsSuspense<
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTeamsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTeams>>> = ({ signal }) => getMyTeams({ signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetMyTeamsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTeams>>>
+export type GetMyTeamsSuspenseQueryError = unknown
+
+
+export function useGetMyTeamsSuspense<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
+  options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyTeamsSuspense<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
+  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyTeamsSuspense<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
+  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 현재 참여 중인 본인의 팀 목록
  */
 
-export function useGetMyTeamsSuspense<
-  TData = Awaited<ReturnType<typeof getMyTeams>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>;
-    request?: SecondParameter<typeof apiFetch>;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetMyTeamsSuspenseQueryOptions(options);
+export function useGetMyTeamsSuspense<TData = Awaited<ReturnType<typeof getMyTeams>>, TError = unknown>(
+  options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getMyTeams>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = getGetMyTeamsSuspenseQueryOptions(options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
+

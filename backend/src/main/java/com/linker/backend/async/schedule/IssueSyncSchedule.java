@@ -11,16 +11,19 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "linker.issues.sync-enabled", havingValue = "true")
 public class IssueSyncSchedule {
   private final UserIssueSyncService sync;
+  private final com.linker.backend.service.user.UserIssueCreateService creation;
   private final com.linker.backend.service.user.UserIssueDetailService edits;
   private final UserIssueProgressService progress;
   private final IssueContextRepository contexts;
 
   public IssueSyncSchedule(
       UserIssueSyncService sync,
+      com.linker.backend.service.user.UserIssueCreateService creation,
       com.linker.backend.service.user.UserIssueDetailService edits,
       UserIssueProgressService progress,
       IssueContextRepository contexts) {
     this.sync = sync;
+    this.creation = creation;
     this.edits = edits;
     this.progress = progress;
     this.contexts = contexts;
@@ -28,6 +31,7 @@ public class IssueSyncSchedule {
 
   @Scheduled(fixedDelayString = "${linker.issues.poll-delay-ms:60000}")
   public void sync() {
+    creation.retryDue();
     edits.retryDue();
     sync.syncDueTeams();
   }

@@ -65,11 +65,58 @@ public class AuthIdentity extends BaseTimeEntity {
 		return identity;
 	}
 
+	public static AuthIdentity email(User user, String email, String passwordHash, Instant when) {
+		AuthIdentity identity = new AuthIdentity();
+		identity.user = user;
+		identity.provider = AuthProvider.EMAIL;
+		identity.providerUserId = email;
+		identity.email = email;
+		identity.passwordHash = passwordHash;
+		identity.lastLoginAt = when;
+		return identity;
+	}
+
 	public void recordLogin(String login, String email, Instant when) {
 		this.providerLogin = login;
 		if (email != null && !email.isBlank()) {
 			this.email = email;
 		}
+		clearFailures(when);
+	}
+
+	public void recordSuccess(Instant when) {
+		clearFailures(when);
+	}
+
+	public void changePassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+		this.failedLoginCount = 0;
+		this.lockedUntil = null;
+	}
+
+	public void recordFailure(Instant lockedUntil) {
+		this.failedLoginCount++;
+		this.lockedUntil = lockedUntil;
+	}
+
+	public void clearExpiredLock() {
+		this.failedLoginCount = 0;
+		this.lockedUntil = null;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
+	public int getFailedLoginCount() {
+		return failedLoginCount;
+	}
+
+	public Instant getLockedUntil() {
+		return lockedUntil;
+	}
+
+	private void clearFailures(Instant when) {
 		this.failedLoginCount = 0;
 		this.lockedUntil = null;
 		this.lastLoginAt = when;

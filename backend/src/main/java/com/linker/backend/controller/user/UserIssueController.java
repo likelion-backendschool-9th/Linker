@@ -289,4 +289,62 @@ public class UserIssueController {
         .cacheControl(CacheControl.noStore())
         .body(issues.status(user, teamId, issueId, request.status()));
   }
+
+  @GetMapping("/issue-templates")
+  @DeveloperOnly
+  @Tag(name = "p13-issue-create")
+  @Operation(operationId = "listIssueTemplates", summary = "이슈 템플릿과 작성 선택지 조회")
+  public ResponseEntity<com.linker.backend.dto.issue.response.IssueTemplateResponse.ListResponse>
+      templates(
+          @AuthenticationPrincipal AuthenticatedUser u,
+          @PathVariable long teamId,
+          @RequestParam long repoId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.templates(u, teamId, repoId));
+  }
+
+  @GetMapping("/issue-templates/{templateKey}")
+  @DeveloperOnly
+  @Tag(name = "p13-issue-create")
+  @Operation(operationId = "getIssueTemplate", summary = "이슈 템플릿 내용 조회")
+  public ResponseEntity<com.linker.backend.dto.issue.response.IssueTemplateResponse> template(
+      @AuthenticationPrincipal AuthenticatedUser u,
+      @PathVariable long teamId,
+      @PathVariable String templateKey,
+      @RequestParam long repoId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.template(u, teamId, repoId, templateKey));
+  }
+
+  @org.springframework.web.bind.annotation.PostMapping("/issues")
+  @DeveloperOnly
+  @Tag(name = "p13-issue-create")
+  @Operation(operationId = "createTeamIssue", summary = "GitHub 이슈 생성과 보드 반영 요청")
+  @io.swagger.v3.oas.annotations.responses.ApiResponse(
+      responseCode = "202",
+      description = "생성 작업 접수·진행 상태")
+  public ResponseEntity<com.linker.backend.dto.issue.response.IssueCreateResponse> create(
+      @AuthenticationPrincipal AuthenticatedUser u,
+      @PathVariable long teamId,
+      @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+          com.linker.backend.dto.issue.request.IssueCreateRequest request) {
+    return ResponseEntity.accepted()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.create(u, teamId, request));
+  }
+
+  @GetMapping("/issue-sync-jobs/{jobId}")
+  @DeveloperOnly
+  @Tag(name = "p13-issue-create")
+  @Operation(operationId = "getIssueCreationProgress", summary = "이슈 생성 진행 상태 조회")
+  public ResponseEntity<com.linker.backend.dto.issue.response.IssueCreateResponse> creationProgress(
+      @AuthenticationPrincipal AuthenticatedUser u,
+      @PathVariable long teamId,
+      @PathVariable long jobId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(issues.creationProgress(u, teamId, jobId));
+  }
 }

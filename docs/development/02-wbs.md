@@ -808,6 +808,8 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Borrowed: 12's assignee and label option APIs, 11's `issue-filters` (repo list)
+- Creation has no issueId yet: reuse the same candidate/label rules through the existing template-list response (`assigneeCandidates`, `labelOptions`, `maxAssignees`), not a fabricated `/issues/0` call. No extra REST endpoint is added. Page 12 issue-scoped edit APIs stay unchanged.
+- C13 backend contract and isolated verification: [c-page13-implementation.md](plans/c-page13-implementation.md). `requestId` is a UUID retained for the same draft; changing the draft requires a new ID. Job progress returns the internal Linker issueId/detailPath after GitHub creation is confirmed.
 - Tables: new none · shared issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens
 - [ ] Server: parse issue form YAML, form answers → GitHub body (`### Question`, empty `_No response_`), retry queue for mid-way failures, never create Linker-only issues
 - [ ] Frontend: stepped (repo & template → content), dynamic form field rendering (react-hook-form + zod), reuse 12's sheets, on failure save draft on device + resend, enter with body prefilled from 17 "이슈로 만들기" (Make an issue)

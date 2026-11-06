@@ -58,4 +58,18 @@ public class Admin extends BaseTimeEntity {
 	public AdminRole getAdminRole() {
 		return adminRole;
 	}
+
+	public String getOtpSecretEnc() {
+		return otpSecretEnc;
+	}
+
+	public Instant getOtpEnrolledAt() {
+		return otpEnrolledAt;
+	}
+
+	/** Stores an already encrypted TOTP secret. HTTP enrollment is a later step. */
+	public void enrollOtp(String secretEnc, Instant when) {
+		this.otpSecretEnc = secretEnc;
+		this.otpEnrolledAt = when;
+	}
 }
