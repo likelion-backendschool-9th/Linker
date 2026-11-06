@@ -136,6 +136,7 @@ Format: `<type>: <description>` (one space after the colon).
 
 - Write the description short and clear. One main change per commit.
 - Never use vague messages such as "fix", "work", or "update".
+- Never add `Co-authored-by: Cursor`, `Made-with: Cursor`, or similar agent attribution trailers. Commits must stay under the human author only so Cursor is not listed as a GitHub contributor. Repo `commit-msg` hook strips those lines when hooks are installed (`bash scripts/setup-git-hooks.sh`).
 
 ### Agent safety
 - Destructive operations (`reset --hard`, force-push, branch deletion) require explicit user approval.
