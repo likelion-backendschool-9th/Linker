@@ -70,7 +70,8 @@ class ModerationReportNotificationTest {
 	@BeforeEach
 	void setUp() {
 		service = new ModerationService(
-				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, null, follows, Clock.systemUTC());
+				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, null, follows,
+				null, null, null, Clock.systemUTC());
 	}
 
 	@Test

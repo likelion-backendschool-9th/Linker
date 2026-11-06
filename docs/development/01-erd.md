@@ -1246,6 +1246,8 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 
 **report_cases, reports**: A new report attaches to the pending case with the same `target_type + target_id`, or creates one. `reports` UK `case_id + reporter_id` counts duplicate reports from one person as one. When distinct reporters reach 5, `auto_hidden_at` is set and the target content's `visibility` becomes UNDER_REVIEW. Reports from users restricted for false reporting are not counted in `reporter_count`.
 
+**report_message_snapshots**: Only the report that opens a case (TEAM_MESSAGE / DM_MESSAGE) stores rows; later reports on the same case add none, so operators see at most the reported message (`rel_position` 0) and 10 lines on each side. Lines are copied from what the reporter could read at report time (active room member, free 60-day team history, the reporter's own block periods in 1:1). Deleted, hidden and system (no sender) messages are skipped and the next readable message fills the slot; near the start or end of a room fewer lines are kept.
+
 **sanctions**: The current step is computed from unrevoked sanctions in the last year. Creating a suspension also sets `users.status = SUSPENDED` and `users.suspended_until`. Recruit-post restriction (30 days) and report restriction (30 days) go in the same table as `sanction_type`.
 
 **admin_actions**: Records content hide/delete, sanctions, revokes, dismissals, even viewing a full email. Permanent bans and content deletion require `reason`.

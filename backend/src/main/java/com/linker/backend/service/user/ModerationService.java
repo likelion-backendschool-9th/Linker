@@ -1,7 +1,10 @@
 package com.linker.backend.service.user;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -10,8 +13,12 @@ import com.linker.backend.dto.moderation.response.BlockView;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.chat.ChatMessage;
+import com.linker.backend.entity.chat.type.MessageVisibility;
+import com.linker.backend.entity.chat.type.RoomType;
 import com.linker.backend.entity.moderation.Appeal;
 import com.linker.backend.entity.moderation.Report;
+import com.linker.backend.entity.moderation.ReportMessageSnapshot;
 import com.linker.backend.entity.moderation.Sanction;
 import com.linker.backend.entity.moderation.ReportCase;
 import com.linker.backend.entity.moderation.type.ReportReason;
@@ -22,12 +29,16 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.time.DatabaseInstant;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatMessageRepository;
+import com.linker.backend.repository.chat.ChatMessageRepositoryCustom.ChatMessageRow;
+import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.AppealRepository;
 import com.linker.backend.repository.moderation.BlockInserter;
 import com.linker.backend.repository.moderation.ReportCaseOpener;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
+import com.linker.backend.repository.moderation.ReportMessageSnapshotRepository;
 import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
@@ -55,6 +66,9 @@ public class ModerationService {
 	private final SanctionRepository sanctions;
 	private final AppealRepository appeals;
 	private final FollowRepository follows;
+	private final ChatMessageRepository messages;
+	private final ChatRoomMemberRepository roomMembers;
+	private final ReportMessageSnapshotRepository snapshots;
 	private final Clock clock;
 
 	public ModerationService(
@@ -69,6 +83,9 @@ public class ModerationService {
 			SanctionRepository sanctions,
 			AppealRepository appeals,
 			FollowRepository follows,
+			ChatMessageRepository messages,
+			ChatRoomMemberRepository roomMembers,
+			ReportMessageSnapshotRepository snapshots,
 			Clock clock
 	) {
 		this.users = users;
@@ -82,6 +99,9 @@ public class ModerationService {
 		this.sanctions = sanctions;
 		this.appeals = appeals;
 		this.follows = follows;
+		this.messages = messages;
+		this.roomMembers = roomMembers;
+		this.snapshots = snapshots;
 		this.clock = clock;
 	}
 
@@ -180,7 +200,10 @@ public class ModerationService {
 			throw new ApiException(403, "REPORT_RESTRICTED", "최근 30일 동안 기각이 5번이라 30일 동안 신고할 수 없어요");
 		}
 		long parsedTargetId = parseTargetId(targetId);
-		long targetUserId = resolveTargetUserId(type, parsedTargetId);
+		ChatMessage reportedMessage = isChatTarget(type) ? resolveReportableMessage(type, parsedTargetId, reporterId) : null;
+		long targetUserId = reportedMessage != null
+				? reportedMessage.getSenderId()
+				: resolveTargetUserId(type, parsedTargetId);
 		if (targetUserId == reporterId) {
 			throw new ApiException(400, "VALIDATION_ERROR", "본인은 신고할 수 없어요");
 		}
@@ -190,7 +213,11 @@ public class ModerationService {
 		if (reports.existsByReportCase_IdAndReporterId(reportCase.getId(), reporterId)) {
 			return;
 		}
-		reports.saveAndFlush(Report.create(reportCase, reporterId, reportReason, normalizedDetail));
+		Report report = reports.saveAndFlush(Report.create(reportCase, reporterId, reportReason, normalizedDetail));
+		// The case row is locked, so only its first report sees no snapshot and copies the context.
+		if (reportedMessage != null && !snapshots.existsByReport_ReportCase_Id(reportCase.getId())) {
+			copyChatContext(report, reportedMessage, reporterId);
+		}
 		int count = (int) reports.countEligibleReporters(reportCase.getId(), Instant.now(clock));
 		reportCase.changeReporterCount(count);
 		if (count >= PlanLimits.REPORT_AUTO_HIDE_REPORTERS && reportCase.getAutoHiddenAt() == null) {
@@ -198,8 +225,107 @@ public class ModerationService {
 			notifyOperatorsOfAutoHide(reportCase);
 			// Target content visibility (UNDER_REVIEW) lands with posts/chat pages that own the rows.
 		}
-		// Chat ±PlanLimits.REPORT_CHAT_CONTEXT_MESSAGES snapshots need chat_messages +
-		// report_message_snapshots (ERD page 17). Reporter outcome / sanction alerts are page 25.
+		// Reporter outcome / sanction alerts are page 25.
+	}
+
+	private static boolean isChatTarget(ReportTargetType type) {
+		return type == ReportTargetType.TEAM_MESSAGE || type == ReportTargetType.DM_MESSAGE;
+	}
+
+	/**
+	 * The message must sit in a room of the reported kind, still be readable, and be one the reporter
+	 * can see right now (active member, history window, own block periods). Anything else is 404 so a
+	 * report does not reveal rows outside the reporter's view.
+	 */
+	private ChatMessage resolveReportableMessage(ReportTargetType type, long messageId, long reporterId) {
+		ChatMessage message = messages.findWithRoom(messageId)
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요"));
+		boolean team = message.getRoom().getRoomType() == RoomType.TEAM;
+		long roomId = message.getRoom().getId();
+		if (team != (type == ReportTargetType.TEAM_MESSAGE)
+				|| !readable(message.getSenderId(), message.getDeletedAt(), message.getVisibility().name())
+				|| roomMembers.findActive(roomId, reporterId).isEmpty()
+				|| !messages.visibleTo(reporterId, roomId, team, historyStart(team), messageId)) {
+			throw new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요");
+		}
+		return message;
+	}
+
+	/**
+	 * Copies the reported message (0) and up to {@link PlanLimits#REPORT_CHAT_CONTEXT_MESSAGES} lines on
+	 * each side (-n..-1, 1..n), taken from what the reporter could read at report time. Deleted, hidden
+	 * and sender-less (system) rows are skipped, and the next readable row fills the slot.
+	 */
+	private void copyChatContext(Report report, ChatMessage target, long reporterId) {
+		long roomId = target.getRoom().getId();
+		boolean team = target.getRoom().getRoomType() == RoomType.TEAM;
+		Instant start = historyStart(team);
+		List<ChatMessageRow> before = readableNeighbours(reporterId, roomId, team, start, target.getId(), true);
+		List<ChatMessageRow> after = readableNeighbours(reporterId, roomId, team, start, target.getId(), false);
+		List<ReportMessageSnapshot> lines = new ArrayList<>(before.size() + 1 + after.size());
+		for (int i = 0; i < before.size(); i++) {
+			lines.add(snapshot(report, before.get(i), i - before.size()));
+		}
+		lines.add(ReportMessageSnapshot.copy(
+				report, target.getId(), target.getSenderId(), target.getBody(), 0, target.getCreatedAt()));
+		for (int i = 0; i < after.size(); i++) {
+			lines.add(snapshot(report, after.get(i), i + 1));
+		}
+		snapshots.saveAll(lines);
+	}
+
+	/** Nearest readable rows on one side of {@code anchorId}, in ascending id order. */
+	private List<ChatMessageRow> readableNeighbours(
+			long viewerId, long roomId, boolean team, Instant start, long anchorId, boolean older) {
+		int wanted = PlanLimits.REPORT_CHAT_CONTEXT_MESSAGES;
+		int batch = wanted * 3;
+		List<ChatMessageRow> kept = new ArrayList<>(wanted);
+		long cursor = anchorId;
+		while (kept.size() < wanted) {
+			List<ChatMessageRow> page = older
+					? messages.before(viewerId, roomId, team, start, cursor, batch)
+					: messages.after(viewerId, roomId, team, start, cursor, batch);
+			if (page.isEmpty()) {
+				break;
+			}
+			// before() and after() both return ascending ids; walk away from the anchor.
+			List<ChatMessageRow> outward = new ArrayList<>(page);
+			if (older) {
+				Collections.reverse(outward);
+			}
+			for (ChatMessageRow row : outward) {
+				if (kept.size() == wanted) {
+					break;
+				}
+				if (readable(row.senderId(), row.deletedAt(), row.visibility())) {
+					kept.add(row);
+				}
+			}
+			if (page.size() < batch) {
+				break;
+			}
+			cursor = outward.get(outward.size() - 1).id();
+		}
+		if (older) {
+			Collections.reverse(kept);
+		}
+		return kept;
+	}
+
+	private static boolean readable(Long senderId, Instant deletedAt, String visibility) {
+		return senderId != null && deletedAt == null && MessageVisibility.VISIBLE.name().equals(visibility);
+	}
+
+	private static ReportMessageSnapshot snapshot(Report report, ChatMessageRow row, int relPosition) {
+		return ReportMessageSnapshot.copy(report, row.id(), row.senderId(), row.body(), relPosition, row.createdAt());
+	}
+
+	/** Same window as {@code user.ChatService.historyStart}: free team history only; 1:1 has none. */
+	private Instant historyStart(boolean team) {
+		if (!team) {
+			return null;
+		}
+		return clock.instant().minus(Duration.ofDays(PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE));
 	}
 
 	/**
@@ -230,7 +356,8 @@ public class ModerationService {
 	}
 
 	private long resolveTargetUserId(ReportTargetType type, long targetId) {
-		// Non-USER targets resolve once their owning tables exist (posts, chat, ads).
+		// Chat messages resolve in resolveReportableMessage. Posts, comments, recruit posts and ads
+		// resolve once their report paths are wired.
 		if (type != ReportTargetType.USER) {
 			throw new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요");
 		}
