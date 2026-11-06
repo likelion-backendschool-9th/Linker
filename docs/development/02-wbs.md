@@ -187,12 +187,12 @@
 | 02 | A | POST | `/api/v1/user/onboarding/agreements` | Age 14+, terms, privacy (required), marketing (optional) consent; store terms version | user |
 | 02 | A | PUT | `/api/v1/user/onboarding/profile` | Save name, bio, blog, tech stack, looking for team, job-seeking status, then finish onboarding | user |
 | 02 | A | PUT | `/api/v1/user/onboarding/email` | `[Included]` Entered only when no email came from GitHub | user |
-| 04 | A | GET | `/api/v1/public/users/{login}` | Header (layout per member type), completion record, new username if changed. If logged in: follow relation, block check; "제안만 받기" (Offers only) shown to recruiters only | public |
-| 04 | A | GET | `/api/v1/user/users/{login}/followers` | Followers sheet (people list, so login only) | user |
-| 04 | A | GET | `/api/v1/user/users/{login}/followings` | Following sheet | user |
-| 04 | A | POST | `/api/v1/user/users/{login}/follow` | Follow (200/day, notification) | user · developers only |
-| 04 | A | DELETE | `/api/v1/user/users/{login}/follow` | Unfollow | user · developers only |
-| 04 | A | GET | `/api/v1/public/users/{login}/contributions?month=` | `[Included]` One month of contribution graph + as-of time | public |
+| 04 | A | GET | `/api/v1/public/user/{login}` | Header (layout per member type), completion record, new username if changed. If logged in: follow relation, block check; "제안만 받기" (Offers only) shown to recruiters only | public |
+| 04 | A | GET | `/api/v1/user/user/{login}/followers` | Followers sheet (people list, so login only) | user |
+| 04 | A | GET | `/api/v1/user/user/{login}/followings` | Following sheet | user |
+| 04 | A | POST | `/api/v1/user/user/{login}/follow` | Follow (200/day, notification) | user · developers only |
+| 04 | A | DELETE | `/api/v1/user/user/{login}/follow` | Unfollow | user · developers only |
+| 04 | A | GET | `/api/v1/public/user/{login}/contributions?month=` | `[Included]` One month of contribution graph + as-of time | public |
 | 05 | A | GET | `/api/v1/user/me/profile` | Edit form values | user |
 | 05 | A | PATCH | `/api/v1/user/me/profile` | Name, bio, blog, tech stack, looking for team, job-seeking status, `[Included]` job categories of interest (max 3) | user · developers only |
 | 05 | A | POST | `/api/v1/user/me/profile/github-sync` | Reload from GitHub | user · developers only |
@@ -269,7 +269,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 04 | A | GET | `/api/v1/public/users/{login}/teams` | 2nd pass: teams (active, completed) | public |
+| 04 | A | GET | `/api/v1/public/user/{login}/teams` | 2nd pass: teams (active, completed) | public |
 | 07 | B | GET | `/api/v1/user/me/teams` | My teams (grouped active / completed / read-only / archived), includes `joinedAt` for default team pick; also used by the team switcher sheet and 07 my-issues team picker | user · developers only |
 | 08 | B | POST | `/api/v1/user/teams` | Create team + team chat room + register owner | user · developers only |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on | team OWNER |
@@ -435,7 +435,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 04 | A | GET | `/api/v1/public/users/{login}/posts` | 2nd pass: project posts (pinned first) | public |
+| 04 | A | GET | `/api/v1/public/user/{login}/posts` | 2nd pass: project posts (pinned first) | public |
 | 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: pin featured posts and order (free 1, Pro 5) | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |

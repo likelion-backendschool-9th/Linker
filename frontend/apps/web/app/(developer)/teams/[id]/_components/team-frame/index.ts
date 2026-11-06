@@ -1,0 +1,1 @@
+export { TeamFrame } from './TeamFrame';
