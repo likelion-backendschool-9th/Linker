@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.linker.backend.dto.github.response.GithubInstallationView;
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.global.security.TeamAccess;
@@ -18,8 +18,8 @@ import com.linker.backend.integration.github.GithubTeamSource.*;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
 import com.linker.backend.repository.issue.IssueContextRepository;
-import com.linker.backend.service.PublicAuthService;
-import com.linker.backend.service.user.UserTeamSyncService;
+import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.TeamSyncService;
 import jakarta.servlet.http.Cookie;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,10 +81,10 @@ class TeamSetupIntegrationTest {
   @Autowired JdbcTemplate jdbc;
   @Autowired ObjectMapper json;
   @Autowired UserRepository users;
-  @Autowired PublicAuthService sessions;
+  @Autowired AuthService sessions;
   @Autowired StringRedisTemplate redis;
   @Autowired TeamAccess access;
-  @Autowired UserTeamSyncService sync;
+  @Autowired TeamSyncService sync;
   @Autowired IssueContextRepository contexts;
   @Autowired GithubWebhookService webhooks;
   @Autowired GithubWebhookDeliveryRepository deliveries;

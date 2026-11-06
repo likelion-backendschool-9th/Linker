@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import com.linker.backend.entity.profile.AdStatus;
+import com.linker.backend.entity.profile.type.AdStatus;
 import com.linker.backend.entity.profile.RecruiterAd;
 
 import org.springframework.data.jpa.repository.JpaRepository;

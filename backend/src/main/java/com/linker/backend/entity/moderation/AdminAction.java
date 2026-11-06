@@ -1,6 +1,8 @@
 package com.linker.backend.entity.moderation;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import java.time.Instant;
+
+import com.linker.backend.entity.moderation.type.AdminActionType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,10 +15,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "admin_actions")
-public class AdminAction extends BaseTimeEntity {
+public class AdminAction {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,6 +46,14 @@ public class AdminAction extends BaseTimeEntity {
 	@Column(length = 2000)
 	private String reason;
 
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
 	protected AdminAction() {
 	}
 
@@ -64,5 +76,13 @@ public class AdminAction extends BaseTimeEntity {
 
 	public AdminActionType getAction() {
 		return action;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

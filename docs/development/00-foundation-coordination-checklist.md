@@ -1,6 +1,6 @@
 ﻿# 00 공통 기반 (D1–D2) — A~E 조율 체크리스트
 
-> 알림 생성 계약(2026-11-04): 아래 NotificationService 표기는 현재 `UserNotificationService` / `RecruiterNotificationService` / `AdminNotificationService`의 `create(CreateNotificationCommand)`로 대체한다. DTO는 dto.notification.request, 서비스는 service의 해당 역할 폴더다. 수신자 종류와 생성 서비스 역할은 별개이며 기존 DB·알림 정책을 유지한다.
+> 알림 생성 계약(2026-11-04): 아래 NotificationService 표기는 현재 `user.NotificationService` / `recruiter.NotificationService` / `admin.NotificationService`의 `create(CreateNotificationCommand)`로 대체한다. DTO는 dto.notification.request, 서비스는 service의 해당 역할 폴더다. 수신자 종류와 생성 서비스 역할은 별개이며 기존 DB·알림 정책을 유지한다.
 
 > 근거: [02 WBS ch. 3](02-wbs.md), [03 frontend blueprint §1-1](03-frontend-blueprint.md#1-1-foundation-built-before-pages-the-most-important-work), [07 page-todo 00](../planning/07-page-todo.md)  
 > 원칙: **계약을 먼저 연 쪽에 맞춘다.** 페이지 작업은 D2 체크·6 스파이크 통과 후.
@@ -24,7 +24,7 @@
 
 ---
 
-> 신고 알림 freeze: E는 최초 자동숨김 시 활성 운영자별 `AdminNotificationService.create`로 `REPORT_AUTO_HIDDEN`을 생성한다(역할 간 호출의 좁은 예외). 피신고자·신고자에게 생성하지 않으며 중복 생산을 막는다. 상세 계약은 [청사진 §4](05-backend-blueprint.md#report-auto-hide-notification--frozen-contract). 호출부 연결은 E 담당이며 이 기록은 연결 완료를 뜻하지 않는다.
+> 신고 알림 freeze: E는 최초 자동숨김 시 활성 운영자별 `admin.NotificationService.create`로 `REPORT_AUTO_HIDDEN`을 생성한다(역할 간 호출의 좁은 예외). 피신고자·신고자에게 생성하지 않으며 중복 생산을 막는다. 상세 계약은 [청사진 §4](05-backend-blueprint.md#report-auto-hide-notification--frozen-contract). 호출부 연결은 E 담당이며 이 기록은 연결 완료를 뜻하지 않는다.
 
 ## 1. D1 오전 — E가 연 뒤에 시작
 
@@ -184,7 +184,7 @@
 - [x] D1 오전 api-fetch/orval/Providers
 - [x] overlay + 공통 시트 + 업로더
 - [x] 신고/차단 API·필터·기간 모델
-- [x] D와 차단 계약 freeze → `UserModerationService.hidesDirectMessage(viewerId, senderId, messageCreatedAt)`(1:1 DM만, 팀 채팅 제외)
+- [x] D와 차단 계약 freeze → `user.ModerationService.hidesDirectMessage(viewerId, senderId, messageCreatedAt)`(1:1 DM만, 팀 채팅 제외)
 - [ ] Vercel 배포 파이프 초안
 
 ### A 이슈 체크
@@ -284,7 +284,7 @@ Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여�
 
 ## D 차단 적용 지점 (2026-11-05)
 
-메시지 저장은 만들지 않는다. 기준은 1:1 DM에서 메시지 `created_at`이 차단 기간 `[created_at, unblocked_at)` 안이면 숨기는 규칙(열린 기간은 이후 전체, 팀 채팅 제외)이고, 조회는 이미 있는 `UserModerationService`를 쓴다. 페이지 16·17에서 아래 지점에 연결한다.
+메시지 저장은 만들지 않는다. 기준은 1:1 DM에서 메시지 `created_at`이 차단 기간 `[created_at, unblocked_at)` 안이면 숨기는 규칙(열린 기간은 이후 전체, 팀 채팅 제외)이고, 조회는 이미 있는 `user.ModerationService`를 쓴다. 페이지 16·17에서 아래 지점에 연결한다.
 
 ### 호출 지점
 

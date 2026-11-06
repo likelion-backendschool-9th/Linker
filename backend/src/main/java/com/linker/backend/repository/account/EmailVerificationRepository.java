@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import com.linker.backend.entity.account.EmailVerification;
-import com.linker.backend.entity.account.VerificationPurpose;
+import com.linker.backend.entity.account.type.VerificationPurpose;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

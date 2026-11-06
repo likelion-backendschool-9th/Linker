@@ -14,7 +14,7 @@
 
 **Design totals:** 18 business systems, 29 HTTP controllers + 29 planned paired entry services, 205 REST endpoints, 5 realtime paths, 69 tables (56 required + 13 included), 33 pages plus foundation 00. Controller count ≠ business-system count. These are design totals, not implementation progress; internal role services may exist beyond the controller pairs.
 
-**Forbidden:** empty controllers or empty paired entry services "for structure" (for example all 29 `*Service` / `User*Service` shells). Add a paired service with real endpoint work; an internal stage-00 role service may be added with its real use case and no controller.
+**Forbidden:** empty controllers or empty paired entry services "for structure" (for example all 29 `*Service` shells). Add a paired service with real endpoint work; an internal stage-00 role service may be added with its real use case and no controller.
 
 
 ## 2. Architecture and layer boundaries
@@ -27,7 +27,7 @@ One Spring Boot application serves the mobile-first Next.js web and Expo WebView
 | service | Access-group-specific use cases | Servlet coupling; another role's service; neutral shared business service |
 | repository | Persistence and query projections | Pricing or access-policy decisions |
 | entity | ERD state, relationships, state changes | Acting as API JSON contracts |
-| dto | Request/response contracts | JPA mappings; duplicate types only because roles differ |
+| dto | Request/response contracts and the entity-to-response mappers shared by access groups (`dto/{business}/mapper/`) | JPA mappings; duplicate types only because roles differ |
 | integration | External adapters **and** the GitHub webhook HTTP entry | Treating unverified provider output as success |
 | async | Queue consumption, post-commit delivery, scheduled entry points | Rules duplicated outside services |
 | global | Config, security, errors | Unrelated feature helpers |
@@ -41,12 +41,12 @@ Flow: Controller → (paired) Service → Repository. Keep `global.error`. Do no
 com.linker.backend/
 ├── BackendApplication.java
 ├── controller/
-│   ├── AuthController.java       # root classes have no prefix
+│   ├── AuthController.java       # no role prefix on any class
 │   ├── AccountController.java
 │   ├── …                         # other public API controllers
-│   ├── user/                     # User*
-│   ├── recruiter/                # Recruiter*
-│   └── admin/                    # Admin*
+│   ├── user/                     # bean names userXxxController
+│   ├── recruiter/                # bean names recruiterXxxController
+│   └── admin/                    # bean names adminXxxController
 ├── service/
 │   ├── AuthService.java
 │   ├── AccountService.java
@@ -59,19 +59,19 @@ com.linker.backend/
 │   └── payment|mail|push|storage|ai/
 ├── repository/{business}/
 ├── entity/{business}/            # @Entity only; enums/constants/@Embeddable/composite keys in type/
-├── dto/{business}/request|response/
+├── dto/{business}/request|response|mapper/
 ├── async/webhook|notification|schedule/
 └── global/config|security|error/
 ```
 
 **Naming and placement**
 - `public` is an HTTP access label only. Never create a Java package `public` or `public_`; public classes sit at the `controller` / `service` roots. The HTTP prefix stays `/api/v1/public`.
-- The class prefix follows the folder: `user/` → `User*`, `recruiter/` → `Recruiter*`, `admin/` → `Admin*`; root classes have none (`AuthController`, `AuthService`). Names do not collide, so no explicit Spring bean names.
+- Controllers and services carry no role prefix. The folder gives the role (`user/TeamService`, `admin/NotificationService`); root classes are the public group (`AuthController`, `AuthService`). Names repeat across folders, so every class in `user/`, `recruiter/`, `admin/` sets an explicit bean name that starts with the folder (`@Service("userTeamService")`, `@RestController("adminModerationController")`). Root classes keep the default bean name. When one file needs two same-name classes (for example `user.ModerationService` calling `admin.NotificationService`), write the fully qualified name for the other one.
 - `user` means authenticated accounts, not developers only. Notifications, uploads, chat and subscription serve developers and recruiters; apply `@DeveloperOnly` and team/resource checks per method.
 - `recruiter` holds recruiter-only actions; `admin` holds operator actions. An operator is a developer with `admins` permissions and follows normal developer rules outside admin APIs.
 - Do not add `controller.member`, `controller.auth`, a member role or `/member` URLs. Login, refresh, password and OTP stay on their access-group controllers, with services named by the same rule.
 - Repositories and entities are owned by business, not role. DTOs follow business request/response packages.
-- A later split of `admin/AdminController` into role-specific `AdminXxxController` classes is out of scope here.
+- `admin/ModerationController` handles operator OTP verification, report cases and appeals. A later split (for example an OTP controller) is out of scope here.
 
 **API version `/api/v1`**
 - Added once in `WebConfig`: `PathMatchConfigurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.linker.backend.controller"))`. Controller `@RequestMapping` omits `/api/v1`; the version is not a package.
@@ -95,11 +95,11 @@ com.linker.backend/
 
 ## 4. Controller ↔ service 1:1
 
-Each HTTP controller calls its same-group paired entry service. Services with overlapping capabilities still use role-specific classes (`UserXService`, `RecruiterXService`, `AdminXService`); never route through a neutral `XService` or another role's service.
+Each HTTP controller calls its same-group paired entry service. Services with overlapping capabilities still use role-specific classes (`user.XService`, `recruiter.XService`, `admin.XService`); never route through a neutral `XService` or another role's service.
 
 ```text
-UserSubscriptionController  → UserSubscriptionService  → PaymentGateway
-AdminSubscriptionController → AdminSubscriptionService → PaymentGateway
+user.SubscriptionController  → user.SubscriptionService  → PaymentGateway
+admin.SubscriptionController → admin.SubscriptionService → PaymentGateway
 ```
 
 - The generation rule is in [AGENTS.md](../../AGENTS.md#mandatory-backend-service-rule).
@@ -109,10 +109,10 @@ AdminSubscriptionController → AdminSubscriptionService → PaymentGateway
 
 ### 4.1 Notification creation (stage-00 internal use case)
 
-No notification controller or REST API is needed. Implemented producers: `service.user.UserNotificationService`, `service.recruiter.RecruiterNotificationService`, `service.admin.AdminNotificationService`.
+No notification controller or REST API is needed. Implemented producers: `service.user.NotificationService`, `service.recruiter.NotificationService`, `service.admin.NotificationService`.
 
 - Each exposes `create(dto.notification.request.CreateNotificationCommand)`, validates recipient and optional actor, computes quiet hours from `PlanLimits`, and saves through `NotificationRepository` in the caller's transaction (rollback removes the row). `create` sends no push and publishes no STOMP; list, read, badge, push and the morning flush of `deliver_after` belong to page 18.
-- The prefix names the producing use case, not the recipient's account type: a logged-in user flow (team invite) calls `UserNotificationService`, a recruiter flow `RecruiterNotificationService`, an operator flow `AdminNotificationService`. They do not delegate to each other, except the report auto-hide case in §4.2. There is no `PublicNotificationService`.
+- The prefix names the producing use case, not the recipient's account type: a logged-in user flow (team invite) calls `user.NotificationService`, a recruiter flow `recruiter.NotificationService`, an operator flow `admin.NotificationService`. They do not delegate to each other, except the report auto-hide case in §4.2. There is no `PublicNotificationService`.
 - Callers check their own permission and, for `MARKETING`, marketing consent before building the command. `create` does not filter senders the recipient blocked; that stays at the call site.
 - `CreateNotificationCommand` requires `recipientUserId` and `notificationType`; optional: `actorUserId`, `targetType`, `targetId`, `linkPath`, `payloadJson`, `groupKey`. Blank `notificationType` throws `IllegalArgumentException`; blank optional strings are stored as null.
 - `NotificationTypes` holds known strings (`CHAT`, `ISSUE_ASSIGNED`, `DUE_SOON`, `APPLICATION_RECEIVED`, `APPLICATION_ACCEPTED`, `APPLICATION_REJECTED`, `COMMENT`, `FOLLOW`, `MESSAGE_REQUEST`, `TEAM_INVITE`, `REPORT_AUTO_HIDDEN`, `MARKETING`). They are not a DB enum; producers may pass other strings.
@@ -127,7 +127,7 @@ userNotifications.create(new CreateNotificationCommand(
 
 ### 4.2 Report auto-hide notification (frozen contract)
 
-- **Exception:** E's `UserModerationService` calls `AdminNotificationService.create(CreateNotificationCommand)` once per active operator in the auto-hide transaction. This system-generated operator alert is the only cross-role service call allowed; it does not move Moderation logic into the notification service.
+- **Exception:** E's `user.ModerationService` calls `admin.NotificationService.create(CreateNotificationCommand)` once per active operator in the auto-hide transaction. This system-generated operator alert is the only cross-role service call allowed; it does not move Moderation logic into the notification service.
 - **Recipients:** each active operator backed by `admins` and an active, non-deleted account. No notification to the reported user or reporters; the reported user sees only the existing 「검토 중」 UI.
 - **Trigger:** the first transition of `auto_hidden_at` from null to a timestamp at `PlanLimits.REPORT_AUTO_HIDE_REPORTERS` distinct eligible reporters (currently 5). Not on every report or on later reports against an already hidden case. E owns the atomic transition and concurrency guard.
 - **Command:** `recipientUserId = operator.userId`, `actorUserId = null`, `targetType = null`, `targetId = null`, `linkPath = "/admin/reports"`, `payloadJson = null`, `groupKey = "report-auto-hidden:" + caseId` (`report_cases.id`). `groupKey` is a grouping hint, not an idempotency guarantee; E resolves recipients and prevents duplicate production.
@@ -156,11 +156,11 @@ Keep each API's method, path, query, permission, DTO, status, error code, page t
 | --- | --- | --- |
 | GitHub/company-email sign-up, login, reset | AuthController | State, verification/reset tokens, allowed return URL, failure limits |
 | Refresh | AuthController | Valid session/refresh eligibility despite public URL |
-| Current session and logout | UserSessionController | Authenticated account, own session |
-| Change recruiter password | RecruiterAuthController | Authenticated recruiter, own account |
-| Operator OTP | AdminController | Logged-in registered operator candidate; permit pre-OTP verification |
-| Shared notifications/uploads/chat | User* controllers | Login plus owner, participant and account-state checks |
-| Teams/issues/recruit writing | User* controllers | Developer, team/resource and GitHub permissions |
+| Current session and logout | user.SessionController | Authenticated account, own session |
+| Change recruiter password | recruiter.AuthController | Authenticated recruiter, own account |
+| Operator OTP | admin.ModerationController | Logged-in registered operator candidate; permit pre-OTP verification |
+| Shared notifications/uploads/chat | `controller/user` controllers | Login plus owner, participant and account-state checks |
+| Teams/issues/recruit writing | `controller/user` controllers | Developer, team/resource and GitHub permissions |
 | Account payments / operator refunds | UserSubscription / AdminSubscription | Separate role implementations; shared PaymentGateway/repositories; distinct payer/target and admin checks |
 
 - Apply authorization in `global.security` and services; package names grant no access. Operator privileges never bypass ordinary team/chat membership.
@@ -178,16 +178,16 @@ Keep each API's method, path, query, permission, DTO, status, error code, page t
 | SUBSCRIBE | `/user/queue/chat-rooms` |
 | SUBSCRIBE | `/user/queue/notifications` |
 
-- The single STOMP SEND is on `UserChatController` → `UserChatService`. Recruiter offer actions use `RecruiterChatService`; role services implement their own handling on the same chat data model, not a neutral `ChatMessageService`.
+- The single STOMP SEND is on `user.ChatController` → `user.ChatService`. Recruiter offer actions use `recruiter.ChatService`; role services implement their own handling on the same chat data model, not a neutral `ChatMessageService`.
 - Authenticate CONNECT; authorize SEND/SUBSCRIBE; protect personal queues. Persist, commit, then publish; reconnect catches up via REST. Add no destinations or ticket API. These five paths are separate from the 205 REST endpoints.
 
 | Business | Rule |
 | --- | --- |
-| Recruitment acceptance | `UserRecruitmentService` coordinates same-group team/chat/notification services and the transaction; GitHub org invite stays separate |
+| Recruitment acceptance | `user.RecruitmentService` coordinates same-group team/chat/notification services and the transaction; GitHub org invite stays separate |
 | GitHub/issues | Distinct user vs installation tokens; verify signatures; dedupe delivery IDs; refresh caches; reconcile misses |
 | Chat | Dedupe by sender/client message ID; consistent read pointers; block-period/leave/hidden rules; team-chat exception per Policy |
 | Notifications | Role-specific `create` with shared command/data (§4.1); creation joins the producing transaction; no external delivery |
-| Payments | `UserSubscriptionService` and `AdminSubscriptionService` each verify their use case and PG result; share the technical `PaymentGateway` and data contracts, not a neutral `PaymentService` |
+| Payments | `user.SubscriptionService` and `admin.SubscriptionService` each verify their use case and PG result; share the technical `PaymentGateway` and data contracts, not a neutral `PaymentService` |
 | Moderation / files / AI·ads·stats | Preserve Policy limits, snapshots, retention, privacy |
 
 Do not hold a DB transaction open across a provider call. PostgreSQL is durable truth; Redis is queue/cache/rate-limit infrastructure. Keep the 69-table ERD and Flyway history; folder moves alone must not change schema or Nginx `/api` routing.
@@ -212,7 +212,7 @@ Keep the existing URL and response contract. The webhook is external ingress, no
 Keep the existing Compose/Nginx/deployment setup. The proxy routes `/api/v1/` to Spring and `/ws` with upgrade headers; `/api/bff/` is reserved. See [Docker](../operations/02-docker.md) and [automatic deployment](../operations/04-automatic-deployment.md). Package moves must not change deployment or provider selection.
 
 Implementation notes as of this document (not rules; re-check against code):
-- Session cookies use RS256 JWTs. `UserGithubController`/`UserGithubService` exist for the documented installation spike. Role notification services stay internal.
+- Session cookies use RS256 JWTs. `user.GithubController`/`user.GithubService` exist for the documented installation spike. Role notification services stay internal.
 - GitHub: the HTTP adapter needs no ambient DB transaction, webhook outcomes use short transactions, and duplicate dispatch uses a PostgreSQL session advisory lock. See [GitHub App operations](../operations/06-github-app.md) for token integration and live-spike prerequisites.
 - Chat reads (page 16): list, unread summary, request accept/delete use the chat tables.
 - Chat send (page 17): a text send stores a TEXT row, updates the same-room last-message pointer, and publishes `{event:"MESSAGE",message}` on the room topic only after commit. A broker receipt is not the save acknowledgement.

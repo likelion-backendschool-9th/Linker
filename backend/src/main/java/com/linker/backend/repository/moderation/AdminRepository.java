@@ -3,7 +3,7 @@ package com.linker.backend.repository.moderation;
 import java.util.List;
 import java.util.Optional;
 
-import com.linker.backend.entity.account.UserStatus;
+import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.moderation.Admin;
 
 import org.springframework.data.jpa.repository.JpaRepository;

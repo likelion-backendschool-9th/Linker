@@ -30,17 +30,15 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
-import com.linker.backend.service.user.UserNotificationService;
-import com.linker.backend.service.recruiter.RecruiterNotificationService;
-import com.linker.backend.service.admin.AdminNotificationService;
+import com.linker.backend.service.admin.NotificationService;
 import com.linker.backend.entity.notification.Notification;
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserStatus;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.github.GithubWebhookDelivery;
-import com.linker.backend.entity.github.WebhookStatus;
+import com.linker.backend.entity.github.type.WebhookStatus;
 import com.linker.backend.entity.moderation.Admin;
-import com.linker.backend.entity.moderation.AdminRole;
+import com.linker.backend.entity.moderation.type.AdminRole;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.security.DeveloperOnly;
 import com.linker.backend.global.security.JwtSessionTokens;
@@ -52,13 +50,13 @@ import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
-import com.linker.backend.service.PublicAuthService;
+import com.linker.backend.service.AuthService;
 import com.linker.backend.service.admin.TotpCodes;
 import com.linker.backend.integration.github.GithubTokenCipher;
 import com.linker.backend.integration.mail.SmtpMailGateway;
 import com.linker.backend.integration.github.GithubWebhookHandler;
 import com.linker.backend.integration.github.GithubWebhookService;
-import com.linker.backend.service.user.UserModerationService;
+import com.linker.backend.service.user.ModerationService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,7 +130,7 @@ class FoundationIntegrationTest {
 	@Autowired
 	private UserRepository users;
 	@Autowired
-	private PublicAuthService sessions;
+	private AuthService sessions;
 	@Autowired
 	private JwtSessionTokens tokens;
 	@Autowired
@@ -140,7 +138,7 @@ class FoundationIntegrationTest {
 	@Autowired
 	private UserBlockRepository blocks;
 	@Autowired
-	private UserModerationService blockService;
+	private ModerationService blockService;
 	@Autowired
 	private ReportCaseRepository reportCases;
 	@Autowired
@@ -152,11 +150,11 @@ class FoundationIntegrationTest {
 
 
 	@Autowired
-	private UserNotificationService userNotifications;
+	private com.linker.backend.service.user.NotificationService userNotifications;
 	@Autowired
-	private RecruiterNotificationService recruiterNotifications;
+	private com.linker.backend.service.recruiter.NotificationService recruiterNotifications;
 	@Autowired
-	private AdminNotificationService adminNotifications;
+	private NotificationService adminNotifications;
 	@Autowired
 	private PlatformTransactionManager transactionManager;
 
@@ -276,7 +274,7 @@ class FoundationIntegrationTest {
 	void operatorApiStaysClosedUntilTheSessionIsOtpVerified() throws Exception {
 		User user = saveUser("ops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
-		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
 		assertThat(tokens.verify(issued.rawToken()).orElseThrow().operator()).isTrue();
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
@@ -299,7 +297,7 @@ class FoundationIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items").isArray());
 
-		PublicAuthService.IssuedSession other = sessions.issue(user, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession other = sessions.issue(user, "JUnit", "127.0.0.1");
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(other.rawToken())))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
@@ -311,7 +309,7 @@ class FoundationIntegrationTest {
 	void operatorOtpVerifyOpensOnlyThatSession() throws Exception {
 		User operator = saveUser("otpops", UserType.DEVELOPER);
 		Admin admin = admins.save(Admin.assign(operator, AdminRole.OPERATOR));
-		PublicAuthService.IssuedSession issued = sessions.issue(operator, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession issued = sessions.issue(operator, "JUnit", "127.0.0.1");
 		String body = "{\"code\":\"000000\"}";
 
 		mockMvc.perform(post("/api/v1/admin/otp/verify").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -358,7 +356,7 @@ class FoundationIntegrationTest {
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
 				.andExpect(status().isOk());
 
-		PublicAuthService.IssuedSession other = sessions.issue(operator, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession other = sessions.issue(operator, "JUnit", "127.0.0.1");
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(other.rawToken())))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
@@ -386,7 +384,7 @@ class FoundationIntegrationTest {
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
 		user.suspendUntil(Instant.now().plusSeconds(3600));
 		users.save(user);
-		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
 
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(issued.rawToken())))
 				.andExpect(status().isForbidden())
@@ -406,7 +404,7 @@ class FoundationIntegrationTest {
 	void deletedOperatorCannotKeepTheAdminSession() throws Exception {
 		User user = saveUser("goneops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
-		PublicAuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession issued = sessions.issue(user, "JUnit", "127.0.0.1");
 		sessions.markOperatorVerified(issued.sessionId(), Instant.now());
 		user.markDeleted(Instant.now());
 		users.save(user);
@@ -420,8 +418,8 @@ class FoundationIntegrationTest {
 	void operatorIdleRevokesThatSessionOnly() throws Exception {
 		User user = saveUser("idleops", UserType.DEVELOPER);
 		admins.save(Admin.assign(user, AdminRole.OPERATOR));
-		PublicAuthService.IssuedSession idle = sessions.issue(user, "JUnit", "127.0.0.1");
-		PublicAuthService.IssuedSession current = sessions.issue(user, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession idle = sessions.issue(user, "JUnit", "127.0.0.1");
+		AuthService.IssuedSession current = sessions.issue(user, "JUnit", "127.0.0.1");
 		sessions.markOperatorVerified(idle.sessionId(), Instant.now());
 		sessions.markOperatorVerified(current.sessionId(), Instant.now());
 		mockMvc.perform(get("/api/v1/admin/report-cases").cookie(cookie(idle.rawToken())))

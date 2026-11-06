@@ -2,7 +2,7 @@ package com.linker.backend.entity.file;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.file.type.UploadPurpose;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,10 +12,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "uploaded_files")
-public class UploadedFile extends BaseTimeEntity {
+public class UploadedFile {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,6 +47,14 @@ public class UploadedFile extends BaseTimeEntity {
 	private Integer height;
 
 	private Instant originalDeletedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected UploadedFile() {
 	}
@@ -97,5 +107,13 @@ public class UploadedFile extends BaseTimeEntity {
 
 	public boolean isComplete() {
 		return url != null;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

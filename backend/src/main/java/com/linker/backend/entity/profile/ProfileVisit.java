@@ -1,9 +1,9 @@
 package com.linker.backend.entity.profile;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,12 +15,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(
 		name = "profile_visits",
 		uniqueConstraints = @UniqueConstraint(columnNames = {"profile_user_id", "visitor_id", "visit_date"}))
-public class ProfileVisit extends BaseTimeEntity {
+public class ProfileVisit {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +39,14 @@ public class ProfileVisit extends BaseTimeEntity {
 	@Column(nullable = false)
 	private LocalDate visitDate;
 
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
 	protected ProfileVisit() {
 	}
 
@@ -46,5 +56,13 @@ public class ProfileVisit extends BaseTimeEntity {
 		visit.visitor = visitor;
 		visit.visitDate = visitDate;
 		return visit;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

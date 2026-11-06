@@ -8,7 +8,7 @@ import java.util.Optional;
 import com.linker.backend.global.error.ApiException;
 
 /**
- * Dev and test stand-in. {@link com.linker.backend.service.user.UserUploadService} rewrites the
+ * Dev and test stand-in. {@link com.linker.backend.service.user.UploadService} rewrites the
  * create response {@code uploadUrl} to {@code PUT /api/v1/user/uploads/{fileId}/content}, which
  * calls {@link #stage}. A real cloud provider still has to be chosen for non-local deploys.
  */

@@ -2,8 +2,6 @@ package com.linker.backend.entity.chat;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,10 +11,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "chat_room_members")
-public class ChatRoomMember extends BaseTimeEntity {
+public class ChatRoomMember {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +40,14 @@ public class ChatRoomMember extends BaseTimeEntity {
 	private Instant leftAt;
 
 	private Instant hiddenAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected ChatRoomMember() {
 	}
@@ -87,5 +95,13 @@ public class ChatRoomMember extends BaseTimeEntity {
 
 	public Instant getHiddenAt() {
 		return hiddenAt;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

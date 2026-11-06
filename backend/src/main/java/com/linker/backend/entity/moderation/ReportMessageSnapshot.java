@@ -2,8 +2,6 @@ package com.linker.backend.entity.moderation;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,10 +11,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "report_message_snapshots")
-public class ReportMessageSnapshot extends BaseTimeEntity {
+public class ReportMessageSnapshot {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +41,14 @@ public class ReportMessageSnapshot extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Instant messageCreatedAt;
 
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
 	protected ReportMessageSnapshot() {
 	}
 
@@ -58,5 +66,13 @@ public class ReportMessageSnapshot extends BaseTimeEntity {
 
 	public int getRelPosition() {
 		return relPosition;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

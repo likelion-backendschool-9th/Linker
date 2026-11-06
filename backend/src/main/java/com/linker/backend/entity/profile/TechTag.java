@@ -1,6 +1,6 @@
 package com.linker.backend.entity.profile;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,10 +8,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "tech_tags")
-public class TechTag extends BaseTimeEntity {
+public class TechTag {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,6 +28,14 @@ public class TechTag extends BaseTimeEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
 	protected TechTag() {
 	}
 
@@ -35,5 +45,13 @@ public class TechTag extends BaseTimeEntity {
 
 	public String getName() {
 		return name;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

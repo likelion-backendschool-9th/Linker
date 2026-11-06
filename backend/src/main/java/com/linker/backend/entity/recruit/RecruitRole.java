@@ -1,6 +1,8 @@
 package com.linker.backend.entity.recruit;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import java.time.Instant;
+
+import com.linker.backend.entity.recruit.type.RecruitRoleType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,10 +15,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "recruit_roles")
-public class RecruitRole extends BaseTimeEntity {
+public class RecruitRole {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +39,14 @@ public class RecruitRole extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private int acceptedCount;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected RecruitRole() {
 	}
@@ -85,5 +97,13 @@ public class RecruitRole extends BaseTimeEntity {
 
 	public boolean isFull() {
 		return acceptedCount >= headcount;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

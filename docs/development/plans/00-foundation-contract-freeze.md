@@ -88,10 +88,10 @@ JWT와 GitHub 토큰은 브리지와 URL에 넣지 않는다.
 
 | 생산 업무 | 서비스 |
 | --- | --- |
-| 로그인 사용자 업무 | `UserNotificationService` |
-| 채용 담당자 업무 | `RecruiterNotificationService` |
-| 운영자 업무 | `AdminNotificationService` |
-| 신고 최초 자동숨김 | `UserModerationService`가 `AdminNotificationService.create` 호출 |
+| 로그인 사용자 업무 | `user.NotificationService` |
+| 채용 담당자 업무 | `recruiter.NotificationService` |
+| 운영자 업무 | `admin.NotificationService` |
+| 신고 최초 자동숨김 | `user.ModerationService`가 `admin.NotificationService.create` 호출 |
 
 인자는 `CreateNotificationCommand` 순서대로 `recipientUserId`, `notificationType`, `actorUserId`, `targetType`, `targetId`, `linkPath`, `payloadJson`, `groupKey`다. 상세 동작은 [알림 생성 계약](d-notification-create-contract.md)과 청사진 §4를 유지한다. 이 freeze는 호출부를 추가하지 않는다.
 

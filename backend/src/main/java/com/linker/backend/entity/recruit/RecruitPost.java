@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.Set;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.recruit.type.RecruitGoal;
+import com.linker.backend.entity.recruit.type.RecruitStatus;
+import com.linker.backend.entity.recruit.type.RecruitVisibility;
+import com.linker.backend.entity.recruit.type.WorkMode;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -23,10 +26,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "recruit_posts")
-public class RecruitPost extends BaseTimeEntity {
+public class RecruitPost {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -81,6 +86,14 @@ public class RecruitPost extends BaseTimeEntity {
 
 	@OneToMany(mappedBy = "recruitPost", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<RecruitPostTag> tags = new ArrayList<>();
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected RecruitPost() {
 	}
@@ -256,5 +269,13 @@ public class RecruitPost extends BaseTimeEntity {
 
 	public List<RecruitPostTag> getTags() {
 		return tags;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

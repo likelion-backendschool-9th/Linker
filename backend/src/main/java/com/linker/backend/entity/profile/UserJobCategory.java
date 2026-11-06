@@ -1,7 +1,9 @@
 package com.linker.backend.entity.profile;
 
+import java.time.Instant;
+
 import com.linker.backend.entity.account.User;
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.profile.type.JobCategory;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,12 +17,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(
 		name = "user_job_categories",
 		uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "job_category"}))
-public class UserJobCategory extends BaseTimeEntity {
+public class UserJobCategory {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,6 +38,14 @@ public class UserJobCategory extends BaseTimeEntity {
 	@Column(nullable = false, length = 32)
 	private JobCategory jobCategory;
 
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
 	protected UserJobCategory() {
 	}
 
@@ -46,5 +58,13 @@ public class UserJobCategory extends BaseTimeEntity {
 
 	public String key() {
 		return jobCategory.name();
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

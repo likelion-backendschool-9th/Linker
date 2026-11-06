@@ -58,12 +58,12 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 
 ## Backend structure (details: blueprint §3–§4)
 - Base package `com.linker.backend`; layers `controller`, `service`, `repository`, `entity`, `dto`, plus `integration`, `async`, `global`. 18 business systems (WBS S01–S18), 29 controller classes.
-- Public controllers/services sit at the `controller`/`service` root with no prefix (`AuthController`, `AuthService`). Others go in `user/`, `recruiter/`, `admin/` and take the folder's prefix (`User*`, `Recruiter*`, `Admin*`). Never create a `public`/`public_` package; names do not collide, so no explicit bean names.
+- Public controllers/services sit at the `controller`/`service` root with no prefix (`AuthController`, `AuthService`). Others go in `user/`, `recruiter/`, `admin/` and take no role prefix either (`user/TeamController`, `admin/NotificationService`). Never create a `public`/`public_` package. Names repeat across folders, so every class in `user/`, `recruiter/`, `admin/` declares an explicit bean name that starts with the folder (`@RestController("userTeamController")`, `@Service("adminNotificationService")`); root classes keep the default name.
 - `user` means authenticated accounts, not developers only. Developer-only actions use method-level checks (`@DeveloperOnly`), not a package.
 - `GithubWebhookController` and its service live in `integration.github` (not a fifth access group). Do not add `controller.multi/open/auth/member`, `/member` URLs, `service.support`, `global.exception`, `global.response`, `api/common`, page-number packages (`p01_login`), or a `domain` package mixing controllers and entities. Keep `global.error`.
-- DTOs go under `dto` (`request`/`response` subpackages), never beside controllers. Controllers never return entities.
+- DTOs go under `dto` (`request`/`response` subpackages; a mapper shared by access groups sits in `dto/{business}/mapper/`), never beside controllers. Controllers never return entities.
 - `/api/v1` is added only in `WebConfig` via `PathMatchConfigurer.addPathPrefix("/api/v1", HandlerTypePredicate.forBasePackage("com.linker.backend.controller"))`. `@RequestMapping` must not contain it, and it is not a package. The webhook is outside this prefix: `GithubWebhookController` keeps its own explicit `@RequestMapping("/api/v1")` (path `/api/v1/webhook/github`); do not change the URL registered in the GitHub App.
-- Keep HTTP paths, permissions, OpenAPI `@Tag` names (for example `p11-issue-list`) and STOMP destinations when classes move. The common STOMP SEND is on `UserChatController`.
+- Keep HTTP paths, permissions, OpenAPI `@Tag` names (for example `p11-issue-list`) and STOMP destinations when classes move. The common STOMP SEND is on `user.ChatController`.
 
 ## Entity and repository
 - `entity/{business}/` holds only `@Entity` classes (file count = table count). Enums, constants, `@Embeddable` and composite keys go in `entity/{business}/type/`.
@@ -74,13 +74,13 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 - Entities and repositories are shared by business responsibility; never copy them per page or access group.
 
 ## Mandatory backend service rule
-- **Even for common functionality, write separate access-group services:** `service.XService` (public), `service.user.UserXService`, `service.recruiter.RecruiterXService`, `service.admin.AdminXService`.
+- **Even for common functionality, write separate access-group services:** `service.XService` (public), `service.user.XService`, `service.recruiter.XService`, `service.admin.XService` (same simple name, bean names `userXService` / `recruiterXService` / `adminXService`).
 - A controller calls its same-group paired service (same name stem). An internal stage-00 role service may exist before any controller; never create an empty controller to pair it.
 - Do not use a neutral `XService`, shared business base class, `service.common`/`service.shared`, or another role's service. Same-group services may call each other for real use cases.
 - **May be shared:** DTO/command contracts, entities, repositories, policy constants, technical adapters (`PaymentGateway`, GitHub HTTP clients). Adapters must not become hidden business services. Keep limits in Policy/`PlanLimits` and test equivalent cases across role implementations.
 - Add services and controllers only with real endpoint work; foundation endpoints join their owning systems. Never bulk-scaffold empty controllers or services (for example all 29 `*Service` shells), nor unused role copies, routes, tables or access rights to complete a matrix.
-- Example: `UserNotificationService`, `RecruiterNotificationService`, `AdminNotificationService` each implement `create`; they share `CreateNotificationCommand`, `NotificationTypes`, `NotificationRepository` and the `Notification` entity.
-- Only exception: `UserModerationService` may call `AdminNotificationService.create` when `auto_hidden_at` is first set (`REPORT_AUTO_HIDDEN`, each active operator); see blueprint §4. It authorizes no other cross-role call.
+- Example: `user.NotificationService`, `recruiter.NotificationService`, `admin.NotificationService` each implement `create`; they share `CreateNotificationCommand`, `NotificationTypes`, `NotificationRepository` and the `Notification` entity.
+- Only exception: `user.ModerationService` may call `admin.NotificationService.create` when `auto_hidden_at` is first set (`REPORT_AUTO_HIDDEN`, each active operator); see blueprint §4. It authorizes no other cross-role call.
 
 ## Keep code and documents consistent
 - Table/column/enum changes: update ERD diagrams, notes, enum list, page mapping, counts, and WBS page tables.

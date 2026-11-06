@@ -173,8 +173,8 @@ public class IssueDetailRepository {
             new com.linker.backend.global.security.AuthenticatedUser(
                 user,
                 rs.getString(1),
-                com.linker.backend.entity.account.UserType.valueOf(rs.getString(2)),
-                com.linker.backend.entity.account.UserStatus.valueOf(rs.getString(3)),
+                com.linker.backend.entity.account.type.UserType.valueOf(rs.getString(2)),
+                com.linker.backend.entity.account.type.UserStatus.valueOf(rs.getString(3)),
                 null,
                 false,
                 false,

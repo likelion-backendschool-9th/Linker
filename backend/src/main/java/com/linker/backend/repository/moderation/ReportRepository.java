@@ -26,7 +26,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 			  and not exists (
 			    select s.id from Sanction s
 			    where s.user.id = r.reporterId
-			      and s.sanctionType = com.linker.backend.entity.moderation.SanctionType.REPORT_RESTRICTION
+			      and s.sanctionType = com.linker.backend.entity.moderation.type.SanctionType.REPORT_RESTRICTION
 			      and s.revokedAt is null
 			      and (s.endsAt is null or s.endsAt > :now)
 			  )
@@ -36,7 +36,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 	@Query("""
 			select count(r) from Report r
 			where r.reporterId = :reporterId
-			  and r.reportCase.status = com.linker.backend.entity.moderation.ReportCaseStatus.DISMISSED
+			  and r.reportCase.status = com.linker.backend.entity.moderation.type.ReportCaseStatus.DISMISSED
 			  and r.reportCase.resolvedAt >= :since
 			""")
 	long countDismissedSince(@Param("reporterId") long reporterId, @Param("since") Instant since);

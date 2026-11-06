@@ -9,7 +9,7 @@ E 브랜치 `feat/59-e-backend` `86a11a6`, A PR #211·#213은 별도로 대조�
 ## 구현한 범위
 
 - `GET /api/v1/user/me/teams`, method tag `p07-workspace`, operationId `getMyTeams`.
-- `controller.user.UserTeamController` → `service.user.UserTeamService` → `repository.team.WorkspaceTeamRepository`.
+- `controller.user.TeamController` → `service.user.TeamService` → `repository.team.WorkspaceTeamRepository`.
 - A의 쿠키 인증·DB 재검증·정지 읽기 허용과 `@DeveloperOnly`를 재사용한다. 운영자도 본인 소속만 조회한다.
 - `team_members.left_at IS NULL`, 팀 `status <> DELETED`. 현재 인원은 현재 소속 행 수로 집계한다.
 - ACTIVE·COMPLETED·READ_ONLY는 개인 참여 수에 포함, ARCHIVED는 목록에 남기되 한도에서 제외한다. 한도는 Policy ch.6의 10을 `PlanLimits.TEAMS_PER_USER_MAX`로 참조한다. 한도 도달·초과도 GET을 막지 않는다.

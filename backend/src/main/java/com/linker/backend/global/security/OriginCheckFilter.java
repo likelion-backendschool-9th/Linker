@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.linker.backend.global.config.ApiPaths;
 import com.linker.backend.global.config.LinkerProperties;
 import com.linker.backend.global.error.ErrorResponseWriter;
 
@@ -45,7 +46,7 @@ public class OriginCheckFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-		if (!enforced || safe(request) || request.getRequestURI().startsWith("/api/v1/webhook/")) {
+		if (!enforced || safe(request) || request.getRequestURI().startsWith(ApiPaths.WEBHOOK + "/")) {
 			filterChain.doFilter(request, response);
 			return;
 		}

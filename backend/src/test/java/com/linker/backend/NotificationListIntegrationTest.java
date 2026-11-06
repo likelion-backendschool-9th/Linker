@@ -27,20 +27,20 @@ import java.util.concurrent.TimeUnit;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.moderation.Admin;
-import com.linker.backend.entity.moderation.AdminRole;
+import com.linker.backend.entity.moderation.type.AdminRole;
 import com.linker.backend.entity.moderation.Sanction;
-import com.linker.backend.entity.moderation.SanctionType;
+import com.linker.backend.entity.moderation.type.SanctionType;
 import com.linker.backend.entity.notification.Notification;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.SanctionRepository;
-import com.linker.backend.service.PublicAuthService;
-import com.linker.backend.service.user.UserModerationService;
-import com.linker.backend.service.user.UserNotificationService;
+import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.ModerationService;
+import com.linker.backend.service.user.NotificationService;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -109,11 +109,11 @@ class NotificationListIntegrationTest {
 	@Autowired
 	private SanctionRepository sanctions;
 	@Autowired
-	private PublicAuthService sessions;
+	private AuthService sessions;
 	@Autowired
-	private UserNotificationService notifications;
+	private NotificationService notifications;
 	@Autowired
-	private UserModerationService moderation;
+	private ModerationService moderation;
 
 	@Test
 	void listShowsOnlyVisibleOwnRowsAndReadAllSkipsFutureOnes() throws Exception {

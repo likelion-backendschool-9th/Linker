@@ -3,6 +3,7 @@ package com.linker.backend.global.security;
 import java.util.Arrays;
 import java.util.List;
 
+import com.linker.backend.global.config.ApiPaths;
 import com.linker.backend.global.config.LinkerProperties;
 import com.linker.backend.global.error.ErrorResponseWriter;
 
@@ -37,7 +38,7 @@ public class SecurityConfig {
 			LinkerProperties properties,
 			SessionAuthenticationFilter sessionAuthenticationFilter,
 			AccountStateFilter accountStateFilter,
-			PublicRateLimitFilter publicRateLimitFilter,
+			RateLimitFilter publicRateLimitFilter,
 			OriginCheckFilter originCheckFilter,
 			ErrorResponseWriter errors
 	) throws Exception {
@@ -50,13 +51,13 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
-						.requestMatchers("/api/v1/public/**").permitAll()
-						.requestMatchers("/api/v1/webhook/**").permitAll()
+						.requestMatchers(ApiPaths.PUBLIC + "/**").permitAll()
+						.requestMatchers(ApiPaths.WEBHOOK + "/**").permitAll()
 						.requestMatchers("/ws", "/ws/**").permitAll()
-						.requestMatchers("/api/v1/user/**").authenticated()
-						.requestMatchers("/api/v1/recruiter/**").hasRole("RECRUITER")
-						.requestMatchers(HttpMethod.POST, "/api/v1/admin/otp/verify").authenticated()
-						.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.USER + "/**").authenticated()
+						.requestMatchers(ApiPaths.RECRUITER + "/**").hasRole("RECRUITER")
+						.requestMatchers(HttpMethod.POST, ApiPaths.ADMIN_OTP_VERIFY).authenticated()
+						.requestMatchers(ApiPaths.ADMIN + "/**").hasRole("ADMIN")
 						.anyRequest().denyAll())
 				.exceptionHandling(handling -> handling
 						.authenticationEntryPoint((request, response, exception) ->
@@ -65,7 +66,7 @@ public class SecurityConfig {
 								errors.write(response, 403, "FORBIDDEN", "이 기능을 사용할 수 없어요", null)))
 				.addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class)
 				.addFilterAfter(publicRateLimitFilter, SessionAuthenticationFilter.class)
-				.addFilterAfter(accountStateFilter, PublicRateLimitFilter.class)
+				.addFilterAfter(accountStateFilter, RateLimitFilter.class)
 				.addFilterAfter(originCheckFilter, AccountStateFilter.class);
 		return http.build();
 	}
@@ -99,7 +100,7 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	FilterRegistrationBean<PublicRateLimitFilter> publicRateLimitRegistration(PublicRateLimitFilter filter) {
+	FilterRegistrationBean<RateLimitFilter> publicRateLimitRegistration(RateLimitFilter filter) {
 		return disabled(filter);
 	}
 

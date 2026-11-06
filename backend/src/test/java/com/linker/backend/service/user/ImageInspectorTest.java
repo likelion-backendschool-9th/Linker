@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class ImageInspectorTest {
 
-	private final UserUploadService.ImageInspection inspector = new UserUploadService.ImageInspection();
+	private final UploadService.ImageInspection inspector = new UploadService.ImageInspection();
 
 	@Test
 	void resizesALongPngAndStripsItByReencoding() throws Exception {
@@ -23,13 +23,13 @@ class ImageInspectorTest {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ImageIO.write(image, "png", output);
 
-		UserUploadService.ImageInspection.ProcessedImage processed = inspector.inspect(output.toByteArray(), "image/png");
+		UploadService.ImageInspection.ProcessedImage processed = inspector.inspect(output.toByteArray(), "image/png");
 
 		assertThat(processed.contentType()).isEqualTo("image/png");
 		assertThat(processed.width()).isEqualTo(2048);
 		assertThat(processed.height()).isLessThan(10);
-		assertThat(UserUploadService.ImageInspection.sniff(processed.bytes()))
-				.isEqualTo(UserUploadService.ImageInspection.Kind.PNG);
+		assertThat(UploadService.ImageInspection.sniff(processed.bytes()))
+				.isEqualTo(UploadService.ImageInspection.Kind.PNG);
 	}
 
 	@Test
@@ -40,11 +40,11 @@ class ImageInspectorTest {
 		byte[] withExif = insertExifApp1(output.toByteArray());
 		assertThat(containsExifApp1(withExif)).isTrue();
 
-		UserUploadService.ImageInspection.ProcessedImage processed = inspector.inspect(withExif, "image/jpeg");
+		UploadService.ImageInspection.ProcessedImage processed = inspector.inspect(withExif, "image/jpeg");
 
 		assertThat(processed.contentType()).isEqualTo("image/jpeg");
-		assertThat(UserUploadService.ImageInspection.sniff(processed.bytes()))
-				.isEqualTo(UserUploadService.ImageInspection.Kind.JPEG);
+		assertThat(UploadService.ImageInspection.sniff(processed.bytes()))
+				.isEqualTo(UploadService.ImageInspection.Kind.JPEG);
 		assertThat(containsExifApp1(processed.bytes())).isFalse();
 	}
 

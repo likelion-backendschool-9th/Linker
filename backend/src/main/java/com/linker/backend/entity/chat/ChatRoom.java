@@ -2,7 +2,9 @@ package com.linker.backend.entity.chat;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.RequestKind;
+import com.linker.backend.entity.chat.type.RoomType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,10 +14,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "chat_rooms")
-public class ChatRoom extends BaseTimeEntity {
+public class ChatRoom {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,6 +51,14 @@ public class ChatRoom extends BaseTimeEntity {
 	private Long lastMessageId;
 
 	private Instant lastMessageAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected ChatRoom() {
 	}
@@ -139,5 +151,13 @@ public class ChatRoom extends BaseTimeEntity {
 	public void markLastMessage(long messageId, Instant at) {
 		this.lastMessageId = messageId;
 		this.lastMessageAt = at;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }

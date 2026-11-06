@@ -38,11 +38,11 @@ MembershipTeamAccess는 DB 현재 소속·역할을 확인한다. OWNER ≥ ADMI
 
 ## 외부 호출·재실행
 
-UserTeamController → UserTeamService → UserTeamSetupService를 사용한다. GitHubTeamClient는 기술 HTTP 어댑터이며 사용자 토큰 복호화·갱신은 A의 GithubUserAccessTokenSource를 재사용한다. 이슈·Projects·PR 설치 읽기 토큰은 기존 GithubAppClient를 그대로 재사용한다. 조직 멤버 조회만 GithubTeamClient에서 members:read 전용 설치 토큰을 발급해 기존 C 토큰의 요청 권한을 넓히지 않는다.
+user.TeamController → user.TeamService → user.TeamSetupService를 사용한다. GitHubTeamClient는 기술 HTTP 어댑터이며 사용자 토큰 복호화·갱신은 A의 GithubUserAccessTokenSource를 재사용한다. 이슈·Projects·PR 설치 읽기 토큰은 기존 GithubAppClient를 그대로 재사용한다. 조직 멤버 조회만 GithubTeamClient에서 members:read 전용 설치 토큰을 발급해 기존 C 토큰의 요청 권한을 넓히지 않는다.
 
 GitHub HTTP 호출은 ambient DB transaction을 거절한다. 설정의 외부 변경은 PostgreSQL session advisory lock으로 직렬화하며 DB 트랜잭션은 짧은 저장·재검증 때만 연다. C 소스의 이슈 저장·동기화·권한 소비 코드는 변경하지 않는다.
 
-개인 한도·기존 팀 OWNER·보관 상태의 판단은 UserTeamSetupService에 두고 저장소는 잠금 조회·저장을 담당한다. 설치 이벤트도 팀 session lock을 얻은 뒤 현재 설치를 조회해 이전 이벤트의 대기 전 조회 결과를 다시 적용하지 않는다.
+개인 한도·기존 팀 OWNER·보관 상태의 판단은 user.TeamSetupService에 두고 저장소는 잠금 조회·저장을 담당한다. 설치 이벤트도 팀 session lock을 얻은 뒤 현재 설치를 조회해 이전 이벤트의 대기 전 조회 결과를 다시 적용하지 않는다.
 
 새 보드는 생성 호출 전 Redis에 결과 불확실 상태를 기록하고, 응답으로 받은 보드 ID를 다음 필드 호출 전에 저장한다. clientMutationId를 멱등 보장으로 간주하지 않는다. 응답 유실 후 NEW를 다시 눌러 새 보드를 만들지 않으며 기존 보드 선택으로 확인·복구한다. 기존 사용자 보드의 옵션 목록을 새 보드 기본값으로 덮어쓰지 않는다. Linker 생성 보드도 연결 후 상태 옵션이나 날짜 필드가 바뀌면 NEW 재시도로 덮어쓰지 않고 409로 기존 보드 재선택을 안내한다. 미매핑 옵션은 OTHER로 저장한다.
 
@@ -54,7 +54,7 @@ GitHub HTTP 호출은 ambient DB transaction을 거절한다. 설정의 외부 �
 | 보드·상태/날짜 필드 | team_project_boards, board_status_mappings. 실제 GitHub 필드/옵션 ID 저장. C의 기존 context reader로 조회됨 |
 | DB TeamAccess | global.security.MembershipTeamAccess. 기존 TeamAccess SPI 구현을 교체해 C requireMember에서도 사용 |
 | 설치 토큰 | GithubAppClient.installationReadToken(외부 설치 ID). 내부 github_installations.id와 혼용하지 않음 |
-| 최초 이슈 동기화 | UserTeamSetupService.complete의 트랜잭션 반환 후 enqueue → UserTeamSyncService의 worker → C UserIssueSyncService.initialSync(teamId). C 호출을 B DB 트랜잭션으로 감싸지 않음 |
+| 최초 이슈 동기화 | user.TeamSetupService.complete의 트랜잭션 반환 후 enqueue → user.TeamSyncService의 worker → C user.IssueSyncService.initialSync(teamId). C 호출을 B DB 트랜잭션으로 감싸지 않음 |
 | 첫 PR·조직 멤버 동기화 | 같은 B worker. PR 캐시 upsert, 기존 팀원의 조직 상태 확인. INVITED/NOT_MEMBER를 조직 목록에 없다는 이유로 탈퇴시키지 않음 |
 | 웹훅 | 기존 서명 검증·delivery 행 ID 큐·dispatch 재사용. B GithubTeamWebhookHandler는 installation/organization, C 기존 핸들러는 issues/projects_v2_item |
 
@@ -68,7 +68,7 @@ GitHub HTTP 호출은 ambient DB transaction을 거절한다. 설정의 외부 �
 - Redis enqueue 실패 시 완료 성공으로 위장하지 않는다. 설정 데이터는 이미 저장돼 있을 수 있으므로 Redis 복구 후 complete를 재요청한다. 새 DB outbox 테이블을 임의로 추가하지 않았다.
 - 설치/조직 이벤트는 현재 GitHub 상태를 재조회한다. 삭제·중지 시 READ_ONLY, 검증된 재설치 시 READ_ONLY→ACTIVE. 교체된 옛 설치의 늦은 삭제 이벤트는 새 연결을 닫지 않는다. ARCHIVED를 자동 복원하지 않는다.
 - READ_ONLY가 Policy 30일을 넘으면 기존 archived_at과 함께 ARCHIVED로 전환한다. 조직에서 실제로 제거된 기존 MEMBER는 기간을 닫고 팀 채팅 참여도 종료한다.
-- 알림은 기존 UserNotificationService.create만 사용한다. TEAM_APP_REMOVED / TEAM_MEMBER_REMOVED 생산 타입을 사용하며 서명·인자나 D 배달 로직을 변경하지 않는다. D에게 표시/소비 확인이 필요하다.
+- 알림은 기존 user.NotificationService.create만 사용한다. TEAM_APP_REMOVED / TEAM_MEMBER_REMOVED 생산 타입을 사용하며 서명·인자나 D 배달 로직을 변경하지 않는다. D에게 표시/소비 확인이 필요하다.
 
 ## SQL 준비 순서와 활성화 조건
 

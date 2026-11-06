@@ -2,7 +2,7 @@ package com.linker.backend.integration.github;
 
 import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.global.error.ApiException;
-import com.linker.backend.service.user.UserTeamSyncService;
+import com.linker.backend.service.user.TeamSyncService;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -14,10 +14,10 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 @ConditionalOnProperty(name = "linker.team-setup.webhook-enabled", havingValue = "true")
 public class GithubTeamWebhookHandler implements GithubWebhookHandler {
-  private final UserTeamSyncService sync;
+  private final TeamSyncService sync;
   private final JsonMapper json = JsonMapper.builder().build();
 
-  public GithubTeamWebhookHandler(UserTeamSyncService sync) {
+  public GithubTeamWebhookHandler(TeamSyncService sync) {
     this.sync = sync;
   }
 

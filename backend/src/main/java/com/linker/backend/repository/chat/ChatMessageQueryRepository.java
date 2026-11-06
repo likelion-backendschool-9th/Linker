@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * History rows for one member. Block periods match {@code UserModerationService.hidesDirectMessage}.
+ * History rows for one member. Block periods match {@code ModerationService.hidesDirectMessage}.
  * Deleted and hidden rows stay in the page; the service replaces their text.
  */
 @Repository

@@ -7,8 +7,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.linker.backend.entity.account.User;
-import com.linker.backend.entity.account.UserType;
+import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.profile.TechTag;
+import com.linker.backend.entity.recruit.type.WorkMode;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;

@@ -6,7 +6,7 @@
 
 [WBS 4-8·P14](../02-wbs.md), [Page TODO 14](../../planning/07-page-todo.md), [Policy POL-I-3·I-4](../../planning/04-policy.md)에 따른 **14번 C 담당 백엔드**다. 상태 변경 API는 새로 만들지 않고 12번 `PUT .../issues/{issueId}/status`를 그대로 쓴다. 필터 선택지는 11번 `issue-filters`를 재사용한다. 15번 API, 프론트 화면 교체, B의 팀·권한·보드 연결, 정식 Flyway 편입은 포함하지 않는다.
 
-`UserIssueController → UserIssueService.board → IssueReadRepository.board`이며 새 서비스·테이블·REST 총수 변경은 없다(205개 유지).
+`user.IssueController → user.IssueService.board → IssueReadRepository.board`이며 새 서비스·테이블·REST 총수 변경은 없다(205개 유지).
 
 | 메서드 | 경로 (기본 `/api/v1/user/teams/{teamId}`) | 동작 |
 | --- | --- | --- |
@@ -29,7 +29,7 @@
 
 - 로그인 개발자이면서 현재 팀원이어야 한다. 채용 담당자·팀 밖 사용자는 403, 비로그인은 401이다. 운영자도 팀 권한을 우회하지 않는다.
 - `canWrite`는 11번과 같은 규칙으로 계산한다. 읽기 전용 팀 `READ_ONLY_TEAM`, 정지 계정 `SUSPENDED`, 연결 저장소 쓰기 권한 없음 `NO_REPOSITORY_WRITE_PERMISSION`, GitHub 확인 실패 `GITHUB_PERMISSION_UNAVAILABLE`. 화면은 false일 때 드래그를 끈다(Page TODO 14). 실제 변경 권한은 12번 상태 API가 다시 검사한다.
-- 11번의 쓰기 권한 계산을 `UserIssueService` 안의 공용 private 메서드로 옮겼다. 동작은 바꾸지 않았다.
+- 11번의 쓰기 권한 계산을 `user.IssueService` 안의 공용 private 메서드로 옮겼다. 동작은 바꾸지 않았다.
 - GitHub 권한 확인은 DB 트랜잭션 밖에서 하고, 읽기 트랜잭션 안에서 팀원 여부와 팀 연결 정보가 그대로인지 다시 확인한다. 바뀌었으면 409 `STATE_CONFLICT`다.
 
 ## 생성 타입

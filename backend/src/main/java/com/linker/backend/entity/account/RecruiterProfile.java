@@ -2,8 +2,6 @@ package com.linker.backend.entity.account;
 
 import java.time.Instant;
 
-import com.linker.backend.global.jpa.BaseTimeEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,10 +11,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "recruiter_profiles")
-public class RecruiterProfile extends BaseTimeEntity {
+public class RecruiterProfile {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +40,14 @@ public class RecruiterProfile extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private Instant emailVerifiedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
 
 	protected RecruiterProfile() {
 	}
@@ -81,5 +89,13 @@ public class RecruiterProfile extends BaseTimeEntity {
 		this.companyName = companyName;
 		this.jobTitle = jobTitle;
 		this.companyUrl = companyUrl;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
 	}
 }
