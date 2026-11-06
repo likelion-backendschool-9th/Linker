@@ -33,7 +33,6 @@ public class AccountStateFilter extends OncePerRequestFilter {
 				|| "/api/v1/user/me/withdrawal".equals(request.getRequestURI())
 				|| "/api/v1/admin/otp/verify".equals(request.getRequestURI())
 				|| appeal(request)) {
-				|| "/api/v1/admin/otp/verify".equals(request.getRequestURI())) {
 			filterChain.doFilter(request, response);
 			return;
 		}
