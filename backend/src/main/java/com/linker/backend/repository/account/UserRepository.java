@@ -13,6 +13,14 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+	/** Serialize team creates for one account, including requests for different organizations. */
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+			select u from User u where u.id = :userId and u.userType = 'DEVELOPER'
+			  and u.status = 'ACTIVE' and u.deletedAt is null
+			""")
+	Optional<User> lockActiveDeveloper(long userId);
+
 	Optional<User> findByUsername(String username);
 
 	List<User> findByStatusAndWithdrawRequestedAtLessThanEqual(UserStatus status, Instant withdrawRequestedAt);

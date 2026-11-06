@@ -47,6 +47,15 @@ public class BoardStatusMapping {
 	protected BoardStatusMapping() {
 	}
 
+	public static BoardStatusMapping map(long boardId, String optionId, String optionName, BoardStatus status) {
+		BoardStatusMapping mapping = new BoardStatusMapping();
+		mapping.boardId = boardId;
+		mapping.githubOptionId = optionId;
+		mapping.githubOptionName = optionName;
+		mapping.linkerStatus = status;
+		return mapping;
+	}
+
 	public Long getId() {
 		return id;
 	}

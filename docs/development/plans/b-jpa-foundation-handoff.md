@@ -1,4 +1,4 @@
-# B → C: 2단계 팀 JPA 선행 기반
+# B: 2단계 팀 JPA 전환과 C 인계
 
 기준: `docs/improvements/02-jpa-migration.md`와 2026-11-06 공유 순서(B 팀 기반 → C 이슈 기반).
 이 문서는 B 변경 범위와 소비 방법을 기록한다. Policy·ERD·WBS의 정책이나 API를 변경하지 않는다.
@@ -47,13 +47,23 @@ HTTP API나 공개 DTO 필드를 추가한 것이 아니다. 조회는 권한을
 현재 C 조회와 B의 새 JPA 연결 조회를 동일한 실제 스키마 데이터로 대조한다.
 C의 이슈 업무 로직·트랜잭션·동기화 락은 이 PR에서 바꾸지 않는다.
 
-## 3. 이번 PR과 후속 작업의 경계
+## 3. B 전환 범위와 다른 담당 경계
 
 - 기존 `OwnedTeamLookup` 계약은 `OwnedTeamRepository`가 유지한다. 실제 조회는
   `TeamRepositoryCustom` + `TeamRepositoryImpl`의 JPQL이며, 탈퇴 검사 동작은 유지한다.
 - B의 `MembershipTeamAccess`는 JPA Repository를 사용하되, 기존 역할·회원 상태·탈퇴 이력 조건은 유지한다.
-- `TeamSetupRepository`, `WorkspaceTeamRepository`, `TeamSyncService`, `TeamSetupLock`의 나머지 전환은 후속 B PR이다.
-- D의 `TeamChatAccess`는 수정하지 않았다. D와 조회 책임·조건을 맞춘 후 같은 팀 Repository를 활용한다.
+- `TeamSetupRepository`와 `WorkspaceTeamRepository`의 조회·저장은 `TeamRepositoryCustom` + `TeamRepositoryImpl`으로 통합했다. 이전 클래스는 제거했다.
+- `TeamSyncService`의 SQL은 같은 팀 Repository로 옮겼다. 서비스는 역할별 권한·동기화 순서·알림 생성을 계속 담당한다.
+- `TeamSetupLock`은 `TeamRepository.withTeamSetupLock` / `withOrganizationSetupLock`으로 옮겼다.
+  별도 Hibernate Session이 같은 물리 연결을 유지해 PostgreSQL 세션 락을 잡고, 외부 HTTP 동안 DB 트랜잭션을 열지 않는다.
+  짧은 쓰기 트랜잭션은 기존대로 서비스가 열고, 팀/사용자 행 잠금은 JPA `PESSIMISTIC_WRITE`로 처리한다.
+- 일반 조회·변경은 JPQL/Entity를 사용한다. `ON CONFLICT`/`RETURNING`, 세션 advisory 락,
+  PostgreSQL 메타데이터·기존 Redis 작업 revision 문자열은 이유를 적고 네이티브 쿼리를 유지한다.
+- 워크스페이스의 팀·멤버·채팅 집계는 JPQL이다. 아직 Entity가 없는 C의 선택적 이슈 캐시만 네이티브 일괄 집계한다.
+  Repository 호출은 팀 수와 무관하게 3쿼리(C 캐시가 없으면 2쿼리), 서비스의 팀 스키마 확인까지 합하면 각각 4/3쿼리다.
+  이전 혼합 SQL은 스키마 확인을 포함해 3쿼리였다. C 집계를 분리해 1쿼리 늘지만 팀별 추가 조회는 없으며,
+  C가 이슈 Entity를 편입하면 같은 JPQL에 합쳐 다시 줄일 수 있다. 미확인/0건은 기존대로 null이다.
+- D의 채팅 조회 JPA 전환 #249를 먼저 병합했다. D의 `TeamChatAccess`는 수정하지 않았다. D와 조회 책임·조건을 맞춘 후 같은 팀 Repository를 활용한다.
   채팅 쓰기 권한과 일반 팀 멤버십 권한을 같다고 가정하지 않는다.
 - A의 프로필 서비스/URL은 수정하지 않는다. A는 머지된 팀 Entity를 재사용할 수 있다.
 - 기존 테스트에서 가짜 팀 테이블을 만들던 부분과 고아 chat team ID만 실제 V20 픽스처로 바꾼다.
@@ -80,5 +90,7 @@ C의 이슈 업무 로직·트랜잭션·동기화 락은 이 PR에서 바꾸지
 - 새 Entity 7개의 실제 PostgreSQL 매핑, Custom/Impl 실제 연결·호출,
   B/C 연결 식별자·보드 필드·저장소·매핑의 동등성 확인.
 - 역할별 멤버십, COMPLETED/READ_ONLY/ARCHIVED/DELETED, 탈퇴 이력 및 계정 상태 회귀 확인.
-- 전체 백엔드 테스트 459개, 로컬 도구·PR 규칙 테스트 27개 통과.
+- 추가 확인: 설정 락의 동시 진입 거절·짧은 커밋 뒤 유지·예외 후 해제·기존 트랜잭션 진입 금지,
+  PR 캐시의 오래된 갱신 거절·호출자 롤백, 팀 수 증가 시 목록 쿼리 수 일정.
+- 최종 전체 백엔드 테스트 473개, 로컬 도구·PR 규칙 테스트 27개 통과.
 - 실제 GitHub 조직/보드 변경, 공유 DB·운영 DB 배포 검증은 이번에 실행하지 않는다.

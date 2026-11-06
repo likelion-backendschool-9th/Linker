@@ -59,6 +59,16 @@ public class TeamMember {
 	protected TeamMember() {
 	}
 
+	public static TeamMember owner(long teamId, long userId, Instant joinedAt) {
+		TeamMember member = new TeamMember();
+		member.teamId = teamId;
+		member.userId = userId;
+		member.role = TeamRole.OWNER;
+		member.githubOrgState = GithubOrgState.MEMBER;
+		member.joinedAt = joinedAt;
+		return member;
+	}
+
 	public Long getId() {
 		return id;
 	}

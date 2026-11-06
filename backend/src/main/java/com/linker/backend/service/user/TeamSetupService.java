@@ -13,9 +13,8 @@ import com.linker.backend.integration.github.GithubAppClient;
 import com.linker.backend.integration.github.GithubTeamSource;
 import com.linker.backend.integration.github.GithubTeamSource.Project;
 import com.linker.backend.integration.github.GithubUserAccessTokenSource;
-import com.linker.backend.repository.team.TeamSetupLock;
-import com.linker.backend.repository.team.TeamSetupRepository;
-import com.linker.backend.repository.team.TeamSetupRepository.Team;
+import com.linker.backend.repository.team.TeamRepository;
+import com.linker.backend.dto.team.response.TeamPersistenceView.Team;
 import java.time.Clock;
 import java.util.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -34,24 +33,22 @@ public class TeamSetupService {
   private static final List<String> OPTION_NAMES =
       List.of("Todo", "In Progress", "Blocked", "Done");
   private static final List<String> STATUSES = List.of("TODO", "IN_PROGRESS", "BLOCKED", "DONE");
-  private final TeamSetupRepository teams;
+  private final TeamRepository teams;
   private final TeamAccess access;
   private final GithubAppClient app;
   private final GithubUserAccessTokenSource tokens;
   private final GithubTeamSource github;
-  private final TeamSetupLock locks;
   private final StringRedisTemplate redis;
   private final TeamSyncService sync;
   private final Clock clock;
   private final TransactionTemplate write;
 
   public TeamSetupService(
-      TeamSetupRepository teams,
+      TeamRepository teams,
       TeamAccess access,
       GithubAppClient app,
       GithubUserAccessTokenSource tokens,
       GithubTeamSource github,
-      TeamSetupLock locks,
       StringRedisTemplate redis,
       TeamSyncService sync,
       Clock clock,
@@ -61,7 +58,6 @@ public class TeamSetupService {
     this.app = app;
     this.tokens = tokens;
     this.github = github;
-    this.locks = locks;
     this.redis = redis;
     this.sync = sync;
     this.clock = clock;
@@ -93,7 +89,7 @@ public class TeamSetupService {
             live.login(),
             verified.avatarUrl(),
             live.repositorySelection());
-    return locks.organization(
+    return teams.withOrganizationSetupLock(
         verified.orgId(),
         () ->
             write.execute(
@@ -375,7 +371,7 @@ public class TeamSetupService {
 
   private <T> T locked(long id, java.util.function.Supplier<T> operation) {
     try {
-      return locks.team(id, operation);
+      return teams.withTeamSetupLock(id, operation);
     } catch (org.springframework.data.redis.RedisConnectionFailureException exception) {
       throw new ApiException(503, "SERVICE_UNAVAILABLE", "팀 설정 대기열 연결을 확인해 주세요");
     }

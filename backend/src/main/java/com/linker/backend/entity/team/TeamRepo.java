@@ -40,6 +40,14 @@ public class TeamRepo {
 	protected TeamRepo() {
 	}
 
+	public static TeamRepo connect(long teamId, long repoId, long connectedBy) {
+		TeamRepo link = new TeamRepo();
+		link.teamId = teamId;
+		link.repoId = repoId;
+		link.connectedBy = connectedBy;
+		return link;
+	}
+
 	public Long getId() {
 		return id;
 	}

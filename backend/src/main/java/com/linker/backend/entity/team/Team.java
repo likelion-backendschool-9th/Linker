@@ -71,6 +71,21 @@ public class Team {
 	protected Team() {
 	}
 
+	public static Team create(long installationId, long orgId, String orgLogin, String name,
+			String description, String avatarUrl, long createdBy) {
+		Team team = new Team();
+		team.installationId = installationId;
+		team.githubOrgId = orgId;
+		team.githubOrgLogin = orgLogin;
+		team.name = name;
+		team.description = description;
+		team.avatarUrl = avatarUrl;
+		team.status = TeamStatus.ACTIVE;
+		team.createdBy = createdBy;
+		team.aiSummaryEnabled = true;
+		return team;
+	}
+
 	public Long getId() {
 		return id;
 	}
