@@ -513,6 +513,37 @@ class ChatTextIntegrationTest {
 	}
 
 	@Test
+	void readCannotPointAtMessagesTheViewerCannotSeeOrThatBelongToAnotherRoom() throws Exception {
+		User member = user("read-scope");
+		User stranger = user("read-scope-stranger");
+		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(null));
+		members.saveAndFlush(ChatRoomMember.join(team, member.getId()));
+		ChatMessage old = messages.saveAndFlush(ChatMessage.text(team, member.getId(), "기간 밖"));
+		ChatMessage recent = messages.saveAndFlush(ChatMessage.text(team, member.getId(), "기간 안"));
+		Instant now = Instant.now();
+		stamp(old.getId(), now.minus(Duration.ofDays(PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE)).minusSeconds(5));
+		stamp(recent.getId(), now.minus(Duration.ofDays(1)));
+		ChatRoom elsewhere = direct(stranger, user("read-scope-peer"), DmStatus.ACCEPTED);
+		ChatMessage foreign = messages.saveAndFlush(ChatMessage.text(elsewhere, stranger.getId(), "다른 방"));
+		String read = "/api/v1/user/chat-rooms/" + team.getId() + "/read";
+
+		for (long hidden : new long[] {old.getId(), foreign.getId(), Long.MAX_VALUE}) {
+			mockMvc.perform(post(read).contentType(MediaType.APPLICATION_JSON)
+							.content("{\"lastReadMessageId\":" + hidden + "}")
+							.cookie(cookie(member)))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+			assertThat(members.findActive(team.getId(), member.getId()).orElseThrow().getLastReadMessageId()).isNull();
+		}
+		mockMvc.perform(post(read).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"lastReadMessageId\":" + recent.getId() + "}")
+						.cookie(cookie(member)))
+				.andExpect(status().isNoContent());
+		assertThat(members.findActive(team.getId(), member.getId()).orElseThrow().getLastReadMessageId())
+				.isEqualTo(recent.getId());
+	}
+
+	@Test
 	void readMovesForwardOnlyAndSuspendedWriteFails() throws Exception {
 		User viewer = user("read-viewer");
 		User sender = user("read-sender");
