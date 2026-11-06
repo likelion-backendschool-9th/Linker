@@ -35,6 +35,7 @@ import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
+import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.UserStatus;
 import com.linker.backend.entity.account.UserType;
@@ -65,6 +66,7 @@ import com.linker.backend.repository.chat.ChatMessageQueryRepository.ChatMessage
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
+import com.linker.backend.entity.notification.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
@@ -113,6 +115,7 @@ public class UserChatService {
 	private final UserModerationService moderation;
 	private final UserUploadService uploads;
 	private final ChatMessageImageRepository imageLinks;
+	private final UserNotificationService notifications;
 
 	public UserChatService(
 			ChatRoomAccess chatRooms,
@@ -128,7 +131,8 @@ public class UserChatService {
 			PlatformTransactionManager transactions,
 			UserModerationService moderation,
 			UserUploadService uploads,
-			ChatMessageImageRepository imageLinks
+			ChatMessageImageRepository imageLinks,
+			UserNotificationService notifications
 	) {
 		this.chatRooms = chatRooms;
 		this.lists = lists;
@@ -144,6 +148,7 @@ public class UserChatService {
 		this.moderation = moderation;
 		this.uploads = uploads;
 		this.imageLinks = imageLinks;
+		this.notifications = notifications;
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -548,9 +553,28 @@ public class UserChatService {
 			imageUrls.add(file.getUrl());
 		}
 		room.markLastMessage(message.getId(), createdAt);
-		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != current.getId()).count();
+		List<Long> recipientIds = members.findActiveUserIds(roomId).stream()
+				.filter(id -> id != current.getId())
+				.filter(id -> messageQuery.visibleTo(id, roomId, room.getRoomType() == RoomType.TEAM,
+						historyStart(room.getRoomType() == RoomType.TEAM), message.getId()))
+				.toList();
+		long unread = recipientIds.size();
 		events.publishEvent(new ChatMessageReady(roomId, toMessage(message, current, unread, imageUrls)));
 		boolean team = room.getRoomType() == RoomType.TEAM;
+		if (!team) {
+			for (Long recipientId : recipientIds) {
+				notifications.create(new CreateNotificationCommand(
+						recipientId,
+						NotificationTypes.CHAT,
+						current.getId(),
+						"CHAT_ROOM",
+						roomId,
+						"/chats/" + roomId,
+						"{\"roomId\":" + roomId + ",\"messageId\":" + message.getId() + "}",
+						"chat:" + roomId
+				));
+			}
+		}
 		for (Long memberId : members.findActiveUserIds(roomId)) {
 			boolean visible = memberId == current.getId()
 					|| messageQuery.visibleTo(memberId, roomId, team, historyStart(team), message.getId());

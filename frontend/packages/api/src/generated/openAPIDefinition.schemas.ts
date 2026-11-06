@@ -1356,3 +1356,34 @@ overdue?: string;
 export type ListAppealsParams = {
 status?: string;
 };
+
+export type IssueBoardColumnStatus =
+  (typeof IssueBoardColumnStatus)[keyof typeof IssueBoardColumnStatus];
+
+export const IssueBoardColumnStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  BLOCKED: 'BLOCKED',
+  DONE: 'DONE',
+  OTHER: 'OTHER',
+} as const;
+
+export interface IssueBoardColumn {
+  status: IssueBoardColumnStatus;
+  label: string;
+  cards: IssueListItem[];
+}
+
+export interface IssueBoardResponse {
+  canWrite: boolean;
+  /** @nullable */
+  writePermissionReason: string | null;
+  columns: IssueBoardColumn[];
+}
+
+export type GetTeamIssueBoardParams = {
+  repo?: number;
+  assignee?: string;
+  label?: string;
+  open?: boolean;
+};
