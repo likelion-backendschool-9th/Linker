@@ -146,37 +146,36 @@ class GithubIntegrationSafetyTest(unittest.TestCase):
         self.assertNotIn("JWT_PRIVATE_KEY", build_env)
         self.assertEqual(runtime_env["GITHUB_APP_PRIVATE_KEY"], self.settings["GITHUB_APP_PRIVATE_KEY"])
 
-    def test_prepared_schema_refuses_unmarked_existing_issue_tables(self):
-        answers = ["linker_github_test", "t", "1", "t"]
-        with patch.object(runner, "database", side_effect=answers) as database:
-            with patch.object(runner, "SQL_ROOT", self.directory):
-                (self.directory / "migration").mkdir()
-                (self.directory / "migration/V1__test.sql").write_text("-- test")
-                with self.assertRaises(runner.SetupError):
-                    runner.prepare_schema(self.directory, self.settings)
-        self.assertEqual(database.call_count, 4)
-        self.assertFalse((self.directory / "schema.json").exists())
-
-    def test_preparation_does_not_reapply_formal_team_tables(self):
-        history = "\n".join(p.name.split("__")[0][1:]
-                            for p in (runner.SQL_ROOT / "migration").glob("V*__*.sql"))
-        with patch.object(runner, "database", side_effect=["linker_github_test", "t", history, "f", ""]) as database:
-            runner.prepare_schema(self.directory, self.settings)
-        applied = database.call_args.args[2]
-        self.assertIn("CREATE TABLE issues", applied)
-        self.assertIn("CREATE TABLE issue_sync_jobs", applied)
-        self.assertNotIn("CREATE TABLE teams", applied)
-        self.assertNotIn("ALTER TABLE chat_rooms", applied)
-        self.assertTrue(applied.startswith("BEGIN;"))
-        self.assertTrue(applied.endswith("COMMIT;\n"))
-        self.assertTrue(runner.schema_matches(self.directory))
-
-    def test_prepared_sql_hash_change_does_not_reapply_sql(self):
-        (self.directory / "schema.json").write_text("{}")
-        with patch.object(runner, "database", return_value="linker_github_test") as database:
+    def test_preparation_refuses_until_flyway_created_team_and_issue_tables(self):
+        with patch.object(runner, "database", side_effect=["linker_github_test", "f"]) as database:
             with self.assertRaises(runner.SetupError):
                 runner.prepare_schema(self.directory, self.settings)
-        self.assertEqual(database.call_count, 1)
+        self.assertEqual(database.call_count, 2)
+        self.assertFalse((self.directory / "schema.json").exists())
+
+    def test_preparation_only_reads_flyway_state_and_applies_no_sql(self):
+        history = "\n".join(p.name.split("__")[0][1:]
+                            for p in (runner.SQL_ROOT / "migration").glob("V*__*.sql"))
+        self.assertIn("22", history.splitlines())
+        with patch.object(runner, "database", side_effect=["linker_github_test", "t", history]) as database:
+            runner.prepare_schema(self.directory, self.settings)
+        self.assertEqual(database.call_count, 3)
+        for call in database.call_args_list:
+            sql = call.args[2]
+            self.assertTrue(sql.lstrip().upper().startswith("SELECT"))
+            self.assertNotIn("CREATE TABLE", sql)
+        self.assertTrue(runner.schema_matches(self.directory))
+
+    def test_stale_flyway_history_is_refused_without_marker(self):
+        with patch.object(runner, "database", side_effect=["linker_github_test", "t", "1\n2"]) as database:
+            with self.assertRaises(runner.SetupError):
+                runner.prepare_schema(self.directory, self.settings)
+        self.assertEqual(database.call_count, 3)
+        self.assertFalse((self.directory / "schema.json").exists())
+
+    def test_marker_from_old_prepared_sql_no_longer_matches(self):
+        (self.directory / "schema.json").write_text(json.dumps({"issue-schema/issue-cache.sql": "old"}))
+        self.assertFalse(runner.schema_matches(self.directory))
 
     def test_invalid_delivery_identifier_never_reaches_sql(self):
         with patch.object(runner, "database") as database:

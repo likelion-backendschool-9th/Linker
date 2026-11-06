@@ -10,8 +10,8 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.IssueSource;
-import com.linker.backend.repository.issue.IssueContextRepository;
-import com.linker.backend.repository.issue.IssueReadRepository;
+import com.linker.backend.dto.issue.response.IssuePersistenceView;
+import com.linker.backend.repository.issue.IssueRepository;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -33,9 +33,8 @@ public class IssueService {
   private final IssueTemplateService templates;
   private final IssueCreateService creation;
   private final IssueDetailService detail;
-  private final IssueReadRepository issues;
+  private final IssueRepository issueRepository;
   private final Clock clock;
-  private final IssueContextRepository contexts;
   private final IssueSource source;
   private final TransactionTemplate read;
 
@@ -44,18 +43,16 @@ public class IssueService {
       IssueTemplateService templates,
       IssueCreateService creation,
       IssueDetailService detail,
-      IssueReadRepository issues,
+      IssueRepository issueRepository,
       Clock clock,
-      IssueContextRepository contexts,
       IssueSource source,
       PlatformTransactionManager manager) {
     this.access = access;
     this.templates = templates;
     this.creation = creation;
     this.detail = detail;
-    this.issues = issues;
+    this.issueRepository = issueRepository;
     this.clock = clock;
-    this.contexts = contexts;
     this.source = source;
     this.read = new TransactionTemplate(manager);
     read.setReadOnly(true);
@@ -65,15 +62,15 @@ public class IssueService {
   public IssueListResponse list(
       AuthenticatedUser user, long teamId, IssueListQuery query, boolean unscheduled) {
     requireMember(user, teamId);
-    var context = contexts.get(teamId);
+    var context = issueRepository.context(teamId);
     var permission = writePermission(user, context);
     return read.execute(
         status -> {
           requireMember(user, teamId);
-          if (!contexts.get(teamId).equals(context))
+          if (!issueRepository.context(teamId).equals(context))
             throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
           var page =
-              issues.list(
+              issueRepository.list(
                   teamId, query, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
           return new IssueListResponse(
               page.items(),
@@ -91,15 +88,15 @@ public class IssueService {
    */
   public IssueBoardResponse board(AuthenticatedUser user, long teamId, IssueListQuery query) {
     requireMember(user, teamId);
-    var context = contexts.get(teamId);
+    var context = issueRepository.context(teamId);
     var permission = writePermission(user, context);
     return read.execute(
         status -> {
           requireMember(user, teamId);
-          if (!contexts.get(teamId).equals(context))
+          if (!issueRepository.context(teamId).equals(context))
             throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
           var cards =
-              issues.board(teamId, query, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
+              issueRepository.board(teamId, query, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
           List<IssueBoardResponse.Column> columns = new ArrayList<>();
           for (var column : BOARD_COLUMNS.entrySet()) {
             String key = column.getKey();
@@ -124,16 +121,16 @@ public class IssueService {
       throw IssueListQuery.invalid();
     var query =
         new IssueListQuery(null, null, assignee, null, false, null, IssueListQuery.MAX_SIZE);
-    var context = contexts.get(teamId);
+    var context = issueRepository.context(teamId);
     return read.execute(
         st -> {
           requireMember(user, teamId);
-          if (!contexts.get(teamId).equals(context))
+          if (!issueRepository.context(teamId).equals(context))
             throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
           return new com.linker.backend.dto.issue.response.IssueCalendarResponse(
               from,
               to,
-              issues.calendar(
+              issueRepository.calendar(
                   teamId,
                   from,
                   to,
@@ -163,7 +160,7 @@ public class IssueService {
 
   /** Repo write on any linked repo, an active account and a writable team (Policy ch. 7). */
   private WritePermission writePermission(
-      AuthenticatedUser user, IssueContextRepository.Context context) {
+      AuthenticatedUser user, IssuePersistenceView.Context context) {
     if (!context.writable()) return new WritePermission(false, "READ_ONLY_TEAM");
     if (user.status() == UserStatus.SUSPENDED) return new WritePermission(false, "SUSPENDED");
     String reason = "NO_REPOSITORY_WRITE_PERMISSION";
@@ -179,11 +176,11 @@ public class IssueService {
 
   public IssueFilterOptionsResponse options(AuthenticatedUser user, long teamId) {
     requireMember(user, teamId);
-    contexts.get(teamId);
+    issueRepository.context(teamId);
     return read.execute(
         status -> {
           requireMember(user, teamId);
-          return issues.options(teamId);
+          return issueRepository.options(teamId);
         });
   }
 
@@ -203,7 +200,7 @@ public class IssueService {
                     cursor,
                     100);
             var page =
-                issues.list(
+                issueRepository.list(
                     teamId, q, unscheduled, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
             page.items().forEach(i -> ids.add(i.id()));
             cursor = page.nextCursor();

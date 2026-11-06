@@ -1,6 +1,5 @@
 package com.linker.backend.async.schedule;
 
-import com.linker.backend.repository.issue.IssueContextRepository;
 import com.linker.backend.service.user.IssueProgressService;
 import com.linker.backend.service.user.IssueSyncService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,21 +14,18 @@ public class IssueSyncSchedule {
   private final com.linker.backend.service.user.IssueCreateService creation;
   private final com.linker.backend.service.user.IssueDetailService edits;
   private final IssueProgressService progress;
-  private final IssueContextRepository contexts;
 
   public IssueSyncSchedule(
       IssueSyncService sync,
       com.linker.backend.service.user.IssueReminderService reminders,
       com.linker.backend.service.user.IssueCreateService creation,
       com.linker.backend.service.user.IssueDetailService edits,
-      IssueProgressService progress,
-      IssueContextRepository contexts) {
+      IssueProgressService progress) {
     this.sync = sync;
     this.reminders = reminders;
     this.creation = creation;
     this.edits = edits;
     this.progress = progress;
-    this.contexts = contexts;
   }
 
   @Scheduled(fixedDelayString = "${linker.issues.poll-delay-ms:60000}")
@@ -41,7 +37,7 @@ public class IssueSyncSchedule {
 
   @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
   public void snapshot() {
-    if (contexts.ready()) progress.snapshot();
+    progress.snapshot();
   }
 
   @Scheduled(

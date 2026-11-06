@@ -1,3 +1,5 @@
+-- Historical preparation snapshot. Superseded by V22__issues.sql.
+-- Do not apply after Flyway V22. Retained for review of old isolated DBs only.
 -- C page 11 schema. NOT an automatically discovered Flyway migration.
 -- Activate as an agreed, versioned migration AFTER B's team/repository migration.
 -- Preconditions: teams, github_repos, users (ERD). Never create copies of B's tables here.
