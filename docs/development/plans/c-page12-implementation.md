@@ -1,6 +1,6 @@
 # C12 이슈 상세·수정 API — 구현 및 검증
 
-> 2026-11-06 · `feat/12-page-api` · 최신 통합 기준 `origin/dev 247f315` · [이슈 #88](https://github.com/likelion-backendschool-9th/Linker/issues/88)
+> 2026-11-06 · `feat/12-page-api` · 최신 통합 기준 `origin/dev b82de28` · [이슈 #88](https://github.com/likelion-backendschool-9th/Linker/issues/88)
 
 ## 범위
 
@@ -48,16 +48,16 @@
 
 - A의 실제 `PersistedGithubUserAccessTokenSource`·`GithubTokenCipher`를 그대로 소비한다. 테스트에서 합성 토큰을 실제 암호화 저장한 뒤, A 복호화 → C 사용자 권한 조회/쓰기 HTTP 전달을 검증했다. 실제 GitHub 사용자 자격 증명을 사용한 것은 아니다.
 - dev의 B #214 팀 목록·공유 SQL 준비본을 재사용한다. B의 [#217](https://github.com/likelion-backendschool-9th/Linker/pull/217)에 MembershipTeamAccess·팀/저장소/보드 저장·최초 동기화 연결 코드가 있으며 C 소비 열/시그니처와 대조했다. 아직 미머지이므로 C에서 복제하지 않고, 병합 후 해당 구현을 받아 공동 검증한다. 현재 dev의 TeamAccess는 임시 전체 거절 상태이며 C 통합 테스트의 외부 계약 대체와 구분한다.
-- C의 [issue-cache.sql](../../../backend/src/main/resources/db/issue-schema/issue-cache.sql)과 [issue-sync-jobs.sql](../../../backend/src/main/resources/db/issue-schema/issue-sync-jobs.sql)은 자동 Flyway 경로 밖이다. 실제 B/E 공유 테이블과 버전 순서가 확정된 뒤 정식 편입한다. 개발/공용 DB에 임의 적용하지 않았다.
+- C의 [issue-cache.sql](../../../backend/src/main/resources/db/issue-schema/issue-cache.sql)과 [issue-sync-jobs.sql](../../../backend/src/main/resources/db/issue-schema/issue-sync-jobs.sql)은 자동 Flyway 경로 밖이다. E 공유 github_repos는 V12로 정식 반영됐으며, 나머지 B 공유 테이블과 버전 순서 확정 후 C SQL을 정식 편입한다. 개발/공용 DB에 임의 적용하지 않았다.
 - ERD의 재시도 enum에 SET_ASSIGNEES/SET_LABELS를 추가했다. 기존 69개 테이블·205개 API 계획은 유지한다. 저장소 밖 ERD 원본에도 step 설명을 반영해야 한다.
 - 실제 사용자·GitHub App 쓰기/수신, 실제 팀/권한 데이터와 정식 DB 마이그레이션, 프론트 화면 왕복 검증은 남아 있다. 따라서 #88은 In progress, PR은 Refs #88로 유지한다.
 
-## 최신 검증 결과 (247f315 반영 후)
+## 최신 검증 결과 (b82de28 반영 후)
 
 - **기본 설정에서 82개 통과**, 실패/오류/생략 0: 이슈 통합 62개, Markdown 3개, 정책·GitHub·JWT 회귀 16개, Flyway 버전 중복 회귀 1개. 격리 PostgreSQL/Redis·Spring Security/MockMvc·모의 GitHub HTTP를 사용했다.
 - `./gradlew clean test`의 관련 테스트와 `bootJar`를 실행했다. 임시 SQL 사본이나 Flyway locations override를 사용하지 않았다. D #219가 정식 dev에 반영한 V4 GitHub 로그인 / V10 채팅 수정 순서를 그대로 사용했다. C가 별도 재번호화하지 않았다.
 - API 패키지·웹 typecheck 통과. D #220의 공통 목업 수정 반영 후 기존 미정의 변수 오류가 해소됐고, mock-fetch 테스트 11개도 통과했다.
-- #220 병합은 프론트 목업 파일 2개만 변경했다. 백엔드가 검증한 병합 커밋 30cdf43 이후와 동일함을 확인했으며, 백엔드 테스트를 이유 없이 반복하지 않았다.
+- E #218까지 반영해 실제 Flyway V12의 github_repos를 사용했다. dev의 중복 테스트 테이블 제거를 유지하고, C12 이동 테스트의 추가 저장소 입력을 명시적 열/full_name/생성·수정 시각에 맞췄다. 새 공유 스키마 상태에서 백엔드 82개·bootJar와 API·웹 typecheck를 재검증했다. E 병합은 frontend를 변경하지 않아 #220 반영 후 목업 11개 통과 결과를 유지한다.
 - p12 HTTP 계약과 p00/p07/p11/p12 생성물을 유지했다. 실제 PR diff는 C12 코드이며, 다른 담당자의 공통 수정은 승인·병합된 dev에서만 받았다.
 - 최신 dev 포함·텍스트 충돌 없음·원격 feat/12-page-api가 현재 HEAD의 조상임을 확인했다. 일반 fast-forward push가 가능하며 강제 push는 필요 없다. 이 기록 시점에 에이전트가 push/PR 생성/merge를 실행하지 않았다.
 - 전체 백엔드 CI·실 GitHub App 쓰기/수신·프론트 실연동 E2E 성공은 선언하지 않는다. PR 생성 후 원격 CI·리뷰를 확인하며 #88은 실연동 검증까지 In progress로 유지한다. 기존 개인 DB 마이그레이션 이력의 복구는 D #219의 공유 절차를 따르며 이 작업에서 DB repair/초기화를 하지 않았다.

@@ -468,7 +468,8 @@ class IssueReadIntegrationTest {
     jdbc.update("INSERT INTO github_installations VALUES(1,500,NULL,NULL)");
     jdbc.update("INSERT INTO teams VALUES(10,1,700,'acme','ACTIVE'),(20,1,700,'acme','READ_ONLY')");
     jdbc.update(
-        "INSERT INTO github_repos(id,github_repo_id,owner_login,name,full_name,deleted_at,created_at,updated_at)"
+        "INSERT INTO"
+            + " github_repos(id,github_repo_id,owner_login,name,full_name,deleted_at,created_at,updated_at)"
             + " VALUES(100,1000,'acme','web','acme/web',NULL,now(),now()),"
             + "(200,2000,'other','private','other/private',NULL,now(),now())");
     jdbc.update("INSERT INTO team_repos VALUES(1,10,100),(2,20,200)");
@@ -1425,7 +1426,10 @@ class IssueReadIntegrationTest {
   }
 
   void connectedMove() {
-    jdbc.update("INSERT INTO github_repos VALUES(300,3000,'acme','mobile',NULL)");
+    jdbc.update(
+        "INSERT INTO"
+            + " github_repos(id,github_repo_id,owner_login,name,full_name,deleted_at,created_at,updated_at)"
+            + " VALUES(300,3000,'acme','mobile','acme/mobile',NULL,now(),now())");
     jdbc.update("INSERT INTO team_repos VALUES(3,10,300)");
     redirectDetail = true;
     moveConnected = true;
