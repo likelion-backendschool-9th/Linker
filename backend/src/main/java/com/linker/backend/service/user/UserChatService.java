@@ -29,6 +29,7 @@ import com.linker.backend.dto.chat.response.ChatCounterpartResponse;
 import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
 import com.linker.backend.dto.chat.response.ChatLastMessageResponse;
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
+import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
@@ -467,11 +468,14 @@ public class UserChatService {
 	public void deleteMessage(AuthenticatedUser principal, long roomId, long messageId) {
 		Participant participant = requireParticipant(principal, roomId);
 		ChatMessage message = lockVisible(participant, roomId, messageId);
-		// No teams or team_members source exists, so a team owner/admin cannot delete someone else's message.
+		ChatRoom room = participant.member().getRoom();
+		boolean canModerate = room.getRoomType() == RoomType.TEAM
+				&& room.getTeamId() != null
+				&& teamChat.canModerate(participant.account().getId(), room.getTeamId());
 		if (message.getSenderId() == null
 				|| message.getMessageType() == MessageType.SYSTEM
 				|| message.getMessageType() == MessageType.PR_EVENT
-				|| !participant.account().getId().equals(message.getSenderId())) {
+				|| (!participant.account().getId().equals(message.getSenderId()) && !canModerate)) {
 			throw new ApiException(403, "FORBIDDEN", "메시지를 삭제할 수 없어요");
 		}
 		if (message.getVisibility() != MessageVisibility.VISIBLE) {
@@ -483,6 +487,19 @@ public class UserChatService {
 		message.delete(DatabaseInstant.now(clock));
 		messages.saveAndFlush(message);
 		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message)));
+	}
+
+	@Transactional(readOnly = true)
+	public ChatMentionCandidatesResponse mentionCandidates(AuthenticatedUser principal, long roomId) {
+		Participant participant = requireReader(principal, roomId);
+		ChatRoom room = participant.member().getRoom();
+		if (room.getRoomType() != RoomType.TEAM || room.getTeamId() == null) {
+			throw new ApiException(403, "FORBIDDEN", "팀 채팅에서만 멘션할 수 있어요");
+		}
+		if (teamChat.readableBy(participant.account().getId(), room.getTeamId()) == null) {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		return new ChatMentionCandidatesResponse(teamChat.mentionCandidates(participant.account().getId(), room.getTeamId()));
 	}
 
 	@Transactional(readOnly = true)
@@ -577,6 +594,11 @@ public class UserChatService {
 		if (room.getRoomType() == RoomType.TEAM
 				&& (room.getTeamId() == null || !teamChat.writableBy(current.getId(), room.getTeamId()))) {
 			reject(current.getId(), roomId, command.clientMessageId(), "FORBIDDEN", "팀 채팅에 메시지를 보낼 수 없어요", false, null);
+			return false;
+		}
+		if (command.mentionAll() && (room.getRoomType() != RoomType.TEAM || room.getTeamId() == null
+				|| !teamChat.canModerate(current.getId(), room.getTeamId()))) {
+			reject(current.getId(), roomId, command.clientMessageId(), "FORBIDDEN", "@전체 멘션은 팀 오너 또는 관리자만 사용할 수 있어요", false, null);
 			return false;
 		}
 		ChatMessage existing = messages.findBySenderIdAndClientMessageId(current.getId(), command.clientMessageId()).orElse(null);
@@ -871,10 +893,11 @@ public class UserChatService {
 		if (!(rawId instanceof String clientId) || !canonicalUuid(clientId)) {
 			throw new StompAuthException("메시지 식별자를 확인해 주세요");
 		}
+		boolean mentionAll = mentionAll(payload.get("mentionAll")) || hasAllMention(text);
 		if (text.isBlank()) {
-			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds);
+			return new SendCommand(clientId, MessageType.IMAGE, "", fileIds, mentionAll);
 		}
-		return new SendCommand(clientId, MessageType.TEXT, text, fileIds);
+		return new SendCommand(clientId, MessageType.TEXT, text, fileIds, mentionAll);
 	}
 
 	private static List<Long> fileIds(Object raw) {
@@ -935,9 +958,22 @@ public class UserChatService {
 	private static boolean unsupportedAttachment(Map<String, Object> payload) {
 		return present(payload.get("mentionedUserIds"))
 				|| present(payload.get("issueRefs"))
-				|| Boolean.TRUE.equals(payload.get("mentionAll"))
 				|| foreignType(payload.get("messageType"))
 				|| foreignType(payload.get("type"));
+	}
+
+	private static boolean mentionAll(Object raw) {
+		if (raw == null) {
+			return false;
+		}
+		if (raw instanceof Boolean value) {
+			return value;
+		}
+		throw new StompAuthException("메시지 내용을 확인해 주세요");
+	}
+
+	private static boolean hasAllMention(String text) {
+		return text.matches("(?s).*?(?<![\\p{L}\\p{N}_])@(?:(?i:all)|전체)(?![\\p{L}\\p{N}_]).*");
 	}
 
 	private static boolean present(Object value) {
@@ -1176,6 +1212,6 @@ public class UserChatService {
 	private record ParsedCursor(int version, long userId, String tab, Instant sortAt, long roomId) {
 	}
 
-	private record SendCommand(String clientMessageId, MessageType type, String body, List<Long> fileIds) {
+	private record SendCommand(String clientMessageId, MessageType type, String body, List<Long> fileIds, boolean mentionAll) {
 	}
 }
