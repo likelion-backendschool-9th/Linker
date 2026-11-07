@@ -8,14 +8,14 @@ const documents = [
     title: '이용약관',
     version: '2026-10-01',
     effectiveDate: '2026-10-01',
-    body: `# 이용약관\n\n## 제1조 (목적)\n이 약관은 Linker가 제공하는 서비스의 이용 조건과 절차를 정합니다.\n\n## 제2조 (회원)\n회원은 개발자 회원과 채용 담당자 회원으로 나뉩니다.\n\n- 개발자 회원은 GitHub 계정으로 가입해요.\n- 채용 담당자 회원은 회사 메일로 가입해요.\n\n## 제3조 (금지 행위)\n스팸, 허위 모집, 사칭 등은 [커뮤니티 정책](/legal/community)에 따라 제재돼요.\n\n문의: support@linker.example`,
+    body: `# 이용약관\n\n## 제1조 (목적)\n이 약관은 Linker가 제공하는 서비스의 이용 조건과 절차를 정합니다.\n\n## 제2조 (회원)\n회원은 개발자 회원과 채용 담당자 회원으로 나뉩니다.\n\n- 개발자 회원은 GitHub 계정으로 가입해요.\n- 채용 담당자 회원은 회사 메일로 가입해요.\n\n## 제3조 (금지 행위)\n스팸, 허위 모집, 사칭 등은 [커뮤니티 정책](/legal/community)에 따라 제재돼요.\n\n문의: [support@linker.example](mailto:support@linker.example)`,
   },
   {
     slug: 'privacy',
     title: '개인정보처리방침',
     version: '2026-10-01',
     effectiveDate: '2026-10-01',
-    body: `# 개인정보처리방침\n\n## 1. 수집하는 항목\n| 구분 | 항목 |\n| --- | --- |\n| 필수 | GitHub ID, 이메일 |\n| 선택 | 블로그 주소, 관심 직군 |\n\n## 2. 보유 기간\n탈퇴 후 30일 뒤 삭제해요.\n\n문의: privacy@linker.example`,
+    body: `# 개인정보처리방침\n\n## 1. 수집하는 항목\n| 구분 | 항목 |\n| --- | --- |\n| 필수 | GitHub ID, 이메일 |\n| 선택 | 블로그 주소, 관심 직군 |\n\n## 2. 보유 기간\n탈퇴 후 30일 뒤 삭제해요.\n\n문의: [privacy@linker.example](mailto:privacy@linker.example)`,
   },
   {
     slug: 'community',
