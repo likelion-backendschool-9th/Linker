@@ -20,6 +20,8 @@ public final class NotificationTypes {
 	/** Post like (POL-P-5 / WBS page 23). */
 	public static final String POST_LIKE = "POST_LIKE";
 	public static final String FOLLOW = "FOLLOW";
+	/** Monday 09:00 count of recruiters who viewed a Pro developer's profile. */
+	public static final String RECRUITER_PROFILE_VIEW = "RECRUITER_PROFILE_VIEW";
 	public static final String JOB_SEEKING_OFF = "JOB_SEEKING_OFF";
 	public static final String MESSAGE_REQUEST = "MESSAGE_REQUEST";
 	public static final String TEAM_INVITE = "TEAM_INVITE";
