@@ -170,7 +170,8 @@ public class ModerationController {
   @GetMapping("/audit-logs")
   @Tag(name="p27-admin-audit")
   @Operation(operationId="listAdminAuditLogs")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=com.linker.backend.dto.moderation.response.AuditLogsResponse.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class)))})
   public ResponseEntity<com.linker.backend.dto.moderation.response.AuditLogsResponse> auditLogs(
@@ -184,7 +185,8 @@ public class ModerationController {
   @GetMapping("/audit-logs/filters")
   @Tag(name="p27-admin-audit")
   @Operation(operationId="getAdminAuditFilters")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=com.linker.backend.dto.moderation.response.AuditLogsResponse.Filters.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class)))})
   public ResponseEntity<com.linker.backend.dto.moderation.response.AuditLogsResponse.Filters> auditFilters(@AuthenticationPrincipal AuthenticatedUser actor) {

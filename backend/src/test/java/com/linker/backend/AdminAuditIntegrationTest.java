@@ -129,6 +129,18 @@ class AdminAuditIntegrationTest {
     var owner=PG.execInContainer("psql","-U",PG.getUsername(),"-d",PG.getDatabaseName(),"-v","app_role="+PG.getUsername(),"-f","/tmp/audit-grants.sql");
     assertThat(owner.getExitCode()).isNotZero();
   }
+  @Test void openApiPublishesSuccessfulAuditResponsesWithoutGenericItemCollision() throws Exception {
+    var result=mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+    var api=json.readTree(result.getResponse().getContentAsString());
+    var schemas=api.path("components").path("schemas");
+    assertThat(schemas.path("AuditLogsResponse").path("properties").path("items").path("items").path("$ref").asText())
+        .endsWith("/AdminAuditLogItem");
+    assertThat(schemas.path("AdminAuditFilters").path("properties").path("admins").path("items").path("$ref").asText())
+        .endsWith("/AdminAuditOperator");
+    for (String path:java.util.List.of("/api/v1/admin/audit-logs","/api/v1/admin/audit-logs/filters")) {
+      assertThat(api.path("paths").path(path).path("get").path("responses").has("200")).isTrue();
+    }
+  }
   private long add(long admin,String action,String at) {
     return jdbc.queryForObject("insert into admin_actions(admin_id,action,target_type,target_id,reason,created_at,updated_at) values (?,?,'USER',?,'사유',?,?) returning id",Long.class,
         admin,action,target.getId(),java.sql.Timestamp.from(Instant.parse(at)),java.sql.Timestamp.from(Instant.parse(at)));
