@@ -15,7 +15,7 @@
     "generate": "turbo run generate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "node ../scripts/install-git-hooks.mjs"
+    "prepare": "node -e \"require('fs').existsSync('../scripts/install-git-hooks.mjs') && import('../scripts/install-git-hooks.mjs')\""
   },
   "devDependencies": {
     "prettier": "^3.9.10",

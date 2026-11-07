@@ -7,7 +7,7 @@ import { formatWon } from '@/lib/format/number';
 import { formatDate } from '@/lib/format/time';
 
 import styles from '../subscription.module.css';
-import { PLAN_LABELS } from './api';
+import { planLabel } from './api';
 import { usePaymentSuccess } from './hook';
 
 export function PaymentSuccess({
@@ -45,7 +45,7 @@ export function PaymentSuccess({
   return (
     <section className={styles.checkout} aria-label="결제 승인 결과">
       <h2 className={styles.heading}>결제를 완료했어요</h2>
-      <p role="status">{PLAN_LABELS[result.planKey]} 혜택이 적용됐어요.</p>
+      <p role="status">{planLabel(result.planKey)} 혜택이 적용됐어요.</p>
       <p>
         {formatWon(result.amount)} · 이용 기간 {formatDate(result.expiresOn)}까지
       </p>
