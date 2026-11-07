@@ -15,6 +15,11 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+  /** Own statistics also cover hidden posts; public visibility is enforced on public readers. */
+  @Query("select p from Post p where p.author.id=:userId and p.deletedAt is null order by p.createdAt desc,p.id desc")
+  List<Post> findOwnStatsPosts(long userId);
+
+
 	boolean existsByAuthorIdAndRepoIdAndDeletedAtIsNull(long authorId, long repoId);
 
 	List<Post> findByAuthor_Id(long authorId);

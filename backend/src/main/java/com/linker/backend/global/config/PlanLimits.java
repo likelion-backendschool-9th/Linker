@@ -158,6 +158,9 @@ public final class PlanLimits {
 	public static final int USERNAME_REDIRECT_DAYS = 90;
 	/** ERD profile_visits. Rows older than this are deleted. */
 	public static final int PROFILE_VISIT_RETENTION_DAYS = 90;
+	/** Policy ch. 11 / page 30 chart windows. Client charts have a one-hour staleTime, not server shared caching. */
+	public static final int STATS_RECRUITER_WEEKS = 8;
+	public static final int STATS_TREND_DAYS = 30;
 	/** POL-H-7. */
 	public static final int JOB_AD_TITLE_MIN = 2;
 	public static final int JOB_AD_TITLE_MAX = 40;

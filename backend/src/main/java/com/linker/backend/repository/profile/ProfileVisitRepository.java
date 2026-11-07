@@ -12,6 +12,15 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProfileVisitRepository extends JpaRepository<ProfileVisit, Long> {
 
+  /** Same distinct-per-week semantics as A's Monday notice, scoped to the authenticated profile. */
+  @Query("""
+      select count(distinct v.visitor.id) from ProfileVisit v where v.profileUser.id=:userId
+          and v.profileUser.userType='DEVELOPER' and v.visitor.userType='RECRUITER'
+          and v.visitor.id<>:userId and v.visitDate>=:from and v.visitDate<=:to
+      """)
+  long countOwnDistinctRecruiters(long userId,LocalDate from,LocalDate to);
+
+
 	boolean existsByProfileUser_IdAndVisitor_IdAndVisitDate(Long profileUserId, Long visitorId, LocalDate visitDate);
 
 	/** Distinct recruiters per developer profile. The same recruiter on several days counts once. */
