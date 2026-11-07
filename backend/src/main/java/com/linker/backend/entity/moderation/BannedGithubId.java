@@ -45,6 +45,14 @@ public class BannedGithubId {
 		return id;
 	}
 
+	public static BannedGithubId ban(String githubUserId, long sanctionId) {
+		BannedGithubId row = ban(githubUserId);
+		row.sanctionId = sanctionId;
+		return row;
+	}
+
+	public Long getSanctionId() { return sanctionId; }
+
 	public String getGithubUserId() {
 		return githubUserId;
 	}

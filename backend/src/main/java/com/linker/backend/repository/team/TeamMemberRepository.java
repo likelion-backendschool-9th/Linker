@@ -8,6 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
   @Query("""
+      select count(m)>0 from TeamMember m, User u where m.userId=u.id and m.teamId=:teamId
+        and m.role='OWNER' and m.leftAt is null and u.deletedAt is null
+        and u.status='SUSPENDED' and u.suspendedUntil>:now
+      """)
+  boolean hasTemporarilySuspendedOwner(long teamId, java.time.Instant now);
+  @Query("""
       select m.role from TeamMember m, Team t, User u
       where m.teamId = t.id and m.userId = u.id and m.teamId = :teamId
         and m.userId = :userId and m.leftAt is null

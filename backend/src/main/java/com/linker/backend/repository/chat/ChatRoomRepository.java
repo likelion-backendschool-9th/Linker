@@ -16,6 +16,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>, ChatRoomRepositoryCustom {
 
+	@Query("select count(r) from ChatRoom r where r.requesterId=:userId and r.requestKind='RECRUITING' and r.dmStatus='ACCEPTED' and r.respondedAt>=:since")
+	long countAcceptedRecruitingOffersSince(long userId, Instant since);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select r from ChatRoom r where r.teamId=:teamId and r.roomType='TEAM'")
 	Optional<ChatRoom> lockTeamRoom(long teamId);

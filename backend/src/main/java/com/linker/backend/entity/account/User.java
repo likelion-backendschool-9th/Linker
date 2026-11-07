@@ -113,6 +113,21 @@ public class User {
 		this.suspendedUntil = until;
 	}
 
+	/** Reconcile current restrictions without cancelling a withdrawal or reviving a deleted account. */
+	public void reconcileSanctions(boolean restricted, Instant until, boolean revokedCurrent, Instant now) {
+		if (status == UserStatus.WITHDRAWING || status == UserStatus.DELETED || deletedAt != null) return;
+		if (restricted) {
+			// A matching revoked restriction may be replaced; retain an unrelated manual restriction.
+			if (status == UserStatus.SUSPENDED && !revokedCurrent && until != null
+					&& (suspendedUntil == null || suspendedUntil.isAfter(until))) return;
+			suspendUntil(until);
+		} else if (status == UserStatus.SUSPENDED && (revokedCurrent
+				|| (suspendedUntil != null && !suspendedUntil.isAfter(now)))) {
+			status = UserStatus.ACTIVE;
+			suspendedUntil = null;
+		}
+	}
+
 	public void markWithdrawing(Instant when) {
 		this.status = UserStatus.WITHDRAWING;
 		this.withdrawRequestedAt = when;

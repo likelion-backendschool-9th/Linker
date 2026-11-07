@@ -5,6 +5,7 @@ import com.linker.backend.dto.team.request.*;
 import com.linker.backend.dto.team.response.TeamSettingsResponse;
 import com.linker.backend.dto.team.response.TeamSettingsResponse.*;
 import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.team.Team;
 import com.linker.backend.entity.team.TeamMember;
@@ -65,9 +66,9 @@ public class TeamManagementService {
   public TeamSettingsResponse settings(AuthenticatedUser principal, long teamId) {
     Team team = readable(principal, teamId);
     TeamRole role = member(teamId, principal.userId()).getRole();
-    boolean writable = writable(team);
+    boolean writable = writable(team) && principal.status() == UserStatus.ACTIVE;
     boolean admin = role != TeamRole.MEMBER && writable;
-    boolean owner = role == TeamRole.OWNER && writable;
+    boolean owner = ownerAuthority(role,teamId) && writable;
     var linked = teams.findLinkedRepos(teamId).stream()
         .map(r -> new Repo(r.repoId(), r.githubRepoId(), r.name(), r.ownerLogin() + "/" + r.name()))
         .toList();
@@ -241,7 +242,11 @@ public class TeamManagementService {
   }
 
   private Team readable(AuthenticatedUser principal, long teamId) {
-    active(principal);
+    if (principal.userType() != UserType.DEVELOPER)
+      throw new ApiException(403, "DEVELOPER_ONLY", "개발자만 사용할 수 있어요");
+    users.findById(principal.userId()).filter(u -> u.getDeletedAt()==null
+        && (u.getStatus()==UserStatus.ACTIVE || u.getStatus()==UserStatus.SUSPENDED))
+        .orElseThrow(() -> new ApiException(403,"FORBIDDEN","팀 권한이 필요해요"));
     Team team = teams.findById(teamId).orElseThrow(TeamManagementService::notFound);
     member(teamId, principal.userId());
     if (team.getStatus() == TeamStatus.ARCHIVED || team.getStatus() == TeamStatus.DELETED)
@@ -259,7 +264,7 @@ public class TeamManagementService {
   private void requireAdmin(AuthenticatedUser principal, long teamId, boolean owner) {
     Team team = readable(principal, teamId);
     TeamRole role = member(teamId, principal.userId()).getRole();
-    if (role == TeamRole.MEMBER || (owner && role != TeamRole.OWNER))
+    if (role == TeamRole.MEMBER || (owner && !ownerAuthority(role,teamId)))
       throw new ApiException(403, "TEAM_ROLE_REQUIRED", "팀 권한이 필요해요");
     requireWritable(team);
   }
@@ -267,6 +272,11 @@ public class TeamManagementService {
   private TeamMember member(long teamId, long userId) {
     return members.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId)
         .orElseThrow(() -> new ApiException(403, "TEAM_ROLE_REQUIRED", "팀 권한이 필요해요"));
+  }
+
+  private boolean ownerAuthority(TeamRole role,long teamId) {
+    return role==TeamRole.OWNER || (role==TeamRole.ADMIN
+        && members.hasTemporarilySuspendedOwner(teamId,clock.instant()));
   }
 
   private void active(AuthenticatedUser principal) {

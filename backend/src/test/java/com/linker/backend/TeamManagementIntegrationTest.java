@@ -315,6 +315,20 @@ class TeamManagementIntegrationTest {
     user.completeOnboarding(Instant.now());
     return users.saveAndFlush(user);
   }
+  @Test
+  void temporaryOwnerSuspensionDelegatesOnlyWhileThePeriodIsOpen() throws Exception {
+    owner.suspendUntil(Instant.now().plusSeconds(3600)); users.saveAndFlush(owner);
+    mvc.perform(get(base+"/settings").cookie(cookie(owner))).andExpect(status().isOk())
+        .andExpect(jsonPath("$.permissions.editInfo").value(false));
+    mvc.perform(get(base+"/settings").cookie(cookie(admin))).andExpect(status().isOk())
+        .andExpect(jsonPath("$.permissions.archive").value(true));
+    mvc.perform(post(base+"/archive").cookie(cookie(admin))).andExpect(status().isNoContent());
+  }
+  @Test
+  void permanentOwnerSuspensionDoesNotSilentlyTransferOwnership() throws Exception {
+    owner.suspendUntil(null);users.saveAndFlush(owner);
+    mvc.perform(post(base+"/archive").cookie(cookie(admin))).andExpect(status().isForbidden());
+  }
   private Cookie cookie(User user) {
     return new Cookie("linker_session", sessions.issue(user, "p09-test", "127.0.0.1").rawToken());
   }
