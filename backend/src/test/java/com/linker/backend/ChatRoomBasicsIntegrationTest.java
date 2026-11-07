@@ -484,7 +484,7 @@ class ChatRoomBasicsIntegrationTest {
 		stale(room, message, "EDIT", "과거 스냅샷");
 		stale(room, message, "MESSAGE", "과거 메시지");
 		waitUntil(() -> topic.size() >= edited + 2);
-		assertThat(String.join("\n", topic.subList(edited, topic.size()))).doesNotContain("과거 스냅샷").doesNotContain("과거 메시지").contains("최신");
+		assertThat(framesFrom(topic, edited)).doesNotContain("과거 스냅샷").doesNotContain("과거 메시지").contains("최신");
 
 		mockMvc.perform(delete(messagePath(room, message)).cookie(cookie(author))).andExpect(status().isNoContent());
 		waitUntil(() -> topic.stream().anyMatch(frame -> frame.contains("삭제된 메시지입니다")));
@@ -492,7 +492,7 @@ class ChatRoomBasicsIntegrationTest {
 		stale(room, message, "EDIT", "삭제 후 원문");
 		stale(room, message, "MESSAGE", "삭제 후 메시지");
 		waitUntil(() -> topic.size() >= deleted + 2);
-		assertThat(String.join("\n", topic.subList(deleted, topic.size())))
+		assertThat(framesFrom(topic, deleted))
 				.doesNotContain("삭제 후 원문").doesNotContain("삭제 후 메시지").doesNotContain("최신")
 				.contains("삭제된 메시지입니다");
 
@@ -502,8 +502,9 @@ class ChatRoomBasicsIntegrationTest {
 		int hiddenAt = topic.size();
 		stale(room, hidden, "EDIT", "신고 원문");
 		stale(room, hidden, "MESSAGE", "신고 원문");
-		waitUntil(() -> topic.subList(hiddenAt, topic.size()).stream().anyMatch(frame -> frame.contains("운영 정책에 따라 숨겨진 메시지예요")));
-		assertThat(String.join("\n", topic.subList(hiddenAt, topic.size()))).doesNotContain("신고 원문");
+		// Both stale frames must arrive before reading; a frame landing mid-read broke subList (CME).
+		waitUntil(() -> topic.size() >= hiddenAt + 2);
+		assertThat(framesFrom(topic, hiddenAt)).contains("운영 정책에 따라 숨겨진 메시지예요").doesNotContain("신고 원문");
 		otherSocket.disconnect();
 	}
 
@@ -733,6 +734,12 @@ class ChatRoomBasicsIntegrationTest {
 		handshake.add(HttpHeaders.COOKIE, "linker_session=" + sessions.issue(user, "JUnit", "127.0.0.1").rawToken());
 		return client.connectAsync("ws://127.0.0.1:" + port + "/ws", handshake, new StompSessionHandlerAdapter() {
 		}).get(5, TimeUnit.SECONDS);
+	}
+
+	/** Frames from {@code from} on, read from a copy so a late frame cannot change the list mid-read. */
+	private static String framesFrom(List<String> frames, int from) {
+		List<String> copy = List.copyOf(frames);
+		return String.join("\n", copy.subList(from, copy.size()));
 	}
 
 	private void waitUntil(java.util.function.BooleanSupplier condition) throws InterruptedException {
