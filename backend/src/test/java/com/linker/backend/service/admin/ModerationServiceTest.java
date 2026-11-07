@@ -29,8 +29,10 @@ import com.linker.backend.entity.moderation.Sanction;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.GithubTokenCipher;
+import com.linker.backend.repository.account.RecruiterProfileRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
+import com.linker.backend.repository.profile.RecruiterAdRepository;
 import com.linker.backend.repository.moderation.AdminActionRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.AppealRepository;
@@ -66,6 +68,10 @@ class ModerationServiceTest {
 	private AdminRepository admins;
 	@Mock
 	private UserRepository users;
+	@Mock
+	private RecruiterAdRepository ads;
+	@Mock
+	private RecruiterProfileRepository profiles;
 	@Mock
 	private NotificationService notifications;
 	@Mock
@@ -156,7 +162,7 @@ class ModerationServiceTest {
 
 	private ModerationService service() {
 		return new ModerationService(
-				cases, reports, snapshots, sanctions, appeals, actions, admins, users, notifications,
+				cases, reports, snapshots, sanctions, appeals, actions, admins, users, ads, profiles, notifications,
 				otpSecrets, sessions, content, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 

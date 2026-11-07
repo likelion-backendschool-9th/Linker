@@ -1,6 +1,7 @@
 package com.linker.backend.dto.moderation.response;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 public record ReportCaseListResponse(List<ReportCaseView> items) {
@@ -17,7 +18,18 @@ public record ReportCaseListResponse(List<ReportCaseView> items) {
 			boolean overdue,
 			Person target,
 			List<ChatLine> chatContext,
-			String handledAction
+			String handledAction,
+			JobAd jobAd
+	) {
+	}
+
+	/** Present when the reported target is a job ad. The host is shown; the full posting URL is not. */
+	public record JobAd(
+			String company,
+			String title,
+			String jobCategory,
+			LocalDate closesOn,
+			String urlHost
 	) {
 	}
 
