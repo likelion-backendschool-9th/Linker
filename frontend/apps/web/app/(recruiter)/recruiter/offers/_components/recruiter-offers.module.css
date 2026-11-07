@@ -84,7 +84,7 @@
 
 .personInfo {
   display: grid;
-  gap: var(--space-xxs);
+  gap: calc(var(--space-xxs) / 2);
   min-width: 0;
 }
 
