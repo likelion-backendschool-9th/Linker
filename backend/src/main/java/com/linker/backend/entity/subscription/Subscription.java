@@ -19,7 +19,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * Pro / Scout (user) or Flex (team) subscription (ERD 3-9). Benefits follow {@code current_period_end}.
- * The first stage is one-time payment + period end: trial, grace and billing-key columns stay unset.
+ * The first stage is one-time payment + period end: trial, payment-failure grace and billing-key columns
+ * stay unset; {@code grace_ends_at} is recorded when a Flex row expires.
  */
 @Entity
 @Table(name = "subscriptions")
@@ -116,6 +117,45 @@ public class Subscription {
 		this.cancelAtPeriodEnd = false;
 		this.canceledAt = null;
 		this.graceUntil = null;
+	}
+
+	/** Cancel keeps benefits until {@code current_period_end}; a repeat keeps the first time. */
+	public void cancelAtPeriodEnd(Instant now) {
+		if (!this.cancelAtPeriodEnd) {
+			this.cancelAtPeriodEnd = true;
+			this.canceledAt = now;
+		}
+	}
+
+	/**
+	 * A refunded payment's period is taken back. {@code cycle} and {@code seats} come from the payment that
+	 * paid the remaining period, so an extension that changed them is undone with it.
+	 */
+	public void revokePeriod(BillingCycle cycle, Integer seats, Instant start, Instant end) {
+		this.billingCycle = cycle;
+		if (seats != null) {
+			this.seats = seats;
+		}
+		this.currentPeriodStart = start;
+		this.currentPeriodEnd = end;
+	}
+
+	/** Nothing paid is left after a refund: benefits end now. */
+	public void endNow(Instant now) {
+		this.status = SubscriptionStatus.CANCELED;
+		this.currentPeriodEnd = now.isBefore(this.currentPeriodStart) ? this.currentPeriodStart : now;
+		if (this.canceledAt == null) {
+			this.canceledAt = now;
+		}
+	}
+
+	/**
+	 * The paid period ended: back to free. A Flex team keeps full history and image originals until
+	 * {@code graceEndsAt} (Policy ch. 11 "Flex grace period").
+	 */
+	public void expire(Instant graceEndsAt) {
+		this.status = SubscriptionStatus.EXPIRED;
+		this.graceEndsAt = graceEndsAt;
 	}
 
 	public Long getId() {

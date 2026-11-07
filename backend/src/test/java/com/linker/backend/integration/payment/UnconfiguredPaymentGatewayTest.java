@@ -20,7 +20,7 @@ class UnconfiguredPaymentGatewayTest {
 
 	@Test
 	void cancelFailsClosed() {
-		assertThatThrownBy(() -> gateway.cancel(new PaymentCancelCommand("p", "reason", null)))
+		assertThatThrownBy(() -> gateway.cancel(new PaymentCancelCommand("p", "reason", null, null)))
 				.isInstanceOf(ApiException.class)
 				.extracting(ex -> ((ApiException) ex).getCode())
 				.isEqualTo("PAYMENT_UNAVAILABLE");

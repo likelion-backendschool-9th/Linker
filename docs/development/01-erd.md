@@ -1271,8 +1271,8 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | --- | --- |
 | plan, user_id, team_id | PRO and SCOUT fill only `user_id`, FLEX only `team_id` (CHECK constraint). SCOUT only for `user_type = RECRUITER`, PRO only for DEVELOPER (server check). SCOUT has no trial (`is_trial` always false) |
 | seats | FLEX only. Set to the team headcount on the billing date; amount = ₩7,900 + max(0, seats − 6) × ₩1,900 (draft; amounts live in server config). Headcount changes during a period apply on the next billing date |
-| grace_ends_at | 30 days after FLEX becomes EXPIRED. Until then, full chat history and image originals stay as they are |
-| status | TRIALING → ACTIVE → PAST_DUE (payment failed, benefits kept until `grace_until`) → EXPIRED. Cancel sets `cancel_at_period_end = true`; EXPIRED when the period ends |
+| grace_ends_at | 30 days after FLEX becomes EXPIRED (`current_period_end` + 30 days, set by the expiry job). Until then, full chat history and image originals stay as they are |
+| status | TRIALING → ACTIVE → PAST_DUE (payment failed, benefits kept until `grace_until`) → EXPIRED. Cancel sets `cancel_at_period_end = true` and `canceled_at`; EXPIRED when the period ends. A refund moves `current_period_end` back to where the refunded period started; CANCELED (benefits end at once) only when no paid period is left |
 | is_trial | Free trial is once per account for Pro and once per team for Flex, so if a row with true exists, no new trial |
 | current_period_end | Basis for benefits. "Is Pro now" = status is TRIALING / ACTIVE / PAST_DUE and this is after now |
 
@@ -1286,7 +1286,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | plan, billing_cycle, team_id, seats | Snapshot of the server order at checkout (status READY), before any subscription row exists. The amount comes from these values, never from the client. FLEX fills `team_id` and `seats` (CHECK constraint) |
 | subscription_id | Null while READY or FAILED; set together with `status = DONE` (CHECK: DONE needs `subscription_id`, `payment_key`, `approved_at`) |
 | payment_key | Bound by the first confirm call; a retry must send the same key. A bound READY order is not ended by the fail return |
-| status | READY → DONE after Toss confirm answers DONE; READY → FAILED on the fail return or a Toss refusal. A Toss timeout or 5xx keeps READY so the same confirm can be retried (Toss `Idempotency-Key` per order) |
+| status | READY → DONE after Toss confirm answers DONE; READY → FAILED on the fail return or a Toss refusal. A Toss timeout or 5xx keeps READY so the same confirm can be retried (Toss `Idempotency-Key` per order). DONE → CANCELED on a full refund through the Toss cancel API (`Idempotency-Key` `cancel:` + order; sets `canceled_at`, `cancel_reason`, `refunded_amount`); a timeout keeps DONE for retry |
 
 - A paid order on a user/team that already has a live row extends that row: the new period starts at the old `current_period_end` (or now if it has passed) and `cancel_at_period_end` is cleared.
 

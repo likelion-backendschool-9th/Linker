@@ -64,7 +64,7 @@ public class TossPaymentClient implements PaymentGateway {
 		if (command.cancelAmount() != null) {
 			body.put("cancelAmount", command.cancelAmount());
 		}
-		Map<String, Object> response = post("/v1/payments/" + command.paymentKey() + "/cancel", body, null);
+		Map<String, Object> response = post("/v1/payments/" + command.paymentKey() + "/cancel", body, command.idempotencyKey());
 		long cancelAmount = resolveCancelAmount(response, command.cancelAmount());
 		return new PaymentCancelResult(
 				stringValue(response.get("paymentKey")),

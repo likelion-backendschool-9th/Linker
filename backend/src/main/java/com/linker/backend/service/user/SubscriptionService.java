@@ -3,6 +3,7 @@ package com.linker.backend.service.user;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -10,8 +11,10 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -26,9 +29,13 @@ import com.linker.backend.dto.subscription.request.CheckoutRequest;
 import com.linker.backend.dto.subscription.request.ConfirmPaymentRequest;
 import com.linker.backend.dto.subscription.request.PaymentFailureRequest;
 import com.linker.backend.dto.subscription.response.CheckoutResponse;
+import com.linker.backend.dto.subscription.response.PaymentItemResponse;
 import com.linker.backend.dto.subscription.response.PaymentResultResponse;
+import com.linker.backend.dto.subscription.response.PaymentsResponse;
 import com.linker.backend.dto.subscription.response.PlanResponse;
 import com.linker.backend.dto.subscription.response.PlansResponse;
+import com.linker.backend.dto.subscription.response.SubscriptionItemResponse;
+import com.linker.backend.dto.subscription.response.SubscriptionsResponse;
 import com.linker.backend.dto.subscription.response.TeamCandidateResponse;
 import com.linker.backend.dto.subscription.response.TeamCandidatesResponse;
 import com.linker.backend.entity.account.type.UserType;
@@ -38,10 +45,13 @@ import com.linker.backend.entity.subscription.type.BillingCycle;
 import com.linker.backend.entity.subscription.type.PaymentStatus;
 import com.linker.backend.entity.subscription.type.SubscriptionPlan;
 import com.linker.backend.entity.subscription.type.SubscriptionStatus;
+import com.linker.backend.entity.team.Team;
 import com.linker.backend.global.config.LinkerProperties;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.integration.payment.PaymentCancelCommand;
+import com.linker.backend.integration.payment.PaymentCancelResult;
 import com.linker.backend.integration.payment.PaymentConfirmCommand;
 import com.linker.backend.integration.payment.PaymentConfirmResult;
 import com.linker.backend.integration.payment.PaymentGateway;
@@ -50,10 +60,12 @@ import com.linker.backend.integration.payment.UnconfiguredPaymentGateway;
 import com.linker.backend.repository.subscription.PaymentRepository;
 import com.linker.backend.repository.subscription.SubscriptionRepository;
 import com.linker.backend.repository.subscription.SubscriptionRepositoryCustom.FlexTeam;
+import com.linker.backend.repository.team.TeamRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,8 +75,9 @@ import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Page 28 plans and Toss test checkout (WBS S15). First stage is one-time payment + period end:
- * trial, billing key, auto-renewal and Scout are [Included] and not offered.
+ * Pages 28 (plans, Toss test checkout) and 29 (subscriptions, history, cancel, refund, expiry) of WBS S15.
+ * First stage is one-time payment + period end: trial, billing key, auto-renewal, payment-failure grace,
+ * billing-owner handover and Scout are [Included] and not offered.
  *
  * <p>The browser success return is never trusted. Confirm runs in three steps so no DB transaction stays
  * open across the Toss call: (1) lock the order, re-check owner, amount and team, and bind the paymentKey;
@@ -82,6 +95,11 @@ public class SubscriptionService {
 	private static final int PAYMENT_KEY_MAX = 200;
 	private static final int ORDER_NAME_MAX = 100;
 	/** Toss outcomes that do not prove the payment was refused: keep the order READY so a retry can finish. */
+	private static final String REFUND_REASON = "7일 이내 혜택 시작 전 환불";
+	private static final List<PaymentStatus> HISTORY_STATUSES =
+			List.of(PaymentStatus.DONE, PaymentStatus.CANCELED, PaymentStatus.PARTIAL_CANCELED);
+	private static final int HISTORY_PAGE_SIZE = 20;
+	private static final int EXPIRY_BATCH = 200;
 	private static final Set<String> RETRYABLE_CODES = Set.of(
 			"IDEMPOTENT_REQUEST_PROCESSING", "ALREADY_PROCESSED_PAYMENT", "UNAUTHORIZED_KEY",
 			"PROVIDER_ERROR", "FAILED_INTERNAL_SYSTEM_PROCESSING", "FAILED_PAYMENT_INTERNAL_SYSTEM_PROCESSING");
@@ -96,6 +114,7 @@ public class SubscriptionService {
 
 	private final SubscriptionRepository subscriptions;
 	private final PaymentRepository payments;
+	private final TeamRepository teams;
 	private final PaymentGateway gateway;
 	private final Clock clock;
 	private final ObjectMapper objectMapper;
@@ -105,6 +124,7 @@ public class SubscriptionService {
 	public SubscriptionService(
 			SubscriptionRepository subscriptions,
 			PaymentRepository payments,
+			TeamRepository teams,
 			PaymentGateway gateway,
 			Clock clock,
 			ObjectMapper objectMapper,
@@ -112,6 +132,7 @@ public class SubscriptionService {
 			LinkerProperties properties) {
 		this.subscriptions = subscriptions;
 		this.payments = payments;
+		this.teams = teams;
 		this.gateway = gateway;
 		this.clock = clock;
 		this.objectMapper = objectMapper;
@@ -331,6 +352,294 @@ public class SubscriptionService {
 			throw new ApiException(409, "PAYMENT_PROCESSING", "결제를 확인하고 있어요. 잠시 후 다시 확인해 주세요.");
 		}
 		order.fail(request == null ? "UNKNOWN" : safeCode(request.code()), null);
+	}
+
+	// ---------------------------------------------------------------- page 29: manage
+
+	@Transactional(readOnly = true)
+	public SubscriptionsResponse mySubscriptions(AuthenticatedUser user) {
+		Instant now = clock.instant();
+		List<Subscription> rows = subscriptions.findCurrentFor(user.userId(), SubscriptionStatus.LIVE, now);
+		if (rows.isEmpty()) {
+			return new SubscriptionsResponse(List.of());
+		}
+		List<Long> teamIds = rows.stream().map(Subscription::getTeamId).filter(Objects::nonNull).toList();
+		Map<Long, String> names = teamIds.isEmpty() ? Map.of() : teams.findAllById(teamIds).stream()
+				.collect(Collectors.toMap(Team::getId, Team::getName));
+		Map<Long, FlexTeam> payable = teamIds.isEmpty() ? Map.of() : subscriptions.flexTeams(user.userId(), null).stream()
+				.collect(Collectors.toMap(FlexTeam::teamId, Function.identity()));
+		return new SubscriptionsResponse(rows.stream()
+				.map(row -> item(row, names.get(row.getTeamId()), payable.get(row.getTeamId())))
+				.toList());
+	}
+
+	/** Cancel keeps benefits until the paid period ends (Policy ch. 11); there is no pro-rated refund. */
+	@Transactional
+	public SubscriptionItemResponse cancel(AuthenticatedUser user, long subscriptionId) {
+		Instant now = clock.instant();
+		Subscription subscription = subscriptions.lockById(subscriptionId)
+				.filter(row -> manages(user.userId(), row))
+				.orElseThrow(SubscriptionService::subscriptionNotFound);
+		if (!current(subscription, now)) {
+			throw new ApiException(409, "SUBSCRIPTION_ENDED", "이미 끝난 구독이에요.");
+		}
+		subscription.cancelAtPeriodEnd(now);
+		FlexTeam team = subscription.getTeamId() == null ? null
+				: flexTeam(user.userId(), subscription.getTeamId()).orElse(null);
+		String teamName = subscription.getTeamId() == null ? null
+				: teams.findById(subscription.getTeamId()).map(Team::getName).orElse(null);
+		return item(subscription, teamName, team);
+	}
+
+	@Transactional(readOnly = true)
+	public PaymentsResponse myPayments(AuthenticatedUser user, String cursor) {
+		Long before = null;
+		if (cursor != null && !cursor.isBlank()) {
+			try {
+				before = Long.parseLong(cursor.trim());
+			}
+			catch (NumberFormatException invalid) {
+				throw new ApiException(400, "VALIDATION_ERROR", "커서를 확인해 주세요");
+			}
+		}
+		List<Payment> rows = payments.findHistory(user.userId(), HISTORY_STATUSES, before,
+				PageRequest.of(0, HISTORY_PAGE_SIZE + 1));
+		boolean more = rows.size() > HISTORY_PAGE_SIZE;
+		List<Payment> page = more ? rows.subList(0, HISTORY_PAGE_SIZE) : rows;
+		Instant now = clock.instant();
+		Map<Long, Optional<Subscription>> owners = new HashMap<>();
+		List<PaymentItemResponse> items = page.stream().map(payment -> {
+			if (payment.getStatus() != PaymentStatus.DONE) {
+				return paymentItem(payment, null);
+			}
+			ApiException why = withinRefundWindow(payment, now)
+					? refusal(payment, owners.computeIfAbsent(payment.getSubscriptionId(), subscriptions::findById)
+							.orElse(null), now)
+					: refundPeriodOver();
+			return paymentItem(payment, why == null ? null : why.getMessage(), why == null);
+		}).toList();
+		return new PaymentsResponse(items, more ? Long.toString(page.getLast().getId()) : null);
+	}
+
+	/**
+	 * Full refund within 7 days of payment while its period has not started yet (Policy ch. 11 "benefits
+	 * unused"; decided 2026-11-07: only a paid period that has not begun counts as unused). Same three steps
+	 * as confirm: check under a row lock, call the Toss cancel API outside any transaction with one
+	 * idempotency key per order, then take the period back under the subscription locks.
+	 */
+	public PaymentItemResponse refund(AuthenticatedUser user, long paymentId) {
+		if (gateway instanceof UnconfiguredPaymentGateway) {
+			throw new ApiException(503, "PAYMENT_UNAVAILABLE", "결제 연동이 설정되지 않았어요");
+		}
+		RefundClaim claim = write.execute(status -> {
+			Payment payment = ownPayment(user.userId(), paymentId);
+			if (payment.getStatus() == PaymentStatus.CANCELED) {
+				return new RefundClaim(null, null, 0, paymentItem(payment, null));
+			}
+			if (payment.getStatus() != PaymentStatus.DONE) {
+				throw notRefundable();
+			}
+			Instant now = clock.instant();
+			if (!withinRefundWindow(payment, now)) {
+				throw refundPeriodOver();
+			}
+			ApiException refusal = refusal(payment, subscriptions.findById(payment.getSubscriptionId()).orElse(null), now);
+			if (refusal != null) {
+				throw refusal;
+			}
+			return new RefundClaim(payment.getPaymentKey(), payment.getOrderId(), payment.getAmount(), null);
+		});
+		if (claim.done() != null) {
+			return claim.done();
+		}
+
+		PaymentCancelResult result;
+		try {
+			result = gateway.cancel(new PaymentCancelCommand(claim.paymentKey(), REFUND_REASON, null,
+					"cancel:" + claim.orderId()));
+		}
+		catch (PaymentGatewayException failure) {
+			if (!"ALREADY_CANCELED_PAYMENT".equals(failure.code())) {
+				throw refundFailed(claim.orderId(), failure);
+			}
+			// Toss already returned the money (an earlier attempt whose answer was lost): record it now.
+			log.warn("Toss says order {} is already canceled; recording the refund", claim.orderId());
+			result = null;
+		}
+		catch (RestClientException unreachable) {
+			log.warn("Toss cancel did not answer for order {}; payment stays DONE for retry", claim.orderId(), unreachable);
+			throw refundUnknown();
+		}
+		if (result != null && !("CANCELED".equals(result.status()) && result.cancelAmount() == claim.amount())) {
+			log.error("Toss cancel for order {} answered status={} cancelAmount={}; refund not recorded",
+					claim.orderId(), result.status(), result.cancelAmount());
+			throw refundUnknown();
+		}
+		PaymentCancelResult refunded = result;
+		return write.execute(status -> revoke(user.userId(), paymentId, refunded));
+	}
+
+	private PaymentItemResponse revoke(long userId, long paymentId, PaymentCancelResult result) {
+		Payment payment = ownPayment(userId, paymentId);
+		if (payment.getStatus() == PaymentStatus.CANCELED) {
+			return paymentItem(payment, null); // a concurrent refund of the same payment finished first
+		}
+		Instant now = clock.instant();
+		boolean team = payment.getPlan() == SubscriptionPlan.FLEX;
+		subscriptions.lockTarget((team ? "team:" : "user:") + (team ? payment.getTeamId() : payment.getPayerUserId()));
+		Subscription subscription = subscriptions.lockById(payment.getSubscriptionId()).orElseThrow();
+		List<Payment> paid = payments.findPaidNewestFirst(subscription.getId(), PaymentStatus.DONE, PageRequest.of(0, 2));
+		if (!paid.isEmpty() && paid.getFirst().getId().equals(payment.getId())) {
+			// This payment paid the current period, which starts where the previous one ends.
+			Instant end = subscription.getCurrentPeriodStart();
+			if (paid.size() > 1 && end.isAfter(now)) {
+				Payment previous = paid.get(1);
+				subscription.revokePeriod(previous.getBillingCycle(), previous.getSeats(),
+						periodStart(end, previous.getBillingCycle()), end);
+			}
+			else {
+				subscription.endNow(now);
+			}
+		}
+		else {
+			// Another payment extended the row while Toss was refunding this one: drop one period from the end.
+			log.warn("Payment {} was refunded after a later payment on subscription {}", paymentId, subscription.getId());
+			Instant end = periodStart(subscription.getCurrentPeriodEnd(), payment.getBillingCycle());
+			if (end.isAfter(now)) {
+				Instant start = subscription.getCurrentPeriodStart().isBefore(end)
+						? subscription.getCurrentPeriodStart() : periodStart(end, subscription.getBillingCycle());
+				subscription.revokePeriod(subscription.getBillingCycle(), null, start, end);
+			}
+			else {
+				subscription.endNow(now);
+			}
+		}
+		Instant canceledAt = result == null ? now : approvedAt(result.canceledAt(), now);
+		payment.refund(canceledAt, REFUND_REASON, result == null ? null : json(result.rawResponse()));
+		return paymentItem(payment, null);
+	}
+
+	/**
+	 * Expiry job: live rows past their paid period go back to free. Existing content stays; free limits
+	 * apply on the next write because every reader checks {@code current_period_end}. Flex records the
+	 * 30-day grace end; its notices and the 60-day hide wait for full chat history ([Included] S-6).
+	 */
+	public int expireLapsed() {
+		Instant now = clock.instant();
+		int expired = 0;
+		for (Long id : subscriptions.findLapsedIds(SubscriptionStatus.LIVE, now, PageRequest.of(0, EXPIRY_BATCH))) {
+			Boolean done = write.execute(status -> {
+				// Locked and re-read: a payment may have extended the row since the id was listed.
+				Subscription row = subscriptions.lockById(id).orElse(null);
+				if (row == null || !SubscriptionStatus.LIVE.contains(row.getStatus()) || row.getCurrentPeriodEnd().isAfter(now)
+						|| (row.getGraceUntil() != null && row.getGraceUntil().isAfter(now))) {
+					return false;
+				}
+				row.expire(row.getPlan() == SubscriptionPlan.FLEX
+						? row.getCurrentPeriodEnd().plus(Duration.ofDays(PlanLimits.FLEX_POST_EXPIRY_GRACE_DAYS))
+						: null);
+				return true;
+			});
+			if (Boolean.TRUE.equals(done)) {
+				expired++;
+			}
+		}
+		return expired;
+	}
+
+	/** Why a DONE, in-window payment cannot be refunded, or null when it can. */
+	private ApiException refusal(Payment payment, Subscription subscription, Instant now) {
+		if (subscription == null || !current(subscription, now)) {
+			return benefitsUsed();
+		}
+		List<Payment> paid = payments.findPaidNewestFirst(subscription.getId(), PaymentStatus.DONE, PageRequest.of(0, 1));
+		if (paid.isEmpty() || !paid.getFirst().getId().equals(payment.getId())) {
+			return new ApiException(409, "REFUND_NOT_LATEST", "가장 최근 결제부터 환불할 수 있어요.");
+		}
+		return subscription.getCurrentPeriodStart().isAfter(now) ? null : benefitsUsed();
+	}
+
+	private static boolean withinRefundWindow(Payment payment, Instant now) {
+		return payment.getApprovedAt() != null
+				&& payment.getApprovedAt().plus(Duration.ofDays(PlanLimits.PAYMENT_REFUND_WITHIN_DAYS)).isAfter(now);
+	}
+
+	private static boolean manages(long userId, Subscription subscription) {
+		return subscription.getTeamId() == null
+				? subscription.getUserId() != null && subscription.getUserId() == userId
+				: subscription.getPayerUserId() == userId;
+	}
+
+	private Payment ownPayment(long userId, long paymentId) {
+		return payments.lockById(paymentId)
+				.filter(payment -> payment.getPayerUserId() == userId)
+				.orElseThrow(() -> new ApiException(404, "PAYMENT_NOT_FOUND", "결제 내역을 찾지 못했어요."));
+	}
+
+	private ApiException refundFailed(String orderId, PaymentGatewayException failure) {
+		if ("IDEMPOTENT_REQUEST_PROCESSING".equals(failure.code())) {
+			return new ApiException(409, "PAYMENT_PROCESSING", "환불을 처리하고 있어요. 잠시 후 다시 확인해 주세요.");
+		}
+		if (failure.httpStatus() >= 500 || RETRYABLE_CODES.contains(failure.code())) {
+			log.warn("Toss cancel for order {} failed with {} {}; payment stays DONE",
+					orderId, failure.httpStatus(), failure.code());
+			return refundUnknown();
+		}
+		log.warn("Toss refused to cancel order {}: {}", orderId, failure.code());
+		return new ApiException(400, "REFUND_REJECTED", "환불하지 못했어요. 잠시 후 다시 시도해 주세요.",
+				Map.of("providerCode", safeCode(failure.code())));
+	}
+
+	private static SubscriptionItemResponse item(Subscription subscription, String teamName, FlexTeam payable) {
+		boolean flex = subscription.getPlan() == SubscriptionPlan.FLEX;
+		Integer nextSeats = flex && payable != null ? seats(payable) : null;
+		return new SubscriptionItemResponse(subscription.getId(), subscription.getPlan().name(),
+				subscription.getStatus().name(), subscription.getBillingCycle().name(), subscription.getTeamId(),
+				teamName, subscription.getCurrentPeriodEnd().atZone(PlanLimits.APP_ZONE).toLocalDate(), null,
+				subscription.isCancelAtPeriodEnd(), subscription.getSeats(), nextSeats,
+				nextSeats == null ? null : PlanLimits.flexMonthlyAmount(nextSeats));
+	}
+
+	/** A payment that is not refundable now and needs no reason (already refunded or just refunded). */
+	private static PaymentItemResponse paymentItem(Payment payment, String refundReason) {
+		return paymentItem(payment, refundReason, false);
+	}
+
+	private static PaymentItemResponse paymentItem(Payment payment, String refundReason, boolean refundable) {
+		return new PaymentItemResponse(payment.getId(), payment.getOrderName(), payment.getPlan().name(),
+				payment.getBillingCycle().name(), payment.getTeamId(), payment.getAmount(), payment.getStatus().name(),
+				payment.getMethod(), payment.getApprovedAt(), payment.getCanceledAt(), payment.getRefundedAmount(),
+				refundable, refundReason);
+	}
+
+	/** Start of the period of {@code cycle} that ends at {@code end} (Seoul calendar). */
+	private static Instant periodStart(Instant end, BillingCycle cycle) {
+		ZonedDateTime seoul = end.atZone(PlanLimits.APP_ZONE);
+		return (cycle == BillingCycle.YEARLY ? seoul.minusYears(1) : seoul.minusMonths(1)).toInstant();
+	}
+
+	private static ApiException subscriptionNotFound() {
+		return new ApiException(404, "SUBSCRIPTION_NOT_FOUND", "구독을 찾지 못했어요.");
+	}
+
+	private static ApiException refundPeriodOver() {
+		return new ApiException(409, "REFUND_PERIOD_OVER", "결제 후 7일이 지나 환불할 수 없어요.");
+	}
+
+	private static ApiException notRefundable() {
+		return new ApiException(409, "NOT_REFUNDABLE", "환불할 수 없는 결제예요.");
+	}
+
+	private static ApiException benefitsUsed() {
+		return new ApiException(409, "REFUND_BENEFITS_USED",
+				"이미 혜택이 시작된 결제는 환불할 수 없어요. 해지하면 남은 기간까지 쓸 수 있어요.");
+	}
+
+	private static ApiException refundUnknown() {
+		return new ApiException(502, "PAYMENT_GATEWAY_ERROR", "환불 결과를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
+	}
+
+	private record RefundClaim(String paymentKey, String orderId, int amount, PaymentItemResponse done) {
 	}
 
 	// ---------------------------------------------------------------- helpers

@@ -77,6 +77,7 @@ class TossPaymentClientTest {
 		server.expect(requestTo("https://api.tosspayments.com/v1/payments/pay_1/cancel"))
 				.andExpect(method(HttpMethod.POST))
 				.andExpect(header("Authorization", AUTH))
+				.andExpect(header("Idempotency-Key", "cancel:order_1"))
 				.andRespond(withSuccess("""
 						{
 						  "paymentKey": "pay_1",
@@ -93,7 +94,7 @@ class TossPaymentClientTest {
 						}
 						""", MediaType.APPLICATION_JSON));
 
-		PaymentCancelResult result = client.cancel(new PaymentCancelCommand("pay_1", "7일 이내 미사용 환불", null));
+		PaymentCancelResult result = client.cancel(new PaymentCancelCommand("pay_1", "7일 이내 미사용 환불", null, "cancel:order_1"));
 
 		assertThat(result.status()).isEqualTo("CANCELED");
 		assertThat(result.cancelAmount()).isEqualTo(2_900);
