@@ -4,4 +4,4 @@ export {
   refundPayment,
   subscriptionsOptions,
 } from '@/features/subscription/management-api';
-export { subscriptionKeys } from '@/features/subscription/subscription-api';
+export { planLabel, subscriptionKeys } from '@/features/subscription/subscription-api';

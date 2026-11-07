@@ -16,6 +16,8 @@ export * from './p16-chat-list/p16-chat-list.zod';
 export * from './p17-chat-room/p17-chat-room.zod';
 export * from './p18-notifications/p18-notifications.zod';
 export * from './p25-admin-reports/p25-admin-reports.zod';
+export * from './p28-subscribe/p28-subscribe.zod';
+export * from './p29-subscription-manage/p29-subscription-manage.zod';
 export * from './p31-recruiter-signup/p31-recruiter-signup.zod';
 export * from './p32-recruiter-login/p32-recruiter-login.zod';
 export * from './p33-recruiter-offers/p33-recruiter-offers.zod';

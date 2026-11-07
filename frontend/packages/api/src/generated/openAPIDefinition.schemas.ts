@@ -1408,3 +1408,183 @@ export type GetTeamIssueCalendarParams = {
   to: string;
   assignee?: string;
 };
+
+export interface PaymentFailureRequest {
+  /** @nullable */
+  code?: string | null;
+}
+
+export interface ConfirmPaymentRequest {
+  orderId?: string;
+  /** Toss paymentKey from the success return */
+  paymentKey?: string;
+  /** Amount in the return URL; must equal the server order amount */
+  amount?: number;
+}
+
+export interface PaymentResultResponse {
+  planKey: string;
+  status: string;
+  /** Last Seoul date the benefits apply (period end, exclusive instant) */
+  expiresOn: string;
+  amount: number;
+  /** Unlocked benefits */
+  benefits: string[];
+}
+
+export interface CheckoutRequest {
+  /** PRO or FLEX for developers (SCOUT is [Included] and not open yet) */
+  planKey?: string;
+  /** MONTHLY or YEARLY. Only PRO allows YEARLY */
+  billing?: string;
+  /**
+     * Required for FLEX: a team where the caller is owner or billing owner
+     * @nullable
+     */
+  teamId?: number | null;
+}
+
+export interface CheckoutResponse {
+  orderId: string;
+  amount: number;
+  orderName: string;
+  /** Stable, non-guessable Toss customerKey for this account */
+  customerKey: string;
+  planKey: string;
+  billing: string;
+  /** @nullable */
+  teamId: number | null;
+}
+
+export interface SubscriptionItemResponse {
+  subscriptionId: number;
+  /** PRO, FLEX or SCOUT */
+  planKey: string;
+  status: string;
+  billing: string;
+  /**
+     * FLEX only
+     * @nullable
+     */
+  teamId: number | null;
+  /**
+     * FLEX only
+     * @nullable
+     */
+  teamName: string | null;
+  /** Seoul date of the paid period end; benefits stop then */
+  expiresOn: string;
+  /**
+     * Auto-renewal is [Included]: always null until a billing key exists
+     * @nullable
+     */
+  nextBillingOn: string | null;
+  /** Canceled: benefits continue until expiresOn */
+  cancelAtPeriodEnd: boolean;
+  /**
+     * FLEX: headcount the current period was paid for
+     * @nullable
+     */
+  seats: number | null;
+  /**
+     * FLEX: current headcount, used by the next payment
+     * @nullable
+     */
+  nextSeats: number | null;
+  /**
+     * FLEX: next payment amount for nextSeats (KRW)
+     * @nullable
+     */
+  nextAmount: number | null;
+}
+
+export interface PaymentItemResponse {
+  paymentId: number;
+  orderName: string;
+  planKey: string;
+  billing: string;
+  /**
+     * FLEX only
+     * @nullable
+     */
+  teamId: number | null;
+  amount: number;
+  /** DONE, CANCELED or PARTIAL_CANCELED */
+  status: string;
+  /** @nullable */
+  method: string | null;
+  approvedAt: string;
+  /** @nullable */
+  canceledAt: string | null;
+  refundedAmount: number;
+  /** Within 7 days of payment and its period has not started yet */
+  refundable: boolean;
+  /**
+     * Why a DONE payment cannot be refunded (UI copy); null otherwise
+     * @nullable
+     */
+  refundReason: string | null;
+}
+
+export interface PlanResponse {
+  key: string;
+  name: string;
+  /** KRW per month */
+  monthly: number;
+  /**
+     * KRW per year; null when monthly only
+     * @nullable
+     */
+  yearly: number | null;
+  benefits: string[];
+  /** Free trial is [Included] and not offered yet, so always false */
+  trialAvailable: boolean;
+  /** FLEX only: KRW per member from the 7th */
+  perExtraMember?: number;
+}
+
+export interface PlansResponse {
+  /**
+     * Entry reason echoed from ?reason= (for example photo-limit)
+     * @nullable
+     */
+  reason: string | null;
+  /** Developers: FREE, PRO, FLEX. Recruiters: empty until Scout ([Included]) opens */
+  plans: PlanResponse[];
+  /** Caller's own plan: FREE, PRO or SCOUT (team Flex is per team) */
+  currentPlan: string;
+}
+
+export interface TeamCandidateResponse {
+  teamId: number;
+  name: string;
+  /** Current members; the amount uses this headcount */
+  memberCount: number;
+  /** KRW 7,900 up to 6 members, +1,900 per member from the 7th */
+  amount: number;
+  /** FREE or FLEX */
+  currentPlan: string;
+}
+
+export interface TeamCandidatesResponse {
+  items: TeamCandidateResponse[];
+}
+
+export interface SubscriptionsResponse {
+  /** Running subscriptions; empty means the free plan */
+  items: SubscriptionItemResponse[];
+}
+
+export interface PaymentsResponse {
+  items: PaymentItemResponse[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export type ListPlansParams = {
+reason?: string;
+};
+
+export type ListMyPaymentsParams = {
+cursor?: string;
+};

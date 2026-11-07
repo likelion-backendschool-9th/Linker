@@ -368,8 +368,11 @@ public class SubscriptionService {
 				.collect(Collectors.toMap(Team::getId, Team::getName));
 		Map<Long, FlexTeam> payable = teamIds.isEmpty() ? Map.of() : subscriptions.flexTeams(user.userId(), null).stream()
 				.collect(Collectors.toMap(FlexTeam::teamId, Function.identity()));
+		// Own Pro/Scout rows have no team id; immutable maps reject get(null).
 		return new SubscriptionsResponse(rows.stream()
-				.map(row -> item(row, names.get(row.getTeamId()), payable.get(row.getTeamId())))
+				.map(row -> row.getTeamId() == null
+						? item(row, null, null)
+						: item(row, names.get(row.getTeamId()), payable.get(row.getTeamId())))
 				.toList());
 	}
 
