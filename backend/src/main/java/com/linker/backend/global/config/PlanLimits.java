@@ -78,6 +78,9 @@ public final class PlanLimits {
 	public static final int POST_TEAM_SIZE_MAX = 50;
 	public static final int POST_PHOTOS_FREE = 5;
 	public static final int POST_PHOTOS_PRO = 10;
+	/** Policy ch. 4 / ch. 11 — featured posts on a profile. Pro ends do not unpin what is already saved. */
+	public static final int PINNED_POSTS_FREE = 1;
+	public static final int PINNED_POSTS_PRO = 5;
 	/** POL-P-4 / FE p24 mock — home feed cursor page size. */
 	public static final int FEED_PAGE_SIZE = 10;
 	/** POL-P-4 — following posts per one recommendation slot. */

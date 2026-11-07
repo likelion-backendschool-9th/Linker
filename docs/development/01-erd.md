@@ -328,6 +328,8 @@ erDiagram
     bigint user_id FK
     bigint post_id FK "UK with user_id"
     int sort_order
+    timestamptz created_at
+    timestamptz updated_at
   }
   feed_seen_posts {
     bigint id PK
