@@ -137,15 +137,17 @@ it('shows the documented empty state', async () => {
   expect(await screen.findByText('배정된 이슈가 없어요.')).toBeVisible();
 });
 
-it('marks an overdue issue with text as well as color', async () => {
+it('shows an overdue issue as a single date without extra text, like Figma', async () => {
   respond([OLD], {
     1: [issue(1, { overdue: true, dueDate: '2026-10-30' }), issue(2, { dueDate: '2030-01-01' })],
   });
   renderWithProviders(<MyIssuesSection />, developer);
   const rows = await screen.findAllByRole('article');
-  expect(within(rows[0]!).getByText('마감 지남')).toBeVisible();
-  expect(rows[0]!.querySelector('time')).toHaveAttribute('dateTime', '2026-10-30');
-  expect(within(rows[1]!).queryByText('마감 지남')).toBeNull();
+  const overdue = rows[0]!.querySelector('time') as HTMLElement;
+  const onTime = rows[1]!.querySelector('time') as HTMLElement;
+  expect(overdue).toHaveAttribute('dateTime', '2026-10-30');
+  expect(overdue.className).not.toBe(onTime.className);
+  expect(rows[0]).not.toHaveTextContent('마감 지남');
 });
 
 it('leaves the date out when an issue has no due date', async () => {
@@ -180,7 +182,7 @@ it('keeps the server order, limits the preview, and links to the full list', asy
     <MyIssuesSection previewRows={3} allIssuesHref={'/workspace/issues?teamId=1' as Route} />,
     developer,
   );
-  const links = await screen.findAllByRole('link', { name: /^이슈/ });
+  const links = await screen.findAllByRole('link', { name: /^이슈 \d/ });
   expect(links.map((link) => link.textContent)).toEqual(['이슈 9', '이슈 3', '이슈 5']);
   expect(screen.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
     'href',
@@ -252,6 +254,28 @@ it('changes the team from the sheet only after pressing 팀 변경, then closes 
   vi.restoreAllMocks();
 });
 
+it('links the + icon to issue creation for the selected team', async () => {
+  respond([OLD, NEW]);
+  renderWithProviders(<MyIssuesSection />, { ...developer, searchParams: '?teamId=1' });
+  const link = await screen.findByRole('link', { name: '이슈 작성' });
+  expect(link).toHaveAttribute('href', '/teams/1/issues/new');
+  expect(within(link).getByText('이슈 작성')).toHaveClass('sr-only');
+});
+
+it('turns the card chevron from › to ∨ while the sheet is open', async () => {
+  vi.spyOn(window.history, 'back').mockImplementation(() => {
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  respond([OLD]);
+  const user = userEvent.setup();
+  const { container } = renderWithProviders(<MyIssuesSection />, developer);
+  await user.click(await screen.findByRole('button', { name: /^팀 변경, 현재/ }));
+  await screen.findByRole('dialog', { name: '팀 변경' });
+  expect(container.querySelector('.lucide-chevron-down')).not.toBeNull();
+  expect(container.querySelector('.lucide-chevron-right')).toBeNull();
+  vi.restoreAllMocks();
+});
+
 it('has no axe violations', async () => {
   respond([OLD, NEW], { 2: [issue(1, { overdue: true }), issue(2, { status: 'NONE' })] });
   const { container } = renderWithProviders(
@@ -262,34 +286,36 @@ it('has no axe violations', async () => {
   expect(await axe(container)).toHaveNoViolations();
 });
 
-describe('status badge (POL-I-3: the name with the color)', () => {
+describe('status dot', () => {
+  const dotOf = (row: HTMLElement) => row.querySelector('[style*="background"]') as HTMLElement;
+
   it.each([
     ['TODO', 'GRAY', '작업 전', 'gray'],
     ['IN_PROGRESS', 'BLUE', '작업 중', 'blue'],
     ['BLOCKED', 'RED', '작업 중단', 'red'],
     ['DONE', 'GREEN', '작업 완료', 'green'],
     ['OTHER', 'GRAY', '기타', 'gray'],
-  ] as const)('shows %s by name in its board color', async (status, statusColor, name, token) => {
+  ] as const)('names %s for screen readers only, in its board color', async (status, statusColor, name, token) => {
     respond([OLD], { 1: [issue(1, { status, statusColor })] });
     renderWithProviders(<MyIssuesSection />, developer);
-    const badge = within(await screen.findByRole('article')).getByText(name);
-    expect(badge).toBeVisible();
-    expect(badge.style.getPropertyValue('--status-color')).toBe(`var(--color-board-status-${token})`);
+    const row = await screen.findByRole('article');
+    expect(within(row).getByText(name)).toHaveClass('sr-only');
+    expect(dotOf(row).style.backgroundColor).toBe(`var(--color-board-status-${token})`);
+    expect(dotOf(row)).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('uses the color the board mapping sends, not one derived from the status', async () => {
     respond([OLD], { 1: [issue(1, { status: 'TODO', statusColor: 'PURPLE' })] });
     renderWithProviders(<MyIssuesSection />, developer);
-    const badge = within(await screen.findByRole('article')).getByText('작업 전');
-    expect(badge.style.getPropertyValue('--status-color')).toBe('var(--color-board-status-purple)');
+    const row = await screen.findByRole('article');
+    expect(dotOf(row).style.backgroundColor).toBe('var(--color-board-status-purple)');
   });
 
-  it('shows NONE as a gray dot without inventing a name', async () => {
+  it('gives NONE a gray dot and no name', async () => {
     respond([OLD], { 1: [issue(1, { status: 'NONE', statusColor: 'GRAY', title: '보드 밖 이슈' })] });
     renderWithProviders(<MyIssuesSection />, developer);
     const row = await screen.findByRole('article');
-    const badge = row.querySelector('[style*="--status-color"]') as HTMLElement;
-    expect(badge.style.getPropertyValue('--status-color')).toBe('var(--color-board-status-gray)');
-    expect(badge.textContent).toBe('');
+    expect(dotOf(row).style.backgroundColor).toBe('var(--color-board-status-gray)');
+    expect(row.querySelector('.sr-only')).toBeNull();
   });
 });

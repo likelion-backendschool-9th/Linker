@@ -14,11 +14,39 @@
   min-width: 0;
 }
 
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
 .title {
+  min-width: 0;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
   line-height: normal;
   color: var(--color-text-black);
+}
+
+/* Figma's 20px icon; the transparent layer keeps a 44px hit area */
+.create {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.create::after {
+  position: absolute;
+  inset: calc((var(--icon-size-add) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.createIcon {
+  width: var(--icon-size-add);
+  height: var(--icon-size-add);
 }
 
 .row {
@@ -52,7 +80,9 @@
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-compact);
   color: var(--color-text-slate);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* The whole row is the tap target for 12 */
@@ -62,9 +92,11 @@
   content: '';
 }
 
-.statusBadge {
+.statusDot {
   flex-shrink: 0;
-  white-space: nowrap;
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--radius-full);
 }
 
 .meta {
@@ -95,16 +127,13 @@
 
 .due,
 .overdue {
-  display: grid;
   flex-shrink: 0;
-  justify-items: end;
   font-size: var(--font-size-caption);
   line-height: var(--line-height-compact);
   color: var(--color-text-slate);
   white-space: nowrap;
 }
 
-/* Red and also says "마감 지남" (POL-I-4; never color alone) */
 .overdue {
   color: var(--color-status-overdue);
 }
@@ -115,7 +144,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-xxs);
+  gap: var(--space-icon-text-compact);
   min-height: var(--control-height-compact);
   margin-block-start: calc(var(--space-list-action) - var(--space-sm));
   font-size: var(--font-size-caption);
@@ -124,6 +153,7 @@
   color: var(--color-text-slate);
   background-color: var(--color-canvas-cool);
   border-radius: var(--radius-control-sm);
+  box-shadow: var(--shadow-compact-link);
 }
 
 .allIssues::after {

@@ -118,7 +118,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-row-block);
-  min-height: var(--touch-target-min);
+  min-height: var(--control-height-choice);
   padding-inline: var(--space-row-inline);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);

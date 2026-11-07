@@ -23,6 +23,7 @@
   --space-block: 28px; /* my issues to the team tabs */
   --space-sheet-block: 15px; /* 07 sheet top and bottom padding */
   --space-sheet-action: 30px; /* 07 sheet list to its CTA */
+  --space-icon-text-compact: 2px; /* 07 compact link, text to icon */
 
   /* Radius */
   --radius-none: 0;
@@ -41,6 +42,8 @@
   --control-height: 48px; /* pill buttons and inputs */
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
   --control-height-sheet: 53px; /* 07 sheet CTA */
+  --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
+  --icon-size-add: 20px; /* 07 add-issue icon */
   --avatar-size-team: 50px; /* 07 selected-team image */
   --radio-size: 20px;
   --radio-dot-size: 12.5px;
@@ -72,4 +75,6 @@
 
   /* The only shadow: the active segment of a segmented control */
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
+  /* Exception: 07 compact link, Figma value by the front-end owner's decision (Figma first) */
+  --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
 }

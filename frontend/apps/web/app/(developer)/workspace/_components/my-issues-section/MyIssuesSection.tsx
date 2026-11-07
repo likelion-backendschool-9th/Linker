@@ -2,7 +2,7 @@
 
 // client boundary: selected team in the URL and the my-issues query
 import type { IssueListItem } from '@linker/api/openAPIDefinition.schemas';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Plus } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
 
@@ -11,8 +11,11 @@ import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { formatDate } from '@/lib/format/time';
 
-import { IssueStatusBadge } from '../../../_components/issue-status-badge';
-import type { IssueStatus } from '../../../_lib/issue-status';
+import {
+  boardStatusColorVar,
+  ISSUE_STATUS_LABELS,
+  type IssueStatus,
+} from '../../../_lib/issue-status';
 import { MyIssuesTeamPicker } from '../my-issues-team-picker';
 import { useMyIssuesSection } from './hook';
 import styles from './MyIssuesSection.module.css';
@@ -49,9 +52,15 @@ export function MyIssuesSection({ previewRows, allIssuesHref }: MyIssuesSectionP
     <div className={styles.section}>
       <MyIssuesTeamPicker teams={teams.data.items} selected={team} onSelect={selectTeam} />
       <section aria-labelledby={titleId} className={styles.issues}>
-        <h2 id={titleId} className={styles.title}>
-          내 {team.name} 팀의 이슈
-        </h2>
+        <div className={styles.heading}>
+          <h2 id={titleId} className={styles.title}>
+            내 {team.name} 팀의 이슈
+          </h2>
+          <Link href={`/teams/${team.id}/issues/new` as Route} className={styles.create}>
+            <Plus aria-hidden className={styles.createIcon} />
+            <span className="sr-only">이슈 작성</span>
+          </Link>
+        </div>
         {issues.isPending ? (
           <Skeleton count={3} />
         ) : issues.isError ? (
@@ -85,12 +94,7 @@ function MyIssueRow({ teamId, issue }: { teamId: number; issue: IssueListItem })
               {issue.title}
             </Link>
           </h3>
-          {/* NONE has no documented name: the badge shows only its gray dot, as on 11–15 */}
-          <IssueStatusBadge
-            status={issue.status as IssueStatus}
-            statusColor={issue.statusColor}
-            className={styles.statusBadge}
-          />
+          <IssueStatusDot status={issue.status} statusColor={issue.statusColor} />
         </div>
         <p className={styles.meta}>
           <span>#{issue.number}</span>
@@ -105,11 +109,25 @@ function MyIssueRow({ teamId, issue }: { teamId: number; issue: IssueListItem })
         </p>
       </div>
       {issue.dueDate && (
-        <p className={issue.overdue ? styles.overdue : styles.due}>
-          {issue.overdue && <span>마감 지남</span>}
-          <time dateTime={issue.dueDate}>{formatDate(issue.dueDate)}</time>
-        </p>
+        <time dateTime={issue.dueDate} className={issue.overdue ? styles.overdue : styles.due}>
+          {formatDate(issue.dueDate)}
+        </time>
       )}
     </article>
+  );
+}
+
+// Dot only on 07 (front-end owner's decision, Figma); the name is for screen readers. NONE has none.
+function IssueStatusDot({ status, statusColor }: Pick<IssueListItem, 'status' | 'statusColor'>) {
+  const name = status === 'NONE' ? null : ISSUE_STATUS_LABELS[status as IssueStatus];
+  return (
+    <>
+      <span
+        className={styles.statusDot}
+        style={{ backgroundColor: boardStatusColorVar(statusColor) }}
+        aria-hidden
+      />
+      {name && <span className="sr-only">{name}</span>}
+    </>
   );
 }

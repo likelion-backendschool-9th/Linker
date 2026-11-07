@@ -152,6 +152,7 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 | `--space-block` | 28px | Page 07 my issues to the team tabs (Figma) |
 | `--space-sheet-block` | 15px | Page 07 sheet top and bottom padding (Figma) |
 | `--space-sheet-action` | 30px | Page 07 sheet list to its CTA (Figma) |
+| `--space-icon-text-compact` | 2px | Page 07 compact link, text to icon (Figma) |
 
 ### 3-1. App column (non-admin)
 
@@ -194,7 +195,7 @@ Apply on app screens (WebView and mobile Safari):
 ### 3-4. Other frame tokens
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Frame sizes:** `--header-height` 56px; `--badge-dot-size` 6px; `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet).
+- **Frame sizes:** `--header-height` 56px; `--badge-dot-size` 6px; `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet); `--control-height-choice` 40px (page 07 sheet option row, below the 44px minimum: Figma value, front-end owner's decision); `--icon-size-add` 20px (page 07 add-issue icon, hit area stays 44px).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
 - **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
 - **Images:** keep a fixed aspect ratio and `--radius-md` corners unless Figma says otherwise. Use `next/image` (blueprint ch. 10).
@@ -298,6 +299,7 @@ Avatars are circles (`--radius-full`).
 | Inverse | `--color-primary` fill, `--color-text-inverse` text | Footer, primary CTA |
 
 - No drop shadow on cards, buttons or nav. The one exception is the active segment of a segmented control (`--shadow-segment-active`).
+- Recorded exception: page 07 compact link uses `--shadow-compact-link` (`0 0 4px rgb(0 0 0 / 0.12)`). 07 Figma value, front-end owner's decision (Figma first). Do not reuse it elsewhere.
 - Bottom sheets, dialogs and drawers are separated from the page by `--color-scrim`, not by a shadow. Sheets use `--radius-md` on their top corners unless Figma specifies otherwise.
 
 ## 5. Components
@@ -324,6 +326,8 @@ Each item says the default Linker recipe. **When Figma for that screen conflicts
 - Default: `--color-canvas` fill, 1px `--color-hairline-soft` outline, `--radius-md`, padding `--space-lg`.
 - Featured (selected plan, highlighted item): `--color-canvas-soft` fill, no outline. Emphasis by tint, not by outline or dark fill.
 - Title `--color-text-title` at card-title size; supporting text `--color-text-secondary`; meta `--color-text-meta`.
+
+**Team member count** — Write it as "멤버 N명". **NEVER** show it against capacity such as "5/6" (front-end owner's decision).
 
 **Accordion row** (FAQ, collapsible group)
 - Full-width `--color-canvas-soft` bar, `--radius-sm`, question in body size with a trailing chevron, rows `--space-sm` apart. It is a `<button>` with `aria-expanded` (blueprint ch. 6).
