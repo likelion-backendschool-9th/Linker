@@ -19,8 +19,9 @@ test('settings and recruiter offers branch on the authenticated role', async ({ 
   await expect(page.getByText('@r-1001', { exact: true })).toBeVisible();
 
   await page.goto('/api/mock/login/recruiter?returnTo=%2Frecruiter%2Foffers');
-  await expect(page.getByRole('heading', { name: '보낸 채용 제안' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /대화 중/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '보낸 제안' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '전체' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: /대화 진행/ }).click();
   await expect(page.getByText('볼 수 없는 사용자')).toHaveCount(0);
   await page.getByRole('button', { name: /응답 대기/ }).click();
   await expect(page.getByRole('button', { name: '보낸 메시지 보기' }).first()).toBeVisible();
@@ -53,7 +54,7 @@ test('recruiter sign-up verifies email and routes the mock account into the app'
   await page.getByRole('button', { name: '회원가입 완료' }).click();
   await expect(page).toHaveURL(/\/feed$/);
   await page.goto('/recruiter/offers');
-  await expect(page.getByRole('heading', { name: '보낸 채용 제안' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '보낸 제안' })).toBeVisible();
 });
 
 test('recruiter login, safe returnTo, and reset-link states use the recruiter mock session', async ({ page }) => {
