@@ -2,6 +2,7 @@ package com.linker.backend.integration.payment;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,9 @@ import org.springframework.web.client.RestClient;
 /**
  * Toss Payments test/live HTTP client. Secret key stays server-side only (Basic {@code secretKey:}).
  * Fields read here (paymentKey, orderId, totalAmount, status, method, approvedAt, cancels) are the same in
- * API version 2024-06-01, which is the version set for the merchant in the developer center.
+ * API versions 2022-11-16 and 2024-06-01. A live test-key run on 2026-11-08 answered {@code version: 2022-11-16}
+ * with null fields such as {@code virtualAccount}, and a repeated Idempotency-Key returned the stored response
+ * for both confirm and cancel.
  */
 public class TossPaymentClient implements PaymentGateway {
 
@@ -53,7 +56,7 @@ public class TossPaymentClient implements PaymentGateway {
 				stringValue(response.get("status")),
 				stringValue(response.get("method")),
 				stringValue(response.get("approvedAt")),
-				Map.copyOf(response)
+				snapshot(response)
 		);
 	}
 
@@ -73,8 +76,13 @@ public class TossPaymentClient implements PaymentGateway {
 				longValue(response.get("totalAmount")),
 				cancelAmount,
 				latestCanceledAt(response),
-				Map.copyOf(response)
+				snapshot(response)
 		);
+	}
+
+	/** Live responses carry null fields ({@code virtualAccount}, {@code failure}, ...), which {@code Map.copyOf} rejects. */
+	private static Map<String, Object> snapshot(Map<String, Object> response) {
+		return Collections.unmodifiableMap(new LinkedHashMap<>(response));
 	}
 
 	private Map<String, Object> post(String path, Map<String, Object> body, String idempotencyKey) {
