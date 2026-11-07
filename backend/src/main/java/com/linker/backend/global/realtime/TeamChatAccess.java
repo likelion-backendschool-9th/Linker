@@ -22,7 +22,7 @@ public class TeamChatAccess {
 					select t.id, t.name, t.status, m.role
 					from teams t join team_members m on m.team_id=t.id
 					where t.id=? and m.user_id=? and m.left_at is null
-					  and t.status not in ('ARCHIVED','DELETED')
+					  and t.status <> 'DELETED'
 					""", (rs, index) -> new TeamView(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4)), teamId, userId);
 			return rows.isEmpty() ? null : rows.getFirst();
 		}
@@ -33,7 +33,7 @@ public class TeamChatAccess {
 
 	public boolean writableBy(long userId, long teamId) {
 		TeamView team = readableBy(userId, teamId);
-		return team != null && "ACTIVE".equals(team.status());
+		return team != null && ("ACTIVE".equals(team.status()) || "COMPLETED".equals(team.status()));
 	}
 
 	public boolean canModerate(long userId, long teamId) {

@@ -287,6 +287,7 @@ class ChatRoomBasicsIntegrationTest {
 		ChatMessage message = messages.saveAndFlush(ChatMessage.text(room, sender.getId(), "운영 삭제"));
 		try {
 			doReturn(true).when(teamChat).canModerate(owner.getId(), room.getTeamId());
+			doReturn(true).when(teamChat).writableBy(owner.getId(), room.getTeamId());
 			mockMvc.perform(delete(messagePath(room, message)).cookie(cookie(owner))).andExpect(status().isNoContent());
 			assertThat(jdbc.queryForObject("select deleted_at is not null from chat_messages where id=?", Boolean.class, message.getId())).isTrue();
 		}

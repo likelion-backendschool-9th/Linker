@@ -4,6 +4,11 @@ import com.linker.backend.dto.team.request.CompleteTeamSetupRequest;
 import com.linker.backend.dto.team.request.CreateTeamRequest;
 import com.linker.backend.dto.team.request.SaveTeamReposRequest;
 import com.linker.backend.dto.team.request.SetupBoardRequest;
+import com.linker.backend.dto.team.request.UpdateTeamRequest;
+import com.linker.backend.dto.team.request.ChangeTeamRoleRequest;
+import com.linker.backend.dto.team.request.AddTeamRepoRequest;
+import com.linker.backend.dto.team.request.DeleteTeamRequest;
+import com.linker.backend.dto.team.response.TeamSettingsResponse;
 import com.linker.backend.dto.team.response.MyTeamsResponse;
 import com.linker.backend.dto.team.response.TeamSetupResponse;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -23,6 +28,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController("userTeamController")
 @RequestMapping("/user")
@@ -128,5 +135,112 @@ public class TeamController {
     return ResponseEntity.accepted()
         .cacheControl(CacheControl.noStore())
         .body(teams.completeSetup(user, teamId, request != null && request.retry()));
+  }
+
+  @GetMapping("/teams/{teamId}/settings")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.MEMBER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "getTeamSettings")
+  public ResponseEntity<TeamSettingsResponse> settings(
+      @AuthenticationPrincipal AuthenticatedUser user, @PathVariable long teamId) {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(teams.settings(user, teamId));
+  }
+
+  @GetMapping("/teams/{teamId}/members")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.MEMBER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "getTeamMembers")
+  public ResponseEntity<TeamSettingsResponse.Members> members(
+      @AuthenticationPrincipal AuthenticatedUser user, @PathVariable long teamId) {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(teams.members(user, teamId));
+  }
+
+  @PatchMapping("/teams/{teamId}")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "updateTeamInfo")
+  public ResponseEntity<Void> update(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId, @Valid @RequestBody UpdateTeamRequest request) {
+    teams.update(user, teamId, request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/teams/{teamId}/members/{userId}/role")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.OWNER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "changeTeamMemberRole")
+  public ResponseEntity<Void> changeRole(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId, @PathVariable long userId,
+      @Valid @RequestBody ChangeTeamRoleRequest request) {
+    teams.changeRole(user, teamId, userId, request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/teams/{teamId}/members/{userId}")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "removeTeamMember")
+  public ResponseEntity<Void> remove(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId, @PathVariable long userId) {
+    teams.removeMember(user, teamId, userId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/teams/{teamId}/members/me")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.MEMBER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "leaveTeam")
+  public ResponseEntity<Void> leave(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long teamId) {
+    teams.leave(user, teamId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/teams/{teamId}/archive")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.OWNER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "archiveTeam")
+  public ResponseEntity<Void> archive(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long teamId) {
+    teams.archive(user, teamId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/teams/{teamId}/repos")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "addTeamRepository")
+  public ResponseEntity<Void> addRepo(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId, @Valid @RequestBody AddTeamRepoRequest request) {
+    teams.addRepo(user, teamId, request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/teams/{teamId}")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.OWNER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "deleteTeam")
+  public ResponseEntity<Void> delete(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId, @Valid @RequestBody DeleteTeamRequest request) {
+    teams.delete(user, teamId, request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/teams/{teamId}/repos/{repoId}")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "removeTeamRepository")
+  public ResponseEntity<Void> removeRepo(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId, @PathVariable long repoId) {
+    teams.removeRepo(user, teamId, repoId);
+    return ResponseEntity.noContent().build();
   }
 }

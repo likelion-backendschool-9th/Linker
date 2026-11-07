@@ -119,6 +119,10 @@ public interface TeamRepositoryCustom {
 
   void archiveReadOnly(Instant threshold, Instant now);
 
+  /** Only called after rechecking the locked DELETED team and its 30-day deadline. */
+  @Transactional(propagation = Propagation.MANDATORY)
+  void purgeDeletedTeamChat(long teamId);
+
   @Transactional(propagation = Propagation.NEVER)
   <T> T withTeamSetupLock(long id, Supplier<T> operation);
 

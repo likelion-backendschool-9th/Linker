@@ -18,6 +18,8 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
 
   List<TeamMember> findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(long teamId);
 
+  java.util.Optional<TeamMember> findByTeamIdAndUserIdAndLeftAtIsNull(long teamId, long userId);
+
   /** Both people are current members of one team that is not deleted (POL-C-4 "same team"). */
   @Query("""
       select count(t) > 0 from TeamMember a, TeamMember b, Team t
