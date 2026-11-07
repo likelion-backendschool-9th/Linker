@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 import { clearNativeSession, unregisterNativePushToken } from '@/features/auth/sync-native-session';
+import { chatKeys } from '@/features/chat/chat-queries';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { isInApp, requestNative } from '@/lib/bridge/native';
@@ -163,7 +164,12 @@ export function SettingsCommon({
   });
   const unblock = useMutation({
     mutationFn: (userId: number) => apiFetch<void>(`/api/v1/user/blocks/${userId}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account-blocks'] }),
+    // Unblocking brings the 1:1 room back to the always-mounted chat badge and list.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['account-blocks'] }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.all }),
+      ]),
     onError: (error) => toast(errorMessage(error, '차단을 해제하지 못했어요.'), { tone: 'alert' }),
   });
 

@@ -1,6 +1,8 @@
 'use client';
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Route } from 'next';
+import { useRouter } from 'next/navigation';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -40,15 +42,18 @@ export function useChatList() {
   const tab = recruiter ? 'DIRECT' : selected;
   const tabs = recruiter ? (['DIRECT'] as const) : CHAT_TABS;
   const client = useQueryClient();
+  const router = useRouter();
   const rooms = useInfiniteQuery(chatRoomsOptions(viewer.login, tab));
   const summary = useQuery(unreadSummaryOptions(viewer.login));
   const overlay = useOverlay('delete-confirm');
   const refresh = () => client.invalidateQueries({ queryKey: chatKeys.account(viewer.login) });
   const accept = useMutation({
     mutationFn: acceptChatRequest,
-    onSuccess: async () => {
+    // The conversation opens right away in 17; the list and badge refetch in the background.
+    onSuccess: ({ roomId }) => {
       toast('메시지 요청을 수락했어요.');
-      await refresh();
+      void refresh();
+      router.push(`/chats/${roomId}` as Route);
     },
   });
   const remove = useMutation({

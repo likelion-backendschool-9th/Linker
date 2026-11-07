@@ -533,6 +533,73 @@ class ChatListIntegrationTest {
 	}
 
 	@Test
+	void teamRowsCarryTheTeamNameAndPhoto() throws Exception {
+		User viewer = user("team-viewer", UserType.DEVELOPER);
+		long orgId = System.nanoTime();
+		Long installation = jdbc.queryForObject("""
+				insert into github_installations(github_installation_id,account_id,account_login,account_type,repository_selection,installed_by,created_at,updated_at)
+				values (?,?,'chat-org','Organization','ALL',?,now(),now()) returning id
+				""", Long.class, orgId, orgId, viewer.getId());
+		Long teamId = jdbc.queryForObject("""
+				insert into teams(installation_id,github_org_id,github_org_login,name,avatar_url,status,created_by,created_at,updated_at)
+				values (?,?,'chat-org','채팅 팀','https://avatars.example/chat-org.png','ACTIVE',?,now(),now()) returning id
+				""", Long.class, installation, orgId, viewer.getId());
+		ChatRoom team = rooms.saveAndFlush(ChatRoom.team(teamId));
+		members.saveAndFlush(ChatRoomMember.join(team, viewer.getId()));
+
+		mockMvc.perform(get("/api/v1/user/chat-rooms").param("tab", "TEAM").cookie(cookie(viewer)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].id").value(team.getId()))
+				.andExpect(jsonPath("$.items[0].title").value("채팅 팀"))
+				.andExpect(jsonPath("$.items[0].counterpart.avatarUrl").value("https://avatars.example/chat-org.png"))
+				.andExpect(jsonPath("$.items[0].lastMessage").value(nullValue()));
+	}
+
+	@Test
+	void acceptIsRefusedWhileEitherSideBlocks() throws Exception {
+		User viewer = user("accept-blocked", UserType.DEVELOPER);
+		User sender = user("accept-sender", UserType.DEVELOPER);
+		User blocker = user("accept-blocker", UserType.DEVELOPER);
+		ChatRoom byMe = direct(sender, viewer, DmStatus.REQUESTED, Instant.now().plusSeconds(3600));
+		ChatRoom byThem = direct(blocker, viewer, DmStatus.REQUESTED, Instant.now().plusSeconds(3600));
+		moderation.block(viewer.getId(), sender.getId());
+		moderation.block(blocker.getId(), viewer.getId());
+
+		mockMvc.perform(post("/api/v1/user/chat-requests/" + byMe.getId() + "/accept").cookie(cookie(viewer)))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/api/v1/user/chat-requests/" + byThem.getId() + "/accept").cookie(cookie(viewer)))
+				.andExpect(status().isNotFound());
+		assertThat(statusOf(byMe.getId())).isEqualTo("REQUESTED");
+		assertThat(statusOf(byThem.getId())).isEqualTo("REQUESTED");
+
+		moderation.unblock(viewer.getId(), sender.getId());
+		mockMvc.perform(post("/api/v1/user/chat-requests/" + byMe.getId() + "/accept").cookie(cookie(viewer)))
+				.andExpect(status().isOk());
+		assertThat(statusOf(byMe.getId())).isEqualTo("ACCEPTED");
+	}
+
+	@Test
+	void blockAndUnblockTellBothListsAfterCommit() throws Exception {
+		User viewer = user("notify-blocker", UserType.DEVELOPER);
+		User other = user("notify-blocked", UserType.DEVELOPER);
+		User stranger = user("notify-stranger", UserType.DEVELOPER);
+		ChatRoom room = direct(other, viewer, DmStatus.ACCEPTED, null);
+		Map<String, Object> changed = Map.of("type", "CHAT_ROOMS_CHANGED", "roomId", room.getId());
+
+		moderation.block(viewer.getId(), other.getId());
+		moderation.block(viewer.getId(), other.getId());
+		verify(messaging, times(1)).convertAndSendToUser(eq(Long.toString(viewer.getId())), eq("/queue/chat-rooms"), eq(changed));
+		verify(messaging, times(1)).convertAndSendToUser(eq(Long.toString(other.getId())), eq("/queue/chat-rooms"), eq(changed));
+
+		moderation.unblock(viewer.getId(), other.getId());
+		verify(messaging, times(2)).convertAndSendToUser(eq(Long.toString(viewer.getId())), eq("/queue/chat-rooms"), eq(changed));
+		verify(messaging, times(2)).convertAndSendToUser(eq(Long.toString(other.getId())), eq("/queue/chat-rooms"), eq(changed));
+
+		moderation.block(viewer.getId(), stranger.getId());
+		verify(messaging, never()).convertAndSendToUser(eq(Long.toString(stranger.getId())), any(String.class), any(Object.class));
+	}
+
+	@Test
 	void openApiDocumentsTheFourListOperations() throws Exception {
 		mockMvc.perform(get("/v3/api-docs"))
 				.andExpect(status().isOk())

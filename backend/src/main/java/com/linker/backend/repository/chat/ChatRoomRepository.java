@@ -28,6 +28,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>, ChatR
 	@Query("select r from ChatRoom r where r.dmKey = :dmKey")
 	Optional<ChatRoom> lockByDmKey(@Param("dmKey") String dmKey);
 
+	@Query("select r.id from ChatRoom r where r.dmKey = :dmKey")
+	Optional<Long> findIdByDmKey(@Param("dmKey") String dmKey);
+
 	/**
 	 * Native for PostgreSQL {@code ON CONFLICT}: two people opening the same pair at once must not abort
 	 * the caller's transaction on the {@code dm_key} unique index. Returns 1 when this call created the row.

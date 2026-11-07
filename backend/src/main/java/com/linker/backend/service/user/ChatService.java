@@ -400,6 +400,10 @@ public class ChatService {
 		if (status != DmStatus.REQUESTED || room.getRequestExpiresAt() == null || !room.getRequestExpiresAt().isAfter(now)) {
 			throw new ApiException(409, "STATE_CONFLICT", "이미 처리되었거나 만료된 요청이에요");
 		}
+		if (accept && room.getRequesterId() != null && moderation.blockedEitherWay(userId, room.getRequesterId())) {
+			// Policy ch. 9: a block closes 1:1 chat. The room is already out of both lists, so it reads as missing.
+			throw missingRequest();
+		}
 		if (accept) {
 			room.markAccepted(now);
 		}
@@ -1539,10 +1543,14 @@ public class ChatService {
 	private static ChatRoomItemResponse toItem(String tab, ChatListRow row) {
 		boolean team = "TEAM".equals(row.roomType());
 		boolean withdrawn = "DELETED".equals(row.counterpartStatus());
-		String title = team ? null : withdrawn ? WITHDRAWN_MEMBER : visibleName(row.displayName(), row.username());
-		ChatCounterpartResponse counterpart = team || row.username() == null
-				? null
-				: new ChatCounterpartResponse(withdrawn ? null : row.avatarUrl());
+		String title = team ? row.teamName() : withdrawn ? WITHDRAWN_MEMBER : visibleName(row.displayName(), row.username());
+		ChatCounterpartResponse counterpart;
+		if (team) {
+			counterpart = row.teamName() == null ? null : new ChatCounterpartResponse(row.teamAvatarUrl());
+		}
+		else {
+			counterpart = row.username() == null ? null : new ChatCounterpartResponse(withdrawn ? null : row.avatarUrl());
+		}
 		ChatLastMessageResponse lastMessage = row.previewCreatedAt() == null
 				? null
 				: new ChatLastMessageResponse(previewText(row), row.previewCreatedAt());

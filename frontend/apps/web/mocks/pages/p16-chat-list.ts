@@ -1,5 +1,6 @@
 import { del, fail, get, paginate, post, type MockRoute } from '../core/define';
 import { findRoom, lastMessage, ROOMS, UNREAD, type MockRoom } from '../fixtures/chat';
+import { TEAMS } from '../fixtures/teams';
 import { isRecruiterRoom } from './p33-recruiter-offers';
 
 /** 16 Chat list: `ChatController`. Recruiters see only the rooms from their offers (04 ch. 2). */
@@ -15,7 +16,13 @@ export function roomRow(room: MockRoom) {
     id: room.id,
     kind: room.kind,
     title: room.title,
-    counterpart: room.counterpart,
+    // TEAM: the team photo; 1:1: the other person's avatar (WBS 16)
+    counterpart:
+      room.kind === 'TEAM'
+        ? { avatarUrl: TEAMS.find((team) => team.id === room.teamId)?.orgAvatarUrl ?? null }
+        : room.counterpart
+          ? { avatarUrl: room.counterpart.avatarUrl }
+          : null,
     // "채용 제안" label + company name (04 POL-H-3)
     requestKind: room.requestKind,
     requestDirection: room.requestDirection,
