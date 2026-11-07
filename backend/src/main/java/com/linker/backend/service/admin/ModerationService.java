@@ -19,12 +19,15 @@ import com.linker.backend.dto.moderation.response.AppealListResponse.AppealView;
 import com.linker.backend.dto.moderation.response.OtpVerifyResponse;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.ChatLine;
+import com.linker.backend.dto.moderation.response.ReportCaseListResponse.JobAd;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.Person;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.ReasonCount;
 import com.linker.backend.dto.moderation.response.ReportCaseListResponse.ReportCaseView;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.entity.account.RecruiterProfile;
 import com.linker.backend.entity.account.type.JobSeekingStatus;
 import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.profile.RecruiterAd;
 import com.linker.backend.entity.account.UserSession;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.moderation.Admin;
@@ -46,8 +49,10 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.GithubTokenCipher;
+import com.linker.backend.repository.account.RecruiterProfileRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
+import com.linker.backend.repository.profile.RecruiterAdRepository;
 import com.linker.backend.repository.moderation.AdminActionRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.AppealRepository;
@@ -78,6 +83,8 @@ public class ModerationService {
 	private final AdminActionRepository actions;
 	private final AdminRepository admins;
 	private final UserRepository users;
+	private final RecruiterAdRepository ads;
+	private final RecruiterProfileRepository profiles;
 	private final NotificationService notifications;
 	private final GithubTokenCipher otpSecrets;
 	private final UserSessionRepository sessions;
@@ -93,6 +100,8 @@ public class ModerationService {
 			AdminActionRepository actions,
 			AdminRepository admins,
 			UserRepository users,
+			RecruiterAdRepository ads,
+			RecruiterProfileRepository profiles,
 			NotificationService notifications,
 			GithubTokenCipher otpSecrets,
 			UserSessionRepository sessions,
@@ -106,6 +115,8 @@ public class ModerationService {
 		this.actions = actions;
 		this.admins = admins;
 		this.users = users;
+		this.ads = ads;
+		this.profiles = profiles;
 		this.notifications = notifications;
 		this.otpSecrets = otpSecrets;
 		this.sessions = sessions;
@@ -211,6 +222,9 @@ public class ModerationService {
 			default -> throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
 		}
 		content.apply(row.getTargetType(), row.getTargetId(), action, now);
+		if (action == AdminActionType.DISMISS && row.getAutoHiddenAt() != null) {
+			content.undoAutoHide(row.getTargetType(), row.getTargetId());
+		}
 		actions.save(AdminAction.record(admin, action, row.getTargetType().name(), row.getTargetId(), row, reason));
 		notifyOutcome(row, action, reason);
 		boolean appealed = appeals.findPendingCaseIds().contains(caseId);
@@ -327,11 +341,12 @@ public class ModerationService {
 		List<Report> filed = reports.findByReportCase_Id(row.getId());
 		User target = users.findById(row.getTargetUserId()).orElse(null);
 		List<ChatLine> chat = withChat ? chat(row) : null;
+		JobAd ad = jobAd(row);
 		return new ReportCaseView(
 				row.getId(),
 				status,
 				apiType(row.getTargetType()),
-				summary(row, filed, chat),
+				ad != null ? ad.title() : summary(row, filed, chat),
 				reasonCounts(filed),
 				row.getReporterCount(),
 				row.getAutoHiddenAt() != null,
@@ -339,7 +354,22 @@ public class ModerationService {
 				late,
 				person(target),
 				chat,
-				handledAction(row.getId()));
+				handledAction(row.getId()),
+				ad);
+	}
+
+	private JobAd jobAd(ReportCase row) {
+		if (row.getTargetType() != ReportTargetType.RECRUITER_AD) {
+			return null;
+		}
+		RecruiterAd ad = ads.findById(row.getTargetId()).orElse(null);
+		if (ad == null) {
+			return null;
+		}
+		String company = profiles.findByUser_Id(ad.getRecruiter().getId())
+				.map(RecruiterProfile::getCompanyName)
+				.orElse("");
+		return new JobAd(company, ad.getTitle(), ad.getJobCategory().name(), ad.getClosesOn(), ad.getUrlHost());
 	}
 
 	private List<ChatLine> chat(ReportCase row) {

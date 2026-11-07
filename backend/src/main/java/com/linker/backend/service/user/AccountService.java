@@ -51,6 +51,7 @@ import com.linker.backend.repository.account.GithubTokenRepository;
 import com.linker.backend.repository.account.UserAgreementRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.profile.UserJobCategoryRepository;
@@ -83,6 +84,7 @@ public class AccountService {
 	private final OwnedTeamLookup ownedTeams;
 	private final UserSessionRepository sessions;
 	private final FollowRepository follows;
+	private final UserBlockRepository blocks;
 	private final NotificationService notifications;
 	private final PostService posts;
 	private final GithubTokenRepository githubTokens;
@@ -101,6 +103,7 @@ public class AccountService {
 			OwnedTeamLookup ownedTeams,
 			UserSessionRepository sessions,
 			FollowRepository follows,
+			UserBlockRepository blocks,
 			NotificationService notifications,
 			PostService posts,
 			GithubTokenRepository githubTokens,
@@ -117,6 +120,7 @@ public class AccountService {
 		this.ownedTeams = ownedTeams;
 		this.sessions = sessions;
 		this.follows = follows;
+		this.blocks = blocks;
 		this.notifications = notifications;
 		this.posts = posts;
 		this.githubTokens = githubTokens;
@@ -644,6 +648,9 @@ public class AccountService {
 		if (target.getUserType() != UserType.DEVELOPER) {
 			throw new ApiException(403, "FORBIDDEN", "채용 담당자는 팔로우할 수 없어요");
 		}
+		if (blockedEitherWay(follower.getId(), target.getId())) {
+			throw new ApiException(404, "NOT_FOUND", "볼 수 없는 프로필");
+		}
 		if (follows.existsByFollower_IdAndFollowing_Id(follower.getId(), target.getId())) {
 			return;
 		}
@@ -706,6 +713,11 @@ public class AccountService {
 
 	private static User person(Follow follow, boolean followers) {
 		return followers ? follow.getFollower() : follow.getFollowing();
+	}
+
+	private boolean blockedEitherWay(long firstUserId, long secondUserId) {
+		return blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(firstUserId, secondUserId)
+				|| blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(secondUserId, firstUserId);
 	}
 
 	private User requireActive(long userId) {
