@@ -212,6 +212,11 @@ public final class PlanLimits {
 	private PlanLimits() {
 	}
 
+	/** Policy ch. 9: account-sanction ladder and inactivity reset. */
+	public static final int SANCTION_FIRST_DAYS = 7;
+	public static final int SANCTION_SECOND_DAYS = 30;
+	public static final int SANCTION_RESET_YEARS = 1;
+
 	/** Flex monthly amount for headcount on the billing date (no mid-period pro-rate). */
 	public static int flexMonthlyAmount(int seats) {
 		if (seats < 1) {

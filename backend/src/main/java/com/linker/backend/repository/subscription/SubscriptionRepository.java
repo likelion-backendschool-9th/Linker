@@ -16,6 +16,9 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long>, SubscriptionRepositoryCustom {
 
+	@Query("select s from Subscription s where s.userId=:userId or s.payerUserId=:userId order by s.id desc")
+	List<Subscription> findAdministrationHistory(long userId, Pageable page);
+
 	/** The live (TRIALING / ACTIVE / PAST_DUE) PRO or SCOUT row; the partial unique index allows one. */
 	Optional<Subscription> findFirstByUserIdAndStatusIn(long userId, Collection<SubscriptionStatus> statuses);
 

@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
 
 	/** Serialize share-card retries across rooms for the same sender/clientMessageId. */
 	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
@@ -52,4 +52,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsByUsername(String username);
 
 	boolean existsByUsernameAndIdNot(String username, Long id);
+
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select u from User u where u.id=:userId")
+	Optional<User> lockById(long userId);
+
+	@Query("""
+			select u from User u where (lower(u.username) like :pattern escape '!'
+			  or lower(u.displayName) like :pattern escape '!')
+			  and (:status is null or u.status=:status) and (:type is null or u.userType=:type)
+			  and (:cursor is null or u.id<:cursor) order by u.id desc
+			""")
+	List<User> findAdministrationPage(String pattern, UserStatus status,
+			com.linker.backend.entity.account.type.UserType type, Long cursor, Pageable page);
+
+	@Query("select u.id from User u where u.status='SUSPENDED' and u.suspendedUntil<=:now order by u.id")
+	List<Long> findExpiredSuspensionIds(Instant now, Pageable page);
 }

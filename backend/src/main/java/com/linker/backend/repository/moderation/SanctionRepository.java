@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface SanctionRepository extends JpaRepository<Sanction, Long> {
 
+	java.util.List<Sanction> findByUser_IdOrderByIdDesc(long userId);
+
 	@Query("""
 			select count(s) > 0 from Sanction s
 			where s.user.id = :userId

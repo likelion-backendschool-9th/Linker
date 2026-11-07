@@ -9,5 +9,6 @@ public enum AdminActionType {
 	DISMISS,
 	VIEW_EMAIL,
 	APPEAL_ACCEPT,
-	APPEAL_REJECT
+	APPEAL_REJECT,
+	REFUND
 }

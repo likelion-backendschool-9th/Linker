@@ -7,9 +7,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class MembershipTeamAccess implements TeamAccess {
   private final TeamMemberRepository members;
+  private final java.time.Clock clock;
 
-  public MembershipTeamAccess(TeamMemberRepository members) {
+  public MembershipTeamAccess(TeamMemberRepository members, java.time.Clock clock) {
     this.members = members;
+    this.clock = clock;
   }
 
   @Override
@@ -22,7 +24,9 @@ public class MembershipTeamAccess implements TeamAccess {
                   case MEMBER -> true;
                   case ADMIN -> role == com.linker.backend.entity.team.type.TeamRole.OWNER
                       || role == com.linker.backend.entity.team.type.TeamRole.ADMIN;
-                  case OWNER -> role == com.linker.backend.entity.team.type.TeamRole.OWNER;
+                  case OWNER -> role == com.linker.backend.entity.team.type.TeamRole.OWNER
+                      || (role == com.linker.backend.entity.team.type.TeamRole.ADMIN
+                          && members.hasTemporarilySuspendedOwner(teamId, clock.instant()));
                 });
   }
 }
