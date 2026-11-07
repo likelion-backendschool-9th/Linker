@@ -29,6 +29,7 @@ import type {
 
 import type {
   AcceptChatRequestResponse,
+  ApiErrorBody,
   ChatRoomPageResponse,
   ListChatRoomsParams,
   UnreadSummaryResponse
@@ -85,7 +86,7 @@ export const acceptChatRequest = async (roomId: number, options?: Parameters<typ
 
 export const getAcceptChatRequestMutationKey = () => ['acceptChatRequest'] as const;
 
-export const getAcceptChatRequestMutationOptions = <TError = unknown,
+export const getAcceptChatRequestMutationOptions = <TError = ApiErrorBody,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptChatRequest>>, TError,AcceptChatRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof acceptChatRequest>>, TError,AcceptChatRequestMutationVariables, TContext> => {
 
@@ -114,10 +115,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type AcceptChatRequestMutationResult = NonNullable<Awaited<ReturnType<typeof acceptChatRequest>>>
 
-    export type AcceptChatRequestMutationError = unknown
+    export type AcceptChatRequestMutationError = ApiErrorBody
     export type AcceptChatRequestMutationVariables = {roomId: number}
 
-    export const useAcceptChatRequest = <TError = unknown,
+    export const useAcceptChatRequest = <TError = ApiErrorBody,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptChatRequest>>, TError,AcceptChatRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof acceptChatRequest>>,
@@ -164,7 +165,7 @@ export const getListChatRoomsQueryKey = (params?: ListChatRoomsParams,) => {
     }
 
 
-export const getListChatRoomsQueryOptions = <TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(params?: ListChatRoomsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getListChatRoomsQueryOptions = <TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(params?: ListChatRoomsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -183,10 +184,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListChatRoomsQueryResult = NonNullable<Awaited<ReturnType<typeof listChatRooms>>>
-export type ListChatRoomsQueryError = unknown
+export type ListChatRoomsQueryError = ApiErrorBody
 
 
-export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params: undefined |  ListChatRoomsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listChatRooms>>,
@@ -196,7 +197,7 @@ export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params?: ListChatRoomsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listChatRooms>>,
@@ -206,12 +207,12 @@ export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params?: ListChatRoomsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params?: ListChatRoomsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -223,7 +224,7 @@ export function useListChatRooms<TData = Awaited<ReturnType<typeof listChatRooms
   return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const prefetchListChatRoomsQuery = async <TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export const prefetchListChatRoomsQuery = async <TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  queryClient: QueryClient, params?: ListChatRoomsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 
   ): Promise<QueryClient> => {
@@ -239,7 +240,7 @@ export const prefetchListChatRoomsQuery = async <TData = Awaited<ReturnType<type
 
 
 
-export const getListChatRoomsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(params?: ListChatRoomsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getListChatRoomsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(params?: ListChatRoomsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -258,23 +259,23 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListChatRoomsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listChatRooms>>>
-export type ListChatRoomsSuspenseQueryError = unknown
+export type ListChatRoomsSuspenseQueryError = ApiErrorBody
 
 
-export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params: undefined |  ListChatRoomsParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params?: ListChatRoomsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params?: ListChatRoomsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = unknown>(
+export function useListChatRoomsSuspense<TData = Awaited<ReturnType<typeof listChatRooms>>, TError = ApiErrorBody>(
  params?: ListChatRoomsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listChatRooms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -321,7 +322,7 @@ export const getUnreadChatSummaryQueryKey = () => {
     }
 
 
-export const getUnreadChatSummaryQueryOptions = <TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getUnreadChatSummaryQueryOptions = <TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -340,10 +341,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type UnreadChatSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof unreadChatSummary>>>
-export type UnreadChatSummaryQueryError = unknown
+export type UnreadChatSummaryQueryError = ApiErrorBody
 
 
-export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof unreadChatSummary>>,
@@ -353,7 +354,7 @@ export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadCha
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof unreadChatSummary>>,
@@ -363,12 +364,12 @@ export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadCha
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -380,7 +381,7 @@ export function useUnreadChatSummary<TData = Awaited<ReturnType<typeof unreadCha
   return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const prefetchUnreadChatSummaryQuery = async <TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export const prefetchUnreadChatSummaryQuery = async <TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
  queryClient: QueryClient,  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 
   ): Promise<QueryClient> => {
@@ -396,7 +397,7 @@ export const prefetchUnreadChatSummaryQuery = async <TData = Awaited<ReturnType<
 
 
 
-export const getUnreadChatSummarySuspenseQueryOptions = <TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getUnreadChatSummarySuspenseQueryOptions = <TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -415,23 +416,23 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type UnreadChatSummarySuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof unreadChatSummary>>>
-export type UnreadChatSummarySuspenseQueryError = unknown
+export type UnreadChatSummarySuspenseQueryError = ApiErrorBody
 
 
-export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = unknown>(
+export function useUnreadChatSummarySuspense<TData = Awaited<ReturnType<typeof unreadChatSummary>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof unreadChatSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -473,7 +474,7 @@ export const deleteChatRequest = async (roomId: number, options?: Parameters<typ
 
 export const getDeleteChatRequestMutationKey = () => ['deleteChatRequest'] as const;
 
-export const getDeleteChatRequestMutationOptions = <TError = unknown,
+export const getDeleteChatRequestMutationOptions = <TError = ApiErrorBody,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChatRequest>>, TError,DeleteChatRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteChatRequest>>, TError,DeleteChatRequestMutationVariables, TContext> => {
 
@@ -502,10 +503,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteChatRequestMutationResult = NonNullable<Awaited<ReturnType<typeof deleteChatRequest>>>
 
-    export type DeleteChatRequestMutationError = unknown
+    export type DeleteChatRequestMutationError = ApiErrorBody
     export type DeleteChatRequestMutationVariables = {roomId: number}
 
-    export const useDeleteChatRequest = <TError = unknown,
+    export const useDeleteChatRequest = <TError = ApiErrorBody,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChatRequest>>, TError,DeleteChatRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteChatRequest>>,

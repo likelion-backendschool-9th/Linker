@@ -22,11 +22,13 @@ export default async function ChatsPage({ searchParams }: PageProps<'/chats'>) {
     client.prefetchInfiniteQuery(chatRoomsOptions(login, tab)),
     client.prefetchQuery(unreadSummaryOptions(login)),
   ]);
+  // Wrap the whole frame: the bottom-tab badge reads the same summary query. If it rendered first,
+  // the boundary would hydrate that query only in an effect and the SSR HTML would miss the counts.
   return (
-    <PageFrame title="채팅">
-      <HydrationBoundary state={dehydrate(client)}>
+    <HydrationBoundary state={dehydrate(client)}>
+      <PageFrame title="채팅">
         <ChatList />
-      </HydrationBoundary>
-    </PageFrame>
+      </PageFrame>
+    </HydrationBoundary>
   );
 }

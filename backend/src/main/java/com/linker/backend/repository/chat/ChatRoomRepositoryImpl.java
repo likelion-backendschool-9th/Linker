@@ -152,8 +152,13 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 			  counterpart.avatar_url,
 			  counterpart.display_name,
 			  counterpart.username,
-			  counterpart.status AS counterpart_status
+			  counterpart.status AS counterpart_status,
+			  team.name AS team_name,
+			  team.avatar_url AS team_avatar_url
 			%s
+			LEFT JOIN teams team
+			  ON team.id = r.team_id
+			 AND r.room_type = 'TEAM'
 			LEFT JOIN LATERAL (
 			  SELECT m.id, m.body, m.visibility, m.deleted_at, m.created_at
 			  FROM chat_messages m
@@ -358,7 +363,9 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 				(String) row.get("avatar_url"),
 				(String) row.get("display_name"),
 				(String) row.get("username"),
-				(String) row.get("counterpart_status")
+				(String) row.get("counterpart_status"),
+				(String) row.get("team_name"),
+				(String) row.get("team_avatar_url")
 		);
 	}
 

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.linker.backend.dto.chat.event.ChatMessageModerated;
+import com.linker.backend.dto.chat.event.ChatRoomsChanged;
 import com.linker.backend.dto.moderation.response.BlockView;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
@@ -33,6 +34,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatMessageRepositoryCustom.ChatMessageRow;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.AppealRepository;
@@ -70,6 +72,7 @@ public class ModerationService {
 	private final FollowRepository follows;
 	private final ChatMessageRepository messages;
 	private final ChatRoomMemberRepository roomMembers;
+	private final ChatRoomRepository rooms;
 	private final ReportMessageSnapshotRepository snapshots;
 	private final ApplicationEventPublisher events;
 	private final Clock clock;
@@ -88,6 +91,7 @@ public class ModerationService {
 			FollowRepository follows,
 			ChatMessageRepository messages,
 			ChatRoomMemberRepository roomMembers,
+			ChatRoomRepository rooms,
 			ReportMessageSnapshotRepository snapshots,
 			ApplicationEventPublisher events,
 			Clock clock
@@ -105,6 +109,7 @@ public class ModerationService {
 		this.follows = follows;
 		this.messages = messages;
 		this.roomMembers = roomMembers;
+		this.rooms = rooms;
 		this.snapshots = snapshots;
 		this.events = events;
 		this.clock = clock;
@@ -139,6 +144,7 @@ public class ModerationService {
 			return;
 		}
 		inserter.insertActive(blockerId, blockedId, DatabaseInstant.now(clock));
+		announceDirectRoom(blockerId, blockedId);
 	}
 
 	/**
@@ -176,6 +182,19 @@ public class ModerationService {
 		UserBlock active = blocks.findByBlockerIdAndBlockedIdAndUnblockedAtIsNull(blockerId, blockedId)
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "차단 중인 사용자가 아니에요"));
 		active.close(DatabaseInstant.now(clock));
+		announceDirectRoom(blockerId, blockedId);
+	}
+
+	/**
+	 * A block hides the pair's 1:1 room from both lists (and unblocking brings it back), so both
+	 * accounts refetch their list and badge after commit. No room, no event.
+	 */
+	private void announceDirectRoom(long firstUserId, long secondUserId) {
+		String dmKey = Math.min(firstUserId, secondUserId) + ":" + Math.max(firstUserId, secondUserId);
+		rooms.findIdByDmKey(dmKey).ifPresent(roomId -> {
+			events.publishEvent(new ChatRoomsChanged(firstUserId, roomId));
+			events.publishEvent(new ChatRoomsChanged(secondUserId, roomId));
+		});
 	}
 
 	@Transactional(readOnly = true)

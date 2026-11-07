@@ -1,27 +1,27 @@
+import type {
+  ChatRoomItemResponse,
+  ChatRoomPageResponse,
+  UnreadSummaryResponse,
+} from '@linker/api/openAPIDefinition.schemas';
+import {
+  acceptChatRequest as acceptChatRequestApi,
+  deleteChatRequest as deleteChatRequestApi,
+  listChatRooms,
+  unreadChatSummary,
+} from '@linker/api/p16-chat-list/p16-chat-list';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-
-import { apiFetch } from '@/lib/api/api-fetch';
 
 export const CHAT_TABS = ['TEAM', 'DIRECT', 'REQUEST'] as const;
 export type ChatTab = (typeof CHAT_TABS)[number];
 
-/** Provisional WBS 16 contract; replace with Orval types when OpenAPI is available. */
-export type ChatRoom = {
-  id: number;
-  kind: ChatTab;
-  title: string | null;
-  counterpart: { avatarUrl: string | null } | null;
-  requestKind: 'GENERAL' | 'RECRUITING' | null;
-  requestDirection: 'SENT' | 'RECEIVED' | null;
-  companyName: string | null;
-  muted: boolean;
-  unreadCount: number;
-  lastMessage: { text: string | null; createdAt: string } | null;
-};
-export type ChatPage = { items: ChatRoom[]; nextCursor: string | null };
-export type UnreadSummary = Record<ChatTab, number> & { requestCount: number; total: number };
+/** A list row. TEAM rows carry the team name in `title` and the team photo in `counterpart.avatarUrl`. */
+export type ChatRoom = ChatRoomItemResponse;
+export type ChatPage = ChatRoomPageResponse;
+export type UnreadSummary = UnreadSummaryResponse;
 
 export const chatKeys = {
+  /** Every account's chat cache: list pages, badge summary, rooms. */
+  all: ['chat'] as const,
   account: (login: string | null) => ['chat', login] as const,
 };
 
@@ -30,11 +30,8 @@ export function chatRoomsOptions(login: string | null, tab: ChatTab) {
     refetchOnMount: 'always',
     queryKey: [...chatKeys.account(login), 'rooms', tab],
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam, signal }) => {
-      const query = new URLSearchParams({ tab });
-      if (pageParam) query.set('cursor', pageParam);
-      return apiFetch<ChatPage>(`/api/v1/user/chat-rooms?${query}`, { signal });
-    },
+    queryFn: ({ pageParam, signal }) =>
+      listChatRooms(pageParam ? { tab, cursor: pageParam } : { tab }, { signal }),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 }
@@ -42,18 +39,16 @@ export function chatRoomsOptions(login: string | null, tab: ChatTab) {
 export function unreadSummaryOptions(login: string | null) {
   return queryOptions({
     refetchOnMount: 'always',
+    // Account-scoped so login switches and `chatKeys.account` invalidation both reach it.
     queryKey: [...chatKeys.account(login), 'unread-summary'],
-    queryFn: ({ signal }) =>
-      apiFetch<UnreadSummary>('/api/v1/user/chat-rooms/unread-summary', { signal }),
+    queryFn: ({ signal }) => unreadChatSummary({ signal }),
   });
 }
 
 export function acceptChatRequest(roomId: number) {
-  return apiFetch<{ roomId: number }>(`/api/v1/user/chat-requests/${roomId}/accept`, {
-    method: 'POST',
-  });
+  return acceptChatRequestApi(roomId);
 }
 
 export function deleteChatRequest(roomId: number) {
-  return apiFetch<void>(`/api/v1/user/chat-requests/${roomId}`, { method: 'DELETE' });
+  return deleteChatRequestApi(roomId);
 }

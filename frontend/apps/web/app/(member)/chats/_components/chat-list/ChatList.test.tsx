@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useRouter } from 'next/navigation';
 import { axe } from 'vitest-axe';
 
 import { chatKeys } from '@/features/chat/chat-queries';
@@ -30,11 +31,20 @@ beforeEach(() => {
     if (url.endsWith('unread-summary'))
       return { TEAM: 0, DIRECT: 0, REQUEST: 1, total: 1, requestCount: 1 };
     if (url.includes('tab=REQUEST')) return { items: [row], nextCursor: null };
+    if (url.endsWith('/accept')) return { roomId: 3 };
     return { items: [], nextCursor: null };
   });
 });
 
 it('changes tabs through the URL and shows request actions with accessible markup', async () => {
+  const push = vi.fn();
+  vi.mocked(useRouter).mockReturnValue({
+    push,
+    replace: vi.fn(),
+    back: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  } as never);
   const user = userEvent.setup();
   const { container } = renderWithProviders(<ChatList />, {
     viewer: { role: 'developer', login: 'developer' },
@@ -50,6 +60,7 @@ it('changes tabs through the URL and shows request actions with accessible marku
       method: 'POST',
     }),
   );
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/chats/3'));
 });
 
 it('shows recruiters only personal chats, even with a TEAM URL', async () => {
