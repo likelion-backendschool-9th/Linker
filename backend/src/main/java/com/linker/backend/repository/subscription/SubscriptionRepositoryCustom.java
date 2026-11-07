@@ -16,6 +16,15 @@ public interface SubscriptionRepositoryCustom {
 	 */
 	List<FlexTeam> flexTeams(long userId, Long teamId);
 
+	/** Existing optional-schema fallback. null = current schema/search path; public = Ad's legacy scope. */
+	com.linker.backend.dto.subscription.response.SubscriptionSchemaView benefitSchema(String schema);
+	boolean subscriptionTableExists();
+
+	/** Preserve each consumer's existing predicate; these are not one newly unified policy. */
+	boolean hasProBenefit(long userId, java.time.Instant now, boolean graceAvailable);
+	boolean hasFlexBenefit(long teamId, java.time.Instant now);
+	boolean hasScoutBenefit(long userId, java.time.Instant now, boolean graceAvailable);
+
 	record FlexTeam(long teamId, String name, long memberCount) {
 	}
 }
