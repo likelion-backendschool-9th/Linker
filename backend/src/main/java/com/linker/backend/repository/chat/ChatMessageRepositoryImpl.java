@@ -7,11 +7,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 
 import com.linker.backend.dto.chat.response.ChatShareCardResponse;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.post.type.PostVisibility;
 import com.linker.backend.entity.recruit.type.RecruitVisibility;
+import com.linker.backend.entity.recruit.type.RecruitRoleType;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -126,9 +128,10 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 
 	private ChatShareCardResponse postCard(long viewerId, long id) {
 		List<Object[]> rows = em.createQuery("""
-				select p.id, p.summary
+				select p.id, p.summary, repo.fullName, coalesce(nullif(u.displayName, ''), u.username), repo.isPrivate, repo.deletedAt
 				from Post p
 				join p.author u
+				join p.repo repo
 				where p.id = :id and p.deletedAt is null and p.visibility = :visible
 				  and u.deletedAt is null and u.status <> :deleted
 				  and\s""" + NO_BLOCK_BETWEEN.formatted("p.author.id", "p.author.id"), Object[].class)
@@ -150,14 +153,16 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 				.setMaxResults(1)
 				.getResultList();
 		long postId = (Long) rows.get(0)[0];
+		Object[] post = rows.getFirst();
+		String repoName = Boolean.TRUE.equals(post[4]) || post[5] != null ? "레포를 볼 수 없음" : (String) post[2];
 		return new ChatShareCardResponse(
-				"POST", postId, (String) rows.get(0)[1], null,
+				"POST", postId, repoName, post[1] + " · " + post[3],
 				images.isEmpty() ? null : images.get(0), "/posts/" + postId + "?from=chat_share", true);
 	}
 
 	private ChatShareCardResponse recruitCard(long viewerId, long id) {
 		List<Object[]> rows = em.createQuery("""
-				select p.id, p.title, p.description
+				select p.id, p.title, p.deadline, p.status
 				from RecruitPost p
 				join p.author u
 				where p.id = :id and p.deletedAt is null and p.visibility = :visible
@@ -173,14 +178,22 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 		}
 		Object[] row = rows.get(0);
 		long postId = (Long) row[0];
+		List<String> roles = em.createQuery("""
+				select r.role, r.headcount, r.acceptedCount from RecruitRole r where r.recruitPost.id = :id order by r.id
+				""", Object[].class).setParameter("id", id).getResultList().stream()
+				.map(role -> ((RecruitRoleType) role[0]).label() + " " + Math.max(0, (Integer) role[1] - (Integer) role[2]) + "명")
+				.toList();
+		String deadline = ((LocalDate) row[2]).toString() + " 마감";
+		String summary = (roles.isEmpty() ? "" : String.join(" · ", roles) + " · ") + deadline
+				+ ("CLOSED".equals(((Enum<?>) row[3]).name()) ? " · 모집 마감" : "");
 		return new ChatShareCardResponse(
-				"RECRUIT_POST", postId, (String) row[1], (String) row[2],
+				"RECRUIT_POST", postId, (String) row[1], summary,
 				null, "/recruits/" + postId + "?from=chat_share", true);
 	}
 
 	private ChatShareCardResponse profileCard(long viewerId, long id) {
 		List<Object[]> rows = em.createQuery("""
-				select u.id, u.username, coalesce(u.displayName, u.username), u.avatarUrl
+				select u.id, u.username, coalesce(nullif(u.displayName, ''), u.username), u.avatarUrl
 				from User u
 				where u.id = :id and u.deletedAt is null and u.status <> :deleted
 				  and\s""" + NO_BLOCK_BETWEEN.formatted("u.id", "u.id"), Object[].class)
@@ -192,9 +205,13 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 			return ChatShareCardResponse.unavailable("PROFILE", id);
 		}
 		Object[] row = rows.get(0);
+		List<String> tags = em.createQuery("""
+				select tag.name from UserTechTag selected join selected.tag tag
+				where selected.user.id = :id order by tag.sortOrder, tag.id
+				""", String.class).setParameter("id", id).getResultList();
 		return new ChatShareCardResponse(
-				"PROFILE", (Long) row[0], (String) row[2], "@" + row[1],
-				(String) row[3], "/users/" + row[1], true);
+				"PROFILE", (Long) row[0], (String) row[2], "@" + row[1] + (tags.isEmpty() ? "" : " · " + String.join(", ", tags)),
+				(String) row[3], "/user/" + row[1], true);
 	}
 
 	private static String where(boolean team, Instant historyStart) {

@@ -21,6 +21,7 @@ import { ApplicationSheet } from '../application-sheet';
 import { RecruitApplySheet } from '../recruit-apply-sheet';
 import styles from './RecruitDetail.module.css';
 import { useActionPanel, usePostView, useRecruitDetail } from './hook';
+import { ShareButton } from '@/features/share/share-button';
 import { RecruitMenuSheet } from '../recruit-menu-sheet';
 import { RejectSheet } from '../reject-sheet';
 
@@ -101,6 +102,13 @@ function PostView({
       <article aria-labelledby="recruit-title" className={styles.main}>
         <header className={styles.head}>
           <div className={styles.headTop}>
+            <ShareButton
+              target={{
+                targetType: 'RECRUIT_POST',
+                targetId: recruit.id,
+                path: `/recruits/${recruit.id}`,
+              }}
+            />
             <ul className={styles.badges} aria-label="모집 요약">
               <li className={closed ? styles.closedBadge : styles.deadlineBadge}>
                 {closed ? '모집 마감' : days === 0 ? '오늘 마감' : `D-${days}`}
@@ -258,16 +266,8 @@ type ActionPanelProps = { recruit: Detail; closed: boolean; onShowApplicants: ()
  * jump to applicants. Fixed to the bottom on mobile, inside the aside from desktop.
  */
 function ActionPanel({ recruit, closed, onShowApplicants }: ActionPanelProps) {
-  const {
-    viewer,
-    mine,
-    suspended,
-    confirm,
-    cancelPending,
-    openApply,
-    openCancel,
-    confirmCancel,
-  } = useActionPanel(recruit);
+  const { viewer, mine, suspended, confirm, cancelPending, openApply, openCancel, confirmCancel } =
+    useActionPanel(recruit);
 
   // Recruiters only read (04 ch. 2)
   if (viewer.role === 'recruiter') return null;

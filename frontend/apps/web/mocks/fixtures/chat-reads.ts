@@ -1,4 +1,5 @@
 import { withChatReferences } from './chat-references';
+import { withShareCards } from './chat-shares';
 import { findRoom, type MockMessage } from './chat';
 import { TEAM_MEMBERS } from './teams';
 import { brief, ME } from './users';
@@ -18,13 +19,21 @@ export function recordRead(roomId: number, userId: number, messageId: number) {
 export function unreadMembers(message: MockMessage) {
   const room = findRoom(message.roomId);
   if (!room) return [];
-  const members = room.teamId ? (TEAM_MEMBERS[room.teamId] ?? []).map((member) => member.user) :
-    [brief(ME), room.counterpart].filter((member) => member !== null);
+  const members = room.teamId
+    ? (TEAM_MEMBERS[room.teamId] ?? []).map((member) => member.user)
+    : [brief(ME), room.counterpart].filter((member) => member !== null);
   const unique = new Map(members.map((member) => [member.id, member]));
-  return [...unique.values()].filter((member) => member.id !== message.sender?.id &&
-    (READ_POSITIONS.get(message.roomId)?.get(member.id) ?? 0) < message.id);
+  return [...unique.values()].filter(
+    (member) =>
+      member.id !== message.sender?.id &&
+      (READ_POSITIONS.get(message.roomId)?.get(member.id) ?? 0) < message.id,
+  );
 }
 
 export function withReadState(message: MockMessage) {
-  return { ...message, payload: withChatReferences(message), unreadCount: unreadMembers(message).length };
+  return {
+    ...message,
+    payload: withShareCards(message, withChatReferences(message)),
+    unreadCount: unreadMembers(message).length,
+  };
 }

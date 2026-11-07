@@ -15,6 +15,7 @@ import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.global.error.ApiErrorBody;
@@ -119,6 +120,19 @@ public class ChatController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.room(user, roomId));
 	}
 
+	@GetMapping("/me/share-targets")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "listChatShareTargets")
+	@ApiResponse(responseCode = "200", description = "Writable team and open direct rooms, most recent first")
+	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "403", description = "FORBIDDEN", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	public ResponseEntity<ChatShareTargetsResponse> shareTargets(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestParam(required = false) String q
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.shareTargets(user, q));
+	}
+
 	@GetMapping("/chat-rooms/{roomId}/messages")
 	@Tag(name = "p17-chat-room")
 	@Operation(operationId = "listChatMessages")
@@ -159,12 +173,13 @@ public class ChatController {
 	@ApiResponse(responseCode = "403", description = "SUSPENDED or FORBIDDEN (room not writable)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@ApiResponse(responseCode = "404", description = "NOT_FOUND", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@ApiResponse(responseCode = "429", description = "RATE_LIMITED (detail.retryAfterSeconds)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "409", description = "STATE_CONFLICT (clientMessageId reused for another target or room)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	public ResponseEntity<ChatMessageResponse> shareCard(
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@PathVariable long roomId,
 			@RequestBody ShareChatCardRequest request
 	) {
-		return ResponseEntity.ok().body(chat.shareCard(user, roomId, request));
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.shareCard(user, roomId, request));
 	}
 
 	@PostMapping("/chat-rooms/{roomId}/read")

@@ -81,6 +81,9 @@ linker:
     enforce-origin: false
     allowed-origins: ${ALLOWED_ORIGINS:}
     trust-forwarded-for: false
+  chat:
+    # Exact frontend origins eligible for DB-backed Linker URL cards; never fetch these URLs.
+    public-origins: ${CHAT_PUBLIC_ORIGINS:${ALLOWED_ORIGINS:http://localhost:3000}}
   storage:
     mode: ${STORAGE_MODE:unconfigured}
     local-dir: ${STORAGE_LOCAL_DIR:}

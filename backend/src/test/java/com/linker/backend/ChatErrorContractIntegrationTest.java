@@ -104,7 +104,7 @@ class ChatErrorContractIntegrationTest {
 				checked.add(name);
 			}
 		}
-		assertThat(checked).hasSize(15);
+		assertThat(checked).hasSize(16);
 		JsonNode direct = paths.path("/api/v1/user/chat-rooms/direct").path("post");
 		assertThat(direct.path("operationId").asString()).isEqualTo("startDirectChat");
 		assertThat(direct.path("responses").path("403").path("description").asString()).contains("DEVELOPER_ONLY", "SUSPENDED");
