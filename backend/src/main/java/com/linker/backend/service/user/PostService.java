@@ -221,7 +221,7 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public RepoSummaryResponse repoSummary(AuthenticatedUser user, long repoId) {
 		GithubRepo repo = requireOwnedSelectableRepo(user, repoId);
-		return toSummary(repo, 0, 0);
+		return toSummary(repo, 0, 0, photoCap(user.userId()));
 	}
 
 	@Transactional
@@ -259,6 +259,7 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public PostEditFormResponse editForm(AuthenticatedUser user, long postId) {
 		Post post = requireOwnedPost(user.userId(), postId);
+		int photoCap = photoCap(user.userId());
 		post.getImages().size();
 		post.getDemoLinks().size();
 		post.getTags().size();
@@ -280,8 +281,8 @@ public class PostService {
 				toPeriod(post.getPeriodStart(), post.getPeriodEnd()),
 				post.getTeamSize(),
 				tags,
-				toSummary(post.getRepo(), post.getMyCommitCount(), post.getLinkerIssueCount()),
-				PlanLimits.POST_PHOTOS_FREE
+				toSummary(post.getRepo(), post.getMyCommitCount(), post.getLinkerIssueCount(), photoCap),
+				photoCap
 		);
 	}
 
@@ -505,11 +506,14 @@ public class PostService {
 		if (photos == null || photos.isEmpty()) {
 			return List.of();
 		}
-		if (photos.size() > PlanLimits.POST_PHOTOS_FREE) {
+		int cap = photoCap(userId);
+		if (photos.size() > cap) {
 			throw new ApiException(
 					403,
 					"PLAN_LIMIT",
-					"사진은 5장까지 올릴 수 있어요. Pro로 10장까지 늘릴 수 있어요.",
+					cap >= PlanLimits.POST_PHOTOS_PRO
+							? "사진은 " + cap + "장까지 올릴 수 있어요."
+							: "사진은 5장까지 올릴 수 있어요. Pro로 10장까지 늘릴 수 있어요.",
 					Map.of("reason", "POST_PHOTOS")
 			);
 		}
@@ -734,7 +738,12 @@ public class PostService {
 		);
 	}
 
-	private RepoSummaryResponse toSummary(GithubRepo repo, int commitCount, int issueCount) {
+	/** Policy ch. 11: Pro 10 photos per post. After Pro ends, saved photos stay; new writes and edits use 5. */
+	private int photoCap(long userId) {
+		return pro.active(userId, clock.instant()) ? PlanLimits.POST_PHOTOS_PRO : PlanLimits.POST_PHOTOS_FREE;
+	}
+
+	private RepoSummaryResponse toSummary(GithubRepo repo, int commitCount, int issueCount, int maxPhotos) {
 		return new RepoSummaryResponse(
 				repo.getId(),
 				repo.getFullName(),
@@ -746,7 +755,7 @@ public class PostService {
 				repo.getParentFullName(),
 				commitCount,
 				issueCount,
-				PlanLimits.POST_PHOTOS_FREE
+				maxPhotos
 		);
 	}
 

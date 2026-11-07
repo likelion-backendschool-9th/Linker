@@ -71,6 +71,8 @@ class RecruitmentServiceTest {
 	UserBlockRepository blocks;
 	@Mock
 	NotificationService notifications;
+	@Mock
+	ProMembership pro;
 
 	RecruitmentService service;
 	AuthenticatedUser developer;
@@ -78,7 +80,7 @@ class RecruitmentServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new RecruitmentService(
-				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, CLOCK);
+				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, pro, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER,
 				UserStatus.ACTIVE,
@@ -134,6 +136,42 @@ class RecruitmentServiceTest {
 		assertThat(options.openCount()).isEqualTo(1);
 		assertThat(options.openLimit()).isEqualTo(PlanLimits.OPEN_RECRUIT_POSTS_FREE);
 		assertThat(options.maxDeadlineDate()).isEqualTo(LocalDate.of(2026, 11, 5).plusDays(60).toString());
+	}
+
+	@Test
+	void proRaisesTheOpenLimitToTen() {
+		when(pro.active(10L, NOW)).thenReturn(true);
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN))
+				.thenReturn((long) PlanLimits.OPEN_RECRUIT_POSTS_PRO);
+
+		assertThat(service.editorOptions(developer).openLimit()).isEqualTo(PlanLimits.OPEN_RECRUIT_POSTS_PRO);
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("PLAN_LIMIT");
+					assertThat(api.getMessage()).isEqualTo("동시에 모집할 수 있는 글은 10개까지예요.");
+				});
+		verify(posts, never()).save(any());
+	}
+
+	@Test
+	void proCanOpenAFourthPost() {
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(pro.active(10L, NOW)).thenReturn(true);
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN))
+				.thenReturn((long) PlanLimits.OPEN_RECRUIT_POSTS_FREE);
+		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
+			RecruitPost post = invocation.getArgument(0);
+			ReflectionTestUtils.setField(post, "id", 43L);
+			return post;
+		});
+
+		assertThat(service.create(developer, writeRequest(null)).id()).isEqualTo(43L);
+
+		verify(posts).save(any(RecruitPost.class));
 	}
 
 	@Test

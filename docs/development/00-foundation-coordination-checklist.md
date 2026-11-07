@@ -89,7 +89,7 @@
 - [ ] STOMP 설정·인증 인터셉터·재연결 — 브라우저 확인은 못 함. 프로토콜 근거는 `StompConnectionTest` 5건(테스트가 띄운 서버이며 브라우저가 아님)이다.
 - [ ] `NotificationService.create()` **시그니처 D2 freeze**
 - [ ] Redis `@RateLimit`, `PlanLimits` (숫자는 Policy / `policy.ts`와 동일 출처)
-- [ ] 스파이크: Toss 테스트 결제 → confirm → cancel — 키 없음. `TossPaymentClientTest` 3건(mock 서버)만 통과했고 라이브 호출은 하지 않았다.
+- [ ] 스파이크: Toss 테스트 결제 → confirm → cancel — 결제위젯 공용 테스트 키(로컬 `.env`)로 위젯 렌더링과 라이브 API 인증을 확인했다(2026-11-07). confirm은 `NOT_FOUND_PAYMENT_SESSION`, cancel은 `NOT_FOUND_PAYMENT`로 응답했고, 같은 `Idempotency-Key`를 다시 보내도 같은 응답이었다. 실제 승인→취소는 카드사 인증이 필요해서 사람이 브라우저에서 결제해야 남는다.
 - [ ] 프론트 `lib/realtime` STOMP 클라이언트
 - [ ] **D → 전원** 알림 create 인자·에러 코드 공유 (이후 시그니처 변경 자제) — 인자 계약은 백엔드 청사진 §4.1에 정리했다. 실제 전달·이슈 고정·소비자 확인은 별도.
 
@@ -159,7 +159,7 @@
 - [ ] Projects Blocked + 날짜 필드 (**C**) — 조회 결론만: 조회한 기존 보드에는 `Blocked`가 없고 날짜 필드 이름은 `Target date`다(필드 ID는 하드코딩하지 않음). 날짜 쓰기·Blocked 전환·설치 토큰 조회·`projects_v2_item` 수신은 하지 않았다
 - [ ] 웹훅 수신 (**B**, C 소비 가능) — smee ping 없음. 같은 문서 §2
 - [ ] STOMP 재연결 (**D**) — 브라우저 확인 없음. 같은 문서 §3
-- [ ] Toss confirm/cancel (**D**) — 키 없음. 같은 문서 §4
+- [ ] Toss confirm/cancel (**D**) — 로컬 테스트 키로 라이브 인증·오류 응답 확인, 실제 승인→취소 남음. 같은 문서 §4
 
 ### 공통
 - [ ] Sentry 연동 (**전원**)

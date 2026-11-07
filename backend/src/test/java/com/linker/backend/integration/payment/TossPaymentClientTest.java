@@ -3,6 +3,7 @@ package com.linker.backend.integration.payment;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
@@ -47,6 +48,8 @@ class TossPaymentClientTest {
 		server.expect(requestTo("https://api.tosspayments.com/v1/payments/confirm"))
 				.andExpect(method(HttpMethod.POST))
 				.andExpect(header("Authorization", AUTH))
+				.andExpect(header("Idempotency-Key", "confirm:order_1"))
+				.andExpect(jsonPath("$.amount").value(2_900))
 				.andRespond(withSuccess("""
 						{
 						  "paymentKey": "pay_1",
@@ -58,7 +61,7 @@ class TossPaymentClientTest {
 						}
 						""", MediaType.APPLICATION_JSON));
 
-		PaymentConfirmResult result = client.confirm(new PaymentConfirmCommand("pay_1", "order_1", 2_900));
+		PaymentConfirmResult result = client.confirm(new PaymentConfirmCommand("pay_1", "order_1", 2_900, "confirm:order_1"));
 
 		assertThat(result.paymentKey()).isEqualTo("pay_1");
 		assertThat(result.orderId()).isEqualTo("order_1");

@@ -183,6 +183,36 @@ class PostServiceTest {
 	}
 
 	@Test
+	void proRaisesThePhotoLimitToTen() {
+		GithubRepo repo = publicRepo(11L, "dev/linker-web");
+		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
+		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(false);
+		when(pro.active(10L, CLOCK.instant())).thenReturn(true);
+		List<PostPhotoRequest> six = photos(PlanLimits.POST_PHOTOS_FREE + 1);
+		List<PostPhotoRequest> eleven = photos(PlanLimits.POST_PHOTOS_PRO + 1);
+
+		// Six photos pass the Pro cap; whatever fails later (unmocked uploads) is not the plan limit.
+		Throwable sixResult = org.assertj.core.api.Assertions.catchThrowable(
+				() -> service.create(developer, writeRequest(11L, six)));
+		if (sixResult instanceof ApiException api) {
+			assertThat(api.getCode()).isNotEqualTo("PLAN_LIMIT");
+		}
+		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, eleven)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("PLAN_LIMIT");
+					assertThat(api.getMessage()).isEqualTo("사진은 10장까지 올릴 수 있어요.");
+				});
+	}
+
+	private static List<PostPhotoRequest> photos(int count) {
+		return java.util.stream.IntStream.rangeClosed(1, count)
+				.mapToObj(i -> new PostPhotoRequest(Integer.toString(i), "https://example.com/" + i))
+				.toList();
+	}
+
+	@Test
 	void createValidatesUploadedFileOwnership() {
 		GithubRepo repo = publicRepo(11L, "dev/linker-web");
 		User author = User.create("dev", UserType.DEVELOPER);
