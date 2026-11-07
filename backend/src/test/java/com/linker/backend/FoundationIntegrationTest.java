@@ -20,8 +20,10 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Set;
@@ -32,9 +34,11 @@ import javax.imageio.ImageIO;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.service.admin.NotificationService;
 import com.linker.backend.entity.notification.Notification;
+import com.linker.backend.entity.account.AuthIdentity;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
+import com.linker.backend.entity.profile.ProfileVisit;
 import com.linker.backend.entity.github.GithubWebhookDelivery;
 import com.linker.backend.entity.github.type.WebhookStatus;
 import com.linker.backend.entity.moderation.Admin;
@@ -45,7 +49,9 @@ import com.linker.backend.global.security.JwtSessionTokens;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.global.security.SessionClaims;
 import com.linker.backend.global.security.TeamRole;
+import com.linker.backend.repository.account.AuthIdentityRepository;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.profile.ProfileVisitRepository;
 import com.linker.backend.repository.github.GithubWebhookDeliveryRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.ReportCaseRepository;
@@ -57,6 +63,7 @@ import com.linker.backend.integration.mail.SmtpMailGateway;
 import com.linker.backend.integration.github.GithubWebhookHandler;
 import com.linker.backend.integration.github.GithubWebhookService;
 import com.linker.backend.service.user.ModerationService;
+import com.linker.backend.async.schedule.RecruiterViewNoticeSchedule;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,6 +79,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -79,6 +87,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -129,6 +138,14 @@ class FoundationIntegrationTest {
 	private StringRedisTemplate redis;
 	@Autowired
 	private UserRepository users;
+	@Autowired
+	private AuthIdentityRepository identities;
+	@Autowired
+	private PasswordEncoder passwords;
+	@Autowired
+	private ProfileVisitRepository visits;
+	@Autowired
+	private RecruiterViewNoticeSchedule recruiterViewNotices;
 	@Autowired
 	private AuthService sessions;
 	@Autowired
@@ -1168,6 +1185,65 @@ class FoundationIntegrationTest {
 		}
 	}
 
+	@Test
+	void jobAdReportDetailShowsTheAdAndHideNotifiesTheRecruiter() throws Exception {
+		User operator = saveUser("adops", UserType.DEVELOPER);
+		Admin admin = admins.save(Admin.assign(operator, AdminRole.OPERATOR));
+		String secret = "JBSWY3DPEHPK3PXP";
+		admin.enrollOtp(otpSecrets.encrypt(secret), Instant.now());
+		admins.save(admin);
+		String token = sessions.issue(operator, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"code\":\"" + TotpCodes.code(secret, Instant.now()) + "\"}"))
+				.andExpect(status().isOk());
+
+		User recruiter = saveUser("ad-recruiter", UserType.RECRUITER);
+		jdbc.update("""
+				INSERT INTO recruiter_profiles (
+				    user_id, company_name, company_email_domain, job_title, email_verified_at, created_at, updated_at)
+				VALUES (?, '넥스트랩', 'nextlab.example', '리크루터', now(), now(), now())
+				""", recruiter.getId());
+		long adId = jdbc.queryForObject("""
+				INSERT INTO recruiter_ads (
+				    recruiter_id, job_category, title, url, url_host, closes_on, status, created_at, updated_at)
+				VALUES (?, 'BACKEND', '백엔드 개발자', 'https://www.wanted.co.kr/wd/1', 'www.wanted.co.kr', DATE '2026-12-01', 'ACTIVE', now(), now())
+				RETURNING id
+				""", Long.class, recruiter.getId());
+		long caseId = insertCase("RECRUITER_AD", adId, recruiter.getId());
+
+		mockMvc.perform(get("/api/v1/admin/report-cases/" + caseId).cookie(cookie(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.targetType").value("RECRUITER_AD"))
+				.andExpect(jsonPath("$.targetSummary").value("백엔드 개발자"))
+				.andExpect(jsonPath("$.jobAd.company").value("넥스트랩"))
+				.andExpect(jsonPath("$.jobAd.title").value("백엔드 개발자"))
+				.andExpect(jsonPath("$.jobAd.jobCategory").value("BACKEND"))
+				.andExpect(jsonPath("$.jobAd.closesOn").value("2026-12-01"))
+				.andExpect(jsonPath("$.jobAd.urlHost").value("www.wanted.co.kr"))
+				.andExpect(jsonPath("$.target.userType").value("RECRUITER"));
+
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + caseId + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"HIDE\",\"reason\":\"허위 광고\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.handledAction").value("HIDE"))
+				.andExpect(jsonPath("$.jobAd.company").value("넥스트랩"));
+		assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = ?", String.class, adId)).isEqualTo("HIDDEN");
+		assertThat(jdbc.queryForObject("SELECT hidden_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
+		assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNull();
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM notifications WHERE user_id = ? AND notification_type = 'REPORT_OUTCOME'",
+				Long.class, recruiter.getId())).isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"SELECT payload::text FROM notifications WHERE user_id = ? AND notification_type = 'REPORT_OUTCOME'",
+				String.class, recruiter.getId()))
+				.contains("작성한 내용이 숨김 처리됐어요")
+				.contains("허위 광고");
+	}
+
 	private long insertCase(String targetType, long targetId, long targetUserId) {
 		return jdbc.queryForObject("""
 				INSERT INTO report_cases (target_type, target_id, target_user_id, reporter_count, status, created_at, updated_at)
@@ -1453,6 +1529,225 @@ class FoundationIntegrationTest {
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("NOT_FOUND"))
 				.andExpect(jsonPath("$.message").value("대상을 찾을 수 없어요"));
+	}
+
+	@Test
+	void mondayRecruiterViewNoticeGoesToProDevelopers() {
+		LocalDate today = LocalDate.now(PlanLimits.APP_ZONE);
+		LocalDate weekEnd = today.with(TemporalAdjusters.previous(DayOfWeek.SUNDAY));
+		LocalDate weekStart = weekEnd.minusDays(6);
+		User active = saveUser("proactive", UserType.DEVELOPER);
+		User grace = saveUser("prograce", UserType.DEVELOPER);
+		User ended = saveUser("proended", UserType.DEVELOPER);
+		User free = saveUser("freeview", UserType.DEVELOPER);
+		User first = saveUser("recruiter-a", UserType.RECRUITER);
+		User second = saveUser("recruiter-b", UserType.RECRUITER);
+		User earlier = saveUser("recruiter-c", UserType.RECRUITER);
+		visits.saveAndFlush(ProfileVisit.record(active, first, weekStart));
+		visits.saveAndFlush(ProfileVisit.record(active, first, weekStart.plusDays(1)));
+		visits.saveAndFlush(ProfileVisit.record(active, second, weekStart.plusDays(2)));
+		visits.saveAndFlush(ProfileVisit.record(active, earlier, weekStart.minusDays(1)));
+		visits.saveAndFlush(ProfileVisit.record(grace, first, weekStart));
+		visits.saveAndFlush(ProfileVisit.record(ended, first, weekStart));
+		visits.saveAndFlush(ProfileVisit.record(free, first, weekStart));
+		try {
+			jdbc.execute("""
+					create table subscriptions (
+					  user_id bigint not null,
+					  plan varchar(16) not null,
+					  status varchar(16) not null,
+					  current_period_end timestamptz not null,
+					  grace_until timestamptz
+					)
+					""");
+			jdbc.update("""
+					insert into subscriptions (user_id, plan, status, current_period_end, grace_until)
+					values (?, 'PRO', 'ACTIVE', now() + interval '30 days', null)
+					""", active.getId());
+			jdbc.update("""
+					insert into subscriptions (user_id, plan, status, current_period_end, grace_until)
+					values (?, 'PRO', 'PAST_DUE', now() - interval '1 day', now() + interval '7 days')
+					""", grace.getId());
+			jdbc.update("""
+					insert into subscriptions (user_id, plan, status, current_period_end, grace_until)
+					values (?, 'PRO', 'PAST_DUE', now() - interval '2 days', now() - interval '1 day')
+					""", ended.getId());
+
+			recruiterViewNotices.run();
+
+			assertViewNotice(active.getId(), "proactive", 2, weekStart);
+			assertViewNotice(grace.getId(), "prograce", 1, weekStart);
+			assertThat(noticeCount(ended.getId())).isZero();
+			assertThat(noticeCount(free.getId())).isZero();
+
+			recruiterViewNotices.run();
+			assertThat(noticeCount(active.getId())).isEqualTo(1);
+			assertThat(noticeCount(grace.getId())).isEqualTo(1);
+		}
+		finally {
+			jdbc.execute("drop table if exists subscriptions");
+		}
+
+		User later = saveUser("laterpro", UserType.DEVELOPER);
+		visits.saveAndFlush(ProfileVisit.record(later, first, weekStart));
+		recruiterViewNotices.run();
+		assertThat(noticeCount(later.getId())).isZero();
+		assertThat(noticeCount(active.getId())).isEqualTo(1);
+	}
+
+	@Test
+	void recruiterLoginLocksAfterFiveFailures() throws Exception {
+		String email = "lock@nextlab.example";
+		User recruiter = saveUser("lock-user", UserType.RECRUITER);
+		identities.saveAndFlush(AuthIdentity.email(recruiter, email, passwords.encode("password1234"), Instant.now()));
+		String wrong = "{\"email\":\"" + email + "\",\"password\":\"wrong1234\"}";
+		String right = "{\"email\":\"" + email + "\",\"password\":\"password1234\"}";
+
+		for (int attempt = 1; attempt <= 4; attempt++) {
+			mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content(wrong))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.code").value("LOGIN_FAILED"))
+					.andExpect(jsonPath("$.detail.remainingAttempts").value(PlanLimits.RECRUITER_LOGIN_ATTEMPTS - attempt));
+		}
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(wrong))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("LOGIN_FAILED"))
+				.andExpect(jsonPath("$.detail.remainingAttempts").value(0));
+		assertThat(jdbc.queryForObject(
+				"select failed_login_count from auth_identities where provider_user_id = ?",
+				Integer.class, email)).isEqualTo(PlanLimits.RECRUITER_LOGIN_ATTEMPTS);
+		assertThat(jdbc.queryForObject(
+				"select locked_until > now() from auth_identities where provider_user_id = ?",
+				Boolean.class, email)).isTrue();
+
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(right))
+				.andExpect(status().isTooManyRequests())
+				.andExpect(jsonPath("$.code").value("LOGIN_LOCKED"))
+				.andExpect(jsonPath("$.message").value("비밀번호를 5번 틀려 10분 동안 로그인할 수 없어요"))
+				.andExpect(jsonPath("$.detail.lockMinutes").value(PlanLimits.RECRUITER_LOGIN_LOCK_MINUTES));
+
+		jdbc.update("update auth_identities set locked_until = now() - interval '1 minute' where provider_user_id = ?", email);
+		mockMvc.perform(post("/api/v1/public/recruiter-auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(right))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.restored").value(false));
+		assertThat(jdbc.queryForObject(
+				"select failed_login_count from auth_identities where provider_user_id = ?",
+				Integer.class, email)).isZero();
+		assertThat(jdbc.queryForObject(
+				"select locked_until from auth_identities where provider_user_id = ?",
+				Object.class, email)).isNull();
+	}
+
+	@Test
+	void recruiterCannotCallDeveloperOnlyWriteApis() throws Exception {
+		User recruiter = saveUser("writer", UserType.RECRUITER);
+		Cookie cookie = cookie(sessions.issue(recruiter, "JUnit", "127.0.0.1").rawToken());
+		String issue = "{\"requestId\":\"00000000-0000-0000-0000-000000000001\",\"repoId\":1,\"title\":\"이슈\"}";
+
+		expectDeveloperOnly(cookie, patch("/api/v1/user/me/profile").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/me/profile/github-sync"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/users/someone/follow"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/users/someone/follow"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/onboarding/agreements")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ageConfirmed\":true,\"termsAccepted\":true,\"privacyAccepted\":true,\"marketingAccepted\":false,\"termsVersion\":\"v\"}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/onboarding/profile")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"name\":\"이름\",\"lookingForTeam\":false}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/onboarding/email")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"recruiter@nextlab.example\"}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/team-setup/installations/verify")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"installationId\":\"1\",\"state\":\"state\",\"setupAction\":\"install\"}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/teams")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"installationId\":\"1\",\"name\":\"팀\"}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/teams/1/setup/repos")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"repoIds\":[]}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/teams/1/setup/board")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"mode\":\"NEW\"}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/teams/1/setup/complete"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/teams/1/issues/refresh"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/teams/1/issues/1/project-item"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/teams/1/issues/1/assignees")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"userIds\":[]}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/teams/1/issues/1/labels")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"labels\":[]}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/teams/1/issues/1/schedule")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/teams/1/issues/1/status")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"status\":\"TODO\"}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/teams/1/issues")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(issue));
+		expectDeveloperOnly(cookie, post("/api/v1/user/chat-rooms/direct")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/posts").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/posts/1").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/posts/1/likes"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/posts/1/likes"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/posts/1/comments").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, patch("/api/v1/user/posts/1/comments/1").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/posts/1/comments/1"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/posts/1"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/me/applications/1"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/recruits").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, put("/api/v1/user/recruits/1").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/recruits/1/close"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/recruits/1/reopen"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/recruits/1"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/recruits/1/applications").contentType(MediaType.APPLICATION_JSON).content("{}"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/recruits/1/applications/1/accept"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/recruits/1/applications/1/reject"));
+	}
+
+	private void expectDeveloperOnly(Cookie cookie, MockHttpServletRequestBuilder request) throws Exception {
+		mockMvc.perform(request.cookie(cookie))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("DEVELOPER_ONLY"))
+				.andExpect(jsonPath("$.message").value("개발자만 사용할 수 있어요"));
+	}
+
+	private void assertViewNotice(long userId, String username, int count, LocalDate weekStart) {
+		String message = "이번 주 채용 담당자 " + count + "명이 내 프로필을 봤어요.";
+		assertThat(noticeCount(userId)).isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"select notification_type from notifications where user_id = ?", String.class, userId))
+				.isEqualTo("RECRUITER_PROFILE_VIEW");
+		assertThat(jdbc.queryForObject(
+				"select payload::text from notifications where user_id = ?", String.class, userId))
+				.isEqualTo("{\"message\": \"" + message + "\"}");
+		assertThat(jdbc.queryForObject(
+				"select link_path from notifications where user_id = ?", String.class, userId))
+				.isEqualTo("/user/" + username);
+		assertThat(jdbc.queryForObject(
+				"select group_key from notifications where user_id = ?", String.class, userId))
+				.isEqualTo("recruiter-view:" + weekStart);
+		assertThat(jdbc.queryForObject(
+				"select actor_id from notifications where user_id = ?", Long.class, userId)).isNull();
+		assertThat(jdbc.queryForObject(
+				"select deliver_after from notifications where user_id = ?", Object.class, userId)).isNull();
+	}
+
+	private long noticeCount(long userId) {
+		Long count = jdbc.queryForObject("select count(*) from notifications where user_id = ?", Long.class, userId);
+		return count == null ? 0 : count;
 	}
 
 	private User saveUser(String username, UserType type) {

@@ -450,11 +450,11 @@ public class AuthService {
 	}
 
 	public RecruiterAuthenticated loginRecruiter(RecruiterLoginRequest request, String userAgent, String ip) {
-		RecruiterAuthenticated authenticated = transactions.execute(status -> authenticateRecruiter(request, userAgent, ip));
-		if (authenticated == null) {
-			throw loginFailed(null);
+		RecruiterLoginAttempt attempt = transactions.execute(status -> authenticateRecruiter(request, userAgent, ip));
+		if (attempt == null || attempt.failure() != null) {
+			throw attempt == null ? loginFailed(null) : attempt.failure();
 		}
-		return authenticated;
+		return attempt.authenticated();
 	}
 
 	public RecruiterPasswordResetResponse requestRecruiterPasswordReset(RecruiterPasswordResetRequest request) {
@@ -565,15 +565,15 @@ public class AuthService {
 		return new RecruiterAccountCreated(issue(user, userAgent, ip).rawToken(), login);
 	}
 
-	private RecruiterAuthenticated authenticateRecruiter(RecruiterLoginRequest request, String userAgent, String ip) {
+	private RecruiterLoginAttempt authenticateRecruiter(RecruiterLoginRequest request, String userAgent, String ip) {
 		String email = relaxedEmail(request == null ? null : request.email());
 		AuthIdentity identity = email == null ? null : identities.findByProviderAndProviderUserId(AuthProvider.EMAIL, email).orElse(null);
 		if (identity == null || request == null || request.password() == null) {
-			throw loginFailed(null);
+			return RecruiterLoginAttempt.failed(loginFailed(null));
 		}
 		Instant now = clock.instant();
 		if (identity.getLockedUntil() != null && identity.getLockedUntil().isAfter(now)) {
-			throw new ApiException(429, "LOGIN_LOCKED", "비밀번호를 5번 틀려 10분 동안 로그인할 수 없어요", Map.of("lockMinutes", PlanLimits.RECRUITER_LOGIN_LOCK_MINUTES));
+			return RecruiterLoginAttempt.failed(new ApiException(429, "LOGIN_LOCKED", "비밀번호를 5번 틀려 10분 동안 로그인할 수 없어요", Map.of("lockMinutes", PlanLimits.RECRUITER_LOGIN_LOCK_MINUTES)));
 		}
 		if (identity.getLockedUntil() != null) {
 			identity.clearExpiredLock();
@@ -582,17 +582,17 @@ public class AuthService {
 			Instant lock = identity.getFailedLoginCount() + 1 >= PlanLimits.RECRUITER_LOGIN_ATTEMPTS
 					? now.plus(PlanLimits.RECRUITER_LOGIN_LOCK_MINUTES, ChronoUnit.MINUTES) : null;
 			identity.recordFailure(lock);
-			throw loginFailed(Math.max(0, PlanLimits.RECRUITER_LOGIN_ATTEMPTS - identity.getFailedLoginCount()));
+			return RecruiterLoginAttempt.failed(loginFailed(Math.max(0, PlanLimits.RECRUITER_LOGIN_ATTEMPTS - identity.getFailedLoginCount())));
 		}
 		User user = identity.getUser();
 		if (user.getUserType() != UserType.RECRUITER || user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null
 				|| user.withdrawalExpired(now, WITHDRAWAL)) {
-			throw loginFailed(null);
+			return RecruiterLoginAttempt.failed(loginFailed(null));
 		}
 		boolean restored = user.restoreWithdrawal(now, WITHDRAWAL);
 		identity.recordSuccess(now);
 		user.touch(now);
-		return new RecruiterAuthenticated(issue(user, userAgent, ip).rawToken(), restored, safeReturnTo(request.returnTo()));
+		return RecruiterLoginAttempt.succeeded(new RecruiterAuthenticated(issue(user, userAgent, ip).rawToken(), restored, safeReturnTo(request.returnTo())));
 	}
 
 	private IssuedCode issueReset(String email, Instant now) {
@@ -741,6 +741,20 @@ public class AuthService {
 
 	private static ApiException mailUnavailable() {
 		return new ApiException(503, "SERVICE_UNAVAILABLE", "메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요");
+	}
+
+	/**
+	 * Failure is returned, not thrown, so the transaction that counted the attempt can commit.
+	 * {@link #loginRecruiter} throws after that commit.
+	 */
+	private record RecruiterLoginAttempt(RecruiterAuthenticated authenticated, ApiException failure) {
+		static RecruiterLoginAttempt succeeded(RecruiterAuthenticated authenticated) {
+			return new RecruiterLoginAttempt(authenticated, null);
+		}
+
+		static RecruiterLoginAttempt failed(ApiException failure) {
+			return new RecruiterLoginAttempt(null, failure);
+		}
 	}
 
 	private record IssuedCode(long id, String email, String code) {

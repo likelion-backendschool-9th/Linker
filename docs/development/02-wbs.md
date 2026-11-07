@@ -484,7 +484,7 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 25 | A | GET | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (`[Included]` incl. RECRUITER_AD), flag over 2 business days | admin |
-| 25 | A | GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat | admin |
+| 25 | A | GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat. A job ad adds `jobAd` (company, title, job category, closing date, URL host) | admin |
 | 25 | A | POST | `/api/v1/admin/report-cases/{caseId}/actions` | Hide / delete (reason required) / dismiss / restore → notify author and reporters | admin |
 | 25 | A | GET | `/api/v1/admin/appeals?status=` | Appeals list | admin |
 | 25 | A | POST | `/api/v1/admin/appeals/{appealId}/decision` | Accept (restore + delete record) / reject. Only an operator other than the original handler | admin |
@@ -1026,7 +1026,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Tables: new sanctions, admin_actions, appeals (18's appeal API is wired on D7) · shared report_cases, reports, report_message_snapshots, posts, comments, recruit_posts, chat_messages, users, admins, notifications, recruiter_ads (after D10)
-- [ ] Server `[Included]`: job ad report detail (company, title, job category, closing date, URL host); hide action = `recruiter_ads.status = HIDDEN` + notify the recruiter
+- [x] Server `[Included]`: job ad report detail (`jobAd`: company, title, job category, closing date, URL host); hide action = `recruiter_ads.status = HIDDEN` + notify the recruiter
 - [ ] Server: log every action to `admin_actions` (27), 5 dismissed reports in 30 days → no reporting for 30 days, log out after 30 min idle
 - [ ] Frontend: desktop layout (list + right detail panel, shared by 26 and 27), filters, action confirm sheet
 

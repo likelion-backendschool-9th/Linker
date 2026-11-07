@@ -103,4 +103,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			  and notification.pushedAt is null
 			""")
 	int markPushed(@Param("ids") Collection<Long> ids, @Param("now") Instant now);
+
+	boolean existsByUser_IdAndGroupKey(long userId, String groupKey);
 }
