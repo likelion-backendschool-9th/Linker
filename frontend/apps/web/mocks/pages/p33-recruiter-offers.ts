@@ -31,7 +31,7 @@ export const OFFERS: Offer[] = [
     status: 'TALKING',
     firstMessage: first('안녕하세요, 넥스트랩 송지현입니다. 백엔드 포지션 관련해 연락드렸어요.'),
     sentAt: daysAgo(6),
-    techStack: doyun!.techStack.slice(0, 3),
+    techStack: doyun!.techStack,
     unavailable: false,
   },
   {
@@ -40,7 +40,7 @@ export const OFFERS: Offer[] = [
     status: 'WAITING',
     firstMessage: first('프로필에서 RAG 프로젝트를 인상 깊게 봤어요. 이야기 나눌 수 있을까요?'),
     sentAt: daysAgo(2),
-    techStack: minjae!.techStack.slice(0, 3),
+    techStack: minjae!.techStack,
     unavailable: false,
   },
   {
@@ -49,7 +49,7 @@ export const OFFERS: Offer[] = [
     status: 'WAITING',
     firstMessage: first('QA 직무 신입 채용 관련해 연락드립니다.'),
     sentAt: hoursAgo(20),
-    techStack: serin!.techStack.slice(0, 3),
+    techStack: serin!.techStack,
     unavailable: false,
   },
   {

@@ -1,6 +1,10 @@
 export const OFFER_STATUSES = ['TALKING', 'WAITING', 'NO_RESPONSE'] as const;
 export type OfferStatus = (typeof OFFER_STATUSES)[number];
 
+/** `ALL` is the unfiltered list. The other values are the API `status` query. */
+export const OFFER_FILTERS = ['ALL', ...OFFER_STATUSES] as const;
+export type OfferFilter = (typeof OFFER_FILTERS)[number];
+
 export type OfferDeveloper = {
   id: number;
   login: string;
@@ -26,4 +30,8 @@ export type OfferFirstMessage = { roomId: number; text: string; sentAt: string |
 
 export function isOfferStatus(value: string | undefined): value is OfferStatus {
   return OFFER_STATUSES.includes(value as OfferStatus);
+}
+
+export function isOfferFilter(value: string | undefined): value is OfferFilter {
+  return OFFER_FILTERS.includes(value as OfferFilter);
 }

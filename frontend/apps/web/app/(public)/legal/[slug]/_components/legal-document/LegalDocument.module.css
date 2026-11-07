@@ -1,43 +1,52 @@
+/*
+ * 03 legal reader. Frame "3-약관 및 정책" (375×800): 16px gutter, clause title and
+ * body both 16px Medium, separated by text color. The home indicator is safe-area,
+ * not a drawn bar. Document list, version and TOC stay because Page TODO / WBS require them.
+ */
+
 .layout {
   display: grid;
-  gap: var(--space-xl);
-  width: min(100%, 960px);
-  margin-inline: auto;
-  padding: 0 var(--page-gutter) var(--space-section);
-}
-
-.documentNav,
-.article {
+  gap: var(--space-lg);
   min-width: 0;
+  /* PageFrame already insets 16px. The frame starts the body 8px under the header. */
+  margin-top: calc(var(--space-xs) - var(--space-md));
 }
 
 .documentNav h2,
-.toc h2 {
-  margin: 0 0 var(--space-sm);
+.toc h2,
+.markdown h2,
+.markdown h3 {
+  margin: 0;
   color: var(--color-text-heading);
-  font-size: var(--font-size-card-title);
-  line-height: var(--line-height-title);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body);
 }
 
 .documentNav ul,
 .toc ol {
   display: grid;
-  gap: var(--space-xs);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .documentNav a,
-.toc a {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch-target-min);
-  color: var(--color-text-body);
+.toc a,
+.markdown a {
+  color: var(--color-text-heading);
   font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   line-height: var(--line-height-body);
   text-decoration: underline;
   text-underline-offset: var(--space-xxs);
+}
+
+.documentNav a,
+.toc a {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
 }
 
 .documentNav a[aria-current='page'] {
@@ -46,74 +55,74 @@
 }
 
 .meta {
-  margin: 0 0 var(--space-lg);
+  margin: 0 0 var(--space-xs);
   color: var(--color-text-secondary);
   font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
 }
 
-.toc {
-  margin-bottom: var(--space-xxl);
-  padding: var(--space-lg);
-  border-radius: var(--radius-md);
-  background: var(--color-canvas-soft);
-}
-
-.depth2 {
+.nested {
   padding-left: var(--space-lg);
-}
-
-.depth3 {
-  padding-left: var(--space-xl);
 }
 
 .markdown {
   color: var(--color-text-body);
   font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   line-height: var(--line-height-body);
   overflow-wrap: anywhere;
 }
 
 .markdown h2,
-.markdown h3,
-.markdown h4 {
-  margin: var(--space-xl) 0 var(--space-sm);
-  color: var(--color-text-heading);
-  line-height: var(--line-height-title);
-}
-
-.markdown h2 {
-  font-size: var(--font-size-section-title);
-}
-
 .markdown h3 {
-  font-size: var(--font-size-card-title);
+  /* One blank line between clauses. paragraphSpacing in the frame is 0. */
+  margin-top: var(--space-lg);
+  scroll-margin-top: calc(var(--header-height) + env(safe-area-inset-top) + var(--space-xs));
 }
 
-.markdown h4 {
-  font-size: var(--font-size-body);
+.markdown h2:first-child,
+.markdown h3:first-child {
+  margin-top: 0;
 }
 
 .markdown p,
 .markdown ul,
 .markdown ol,
 .markdown blockquote {
-  margin: 0 0 var(--space-md);
+  margin: 0;
+}
+
+.markdown p + p,
+.markdown ul + p,
+.markdown ol + p {
+  margin-top: var(--space-md);
 }
 
 .markdown ul,
 .markdown ol {
-  padding-left: var(--space-xl);
+  padding-left: var(--space-lg);
 }
 
-.markdown a {
-  color: var(--color-text-heading);
-  text-decoration: underline;
-  text-underline-offset: var(--space-xxs);
+.markdown ul {
+  list-style: disc;
+}
+
+.markdown ol {
+  list-style: decimal;
+}
+
+.markdown li + li {
+  margin-top: 0;
+}
+
+.markdown ::marker {
+  color: var(--color-text-body);
 }
 
 .markdown table {
   display: block;
   max-width: 100%;
+  margin-top: var(--space-md);
   overflow-x: auto;
   border-collapse: collapse;
 }
@@ -126,29 +135,13 @@
 }
 
 .markdown th {
+  color: var(--color-text-heading);
   background: var(--color-canvas-soft);
 }
 
 .markdown blockquote {
+  margin-top: var(--space-md);
   padding-left: var(--space-md);
   border-left: 2px solid var(--color-hairline);
   color: var(--color-text-secondary);
-}
-
-@media (min-width: 600px) {
-  .layout {
-    padding-inline: var(--space-lg);
-  }
-}
-
-@media (min-width: 1024px) {
-  .layout {
-    grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .documentNav {
-    position: sticky;
-    top: var(--space-lg);
-  }
 }

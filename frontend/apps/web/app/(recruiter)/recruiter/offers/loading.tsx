@@ -5,7 +5,7 @@ import styles from './_components/recruiter-offers.module.css';
 
 export default function RecruiterOffersLoading() {
   return (
-    <PageFrame title="보낸 채용 제안" variant="tab">
+    <PageFrame title="보낸 제안" variant="stack" backHref="/feed" bottomTabs={false}>
       <div className={styles.page} aria-label="채용 제안 불러오는 중" aria-busy="true">
         <Skeleton variant="line" count={2} />
         <Skeleton variant="card" count={3} />

@@ -18,6 +18,7 @@
 
   /* Radius */
   --radius-none: 0;
+  --radius-xxs: 4px; /* offer cards, status chips, and the open-chat button */
   --radius-xs: 8px; /* the floating mobile bottom GNB pill */
   --radius-sm: 16px; /* inputs, FAQ rows, small cards */
   --radius-lg: 20px; /* frosted pills when Figma uses them */
