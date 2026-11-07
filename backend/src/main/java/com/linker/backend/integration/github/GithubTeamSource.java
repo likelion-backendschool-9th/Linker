@@ -67,4 +67,6 @@ public interface GithubTeamSource {
   List<Long> memberIds(long installationId, String orgLogin, long orgId);
 
   List<PullRequest> pullRequests(long installationId, Repository repository);
+
+  PullRequest pullRequest(long installationId, Repository repository, int number);
 }

@@ -101,6 +101,13 @@ public class ChatMessage {
 		return create(room, null, MessageType.SYSTEM, body, MessageVisibility.VISIBLE);
 	}
 
+	public static ChatMessage pullRequestEvent(ChatRoom room, String body, String payload, String deliveryKey) {
+		ChatMessage message = create(room, null, MessageType.PR_EVENT, body, MessageVisibility.VISIBLE);
+		message.payload = payload;
+		message.clientMessageId = deliveryKey;
+		return message;
+	}
+
 	public static ChatMessage create(
 			ChatRoom room,
 			Long senderId,

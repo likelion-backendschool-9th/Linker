@@ -59,6 +59,8 @@ public interface TeamRepositoryCustom {
 
   long cacheRepo(GithubTeamSource.Repository repo, Instant now);
 
+  void renameGithubRepository(long githubRepoId, String owner, String name, Instant now);
+
   List<GithubTeamSource.Repository> repos(long teamId);
 
   void saveBoard(
