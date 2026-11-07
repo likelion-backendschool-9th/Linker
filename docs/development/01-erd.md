@@ -547,6 +547,7 @@ erDiagram
     varchar github_option_id "UK with board_id"
     varchar github_option_name
     varchar linker_status "TODO, IN_PROGRESS, BLOCKED, DONE, OTHER"
+    varchar color "GitHub Status option enum: BLUE/GRAY/GREEN/ORANGE/PINK/PURPLE/RED/YELLOW"
   }
   team_completions {
     bigint id PK
@@ -1146,7 +1147,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 
 - Constraint: partial unique index `(team_id, user_id) WHERE left_at IS NULL`. One OWNER per team (service-layer check).
 
-**team_project_boards, board_status_mappings**: If there's no board, Linker creates a "Linker" board with `created_by_linker = true` and auto-inserts 4 mappings: Todo, In Progress, Blocked, Done. If an existing board is chosen, the user sets the mapping and unmapped options become OTHER. Changing boards creates a new row and re-syncs `project_item_id` for the team's issues.
+**team_project_boards, board_status_mappings**: If there's no board, Linker creates a "Linker" board with `created_by_linker = true` and auto-inserts 4 mappings: Todo, In Progress, Blocked, Done (fixed Status option colors Todo=GRAY, In Progress=BLUE, Blocked=RED, Done=GREEN). If an existing board is chosen, the user sets the mapping and unmapped options become OTHER; each option's GitHub Status `color` enum is stored on the mapping at link time (no hex). Changing boards creates a new row and re-syncs `project_item_id` for the team's issues. GitHub-only color edits after link are out of scope until the board is re-linked. Issue screens 07 / 11–15 read colors from this table only (not per-issue colors).
 
 **team_completions, completion_records**: Completing creates a `team_completions` row, revertible for 7 days. After 7 days a batch sets `confirmed_at` and creates per-member `completion_records`. Members at completion time with 14+ days of membership are COMPLETED; those who left during the period are DROPPED. Issue completion rate = `done_issue_count / assigned_issue_count`.
 
@@ -1333,6 +1334,7 @@ Several tables share state names, so Java enum names are fixed here.
 | TeamStatus | ACTIVE, COMPLETED, READ_ONLY, ARCHIVED, DELETED | teams.status |
 | TeamRole | OWNER, ADMIN, MEMBER | team_members.role |
 | BoardStatus | TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE | issues.board_status, board_status_mappings.linker_status (except NONE) |
+| BoardStatusColor | BLUE, GRAY, GREEN, ORANGE, PINK, PURPLE, RED, YELLOW | board_status_mappings.color (GitHub Projects Status option color; UI tokens map the enum) |
 | SyncStatus | SYNCED, PENDING, FAILED | issues.sync_status |
 | DmStatus | REQUESTED, ACCEPTED, REJECTED, EXPIRED | chat_rooms.dm_status |
 | ReportTargetType | USER, POST, COMMENT, RECRUIT_POST, TEAM_MESSAGE, DM_MESSAGE, RECRUITER_AD | report_cases.target_type |

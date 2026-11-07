@@ -97,12 +97,16 @@ public class IssueService {
             throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
           var cards =
               issueRepository.board(teamId, query, LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)));
+          var statusColors = issueRepository.statusColors(teamId);
           List<IssueBoardResponse.Column> columns = new ArrayList<>();
           for (var column : BOARD_COLUMNS.entrySet()) {
             String key = column.getKey();
             columns.add(
                 new IssueBoardResponse.Column(
                     key,
+                    com.linker.backend.entity.team.type.BoardStatusColors.forStatus(
+                            key, statusColors)
+                        .name(),
                     column.getValue(),
                     cards.stream()
                         .filter(card -> key.equals(boardColumn(card.status())))

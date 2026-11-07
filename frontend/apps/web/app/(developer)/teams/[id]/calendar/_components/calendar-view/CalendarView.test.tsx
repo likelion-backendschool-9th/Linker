@@ -23,6 +23,7 @@ const row = (id: number, title: string, startDate: string | null, dueDate: strin
   repoName: 'linker-web',
   title,
   status: 'IN_PROGRESS',
+  statusColor: 'BLUE',
   state: 'OPEN',
   assignees: [{ id: 2, login: 'doyun', name: '이도윤', avatarUrl: '', inTeam: true }],
   labels: [],

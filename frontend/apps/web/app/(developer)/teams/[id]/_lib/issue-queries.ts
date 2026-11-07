@@ -3,7 +3,7 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api/api-fetch';
 
 import { issueFilterQuery, type IssueFilters } from './issue-filters';
-import type { IssueStatus } from '../../../_lib/issue-status';
+import type { BoardStatusColor, IssueStatus } from '../../../_lib/issue-status';
 
 /**
  * Provisional 11 IssueController contract (WBS 11). Hand-written until the controller is in
@@ -23,6 +23,8 @@ export type IssueRow = {
   repoName: string;
   title: string;
   status: IssueStatus;
+  /** From board_status_mappings; OTHER/NONE → GRAY */
+  statusColor: BoardStatusColor;
   state: 'OPEN' | 'CLOSED';
   assignees: IssueAssignee[];
   labels: IssueLabel[];

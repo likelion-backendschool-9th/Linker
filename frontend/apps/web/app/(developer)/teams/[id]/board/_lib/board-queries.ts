@@ -4,13 +4,18 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import { issueFilterQuery, type IssueFilters } from '../../_lib/issue-filters';
 import type { IssueRow } from '../../_lib/issue-queries';
-import type { IssueStatus } from '../../../../_lib/issue-status';
+import type { BoardStatusColor, IssueStatus } from '../../../../_lib/issue-status';
 
 /**
  * Provisional 14 `IssueController` contract (WBS 14). Moves borrow 12's status API.
  * `canWrite` is a proposal beyond WBS (the board needs it to turn drag off, 07 TODO 14).
  */
-export type BoardColumn = { status: IssueStatus; label: string; cards: IssueRow[] };
+export type BoardColumn = {
+  status: IssueStatus;
+  statusColor: BoardStatusColor;
+  label: string;
+  cards: IssueRow[];
+};
 export type Board = { canWrite: boolean; columns: BoardColumn[] };
 
 /** Same filters as 11 except status: the columns are the statuses */

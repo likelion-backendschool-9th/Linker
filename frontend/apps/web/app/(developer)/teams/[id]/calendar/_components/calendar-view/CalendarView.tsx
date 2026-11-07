@@ -12,7 +12,8 @@ import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { formatDate } from '@/lib/format/time';
 
 import type { IssueRow } from '../../../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS } from '../../../../../_lib/issue-status';
+import { IssueStatusBadge } from '../../../../../_components/issue-status-badge';
+import { boardStatusColorVar } from '../../../../../_lib/issue-status';
 import { issuesOnDay, sameMonth, type Segment } from '../../_lib/calendar-grid';
 import styles from './CalendarView.module.css';
 import { dayLabel, dayNumber, MONTH_LANES, useCalendarView, WEEKDAYS } from './hook';
@@ -230,7 +231,12 @@ function Bar({ segment, first, last }: { segment: Segment; first: boolean; last:
       // Round only where the issue really starts / ends, not where the week cuts it
       data-round-start={first && segment.starts}
       data-round-end={last && segment.ends}
-      style={{ '--span': segment.span } as CSSProperties}
+      style={
+        {
+          '--span': segment.span,
+          '--bar-color': boardStatusColorVar(issue.statusColor),
+        } as CSSProperties
+      }
     >
       {/* The title runs across the segment from its first day (hidden on narrow month cells) */}
       {first && <span className={styles.barTitle}>{issue.title}</span>}
@@ -273,7 +279,7 @@ function DayIssues({
                 </Link>
               </h3>
               <p className={styles.dayMeta}>
-                <span className={styles.status}>{ISSUE_STATUS_LABELS[issue.status]}</span>
+                <IssueStatusBadge status={issue.status} statusColor={issue.statusColor} />
                 <span className={issue.overdue ? styles.overdue : undefined}>
                   {issue.startDate && (
                     <>

@@ -12,13 +12,22 @@ import { BoardView } from './BoardView';
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
 const fetchMock = vi.mocked(apiFetch);
 
-const card = (id: number, title: string, status: string, extra: object = {}) => ({
+const COLORS = {
+  TODO: 'GRAY',
+  IN_PROGRESS: 'BLUE',
+  BLOCKED: 'RED',
+  DONE: 'GREEN',
+  OTHER: 'GRAY',
+} as const;
+
+const card = (id: number, title: string, status: keyof typeof COLORS, extra: object = {}) => ({
   id,
   number: id % 1000,
   repoId: 11,
   repoName: 'linker-web',
   title,
   status,
+  statusColor: COLORS[status],
   state: status === 'DONE' ? 'CLOSED' : 'OPEN',
   assignees: [],
   labels: [],
@@ -34,16 +43,23 @@ function board(canWrite: boolean, withOther = false) {
   return {
     canWrite,
     columns: [
-      { status: 'TODO', label: '작업 전', cards: [card(1018, '필터 시트 개선', 'TODO')] },
-      { status: 'IN_PROGRESS', label: '작업 중', cards: [] },
+      {
+        status: 'TODO',
+        statusColor: 'GRAY',
+        label: '작업 전',
+        cards: [card(1018, '필터 시트 개선', 'TODO')],
+      },
+      { status: 'IN_PROGRESS', statusColor: 'BLUE', label: '작업 중', cards: [] },
       {
         status: 'BLOCKED',
+        statusColor: 'RED',
         label: '작업 중단',
         cards: [card(1009, '웹훅 검증', 'BLOCKED', { dueDate: '2026-10-01', overdue: true })],
       },
-      { status: 'DONE', label: '작업 완료', cards: [] },
+      { status: 'DONE', statusColor: 'GREEN', label: '작업 완료', cards: [] },
       {
         status: 'OTHER',
+        statusColor: 'GRAY',
         label: '기타',
         cards: withOther ? [card(1014, '배포 정리', 'OTHER')] : [],
       },

@@ -274,8 +274,8 @@
 | 08 | B | POST | `/api/v1/user/teams` | Create team + team chat room + register owner | user · developers only |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on | team OWNER |
 | 08 | B | PUT | `/api/v1/user/teams/{teamId}/setup/repos` | Set initial linked repos | team OWNER |
-| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns) | team OWNER/ADMIN |
-| 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields) or use existing board + status mapping | team OWNER/ADMIN |
+| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns, Status option `id`/`name`/`color` enum) | team OWNER/ADMIN |
+| 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields; fixed colors Todo=GRAY / In Progress=BLUE / Blocked=RED / Done=GREEN) or use existing board + status mapping; persist each option's GitHub `color` on `board_status_mappings` | team OWNER/ADMIN |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/permission-check` | Whether org base repo permission is read | team OWNER |
 | 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/complete` | Queue first full sync (issues, PRs, org members) | team OWNER |
 | 09 | B | GET | `/api/v1/user/teams/{teamId}/settings` | Team info, my role, which buttons are allowed, plan, board | team MEMBER |
@@ -309,8 +309,8 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 07 | C | GET | `/api/v1/user/me/issues?teamId=` | `[Included]` Issues assigned to me **in that team only**, by due date (added by C on D9). `teamId` required and must be a team I belong to; otherwise 400 | user · developers only |
-| 11 | C | GET | `/api/v1/user/teams/{teamId}/issues` | Filters: repo, status, assignee, label, open; cursor | team MEMBER |
+| 07 | C | GET | `/api/v1/user/me/issues?teamId=` | `[Included]` Issues assigned to me **in that team only**, by due date (added by C on D9). `teamId` required and must be a team I belong to; otherwise 400. Items reuse 11's `IssueListItem` including `statusColor` from `board_status_mappings` | user · developers only |
+| 11 | C | GET | `/api/v1/user/teams/{teamId}/issues` | Filters: repo, status, assignee, label, open; cursor. Each item includes `status` + `statusColor` (GitHub Status option color enum from the team's board mapping; OTHER/NONE → GRAY). Shared by 07/12/14/15 — no per-page color API | team MEMBER |
 | 11 | C | GET | `/api/v1/user/teams/{teamId}/issues/unscheduled` | "일정 없음" (Unscheduled) tab (not on board or no due date) | team MEMBER |
 | 11 | C | GET | `/api/v1/user/teams/{teamId}/issue-filters` | Filter sheet options (repos, labels, members) — also used by 14 and 15 | team MEMBER |
 | 11 | C | POST | `/api/v1/user/teams/{teamId}/issues/refresh` | Pull to refresh (once per minute) | team MEMBER |
