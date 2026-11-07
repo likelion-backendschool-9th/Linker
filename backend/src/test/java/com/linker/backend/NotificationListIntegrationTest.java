@@ -2,6 +2,9 @@ package com.linker.backend;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,7 +20,10 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -27,18 +33,29 @@ import java.util.concurrent.TimeUnit;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
+import com.linker.backend.entity.chat.ChatRoom;
+import com.linker.backend.entity.chat.ChatRoomMember;
+import com.linker.backend.entity.chat.type.DmStatus;
+import com.linker.backend.entity.chat.type.RequestKind;
 import com.linker.backend.entity.moderation.Admin;
 import com.linker.backend.entity.moderation.type.AdminRole;
 import com.linker.backend.entity.moderation.Sanction;
 import com.linker.backend.entity.moderation.type.SanctionType;
 import com.linker.backend.entity.notification.Notification;
+import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.global.error.ApiException;
+import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatRoomMemberRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.moderation.AdminRepository;
 import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.AccountService;
+import com.linker.backend.service.user.ChatService;
 import com.linker.backend.service.user.ModerationService;
 import com.linker.backend.service.user.NotificationService;
 
@@ -114,6 +131,14 @@ class NotificationListIntegrationTest {
 	private NotificationService notifications;
 	@Autowired
 	private ModerationService moderation;
+	@Autowired
+	private ChatRoomRepository rooms;
+	@Autowired
+	private ChatRoomMemberRepository members;
+	@Autowired
+	private ChatService chat;
+	@Autowired
+	private AccountService accounts;
 
 	@Test
 	void listShowsOnlyVisibleOwnRowsAndReadAllSkipsFutureOnes() throws Exception {
@@ -405,6 +430,85 @@ class NotificationListIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/user/push-tokens/{token}'].delete.operationId").value("deletePushToken"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/appeals'].post.operationId").value("createAppeal"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/appeals'].post.tags[0]").value("p18-notifications"));
+	}
+
+	/** OpenAPI lists each method's error codes next to its success response (ApiErrorBody schema). */
+	@Test
+	void openApiListsSuccessAndErrorResponsesForEveryMethod() throws Exception {
+		String list = "$.paths['/api/v1/user/notifications'].get.responses";
+		String read = "$.paths['/api/v1/user/notifications/{notificationId}/read'].patch.responses";
+		String readAll = "$.paths['/api/v1/user/notifications/read-all'].post.responses";
+		String count = "$.paths['/api/v1/user/notifications/unread-count'].get.responses";
+		String token = "$.paths['/api/v1/user/push-tokens'].post.responses";
+		String tokenDelete = "$.paths['/api/v1/user/push-tokens/{token}'].delete.responses";
+		String pushSwitch = "$.paths['/api/v1/user/me/settings/notifications'].patch.responses";
+		String errorBody = "#/components/schemas/ApiErrorBody";
+		mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath(list + "['200']").exists())
+				.andExpect(jsonPath(list + "['400'].description").value("VALIDATION_ERROR (cursor)"))
+				.andExpect(jsonPath(list + "['401'].content.*.schema['$ref']").value(hasItem(errorBody)))
+				.andExpect(jsonPath(list + "['401'].content.*.schema['$ref']").value(everyItem(is(errorBody))))
+				.andExpect(jsonPath(count + "['200']").exists())
+				.andExpect(jsonPath(count + "['401']").exists())
+				.andExpect(jsonPath(read + "['204']").exists())
+				.andExpect(jsonPath(read + "['200']").doesNotExist())
+				.andExpect(jsonPath(read + "['400']").exists())
+				.andExpect(jsonPath(read + "['403'].description").value("SUSPENDED"))
+				.andExpect(jsonPath(read + "['404']").exists())
+				.andExpect(jsonPath(readAll + "['204']").exists())
+				.andExpect(jsonPath(readAll + "['403']").exists())
+				.andExpect(jsonPath(token + "['204']").exists())
+				.andExpect(jsonPath(token + "['400']").exists())
+				.andExpect(jsonPath(token + "['404']").exists())
+				.andExpect(jsonPath(tokenDelete + "['204']").exists())
+				.andExpect(jsonPath(tokenDelete + "['404']").exists())
+				.andExpect(jsonPath(pushSwitch + "['200']").exists())
+				.andExpect(jsonPath(pushSwitch + "['400']").exists());
+	}
+
+	@Test
+	void aNonNumericNotificationIdIsABadRequest() throws Exception {
+		mockMvc.perform(patch("/api/v1/user/notifications/abc/read").cookie(cookie(user("contract"))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	/** Team mention resends are covered in ChatTeamMentionIntegrationTest. */
+	@Test
+	void aDirectMessageResentWithTheSameClientIdNotifiesOnce() {
+		User sender = user("dup-sender");
+		User recipient = user("dup-recipient");
+		ChatRoom room = rooms.saveAndFlush(ChatRoom.direct(
+				sender.getId(), recipient.getId(), DmStatus.ACCEPTED, RequestKind.GENERAL, null));
+		members.saveAndFlush(ChatRoomMember.join(room, sender.getId()));
+		members.saveAndFlush(ChatRoomMember.join(room, recipient.getId()));
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("clientMessageId", UUID.randomUUID().toString());
+		payload.put("text", "한 번만 알림");
+
+		chat.sendMessage(sender.getId(), room.getId(), payload);
+		chat.sendMessage(sender.getId(), room.getId(), payload);
+
+		assertThat(typeCount(recipient, NotificationTypes.CHAT)).isEqualTo(1);
+	}
+
+	@Test
+	void followingTheSamePersonTwiceNotifiesOnce() {
+		User follower = user("dup-follower");
+		User target = user("dup-target");
+		AuthenticatedUser principal = new AuthenticatedUser(follower.getId(), follower.getUsername(),
+				follower.getUserType(), UserStatus.ACTIVE, null, false, false, true, 1L);
+
+		accounts.follow(principal, target.getUsername());
+		accounts.follow(principal, target.getUsername());
+
+		assertThat(typeCount(target, NotificationTypes.FOLLOW)).isEqualTo(1);
+	}
+
+	private long typeCount(User recipient, String type) {
+		return jdbc.queryForObject("select count(*) from notifications where user_id = ? and notification_type = ?",
+				Long.class, recipient.getId(), type);
 	}
 
 	private long count(User user) throws Exception {
