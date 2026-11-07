@@ -38,11 +38,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,6 +61,12 @@ import tools.jackson.databind.json.JsonMapper;
 @Import(IssueReadIntegrationTest.Contracts.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class IssueReadIntegrationTest {
+  /** Real V24 subscriptions row: team 10 on Flex, billed to user 1. */
+  private static final String FLEX_ACTIVE =
+      "INSERT INTO subscriptions(id,team_id,plan,payer_user_id,billing_cycle,status,seats,"
+          + "current_period_start,current_period_end,grace_until,created_at,updated_at)"
+          + " VALUES(1,10,'FLEX',1,'MONTHLY','ACTIVE',1,'2026-01-01','2099-01-01',NULL,now(),now())";
+
   static final RsaMaterial KEYS = RsaMaterial.generate();
   static final Instant DEFAULT_NOW = Instant.parse("2026-11-05T15:30:00Z");
   static final java.util.concurrent.atomic.AtomicReference<Instant> CALENDAR_NOW =
@@ -581,14 +585,6 @@ class IssueReadIntegrationTest {
     }
   }
 
-  @BeforeAll
-  void schema() throws Exception {
-    try (var connection = jdbc.getDataSource().getConnection()) {
-      ScriptUtils.executeSqlScript(
-          connection, new ClassPathResource("issue/issue-read-fixture.sql"));
-    }
-  }
-
   @BeforeEach
   void seed() {
     CALENDAR_NOW.set(DEFAULT_NOW);
@@ -943,7 +939,7 @@ class IssueReadIntegrationTest {
     mvc.perform(get("/api/v1/user/teams/10/progress").cookie(cookie))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.code").value("PLAN_LIMIT"));
-    jdbc.update("INSERT INTO subscriptions VALUES(1,10,'FLEX','ACTIVE','2099-01-01',NULL)");
+    jdbc.update(FLEX_ACTIVE);
     mvc.perform(get("/api/v1/user/teams/10/progress").cookie(cookie))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.completion.total").value(2))
@@ -1048,7 +1044,9 @@ class IssueReadIntegrationTest {
   void pendingPaymentWithinGraceStillHasFlexButExpiredGraceDoesNot() {
     sync.fullSync(10);
     jdbc.update(
-        "INSERT INTO subscriptions VALUES(1,10,'FLEX','PAST_DUE','2020-01-01','2099-01-01')");
+        "INSERT INTO subscriptions(id,team_id,plan,payer_user_id,billing_cycle,status,seats,"
+            + "current_period_start,current_period_end,grace_until,created_at,updated_at)"
+            + " VALUES(1,10,'FLEX',1,'MONTHLY','PAST_DUE',1,'2019-12-01','2020-01-01','2099-01-01',now(),now())");
     assertThat(progress.progress(member(), 10, 14).completion().total()).isEqualTo(2);
     jdbc.update("UPDATE subscriptions SET grace_until='2020-01-01'");
     assertThatThrownBy(() -> progress.progress(member(), 10, 14))
@@ -1161,7 +1159,7 @@ class IssueReadIntegrationTest {
     jdbc.update(
         "INSERT INTO issue_assignees(issue_id,github_user_id,github_login,user_id) SELECT"
             + " id,101,'kim',1 FROM issues WHERE github_issue_id=900");
-    jdbc.update("INSERT INTO subscriptions VALUES(1,10,'FLEX','ACTIVE','2099-01-01',NULL)");
+    jdbc.update(FLEX_ACTIVE);
     var first = progress.progress(member(), 10, 14);
     assertThat(first.completion().total()).isEqualTo(2);
     assertThat(first.openByAssignee().getFirst().openCount()).isEqualTo(1);

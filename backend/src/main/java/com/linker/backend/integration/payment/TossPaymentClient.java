@@ -15,6 +15,8 @@ import org.springframework.web.client.RestClient;
 
 /**
  * Toss Payments test/live HTTP client. Secret key stays server-side only (Basic {@code secretKey:}).
+ * Fields read here (paymentKey, orderId, totalAmount, status, method, approvedAt, cancels) are the same in
+ * API version 2024-06-01, which is the version set for the merchant in the developer center.
  */
 public class TossPaymentClient implements PaymentGateway {
 
@@ -43,7 +45,7 @@ public class TossPaymentClient implements PaymentGateway {
 				"orderId", command.orderId(),
 				"amount", command.amount()
 		);
-		Map<String, Object> response = post("/v1/payments/confirm", body);
+		Map<String, Object> response = post("/v1/payments/confirm", body, command.idempotencyKey());
 		return new PaymentConfirmResult(
 				stringValue(response.get("paymentKey")),
 				stringValue(response.get("orderId")),
@@ -62,7 +64,7 @@ public class TossPaymentClient implements PaymentGateway {
 		if (command.cancelAmount() != null) {
 			body.put("cancelAmount", command.cancelAmount());
 		}
-		Map<String, Object> response = post("/v1/payments/" + command.paymentKey() + "/cancel", body);
+		Map<String, Object> response = post("/v1/payments/" + command.paymentKey() + "/cancel", body, null);
 		long cancelAmount = resolveCancelAmount(response, command.cancelAmount());
 		return new PaymentCancelResult(
 				stringValue(response.get("paymentKey")),
@@ -75,9 +77,14 @@ public class TossPaymentClient implements PaymentGateway {
 		);
 	}
 
-	private Map<String, Object> post(String path, Map<String, Object> body) {
+	private Map<String, Object> post(String path, Map<String, Object> body, String idempotencyKey) {
 		return client.post()
 				.uri(path)
+				.headers(headers -> {
+					if (idempotencyKey != null) {
+						headers.set("Idempotency-Key", idempotencyKey);
+					}
+				})
 				.body(body)
 				.retrieve()
 				.onStatus(status -> status.value() >= 400, (request, response) -> {
