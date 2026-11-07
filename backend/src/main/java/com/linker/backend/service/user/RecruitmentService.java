@@ -70,6 +70,7 @@ public class RecruitmentService {
 	private final UserBlockRepository blocks;
 	private final RecruitCardMapper cards;
 	private final NotificationService notifications;
+	private final ProMembership pro;
 	private final Clock clock;
 
 	public RecruitmentService(
@@ -80,6 +81,7 @@ public class RecruitmentService {
 			UserBlockRepository blocks,
 			RecruitCardMapper cards,
 			NotificationService notifications,
+			ProMembership pro,
 			Clock clock
 	) {
 		this.posts = posts;
@@ -89,6 +91,7 @@ public class RecruitmentService {
 		this.blocks = blocks;
 		this.cards = cards;
 		this.notifications = notifications;
+		this.pro = pro;
 		this.clock = clock;
 	}
 
@@ -146,7 +149,7 @@ public class RecruitmentService {
 		return new RecruitEditorOptionsResponse(
 				List.of(),
 				openCount,
-				PlanLimits.OPEN_RECRUIT_POSTS_FREE,
+				openCap(user.userId()),
 				maxDeadline.toString()
 		);
 	}
@@ -563,14 +566,22 @@ public class RecruitmentService {
 
 	private void assertOpenSlotAvailable(long authorId) {
 		long openCount = posts.countByAuthorIdAndStatusAndDeletedAtIsNull(authorId, RecruitStatus.OPEN);
-		if (openCount >= PlanLimits.OPEN_RECRUIT_POSTS_FREE) {
+		int cap = openCap(authorId);
+		if (openCount >= cap) {
 			throw new ApiException(
 					403,
 					"PLAN_LIMIT",
-					"동시에 모집할 수 있는 글은 3개까지예요. Pro로 10개까지 늘릴 수 있어요.",
+					cap >= PlanLimits.OPEN_RECRUIT_POSTS_PRO
+							? "동시에 모집할 수 있는 글은 " + cap + "개까지예요."
+							: "동시에 모집할 수 있는 글은 3개까지예요. Pro로 10개까지 늘릴 수 있어요.",
 					Map.of("reason", "RECRUIT_POSTS")
 			);
 		}
+	}
+
+	/** POL-R-1 / Policy ch. 11: Pro 10 open posts. After Pro ends, open posts stay; new opens use 3. */
+	private int openCap(long authorId) {
+		return pro.active(authorId, clock.instant()) ? PlanLimits.OPEN_RECRUIT_POSTS_PRO : PlanLimits.OPEN_RECRUIT_POSTS_FREE;
 	}
 
 	private ValidatedWrite validateWrite(RecruitWriteRequest request) {
