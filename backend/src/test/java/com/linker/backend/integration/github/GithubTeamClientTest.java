@@ -30,6 +30,34 @@ class GithubTeamClientTest {
   GithubTeamClient client;
   Function<String, String> response;
 
+  @Test
+  void singlePullRequestUsesInstallationTokenAndChecksRepositoryIdentity() {
+    response = request -> request.startsWith("/repos/org/repo/pulls/12") ? """
+        {"id":901,"number":12,"title":"PR","state":"closed","draft":false,
+         "user":{"login":"dev"},"html_url":"https://github.com/org/repo/pull/12",
+         "merged_at":"2026-11-07T15:00:00Z","closed_at":"2026-11-07T15:00:00Z",
+         "updated_at":"2026-11-07T15:00:00Z","base":{"repo":{"id":900}}}
+        """ : "{\"id\":900}";
+    var repo = new GithubTeamSource.Repository(900, "org", "repo", "org/repo", null,
+        null, 0, 0, null, false, false, null, "main");
+    var result = client.pullRequest(42, repo, 12);
+    assertThat(result.id()).isEqualTo(901);
+    assertThat(result.state()).isEqualTo("MERGED");
+    verify(app).installationReadToken(42);
+    verifyNoInteractions(tokens);
+    response = request -> "{\"id\":999}";
+    assertThatThrownBy(() -> client.pullRequest(42, repo, 12)).isInstanceOf(ApiException.class);
+  }
+
+  @Test
+  void singlePullRequestDoesNotPerformHttpInsideTransaction() {
+    TransactionSynchronizationManager.setActualTransactionActive(true);
+    var repo = new GithubTeamSource.Repository(900, "org", "repo", "org/repo", null,
+        null, 0, 0, null, false, false, null, "main");
+    assertThatThrownBy(() -> client.pullRequest(42, repo, 12)).isInstanceOf(IllegalStateException.class);
+    assertThat(requests).isEmpty();
+  }
+
   @BeforeEach
   void start() throws Exception {
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);

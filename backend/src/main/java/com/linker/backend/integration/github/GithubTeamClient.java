@@ -324,6 +324,21 @@ public class GithubTeamClient implements GithubTeamSource {
     throw unavailable();
   }
 
+  @Override
+  public PullRequest pullRequest(long installationId, Repository repository, int number) {
+    String token = app.installationReadToken(installationId);
+    var repo = get("/repos/{owner}/{repo}", token, repository.owner(), repository.name());
+    if (repo.path("id").asLong(0) != repository.id()) throw forbidden();
+    var row = get("/repos/{owner}/{repo}/pulls/{number}", token, repository.owner(), repository.name(), number);
+    if (row.path("base").path("repo").path("id").asLong(0) != repository.id()
+        || row.path("number").asInt(0) != number) throw forbidden();
+    var merged = instant(row, "merged_at");
+    return new PullRequest(row.path("id").asLong(0), number, required(row, "title"),
+        merged != null ? "MERGED" : "closed".equals(required(row, "state")) ? "CLOSED" : "OPEN",
+        row.path("draft").asBoolean(false), nullable(row.path("user"), "login"),
+        required(row, "html_url"), merged, instant(row, "closed_at"), instant(row, "updated_at"));
+  }
+
   private JsonNode get(String path, String token, Object... variables) {
     outside();
     try {
