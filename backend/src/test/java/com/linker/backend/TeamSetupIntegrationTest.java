@@ -1196,7 +1196,7 @@ class TeamSetupIntegrationTest {
       assertThat(rows).hasSize(5);
       assertThat(rows.getLast().status()).isEqualTo("ARCHIVED");
       assertThat(rows).allSatisfy(row -> assertThat(row.openIssueCount()).isNull());
-      assertThat(statistics.getPrepareStatementCount()).isEqualTo(queries).isEqualTo(3);
+      assertThat(statistics.getPrepareStatementCount()).isEqualTo(queries).isEqualTo(2);
     } finally {
       statistics.setStatisticsEnabled(enabled);
     }

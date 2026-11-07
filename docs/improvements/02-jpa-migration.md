@@ -1,6 +1,6 @@
 # 2단계: JdbcTemplate → JPA 전환 (담당자별)
 
-상태: 진행 중 (1단계 #244, CI 규칙 #245 머지. 2단계는 B #248, D #249, A #251 일부(URL 변경 #252) 머지, C는 `chore/issue-jpa`. 영역별 상태는 5절)
+상태: 진행 중 (1단계 #244, CI 규칙 #245 머지. 2단계는 B #248, D #249, A #251 일부(URL 변경 #252) 머지, C #253 머지. 영역별 상태는 5절)
 
 대상 독자: 백엔드를 맡은 팀원 A–E. 각자 자기 영역 브랜치에서 진행한다.
 기준: 1단계 PR #244가 `dev`에 머지된 상태. 규칙의 원본은 루트 `AGENTS.md`(Entity and repository / Mandatory backend service rule)와 `docs/development/05-backend-blueprint.md` §3–§4. 이 문서는 그 규칙을 실제 파일에 대입한 실행 가이드다.
@@ -32,13 +32,15 @@
 
 범위
 - `JdbcTemplate`/`NamedParameterJdbcTemplate`을 쓰는 main 파일 22개.
-- 이름 규칙에서 벗어난 영속 클래스 10개를 `XxxRepository` 계열로 정리.
+- 이름 규칙에서 벗어난 영속 클래스 11개를 `XxxRepository` 계열로 정리.
 
 범위 밖
 - 스키마 변경, API(URL·응답 형태) 변경, 동작 변경. 결과는 전환 전과 같아야 한다.
 - 프론트(3단계).
 
 ## 2. 먼저 알아야 할 것 (선행 사실)
+
+아래 선행 사실은 최초 점검 당시 기준이다. 현재는 B #248의 V20·팀 Entity, C #253의 V22·이슈 Entity, 각 영역의 Custom/Impl이 머지되어 있다. `GithubWebhookDispatchLock` 추가 대상은 5·6절 B 항목에 반영했다.
 
 ### 2-1. 이슈·팀 테이블은 아직 Flyway에도 Entity에도 없다
 - `backend/src/main/resources/db/issue-schema/*.sql`(5개 테이블)과 `db/team-schema/*.sql`(7개 테이블)에 SQL로만 있고, `db/migration/`(V1~V19)에는 없다.
@@ -196,6 +198,7 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 | repository/team/OwnedTeamQuery | 3 | 없음 (이름 정리) |
 | global/security/MembershipTeamAccess | 3 | 없음 (`global`에서 SQL 제거) — **배정 필요(B로 추정)** |
 | `TeamSetupLock` (이름 정리) | - | 락 방식 확인 |
+| integration/github/GithubWebhookDispatchLock (추가 요청) | - | 세션 advisory 락 → `GithubWebhookDeliveryRepository` Custom/Impl (B) |
 
 선행: 2-1의 팀 스키마 마이그레이션·Entity.
 가장 큰 파일 두 개(`TeamSetupRepository`, `TeamSyncService`)가 B에 있다. 일정 산정에 반영한다.
@@ -218,7 +221,7 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 - `ReportCaseOpener` (`EntityManager` 사용) → `ReportCaseRepositoryCustom` + `ReportCaseRepositoryImpl`
 - 이미 `UserBlockRepository`, `ReportCaseRepository`가 있으므로 여기에 Custom을 붙인다. 위 "Custom/Impl 선례가 없다"(2-2)의 첫 사례가 되기 쉬우므로 가장 먼저 패턴을 만드는 사람으로 적당하다.
 
-## 6. 이름 정리 10개 제안
+## 6. 이름 정리 11개 제안
 
 | 현재 | 제안 | 비고 |
 | --- | --- | --- |
@@ -230,6 +233,7 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 | OwnedTeamQuery | `TeamRepository` 쿼리 메서드 | 단순하면 Custom 불필요 |
 | IssueSyncLock | `IssueRepository`의 락/네이티브 메서드 | |
 | TeamSetupLock | `TeamRepository`의 락/네이티브 메서드 | |
+| GithubWebhookDispatchLock | `GithubWebhookDeliveryRepositoryCustom` + Impl의 `withDispatchLock` | B. 핸들러 동안 DB 트랜잭션을 열지 않는 세션 락 유지 |
 | BlockInserter | `UserBlockRepositoryCustom` + Impl | |
 | ReportCaseOpener | `ReportCaseRepositoryCustom` + Impl | |
 
@@ -268,7 +272,7 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 - [ ] 대상 파일의 쿼리별로 변환 방식 결정(쿼리 메서드 / JPQL / Custom / 네이티브)
 - [ ] 네이티브 쿼리마다 사유 주석
 - [ ] 서비스·`global` 클래스에서 SQL 제거
-- [ ] 이름 규칙 10개 중 담당 클래스 정리
+- [ ] 이름 규칙 11개 중 담당 클래스 정리
 - [ ] 변환 전후 동작 동일(결과, 정렬, 커서, 쿼리 수) 확인
 - [ ] `./gradlew test` 통과
 - [ ] `/v3/api-docs`·핸들러 경로 변화 없음

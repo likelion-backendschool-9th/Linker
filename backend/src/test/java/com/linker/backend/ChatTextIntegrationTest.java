@@ -154,7 +154,9 @@ class ChatTextIntegrationTest {
 		List<String> readerList = frames(readerSocket, "/user/queue/chat-rooms");
 		String clientId = UUID.randomUUID().toString();
 		send(senderSocket, room.getId(), clientId, "  안녕  ", Map.of("senderId", reader.getId()));
-		waitUntil(() -> !readerFrames.isEmpty());
+		// Independent STOMP destinations have no delivery-order guarantee.
+		waitUntil(() -> !readerFrames.isEmpty() && !senderFrames.isEmpty()
+				&& readerList.stream().anyMatch(frame -> frame.contains("CHAT_ROOMS_CHANGED")));
 		assertThat(senderFrames).hasSize(1);
 		assertThat(readerFrames.get(0)).contains("안녕").contains(clientId).doesNotContain(reader.getUsername());
 		assertThat(readerList.stream().anyMatch(frame -> frame.contains("CHAT_ROOMS_CHANGED"))).isTrue();
