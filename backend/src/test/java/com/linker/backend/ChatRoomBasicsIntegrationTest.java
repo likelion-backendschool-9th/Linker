@@ -85,6 +85,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -93,6 +95,7 @@ class ChatRoomBasicsIntegrationTest {
 
 	private static final Instant NOW = Instant.parse("2026-11-05T01:00:00Z");
 	private static final RsaMaterial KEYS = RsaMaterial.generate();
+	private static final JsonMapper JSON = JsonMapper.builder().build();
 
 	@Container
 	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
@@ -113,6 +116,7 @@ class ChatRoomBasicsIntegrationTest {
 		registry.add("linker.session.jwt-public-key", KEYS::publicPem);
 		registry.add("linker.webhook.consumer-enabled", () -> "false");
 		registry.add("spring.jpa.show-sql", () -> "false");
+		registry.add("linker.chat.public-origins", () -> "https://linker.test");
 	}
 
 	@org.springframework.boot.test.context.TestConfiguration
@@ -675,6 +679,192 @@ class ChatRoomBasicsIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/mention-candidates'].get.tags[0]").value("p17-chat-room"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete.operationId").value("leaveChatRoom"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/members/me'].delete.tags[0]").value("p17-chat-room"));
+	}
+
+	@Test
+	void liveShareAndLinkCardsRespectEachSubscribersSourceAuthorBlock() throws Exception {
+		User sender = user("card-sender");
+		User reader = user("card-reader");
+		User blocked = user("card-blocked");
+		User sourceAuthor = user("card-source");
+		ChatRoom room = shareTeam(sender, reader, blocked);
+		SharedPost source = sharedPost(sourceAuthor);
+		blockSource(blocked, sourceAuthor);
+		StompSession senderSocket = connect(sender);
+		StompSession readerSocket = connect(reader);
+		StompSession blockedSocket = connect(blocked);
+		try {
+			List<JsonNode> normalFrames = cardFrames(readerSocket, room);
+			List<JsonNode> blockedFrames = cardFrames(blockedSocket, room);
+			for (boolean linker : List.of(false, true)) {
+				int normalAt = normalFrames.size();
+				int blockedAt = blockedFrames.size();
+				sendCard(senderSocket, sender, room, source, linker);
+				JsonNode normal = awaitCardFrame(normalFrames, normalAt);
+				JsonNode filtered = awaitCardFrame(blockedFrames, blockedAt);
+				assertThat(normal.path("message").path("id").asLong())
+						.isEqualTo(filtered.path("message").path("id").asLong());
+				JsonNode visible = card(normal.path("message"));
+				assertThat(visible.path("available").asBoolean()).isTrue();
+				assertThat(visible.path("title").asText()).isEqualTo(source.title());
+				assertThat(visible.path("imageUrl").asText()).isEqualTo(source.imageUrl());
+				assertUnavailable(filtered, source);
+			}
+		} finally {
+			senderSocket.disconnect();
+			readerSocket.disconnect();
+			blockedSocket.disconnect();
+		}
+	}
+
+	@Test
+	void delayedShareFramesCannotRestoreHiddenOrDeletedSourceMetadata() throws Exception {
+		User sender = user("late-card-sender");
+		User reader = user("late-card-reader");
+		User sourceAuthor = user("late-card-source");
+		ChatRoom room = shareTeam(sender, reader);
+		StompSession senderSocket = connect(sender);
+		StompSession readerSocket = connect(reader);
+		try {
+			List<JsonNode> frames = cardFrames(readerSocket, room);
+			for (boolean linker : List.of(false, true)) {
+				for (boolean deleted : List.of(false, true)) {
+					SharedPost source = sharedPost(sourceAuthor);
+					int start = frames.size();
+					sendCard(senderSocket, sender, room, source, linker);
+					JsonNode original = awaitCardFrame(frames, start);
+					assertThat(card(original.path("message")).path("available").asBoolean()).isTrue();
+					if (deleted) jdbc.update("update posts set deleted_at=? where id=?", Timestamp.from(NOW), source.id());
+					else jdbc.update("update posts set visibility='HIDDEN' where id=?", source.id());
+					int changed = frames.size();
+					// Re-publish the complete, stale pre-change payload through the real outbound channel.
+					template.convertAndSend("/topic/chat-rooms/" + room.getId(),
+							(Object) JSON.convertValue(original, Map.class));
+					assertUnavailable(awaitCardFrame(frames, changed), source);
+				}
+			}
+		} finally {
+			senderSocket.disconnect();
+			readerSocket.disconnect();
+		}
+	}
+
+	@Test
+	void reconnectCatchUpMatchesLiveCardsAndRefreshesOlderSourceState() throws Exception {
+		User sender = user("catchup-card-sender");
+		User reader = user("catchup-card-reader");
+		User sourceAuthor = user("catchup-card-source");
+		ChatRoom room = shareTeam(sender, reader);
+		SharedPost source = sharedPost(sourceAuthor);
+		StompSession senderSocket = connect(sender);
+		StompSession readerSocket = connect(reader);
+		try {
+			List<JsonNode> firstFrames = cardFrames(readerSocket, room);
+			sendCard(senderSocket, sender, room, source, false);
+			long anchor = awaitCardFrame(firstFrames, 0).path("message").path("id").asLong();
+			readerSocket.disconnect();
+			jdbc.update("update posts set visibility='HIDDEN' where id=?", source.id());
+			List<JsonNode> observed = cardFrames(senderSocket, room);
+			for (boolean linker : List.of(false, true)) {
+				int start = observed.size();
+				sendCard(senderSocket, sender, room, source, linker);
+				assertUnavailable(awaitCardFrame(observed, start), source);
+			}
+			readerSocket = connect(reader);
+			List<JsonNode> reconnected = cardFrames(readerSocket, room);
+			JsonNode catchUp = JSON.readTree(mockMvc.perform(get("/api/v1/user/chat-rooms/" + room.getId() + "/messages")
+					.param("after", Long.toString(anchor)).cookie(cookie(reader)))
+					.andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+			assertThat(catchUp.path("items").size()).isEqualTo(2);
+			for (int i = 0; i < 2; i++) {
+				JsonNode recovered = catchUp.path("items").get(i);
+				assertThat(recovered.path("id").asLong()).isEqualTo(observed.get(i).path("message").path("id").asLong());
+				assertThat(card(recovered)).isEqualTo(card(observed.get(i).path("message")));
+			}
+			// `after` intentionally excludes older ids; a full history refresh must redact the anchor too.
+			JsonNode refreshed = JSON.readTree(history(reader, room.getId()));
+			JsonNode older = refreshed.path("items").valueStream().filter(row -> row.path("id").asLong() == anchor).findFirst().orElseThrow();
+			assertThat(card(older).path("available").asBoolean()).isFalse();
+			sendCard(senderSocket, sender, room, source, true);
+			assertUnavailable(awaitCardFrame(reconnected, 0), source);
+		} finally {
+			senderSocket.disconnect();
+			if (readerSocket.isConnected()) readerSocket.disconnect();
+		}
+	}
+
+	private record SharedPost(long id, String title, String summary, String imageUrl) { }
+
+	private SharedPost sharedPost(User author) {
+		String title = "card/source-" + System.nanoTime();
+		String image = "https://cdn.example/card-" + System.nanoTime() + ".png";
+		long repo = jdbc.queryForObject("""
+				insert into github_repos(github_repo_id,owner_login,name,full_name,created_at,updated_at)
+				values (?,'card','source',?,now(),now()) returning id
+				""", Long.class, System.nanoTime(), title);
+		long post = jdbc.queryForObject("""
+				insert into posts(author_id,repo_id,summary,body,visibility,created_at,updated_at)
+				values (?,?,'공유 원문 소개','본문','VISIBLE',now(),now()) returning id
+				""", Long.class, author.getId(), repo);
+		long file = jdbc.queryForObject("""
+				insert into uploaded_files(uploader_id,storage_key,url,content_type,byte_size,created_at,updated_at)
+				values (?,?,?,'image/png',1,now(),now()) returning id
+				""", Long.class, author.getId(), "card-" + System.nanoTime(), image);
+		jdbc.update("insert into post_images(post_id,file_id,sort_order,created_at,updated_at) values (?,?,0,now(),now())", post, file);
+		return new SharedPost(post, title, "공유 원문 소개", image);
+	}
+
+	private ChatRoom shareTeam(User... people) {
+		ChatRoom room = team(people);
+		for (int i = 0; i < people.length; i++) jdbc.update("""
+				insert into team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at)
+				values (?,?,?,'MEMBER',now(),now(),now())
+				""", room.getTeamId(), people[i].getId(), i == 0 ? "OWNER" : "MEMBER");
+		return room;
+	}
+
+	private void blockSource(User viewer, User author) {
+		jdbc.update("insert into user_blocks(blocker_id,blocked_id,created_at,updated_at) values (?,?,?,?)",
+				viewer.getId(), author.getId(), Timestamp.from(NOW), Timestamp.from(NOW));
+	}
+
+	private void sendCard(StompSession socket, User sender, ChatRoom room, SharedPost source, boolean linker) throws Exception {
+		String clientId = UUID.randomUUID().toString();
+		if (linker) socket.send("/app/chat-rooms/" + room.getId() + "/messages", Map.of(
+				"clientMessageId", clientId, "text", "https://linker.test/posts/" + source.id()));
+		else mockMvc.perform(post("/api/v1/user/chat-rooms/" + room.getId() + "/share-cards").cookie(cookie(sender))
+				.contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of(
+						"targetType", "POST", "targetId", source.id(), "clientMessageId", clientId))))
+				.andExpect(status().isOk());
+	}
+
+	private List<JsonNode> cardFrames(StompSession session, ChatRoom room) throws InterruptedException {
+		List<JsonNode> result = new CopyOnWriteArrayList<>();
+		session.subscribe("/topic/chat-rooms/" + room.getId(), new StompFrameHandler() {
+			@Override public Type getPayloadType(StompHeaders headers) { return Map.class; }
+			@Override public void handleFrame(StompHeaders headers, Object payload) { result.add(JSON.valueToTree(payload)); }
+		});
+		Thread.sleep(300);
+		return result;
+	}
+
+	private JsonNode awaitCardFrame(List<JsonNode> frames, int from) throws InterruptedException {
+		waitUntil(() -> frames.size() > from);
+		return frames.get(from);
+	}
+
+	private static JsonNode card(JsonNode message) {
+		JsonNode payload = message.path("payload");
+		return "SHARE_CARD".equals(message.path("type").asText()) ? payload : payload.path("linkerCard");
+	}
+
+	private static void assertUnavailable(JsonNode frame, SharedPost source) {
+		JsonNode card = card(frame.path("message"));
+		assertThat(card.has("available")).isTrue();
+		assertThat(card.path("available").asBoolean()).isFalse();
+		assertThat(card.path("title").asText()).isEqualTo("볼 수 없는 게시물이에요");
+		for (String field : List.of("summary", "imageUrl", "linkPath")) assertThat(card.path(field).isNull()).isTrue();
+		assertThat(frame.toString()).doesNotContain(source.title(), source.summary(), source.imageUrl());
 	}
 
 	private void stale(ChatRoom room, ChatMessage message, String event, String text) {
