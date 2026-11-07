@@ -184,7 +184,7 @@
 }
 
 .bar {
-  background-color: var(--color-primary);
+  background-color: var(--bar-color, var(--color-board-status-gray));
 }
 
 .bar[data-round-start='true'] {
@@ -220,7 +220,7 @@
   width: var(--space-xs);
   height: var(--space-xs);
   content: '';
-  background-color: var(--color-primary);
+  background-color: var(--bar-color, var(--color-board-status-gray));
   border-radius: var(--radius-full);
   transform: translateY(-50%);
 }

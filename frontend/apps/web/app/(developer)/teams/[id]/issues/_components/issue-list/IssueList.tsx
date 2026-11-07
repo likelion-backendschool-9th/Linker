@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { formatDate } from '@/lib/format/time';
 
 import { IssueFilterButton } from '../../../_components/issue-filter-button';
-import { ISSUE_STATUS_LABELS } from '../../../../../_lib/issue-status';
+import { IssueStatusBadge } from '../../../../../_components/issue-status-badge';
 import type { IssueListView, IssueRow as IssueRowData } from './api';
 import styles from './IssueList.module.css';
 import { PULL_MAX, useIssueList, VIEW_LABELS } from './hook';
@@ -191,7 +191,7 @@ function IssueRow({ teamId, issue, action }: IssueRowProps) {
       </h2>
 
       <div className={rowStyles.meta}>
-        <span className={rowStyles.status}>{ISSUE_STATUS_LABELS[issue.status]}</span>
+        <IssueStatusBadge status={issue.status} statusColor={issue.statusColor} />
         {issue.dueDate && (
           <span className={issue.overdue ? rowStyles.overdue : rowStyles.due}>
             마감 <time dateTime={issue.dueDate}>{formatDate(issue.dueDate)}</time>

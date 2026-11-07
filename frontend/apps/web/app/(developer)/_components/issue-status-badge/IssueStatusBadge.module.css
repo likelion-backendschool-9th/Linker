@@ -1,0 +1,19 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.dot {
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--radius-full);
+  background-color: var(--status-color, var(--color-board-status-gray));
+  flex-shrink: 0;
+}

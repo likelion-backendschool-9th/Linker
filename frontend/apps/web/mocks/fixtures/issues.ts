@@ -4,6 +4,33 @@ import { brief, DEVELOPERS, ME, type UserBrief } from './users';
 /** 04 POL-I-3: Todo / In Progress / Blocked / Done, plus OTHER for unmapped board columns */
 export type IssueStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'OTHER';
 
+/** GitHub Projects Status option color enum stored on board_status_mappings */
+export type BoardStatusColor =
+  | 'BLUE'
+  | 'GRAY'
+  | 'GREEN'
+  | 'ORANGE'
+  | 'PINK'
+  | 'PURPLE'
+  | 'RED'
+  | 'YELLOW';
+
+/** Mock board uses Linker-created fixed colors; OTHER/NONE → GRAY */
+export function mockStatusColor(status: IssueStatus): BoardStatusColor {
+  switch (status) {
+    case 'TODO':
+      return 'GRAY';
+    case 'IN_PROGRESS':
+      return 'BLUE';
+    case 'BLOCKED':
+      return 'RED';
+    case 'DONE':
+      return 'GREEN';
+    default:
+      return 'GRAY';
+  }
+}
+
 export type MockIssue = {
   id: number;
   teamId: number;

@@ -17,6 +17,7 @@ const overdue = {
   number: 15,
   title: '피드 카드 컴포넌트',
   status: 'IN_PROGRESS',
+  statusColor: 'BLUE',
   dueDate: '2026-10-30',
   overdue: true,
 };
@@ -28,6 +29,7 @@ const noDue = {
   number: 3,
   title: 'README 정리',
   status: 'TODO',
+  statusColor: 'GRAY',
   dueDate: null,
   overdue: false,
 };

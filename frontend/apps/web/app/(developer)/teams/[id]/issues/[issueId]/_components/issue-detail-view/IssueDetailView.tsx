@@ -16,7 +16,7 @@ import { IssueAssigneeSheet } from '../../../../_components/issue-sheets/issue-a
 import { IssueLabelSheet } from '../../../../_components/issue-sheets/issue-label-sheet';
 import { IssueScheduleSheet } from '../../../../_components/issue-sheets/issue-schedule-sheet';
 import { IssueStatusSheet } from '../../../../_components/issue-sheets/issue-status-sheet';
-import { ISSUE_STATUS_LABELS } from '../../../../../../_lib/issue-status';
+import { IssueStatusBadge } from '../../../../../../_components/issue-status-badge';
 import { useIssueDetailView } from './hook';
 import styles from './IssueDetailView.module.css';
 
@@ -92,7 +92,7 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
             <div className={styles.field}>
               <dt className={styles.term}>상태</dt>
               <dd className={styles.value}>
-                <span className={styles.status}>{ISSUE_STATUS_LABELS[issue.status]}</span>
+                <IssueStatusBadge status={issue.status} statusColor={issue.statusColor} />
                 {issue.state === 'CLOSED' && <span className={styles.meta}>닫힌 이슈</span>}
               </dd>
               <dd className={styles.action}>

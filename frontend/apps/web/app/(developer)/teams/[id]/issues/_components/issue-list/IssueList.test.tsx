@@ -18,6 +18,7 @@ const row = {
   repoName: 'linker-web',
   title: '피드 카드 컴포넌트',
   status: 'IN_PROGRESS',
+  statusColor: 'BLUE',
   state: 'OPEN',
   assignees: [
     {

@@ -394,6 +394,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | POL-I-1 Create failure | If GitHub permission is missing or the request fails, keep the input as a draft and show the reason. Never create Linker-only issues |
 | POL-I-2 Assignees | Only team members with access to that repo (max 10 due to GitHub). Members with read permission can still be assigned. If the person assigning lacks repo write permission, GitHub silently ignores it, so disable assignee/label buttons and show the reason in a toast on tap. After saving, verify from GitHub's response that the assignee was actually set |
 | POL-I-3 Status mapping | 작업 전 = Todo, 작업 중 = In Progress, 작업 중단 = Blocked, 작업 완료 = Done. An issue closed on GitHub → Done; moving to Done closes the issue. Blocked keeps the issue open and shows "중단" (blocked) on the card |
+| POL-I-3 Status color | Issue status color is the GitHub Projects Status **option** color (enum only: BLUE/GRAY/GREEN/ORANGE/PINK/PURPLE/RED/YELLOW), stored once on `board_status_mappings` when the board is linked (08). Shared field `statusColor` on issue list/detail/board/calendar responses; used on 07·11·12·13·14·15 with the status name (never color alone). OTHER and NONE display as GRAY. Linker-created boards keep Todo=GRAY, In Progress=BLUE, Blocked=RED, Done=GREEN. Changing a color only on GitHub after link is out of scope until the board is re-linked |
 | POL-I-3 Dates | Start ≤ due. Issues without a due date don't appear on the calendar; they're listed under "일정 없음" (no schedule) |
 | Concurrent edits | If the same value changes in Linker and GitHub at once, the later arrival wins. The user's screen refreshes to the latest value |
 | POL-I-4 Overdue | Issues past due and not done are shown in red. Team timezone is KST |
@@ -403,7 +404,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 ### Preparing GitHub Projects
 
 - A team links to exactly one GitHub Projects board, chosen once at team creation. If the org has no board, auto-create a "Linker" board with Status (Todo, In Progress, Blocked, Done), Start date and Due date fields. If boards exist, choose "새로 만들기" (create new) or "기존 보드 쓰기" (use existing); for existing boards, preview name, card count and status column names in the picker. No per-screen board switcher; to change it, owner/admin change it in team settings.
-- When choosing an existing board, map its Status values once to Todo / In Progress / Blocked / Done (e.g. Blocked → 작업 중단). Linker adds missing start/due date fields. Unmapped values appear in an "기타" (other) column on the board.
+- When choosing an existing board, map its Status values once to Todo / In Progress / Blocked / Done (e.g. Blocked → 작업 중단). Linker adds missing start/due date fields. Unmapped values appear in an "기타" (other) column on the board. Each Status option's GitHub `color` enum is stored on the mapping at link time and reused as the issue status color SoT (POL-I-3 Status color).
 - Issues created in Linker are added to the project automatically. Issues created on GitHub appear on calendar/board only if they're in the project; others can be added from the "일정 없음" list.
 
 ### Sync

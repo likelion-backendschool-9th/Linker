@@ -49,6 +49,9 @@
 }
 
 .optionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
   font-size: var(--font-size-body);
   color: var(--color-text-title);
 }

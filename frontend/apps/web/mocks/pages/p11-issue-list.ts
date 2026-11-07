@@ -7,7 +7,14 @@ import {
   type MockContext,
   type MockRoute,
 } from '../core/define';
-import { ISSUES, isOverdue, LABELS, type IssueStatus, type MockIssue } from '../fixtures/issues';
+import {
+  ISSUES,
+  isOverdue,
+  LABELS,
+  mockStatusColor,
+  type IssueStatus,
+  type MockIssue,
+} from '../fixtures/issues';
 import { findTeam, TEAM_MEMBERS, type MockTeam } from '../fixtures/teams';
 
 /** 11 Issue list: `IssueController`. `issueRow` and `filterIssues` are borrowed by 14 and 15. */
@@ -21,6 +28,7 @@ export function issueRow(item: MockIssue) {
     repoName: item.repoName,
     title: item.title,
     status: item.status,
+    statusColor: mockStatusColor(item.status),
     state: item.state,
     // Assignees who aren't current team members show as "팀 밖 사용자" (04 ch. 7 exceptions)
     assignees: item.assignees.map((user) => ({

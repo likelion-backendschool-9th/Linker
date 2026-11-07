@@ -58,6 +58,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-status-error` | `#b91c1c` | Input error, failed action; also delete, leave, other irreversible actions | Caption or larger |
 | `--color-status-success` | `#15803d` | Saved, registered, verified | Caption or larger |
 | `--color-status-warning` | `#92400e` | Loss or expiry warning before it happens | Caption or larger |
+| `--color-board-status-blue` … `-yellow` | GitHub Projects Status option enum colors (BLUE/GRAY/GREEN/ORANGE/PINK/PURPLE/RED/YELLOW) | Issue status chips/dots/columns on 07·11–15. SoT is `board_status_mappings.color` via API `statusColor`. **NEVER** color alone — always pair with the status name | Dot / chip accent |
 
 How the palette's text names map here (the palette's own text colors are **not** tokens):
 

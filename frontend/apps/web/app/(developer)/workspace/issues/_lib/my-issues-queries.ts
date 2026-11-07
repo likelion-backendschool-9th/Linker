@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
-import type { IssueStatus } from '../../../_lib/issue-status';
+import type { BoardStatusColor, IssueStatus } from '../../../_lib/issue-status';
 
 /**
  * Provisional 07 `IssueController` method `GET /api/v1/user/me/issues` (WBS 07, added by C):
@@ -16,6 +16,7 @@ export type MyIssue = {
   number: number;
   title: string;
   status: IssueStatus;
+  statusColor: BoardStatusColor;
   /** `yyyy-MM-dd` in KST; null = no due date (listed last) */
   dueDate: string | null;
   overdue: boolean;

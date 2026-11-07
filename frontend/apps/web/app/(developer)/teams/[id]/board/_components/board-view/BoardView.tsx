@@ -14,7 +14,12 @@ import { formatDate } from '@/lib/format/time';
 import { IssueFilterButton } from '../../../_components/issue-filter-button';
 import { IssueStatusSheet } from '../../../_components/issue-sheets/issue-status-sheet';
 import type { IssueRow } from '../../../_lib/issue-queries';
-import { ISSUE_STATUS_LABELS, type IssueStatus } from '../../../../../_lib/issue-status';
+import { IssueStatusBadge } from '../../../../../_components/issue-status-badge';
+import {
+  boardStatusColorVar,
+  type BoardStatusColor,
+  type IssueStatus,
+} from '../../../../../_lib/issue-status';
 import styles from './BoardView.module.css';
 import { isTarget, useBoardView } from './hook';
 
@@ -81,6 +86,7 @@ export function BoardView({ teamId }: { teamId: string }) {
               <BoardColumnView
                 key={column.status}
                 status={column.status}
+                statusColor={column.statusColor}
                 count={column.cards.length}
               >
                 {column.cards.length === 0 ? (
@@ -115,6 +121,11 @@ export function BoardView({ teamId }: { teamId: string }) {
 
       <IssueStatusSheet
         value={sheetCard ? statusOf(sheetCard) : 'TODO'}
+        statusColors={Object.fromEntries(
+          columns
+            .filter((column) => column.status !== 'OTHER')
+            .map((column) => [column.status, column.statusColor]),
+        )}
         onSave={async (status) => {
           if (sheetCard) await move(sheetCard, status);
         }}
@@ -125,10 +136,12 @@ export function BoardView({ teamId }: { teamId: string }) {
 
 function BoardColumnView({
   status,
+  statusColor,
   count,
   children,
 }: {
   status: IssueStatus;
+  statusColor: BoardStatusColor;
   count: number;
   children: ReactNode;
 }) {
@@ -140,9 +153,10 @@ function BoardColumnView({
       aria-labelledby={headingId}
       className={styles.column}
       data-over={isOver}
+      style={{ ['--column-status-color' as string]: boardStatusColorVar(statusColor) }}
     >
       <h2 id={headingId} className={styles.columnTitle}>
-        {ISSUE_STATUS_LABELS[status]}
+        <IssueStatusBadge status={status} statusColor={statusColor} />
         <span className={styles.count}>
           {count}
           <span className="sr-only">개</span>
