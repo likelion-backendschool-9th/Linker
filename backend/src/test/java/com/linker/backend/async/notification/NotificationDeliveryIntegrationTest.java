@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.sql.Timestamp;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.HashSet;
@@ -48,7 +50,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /**
  * Chat push rules (Policy ch. 8): muted rooms get no chat push, a {@code @person} mention is pushed
  * even when muted and also during quiet hours, and notifications of one room go out as one push.
- * The fixed clock is 23:30 KST, inside quiet hours.
+ * The fixed clock is 23:30 KST, inside quiet hours. Non-chat timing (POL-N-1) sets {@code deliver_after}
+ * directly: a row made between 08:00 and 22:00 KST has none and goes out on the next run, a held row goes
+ * out once its 08:00 has passed. A chat push also needs the recipient to still be in the room.
  */
 @SpringBootTest
 @Testcontainers
@@ -76,8 +80,8 @@ class NotificationDeliveryIntegrationTest {
 		registry.add("linker.session.jwt-public-key", KEYS::publicPem);
 		registry.add("linker.webhook.consumer-enabled", () -> "false");
 		registry.add("spring.jpa.show-sql", () -> "false");
-		// keep the scheduled job out of the way: the tests call deliverChat() themselves
-		registry.add("linker.notifications.chat-delivery-delay-ms", () -> "3600000");
+		// keep the scheduled job out of the way: the tests call the delivery methods themselves
+		registry.add("linker.notifications.delivery-delay-ms", () -> "3600000");
 	}
 
 	/** Records every message and reports every token as delivered. */
@@ -281,6 +285,69 @@ class NotificationDeliveryIntegrationTest {
 				.as("the in-app row stays").isEqualTo(1);
 	}
 
+	@Test
+	void daytimeNonChatRowsArePushedOnTheNextRunAndOnlyOnce() {
+		User recipient = withToken("day");
+		User actor = user("day-actor");
+		long follow = daytime(nonChat(recipient, actor, NotificationTypes.FOLLOW));
+		long request = daytime(nonChat(recipient, actor, NotificationTypes.MESSAGE_REQUEST));
+
+		delivery.deliverDue();
+
+		assertThat(SENT).extracting(message -> message.data().get("notificationId"))
+				.containsExactlyInAnyOrder(follow, request);
+		assertThat(pushed(follow)).isTrue();
+		assertThat(pushed(request)).isTrue();
+		delivery.deliverDue();
+		assertThat(SENT).as("a pushed row is not sent again").hasSize(2);
+	}
+
+	@Test
+	void aQuietHoursRowWaitsUntilItsMorningAndThenGoesOut() {
+		User recipient = withToken("held");
+		User actor = user("held-actor");
+		long due = holdUntil(nonChat(recipient, actor, NotificationTypes.FOLLOW), NOW.minus(Duration.ofHours(4)));
+		long later = holdUntil(nonChat(recipient, actor, NotificationTypes.FOLLOW), NOW.plus(Duration.ofHours(20)));
+
+		delivery.deliverDue();
+
+		assertThat(SENT).extracting(message -> message.data().get("notificationId")).containsExactly(due);
+		assertThat(pushed(due)).isTrue();
+		assertThat(pushed(later)).isFalse();
+	}
+
+	@Test
+	void daytimeNonChatRespectsThePushSwitch() {
+		User recipient = withToken("day-off");
+		recipient.setPushEnabled(false);
+		users.saveAndFlush(recipient);
+		long follow = daytime(nonChat(recipient, user("day-off-actor"), NotificationTypes.FOLLOW));
+
+		delivery.deliverDue();
+
+		assertThat(SENT).isEmpty();
+		assertThat(pushed(follow)).isFalse();
+	}
+
+	@Test
+	void aChatPushIsDroppedForSomeoneWhoLeftTheRoomButTheInAppRowStays() {
+		User recipient = withToken("left");
+		User sender = user("left-sender");
+		ChatRoom room = room(sender, recipient, false);
+		long chat = chat(recipient, sender, room, NotificationTypes.CHAT);
+		long mention = chat(recipient, sender, room, NotificationTypes.CHAT_MENTION);
+		jdbc.update("update chat_room_members set left_at = now() where room_id = ? and user_id = ?",
+				room.getId(), recipient.getId());
+
+		delivery.deliverDue();
+
+		assertThat(SENT).isEmpty();
+		assertThat(pushed(chat)).isFalse();
+		assertThat(pushed(mention)).isFalse();
+		assertThat(jdbc.queryForObject("select count(*) from notifications where id in (?, ?)", Long.class, chat, mention))
+				.isEqualTo(2);
+	}
+
 	// ---- fixtures --------------------------------------------------------------------
 
 	private User user(String prefix) {
@@ -308,6 +375,22 @@ class NotificationDeliveryIntegrationTest {
 		return notifications.create(new CreateNotificationCommand(
 				recipient.getId(), type, actor.getId(), "CHAT_ROOM", room.getId(), "/chats/" + room.getId(),
 				"{\"roomId\":" + room.getId() + "}", "chat:" + room.getId())).getId();
+	}
+
+	private long nonChat(User recipient, User actor, String type) {
+		return notifications.create(new CreateNotificationCommand(
+				recipient.getId(), type, actor.getId(), "USER", actor.getId(), "/user/" + actor.getUsername(), null, null)).getId();
+	}
+
+	/** What a row made between 08:00 and 22:00 KST looks like (see RoleNotificationServiceTest). */
+	private long daytime(long notificationId) {
+		jdbc.update("update notifications set deliver_after = null where id = ?", notificationId);
+		return notificationId;
+	}
+
+	private long holdUntil(long notificationId, Instant at) {
+		jdbc.update("update notifications set deliver_after = ? where id = ?", Timestamp.from(at), notificationId);
+		return notificationId;
 	}
 
 	private boolean pushed(long notificationId) {

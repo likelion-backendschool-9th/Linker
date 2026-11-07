@@ -44,14 +44,23 @@ public class NotificationDeliveryService {
 		this.clock = clock;
 	}
 
-	@Scheduled(fixedDelayString = "${linker.notifications.chat-delivery-delay-ms:60000}")
+	/**
+	 * Every run sends what is due now. Non-chat rows from daytime have no {@code deliverAfter}; rows held
+	 * for quiet hours carry 08:00 KST and go out together on the first run after it. Rows beyond one
+	 * batch wait for the next run instead of the next morning.
+	 */
+	@Scheduled(fixedDelayString = "${linker.notifications.delivery-delay-ms:60000}")
+	public void deliverDue() {
+		deliverChat();
+		deliverNonChat();
+	}
+
 	public void deliverChat() {
 		deliver(notifications.findDueChat(PageRequest.of(0, BATCH_SIZE)));
 	}
 
-	@Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul")
-	public void deliverDeferred() {
-		deliver(notifications.findDueDeferred(Instant.now(clock), PageRequest.of(0, BATCH_SIZE)));
+	public void deliverNonChat() {
+		deliver(notifications.findDueNonChat(Instant.now(clock), PageRequest.of(0, BATCH_SIZE)));
 	}
 
 	void deliver(List<Notification> rows) {

@@ -52,4 +52,7 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Each integration test class keeps its own Spring context (and Testcontainers) cached; the 512m
+	// Gradle default ran out of heap late in the full run.
+	maxHeapSize = '1g'
 }
