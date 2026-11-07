@@ -59,11 +59,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			  and notification.user.pushEnabled = true
 			  and exists (select 1 from PushToken token where token.user.id = notification.user.id)
 			  and notification.notificationType not in ('CHAT', 'CHAT_MENTION')
-			  and notification.deliverAfter is not null
-			  and notification.deliverAfter <= :now
+			  and (notification.deliverAfter is null or notification.deliverAfter <= :now)
 			order by notification.user.id, notification.createdAt, notification.id
 			""")
-	List<Notification> findDueDeferred(@Param("now") Instant now, Pageable pageable);
+	List<Notification> findDueNonChat(@Param("now") Instant now, Pageable pageable);
 
 	@Query("""
 			select notification from Notification notification

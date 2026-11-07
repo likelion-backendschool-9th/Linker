@@ -76,8 +76,8 @@ class NotificationDeliveryIntegrationTest {
 		registry.add("linker.session.jwt-public-key", KEYS::publicPem);
 		registry.add("linker.webhook.consumer-enabled", () -> "false");
 		registry.add("spring.jpa.show-sql", () -> "false");
-		// keep the scheduled job out of the way: the tests call deliverChat() themselves
-		registry.add("linker.notifications.chat-delivery-delay-ms", () -> "3600000");
+		// keep the scheduled job out of the way: the tests call the delivery methods themselves
+		registry.add("linker.notifications.delivery-delay-ms", () -> "3600000");
 	}
 
 	/** Records every message and reports every token as delivered. */
