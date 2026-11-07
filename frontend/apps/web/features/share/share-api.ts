@@ -6,7 +6,7 @@ export type ShareTargetType = 'POST' | 'RECRUIT_POST' | 'PROFILE';
 export type ShareTarget = { targetType: ShareTargetType; targetId: number; path: string };
 export type ShareRoom = { roomId: number; kind: 'TEAM' | 'DIRECT'; title: string };
 
-/** WBS P17 contract; share-targets is pending on Spring. No generated operation exists yet. */
+/** WBS P17 contract. Spring implements it; the committed p17 orval output predates it (full regeneration is deferred). */
 export function shareRoomsOptions(login: string | null, search: string) {
   return queryOptions({
     queryKey: ['chat', login, 'share-targets', search],
