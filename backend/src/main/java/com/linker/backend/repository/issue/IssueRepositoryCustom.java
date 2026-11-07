@@ -11,11 +11,14 @@ import com.linker.backend.dto.issue.response.IssuePersistenceView.Reminder;
 import com.linker.backend.dto.issue.response.IssuePersistenceView.Row;
 import com.linker.backend.dto.issue.response.IssueProgressResponse.Counts;
 import com.linker.backend.dto.issue.response.IssueProgressResponse.Workload;
+import com.linker.backend.entity.team.type.BoardStatus;
+import com.linker.backend.entity.team.type.BoardStatusColor;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.IssueSource;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public interface IssueRepositoryCustom {
@@ -24,6 +27,12 @@ public interface IssueRepositoryCustom {
 
   /** Team, installation, board (required) and linked repos. 404 when any is missing. */
   Context context(long teamId);
+
+  /**
+   * Status option colors for the team's linked board (SoT: {@code board_status_mappings}). Empty
+   * when no board is linked. Used to fill {@code statusColor} on shared issue responses.
+   */
+  Map<BoardStatus, BoardStatusColor> statusColors(long teamId);
 
   /** Teams whose issues are synced periodically: ACTIVE/COMPLETED with a live installation. */
   List<Long> syncTeams();

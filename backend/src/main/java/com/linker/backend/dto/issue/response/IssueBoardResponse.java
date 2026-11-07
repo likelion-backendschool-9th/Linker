@@ -13,9 +13,23 @@ public record IssueBoardResponse(
 
   @Schema(
       name = "IssueBoardColumn",
-      requiredProperties = {"status", "label", "cards"})
+      requiredProperties = {"status", "statusColor", "label", "cards"})
   public record Column(
       @Schema(allowableValues = {"TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER"}) String status,
+      @Schema(
+              description =
+                  "Column color from board_status_mappings for the four statuses; OTHER → GRAY.",
+              allowableValues = {
+                "BLUE",
+                "GRAY",
+                "GREEN",
+                "ORANGE",
+                "PINK",
+                "PURPLE",
+                "RED",
+                "YELLOW"
+              })
+          String statusColor,
       String label,
       List<IssueListResponse.Item> cards) {}
 }

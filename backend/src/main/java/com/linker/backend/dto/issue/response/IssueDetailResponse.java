@@ -15,6 +15,7 @@ import java.util.List;
       "title",
       "body",
       "status",
+      "statusColor",
       "state",
       "assignees",
       "labels",
@@ -44,6 +45,20 @@ public record IssueDetailResponse(
     String body,
     @Schema(allowableValues = {"TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER", "NONE"})
         String status,
+    @Schema(
+            description =
+                "GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.",
+            allowableValues = {
+              "BLUE",
+              "GRAY",
+              "GREEN",
+              "ORANGE",
+              "PINK",
+              "PURPLE",
+              "RED",
+              "YELLOW"
+            })
+        String statusColor,
     @Schema(allowableValues = {"OPEN", "CLOSED"}) String state,
     List<IssueListResponse.Assignee> assignees,
     List<IssueListResponse.Label> labels,
@@ -118,6 +133,20 @@ public record IssueDetailResponse(
 
   @Schema(
       name = "IssueStatusResult",
-      requiredProperties = {"status", "state"})
-  public record StatusResult(String status, String state) {}
+      requiredProperties = {"status", "statusColor", "state"})
+  public record StatusResult(
+      String status,
+      @Schema(
+              allowableValues = {
+                "BLUE",
+                "GRAY",
+                "GREEN",
+                "ORANGE",
+                "PINK",
+                "PURPLE",
+                "RED",
+                "YELLOW"
+              })
+          String statusColor,
+      String state) {}
 }

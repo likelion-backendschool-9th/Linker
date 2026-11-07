@@ -644,7 +644,8 @@ class IssueReadIntegrationTest {
             + " VALUES(1,10,'BOARD','STATUS','START','TARGET',1,'Board',false,1,now(),now()),"
             + "(2,20,'OTHERBOARD','STATUS','START','TARGET',2,'Other',false,1,now(),now())");
     jdbc.update("INSERT INTO board_status_mappings(id,board_id,github_option_id,linker_status,"
-        + "github_option_name,created_at,updated_at) VALUES(1,1,'READY','TODO','Ready',now(),now())");
+        + "github_option_name,color,created_at,updated_at)"
+        + " VALUES(1,1,'READY','TODO','Ready','GRAY',now(),now())");
     for (String key : redis.keys("issues:*")) redis.delete(key);
     redirectLocation = null;
     moveConnected = false;
@@ -1639,8 +1640,9 @@ class IssueReadIntegrationTest {
     long id = firstIssue();
     jdbc.update(
         "INSERT INTO board_status_mappings(id,board_id,github_option_id,linker_status,"
-            + "github_option_name,created_at,updated_at) VALUES(2,1,'FINISHED','DONE','Done',now(),now()),"
-            + "(3,1,'STOP','BLOCKED','Blocked',now(),now())");
+            + "github_option_name,color,created_at,updated_at)"
+            + " VALUES(2,1,'FINISHED','DONE','Done','GREEN',now(),now()),"
+            + "(3,1,'STOP','BLOCKED','Blocked','RED',now(),now())");
     assertThat(reads.status(member(), 10, id, "DONE").state()).isEqualTo("CLOSED");
     assertThat(reads.status(member(), 10, id, "BLOCKED").state()).isEqualTo("OPEN");
     assertThat(jdbc.queryForObject("SELECT board_status FROM issues WHERE id=?", String.class, id))

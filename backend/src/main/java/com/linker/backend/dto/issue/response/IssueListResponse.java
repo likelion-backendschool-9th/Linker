@@ -21,6 +21,7 @@ public record IssueListResponse(
         "repoName",
         "title",
         "status",
+        "statusColor",
         "state",
         "assignees",
         "labels",
@@ -40,6 +41,20 @@ public record IssueListResponse(
       String title,
       @Schema(allowableValues = {"TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER", "NONE"})
           String status,
+      @Schema(
+              description =
+                  "GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.",
+              allowableValues = {
+                "BLUE",
+                "GRAY",
+                "GREEN",
+                "ORANGE",
+                "PINK",
+                "PURPLE",
+                "RED",
+                "YELLOW"
+              })
+          String statusColor,
       @Schema(allowableValues = {"OPEN", "CLOSED"}) String state,
       List<Assignee> assignees,
       List<Label> labels,
