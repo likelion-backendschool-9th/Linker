@@ -162,4 +162,35 @@ public class ModerationController {
     return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(reports.revealUserEmail(actor,userId,request));
   }
 
+  @GetMapping("/audit-logs")
+  @Tag(name="p27-admin-audit")
+  @Operation(operationId="listAdminAuditLogs")
+  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+      @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+      @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class)))})
+  public ResponseEntity<com.linker.backend.dto.moderation.response.AuditLogsResponse> auditLogs(
+      @AuthenticationPrincipal AuthenticatedUser actor,@RequestParam(required=false) Long adminId,
+      @RequestParam(required=false) String actionType,
+      @RequestParam(required=false) @org.springframework.format.annotation.DateTimeFormat(iso=org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+      @RequestParam(required=false) @org.springframework.format.annotation.DateTimeFormat(iso=org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+      @RequestParam(required=false) Long cursor,@RequestParam(defaultValue="20") int size) {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(reports.auditLogs(actor,adminId,actionType,from,to,cursor,size));
+  }
+  @GetMapping("/audit-logs/filters")
+  @Tag(name="p27-admin-audit")
+  @Operation(operationId="getAdminAuditFilters")
+  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+      @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+      @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class)))})
+  public ResponseEntity<com.linker.backend.dto.moderation.response.AuditLogsResponse.Filters> auditFilters(@AuthenticationPrincipal AuthenticatedUser actor) {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(reports.auditFilters(actor));
+  }
+
+  // Keep malformed date/number handling within this controller instead of changing shared advice.
+  @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ApiErrorBody> invalidQueryType() {
+    return ResponseEntity.badRequest().cacheControl(CacheControl.noStore())
+        .body(new ApiErrorBody("VALIDATION_ERROR","요청 값을 확인해 주세요",null));
+  }
+
 }
