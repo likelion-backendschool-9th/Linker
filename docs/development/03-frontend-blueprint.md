@@ -405,7 +405,7 @@ export function useOverlay(key: OverlayKey) {
 | Avatar | Fixed size 24–96; GitHub `?s=` param |
 | Chat photo | Thumbnail `sizes="240px"`; large in the viewer |
 | GIF | Server-made first-frame still via `Image`; original plays on tap |
-| Logo, icons | SVG components (lucide-react), not `Image` |
+| Logo, icons | Solar Icons (`@solar-icons/static` / `@solar-icons/react`) SVG components, not `Image`. **MUST** prefer Solar Icons; do not introduce Lucide (or other icon sets) as the default |
 
 - `alt`: post photos auto `"{repo name} 이미지"`, numbered for 2+ (`"Linker 이미지 2"`); no input field. Avatars next to a visible name: `alt=""`.
 - Unknown sizes: `fill` + fixed-ratio parent.

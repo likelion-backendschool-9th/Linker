@@ -19,6 +19,7 @@
 8. Never signal state by color alone. Pair color with text, an icon or a border (WCAG 1.4.1).
 9. No hover-only UI. Input/textarea font **≥ 16px** (iOS zoom). Prefer `100dvh` and `viewportFit: cover`.
 10. **Scrollbars stay visually hidden; scroll itself stays enabled** (ch. 3-5). **NEVER** block scrolling with a global `overflow: hidden` on `html`/`body`. Nested horizontal + vertical UIs (e.g. kanban) must keep swipe axes independent in iOS/Android WebView.
+11. **Icons = Solar Icons first** (`@solar-icons/static` / `@solar-icons/react`). **MUST** use Solar Icons for UI glyphs. **NEVER** treat Lucide (`lucide-react`) or another set as the preferred default.
 
 ## 1. Color
 
@@ -352,6 +353,7 @@ When implementing a page: match **Figma** first; put one-off UI in that page’s
 - [ ] Top/bottom **safe-area** + header/tab (or composer) clearance applied; prefer `100dvh` / root `viewportFit: 'cover'`
 - [ ] Scrollbars hidden without disabling scroll; no global `overflow: hidden` blocking the page
 - [ ] Nested horizontal/vertical scroll (if any) keeps axes independent; checked in iOS and Android WebView
+- [ ] UI icons come from **Solar Icons**, not Lucide as the default
 - [ ] Primary controls ≥ 44px hit; icon clusters use **24px hit** without enlarging Figma visuals
 - [ ] Input font is 16px; no hover-only interaction
 - [ ] Error, success and warning states have a message, not color alone
