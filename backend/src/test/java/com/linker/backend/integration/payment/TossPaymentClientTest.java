@@ -57,7 +57,10 @@ class TossPaymentClientTest {
 						  "totalAmount": 2900,
 						  "status": "DONE",
 						  "method": "카드",
-						  "approvedAt": "2026-11-03T12:00:00+09:00"
+						  "approvedAt": "2026-11-03T12:00:00+09:00",
+						  "virtualAccount": null,
+						  "cancels": null,
+						  "failure": null
 						}
 						""", MediaType.APPLICATION_JSON));
 
@@ -68,7 +71,7 @@ class TossPaymentClientTest {
 		assertThat(result.totalAmount()).isEqualTo(2_900);
 		assertThat(result.status()).isEqualTo("DONE");
 		assertThat(result.method()).isEqualTo("카드");
-		assertThat(result.rawResponse()).containsEntry("status", "DONE");
+		assertThat(result.rawResponse()).containsEntry("status", "DONE").containsEntry("virtualAccount", null);
 		server.verify();
 	}
 
@@ -84,6 +87,8 @@ class TossPaymentClientTest {
 						  "orderId": "order_1",
 						  "totalAmount": 2900,
 						  "status": "CANCELED",
+						  "virtualAccount": null,
+						  "failure": null,
 						  "cancels": [
 						    {
 						      "cancelAmount": 2900,
