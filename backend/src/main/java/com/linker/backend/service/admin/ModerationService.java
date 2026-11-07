@@ -74,6 +74,7 @@ public class ModerationService {
 	private static final Set<AdminActionType> CONTENT_ACTIONS = EnumSet.of(
 			AdminActionType.HIDE, AdminActionType.DELETE, AdminActionType.DISMISS, AdminActionType.RESTORE);
 	private static final int REASON_MAX = 2000;
+	private static final tools.jackson.databind.ObjectMapper AUDIT_JSON = new tools.jackson.databind.ObjectMapper();
 
 	private final ReportCaseRepository cases;
 	private final ReportRepository reports;
@@ -581,5 +582,61 @@ public class ModerationService {
   public com.linker.backend.dto.moderation.response.AdminUsersResponse.RevealedEmail revealUserEmail(AuthenticatedUser actor,long id,
       com.linker.backend.dto.moderation.request.EmailRevealRequest request) { return administration.reveal(actor,id,request); }
   public void expireUserSanction(long id) { administration.expire(id); }
+
+  @Transactional(readOnly=true)
+  public com.linker.backend.dto.moderation.response.AuditLogsResponse auditLogs(AuthenticatedUser actor,
+      Long adminId,String actionType,java.time.LocalDate from,java.time.LocalDate to,Long cursor,int size) {
+    requireAuditAdmin(actor);
+    if (size<1 || size>100 || (adminId!=null && adminId<=0) || (cursor!=null && cursor<=0)
+        || (from!=null && to!=null && from.isAfter(to))) throw auditInvalid();
+    AdminActionType action=null;
+    if (actionType!=null && !actionType.isBlank()) {
+      try { action=AdminActionType.valueOf(actionType); } catch (IllegalArgumentException e) { throw auditInvalid(); }
+    }
+    Instant start=null,end=null;
+    try {
+      if (from!=null) start=from.atStartOfDay(PlanLimits.APP_ZONE).toInstant();
+      if (to!=null) end=to.plusDays(1).atStartOfDay(PlanLimits.APP_ZONE).toInstant();
+    } catch (java.time.DateTimeException e) { throw auditInvalid(); }
+    AdminAction anchor=cursor==null?null:actions.findById(cursor).orElseThrow(ModerationService::auditInvalid);
+    if (anchor!=null && ((adminId!=null && !anchor.getAdmin().getId().equals(adminId))
+        || (action!=null && anchor.getAction()!=action)
+        || (start!=null && anchor.getCreatedAt().isBefore(start))
+        || (end!=null && !anchor.getCreatedAt().isBefore(end)))) throw auditInvalid();
+    var rows=actions.findAuditPage(adminId,action,start,end,anchor==null?null:anchor.getCreatedAt(),cursor,size+1);
+    var page=rows.stream().limit(size).map(this::auditView).toList();
+    return new com.linker.backend.dto.moderation.response.AuditLogsResponse(page,
+        rows.size()>size?Long.toString(page.getLast().id()):null);
+  }
+
+  @Transactional(readOnly=true)
+  public com.linker.backend.dto.moderation.response.AuditLogsResponse.Filters auditFilters(AuthenticatedUser actor) {
+    requireAuditAdmin(actor);
+    var operators=admins.findAll().stream().sorted(Comparator.comparing(Admin::getId))
+        .map(a -> new com.linker.backend.dto.moderation.response.AuditLogsResponse.Operator(a.getId(),a.getUser().visibleName())).toList();
+    return new com.linker.backend.dto.moderation.response.AuditLogsResponse.Filters(operators,
+        java.util.Arrays.stream(AdminActionType.values()).map(Enum::name).toList());
+  }
+
+  private void requireAuditAdmin(AuthenticatedUser actor) {
+    if (actor==null || !actor.operatorAuthorized()) throw new ApiException(403,"FORBIDDEN","운영자 인증이 필요해요");
+    Admin admin=requireAdmin(actor);
+    if (admin.getUser().getStatus()!=UserStatus.ACTIVE || admin.getUser().getDeletedAt()!=null)
+      throw new ApiException(403,"FORBIDDEN","운영자만 쓸 수 있어요");
+  }
+  private com.linker.backend.dto.moderation.response.AuditLogsResponse.Item auditView(AdminAction row) {
+    String step=null;
+    // Return only the known sanction step, never arbitrary metadata that may contain private details.
+    if (row.getAction()==AdminActionType.SANCTION && row.getMetadata()!=null) {
+      try {
+        String value=AUDIT_JSON.readTree(row.getMetadata()).path("step").asText();
+        if (Set.of("WARNING","DAYS_7","DAYS_30","PERMANENT").contains(value)) step=value;
+      } catch (RuntimeException ignored) {}
+    }
+    return new com.linker.backend.dto.moderation.response.AuditLogsResponse.Item(row.getId(),row.getAdmin().getId(),
+        row.getAdmin().getUser().visibleName(),row.getAction().name(),row.getTargetType(),row.getTargetId(),
+        row.getTargetType()+" "+row.getTargetId(),row.getReason(),row.getCreatedAt(),step);
+  }
+  private static ApiException auditInvalid() { return new ApiException(400,"VALIDATION_ERROR","감사 조회 조건을 확인해 주세요"); }
 
 }
