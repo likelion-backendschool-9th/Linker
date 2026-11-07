@@ -45,6 +45,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
 import com.linker.backend.repository.post.FeedSeenPostRepository;
+import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.post.PostViewRepository;
@@ -66,6 +67,7 @@ public class PostService {
 	private final PostLikeRepository likes;
 	private final PostViewRepository views;
 	private final FeedSeenPostRepository seenPosts;
+	private final PinnedPostRepository pins;
 	private final UserRepository users;
 	private final UserBlockRepository blocks;
 	private final RecruitCardMapper authors;
@@ -77,6 +79,7 @@ public class PostService {
 			PostLikeRepository likes,
 			PostViewRepository views,
 			FeedSeenPostRepository seenPosts,
+			PinnedPostRepository pins,
 			UserRepository users,
 			UserBlockRepository blocks,
 			RecruitCardMapper authors,
@@ -87,6 +90,7 @@ public class PostService {
 		this.likes = likes;
 		this.views = views;
 		this.seenPosts = seenPosts;
+		this.pins = pins;
 		this.users = users;
 		this.blocks = blocks;
 		this.authors = authors;
@@ -190,7 +194,7 @@ public class PostService {
 		return new CommentListResponse(items);
 	}
 
-	/** Profile post list (page 04). Pin order waits until `pinned_posts` exists. */
+	/** Profile post list (page 04). Pinned posts come first, in saved order. */
 	@Transactional(readOnly = true)
 	public PostCardListResponse profilePosts(String login) {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
@@ -212,6 +216,12 @@ public class PostService {
 			post.getTags().size();
 			items.add(toCard(post));
 		}
+		List<Long> pinnedIds = pins.findVisiblePostIds(author.getId());
+		Map<Long, Integer> pinOrder = new HashMap<>();
+		for (int i = 0; i < pinnedIds.size(); i++) {
+			pinOrder.put(pinnedIds.get(i), i);
+		}
+		items.sort(Comparator.comparingInt(card -> pinOrder.getOrDefault(card.id(), Integer.MAX_VALUE)));
 		return new PostCardListResponse(items);
 	}
 

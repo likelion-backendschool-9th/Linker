@@ -27,6 +27,7 @@ import com.linker.backend.repository.account.GithubTokenRepository;
 import com.linker.backend.repository.account.RecruiterProfileRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.profile.ContributionDayRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.PublicProfileQuery;
@@ -56,6 +57,9 @@ class AccountServiceTest {
 
 	@Mock
 	private UserBlockRepository blocks;
+
+	@Mock
+	private PinnedPostRepository pins;
 
 	@Mock
 	private PublicProfileQuery profileQuery;

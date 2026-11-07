@@ -29,6 +29,7 @@ import com.linker.backend.repository.account.GithubTokenRepository;
 import com.linker.backend.repository.account.RecruiterProfileRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.profile.ContributionDayRepository;
 import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.PublicProfileQuery;
@@ -48,6 +49,7 @@ public class AccountService {
 	private final UserTechTagRepository selectedTags;
 	private final FollowRepository follows;
 	private final UserBlockRepository blocks;
+	private final PinnedPostRepository pins;
 	private final PublicProfileQuery profileQuery;
 	private final UsernameRedirectRepository redirects;
 	private final RecruiterProfileRepository recruiterProfiles;
@@ -64,6 +66,7 @@ public class AccountService {
 			UserTechTagRepository selectedTags,
 			FollowRepository follows,
 			UserBlockRepository blocks,
+			PinnedPostRepository pins,
 			PublicProfileQuery profileQuery,
 			UsernameRedirectRepository redirects,
 			RecruiterProfileRepository recruiterProfiles,
@@ -78,6 +81,7 @@ public class AccountService {
 		this.selectedTags = selectedTags;
 		this.follows = follows;
 		this.blocks = blocks;
+		this.pins = pins;
 		this.profileQuery = profileQuery;
 		this.redirects = redirects;
 		this.recruiterProfiles = recruiterProfiles;
@@ -127,7 +131,9 @@ public class AccountService {
 				company == null ? null : company.getJobTitle(),
 				company == null ? null : company.getCompanyEmailDomain(),
 				company == null ? null : company.getCompanyUrl(),
-				List.of());
+				user.getUserType() == UserType.DEVELOPER
+						? pins.findVisiblePostIds(user.getId())
+						: List.of());
 		if (viewer != null
 				&& viewer.userType() == UserType.RECRUITER
 				&& user.getUserType() == UserType.DEVELOPER
