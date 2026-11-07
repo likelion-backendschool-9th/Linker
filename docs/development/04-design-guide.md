@@ -98,6 +98,7 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **A
 | Section title | 20px | 600 | 1.4 | `--font-size-section-title`, `--font-weight-semibold`, `--line-height-title` |
 | Card / group title | 18px | 600 | 1.4 | `--font-size-card-title`, `--font-weight-semibold`, `--line-height-title` |
 | Body | 16px | 400 | 1.6 | `--font-size-body`, `--font-weight-regular`, `--line-height-body` |
+| Medium | 16px | 500 | 1.6 | `--font-weight-medium` with the body, caption, or meta size. Offer names, tabs, chips, and status labels on page 33 |
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
 
@@ -172,6 +173,7 @@ Apply on app screens (WebView and mobile Safari):
 | Token | Value | Use |
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
+| `--radius-xxs` | 4px | Offer cards, status chips, and the rectangular open-chat button on page 33 |
 | `--radius-xs` | 8px | Floating mobile bottom GNB pill (if Figma uses it) |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
 | `--radius-lg` | 20px | Frosted pills when Figma uses them |

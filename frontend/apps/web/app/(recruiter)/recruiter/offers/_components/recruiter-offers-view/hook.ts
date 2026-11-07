@@ -5,13 +5,20 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs';
 
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import type { OfferCounts, OfferStatus, OffersResponse } from '../../_lib/offer-types';
-import { OFFER_STATUSES } from '../../_lib/offer-types';
+import type { OfferCounts, OfferFilter, OfferStatus, OffersResponse } from '../../_lib/offer-types';
+import { OFFER_FILTERS } from '../../_lib/offer-types';
 import { fetchOfferCounts, fetchOfferFirstMessage, fetchOffers } from './api';
 
-export const STATUS_LABELS: Record<OfferStatus, string> = {
-  TALKING: '대화 중',
+export const FILTER_LABELS: Record<OfferFilter, string> = {
+  ALL: '전체',
+  TALKING: '대화 진행',
   WAITING: '응답 대기',
+  NO_RESPONSE: '응답 없음',
+};
+
+export const STATUS_PILL_LABELS: Record<OfferStatus, string> = {
+  TALKING: '대화 진행 중',
+  WAITING: '응답 대기 중',
   NO_RESPONSE: '응답 없음',
 };
 
@@ -21,14 +28,14 @@ export function useRecruiterOffersView({
   initialCounts,
   initialError,
 }: {
-  initialStatus: OfferStatus;
+  initialStatus: OfferFilter;
   initialOffers: OffersResponse | null;
   initialCounts: OfferCounts | null;
   initialError: string | null;
 }) {
   const [status, setStatus] = useQueryState(
     'status',
-    parseAsStringLiteral(OFFER_STATUSES)
+    parseAsStringLiteral(OFFER_FILTERS)
       .withDefault(initialStatus)
       .withOptions({ shallow: true, history: 'replace' }),
   );
