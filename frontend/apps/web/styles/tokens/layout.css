@@ -15,12 +15,22 @@
   --space-xxl: 48px;
   --space-section: 48px; /* gap between page sections */
   --space-section-lg: 80px; /* gap between major blocks */
+  /* Figma 07 values off the 4px grid */
+  --space-row-inline: 5px; /* compact list row side padding, title to meta */
+  --space-row-block: 10px; /* compact list row vertical padding, meta gap */
+  --space-list-action: 15px; /* list to the action below it */
+  --space-group: 20px; /* selected team to its issues */
+  --space-block: 28px; /* my issues to the team tabs */
+  --space-sheet-block: 15px; /* 07 sheet top and bottom padding */
+  --space-sheet-action: 30px; /* 07 sheet list to its CTA */
 
   /* Radius */
   --radius-none: 0;
   --radius-xxs: 4px; /* offer cards, status chips, and the open-chat button */
   --radius-xs: 8px; /* the floating mobile bottom GNB pill */
   --radius-sm: 16px; /* inputs, FAQ rows, small cards */
+  --radius-control-sm: 10px; /* 07 compact link */
+  --radius-control-md: 14px; /* 07 sheet CTA */
   --radius-lg: 20px; /* frosted pills when Figma uses them */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
@@ -29,6 +39,12 @@
   --touch-target-min: 44px; /* CTA, list rows, tabs, form controls */
   --touch-target-icon: 24px; /* dense header/toolbar icon-cluster hit area (WCAG 2.2 AA) */
   --control-height: 48px; /* pill buttons and inputs */
+  --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
+  --control-height-sheet: 53px; /* 07 sheet CTA */
+  --avatar-size-team: 50px; /* 07 selected-team image */
+  --radio-size: 20px;
+  --radio-dot-size: 12.5px;
+  --separator-dot-size: 2px; /* dot between meta items */
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
@@ -52,6 +68,7 @@
   --duration-overlay: 200ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --blur-header-scroll: blur(20px); /* backdrop blur when Figma specifies frosted chrome */
+  --blur-scrim: blur(6px); /* 07 sheet scrim */
 
   /* The only shadow: the active segment of a segmented control */
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);

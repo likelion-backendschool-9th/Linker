@@ -1,0 +1,193 @@
+/* Figma 7 (selected team) and 7-팀 리스트 (368:1239) */
+.picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--space-row-block) var(--space-xs);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+}
+
+.trigger {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target-min);
+  text-align: start;
+  background: none;
+  border: 0;
+}
+
+.triggerContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--avatar-size-team);
+  height: var(--avatar-size-team);
+  color: var(--color-text-slate);
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+}
+
+.summary {
+  display: grid;
+  gap: var(--space-row-block);
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.members {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-slate);
+}
+
+.entry {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-slate);
+}
+
+.chevron {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  stroke-width: 1.5;
+}
+
+/* Doubled classes: must win over the shared overlay styles whatever the CSS load order */
+.sheetScrim.sheetScrim {
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+.sheet.sheet {
+  padding: var(--space-sheet-block) var(--space-md)
+    calc(var(--space-sheet-block) + env(safe-area-inset-bottom));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.sheetTitle.sheetTitle {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-sheet-title);
+}
+
+.choices {
+  min-inline-size: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-height: var(--touch-target-min);
+  padding-inline: var(--space-row-inline);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: normal;
+  color: var(--color-text-unselected);
+  border-bottom: 1px solid var(--color-hairline-faint);
+}
+
+.choice:has(:checked) {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-sheet-title);
+}
+
+.radioInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+}
+
+.radio {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--radio-size);
+  height: var(--radio-size);
+  background-color: var(--color-radio-surface);
+  border: 1px solid var(--color-radio-border);
+  border-radius: var(--radius-full);
+}
+
+.radio::after {
+  width: var(--radio-dot-size);
+  height: var(--radio-dot-size);
+  content: '';
+  background-color: var(--color-canvas);
+  border-radius: var(--radius-full);
+}
+
+.radioInput:checked + .radio {
+  border-color: var(--color-selection);
+}
+
+.radioInput:checked + .radio::after {
+  background-color: var(--color-selection);
+}
+
+.radioInput:focus-visible + .radio {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.choiceName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.submit {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  margin-block-start: var(--space-sheet-action);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+  border: 0;
+  border-radius: var(--radius-control-md);
+}

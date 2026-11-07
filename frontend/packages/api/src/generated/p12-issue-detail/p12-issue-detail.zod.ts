@@ -20,6 +20,7 @@ export const UpdateTeamIssueStatusBody = zod.object({
 
 export const UpdateTeamIssueStatusResponse = zod.object({
   status: zod.string(),
+  statusColor: zod.enum(['BLUE', 'GRAY', 'GREEN', 'ORANGE', 'PINK', 'PURPLE', 'RED', 'YELLOW']),
   state: zod.string(),
 });
 
@@ -105,6 +106,9 @@ export const DetailTeamIssueResponse = zod.object({
   title: zod.string(),
   body: zod.string(),
   status: zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  statusColor: zod
+    .enum(['BLUE', 'GRAY', 'GREEN', 'ORANGE', 'PINK', 'PURPLE', 'RED', 'YELLOW'])
+    .describe('GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.'),
   state: zod.enum(['OPEN', 'CLOSED']),
   assignees: zod.array(
     zod.object({

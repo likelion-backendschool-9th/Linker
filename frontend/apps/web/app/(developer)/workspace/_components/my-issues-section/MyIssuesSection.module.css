@@ -1,0 +1,139 @@
+/* Figma 7 (123:1966). B's page stack adds --space-lg; the rest makes up Figma's gap to the tabs */
+.section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-group);
+  min-width: 0;
+  padding-block-end: calc(var(--space-block) - var(--space-lg));
+}
+
+.issues {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-row-block) var(--space-row-inline);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-row-inline);
+  flex: 1;
+  min-width: 0;
+}
+
+.titleLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.issueTitle {
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  overflow-wrap: anywhere;
+}
+
+/* The whole row is the tap target for 12 */
+.link::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.statusBadge {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-width: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+}
+
+.metaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.separator {
+  flex-shrink: 0;
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: currentcolor;
+  border-radius: var(--radius-full);
+}
+
+.due,
+.overdue {
+  display: grid;
+  flex-shrink: 0;
+  justify-items: end;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+}
+
+/* Red and also says "마감 지남" (POL-I-4; never color alone) */
+.overdue {
+  color: var(--color-status-overdue);
+}
+
+/* Figma's 37px control; the transparent layer keeps a 44px hit area */
+.allIssues {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  min-height: var(--control-height-compact);
+  margin-block-start: calc(var(--space-list-action) - var(--space-sm));
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-control-sm);
+}
+
+.allIssues::after {
+  position: absolute;
+  inset: calc((var(--control-height-compact) - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+
+.allIssuesIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  stroke-width: 1;
+}

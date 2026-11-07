@@ -39,6 +39,13 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
+| `--color-canvas-cool` | `#f3f4f6` | Page 07 compact link fill |
+| `--color-hairline-cool` | `#e5e7eb` | Page 07 issue rows and selected-team card |
+| `--color-hairline-faint` | `#f5f5f5` | Page 07 sheet option divider |
+| `--color-selection` | `#2563eb` | Page 07 sheet selected radio |
+| `--color-scrim-team-picker` | `rgb(25 31 40 / 0.32)` | Page 07 sheet scrim (Figma `#191f28` 32%), with `--blur-scrim`. Other overlays keep `--color-scrim` |
+| `--color-radio-surface` / `--color-radio-border` | `#f6f7fb` / `#eaeaea` | Page 07 sheet radio fill and unselected outline |
+| `--color-sheet-cta` / `--color-on-sheet-cta` | `#121212` / `#f8f9f6` | Page 07 sheet CTA fill and label |
 | `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill when a scrolled top chrome needs it (only if Figma specifies) |
 | `--color-gnb-pill` | `rgb(244 244 244 / 0.8)` | Frosted GNB fill when Figma specifies blur |
 
@@ -61,6 +68,12 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-status-success` | `#15803d` | Saved, registered, verified | Caption or larger |
 | `--color-status-warning` | `#92400e` | Loss or expiry warning before it happens | Caption or larger |
 | `--color-board-status-blue` … `-yellow` | GitHub Projects Status option enum colors (BLUE/GRAY/GREEN/ORANGE/PINK/PURPLE/RED/YELLOW) | Issue status chips/dots/columns on 07·11–15. SoT is `board_status_mappings.color` via API `statusColor`. **NEVER** color alone — always pair with the status name | Dot / chip accent |
+| `--color-text-black` | `#000000` | Page 07 section labels | Body |
+| `--color-text-sheet-title` | `#111827` | Page 07 sheet title, selected option | Card title / Caption |
+| `--color-text-slate` | `#4b5563` | Page 07 issue title, due date, compact link | Caption |
+| `--color-text-muted-cool` | `#98a3b4` | Page 07 issue meta. Low contrast, see §1-3 | Micro |
+| `--color-text-unselected` | `#b0b8c1` | Page 07 unselected sheet option. Low contrast, see §1-3 | Caption |
+| `--color-status-overdue` | `#e62e00` | Page 07 overdue date, paired with "마감 지남". Low contrast, see §1-3 | Caption |
 
 How the palette's text names map here (the palette's own text colors are **not** tokens):
 
@@ -85,9 +98,13 @@ Measured ratios, so nobody has to recompute:
 | `#0066ff` accent text | white / `#f3f3f3` | 4.83 / 4.36 | accent text only on white |
 | `#005fed` GNB current text | `#f3f3f3` | 4.90 | pass; use `--color-gnb-current` for the selected tab |
 | `#ffffff` on accent badge | `#0066ff` | 4.83 | pass |
+| `#4b5563` slate | white / `#f3f4f6` | 7.56 / 6.87 | pass |
+| `#e62e00` overdue | white | 4.42 | **below 4.5**, Figma value kept (team decision, page 07) |
+| `#98a3b4` muted-cool | white | 2.55 | **below 4.5**, Figma value kept (team decision, page 07) |
+| `#b0b8c1` unselected | white | 2.01 | **below 4.5**, Figma value kept (team decision, page 07) |
 
 - **MUST** re-check contrast when text sits on any surface other than white and add a token if no existing one passes.
-- Text lighter than `--color-text-meta` is **NEVER** used on a light surface.
+- Text lighter than `--color-text-meta` is **NEVER** used on a light surface. Exception: the page 07 Figma values marked above; do not reuse them elsewhere without the same team decision.
 - Global `::placeholder` already uses `--color-text-subtle-on-tint` (darker is safe on white and on tint).
 
 ## 2. Typography
@@ -103,6 +120,7 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **A
 | Medium | 16px | 500 | 1.6 | `--font-weight-medium` with the body, caption, or meta size |
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
+| Micro (page 07 issue meta) | 12px | 500 | 22px | `--font-size-micro`, `--font-weight-medium`, `--line-height-compact` |
 
 - Medium (500) is Pretendard Medium for a clause title and its body (page 03) and for offer names, tabs, chips, and status labels (page 33). Other body copy stays 400.
 - Buttons and inputs: 16px; button weight 600, input value weight 400. Inputs smaller than 16px make iOS zoom in.
@@ -127,6 +145,13 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 | `--space-xxl` | 48px | Large gap inside a section |
 | `--space-section` | 48px | Gap between page sections |
 | `--space-section-lg` | 80px | Gap between major blocks |
+| `--space-row-inline` | 5px | Page 07 row side padding, title to meta (Figma, off the grid) |
+| `--space-row-block` | 10px | Page 07 row vertical padding, meta gap (Figma) |
+| `--space-list-action` | 15px | Page 07 list to the action below it (Figma) |
+| `--space-group` | 20px | Page 07 selected team to its issues (Figma) |
+| `--space-block` | 28px | Page 07 my issues to the team tabs (Figma) |
+| `--space-sheet-block` | 15px | Page 07 sheet top and bottom padding (Figma) |
+| `--space-sheet-action` | 30px | Page 07 sheet list to its CTA (Figma) |
 
 ### 3-1. App column (non-admin)
 
@@ -169,7 +194,7 @@ Apply on app screens (WebView and mobile Safari):
 ### 3-4. Other frame tokens
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Frame sizes:** `--header-height` 56px; `--badge-dot-size` 6px; `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px.
+- **Frame sizes:** `--header-height` 56px; `--badge-dot-size` 6px; `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
 - **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
 - **Images:** keep a fixed aspect ratio and `--radius-md` corners unless Figma says otherwise. Use `next/image` (blueprint ch. 10).
@@ -256,6 +281,8 @@ Validate on **iOS React Native WebView** and **Android React Native WebView**:
 | `--radius-none` | 0 | Full-bleed media |
 | `--radius-xxs` | 4px | Offer cards, status chips, and the rectangular open-chat button on page 33 |
 | `--radius-xs` | 8px | Floating mobile bottom GNB pill (if Figma uses it) |
+| `--radius-control-sm` | 10px | Page 07 compact link |
+| `--radius-control-md` | 14px | Page 07 sheet CTA (Figma) |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
 | `--radius-lg` | 20px | Frosted pills when Figma uses them |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
