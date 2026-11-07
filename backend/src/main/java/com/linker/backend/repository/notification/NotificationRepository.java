@@ -64,6 +64,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			""")
 	List<Notification> findDueNonChat(@Param("now") Instant now, Pageable pageable);
 
+	// Membership is checked again at push time: someone who left the room after the row was made gets no
+	// push. The in-app row stays, and its /chats link answers 404 like any room they cannot open.
 	@Query("""
 			select notification from Notification notification
 			where notification.pushedAt is null
@@ -71,6 +73,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			  and exists (select 1 from PushToken token where token.user.id = notification.user.id)
 			  and notification.notificationType in ('CHAT', 'CHAT_MENTION')
 			  and notification.deliverAfter is null
+			  and exists (
+				select member from ChatRoomMember member
+				where member.room.id = notification.targetId
+				  and member.userId = notification.user.id
+				  and member.leftAt is null
+			)
 			  and (notification.notificationType = 'CHAT_MENTION' or not exists (
 				select member from ChatRoomMember member
 				where member.room.id = notification.targetId

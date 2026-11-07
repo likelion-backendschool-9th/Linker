@@ -18,12 +18,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserType;
+import com.linker.backend.entity.chat.ChatRoom;
+import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.notification.PushToken;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.global.security.RsaMaterial;
 import com.linker.backend.integration.push.PushGateway;
 import com.linker.backend.integration.push.PushMessage;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatRoomMemberRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.notification.PushTokenRepository;
 import com.linker.backend.service.user.NotificationService;
 
@@ -43,7 +47,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Non-chat push timing (Policy POL-N-1): outside 22:00–08:00 KST a follow, comment or application alert
- * is pushed on the next run; a row held for quiet hours goes out once its 08:00 has passed.
+ * is pushed on the next run; a row held for quiet hours goes out once its 08:00 has passed. A chat push
+ * also needs the recipient to still be in the room when it is sent.
  * The fixed clock is 12:00 KST.
  */
 @SpringBootTest
@@ -111,6 +116,10 @@ class NotificationDueDeliveryIntegrationTest {
 	private NotificationService notifications;
 	@Autowired
 	private NotificationDeliveryService delivery;
+	@Autowired
+	private ChatRoomRepository rooms;
+	@Autowired
+	private ChatRoomMemberRepository members;
 
 	@BeforeEach
 	void clean() {
@@ -164,6 +173,33 @@ class NotificationDueDeliveryIntegrationTest {
 
 		assertThat(SENT).isEmpty();
 		assertThat(pushed(follow)).isFalse();
+	}
+
+	@Test
+	void aChatPushIsDroppedForSomeoneWhoLeftTheRoomButTheInAppRowStays() {
+		User recipient = withToken("left");
+		User sender = user("left-sender");
+		ChatRoom room = rooms.saveAndFlush(ChatRoom.team(null));
+		members.saveAndFlush(ChatRoomMember.join(room, sender.getId()));
+		ChatRoomMember member = members.saveAndFlush(ChatRoomMember.join(room, recipient.getId()));
+		long chat = chat(recipient, sender, room, NotificationTypes.CHAT);
+		long mention = chat(recipient, sender, room, NotificationTypes.CHAT_MENTION);
+		member.leave(NOW);
+		members.saveAndFlush(member);
+
+		delivery.deliverDue();
+
+		assertThat(SENT).isEmpty();
+		assertThat(pushed(chat)).isFalse();
+		assertThat(pushed(mention)).isFalse();
+		assertThat(jdbc.queryForObject("select count(*) from notifications where id in (?, ?)", Long.class, chat, mention))
+				.isEqualTo(2);
+	}
+
+	private long chat(User recipient, User actor, ChatRoom room, String type) {
+		return notifications.create(new CreateNotificationCommand(
+				recipient.getId(), type, actor.getId(), "CHAT_ROOM", room.getId(), "/chats/" + room.getId(),
+				"{\"roomId\":" + room.getId() + "}", "chat:" + room.getId())).getId();
 	}
 
 	private long create(User recipient, User actor, String type) {
