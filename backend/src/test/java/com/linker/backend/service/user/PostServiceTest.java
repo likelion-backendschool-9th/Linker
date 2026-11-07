@@ -38,6 +38,7 @@ import com.linker.backend.repository.github.GithubRepoRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
 import com.linker.backend.repository.post.FeedSeenPostRepository;
+import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
@@ -74,7 +75,11 @@ class PostServiceTest {
 	@Mock
 	FeedSeenPostRepository seenPosts;
 	@Mock
+	PinnedPostRepository pins;
+	@Mock
 	UserBlockRepository blocks;
+	@Mock
+	ProMembership pro;
 	@Mock
 	NotificationService notifications;
 	@Mock
@@ -89,7 +94,7 @@ class PostServiceTest {
 	void setUp() {
 		service = new PostService(
 				repos, posts, users, techTags, uploads,
-				likes, comments, seenPosts, blocks, notifications, authors, rateLimiter, CLOCK);
+				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);

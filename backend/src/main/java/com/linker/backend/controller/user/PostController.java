@@ -2,11 +2,13 @@ package com.linker.backend.controller.user;
 
 import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.FeedSeenRequest;
+import com.linker.backend.dto.post.request.PinPostsRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
 import com.linker.backend.dto.post.response.CommentResponse;
 import com.linker.backend.dto.post.response.EditorRepoListResponse;
 import com.linker.backend.dto.post.response.LikeCountResponse;
 import com.linker.backend.dto.post.response.LikerListResponse;
+import com.linker.backend.dto.post.response.PinnedPostsResponse;
 import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
 import com.linker.backend.dto.post.response.RecommendedUsersResponse;
@@ -65,6 +67,18 @@ public class PostController {
 		return ResponseEntity.ok()
 				.cacheControl(CacheControl.noStore())
 				.body(posts.recommendedUsers(user));
+	}
+
+	@PutMapping("/me/pinned-posts")
+	@DeveloperOnly
+	@Operation(operationId = "replacePinnedPosts", tags = {"p04-profile"})
+	public ResponseEntity<PinnedPostsResponse> replacePins(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestBody PinPostsRequest request
+	) {
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.noStore())
+				.body(posts.replacePins(user, request));
 	}
 
 	@GetMapping("/post-editor/repos")

@@ -31,6 +31,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
 import com.linker.backend.repository.post.FeedSeenPostRepository;
+import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.post.PostViewRepository;
@@ -64,6 +65,8 @@ class PostServiceTest {
 	@Mock
 	FeedSeenPostRepository seenPosts;
 	@Mock
+	PinnedPostRepository pins;
+	@Mock
 	UserRepository users;
 	@Mock
 	UserBlockRepository blocks;
@@ -74,7 +77,7 @@ class PostServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new PostService(posts, comments, likes, views, seenPosts, users, blocks, authors, CLOCK);
+		service = new PostService(posts, comments, likes, views, seenPosts, pins, users, blocks, authors, CLOCK);
 		SecurityContextHolder.clearContext();
 	}
 

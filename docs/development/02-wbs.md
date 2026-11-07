@@ -436,7 +436,7 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 04 | A | GET | `/api/v1/public/user/{login}/posts` | 2nd pass: project posts (pinned first) | public |
-| 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: pin featured posts and order (free 1, Pro 5) | user · developers only |
+| 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: replace featured posts and order (free 1, Pro 5; saved pins stay after Pro ends) | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
 | 22 | E | POST | `/api/v1/user/posts` | Publish (10/day, photos 5 / Pro 10) | user · developers only |

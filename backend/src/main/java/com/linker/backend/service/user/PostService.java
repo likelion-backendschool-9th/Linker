@@ -18,10 +18,12 @@ import java.util.Set;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.FeedSeenRequest;
+import com.linker.backend.dto.post.request.PinPostsRequest;
 import com.linker.backend.dto.post.request.PostPeriodRequest;
 import com.linker.backend.dto.post.request.PostPhotoRequest;
 import com.linker.backend.dto.post.request.PostWriteRequest;
 import com.linker.backend.dto.post.response.CommentResponse;
+import com.linker.backend.dto.post.response.PinnedPostsResponse;
 import com.linker.backend.dto.post.response.EditorRepoListResponse;
 import com.linker.backend.dto.post.response.EditorRepoResponse;
 import com.linker.backend.dto.post.response.LikeCountResponse;
@@ -39,6 +41,7 @@ import com.linker.backend.entity.github.GithubRepo;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.entity.post.Comment;
 import com.linker.backend.entity.post.FeedSeenPost;
+import com.linker.backend.entity.post.PinnedPost;
 import com.linker.backend.entity.post.Post;
 import com.linker.backend.entity.post.PostDemoLink;
 import com.linker.backend.entity.post.PostImage;
@@ -55,6 +58,7 @@ import com.linker.backend.repository.github.GithubRepoRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.post.CommentRepository;
 import com.linker.backend.repository.post.FeedSeenPostRepository;
+import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
@@ -78,10 +82,12 @@ public class PostService {
 	private final PostLikeRepository likes;
 	private final CommentRepository comments;
 	private final FeedSeenPostRepository seenPosts;
+	private final PinnedPostRepository pins;
 	private final UserBlockRepository blocks;
 	private final NotificationService notifications;
 	private final RecruitCardMapper authors;
 	private final RedisRateLimiter rateLimiter;
+	private final ProMembership pro;
 	private final Clock clock;
 
 	public PostService(
@@ -93,10 +99,12 @@ public class PostService {
 			PostLikeRepository likes,
 			CommentRepository comments,
 			FeedSeenPostRepository seenPosts,
+			PinnedPostRepository pins,
 			UserBlockRepository blocks,
 			NotificationService notifications,
 			RecruitCardMapper authors,
 			RedisRateLimiter rateLimiter,
+			ProMembership pro,
 			Clock clock
 	) {
 		this.repos = repos;
@@ -106,12 +114,42 @@ public class PostService {
 		this.uploads = uploads;
 		this.likes = likes;
 		this.seenPosts = seenPosts;
+		this.pins = pins;
 		this.comments = comments;
 		this.blocks = blocks;
 		this.notifications = notifications;
 		this.authors = authors;
 		this.rateLimiter = rateLimiter;
+		this.pro = pro;
 		this.clock = clock;
+	}
+
+	@Transactional
+	public PinnedPostsResponse replacePins(AuthenticatedUser user, PinPostsRequest request) {
+		User owner = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		List<Long> requested = postIds(request);
+		List<Long> current = pins.findPostIds(owner.getId());
+		boolean addsNew = requested.stream().anyMatch(id -> !current.contains(id));
+		int cap = pro.active(owner.getId(), clock.instant())
+				? PlanLimits.PINNED_POSTS_PRO
+				: PlanLimits.PINNED_POSTS_FREE;
+		if (requested.size() > PlanLimits.PINNED_POSTS_PRO || (addsNew && requested.size() > cap)) {
+			throw new ApiException(403, "PLAN_LIMIT", pinLimitMessage(cap));
+		}
+		List<Post> owned = new ArrayList<>();
+		for (Long postId : requested) {
+			Post post = requireOwnedPost(owner.getId(), postId);
+			if (post.getVisibility() != PostVisibility.VISIBLE) {
+				throw new ApiException(404, "NOT_FOUND", UNAVAILABLE);
+			}
+			owned.add(post);
+		}
+		pins.deleteByUserId(owner.getId());
+		for (int i = 0; i < owned.size(); i++) {
+			pins.save(PinnedPost.create(owner, owned.get(i), i));
+		}
+		return new PinnedPostsResponse(List.copyOf(requested));
 	}
 
 	@Transactional
@@ -571,6 +609,28 @@ public class PostService {
 			throw new ApiException(404, "NOT_FOUND", "레포를 찾지 못했어요");
 		}
 		return repo;
+	}
+
+	private List<Long> postIds(PinPostsRequest request) {
+		if (request == null || request.postIds() == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+		}
+		List<Long> ids = new ArrayList<>();
+		for (Long id : request.postIds()) {
+			if (id == null || id <= 0 || ids.contains(id)) {
+				throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
+			}
+			ids.add(id);
+		}
+		return ids;
+	}
+
+	private String pinLimitMessage(int cap) {
+		if (cap >= PlanLimits.PINNED_POSTS_PRO) {
+			return "대표 작업물은 " + cap + "개까지 고정할 수 있어요";
+		}
+		return "대표 작업물은 " + cap + "개까지 고정할 수 있어요. Pro로 "
+				+ PlanLimits.PINNED_POSTS_PRO + "개까지 늘릴 수 있어요";
 	}
 
 	private Post requireOwnedPost(long userId, long postId) {
