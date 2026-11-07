@@ -8,6 +8,10 @@ import com.linker.backend.global.security.DeveloperOnly;
 import com.linker.backend.service.user.GithubService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import com.linker.backend.global.error.ApiErrorBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
@@ -45,6 +49,11 @@ public class GithubController {
 	@GetMapping("/chat-rooms/{roomId}/pull-requests")
 	@Tag(name = "p17-chat-room")
 	@Operation(operationId = "listChatPullRequests")
+	@ApiResponse(responseCode = "200", description = "Connected repository PRs")
+	@ApiResponse(responseCode = "400", description = "VALIDATION_ERROR (open/merged state)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "403", description = "DEVELOPER_ONLY / account state", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "404", description = "NOT_FOUND (not a current team room member)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@DeveloperOnly
 	public ResponseEntity<com.linker.backend.dto.github.response.ChatPullRequestsResponse> pullRequests(
 			@AuthenticationPrincipal AuthenticatedUser user,

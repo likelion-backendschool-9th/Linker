@@ -11,9 +11,6 @@ import org.springframework.stereotype.Component;
 public class PullRequestSyncJob {
   private final GithubPullRequestService requests;
   public PullRequestSyncJob(GithubPullRequestService requests) { this.requests = requests; }
-  @Scheduled(fixedDelay = com.linker.backend.global.config.PlanLimits.ISSUE_ACTIVE_SYNC_MINUTES,
-      timeUnit = java.util.concurrent.TimeUnit.MINUTES)
-  public void active() { requests.syncActive(); }
-  @Scheduled(cron = "0 0 2 * * *", zone = "Asia/Seoul")
-  public void daily() { requests.syncDaily(); }
+  @Scheduled(fixedDelayString = "${linker.team-setup.pr-poll-delay-ms:60000}")
+  public void poll() { requests.syncDueTeams(); }
 }

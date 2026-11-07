@@ -46,6 +46,10 @@ public interface TeamRepository extends JpaRepository<Team, Long>, TeamRepositor
       """)
   Optional<Long> findPullRequestTeam(long installationId, long orgId, long githubRepoId);
 
-  @Query("select t.id from Team t where t.status in ('ACTIVE','COMPLETED') order by t.id")
+  @Query("""
+      select t.id from Team t join GithubInstallation i on i.id=t.installationId
+      where t.status in ('ACTIVE','COMPLETED') and i.removedAt is null and i.suspendedAt is null
+      order by t.id
+      """)
   java.util.List<Long> findPullRequestSyncTeams();
 }

@@ -36,7 +36,6 @@ import tools.jackson.databind.json.JsonMapper;
 @Transactional(propagation = Propagation.NEVER)
 public class GithubPullRequestService {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GithubPullRequestService.class);
-  private static final String ACTIVE = "linker:pull-requests:active-teams";
   private static final Set<String> ACTIONS = Set.of("assigned", "unassigned", "auto_merge_enabled",
       "auto_merge_disabled", "closed", "converted_to_draft", "demilestoned", "dequeued",
       "edited", "enqueued", "labeled", "unlabeled", "locked", "unlocked", "milestoned",
@@ -75,18 +74,17 @@ public class GithubPullRequestService {
       throw new ApiException(403, "DEVELOPER_ONLY", "개발자만 사용할 수 있어요");
     String state = rawState == null ? "open" : rawState.toLowerCase(Locale.ROOT);
     if (!Set.of("open", "merged").contains(state)) throw invalid();
-    final long[] teamId = new long[1];
-    var result = read.execute(status -> {
+    return read.execute(status -> {
       teams.requireActive(user.userId());
       var member = members.findActive(roomId, user.userId()).orElseThrow(GithubPullRequestService::notFound);
       var room = member.getRoom();
       if (room.getRoomType() != RoomType.TEAM || room.getTeamId() == null
           || !access.hasRole(user.userId(), room.getTeamId(), TeamRole.Level.MEMBER)) throw notFound();
-      teamId[0] = room.getTeamId();
-      var linked = teams.findLinkedRepos(teamId[0]).stream()
+      long teamId = room.getTeamId();
+      var linked = teams.findLinkedRepos(teamId).stream()
           .collect(Collectors.toMap(com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo::repoId,
               Function.identity()));
-      var items = requests.findLinkedByState(teamId[0], PullRequestState.valueOf(state.toUpperCase(Locale.ROOT)))
+      var items = requests.findLinkedByState(teamId, PullRequestState.valueOf(state.toUpperCase(Locale.ROOT)))
           .stream().filter(pr -> linked.containsKey(pr.getRepoId())).map(pr -> {
             var repo = linked.get(pr.getRepoId());
             return new ChatPullRequestsResponse.Item(pr.getId(), repo.repoId(), repo.githubRepoId(),
@@ -95,9 +93,6 @@ public class GithubPullRequestService {
           }).toList();
       return new ChatPullRequestsResponse(items);
     });
-    // Activity is technical cache state, recorded after the DB read transaction is closed.
-    redis.opsForZSet().add(ACTIVE, Long.toString(teamId[0]), clock.millis());
-    return result;
   }
 
   public void receive(GithubWebhookDelivery delivery) {
@@ -180,29 +175,29 @@ public class GithubPullRequestService {
           }
         }
       });
+      redis.opsForValue().set(lastKey(teamId), clock.instant().toString(), java.time.Duration.ofDays(2));
       return null;
     });
   }
 
-  public void syncActive() {
-    double threshold = clock.millis() - java.time.Duration.ofMinutes(
-        com.linker.backend.global.config.PlanLimits.ISSUE_ACTIVE_SYNC_MINUTES).toMillis();
-    redis.opsForZSet().removeRangeByScore(ACTIVE, Double.NEGATIVE_INFINITY, threshold);
-    var ids = redis.opsForZSet().rangeByScore(ACTIVE, threshold, Double.POSITIVE_INFINITY);
-    if (ids != null) for (String id : ids) refreshSafely(Long.parseLong(id));
-  }
-
-  public void syncDaily() {
-    for (long id : teams.findPullRequestSyncTeams()) refreshSafely(id);
-  }
-
-  private void refreshSafely(long teamId) {
-    try { syncTeam(teamId); }
-    catch (RuntimeException exception) {
-      // A failed org must not delay the other teams; the next scheduled run retries it.
-      log.warn("PR cache refresh failed for team {}: {}", teamId, exception.getClass().getSimpleName());
+  /** Same status-based cadence as C's existing IssueSyncService.syncDueTeams contract. */
+  public void syncDueTeams() {
+    for (long teamId : teams.findPullRequestSyncTeams()) {
+      try {
+        var context = teams.team(teamId);
+        java.time.Duration interval = "ACTIVE".equals(context.status())
+            ? java.time.Duration.ofMinutes(com.linker.backend.global.config.PlanLimits.ISSUE_ACTIVE_SYNC_MINUTES)
+            : java.time.Duration.ofDays(1);
+        String last = redis.opsForValue().get(lastKey(teamId));
+        if (last == null || !Instant.parse(last).plus(interval).isAfter(clock.instant())) syncTeam(teamId);
+      } catch (RuntimeException exception) {
+        // A failed org must not delay the other teams; the next scheduled run retries it.
+        log.warn("PR cache refresh failed for team {}: {}", teamId, exception.getClass().getSimpleName());
+      }
     }
   }
+
+  private static String lastKey(long teamId) { return "pull-requests:last-full-sync:" + teamId; }
 
   private static void requireLive(GithubTeamSource.PullRequest pr, long id, int number, Instant revision) {
     if (pr == null || id <= 0 || number <= 0 || pr.id() != id || pr.number() != number

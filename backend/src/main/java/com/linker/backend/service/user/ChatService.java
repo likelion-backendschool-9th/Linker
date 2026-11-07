@@ -39,6 +39,7 @@ import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.ChatShareCardResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
@@ -86,6 +87,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.ChatController}.
@@ -234,7 +236,9 @@ public class ChatService {
 		messages.assignCreatedAt(message.getId(), now);
 		message.alignCreatedAt(now);
 		room.markLastMessage(message.getId(), now);
-		events.publishEvent(new ChatMessageReady(room.getId(), present(message)));
+		events.publishEvent(new ChatMessageReady(room.getId(), new ChatMessageResponse(
+				message.getId(), room.getId(), unreadCount(message), key, null, "PR_EVENT",
+				message.getBody(), List.of(), payload, now, null, null, "VISIBLE")));
 		for (long memberId : members.findActiveUserIds(room.getId()))
 			events.publishEvent(new ChatRoomsChanged(memberId, room.getId()));
 	}
@@ -661,7 +665,7 @@ public class ChatService {
 		}
 		message.revise(text, DatabaseInstant.now(clock));
 		messages.saveAndFlush(message);
-		ChatMessageResponse response = present(message);
+		ChatMessageResponse response = present(message, participant.account().getId());
 		events.publishEvent(new ChatTranscriptChanged("EDIT", roomId, response));
 		return response;
 	}
@@ -688,7 +692,7 @@ public class ChatService {
 		}
 		message.delete(DatabaseInstant.now(clock));
 		messages.saveAndFlush(message);
-		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message)));
+		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message, participant.account().getId())));
 	}
 
 	@Transactional(readOnly = true)
@@ -770,7 +774,7 @@ public class ChatService {
 		if (message == null || !message.getRoom().getId().equals(roomId)) {
 			return null;
 		}
-		return present(message);
+		return present(message, viewerId);
 	}
 
 	@Transactional(readOnly = true)
@@ -1050,7 +1054,7 @@ public class ChatService {
 		}
 	}
 
-	private ChatMessageResponse present(ChatMessage message) {
+	private ChatMessageResponse present(ChatMessage message, long viewerId) {
 		boolean redacted = message.getDeletedAt() != null || message.getVisibility() != MessageVisibility.VISIBLE;
 		String text = message.getDeletedAt() != null
 				? DELETED_PREVIEW
@@ -1070,7 +1074,7 @@ public class ChatService {
 				message.getMessageType().name(),
 				text,
 				redacted ? List.of() : imageLinks.findUrls(message.getId()),
-				!redacted && message.getMessageType() == MessageType.PR_EVENT ? prPayload(message.getPayload()) : null,
+				redacted ? null : cardPayload(viewerId, message.getMessageType().name(), message.getPayload()),
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				message.getDeletedAt(),
@@ -1114,33 +1118,30 @@ public class ChatService {
 	}
 
 	private Object cardPayload(long viewerId, ChatMessageRow row) {
-		if ("PR_EVENT".equals(row.type())) return prPayload(row.payload());
-		if (!"SHARE_CARD".equals(row.type()) || row.payload() == null || row.payload().isBlank()) {
-			return row.payload();
-		}
+		if (row.deletedAt() != null || !"VISIBLE".equals(row.visibility())) return null;
+		return cardPayload(viewerId, row.type(), row.payload());
+	}
+
+	private Object cardPayload(long viewerId, String type, String payloadJson) {
+		if (payloadJson == null || payloadJson.isBlank()) return null;
 		try {
-			JsonNode payload = json.readTree(row.payload());
-			String targetType = payload.path("targetType").asText();
-			long targetId = payload.path("targetId").asLong();
-			if (targetType.isBlank() || targetId < 1) {
-				return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable(targetType, targetId);
+			JsonNode payload = json.readTree(payloadJson);
+			if ("SHARE_CARD".equals(type)) return resolvedCard(viewerId, payload);
+			if (payload instanceof ObjectNode object && object.has("linkerCard")) {
+				object.set("linkerCard", json.valueToTree(resolvedCard(viewerId, object.path("linkerCard"))));
 			}
-			return messages.resolveShareCard(viewerId, targetType, targetId);
+			return payload;
 		}
 		catch (RuntimeException exception) {
-			return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable("UNKNOWN", 0);
+			return "SHARE_CARD".equals(type) ? ChatShareCardResponse.unavailable("UNKNOWN", 0) : null;
 		}
 	}
 
-	private Object prPayload(String raw) {
-		if (raw == null || raw.isBlank()) return null;
-		try {
-			JsonNode payload = json.readTree(raw);
-			return payload.isObject() ? payload : null;
-		} catch (RuntimeException exception) {
-			return null;
-		}
+	private ChatShareCardResponse resolvedCard(long viewerId, JsonNode target) {
+		return messages.resolveShareCard(viewerId, target.path("targetType").asText(), target.path("targetId").asLong());
 	}
+
+
 
 	private static SendCommand sendCommand(Map<String, Object> payload) {
 		if (payload == null || unsupportedAttachment(payload)) {

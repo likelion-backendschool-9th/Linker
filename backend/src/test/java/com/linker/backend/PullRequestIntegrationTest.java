@@ -85,6 +85,7 @@ class PullRequestIntegrationTest {
   @Autowired AuthService sessions;
   @Autowired PlatformTransactionManager transactions;
   @Autowired com.linker.backend.service.user.ChatService chat;
+  @Autowired org.springframework.data.redis.core.StringRedisTemplate redis;
   @MockitoBean GithubTeamSource github;
   @MockitoBean SimpMessagingTemplate messaging;
   final JsonMapper json = JsonMapper.builder().build();
@@ -287,6 +288,26 @@ class PullRequestIntegrationTest {
     mvc.perform(get("/api/v1/user/chat-rooms/" + next.chatRoomId() + "/pull-requests").cookie(cookie(outsider)))
         .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].title").value("이전 후 비공개 제목"));
     assertThat(jdbc.queryForObject("select team_id from pull_requests where github_pr_id=?", Long.class, prId)).isEqualTo(next.id());
+  }
+
+  @Test void periodicRefreshUsesTheSameActiveAndCompletedCadenceAsIssues() {
+    requests.syncTeam(team);
+    clearInvocations(github);
+    requests.syncDueTeams();
+    verify(github, never()).pullRequests(eq(installation), any());
+    String key = "pull-requests:last-full-sync:" + team;
+    redis.opsForValue().set(key, Instant.now().minusSeconds(16 * 60).toString());
+    requests.syncDueTeams();
+    verify(github).pullRequests(eq(installation), any());
+    clearInvocations(github);
+    jdbc.update("update teams set status='COMPLETED' where id=?", team);
+    redis.opsForValue().set(key, Instant.now().minusSeconds(16 * 60).toString());
+    requests.syncDueTeams();
+    verify(github, never()).pullRequests(eq(installation), any());
+    redis.opsForValue().set(key, Instant.now().minusSeconds(2 * 86400L).toString());
+    requests.syncDueTeams();
+    verify(github).pullRequests(eq(installation), any());
+    assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, room)).isZero();
   }
 
   private void replayOrBusy(GithubWebhookDelivery delivery) {
