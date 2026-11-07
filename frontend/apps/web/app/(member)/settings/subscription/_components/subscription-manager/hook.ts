@@ -22,7 +22,7 @@ export function useSubscriptionManager() {
   const cancel = useOverlay('subscription-cancel');
   const refund = useOverlay('payment-refund');
   const action = useMutation({
-    mutationFn: async (input: { kind: 'cancel' | 'refund'; id: string }) =>
+    mutationFn: async (input: { kind: 'cancel' | 'refund'; id: number }) =>
       input.kind === 'cancel' ? cancelSubscription(input.id) : refundPayment(input.id),
     throwOnError: false,
     onSuccess: async (_, input) => {
@@ -31,13 +31,13 @@ export function useSubscriptionManager() {
       toast(
         input.kind === 'cancel'
           ? '해지를 예약했어요. 만료일까지 혜택을 이용할 수 있어요.'
-          : '전액 환불됐어요. 구독 혜택이 종료됐어요.',
+          : '전액 환불됐어요. 이 결제의 이용 기간이 취소됐어요.',
       );
       await client.invalidateQueries({ queryKey: subscriptionKeys.account(login) });
     },
   });
-  const selectedSub = subs.data?.items.find((item) => String(item.id) === cancel.id);
-  const selectedPayment = payments.data?.items.find((item) => String(item.id) === refund.id);
+  const selectedSub = subs.data?.items.find((item) => String(item.subscriptionId) === cancel.id);
+  const selectedPayment = payments.data?.items.find((item) => String(item.paymentId) === refund.id);
 
   return {
     subs,
@@ -47,10 +47,10 @@ export function useSubscriptionManager() {
     action,
     selectedSub,
     selectedPayment,
-    submit: (kind: 'cancel' | 'refund', id: string) => {
+    submit: (kind: 'cancel' | 'refund', id: number) => {
       if (!action.isPending) action.mutate({ kind, id });
     },
-    open: (kind: 'cancel' | 'refund', id: string) => {
+    open: (kind: 'cancel' | 'refund', id: number) => {
       if (action.isPending) return;
       action.reset();
       (kind === 'cancel' ? cancel : refund).open(String(id));

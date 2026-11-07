@@ -61,6 +61,10 @@ services:
       TEAM_SETUP_POLL_DELAY_MS: ${TEAM_SETUP_POLL_DELAY_MS:-5000}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?JWT_PUBLIC_KEY is required}
+      # Toss Payments test mode only. Empty keys keep checkout at 503 PAYMENT_UNAVAILABLE.
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY:-}
+      TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY:-}
+      TOSS_API_BASE_URL: ${TOSS_API_BASE_URL:-https://api.tosspayments.com}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "127.0.0.1:8080:8080"

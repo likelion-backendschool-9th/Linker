@@ -1,7 +1,6 @@
 package com.linker.backend.service.recruiter;
 
 import java.net.URI;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +29,7 @@ import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.profile.RecruiterAdRepository;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.linker.backend.repository.subscription.SubscriptionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +44,7 @@ public class AdService {
 	private final RecruiterProfileRepository profiles;
 	private final RecruiterAdRepository ads;
 	private final NotificationService notifications;
-	private final JdbcTemplate jdbc;
+	private final SubscriptionRepository subscriptions;
 	private final StringRedisTemplate redis;
 	private final Clock clock;
 
@@ -54,14 +53,14 @@ public class AdService {
 			RecruiterProfileRepository profiles,
 			RecruiterAdRepository ads,
 			NotificationService notifications,
-			JdbcTemplate jdbc,
+			SubscriptionRepository subscriptions,
 			StringRedisTemplate redis,
 			Clock clock) {
 		this.users = users;
 		this.profiles = profiles;
 		this.ads = ads;
 		this.notifications = notifications;
-		this.jdbc = jdbc;
+		this.subscriptions = subscriptions;
 		this.redis = redis;
 		this.clock = clock;
 	}
@@ -225,38 +224,8 @@ public class AdService {
 	}
 
 	private boolean scout(long userId) {
-		if (!ready("subscriptions", "user_id", "plan", "status", "current_period_end")) {
-			return false;
-		}
-		Timestamp now = Timestamp.from(clock.instant());
-		boolean grace = ready("subscriptions", "grace_until");
-		Integer count = jdbc.queryForObject(grace ? """
-				select count(*) from subscriptions
-				where user_id = ? and plan = 'SCOUT' and status in ('ACTIVE', 'PAST_DUE')
-				  and (current_period_end > ? or (grace_until is not null and grace_until > ?))
-				""" : """
-				select count(*) from subscriptions
-				where user_id = ? and plan = 'SCOUT' and status in ('ACTIVE', 'PAST_DUE')
-				  and current_period_end > ?
-				""", Integer.class, grace ? new Object[] {userId, now, now} : new Object[] {userId, now});
-		return count != null && count > 0;
-	}
-
-	private boolean ready(String table, String... columns) {
-		Boolean exists = jdbc.queryForObject("select to_regclass('public." + table + "') is not null", Boolean.class);
-		if (!Boolean.TRUE.equals(exists)) {
-			return false;
-		}
-		for (String column : columns) {
-			Integer count = jdbc.queryForObject("""
-					select count(*) from information_schema.columns
-					where table_schema = 'public' and table_name = ? and column_name = ?
-					""", Integer.class, table, column);
-			if (count == null || count == 0) {
-				return false;
-			}
-		}
-		return true;
+		var schema = subscriptions.benefitSchema("public");
+		return schema.ready() && subscriptions.hasScoutBenefit(userId, clock.instant(), schema.grace());
 	}
 
 	private User requireRecruiter(AuthenticatedUser principal) {

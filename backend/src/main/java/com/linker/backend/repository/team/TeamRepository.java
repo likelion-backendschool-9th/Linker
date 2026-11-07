@@ -14,6 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 public interface TeamRepository extends JpaRepository<Team, Long>, TeamRepositoryCustom {
   Optional<Team> findByGithubOrgId(long githubOrgId);
 
+  @Query("select b from TeamProjectBoard b where b.teamId = :teamId")
+  Optional<com.linker.backend.entity.team.TeamProjectBoard> findSettingsBoard(long teamId);
+
+  @Query("""
+      select t.id from Team t where t.status = 'DELETED' and t.deleteScheduledAt <= :now
+        and exists(select 1 from ChatRoom r where r.teamId = t.id and r.roomType = 'TEAM')
+      order by t.id
+      """)
+  java.util.List<Long> findChatDeletionCandidates(java.time.Instant now, org.springframework.data.domain.Pageable page);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select t from Team t where t.id = :id")
   Optional<Team> lockTeamForSetup(long id);

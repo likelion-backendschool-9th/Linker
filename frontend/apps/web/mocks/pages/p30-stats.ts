@@ -4,7 +4,7 @@ import { dateOnly, fail, get, type MockRoute } from '../core/define';
 import type { MockViewer } from '../core/viewer';
 import { POSTS } from '../fixtures/posts';
 import { ME } from '../fixtures/users';
-import { state } from '../fixtures/subscriptions';
+import { personalPlan } from '../fixtures/subscriptions';
 import { startOfWeek, subWeeks } from 'date-fns';
 import { todayKst, toKst } from '@/lib/format/time';
 
@@ -15,13 +15,7 @@ const SOURCES = ['FEED', 'PROFILE', 'RECRUIT_POST', 'CHAT_SHARE', 'EXTERNAL'] as
 const mine = () => POSTS.filter((p) => p.author.id === ME.id);
 
 function hasPro(viewer: MockViewer) {
-  const today = todayKst();
-  return state(viewer).subscriptions.some(
-    (sub) =>
-      sub.kind === 'PRO' &&
-      (sub.status === 'ACTIVE' ||
-        (sub.status === 'CANCELING' && sub.endsOn !== null && sub.endsOn >= today)),
-  );
+  return personalPlan(viewer) === 'PRO';
 }
 
 function requirePro(viewer: MockViewer) {

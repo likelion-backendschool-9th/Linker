@@ -523,6 +523,19 @@ class SubscriptionPaymentIntegrationTest {
 	}
 
 	@Test
+	void mySubscriptionsListOwnProWithoutAnyTeam() throws Exception {
+		// Pro only (the MVP demo): no team ids, so the team lookups are empty maps.
+		User developer = user("pro-only", UserType.DEVELOPER);
+		pay(developer, "PRO", "MONTHLY", null, 2_900);
+		mockMvc.perform(get("/api/v1/user/me/subscriptions").cookie(cookie(developer)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items", hasSize(1)))
+				.andExpect(jsonPath("$.items[0].planKey").value("PRO"))
+				.andExpect(jsonPath("$.items[0].teamName").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].nextSeats").value(nullValue()));
+	}
+
+	@Test
 	void paymentHistoryShowsPaidOrdersNewestFirstWithRefundReason() throws Exception {
 		User developer = user("history", UserType.DEVELOPER);
 		String first = pay(developer, "PRO", "MONTHLY", null, 2_900);

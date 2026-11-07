@@ -95,12 +95,15 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
   private final EntityManager entityManager;
   private final EntityManagerFactory factory;
   private final TeamRepository teams;
+  private final com.linker.backend.repository.subscription.SubscriptionRepository subscriptions;
 
   public IssueRepositoryImpl(
-      EntityManager entityManager, EntityManagerFactory factory, TeamRepository teams) {
+      EntityManager entityManager, EntityManagerFactory factory, TeamRepository teams,
+      com.linker.backend.repository.subscription.SubscriptionRepository subscriptions) {
     this.entityManager = entityManager;
     this.factory = factory;
     this.teams = teams;
+    this.subscriptions = subscriptions;
   }
 
   // ---------------------------------------------------------------- team connection
@@ -1042,26 +1045,12 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
 
   @Override
   public boolean subscriptionsReady() {
-    // D's subscriptions table has no migration or Entity yet; PostgreSQL catalog check.
-    return Boolean.TRUE.equals(
-        entityManager
-            .createNativeQuery("select to_regclass('subscriptions') is not null", Boolean.class)
-            .getSingleResult());
+    return subscriptions.subscriptionTableExists();
   }
 
   @Override
   public boolean flexActive(long teamId, Instant now) {
-    // Native until D's subscriptions table gets its migration and Entity (no JPQL target yet).
-    return Boolean.TRUE.equals(
-        entityManager
-            .createNativeQuery(
-                "select exists (select 1 from subscriptions where team_id = :team and plan = 'FLEX'"
-                    + " and ((status in ('TRIALING','ACTIVE') and current_period_end > :now)"
-                    + " or (status = 'PAST_DUE' and grace_until > :now)))",
-                Boolean.class)
-            .setParameter("team", teamId)
-            .setParameter("now", now)
-            .getSingleResult());
+    return subscriptions.hasFlexBenefit(teamId, now);
   }
 
   @Override

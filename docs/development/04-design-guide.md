@@ -18,6 +18,8 @@
 7. Shadow-free. Depth comes from fill differences and 1px hairlines (ch. 4). The only shadow token is `--shadow-segment-active`.
 8. Never signal state by color alone. Pair color with text, an icon or a border (WCAG 1.4.1).
 9. No hover-only UI. Input/textarea font **≥ 16px** (iOS zoom). Prefer `100dvh` and `viewportFit: cover`.
+10. **Scrollbars stay visually hidden; scroll itself stays enabled** (ch. 3-5). **NEVER** block scrolling with a global `overflow: hidden` on `html`/`body`. Nested horizontal + vertical UIs (e.g. kanban) must keep swipe axes independent in iOS/Android WebView.
+11. **Icons = Solar Icons first** (`@solar-icons/static` / `@solar-icons/react`). **MUST** use Solar Icons for UI glyphs. **NEVER** treat Lucide (`lucide-react`) or another set as the preferred default.
 
 ## 1. Color
 
@@ -98,9 +100,11 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **A
 | Section title | 20px | 600 | 1.4 | `--font-size-section-title`, `--font-weight-semibold`, `--line-height-title` |
 | Card / group title | 18px | 600 | 1.4 | `--font-size-card-title`, `--font-weight-semibold`, `--line-height-title` |
 | Body | 16px | 400 | 1.6 | `--font-size-body`, `--font-weight-regular`, `--line-height-body` |
+| Medium | 16px | 500 | 1.6 | `--font-weight-medium` with the body, caption, or meta size |
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
 
+- Medium (500) is Pretendard Medium for a clause title and its body (page 03) and for offer names, tabs, chips, and status labels (page 33). Other body copy stays 400.
 - Buttons and inputs: 16px; button weight 600, input value weight 400. Inputs smaller than 16px make iOS zoom in.
 - Error and notice messages: 14px at minimum, never the 13px meta size.
 - Hierarchy comes from size, weight and spacing together, not from small gray differences alone.
@@ -134,6 +138,8 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 
 ### 3-2. Safe areas and chrome clearance
 
+The product ships as a Next.js web app inside a React Native WebView (`apps/mobile`). Design for a native-like mobile-first column; fixed chrome must not fight scroll.
+
 Apply on app screens (WebView and mobile Safari):
 
 | Layer | Rule |
@@ -143,9 +149,10 @@ Apply on app screens (WebView and mobile Safari):
 | Header clearance | Main content top padding accounts for `--header-height` + top safe inset when the header is sticky |
 | Tab / composer clearance | Main content (and toasts) sit above `--tab-bar-height` (or the composer height) + bottom safe inset |
 | Sheets | Cap height with `--sheet-max-height`; respect top/bottom safe insets so grabber and actions stay tappable |
-| Viewport | `viewportFit: 'cover'`; prefer `100dvh` over `100vh` |
+| Viewport height | Prefer `100dvh` over `100vh` so layout does not jump when the mobile browser chrome shows/hides |
+| Viewport metadata | Root `export const viewport` in App Router: `width: 'device-width'`, `initialScale: 1`, `viewportFit: 'cover'` (see `apps/web/app/layout.tsx`). Do not fight an existing root export with a conflicting page-level viewport |
 
-**NEVER** let fixed chrome cover primary actions or message input without compensating padding.
+**NEVER** let fixed chrome cover primary actions or message input without compensating padding. Sticky header and bottom tabs **MUST** leave a clear scrollable content band; content that exceeds the band remains reachable by scroll (ch. 3-5).
 
 ### 3-3. Touch targets (WCAG 2.2 AA)
 
@@ -167,11 +174,87 @@ Apply on app screens (WebView and mobile Safari):
 - **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
 - **Images:** keep a fixed aspect ratio and `--radius-md` corners unless Figma says otherwise. Use `next/image` (blueprint ch. 10).
 
+### 3-5. Scroll and touch (WebView)
+
+Goal: a native-like touch and scroll feel in the Expo / React Native WebView shell. Visual chrome stays clean; every overflowed region stays reachable.
+
+#### 3-5-1. Default scroll policy
+
+- Allow **both** vertical and horizontal scroll where the UI needs them.
+- **MUST** hide scrollbars visually by default; **MUST** keep actual scrolling (touch, swipe, mouse wheel) working.
+- Overflowed content **MUST** remain reachable — hiding the scrollbar is not the same as disabling scroll.
+- Prevent **accidental** page-wide horizontal scroll (e.g. at 360px / 600px QA widths). Horizontal scroll is allowed only for intentional horizontal explorers (kanban boards, chip rows, media carousels).
+- **NEVER** apply global `overflow: hidden` on `html` / `body` (or a full-page wrapper) in a way that blocks document scroll. Use `overflow: hidden` only on a local clip (avatar, ellipsis line, media crop).
+
+#### 3-5-2. Scrollbar hiding
+
+Default policy lives in global CSS (`apps/web/styles/globals.css`):
+
+```css
+* {
+  scrollbar-width: none; /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chromium / WebKit / RN WebView */
+}
+```
+
+| Do | Do not |
+| --- | --- |
+| Hide the scrollbar chrome only | Treat “no scrollbar” as “no scroll” |
+| Keep `overflow: auto` / `overflow-x: auto` / `overflow-y: auto` on scroll regions | Replace needed `auto` with `hidden` just to hide bars |
+| Verify scroll still works in iOS and Android WebView after the global rule | Assume desktop browser QA alone is enough |
+
+Screen-specific scroll recipes stay in that screen’s module CSS; do not pile one-off scroll hacks into `globals.css`.
+
+#### 3-5-3. Two-axis and nested scroll (e.g. kanban)
+
+When a board needs horizontal column travel **and** vertical card lists:
+
+| Axis | Rule |
+| --- | --- |
+| Horizontal (board) | The board surface swipes left/right when columns exceed the column width. Keep column widths and gaps consistent. |
+| Vertical (per column) | Each column’s card list scrolls independently. Cap column height so a long list does not stretch the board forever. |
+| Scrollbars | Hide both the board’s horizontal bar and each column’s vertical bar; keep both axes scrollable. |
+| Isolation | Scrolling one column **MUST NOT** move another column’s scroll offset. |
+
+#### 3-5-4. Gesture conflict avoidance
+
+Nested horizontal → vertical scrollers fight touch gestures if axes are not separated. Design so that:
+
+- Horizontal swipe moves board columns.
+- Vertical swipe moves that column’s cards.
+- Diagonal swipes do not produce stuck or fighting gestures.
+- Reaching a scroll edge: review whether the event should chain to the parent (`overscroll-behavior` and related). Prefer intentional containment over accidental parent scroll.
+- Use `touch-action`, `overscroll-behavior`, and `-webkit-overflow-scrolling` **only when needed**, after verifying on device WebViews — **NEVER** sprinkle them globally “just in case”.
+
+#### 3-5-5. WebView verification (required)
+
+Validate on **iOS React Native WebView** and **Android React Native WebView**:
+
+1. Horizontal swipe moves kanban (or other) columns
+2. Vertical swipe scrolls cards inside a column
+3. Diagonal swipe does not lock or fight axes
+4. Columns keep independent scroll positions
+5. Edge / overscroll behavior is acceptable
+6. No scrollbar chrome is visible
+7. Touch scroll feels responsive (no unexpected jank or capture)
+8. Sticky header / bottom tabs do not collide with the scroll band (ch. 3-2)
+
+#### 3-5-6. Maintenance
+
+- Mobile-first; account for iOS vs Android WebView rendering differences.
+- Keep the existing token + CSS Modules structure; avoid drive-by global style changes.
+- Give each scrollable region a clear responsibility (page / board / column / sheet).
+- Page-only scroll policies stay next to that page; shared defaults stay in `globals.css` + this section.
+
 ## 4. Shape and elevation
 
 | Token | Value | Use |
 | --- | --- | --- |
 | `--radius-none` | 0 | Full-bleed media |
+| `--radius-xxs` | 4px | Offer cards, status chips, and the rectangular open-chat button on page 33 |
 | `--radius-xs` | 8px | Floating mobile bottom GNB pill (if Figma uses it) |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
 | `--radius-lg` | 20px | Frosted pills when Figma uses them |
@@ -267,7 +350,10 @@ When implementing a page: match **Figma** first; put one-off UI in that page’s
 - [ ] Text on tinted or dark surfaces uses the on-tint / inverse tokens (ch. 1-2)
 - [ ] Accent is not used for text on a tinted surface or as a CTA fill
 - [ ] App column works at **360** and **600**; above 600 the column stays **600 centered** (admin exempt)
-- [ ] Top/bottom **safe-area** + header/tab (or composer) clearance applied
+- [ ] Top/bottom **safe-area** + header/tab (or composer) clearance applied; prefer `100dvh` / root `viewportFit: 'cover'`
+- [ ] Scrollbars hidden without disabling scroll; no global `overflow: hidden` blocking the page
+- [ ] Nested horizontal/vertical scroll (if any) keeps axes independent; checked in iOS and Android WebView
+- [ ] UI icons come from **Solar Icons**, not Lucide as the default
 - [ ] Primary controls ≥ 44px hit; icon clusters use **24px hit** without enlarging Figma visuals
 - [ ] Input font is 16px; no hover-only interaction
 - [ ] Error, success and warning states have a message, not color alone

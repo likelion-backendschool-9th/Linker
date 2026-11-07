@@ -58,7 +58,7 @@ export default async function LegalDocumentPage({ params }: PageProps<'/legal/[s
 
   const documents = await getLegalDocumentList();
   return (
-    <PageFrame title={document.title} variant="stack" bottomTabs={false}>
+    <PageFrame title={document.title} variant="stack" backHref="/feed" bottomTabs={false}>
       <LegalDocument document={document} documents={documents} />
     </PageFrame>
   );
