@@ -227,6 +227,15 @@ class PullRequestIntegrationTest {
         .andExpect(status().isNotFound());
   }
 
+  @Test void suspendedCurrentMemberCanStillReadExistingPrCache() throws Exception {
+    deliver("opened", false, REV);
+    Cookie existing = cookie(member);
+    member.suspendUntil(Instant.now().plusSeconds(3600));
+    users.saveAndFlush(member);
+    mvc.perform(get(list()).cookie(existing)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].githubPrId").value(prId));
+  }
+
   @Test void brokenSignatureNeverEntersQueue() throws Exception {
     mvc.perform(post("/api/v1/webhook/github").header("X-GitHub-Delivery", UUID.randomUUID())
         .header("X-GitHub-Event", "pull_request").header("X-Hub-Signature-256", "sha256=" + "0".repeat(64))

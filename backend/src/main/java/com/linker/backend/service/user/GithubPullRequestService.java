@@ -75,11 +75,12 @@ public class GithubPullRequestService {
     String state = rawState == null ? "open" : rawState.toLowerCase(Locale.ROOT);
     if (!Set.of("open", "merged").contains(state)) throw invalid();
     return read.execute(status -> {
-      teams.requireActive(user.userId());
       var member = members.findActive(roomId, user.userId()).orElseThrow(GithubPullRequestService::notFound);
       var room = member.getRoom();
       if (room.getRoomType() != RoomType.TEAM || room.getTeamId() == null
           || !access.hasRole(user.userId(), room.getTeamId(), TeamRole.Level.MEMBER)) throw notFound();
+      // TeamAccess rechecks the current DB account and membership. Suspended accounts may view
+      // existing data (Policy ch. 9); mutation restrictions remain on their owning write APIs.
       long teamId = room.getTeamId();
       var linked = teams.findLinkedRepos(teamId).stream()
           .collect(Collectors.toMap(com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo::repoId,
