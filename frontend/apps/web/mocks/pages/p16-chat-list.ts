@@ -31,7 +31,11 @@ export function roomRow(room: MockRoom) {
     unreadCount: UNREAD[room.id] ?? 0,
     lastMessage: last
       ? {
-          text: last.deletedAt ? '삭제된 메시지입니다' : (last.text ?? '사진을 보냈어요'),
+          text: last.deletedAt
+            ? '삭제된 메시지입니다'
+            : last.type === 'SHARE_CARD'
+              ? '공유한 게시물'
+              : (last.text ?? '사진을 보냈어요'),
           createdAt: last.createdAt,
         }
       : null,

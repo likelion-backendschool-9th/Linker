@@ -15,6 +15,7 @@ import { CHAT } from '@/lib/policy';
 import { useStompConnectionState, useStompSubscription } from '@/lib/realtime/use-stomp';
 
 import { useMessageOutbox } from '../../_hooks/use-message-outbox';
+import { messagePayload } from '@/features/share/chat-cards';
 
 import {
   chatKeys,
@@ -100,6 +101,10 @@ export function useChatRoom(roomId: number) {
         };
       });
       if (message.clientMessageId) outbox.acknowledge(message.clientMessageId);
+      // SHARE_CARD live frames contain only a target reference. REST resolves visibility per reader.
+      if (message.type === 'SHARE_CARD' || messagePayload(message.payload)?.linkerCard) {
+        void client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+      }
     },
     [client, roomId, viewer.login, outbox],
   );
@@ -111,9 +116,8 @@ export function useChatRoom(roomId: number) {
         setLargeGap(true);
         // Keep the cached read position and every returned message: truncating here
         // loses the anchor and creates a gap that older-page pagination cannot fill.
-        client.setQueryData<InfiniteData<MessagePage>>(
-          messagesKey(viewer.login, roomId),
-          (data) => mergeCatchUpHistory(data, page),
+        client.setQueryData<InfiniteData<MessagePage>>(messagesKey(viewer.login, roomId), (data) =>
+          mergeCatchUpHistory(data, page),
         );
         setReadPosition({ id: position || page.items[0]!.id });
       } else page.items.forEach(receive);

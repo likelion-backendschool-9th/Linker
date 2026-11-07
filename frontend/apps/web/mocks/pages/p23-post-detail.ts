@@ -104,7 +104,12 @@ export const routes: MockRoute[] = [
       // Guests and recruiters can read but not react (04 ch. 2)
       likedByMe: viewer.me ? liked.has(item.id) : false,
       // Only the author sees stats links; ?from=share counts as the "external link" source (POL-P-7)
-      trafficSource: query.get('from') === 'share' ? 'EXTERNAL_LINK' : 'DIRECT',
+      trafficSource:
+        query.get('from') === 'share'
+          ? 'EXTERNAL_LINK'
+          : query.get('from') === 'chat_share'
+            ? 'CHAT_SHARE'
+            : 'DIRECT',
       canSendOffer: viewer.role === 'recruiter',
     };
   }),

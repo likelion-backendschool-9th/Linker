@@ -4,6 +4,8 @@
  */
 export const OVERLAY_KEYS = [
   'login',
+  'share',
+  'share-room',
   'report',
   'block',
   'external-link',

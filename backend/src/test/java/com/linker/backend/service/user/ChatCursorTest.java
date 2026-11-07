@@ -64,7 +64,8 @@ class ChatCursorTest {
 				null,
 				null,
 				null,
-				null
+				null,
+				"http://localhost:3000"
 		);
 		AuthenticatedUser user = new AuthenticatedUser(
 				7L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE, null, false, false, true, 1L
