@@ -31,7 +31,8 @@ class GithubServiceTest {
           tokens,
           client,
           mock(GithubTeamSource.class),
-          mock(com.linker.backend.repository.team.TeamRepository.class));
+          mock(com.linker.backend.repository.team.TeamRepository.class),
+          mock(GithubPullRequestService.class));
 
   @Test
   void missingUserTokenIntegrationNeverBecomesASuccess() {

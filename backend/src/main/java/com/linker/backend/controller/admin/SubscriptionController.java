@@ -22,7 +22,8 @@ public class SubscriptionController {
   public SubscriptionController(SubscriptionService subscriptions) { this.subscriptions=subscriptions; }
   @PostMapping("/{paymentId}/refund")
   @Operation(operationId="refundAdminPayment")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=AdminRefundResponse.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="404",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
