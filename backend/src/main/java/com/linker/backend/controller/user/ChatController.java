@@ -26,6 +26,7 @@ import com.linker.backend.service.user.ChatService;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -90,6 +91,7 @@ public class ChatController {
 	@ApiResponse(responseCode = "403", description = "FORBIDDEN (tab not open to recruiters)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	public ResponseEntity<ChatRoomPageResponse> list(
 			@AuthenticationPrincipal AuthenticatedUser user,
+			@Parameter(schema = @Schema(allowableValues = {"TEAM", "DIRECT", "REQUEST"}, defaultValue = "TEAM"))
 			@RequestParam(required = false) String tab,
 			@RequestParam(required = false) String cursor
 	) {
@@ -292,7 +294,7 @@ public class ChatController {
 	@ApiResponse(responseCode = "400", description = "VALIDATION_ERROR (room id)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@ApiResponse(responseCode = "403", description = "SUSPENDED or FORBIDDEN (the requester)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
-	@ApiResponse(responseCode = "404", description = "NOT_FOUND", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "404", description = "NOT_FOUND (also while either side blocks the other)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@ApiResponse(responseCode = "409", description = "STATE_CONFLICT (already handled or expired)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	public ResponseEntity<AcceptChatRequestResponse> accept(
 			@AuthenticationPrincipal AuthenticatedUser user,

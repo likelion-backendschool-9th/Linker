@@ -214,11 +214,11 @@ Keep the existing Compose/Nginx/deployment setup. The proxy routes `/api/v1/` to
 Implementation notes as of this document (not rules; re-check against code):
 - Session cookies use RS256 JWTs. `user.GithubController`/`user.GithubService` exist for the documented installation spike. Role notification services stay internal.
 - GitHub: the HTTP adapter needs no ambient DB transaction, webhook outcomes use short transactions, and duplicate dispatch uses a PostgreSQL session advisory lock. See [GitHub App operations](../operations/06-github-app.md) for token integration and live-spike prerequisites.
-- Chat reads (page 16): list, unread summary, request accept/delete use the chat tables.
+- Chat reads (page 16): list, unread summary, request accept/delete use the chat tables. Team rows take the name and photo from `teams`. Accept is 404 while either side blocks, and block/unblock publish `CHAT_ROOMS_CHANGED` to both users after commit when they share a 1:1 room.
 - Chat send (page 17): a text send stores a TEXT row, updates the same-room last-message pointer, and publishes `{event:"MESSAGE",message}` on the room topic only after commit. A broker receipt is not the save acknowledgement.
 - A replay of a stored client id publishes `{type:"CHAT_SEND_ACCEPTED"}` only on that sender's user queue.
 - History GET applies the free-team 60-day window because no Flex entitlement exists (`flexSupported: false`).
-- Team send stays rejected until team status exists; team titles, room info and team-owner deletion of another person's message stay closed because `teams` and `team_members` do not exist.
+- Team send stays rejected until team status exists; room info and team-owner deletion of another person's message stay closed because `teams` and `team_members` do not exist.
 - New block periods and chat text timestamps use the application clock truncated to microseconds.
 - Reconnect uses `after`, which returns only newer ids and does not recover an older edit or delete.
 - Author TEXT edit and soft delete, team unread members, and the caller's mute flag are implemented. The room topic also carries `EDIT`, `DELETE`, `READ`; other topic events are dropped. Transcript frames are replaced with the current safe row at delivery, and the client ignores an older snapshot arriving after a newer edit, delete or hide.

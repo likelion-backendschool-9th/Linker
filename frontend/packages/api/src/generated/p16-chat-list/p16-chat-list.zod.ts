@@ -12,41 +12,43 @@ export const AcceptChatRequestParams = zod.object({
 })
 
 export const AcceptChatRequestResponse = zod.object({
-  "roomId": zod.int().optional()
+  "roomId": zod.int()
 })
 
+export const listChatRoomsQueryTabDefault = `TEAM`;
+
 export const ListChatRoomsQueryParams = zod.object({
-  "tab": zod.string().optional(),
+  "tab": zod.enum(['TEAM', 'DIRECT', 'REQUEST']).default(listChatRoomsQueryTabDefault),
   "cursor": zod.string().optional()
 })
 
 export const ListChatRoomsResponse = zod.object({
   "items": zod.array(zod.object({
-  "id": zod.int().optional(),
-  "kind": zod.string().optional(),
-  "title": zod.string().optional(),
+  "id": zod.int(),
+  "kind": zod.enum(['TEAM', 'DIRECT', 'REQUEST']),
+  "title": zod.string().nullable().describe('TEAM: team name. 1:1: counterpart name'),
   "counterpart": zod.object({
-  "avatarUrl": zod.string().optional()
-}).optional(),
-  "requestKind": zod.string().optional(),
-  "requestDirection": zod.string().optional(),
-  "companyName": zod.string().optional(),
-  "muted": zod.boolean().optional(),
-  "unreadCount": zod.int().optional(),
+  "avatarUrl": zod.string().nullable().describe('1:1: counterpart avatar (null when withdrawn). TEAM: team photo')
+}).nullable(),
+  "requestKind": zod.union([zod.literal('GENERAL'),zod.literal('RECRUITING'),zod.literal(null)]).nullable(),
+  "requestDirection": zod.union([zod.literal('SENT'),zod.literal('RECEIVED'),zod.literal(null)]).nullable(),
+  "companyName": zod.string().nullable().describe('[Included] recruiting offer company; always null for now'),
+  "muted": zod.boolean(),
+  "unreadCount": zod.int(),
   "lastMessage": zod.object({
-  "text": zod.string().optional(),
-  "createdAt": zod.iso.datetime({"offset":true}).optional()
-}).optional()
-})).optional(),
-  "nextCursor": zod.string().optional()
+  "text": zod.string().nullable().describe('Preview text; null for an image-only message'),
+  "createdAt": zod.iso.datetime({"offset":true})
+}).nullable().describe('null when the room has no visible message')
+})),
+  "nextCursor": zod.string().nullable()
 })
 
 export const UnreadChatSummaryResponse = zod.object({
-  "TEAM": zod.int().optional(),
-  "DIRECT": zod.int().optional(),
-  "REQUEST": zod.int().optional(),
-  "requestCount": zod.int().optional(),
-  "total": zod.int().optional()
+  "TEAM": zod.int(),
+  "DIRECT": zod.int(),
+  "REQUEST": zod.int(),
+  "requestCount": zod.int().describe('Received, unexpired requests'),
+  "total": zod.int()
 })
 
 export const DeleteChatRequestParams = zod.object({

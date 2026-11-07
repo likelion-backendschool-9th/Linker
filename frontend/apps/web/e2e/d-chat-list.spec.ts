@@ -38,13 +38,14 @@ test('developers switch tabs, open a room and come back on a phone-sized screen'
   await expect(page.getByRole('region', { name: '팀 채팅 목록' })).toBeVisible();
 });
 
-test('a received request can be accepted from the list', async ({ page }) => {
+test('accepting a received request opens the conversation', async ({ page }) => {
   await role(page, 'developer');
   await page.goto('/chats?tab=REQUEST');
   const accept = page.getByRole('button', { name: /요청 수락/ }).first();
   await expect(accept).toBeVisible();
   await accept.click();
   await expect(page.getByText('메시지 요청을 수락했어요.', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/chats\/\d+$/);
 });
 
 test('recruiters only get the personal tab, even from a TEAM URL', async ({ page }) => {

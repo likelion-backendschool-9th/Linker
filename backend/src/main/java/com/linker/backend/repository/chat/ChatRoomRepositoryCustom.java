@@ -42,7 +42,9 @@ public interface ChatRoomRepositoryCustom {
 			String avatarUrl,
 			String displayName,
 			String username,
-			String counterpartStatus
+			String counterpartStatus,
+			String teamName,
+			String teamAvatarUrl
 	) {
 	}
 

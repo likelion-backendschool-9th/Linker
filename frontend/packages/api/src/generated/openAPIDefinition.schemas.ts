@@ -5,7 +5,7 @@
  * OpenAPI spec version: v0
  */
 export interface AcceptChatRequestResponse {
-  roomId?: number;
+  roomId: number;
 }
 
 export type ApiErrorBodyDetail = {[key: string]: unknown};
@@ -103,30 +103,85 @@ export interface ChatRoomInfoResponse {
 }
 
 export interface ChatCounterpartResponse {
-  avatarUrl?: string;
+  /**
+     * 1:1: counterpart avatar (null when withdrawn). TEAM: team photo
+     * @nullable
+     */
+  avatarUrl: string | null;
 }
 
 export interface ChatLastMessageResponse {
-  text?: string;
-  createdAt?: string;
+  /**
+     * Preview text; null for an image-only message
+     * @nullable
+     */
+  text: string | null;
+  createdAt: string;
 }
 
+export type ChatRoomItemResponseKind = typeof ChatRoomItemResponseKind[keyof typeof ChatRoomItemResponseKind];
+
+
+export const ChatRoomItemResponseKind = {
+  TEAM: 'TEAM',
+  DIRECT: 'DIRECT',
+  REQUEST: 'REQUEST',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ChatRoomItemResponseRequestKind = typeof ChatRoomItemResponseRequestKind[keyof typeof ChatRoomItemResponseRequestKind] | null;
+
+
+export const ChatRoomItemResponseRequestKind = {
+  GENERAL: 'GENERAL',
+  RECRUITING: 'RECRUITING',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ChatRoomItemResponseRequestDirection = typeof ChatRoomItemResponseRequestDirection[keyof typeof ChatRoomItemResponseRequestDirection] | null;
+
+
+export const ChatRoomItemResponseRequestDirection = {
+  SENT: 'SENT',
+  RECEIVED: 'RECEIVED',
+} as const;
+
 export interface ChatRoomItemResponse {
-  id?: number;
-  kind?: string;
-  title?: string;
-  counterpart?: ChatCounterpartResponse;
-  requestKind?: string;
-  requestDirection?: string;
-  companyName?: string;
-  muted?: boolean;
-  unreadCount?: number;
-  lastMessage?: ChatLastMessageResponse;
+  id: number;
+  kind: ChatRoomItemResponseKind;
+  /**
+     * TEAM: team name. 1:1: counterpart name
+     * @nullable
+     */
+  title: string | null;
+  /** @nullable */
+  counterpart: ChatCounterpartResponse | null;
+  /** @nullable */
+  requestKind: ChatRoomItemResponseRequestKind;
+  /** @nullable */
+  requestDirection: ChatRoomItemResponseRequestDirection;
+  /**
+     * [Included] recruiting offer company; always null for now
+     * @nullable
+     */
+  companyName: string | null;
+  muted: boolean;
+  unreadCount: number;
+  /**
+     * null when the room has no visible message
+     * @nullable
+     */
+  lastMessage: ChatLastMessageResponse | null;
 }
 
 export interface ChatRoomPageResponse {
-  items?: ChatRoomItemResponse[];
-  nextCursor?: string;
+  items: ChatRoomItemResponse[];
+  /** @nullable */
+  nextCursor: string | null;
 }
 
 export interface CompleteTeamSetupRequest {
@@ -1216,11 +1271,12 @@ export interface UnreadMembersResponse {
 }
 
 export interface UnreadSummaryResponse {
-  TEAM?: number;
-  DIRECT?: number;
-  REQUEST?: number;
-  requestCount?: number;
-  total?: number;
+  TEAM: number;
+  DIRECT: number;
+  REQUEST: number;
+  /** Received, unexpired requests */
+  requestCount: number;
+  total: number;
 }
 
 export interface UpdateChatNotificationRequest {
@@ -1330,9 +1386,18 @@ cursor?: string;
 };
 
 export type ListChatRoomsParams = {
-tab?: string;
+tab?: ListChatRoomsTab;
 cursor?: string;
 };
+
+export type ListChatRoomsTab = typeof ListChatRoomsTab[keyof typeof ListChatRoomsTab];
+
+
+export const ListChatRoomsTab = {
+  TEAM: 'TEAM',
+  DIRECT: 'DIRECT',
+  REQUEST: 'REQUEST',
+} as const;
 
 export type ListChatMessagesParams = {
 before?: number;
