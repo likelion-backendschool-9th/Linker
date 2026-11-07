@@ -65,6 +65,8 @@ public final class PlanLimits {
 	public static final int APPLICATION_EXPIRE_DAYS = 14;
 	/** Policy ch. 11 — free team member cap (Flex unlimited later). */
 	public static final int TEAM_MEMBERS_FREE = 6;
+	/** Policy ch. 6 — deleted teams keep chat for this many days before removal. */
+	public static final int TEAM_DELETED_CHAT_RETENTION_DAYS = 30;
 	/** POL-P-2 / ch. 2 — project post writes and photo caps. */
 	public static final int POSTS_PER_DAY = 10;
 	public static final int POSTS_PER_DAY_WINDOW_SECONDS = 86_400;

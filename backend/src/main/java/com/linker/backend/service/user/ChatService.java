@@ -555,7 +555,7 @@ public class ChatService {
 
 	@Transactional
 	public ChatMessageResponse shareCard(AuthenticatedUser principal, long roomId, ShareChatCardRequest request) {
-		Participant participant = requireParticipant(principal, roomId);
+		Participant participant = requireWritableParticipant(principal, roomId);
 		if (request == null || request.targetType() == null || request.targetId() == null
 				|| request.targetId() < 1 || request.clientMessageId() == null
 				|| !canonicalUuid(request.clientMessageId())) {
@@ -606,7 +606,7 @@ public class ChatService {
 
 	@Transactional
 	public ChatMessageResponse edit(AuthenticatedUser principal, long roomId, long messageId, EditChatMessageRequest request) {
-		Participant participant = requireParticipant(principal, roomId);
+		Participant participant = requireWritableParticipant(principal, roomId);
 		ChatMessage message = lockVisible(participant, roomId, messageId);
 		if (message.getMessageType() != MessageType.TEXT || !participant.account().getId().equals(message.getSenderId())) {
 			throw new ApiException(403, "FORBIDDEN", "메시지를 수정할 수 없어요");
@@ -634,7 +634,7 @@ public class ChatService {
 
 	@Transactional
 	public void deleteMessage(AuthenticatedUser principal, long roomId, long messageId) {
-		Participant participant = requireParticipant(principal, roomId);
+		Participant participant = requireWritableParticipant(principal, roomId);
 		ChatMessage message = lockVisible(participant, roomId, messageId);
 		ChatRoom room = participant.member().getRoom();
 		boolean canModerate = room.getRoomType() == RoomType.TEAM
@@ -939,6 +939,16 @@ public class ChatService {
 			Long retryAfterSeconds
 	) {
 		events.publishEvent(new ChatSendRejected(userId, roomId, clientMessageId, code, message, retryable, retryAfterSeconds));
+	}
+
+	private Participant requireWritableParticipant(AuthenticatedUser principal, long roomId) {
+		Participant participant = requireParticipant(principal, roomId);
+		ChatRoom room = participant.member().getRoom();
+		if (room.getRoomType() == RoomType.TEAM
+				&& (room.getTeamId() == null || !teamChat.writableBy(principal.userId(), room.getTeamId()))) {
+			throw new ApiException(403, "FORBIDDEN", "팀 채팅을 변경할 수 없어요");
+		}
+		return participant;
 	}
 
 	private Participant requireParticipant(AuthenticatedUser principal, long roomId) {

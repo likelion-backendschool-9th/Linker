@@ -441,6 +441,22 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
   }
 
   @Override
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void purgeDeletedTeamChat(long teamId) {
+    String rooms = "select r.id from ChatRoom r where r.teamId=:p0 and r.roomType='TEAM'";
+    String messages = "select m.id from ChatMessage m where m.room.id in (" + rooms + ")";
+    // Clear circular transcript/read pointers before deleting children. Moderation evidence is a
+    // separate immutable snapshot and is deliberately retained, as are uploaded file records.
+    bulk("update ChatRoom r set r.lastMessageId=null,r.lastMessageAt=null where r.id in (" + rooms + ")", teamId);
+    bulk("update ChatRoomMember m set m.lastReadMessageId=null where m.room.id in (" + rooms + ")", teamId);
+    bulk("delete from ChatMessageMention m where m.message.id in (" + messages + ")", teamId);
+    bulk("delete from ChatMessageImage m where m.message.id in (" + messages + ")", teamId);
+    bulk("delete from ChatMessage m where m.room.id in (" + rooms + ")", teamId);
+    bulk("delete from ChatRoomMember m where m.room.id in (" + rooms + ")", teamId);
+    bulk("delete from ChatRoom r where r.teamId=:p0 and r.roomType='TEAM'", teamId);
+  }
+
+  @Override
   public boolean isActiveUser(long userId) {
     return q(
                 "select count(u) from User u where u.id=:p0 and u.status='ACTIVE' and u.deletedAt"

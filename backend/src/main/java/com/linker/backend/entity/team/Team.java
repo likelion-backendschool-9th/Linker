@@ -106,6 +106,21 @@ public class Team {
 		return name;
 	}
 
+	public void changeInfo(String name, String description) {
+		this.name = name;
+		this.description = description;
+	}
+
+	public void archive(Instant now) {
+		this.status = TeamStatus.ARCHIVED;
+		this.archivedAt = now;
+	}
+
+	public void scheduleDeletion(Instant chatDeletionAt) {
+		this.status = TeamStatus.DELETED;
+		this.deleteScheduledAt = chatDeletionAt;
+	}
+
 	public String getDescription() {
 		return description;
 	}

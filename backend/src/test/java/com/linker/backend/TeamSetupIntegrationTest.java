@@ -89,6 +89,8 @@ class TeamSetupIntegrationTest {
   @Autowired jakarta.persistence.EntityManager entityManager;
   @Autowired GithubWebhookService webhooks;
   @Autowired GithubWebhookDeliveryRepository deliveries;
+  // Provider/delivery workers are not the subject of this B setup test's TRUNCATE fixtures.
+  @MockitoBean com.linker.backend.async.notification.NotificationDeliveryService notificationDelivery;
   @MockitoBean GithubAppClient app;
   @MockitoBean GithubUserAccessTokenSource tokens;
   @MockitoBean GithubTeamSource github;
