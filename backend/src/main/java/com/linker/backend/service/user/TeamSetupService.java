@@ -185,7 +185,14 @@ public class TeamSetupService {
                       status == null
                           ? List.of()
                           : status.options().stream()
-                              .map(o -> new TeamSetupResponse.Option(o.id(), o.name()))
+                              .map(
+                                  o ->
+                                      new TeamSetupResponse.Option(
+                                          o.id(),
+                                          o.name(),
+                                          com.linker.backend.entity.team.type.BoardStatusColor
+                                              .parse(o.color())
+                                              .name()))
                               .toList());
                 })
             .toList());

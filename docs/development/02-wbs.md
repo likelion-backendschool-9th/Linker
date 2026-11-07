@@ -274,8 +274,8 @@
 | 08 | B | POST | `/api/v1/user/teams` | Create team + team chat room + register owner | user · developers only |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on | team OWNER |
 | 08 | B | PUT | `/api/v1/user/teams/{teamId}/setup/repos` | Set initial linked repos | team OWNER |
-| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns) | team OWNER/ADMIN |
-| 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields) or use existing board + status mapping | team OWNER/ADMIN |
+| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns, Status option `id`/`name`/`color` enum) | team OWNER/ADMIN |
+| 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields; fixed colors Todo=GRAY / In Progress=BLUE / Blocked=RED / Done=GREEN) or use existing board + status mapping; persist each option's GitHub `color` on `board_status_mappings` | team OWNER/ADMIN |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/permission-check` | Whether org base repo permission is read | team OWNER |
 | 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/complete` | Queue first full sync (issues, PRs, org members) | team OWNER |
 | 09 | B | GET | `/api/v1/user/teams/{teamId}/settings` | Team info, my role, which buttons are allowed, plan, board | team MEMBER |

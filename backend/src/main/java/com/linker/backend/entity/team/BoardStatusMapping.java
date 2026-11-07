@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import com.linker.backend.entity.team.type.BoardStatus;
+import com.linker.backend.entity.team.type.BoardStatusColor;
 
 /** Maps the existing ERD table promoted by V20; internal and GitHub identifiers remain distinct. */
 @Entity
@@ -36,6 +37,11 @@ public class BoardStatusMapping {
 	@Column(nullable = false, length = 32)
 	private BoardStatus linkerStatus;
 
+	/** GitHub Status option color enum; captured at board link (V25). */
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 16)
+	private BoardStatusColor color;
+
 	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
@@ -47,12 +53,18 @@ public class BoardStatusMapping {
 	protected BoardStatusMapping() {
 	}
 
-	public static BoardStatusMapping map(long boardId, String optionId, String optionName, BoardStatus status) {
+	public static BoardStatusMapping map(
+			long boardId,
+			String optionId,
+			String optionName,
+			BoardStatus status,
+			BoardStatusColor color) {
 		BoardStatusMapping mapping = new BoardStatusMapping();
 		mapping.boardId = boardId;
 		mapping.githubOptionId = optionId;
 		mapping.githubOptionName = optionName;
 		mapping.linkerStatus = status;
+		mapping.color = color == null ? BoardStatusColor.GRAY : color;
 		return mapping;
 	}
 
@@ -74,6 +86,10 @@ public class BoardStatusMapping {
 
 	public BoardStatus getLinkerStatus() {
 		return linkerStatus;
+	}
+
+	public BoardStatusColor getColor() {
+		return color;
 	}
 
 	public Instant getCreatedAt() {
