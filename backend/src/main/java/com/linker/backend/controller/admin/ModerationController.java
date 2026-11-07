@@ -98,7 +98,8 @@ public class ModerationController {
   @GetMapping("/users")
   @Tag(name="p26-admin-users")
   @Operation(operationId="listAdminUsers")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=AdminUsersResponse.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="404",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
@@ -113,7 +114,8 @@ public class ModerationController {
   @GetMapping("/users/{userId}")
   @Tag(name="p26-admin-users")
   @Operation(operationId="getAdminUser")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=AdminUsersResponse.Detail.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="404",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
@@ -125,7 +127,8 @@ public class ModerationController {
   @PostMapping("/users/{userId}/sanctions")
   @Tag(name="p26-admin-users")
   @Operation(operationId="sanctionAdminUser")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=AdminUsersResponse.SanctionView.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="404",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
@@ -138,7 +141,8 @@ public class ModerationController {
   @DeleteMapping("/users/{userId}/sanctions/{sanctionId}")
   @Tag(name="p26-admin-users")
   @Operation(operationId="liftAdminUserSanction")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="204",description="No Content",content=@Content),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="404",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
@@ -151,7 +155,8 @@ public class ModerationController {
   @PostMapping("/users/{userId}/email-reveal")
   @Tag(name="p26-admin-users")
   @Operation(operationId="revealAdminUserEmail")
-  @ApiResponses({@ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
+  @ApiResponses({@ApiResponse(responseCode="200",content=@Content(schema=@Schema(implementation=AdminUsersResponse.RevealedEmail.class))),
+      @ApiResponse(responseCode="400",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="401",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="403",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),
       @ApiResponse(responseCode="404",content=@Content(schema=@Schema(implementation=ApiErrorBody.class))),

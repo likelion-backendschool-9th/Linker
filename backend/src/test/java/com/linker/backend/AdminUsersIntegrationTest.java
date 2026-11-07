@@ -221,6 +221,17 @@ class AdminUsersIntegrationTest {
       assertThat(sanctions.findByUser_IdOrderByIdDesc(target.getId())).hasSize(1);
     }
   }
+  @Test void openApiKeepsMemberListDetailAndEmailSchemasDistinct() throws Exception {
+    var result=mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+    var api=json.readTree(result.getResponse().getContentAsString());
+    var schemas=api.path("components").path("schemas");
+    assertThat(schemas.path("AdminUsersResponse").path("properties").path("items").path("items").path("$ref").asText())
+        .endsWith("/AdminUserListItem");
+    assertThat(schemas.path("AdminUserDetail").path("properties").has("payments")).isTrue();
+    assertThat(schemas.path("AdminUserDetail").path("properties").has("email")).isFalse();
+    assertThat(schemas.path("AdminUserRevealedEmail").path("properties").has("email")).isTrue();
+    assertThat(schemas.path("AdminUserAllowedActions").path("properties").has("liftSanction")).isTrue();
+  }
   private void apply(Cookie actor,String step,int expected) throws Exception {
     mvc.perform(post(path()).cookie(actor).contentType(MediaType.APPLICATION_JSON)
         .content(json.writeValueAsString(java.util.Map.of("step",step,"reason","반복 위반"))))
