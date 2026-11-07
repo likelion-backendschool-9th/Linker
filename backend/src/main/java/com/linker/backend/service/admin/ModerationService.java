@@ -90,6 +90,7 @@ public class ModerationService {
 	private final UserSessionRepository sessions;
 	private final ReportContentEffects content;
 	private final java.time.Clock clock;
+	private final UserAdministrationService administration;
 
 	public ModerationService(
 			ReportCaseRepository cases,
@@ -106,7 +107,7 @@ public class ModerationService {
 			GithubTokenCipher otpSecrets,
 			UserSessionRepository sessions,
 			ReportContentEffects content,
-			java.time.Clock clock) {
+			java.time.Clock clock, UserAdministrationService administration) {
 		this.cases = cases;
 		this.reports = reports;
 		this.snapshots = snapshots;
@@ -122,6 +123,7 @@ public class ModerationService {
 		this.sessions = sessions;
 		this.content = content;
 		this.clock = clock;
+		this.administration = administration;
 	}
 
 	/**
@@ -265,6 +267,7 @@ public class ModerationService {
 		if (request.accept()) {
 			appeal.accept(admin, now);
 			sanction.revoke(now, admin.getId());
+			administration.afterAppealRevoked(sanction);
 			ReportCase row = sanction.getReportCase();
 			if (row != null && row.getStatus() != ReportCaseStatus.PENDING) {
 				content.apply(row.getTargetType(), row.getTargetId(), AdminActionType.RESTORE, now);
@@ -563,4 +566,20 @@ public class ModerationService {
 	private static String escape(String value) {
 		return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
 	}
+  public com.linker.backend.dto.moderation.response.AdminUsersResponse listUsers(AuthenticatedUser actor,
+      String q,String status,String type,Boolean needsReview,Long cursor,int size) {
+    return administration.list(actor,q,status,type,needsReview,cursor,size);
+  }
+  public com.linker.backend.dto.moderation.response.AdminUsersResponse.Detail getUser(AuthenticatedUser actor,long id) {
+    return administration.detail(actor,id);
+  }
+  public com.linker.backend.dto.moderation.response.AdminUsersResponse.SanctionView sanctionUser(AuthenticatedUser actor,long id,
+      com.linker.backend.dto.moderation.request.AccountSanctionRequest request) {
+    return administration.sanction(actor,id,request);
+  }
+  public void liftUserSanction(AuthenticatedUser actor,long id,long sanctionId) { administration.lift(actor,id,sanctionId); }
+  public com.linker.backend.dto.moderation.response.AdminUsersResponse.RevealedEmail revealUserEmail(AuthenticatedUser actor,long id,
+      com.linker.backend.dto.moderation.request.EmailRevealRequest request) { return administration.reveal(actor,id,request); }
+  public void expireUserSanction(long id) { administration.expire(id); }
+
 }

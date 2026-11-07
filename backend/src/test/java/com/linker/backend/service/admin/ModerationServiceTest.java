@@ -163,7 +163,7 @@ class ModerationServiceTest {
 	private ModerationService service() {
 		return new ModerationService(
 				cases, reports, snapshots, sanctions, appeals, actions, admins, users, ads, profiles, notifications,
-				otpSecrets, sessions, content, Clock.fixed(NOW, ZoneOffset.UTC));
+				otpSecrets, sessions, content, Clock.fixed(NOW, ZoneOffset.UTC), org.mockito.Mockito.mock(UserAdministrationService.class));
 	}
 
 	private static Admin operator(long id) {

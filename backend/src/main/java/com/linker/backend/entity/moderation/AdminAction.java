@@ -46,6 +46,10 @@ public class AdminAction {
 	@Column(length = 2000)
 	private String reason;
 
+	@org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+	@Column(columnDefinition = "jsonb")
+	private String metadata;
+
 	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
@@ -77,6 +81,20 @@ public class AdminAction {
 	public AdminActionType getAction() {
 		return action;
 	}
+
+	public static AdminAction record(Admin admin, AdminActionType action, String targetType,
+			Long targetId, ReportCase reportCase, String reason, String metadata) {
+		AdminAction row = record(admin,action,targetType,targetId,reportCase,reason);
+		row.metadata = metadata;
+		return row;
+	}
+
+	public Long getId() { return id; }
+	public Admin getAdmin() { return admin; }
+	public String getTargetType() { return targetType; }
+	public Long getTargetId() { return targetId; }
+	public String getReason() { return reason; }
+	public String getMetadata() { return metadata; }
 
 	public Instant getCreatedAt() {
 		return createdAt;

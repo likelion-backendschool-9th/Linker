@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface AuthIdentityRepository extends JpaRepository<AuthIdentity, Long> {
 
+	@Query("select i.providerUserId from AuthIdentity i where i.user.id=:userId and i.provider='GITHUB'")
+	Optional<String> findGithubUserId(long userId);
+
 	@Query("""
 			select identity from AuthIdentity identity
 			join fetch identity.user

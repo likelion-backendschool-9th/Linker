@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserSessionRepository extends JpaRepository<UserSession, Long> {
 
+	@Modifying(flushAutomatically = true)
+	@Query("update UserSession s set s.otpVerifiedAt=null, s.operatorSeenAt=null where s.user.id=:userId")
+	void clearOperatorAccess(long userId);
+
 	@Query("""
 			select s from UserSession s
 			join fetch s.user u

@@ -163,6 +163,7 @@ public class AuthService {
 
 	@Transactional
 	public IssuedSession issue(User user, String userAgent, String ip) {
+		user = currentSanctions(user);
 		Instant expiresAt = Instant.now().plus(Duration.ofDays(PlanLimits.SESSION_DAYS));
 		String raw = tokens.sign(claims(user), expiresAt);
 		UserSession session = sessions.save(UserSession.issue(user, hash(raw), trim(userAgent, 512), trim(ip, 64), expiresAt));
@@ -176,7 +177,7 @@ public class AuthService {
 			return Optional.empty();
 		}
 		UserSession session = found.get();
-		User user = session.getUser();
+		User user = currentSanctions(session.getUser());
 		if (user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null) {
 			return Optional.empty();
 		}
@@ -271,6 +272,15 @@ public class AuthService {
 
 	private SessionClaims claims(User user) {
 		return SessionClaims.of(user, adminRegistered(user));
+	}
+
+	private User currentSanctions(User user) {
+		User current = users.lockById(user.getId())
+				.orElseThrow(() -> new ApiException(401, "LOGIN_REQUIRED", "로그인이 필요해요"));
+		Instant now = Instant.now(clock);
+		var state = users.accountSanctionState(current, now);
+		current.reconcileSanctions(state.restricted(), state.until(), state.revokedCurrent(), now);
+		return current;
 	}
 
 	private boolean adminRegistered(User user) {

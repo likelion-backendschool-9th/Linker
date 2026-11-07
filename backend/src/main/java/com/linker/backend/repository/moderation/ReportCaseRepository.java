@@ -18,6 +18,7 @@ public interface ReportCaseRepository extends JpaRepository<ReportCase, Long> {
 	Optional<ReportCase> findByTargetTypeAndTargetIdAndStatus(ReportTargetType targetType, long targetId, ReportCaseStatus status);
 
 	List<ReportCase> findByTargetType(ReportTargetType targetType);
+	List<ReportCase> findByTargetUserIdOrderByIdDesc(long userId, org.springframework.data.domain.Pageable page);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select c from ReportCase c where c.id = :id")

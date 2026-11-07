@@ -96,6 +96,26 @@ public class Sanction {
 		this.reasonDetail = null;
 	}
 
+	public static Sanction account(User user, SanctionType type, Admin admin, Instant start,
+			Instant end, String code, String reason) {
+		Sanction row = issue(user, type, admin, start);
+		row.endsAt = end;
+		row.reasonCode = code;
+		row.reasonDetail = reason;
+		return row;
+	}
+
+	/** Manual lifting keeps the violation history; accepted appeals use revoke instead. */
+	public void lift(Instant when, long adminId) {
+		this.revokedAt = when;
+		this.revokedBy = adminId;
+	}
+
+	public String getReasonCode() { return reasonCode; }
+	public String getReasonDetail() { return reasonDetail; }
+	public Instant getStartsAt() { return startsAt; }
+	public Instant getEndsAt() { return endsAt; }
+
 	public Long getId() {
 		return id;
 	}
