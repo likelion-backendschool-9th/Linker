@@ -62,6 +62,10 @@ class WorkspaceTeamIntegrationTest {
 	@Autowired UserRepository users;
 	@Autowired AuthService sessions;
 	@Autowired ObjectMapper json;
+	// This B read-contract test resets its isolated DB. Delivery has its own integration tests;
+	// do not let the scheduled notification scan race the fixture's TRUNCATE lock order.
+	@org.springframework.test.context.bean.override.mockito.MockitoBean
+	com.linker.backend.async.notification.NotificationDeliveryService notificationDelivery;
 	int org;
 
 	@BeforeEach

@@ -73,6 +73,17 @@ public class TeamMember {
 		return id;
 	}
 
+	public void changeRole(TeamRole role) {
+		this.role = role;
+	}
+
+	public void leave(Instant now, TeamLeaveType reason) {
+		if (this.leftAt == null) {
+			this.leftAt = now;
+			this.leaveType = reason;
+		}
+	}
+
 	public Long getTeamId() {
 		return teamId;
 	}

@@ -16,10 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class TeamService {
   private final TeamRepository teams;
   private final TeamSetupService setup;
+  private final TeamManagementService management;
 
-  public TeamService(TeamRepository teams, TeamSetupService setup) {
+  public TeamService(TeamRepository teams, TeamSetupService setup, TeamManagementService management) {
     this.teams = teams;
     this.setup = setup;
+    this.management = management;
   }
 
   @Transactional(readOnly = true)
@@ -80,5 +82,45 @@ public class TeamService {
 
   public TeamSetupResponse.Complete completeSetup(AuthenticatedUser user, long id, boolean retry) {
     return setup.complete(user, id, retry);
+  }
+
+  public com.linker.backend.dto.team.response.TeamSettingsResponse settings(AuthenticatedUser user, long id) {
+    return management.settings(user, id);
+  }
+
+  public com.linker.backend.dto.team.response.TeamSettingsResponse.Members members(AuthenticatedUser user, long id) {
+    return management.members(user, id);
+  }
+
+  public void update(AuthenticatedUser user, long id, UpdateTeamRequest request) {
+    management.update(user, id, request);
+  }
+
+  public void changeRole(AuthenticatedUser user, long id, long targetId, ChangeTeamRoleRequest request) {
+    management.changeRole(user, id, targetId, request);
+  }
+
+  public void removeMember(AuthenticatedUser user, long id, long targetId) {
+    management.remove(user, id, targetId);
+  }
+
+  public void leave(AuthenticatedUser user, long id) {
+    management.leave(user, id);
+  }
+
+  public void archive(AuthenticatedUser user, long id) {
+    management.archive(user, id);
+  }
+
+  public void delete(AuthenticatedUser user, long id, DeleteTeamRequest request) {
+    management.delete(user, id, request);
+  }
+
+  public void addRepo(AuthenticatedUser user, long id, AddTeamRepoRequest request) {
+    management.addRepo(user, id, request);
+  }
+
+  public void removeRepo(AuthenticatedUser user, long id, long repoId) {
+    management.removeRepo(user, id, repoId);
   }
 }
