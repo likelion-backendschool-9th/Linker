@@ -52,4 +52,14 @@ public interface TeamRepository extends JpaRepository<Team, Long>, TeamRepositor
       order by t.id
       """)
   java.util.List<Long> findPullRequestSyncTeams();
+
+  @Query(
+      "select i from Team t join GithubInstallation i on i.id=t.installationId where t.id=:teamId")
+  Optional<com.linker.backend.entity.github.GithubInstallation> findInstallationForTeam(
+      long teamId);
+
+  /** Read-only teams are included to recover a missed installation unsuspend event. */
+  @Query(
+      "select t.id from Team t where t.status in ('ACTIVE','COMPLETED','READ_ONLY') order by t.id")
+  java.util.List<Long> findLifecycleSyncTeams();
 }

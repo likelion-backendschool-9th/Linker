@@ -16,6 +16,15 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long>, SubscriptionRepositoryCustom {
 
+  /** Batch form of the existing hasFlexBenefit predicate; no Pro/Scout policy is substituted. */
+  @Query(
+      """
+      select s.teamId from Subscription s where s.plan='FLEX' and s.teamId in :teamIds
+        and ((s.status in ('ACTIVE','TRIALING') and s.currentPeriodEnd>:now)
+          or (s.status='PAST_DUE' and s.graceUntil>:now))
+      """)
+  List<Long> findTeamsWithFlexBenefit(Collection<Long> teamIds, Instant now);
+
 	@Query("select s from Subscription s where s.userId=:userId or s.payerUserId=:userId order by s.id desc")
 	List<Subscription> findAdministrationHistory(long userId, Pageable page);
 

@@ -168,9 +168,9 @@ function WorkspaceTeamCard({ team }: { team: MyTeam }) {
           <Users size={48} aria-hidden className={styles.avatar} />
         )}
         <div className={styles.body}>
-          <h4 id={`team-${team.id}`} className={styles.cardTitle}>
+          <h3 id={`team-${team.id}`} className={styles.cardTitle}>
             {team.name}
-          </h4>
+          </h3>
           <span className={styles.meta}>
             {team.myRole === 'OWNER' ? '오너' : team.myRole === 'ADMIN' ? '관리자' : '멤버'}
           </span>
