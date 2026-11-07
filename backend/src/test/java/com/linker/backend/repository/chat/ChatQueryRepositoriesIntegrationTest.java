@@ -230,7 +230,9 @@ class ChatQueryRepositoriesIntegrationTest {
 	void postCardResolvesFirstImageAndHidesUnavailableOrBlockedPosts() {
 		User viewer = user("card-viewer");
 		User author = user("card-author");
-		long visible = post(author, repo(), "보이는 글", "VISIBLE", false);
+		long repoId = repo();
+		String repoName = jdbc.queryForObject("select full_name from github_repos where id = ?", String.class, repoId);
+		long visible = post(author, repoId, "보이는 글", "VISIBLE", false);
 		long hidden = post(author, repo(), "숨김 글", "HIDDEN", false);
 		long deleted = post(author, repo(), "삭제 글", "VISIBLE", true);
 		image(visible, "post_images", "post_id", file(author, "https://cdn.example/second.png"), 2);
@@ -238,7 +240,7 @@ class ChatQueryRepositoriesIntegrationTest {
 
 		ChatShareCardResponse card = resolve(viewer, "POST", visible);
 		assertThat(card).isEqualTo(new ChatShareCardResponse(
-				"POST", visible, "보이는 글", null, "https://cdn.example/first.png",
+				"POST", visible, repoName, "보이는 글 · " + author.getUsername(), "https://cdn.example/first.png",
 				"/posts/" + visible + "?from=chat_share", true));
 		assertThat(resolve(viewer, "POST", hidden)).isEqualTo(ChatShareCardResponse.unavailable("POST", hidden));
 		assertThat(resolve(viewer, "POST", deleted)).isEqualTo(ChatShareCardResponse.unavailable("POST", deleted));
@@ -272,13 +274,13 @@ class ChatQueryRepositoriesIntegrationTest {
 		long hidden = recruitPost(author, "숨김", "x", "HIDDEN", false);
 
 		assertThat(resolve(viewer, "RECRUIT_POST", recruit)).isEqualTo(new ChatShareCardResponse(
-				"RECRUIT_POST", recruit, "팀원 구해요", "함께해요", null,
+				"RECRUIT_POST", recruit, "팀원 구해요", jdbc.queryForObject("select deadline from recruit_posts where id = ?", java.time.LocalDate.class, recruit) + " 마감", null,
 				"/recruits/" + recruit + "?from=chat_share", true));
 		assertThat(resolve(viewer, "RECRUIT_POST", hidden).available()).isFalse();
 
 		assertThat(resolve(viewer, "PROFILE", author.getId())).isEqualTo(new ChatShareCardResponse(
 				"PROFILE", author.getId(), "작성자", "@" + author.getUsername(), null,
-				"/users/" + author.getUsername(), true));
+				"/user/" + author.getUsername(), true));
 		User noName = user("card3-noname");
 		assertThat(resolve(viewer, "PROFILE", noName.getId()).title()).isEqualTo(noName.getUsername());
 
@@ -292,6 +294,28 @@ class ChatQueryRepositoriesIntegrationTest {
 	}
 
 	// ---- recruiting offers -----------------------------------------------------------
+
+	@Test
+	void cardDetailsTrackPrivateReposRemainingRecruitRolesAndOrderedTechTags() {
+		User viewer = user("detail-viewer");
+		User author = named("detail-author", "공유 작성자");
+		long repoId = repo();
+		long postId = post(author, repoId, "프로젝트 소개", "VISIBLE", false);
+		jdbc.update("update github_repos set is_private=true where id=?", repoId);
+		assertThat(resolve(viewer, "POST", postId).title()).isEqualTo("레포를 볼 수 없음");
+		assertThat(resolve(viewer, "POST", postId).summary()).isEqualTo("프로젝트 소개 · 공유 작성자");
+		long recruit = recruitPost(author, "팀 모집", "상세 본문", "VISIBLE", false);
+		jdbc.update("insert into recruit_roles(recruit_post_id,role,headcount,accepted_count,created_at,updated_at) values (?,'BACKEND',3,1,now(),now())", recruit);
+		assertThat(resolve(viewer, "RECRUIT_POST", recruit).summary()).contains("백엔드 2명", "마감");
+		jdbc.update("update recruit_roles set accepted_count=3 where recruit_post_id=?", recruit);
+		jdbc.update("update recruit_posts set status='CLOSED',closed_at=now() where id=?", recruit);
+		assertThat(resolve(viewer, "RECRUIT_POST", recruit).summary()).contains("백엔드 0명", "모집 마감");
+		String first = "CardA-" + System.nanoTime();
+		String second = "CardB-" + System.nanoTime();
+		userTag(author, tag(second, 20));
+		userTag(author, tag(first, 10));
+		assertThat(resolve(viewer, "PROFILE", author.getId()).summary()).isEqualTo("@" + author.getUsername() + " · " + first + ", " + second);
+	}
 
 	@Test
 	void offersListNewestFirstWithFirstTextMessageAndTopThreeTags() {

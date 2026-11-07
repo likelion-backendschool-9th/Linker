@@ -1,0 +1,45 @@
+.card {
+  display: grid;
+  min-width: 0;
+  margin-top: var(--space-xs);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-canvas);
+  color: var(--color-text-body);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.image {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+}
+.image img {
+  object-fit: cover;
+}
+.body {
+  display: grid;
+  gap: var(--space-xxs);
+  padding: var(--space-sm);
+  min-height: var(--touch-target-min);
+}
+.label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+.title {
+  color: var(--color-text-title);
+  font-weight: var(--font-weight-semibold);
+}
+.summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: var(--font-size-caption);
+}
+.unavailable {
+  margin-block: var(--space-xs);
+  color: inherit;
+}

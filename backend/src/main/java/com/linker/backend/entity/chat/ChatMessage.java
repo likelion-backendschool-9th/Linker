@@ -160,6 +160,11 @@ public class ChatMessage {
 		return payload;
 	}
 
+	/** Only source references belong here; card content is resolved for the reader. */
+	public void replacePayload(String payload) {
+		this.payload = payload;
+	}
+
 	public MessageType getMessageType() {
 		return messageType;
 	}

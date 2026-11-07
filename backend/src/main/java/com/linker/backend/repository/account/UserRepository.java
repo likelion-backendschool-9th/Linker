@@ -13,6 +13,11 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+	/** Serialize share-card retries across rooms for the same sender/clientMessageId. */
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select u from User u where u.id = :userId and u.status = 'ACTIVE' and u.deletedAt is null")
+	Optional<User> lockActiveAccount(long userId);
+
 	/** Serialize team creates for one account, including requests for different organizations. */
 	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
 	@Query("""

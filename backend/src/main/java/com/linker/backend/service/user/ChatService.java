@@ -1,19 +1,25 @@
 package com.linker.backend.service.user;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.linker.backend.dto.chat.event.ChatMessageReady;
@@ -39,6 +45,8 @@ import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
+import com.linker.backend.dto.chat.response.ChatShareCardResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
@@ -78,6 +86,7 @@ import com.linker.backend.repository.team.TeamMemberRepository;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -86,12 +95,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.user.ChatController}.
- * Page 16 reads chat rows. Page 17 stores DIRECT text and chat images, opens DIRECT and request rooms,
- * and handles the caller's own edit, delete, read, and mute.
- * Team room info and deleting someone else's message stay closed until a real team role source exists.
+ * Page 16 reads chat rows. Page 17 stores messages, images and source-only share/link cards, opens
+ * DIRECT/request rooms, and handles edit, delete, read and mute with current account/team access.
  */
 @Service("userChatService")
 public class ChatService {
@@ -132,6 +141,10 @@ public class ChatService {
 	private final ChatMessageMentionRepository mentions;
 	private final FollowRepository follows;
 	private final TeamMemberRepository teamMembers;
+	private final Set<String> linkerOrigins;
+	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+	private static final Pattern LINK_URL = Pattern.compile("https?://[^\\s<>\"']+", Pattern.CASE_INSENSITIVE);
+	private static final Pattern LINK_PATH = Pattern.compile("^/(posts|recruits|user)/([A-Za-z0-9-]+)/?$");
 
 	public ChatService(
 			ChatRoomAccess chatRooms,
@@ -150,7 +163,8 @@ public class ChatService {
 			TeamChatAccess teamChat,
 			ChatMessageMentionRepository mentions,
 			FollowRepository follows,
-			TeamMemberRepository teamMembers
+			TeamMemberRepository teamMembers,
+			@Value("${linker.chat.public-origins:http://localhost:3000}") String publicOrigins
 	) {
 		this.chatRooms = chatRooms;
 		this.rooms = rooms;
@@ -169,6 +183,8 @@ public class ChatService {
 		this.mentions = mentions;
 		this.follows = follows;
 		this.teamMembers = teamMembers;
+		this.linkerOrigins = Arrays.stream(publicOrigins.split(",")).map(String::strip).filter(s -> !s.isEmpty())
+				.map(s -> origin(URI.create(s))).filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
 	}
 
 	public void sendMessage(long userId, long roomId, Map<String, Object> payload) {
@@ -553,33 +569,64 @@ public class ChatService {
 		);
 	}
 
+	@Transactional(readOnly = true)
+	public ChatShareTargetsResponse shareTargets(AuthenticatedUser principal, String search) {
+		User account = requireReaderAccount(principal);
+		return new ChatShareTargetsResponse(rooms.shareTargets(account.getId(), account.getUserType() == UserType.DEVELOPER,
+				search == null ? "" : search.strip()));
+	}
+
 	@Transactional
 	public ChatMessageResponse shareCard(AuthenticatedUser principal, long roomId, ShareChatCardRequest request) {
-		Participant participant = requireWritableParticipant(principal, roomId);
+		User account = requireActive(principal);
+		account = accounts.lockActiveAccount(account.getId())
+				.orElseThrow(() -> new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요"));
+		ChatRoom room = rooms.lockById(roomId).orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		if (members.findActive(roomId, account.getId()).isEmpty()) {
+			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
+		}
+		if (!rooms.shareableBy(account.getId(), account.getUserType() == UserType.DEVELOPER, roomId)) {
+			throw new ApiException(403, "FORBIDDEN", "공유할 수 없는 채팅방이에요");
+		}
 		if (request == null || request.targetType() == null || request.targetId() == null
 				|| request.targetId() < 1 || request.clientMessageId() == null
 				|| !canonicalUuid(request.clientMessageId())) {
 			throw new ApiException(400, "VALIDATION_ERROR", "공유할 대상을 확인해 주세요");
 		}
-		String targetType = request.targetType().trim().toUpperCase();
+		String targetType = request.targetType().trim().toUpperCase(Locale.ROOT);
 		if (!Set.of("POST", "RECRUIT_POST", "PROFILE").contains(targetType)) {
 			throw new ApiException(400, "VALIDATION_ERROR", "공유할 대상을 확인해 주세요");
 		}
-		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire("chat.share", participant.account().getId(), PlanLimits.CHAT_SHARES_PER_MINUTE, 1);
-		if (!decision.allowed()) {
-			throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요",
-					Map.of("retryAfterSeconds", decision.retryAfterSeconds()));
+		ChatMessage existing = messages.findBySenderIdAndClientMessageId(account.getId(), request.clientMessageId()).orElse(null);
+		String payload = json.writeValueAsString(Map.of("targetType", targetType, "targetId", request.targetId()));
+		if (existing != null) {
+			if (!existing.getRoom().getId().equals(roomId) || existing.getMessageType() != MessageType.SHARE_CARD
+					|| !json.readTree(payload).equals(json.readTree(existing.getPayload()))) {
+				throw new ApiException(409, "STATE_CONFLICT", "이미 사용한 메시지 식별자예요");
+			}
+			return present(existing, account.getId());
 		}
-		String payload = "{\"targetType\":\"" + targetType + "\",\"targetId\":" + request.targetId() + "}";
-		ChatMessage message = messages.saveAndFlush(ChatMessage.shareCard(participant.member().getRoom(), participant.account().getId(), payload, request.clientMessageId()));
+		acquireShareLimit("chat.share", account.getId(), PlanLimits.CHAT_SHARES_PER_MINUTE, 60);
 		Instant createdAt = DatabaseInstant.now(clock);
+		LocalDate today = LocalDate.ofInstant(createdAt, KST);
+		Duration remaining = Duration.between(createdAt, today.plusDays(1).atStartOfDay(KST).toInstant());
+		// Round up: a fractional second must not expire today's quota before midnight.
+		int seconds = (int) Math.max(1, remaining.getSeconds() + (remaining.getNano() == 0 ? 0 : 1));
+		acquireShareLimit("chat.share.day:" + today, account.getId(), PlanLimits.CHAT_SHARES_PER_DAY, seconds);
+		ChatMessage message = messages.saveAndFlush(ChatMessage.shareCard(room, account.getId(), payload, request.clientMessageId()));
 		messages.assignCreatedAt(message.getId(), createdAt);
 		message.alignCreatedAt(createdAt);
-		participant.member().getRoom().markLastMessage(message.getId(), createdAt);
-		long unread = members.findActiveUserIds(roomId).stream().filter(id -> id != principal.userId()).count();
-		ChatMessageResponse response = toMessage(message, participant.account(), unread, List.of());
+		room.markLastMessage(message.getId(), createdAt);
+		ChatMessageResponse response = present(message, account.getId());
 		events.publishEvent(new ChatMessageReady(roomId, response));
+		for (Long userId : members.findActiveUserIds(roomId)) events.publishEvent(new ChatRoomsChanged(userId, roomId));
 		return response;
+	}
+
+	private void acquireShareLimit(String bucket, long userId, int limit, int seconds) {
+		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire(bucket, userId, limit, seconds);
+		if (!decision.allowed()) throw new ApiException(429, "RATE_LIMITED", "공유 요청이 너무 많아요",
+				Map.of("retryAfterSeconds", decision.retryAfterSeconds()));
 	}
 
 	@Transactional
@@ -626,8 +673,9 @@ public class ChatService {
 			throw new ApiException(409, "STATE_CONFLICT", "메시지를 수정할 수 있는 시간이 지났어요");
 		}
 		message.revise(text, DatabaseInstant.now(clock));
+		message.replacePayload(linkerPayload(text));
 		messages.saveAndFlush(message);
-		ChatMessageResponse response = present(message);
+		ChatMessageResponse response = present(message, participant.account().getId());
 		events.publishEvent(new ChatTranscriptChanged("EDIT", roomId, response));
 		return response;
 	}
@@ -654,7 +702,7 @@ public class ChatService {
 		}
 		message.delete(DatabaseInstant.now(clock));
 		messages.saveAndFlush(message);
-		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message)));
+		events.publishEvent(new ChatTranscriptChanged("DELETE", roomId, present(message, participant.account().getId())));
 	}
 
 	@Transactional(readOnly = true)
@@ -736,7 +784,7 @@ public class ChatService {
 		if (message == null || !message.getRoom().getId().equals(roomId)) {
 			return null;
 		}
-		return present(message);
+		return present(message, viewerId);
 	}
 
 	@Transactional(readOnly = true)
@@ -791,9 +839,11 @@ public class ChatService {
 			return false;
 		}
 		Instant createdAt = DatabaseInstant.now(clock);
-		ChatMessage message = messages.saveAndFlush(command.type() == MessageType.IMAGE
+		ChatMessage candidate = command.type() == MessageType.IMAGE
 				? ChatMessage.clientImage(room, current.getId(), command.clientMessageId())
-				: ChatMessage.clientText(room, current.getId(), command.body(), command.clientMessageId()));
+				: ChatMessage.clientText(room, current.getId(), command.body(), command.clientMessageId());
+		candidate.replacePayload(linkerPayload(command.body()));
+		ChatMessage message = messages.saveAndFlush(candidate);
 		messages.assignCreatedAt(message.getId(), createdAt);
 		message.alignCreatedAt(createdAt);
 		if (!message.getRoom().getId().equals(room.getId())) {
@@ -956,11 +1006,15 @@ public class ChatService {
 	}
 
 	private Participant requireReader(AuthenticatedUser principal, long roomId) {
+		return member(requireReaderAccount(principal), roomId);
+	}
+
+	private User requireReaderAccount(AuthenticatedUser principal) {
 		User account = requireKnown(principal);
 		if (account.getStatus() != UserStatus.ACTIVE && account.getStatus() != UserStatus.SUSPENDED) {
 			throw new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요");
 		}
-		return member(account, roomId);
+		return account;
 	}
 
 	private Participant member(User account, long roomId) {
@@ -1016,7 +1070,7 @@ public class ChatService {
 		}
 	}
 
-	private ChatMessageResponse present(ChatMessage message) {
+	private ChatMessageResponse present(ChatMessage message, long viewerId) {
 		boolean redacted = message.getDeletedAt() != null || message.getVisibility() != MessageVisibility.VISIBLE;
 		String text = message.getDeletedAt() != null
 				? DELETED_PREVIEW
@@ -1036,7 +1090,7 @@ public class ChatService {
 				message.getMessageType().name(),
 				text,
 				redacted ? List.of() : imageLinks.findUrls(message.getId()),
-				null,
+				redacted ? null : cardPayload(viewerId, message.getMessageType().name(), message.getPayload()),
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				message.getDeletedAt(),
@@ -1080,21 +1134,62 @@ public class ChatService {
 	}
 
 	private Object cardPayload(long viewerId, ChatMessageRow row) {
-		if (!"SHARE_CARD".equals(row.type()) || row.payload() == null || row.payload().isBlank()) {
-			return row.payload();
-		}
+		if (row.deletedAt() != null || !"VISIBLE".equals(row.visibility())) return null;
+		return cardPayload(viewerId, row.type(), row.payload());
+	}
+
+	private Object cardPayload(long viewerId, String type, String payloadJson) {
+		if (payloadJson == null || payloadJson.isBlank()) return null;
 		try {
-			JsonNode payload = json.readTree(row.payload());
-			String targetType = payload.path("targetType").asText();
-			long targetId = payload.path("targetId").asLong();
-			if (targetType.isBlank() || targetId < 1) {
-				return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable(targetType, targetId);
+			JsonNode payload = json.readTree(payloadJson);
+			if ("SHARE_CARD".equals(type)) return resolvedCard(viewerId, payload);
+			if (payload instanceof ObjectNode object && object.has("linkerCard")) {
+				object.set("linkerCard", json.valueToTree(resolvedCard(viewerId, object.path("linkerCard"))));
 			}
-			return messages.resolveShareCard(viewerId, targetType, targetId);
+			return payload;
 		}
 		catch (RuntimeException exception) {
-			return com.linker.backend.dto.chat.response.ChatShareCardResponse.unavailable("UNKNOWN", 0);
+			return "SHARE_CARD".equals(type) ? ChatShareCardResponse.unavailable("UNKNOWN", 0) : null;
 		}
+	}
+
+	private ChatShareCardResponse resolvedCard(long viewerId, JsonNode target) {
+		return messages.resolveShareCard(viewerId, target.path("targetType").asText(), target.path("targetId").asLong());
+	}
+
+	private String linkerPayload(String text) {
+		var matcher = LINK_URL.matcher(text == null ? "" : text);
+		while (matcher.find()) {
+			try {
+				URI uri = URI.create(matcher.group().replaceFirst("[.,!?;:)\\]}]+$", ""));
+				String urlOrigin = origin(uri);
+				if (uri.getRawUserInfo() != null || urlOrigin == null || !linkerOrigins.contains(urlOrigin)) continue;
+				var path = LINK_PATH.matcher(uri.getRawPath());
+				if (!path.matches()) continue;
+				String type;
+				long id;
+				if ("user".equals(path.group(1))) {
+					type = "PROFILE";
+					id = accounts.findByUsername(path.group(2)).map(User::getId).orElse(0L);
+				} else {
+					type = "posts".equals(path.group(1)) ? "POST" : "RECRUIT_POST";
+					id = Long.parseLong(path.group(2));
+					if (id < 1) continue;
+				}
+				return json.writeValueAsString(Map.of("linkerCard", Map.of("targetType", type, "targetId", id)));
+			} catch (IllegalArgumentException exception) {
+				// Invalid/oversized URL ids are ordinary message text; inspect the next URL.
+			}
+		}
+		return null;
+	}
+
+	private static String origin(URI uri) {
+		String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+		if (!(scheme.equals("http") || scheme.equals("https")) || uri.getHost() == null) return null;
+		int port = uri.getPort();
+		boolean defaultPort = port < 0 || (scheme.equals("https") && port == 443) || (scheme.equals("http") && port == 80);
+		return scheme + "://" + uri.getHost().toLowerCase(Locale.ROOT) + (defaultPort ? "" : ":" + port);
 	}
 
 	private static SendCommand sendCommand(Map<String, Object> payload) {
