@@ -59,4 +59,59 @@ class SubscriptionRepositoryImpl implements SubscriptionRepositoryCustom {
 				.map(row -> new FlexTeam((Long) row[0], (String) row[1], counts.getOrDefault((Long) row[0], 0L)))
 				.toList();
 	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public com.linker.backend.dto.subscription.response.SubscriptionSchemaView benefitSchema(String schema) {
+		// PostgreSQL catalog inspection keeps the existing missing-table/column fallback. Data reads
+		// below use JPQL; one metadata round trip replaces the old per-column service queries.
+		Object[] row = (Object[]) entityManager.createNativeQuery("""
+				select to_regclass(:tableName) is not null,
+				  (select count(*) = 4 from information_schema.columns
+				   where table_schema=coalesce(cast(:schemaName as text),current_schema()::text)
+				     and table_name='subscriptions'
+				     and column_name in ('user_id','plan','status','current_period_end')),
+				  exists(select 1 from information_schema.columns
+				   where table_schema=coalesce(cast(:schemaName as text),current_schema()::text)
+				     and table_name='subscriptions' and column_name='grace_until')
+				""").setParameter("tableName", schema == null ? "subscriptions" : schema + ".subscriptions")
+				.setParameter("schemaName", schema).getSingleResult();
+		return new com.linker.backend.dto.subscription.response.SubscriptionSchemaView(
+				Boolean.TRUE.equals(row[0]) && Boolean.TRUE.equals(row[1]), Boolean.TRUE.equals(row[2]));
+	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public boolean subscriptionTableExists() {
+		// PostgreSQL metadata; C's readiness contract checks only existence, unlike Pro's columns.
+		return Boolean.TRUE.equals(entityManager.createNativeQuery("select to_regclass('subscriptions') is not null", Boolean.class).getSingleResult());
+	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public boolean hasProBenefit(long userId, java.time.Instant now, boolean graceAvailable) {
+		String grace = graceAvailable ? " or (s.status='PAST_DUE' and s.graceUntil>:now)" : "";
+		return entityManager.createQuery("select count(s)>0 from Subscription s where s.userId=:id and s.plan='PRO'"
+				+ " and ((s.status in ('TRIALING','ACTIVE','PAST_DUE') and s.currentPeriodEnd>:now)" + grace + ")", Boolean.class)
+				.setParameter("id", userId).setParameter("now", now).getSingleResult();
+	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public boolean hasFlexBenefit(long teamId, java.time.Instant now) {
+		return entityManager.createQuery("""
+				select count(s)>0 from Subscription s where s.teamId=:id and s.plan='FLEX'
+				  and ((s.status in ('TRIALING','ACTIVE') and s.currentPeriodEnd>:now)
+				    or (s.status='PAST_DUE' and s.graceUntil>:now))
+				""", Boolean.class).setParameter("id", teamId).setParameter("now", now).getSingleResult();
+	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public boolean hasScoutBenefit(long userId, java.time.Instant now, boolean graceAvailable) {
+		String grace = graceAvailable ? " or s.graceUntil>:now" : "";
+		return entityManager.createQuery("select count(s)>0 from Subscription s where s.userId=:id and s.plan='SCOUT'"
+				+ " and s.status in ('ACTIVE','PAST_DUE') and (s.currentPeriodEnd>:now" + grace + ")", Boolean.class)
+				.setParameter("id", userId).setParameter("now", now).getSingleResult();
+	}
 }
