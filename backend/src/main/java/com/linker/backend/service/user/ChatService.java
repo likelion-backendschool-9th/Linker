@@ -221,6 +221,42 @@ public class ChatService {
 		}
 	}
 
+	/** B's verified webhook consumer joins cache and message writes in one short transaction. */
+	@Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+	public void postPullRequestEvent(com.linker.backend.dto.chat.request.PostPullRequestEventCommand command) {
+		ChatRoom room = rooms.lockTeamRoom(command.teamId())
+				.orElseThrow(() -> new ApiException(409, "STATE_CONFLICT", "팀 채팅방을 확인해 주세요"));
+		String key = command.deliveryKey();
+		if (key == null || !canonicalUuid(key)
+				|| command.event() == null || !Set.of("OPENED", "REVIEW_REQUESTED", "MERGED", "CLOSED").contains(command.event())
+				|| command.repoId() <= 0 || command.githubRepoId() <= 0 || command.githubPrId() <= 0
+				|| command.prNumber() <= 0 || command.title() == null || command.url() == null
+				|| command.repo() == null || command.repo().isBlank())
+			throw new IllegalArgumentException("Invalid internal PR event command");
+		if (messages.containsPullRequestDelivery(room.getId(), key)) return;
+		Map<String, Object> payload = Map.of("prNumber", command.prNumber(), "repo", command.repo(),
+				"event", command.event(), "url", command.url(), "repoId", command.repoId(),
+				"githubRepoId", command.githubRepoId(), "githubPrId", command.githubPrId());
+		String verb = switch (command.event()) {
+			case "OPENED" -> "열렸어요";
+			case "REVIEW_REQUESTED" -> "리뷰가 요청됐어요";
+			case "MERGED" -> "병합됐어요";
+			default -> "닫혔어요";
+		};
+		ChatMessage message = messages.saveAndFlush(ChatMessage.pullRequestEvent(room,
+				"PR #" + command.prNumber() + " \"" + command.title() + "\" · " + verb,
+				json.writeValueAsString(payload), key));
+		Instant now = DatabaseInstant.now(clock);
+		messages.assignCreatedAt(message.getId(), now);
+		message.alignCreatedAt(now);
+		room.markLastMessage(message.getId(), now);
+		events.publishEvent(new ChatMessageReady(room.getId(), new ChatMessageResponse(
+				message.getId(), room.getId(), unreadCount(message), key, null, "PR_EVENT",
+				message.getBody(), List.of(), payload, now, null, null, "VISIBLE")));
+		for (long memberId : members.findActiveUserIds(room.getId()))
+			events.publishEvent(new ChatRoomsChanged(memberId, room.getId()));
+	}
+
 	@Transactional(readOnly = true)
 	public ChatRoomPageResponse list(AuthenticatedUser user, String rawTab, String rawCursor) {
 		String tab = resolveTab(user, rawTab);
