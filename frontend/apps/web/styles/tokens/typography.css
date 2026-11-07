@@ -18,6 +18,7 @@
 
   /* Weight */
   --font-weight-regular: 400; /* body, input values */
+  --font-weight-medium: 500; /* Figma Pretendard Medium, e.g. legal clause title and body */
   --font-weight-semibold: 600; /* section and card titles, buttons */
   --font-weight-bold: 700; /* page title */
 
