@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ReportContentEffectsTest {
@@ -51,12 +52,12 @@ class ReportContentEffectsTest {
 	@Mock
 	private RecruiterAdRepository ads;
 
+	@Mock
+	private org.springframework.context.ApplicationEventPublisher events;
+
 	@Test
 	void hideDeleteAndRestoreAChatMessage() {
-		ChatMessage message = ChatMessage.text(
-				ChatRoom.direct(1L, 2L, DmStatus.ACCEPTED, RequestKind.GENERAL, NOW),
-				1L,
-				"hello");
+		ChatMessage message = message(4L);
 		when(messages.lockById(4L)).thenReturn(Optional.of(message));
 		ReportContentEffects effects = effects();
 
@@ -158,7 +159,15 @@ class ReportContentEffectsTest {
 				.hasMessage("신고 대상을 찾을 수 없어요");
 	}
 
+	static ChatMessage message(long id) {
+		ChatRoom room = ChatRoom.direct(1L, 2L, DmStatus.ACCEPTED, RequestKind.GENERAL, NOW);
+		ReflectionTestUtils.setField(room, "id", 30L);
+		ChatMessage message = ChatMessage.text(room, 1L, "hello");
+		ReflectionTestUtils.setField(message, "id", id);
+		return message;
+	}
+
 	private ReportContentEffects effects() {
-		return new ReportContentEffects(messages, posts, comments, recruitPosts, ads);
+		return new ReportContentEffects(messages, posts, comments, recruitPosts, ads, events);
 	}
 }

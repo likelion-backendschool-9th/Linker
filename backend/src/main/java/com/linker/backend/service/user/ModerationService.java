@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.linker.backend.dto.chat.event.ChatMessageModerated;
 import com.linker.backend.dto.moderation.response.BlockView;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.account.User;
@@ -43,6 +44,7 @@ import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +71,7 @@ public class ModerationService {
 	private final ChatMessageRepository messages;
 	private final ChatRoomMemberRepository roomMembers;
 	private final ReportMessageSnapshotRepository snapshots;
+	private final ApplicationEventPublisher events;
 	private final Clock clock;
 
 	public ModerationService(
@@ -86,6 +89,7 @@ public class ModerationService {
 			ChatMessageRepository messages,
 			ChatRoomMemberRepository roomMembers,
 			ReportMessageSnapshotRepository snapshots,
+			ApplicationEventPublisher events,
 			Clock clock
 	) {
 		this.users = users;
@@ -102,6 +106,7 @@ public class ModerationService {
 		this.messages = messages;
 		this.roomMembers = roomMembers;
 		this.snapshots = snapshots;
+		this.events = events;
 		this.clock = clock;
 	}
 
@@ -222,10 +227,22 @@ public class ModerationService {
 		reportCase.changeReporterCount(count);
 		if (count >= PlanLimits.REPORT_AUTO_HIDE_REPORTERS && reportCase.getAutoHiddenAt() == null) {
 			reportCase.markAutoHidden(Instant.now());
+			if (reportedMessage != null) {
+				hideReportedMessage(reportedMessage);
+			}
 			notifyOperatorsOfAutoHide(reportCase);
-			// Target content visibility (UNDER_REVIEW) lands with posts/chat pages that own the rows.
+			// Posts, comments and recruit posts are not reportable yet; their auto-hide lands with those paths.
 		}
 		// Reporter outcome / sanction alerts are page 25.
+	}
+
+	/**
+	 * Chat messages have no UNDER_REVIEW state (V2 check), so auto-hide sets HIDDEN. An operator dismissal
+	 * of the case shows the message again ({@code admin.ReportContentEffects#undoAutoHide}).
+	 */
+	private void hideReportedMessage(ChatMessage message) {
+		message.hide();
+		events.publishEvent(new ChatMessageModerated(message.getRoom().getId(), message.getId()));
 	}
 
 	private static boolean isChatTarget(ReportTargetType type) {

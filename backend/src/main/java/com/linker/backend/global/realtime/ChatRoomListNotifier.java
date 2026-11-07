@@ -3,6 +3,7 @@ package com.linker.backend.global.realtime;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.linker.backend.dto.chat.event.ChatMessageModerated;
 import com.linker.backend.dto.chat.event.ChatMessageReady;
 import com.linker.backend.dto.chat.event.ChatReadAdvanced;
 import com.linker.backend.dto.chat.event.ChatRoomsChanged;
@@ -44,6 +45,20 @@ public class ChatRoomListNotifier {
 	public void publishTranscript(ChatTranscriptChanged event) {
 		String destination = "/topic/chat-rooms/" + event.roomId();
 		Map<String, Object> body = Map.of("event", event.event(), "message", event.message());
+		template.convertAndSend(destination, (Object) body);
+	}
+
+	/**
+	 * Only the ids go out here; {@link ChatDeliveryGuard} swaps in each subscriber's current view of the
+	 * row (hidden copy, deleted copy, or the restored text) and drops it for anyone who cannot see it.
+	 */
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void publishModerated(ChatMessageModerated event) {
+		String destination = "/topic/chat-rooms/" + event.roomId();
+		Map<String, Object> body = Map.of(
+				"event", "EDIT",
+				"message", Map.of("id", event.messageId(), "roomId", event.roomId())
+		);
 		template.convertAndSend(destination, (Object) body);
 	}
 

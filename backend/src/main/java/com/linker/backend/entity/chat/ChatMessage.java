@@ -17,11 +17,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * {@code @DynamicUpdate}: a report auto-hide changes a row the reporter read without a lock. Writing only
+ * the changed columns keeps a concurrent sender edit or delete instead of overwriting it with stale values.
+ */
 @Entity
+@DynamicUpdate
 @Table(name = "chat_messages")
 public class ChatMessage {
 
@@ -122,6 +128,11 @@ public class ChatMessage {
 
 	public void hide() {
 		this.visibility = MessageVisibility.HIDDEN;
+	}
+
+	/** Undoes a hide only; a sender's own deletion stays. */
+	public void unhide() {
+		this.visibility = MessageVisibility.VISIBLE;
 	}
 
 	public void restore() {
