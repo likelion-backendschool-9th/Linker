@@ -1185,6 +1185,65 @@ class FoundationIntegrationTest {
 		}
 	}
 
+	@Test
+	void jobAdReportDetailShowsTheAdAndHideNotifiesTheRecruiter() throws Exception {
+		User operator = saveUser("adops", UserType.DEVELOPER);
+		Admin admin = admins.save(Admin.assign(operator, AdminRole.OPERATOR));
+		String secret = "JBSWY3DPEHPK3PXP";
+		admin.enrollOtp(otpSecrets.encrypt(secret), Instant.now());
+		admins.save(admin);
+		String token = sessions.issue(operator, "JUnit", "127.0.0.1").rawToken();
+		mockMvc.perform(post("/api/v1/admin/otp/verify")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"code\":\"" + TotpCodes.code(secret, Instant.now()) + "\"}"))
+				.andExpect(status().isOk());
+
+		User recruiter = saveUser("ad-recruiter", UserType.RECRUITER);
+		jdbc.update("""
+				INSERT INTO recruiter_profiles (
+				    user_id, company_name, company_email_domain, job_title, email_verified_at, created_at, updated_at)
+				VALUES (?, '넥스트랩', 'nextlab.example', '리크루터', now(), now(), now())
+				""", recruiter.getId());
+		long adId = jdbc.queryForObject("""
+				INSERT INTO recruiter_ads (
+				    recruiter_id, job_category, title, url, url_host, closes_on, status, created_at, updated_at)
+				VALUES (?, 'BACKEND', '백엔드 개발자', 'https://www.wanted.co.kr/wd/1', 'www.wanted.co.kr', DATE '2026-12-01', 'ACTIVE', now(), now())
+				RETURNING id
+				""", Long.class, recruiter.getId());
+		long caseId = insertCase("RECRUITER_AD", adId, recruiter.getId());
+
+		mockMvc.perform(get("/api/v1/admin/report-cases/" + caseId).cookie(cookie(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.targetType").value("RECRUITER_AD"))
+				.andExpect(jsonPath("$.targetSummary").value("백엔드 개발자"))
+				.andExpect(jsonPath("$.jobAd.company").value("넥스트랩"))
+				.andExpect(jsonPath("$.jobAd.title").value("백엔드 개발자"))
+				.andExpect(jsonPath("$.jobAd.jobCategory").value("BACKEND"))
+				.andExpect(jsonPath("$.jobAd.closesOn").value("2026-12-01"))
+				.andExpect(jsonPath("$.jobAd.urlHost").value("www.wanted.co.kr"))
+				.andExpect(jsonPath("$.target.userType").value("RECRUITER"));
+
+		mockMvc.perform(post("/api/v1/admin/report-cases/" + caseId + "/actions")
+						.cookie(cookie(token))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"action\":\"HIDE\",\"reason\":\"허위 광고\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.handledAction").value("HIDE"))
+				.andExpect(jsonPath("$.jobAd.company").value("넥스트랩"));
+		assertThat(jdbc.queryForObject("SELECT status FROM recruiter_ads WHERE id = ?", String.class, adId)).isEqualTo("HIDDEN");
+		assertThat(jdbc.queryForObject("SELECT hidden_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNotNull();
+		assertThat(jdbc.queryForObject("SELECT deleted_at FROM recruiter_ads WHERE id = ?", Object.class, adId)).isNull();
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM notifications WHERE user_id = ? AND notification_type = 'REPORT_OUTCOME'",
+				Long.class, recruiter.getId())).isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"SELECT payload::text FROM notifications WHERE user_id = ? AND notification_type = 'REPORT_OUTCOME'",
+				String.class, recruiter.getId()))
+				.contains("작성한 내용이 숨김 처리됐어요")
+				.contains("허위 광고");
+	}
+
 	private long insertCase(String targetType, long targetId, long targetUserId) {
 		return jdbc.queryForObject("""
 				INSERT INTO report_cases (target_type, target_id, target_user_id, reporter_count, status, created_at, updated_at)

@@ -129,6 +129,10 @@ public class RecruiterAd {
 		return url;
 	}
 
+	public String getUrlHost() {
+		return urlHost;
+	}
+
 	public LocalDate getClosesOn() {
 		return closesOn;
 	}
