@@ -9,9 +9,8 @@ export type Order = {
   planKey: 'PRO' | 'FLEX' | 'SCOUT';
   billing: 'MONTHLY' | 'YEARLY';
   teamId: number | null;
-  state: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-  paidAt?: string;
-  expiresOn: string;
+  orderName: string;
+  state: 'PENDING' | 'PAID' | 'FAILED';
 };
 const orders = new Map<string, Order>();
 export function readOrders(viewer: MockViewer): Order[] {

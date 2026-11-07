@@ -16,6 +16,8 @@ export * from './p16-chat-list/p16-chat-list';
 export * from './p17-chat-room/p17-chat-room';
 export * from './p18-notifications/p18-notifications';
 export * from './p25-admin-reports/p25-admin-reports';
+export * from './p28-subscribe/p28-subscribe';
+export * from './p29-subscription-manage/p29-subscription-manage';
 export * from './p31-recruiter-signup/p31-recruiter-signup';
 export * from './p32-recruiter-login/p32-recruiter-login';
 export * from './p33-recruiter-offers/p33-recruiter-offers';

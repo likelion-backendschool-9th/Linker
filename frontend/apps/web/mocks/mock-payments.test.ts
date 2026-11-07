@@ -56,7 +56,17 @@ it('enforces plan/role/billing/team ownership on order creation and approval', a
   ).rejects.toMatchObject({ status: 404 });
   await expect(
     mockFetch('/api/v1/user/payments/checkout', post({ planKey: 'SCOUT', billing: 'YEARLY' })),
-  ).rejects.toMatchObject({ status: 400 });
+  ).rejects.toMatchObject({ status: 403, code: 'PLAN_MISMATCH' });
+  login('developer');
+  await expect(
+    mockFetch('/api/v1/user/payments/checkout', post({ planKey: 'PRO', billing: 'WEEKLY' })),
+  ).rejects.toMatchObject({ status: 400, code: 'INVALID_BILLING' });
+  await expect(
+    mockFetch(
+      '/api/v1/user/payments/checkout',
+      post({ planKey: 'FLEX', billing: 'YEARLY', teamId: 1 }),
+    ),
+  ).rejects.toMatchObject({ status: 400, code: 'INVALID_BILLING' });
   login('developer');
   await expect(
     mockFetch(

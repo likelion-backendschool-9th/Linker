@@ -1,11 +1,19 @@
-import { addMonths, addYears } from 'date-fns';
 import { SUBSCRIPTION_PRICE } from '@/lib/policy';
 import { ownOrder, saveOrder, type Order } from '../fixtures/payment-orders';
-import { state } from '../fixtures/subscriptions';
+import {
+  applyPayment,
+  flexAmount,
+  kstDate,
+  personalPlan,
+  teamSeats,
+} from '../fixtures/subscriptions';
 import { fail, get, newId, post, type MockRoute } from '../core/define';
-import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
+import { TEAMS } from '../fixtures/teams';
 
-/** 28 Plans & checkout: `SubscriptionController`. Toss test mode only; the mock confirms every order. */
+/**
+ * 28 Plans & checkout: `SubscriptionController`. Toss test mode only; the mock confirms every order.
+ * Recruiters get no plans until Scout ([Included]) opens, as on the server.
+ */
 
 const developerPlans = [
   {
@@ -28,7 +36,7 @@ const developerPlans = [
       '대표 게시물 5개',
       '모집 글 동시 10개',
     ],
-    trialAvailable: true,
+    trialAvailable: false,
   },
   {
     key: 'FLEX',
@@ -36,56 +44,39 @@ const developerPlans = [
     monthly: SUBSCRIPTION_PRICE.flexMonthly,
     yearly: null,
     benefits: ['팀원 수 제한 없음', '채팅 전체 기간 검색', 'AI 채팅 요약', '진행 현황 그래프'],
-    trialAvailable: true,
+    trialAvailable: false,
     perExtraMember: SUBSCRIPTION_PRICE.flexExtraMember,
   },
 ];
 
-const recruiterPlans = [
-  {
-    key: 'SCOUT',
-    name: 'Scout',
-    monthly: SUBSCRIPTION_PRICE.scoutMonthly,
-    yearly: null,
-    benefits: ['채용 제안 하루 50건', '피드 채용 광고 1개'],
-    trialAvailable: false,
-  },
-];
-
-const flexAmount = (members: number) =>
-  SUBSCRIPTION_PRICE.flexMonthly +
-  Math.max(0, members - SUBSCRIPTION_PRICE.flexIncludedSeats) * SUBSCRIPTION_PRICE.flexExtraMember;
 function candidates() {
   return TEAMS.filter((team) => team.myRole === 'OWNER' && team.status === 'ACTIVE').map(
     (team) => ({
       teamId: team.id,
       name: team.name,
-      memberCount: TEAM_MEMBERS[team.id]?.length ?? 0,
-      amount: flexAmount(TEAM_MEMBERS[team.id]?.length ?? 0),
+      memberCount: teamSeats(team.id),
+      amount: flexAmount(teamSeats(team.id)),
       currentPlan: team.plan,
     }),
   );
 }
 
 export const routes: MockRoute[] = [
-  get('/api/v1/user/plans', ({ query, viewer }) => {
-    const personal = state(viewer)
-      .subscriptions.filter((sub) => sub.kind !== 'FLEX' && sub.status !== 'ENDED')
-      .at(-1);
-    return {
-      reason: query.get('reason'),
-      plans: viewer.role === 'recruiter' ? recruiterPlans : developerPlans,
-      currentPlan: personal?.kind ?? 'FREE',
-    };
-  }),
+  get('/api/v1/user/plans', ({ query, viewer }) => ({
+    reason: query.get('reason'),
+    plans: viewer.role === 'recruiter' ? [] : developerPlans,
+    currentPlan: personalPlan(viewer) ?? 'FREE',
+  })),
   get('/api/v1/user/plans/team-candidates', () => ({ items: candidates() }), { only: 'developer' }),
   post('/api/v1/user/payments/checkout', ({ body, viewer }) => {
     const planKey = String(body.planKey);
-    if (viewer.role === 'recruiter' ? planKey !== 'SCOUT' : !['PRO', 'FLEX'].includes(planKey))
+    // Same order as the server: plan key, member type, then billing.
+    if (!['PRO', 'FLEX', 'SCOUT'].includes(planKey))
+      fail(400, 'VALIDATION_ERROR', '요금제를 선택해 주세요.');
+    if (viewer.role === 'recruiter' || planKey === 'SCOUT')
       fail(403, 'PLAN_MISMATCH', '선택할 수 없는 요금제예요.');
     if (body.billing !== 'MONTHLY' && body.billing !== 'YEARLY')
       fail(400, 'INVALID_BILLING', '결제 기간을 확인해 주세요.');
-    const plan = [...developerPlans, ...recruiterPlans].find((item) => item.key === planKey)!;
     if (body.billing === 'YEARLY' && planKey !== 'PRO')
       fail(400, 'INVALID_BILLING', '이 요금제는 월간 결제만 가능해요.');
     const candidate =
@@ -95,48 +86,50 @@ export const routes: MockRoute[] = [
     const amount = candidate
       ? candidate.amount
       : body.billing === 'YEARLY'
-        ? plan.yearly!
-        : plan.monthly;
-    const orderId = `order-${newId()}`;
-    const expires = body.billing === 'YEARLY' ? addYears(new Date(), 1) : addMonths(new Date(), 1);
+        ? SUBSCRIPTION_PRICE.proYearly
+        : SUBSCRIPTION_PRICE.proMonthly;
     const order: Order = {
-      orderId,
+      orderId: `lnk_mock_${newId()}`,
       userId: viewer.me!.id,
       amount,
       planKey: planKey as Order['planKey'],
       billing: body.billing,
       teamId: candidate?.teamId ?? null,
+      orderName: candidate
+        ? `Flex · ${candidate.name} 구독`
+        : body.billing === 'YEARLY'
+          ? 'Pro 연간 구독'
+          : 'Pro 월간 구독',
       state: 'PENDING',
-      expiresOn: expires.toISOString().slice(0, 10),
     };
     saveOrder(order);
     return {
-      ...order,
-      orderName: `${plan.name}${candidate ? ` · ${candidate.name}` : ''} 구독`,
+      orderId: order.orderId,
+      amount: order.amount,
+      orderName: order.orderName,
       customerKey: `mock_customer_${viewer.me!.id}`,
+      planKey: order.planKey,
+      billing: order.billing,
+      teamId: order.teamId,
     };
   }),
   post('/api/v1/user/payments/confirm', ({ body, viewer }) => {
     const order = ownOrder(viewer, String(body.orderId));
-    if (order.state === 'FAILED' || order.state === 'REFUNDED')
+    if (order.state === 'FAILED')
       fail(409, 'ORDER_FAILED', '완료되지 않은 주문이에요. 새로 결제해 주세요.');
     if (body.amount !== order.amount) fail(400, 'AMOUNT_MISMATCH', '결제 금액이 달라요.');
     if (body.paymentKey !== `mock_${order.orderId}`)
       fail(400, 'INVALID_PAYMENT', '결제 정보를 확인할 수 없어요.');
-    order.paidAt ??= new Date().toISOString();
     order.state = 'PAID';
-    saveOrder(order); // Idempotent confirmation; no second entitlement activation.
-    const plan = [...developerPlans, ...recruiterPlans].find((item) => item.key === order.planKey)!;
-    if (order.planKey === 'FLEX') {
-      const team = TEAMS.find((item) => item.id === order.teamId);
-      if (team) team.plan = 'FLEX';
-    }
+    saveOrder(order);
+    // Replays return the stored result; no second period.
+    const paid = applyPayment(viewer, order);
     return {
       planKey: order.planKey,
       status: 'ACTIVE',
-      expiresOn: order.expiresOn,
+      expiresOn: kstDate(paid.periodEnd),
       amount: order.amount,
-      benefits: plan.benefits,
+      benefits: developerPlans.find((item) => item.key === order.planKey)!.benefits,
     };
   }),
   post('/api/v1/user/payments/:orderId/fail', ({ params, viewer }) => {

@@ -31,9 +31,19 @@ async function expectFreeStats() {
   }
 }
 
-it('ends Pro stats after a refund and restores them after another confirmed mock checkout', async () => {
+async function endProIn(days: number) {
+  const { buildViewer } = await import('./core/viewer');
+  const { endPersonalPlanOn } = await import('./fixtures/subscriptions');
+  const viewer: MockViewer = buildViewer('developer');
+  endPersonalPlanOn(viewer, 'PRO', days);
+}
+
+it('keeps Pro after refunding a future period, ends it on expiry and restores it after checkout', async () => {
   expect(await mockFetch(summaryUrl)).toMatchObject({ isPro: true });
-  await mockFetch('/api/v1/user/me/payments/demo-recent/refund', { method: 'POST' });
+  // 7103 paid the next period only; the period already running stays (Policy ch. 11 refund).
+  await mockFetch('/api/v1/user/me/payments/7103/refund', { method: 'POST' });
+  expect(await mockFetch(summaryUrl)).toMatchObject({ isPro: true });
+  await endProIn(-1);
   await expectFreeStats();
 
   const order = await mockFetch<{ orderId: string; amount: number }>(
@@ -52,21 +62,11 @@ it('ends Pro stats after a refund and restores them after another confirmed mock
   await expect(mockFetch(proUrls[1]!)).resolves.toHaveProperty('thisWeek');
 });
 
-it('keeps canceled Pro benefits through their end date and blocks them after expiry', async () => {
-  await mockFetch('/api/v1/user/me/subscriptions/demo-personal/cancel', { method: 'POST' });
+it('keeps canceled Pro benefits until the period ends and blocks them after expiry', async () => {
+  await mockFetch('/api/v1/user/me/subscriptions/7001/cancel', { method: 'POST' });
   expect(await mockFetch(summaryUrl)).toMatchObject({ isPro: true });
-
-  const { buildViewer } = await import('./core/viewer');
-  const { state, save } = await import('./fixtures/subscriptions');
-  const { todayKst } = await import('@/lib/format/time');
-  const viewer: MockViewer = buildViewer('developer');
-  const data = state(viewer);
-  const pro = data.subscriptions.find((sub) => sub.kind === 'PRO')!;
-  pro.endsOn = todayKst();
-  save(viewer, data);
+  await endProIn(0.01);
   expect(await mockFetch(summaryUrl)).toMatchObject({ isPro: true });
-
-  pro.endsOn = '2000-01-01';
-  save(viewer, data);
+  await endProIn(-0.01);
   await expectFreeStats();
 });
