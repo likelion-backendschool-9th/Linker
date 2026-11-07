@@ -3,6 +3,8 @@
 import Image from 'next/image';
 
 import { formatMessageTime, toKstIso } from '@/lib/format/time';
+import { messagePayload } from '@/features/share/chat-cards';
+import { messageUrls } from '@/features/share/message-links';
 
 import { useMessageMenu } from '../../_hooks/use-message-menu';
 import type { RoomInfo, RoomMessage } from '../../_lib/room-api';
@@ -10,8 +12,17 @@ import styles from '../chat-room/ChatRoom.module.css';
 import { MessageReadStatus } from '../message-read-status';
 import { IssueMessageCards } from '../issue-message-cards';
 import { PrEventCard } from '../pr-event-card';
+import { SharedContentCard } from '../shared-content-card';
+import { ExternalLinkPreview } from '../external-link-preview';
 
-type Props = { message: RoomMessage; mine: boolean; kind: RoomInfo['kind']; onUnread?: (id: number) => void; onPhoto?: (id: number, index: number) => void; onMenu?: (id: number) => void };
+type Props = {
+  message: RoomMessage;
+  mine: boolean;
+  kind: RoomInfo['kind'];
+  onUnread?: (id: number) => void;
+  onPhoto?: (id: number, index: number) => void;
+  onMenu?: (id: number) => void;
+};
 
 function SenderAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
   const initial = name.trim().slice(0, 1) || '?';
@@ -28,6 +39,7 @@ function SenderAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string })
 
 export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
+  const payload = messagePayload(message.payload);
   const hidden = message.visibility === 'HIDDEN' || message.visibility === 'UNDER_REVIEW';
   const canMenu = !system && !hidden && !message.deletedAt && !!onMenu;
   const menu = useMessageMenu(canMenu, () => onMenu?.(message.id));
@@ -41,7 +53,9 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
       tabIndex={canMenu ? 0 : undefined}
       aria-label={canMenu ? `${senderName} 메시지` : undefined}
       aria-keyshortcuts={canMenu ? 'Shift+F10 Enter Space' : undefined}
-      title={canMenu ? '우클릭, 길게 누르기 또는 Enter 키로 메시지 메뉴를 열 수 있어요.' : undefined}
+      title={
+        canMenu ? '우클릭, 길게 누르기 또는 Enter 키로 메시지 메뉴를 열 수 있어요.' : undefined
+      }
       {...menu}
     >
       {message.deletedAt ? (
@@ -75,12 +89,19 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
               ))}
             </div>
           )}
-          {!!message.payload?.issueCards?.length && <IssueMessageCards cards={message.payload.issueCards} />}
-          {message.type === 'SHARE_CARD' && (
-            <p className={styles.card}>
-              공유 · {String(message.payload?.title ?? '공유한 항목')}
-            </p>
+          {!!message.payload?.issueCards?.length && (
+            <IssueMessageCards cards={message.payload.issueCards} />
           )}
+          {message.type === 'SHARE_CARD' && <SharedContentCard value={payload} />}
+          {message.type !== 'SHARE_CARD' && !!payload?.linkerCard && (
+            <SharedContentCard value={payload.linkerCard} />
+          )}
+          {!system &&
+            kind !== 'REQUEST' &&
+            message.text &&
+            messageUrls(message.text).length > 0 && (
+              <ExternalLinkPreview roomId={message.roomId} text={message.text} />
+            )}
           {message.type === 'AI_SUMMARY' && (
             <p className={styles.card}>AI 요약 · {String(message.payload?.oneLine ?? '')}</p>
           )}
@@ -93,7 +114,9 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
     <div className={styles.messageMeta}>
       <MessageReadStatus message={message} kind={kind} mine={mine} onUnread={onUnread} />
       <p className={styles.meta}>
-        <time dateTime={toKstIso(message.createdAt)} title={toKstIso(message.createdAt)}>{formatMessageTime(message.createdAt)}</time>
+        <time dateTime={toKstIso(message.createdAt)} title={toKstIso(message.createdAt)}>
+          {formatMessageTime(message.createdAt)}
+        </time>
         {message.editedAt && !message.deletedAt && ' · 수정됨'}
       </p>
     </div>
@@ -124,14 +147,18 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
         </>
       )}
 
-      {canMenu && <button
-        type="button"
-        className="sr-only"
-        tabIndex={-1}
-        aria-haspopup="dialog"
-        aria-label={`${senderName} 메시지 메뉴`}
-        onClick={() => onMenu?.(message.id)}
-      >메시지 메뉴 열기</button>}
+      {canMenu && (
+        <button
+          type="button"
+          className="sr-only"
+          tabIndex={-1}
+          aria-haspopup="dialog"
+          aria-label={`${senderName} 메시지 메뉴`}
+          onClick={() => onMenu?.(message.id)}
+        >
+          메시지 메뉴 열기
+        </button>
+      )}
     </article>
   );
 }

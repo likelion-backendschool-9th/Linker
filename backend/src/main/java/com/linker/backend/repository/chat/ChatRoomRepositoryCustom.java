@@ -2,12 +2,17 @@ package com.linker.backend.repository.chat;
 
 import java.time.Instant;
 import java.util.List;
+import com.linker.backend.dto.chat.response.ChatShareTargetResponse;
 
 /**
  * Room-centred reads that join members, messages, users and blocks: the chat room list
  * (page, summary, tab membership) and the recruiter's offer rooms.
  */
 public interface ChatRoomRepositoryCustom {
+
+	List<ChatShareTargetResponse> shareTargets(long viewerId, boolean developer, String search);
+
+	boolean shareableBy(long viewerId, boolean developer, long roomId);
 
 	/**
 	 * One page of the viewer's rooms. Visible 1:1 messages use the same half-open block period as

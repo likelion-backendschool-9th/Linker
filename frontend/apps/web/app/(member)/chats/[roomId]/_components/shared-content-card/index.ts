@@ -1,0 +1,1 @@
+export { SharedContentCard } from './SharedContentCard';

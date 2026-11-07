@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 
 import { ProfileInteractions } from '@/features/profile/profile-interactions/ProfileInteractions';
+import { ShareButton } from '@/features/share/share-button';
 import { apiFetch } from '@/lib/api/api-fetch';
 import type { Role } from '@/lib/auth/route-access';
 import type { PublicProfile } from '@/features/profile/profile-types';
@@ -77,6 +78,9 @@ export function DeveloperProfileView({
           </ul>
         )}
         <ProfileInteractions profile={profile} viewerRole={viewerRole} />
+        <ShareButton
+          target={{ targetType: 'PROFILE', targetId: profile.id, path: `/user/${profile.login}` }}
+        />
       </header>
 
       <section className={styles.section} aria-labelledby="completion-title">

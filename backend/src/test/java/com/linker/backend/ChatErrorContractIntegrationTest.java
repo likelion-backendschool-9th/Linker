@@ -104,9 +104,9 @@ class ChatErrorContractIntegrationTest {
 				checked.add(name);
 			}
 		}
-		// The existing 15 operations plus B's PR list. Planned additions must also pass the
-		// response checks above, rather than fail only because the route count increased.
-		assertThat(checked).hasSizeGreaterThanOrEqualTo(16);
+		// Existing chat routes plus D's share targets and B's PR list. Planned additions must
+		// still pass every response check above; a larger route count alone is not an error.
+		assertThat(checked).hasSizeGreaterThanOrEqualTo(17);
 		JsonNode direct = paths.path("/api/v1/user/chat-rooms/direct").path("post");
 		assertThat(direct.path("operationId").asString()).isEqualTo("startDirectChat");
 		assertThat(direct.path("responses").path("403").path("description").asString()).contains("DEVELOPER_ONLY", "SUSPENDED");

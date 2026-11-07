@@ -5,7 +5,10 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
+import com.linker.backend.dto.chat.response.ChatShareTargetResponse;
+import com.linker.backend.entity.chat.type.RoomType;
 import com.linker.backend.entity.chat.type.MessageType;
 import com.linker.backend.entity.chat.type.RequestKind;
 
@@ -25,6 +28,48 @@ import jakarta.persistence.Tuple;
  * never disagree about which rooms belong to a tab.
  */
 class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
+
+	private static final String SHARE_FROM = """
+			from ChatRoomMember me join me.room r
+			left join Team t on t.id = r.teamId
+			left join ChatRoomMember other on other.room.id = r.id and other.userId <> :viewer and other.leftAt is null
+			left join User u on u.id = other.userId
+			where me.userId = :viewer and me.leftAt is null and me.hiddenAt is null
+			  and (
+			    (r.roomType = 'TEAM' and :developer = true and t.status in ('ACTIVE', 'COMPLETED')
+			      and exists (select 1 from TeamMember tm where tm.teamId = t.id and tm.userId = :viewer and tm.leftAt is null))
+			    or (r.roomType = 'DIRECT' and r.dmStatus = 'ACCEPTED'
+			      and u.id is not null and u.deletedAt is null and u.status <> 'DELETED'
+			      and not exists (select 1 from UserBlock b where b.unblockedAt is null
+			        and ((b.blockerId = :viewer and b.blockedId = u.id) or (b.blockerId = u.id and b.blockedId = :viewer))))
+			  )
+			""";
+
+	@Override
+	public List<ChatShareTargetResponse> shareTargets(long viewerId, boolean developer, String search) {
+		String title = "case when r.roomType = 'TEAM' then t.name else coalesce(nullif(u.displayName, ''), u.username) end";
+		// The correlated last-message read keeps block-period DMs out of the room's recency order.
+		String sort = """
+				coalesce((select max(m.createdAt) from ChatMessage m where m.room.id = r.id
+				  and (r.roomType = 'TEAM' or m.senderId is null or m.senderId = :viewer or not exists (
+				    select 1 from UserBlock b where b.blockerId = :viewer and b.blockedId = m.senderId
+				      and b.createdAt <= m.createdAt and (b.unblockedAt is null or b.unblockedAt > m.createdAt)))), r.createdAt)
+				""";
+		String pattern = "%" + search.toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+		return em.createQuery("select distinct r.id, r.roomType, " + title + ", " + sort + SHARE_FROM
+				+ " and lower(" + title + ") like :search escape '!' order by 4 desc, r.id desc", Object[].class)
+				.setParameter("viewer", viewerId).setParameter("developer", developer).setParameter("search", pattern)
+				.getResultList().stream()
+				.map(row -> new ChatShareTargetResponse((Long) row[0], ((RoomType) row[1]).name(), (String) row[2]))
+				.toList();
+	}
+
+	@Override
+	public boolean shareableBy(long viewerId, boolean developer, long roomId) {
+		return !em.createQuery("select r.id " + SHARE_FROM + " and r.id = :room", Long.class)
+				.setParameter("viewer", viewerId).setParameter("developer", developer).setParameter("room", roomId)
+				.setMaxResults(1).getResultList().isEmpty();
+	}
 
 	private static final String VISIBLE = """
 			(

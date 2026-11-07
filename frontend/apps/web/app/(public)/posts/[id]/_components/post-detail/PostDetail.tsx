@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
+import { ShareButton } from '@/features/share/share-button';
 
 import { linkify } from '../../_lib/linkify';
 import type { PostDetail as Detail } from '../../_lib/post-detail-queries';
@@ -141,6 +142,11 @@ function ReactionBar({ post, canReact }: { post: Detail; canReact: boolean }) {
         <MessageCircle aria-hidden className={styles.metaIcon} />
         댓글 {commentCount.toLocaleString('ko-KR')}
       </span>
+      {post.visibility === 'VISIBLE' && (
+        <ShareButton
+          target={{ targetType: 'POST', targetId: post.id, path: `/posts/${post.id}` }}
+        />
+      )}
     </div>
   );
 }

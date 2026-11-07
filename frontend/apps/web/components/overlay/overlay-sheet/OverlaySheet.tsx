@@ -16,6 +16,7 @@ type OverlaySheetProps = {
   describeHidden?: boolean;
   /** Optional in-place trigger; Radix then restores keyboard focus on sheet close. */
   trigger?: ReactElement;
+  onOpenAutoFocus?: (event: Event) => void;
   children?: ReactNode;
 };
 
@@ -26,6 +27,7 @@ export function OverlaySheet({
   description,
   describeHidden = false,
   trigger,
+  onOpenAutoFocus,
   children,
 }: OverlaySheetProps) {
   return (
@@ -33,7 +35,7 @@ export function OverlaySheet({
       {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
       <Dialog.Portal>
         <Dialog.Overlay className={styles.scrim} />
-        <Dialog.Content className={styles.sheet}>
+        <Dialog.Content className={styles.sheet} onOpenAutoFocus={onOpenAutoFocus}>
           <div className={styles.header}>
             <Dialog.Title className={styles.title}>{title}</Dialog.Title>
             <Dialog.Close className={styles.close}>

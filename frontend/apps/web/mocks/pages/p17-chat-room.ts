@@ -4,11 +4,23 @@ import { messageActions } from '@/app/(member)/chats/[roomId]/_lib/message-actio
 import { countChars, normalizeLineBreaks } from '@/lib/format/text';
 import { CHAT, PLAN_LIMITS } from '@/lib/policy';
 import { emit } from '../realtime-bus';
-import { daysAgo, del, fail, get, newId, patch, post, type MockRoute, type MockContext } from '../core/define';
+import {
+  daysAgo,
+  del,
+  fail,
+  get,
+  newId,
+  patch,
+  post,
+  type MockRoute,
+  type MockContext,
+} from '../core/define';
 import { findRoom, MESSAGES, ROOMS, UNREAD } from '../fixtures/chat';
-import { POSTS } from '../fixtures/posts';
 import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
+import { isBlocked } from './p00-common';
+import { isRecruiterRoom } from './p33-recruiter-offers';
+import { lastMessage, nextMessageId } from '../fixtures/chat';
 
 /**
  * 17 Chat room: `ChatController` (REST). Live sending/receiving is `lib/realtime` (mock-realtime.ts),
@@ -25,11 +37,23 @@ function roomOr404(id: string) {
 
 function editableMessage(params: MockContext['params'], viewer: MockContext['viewer']) {
   const room = roomOr404(params.roomId);
-  const message = MESSAGES.find((item) => item.id === Number(params.messageId) && item.roomId === room.id);
+  const message = MESSAGES.find(
+    (item) => item.id === Number(params.messageId) && item.roomId === room.id,
+  );
   if (!message) fail(404, 'NOT_FOUND', '메시지를 찾지 못했어요');
   const team = room.teamId ? findTeam(room.teamId) : undefined;
-  const disabled = room.kind === 'REQUEST' || !!(team && ['READ_ONLY', 'ARCHIVED'].includes(team.status));
-  return { message, allowed: messageActions(withReadState(message), viewer.me?.login ?? null, team?.myRole ?? null, disabled, Date.now()) };
+  const disabled =
+    room.kind === 'REQUEST' || !!(team && ['READ_ONLY', 'ARCHIVED'].includes(team.status));
+  return {
+    message,
+    allowed: messageActions(
+      withReadState(message),
+      viewer.me?.login ?? null,
+      team?.myRole ?? null,
+      disabled,
+      Date.now(),
+    ),
+  };
 }
 
 export const routes: MockRoute[] = [
@@ -69,14 +93,18 @@ export const routes: MockRoute[] = [
     ).sort((a, b) => a.id - b.id);
     const before = query.get('before');
     const after = query.get('after');
-    if (after) return { items: all.filter((m) => m.id > Number(after)).map(withReadState), hasMore: false };
+    if (after)
+      return { items: all.filter((m) => m.id > Number(after)).map(withReadState), hasMore: false };
     const older = before ? all.filter((m) => m.id < Number(before)) : all;
     return { items: older.slice(-PAGE).map(withReadState), hasMore: older.length > PAGE };
   }),
   post('/api/v1/user/chat-rooms/:roomId/read', ({ params, body, viewer }) => {
     const room = roomOr404(params.roomId);
     const id = Number(body.lastReadMessageId);
-    if (!Number.isSafeInteger(id) || !MESSAGES.some((item) => item.roomId === room.id && item.id === id)) {
+    if (
+      !Number.isSafeInteger(id) ||
+      !MESSAGES.some((item) => item.roomId === room.id && item.id === id)
+    ) {
       fail(404, 'NOT_FOUND', '메시지를 찾지 못했어요');
     }
     recordRead(room.id, viewer.me!.id, id);
@@ -87,8 +115,16 @@ export const routes: MockRoute[] = [
   }),
   get('/api/v1/user/chat-rooms/:roomId/messages/:messageId/unread-members', ({ params }) => {
     const room = roomOr404(params.roomId);
-    const message = MESSAGES.find((item) => item.roomId === room.id && item.id === Number(params.messageId));
-    if (!message || !room.teamId || message.deletedAt || message.type === 'SYSTEM' || message.type === 'PR_EVENT') {
+    const message = MESSAGES.find(
+      (item) => item.roomId === room.id && item.id === Number(params.messageId),
+    );
+    if (
+      !message ||
+      !room.teamId ||
+      message.deletedAt ||
+      message.type === 'SYSTEM' ||
+      message.type === 'PR_EVENT'
+    ) {
       fail(404, 'NOT_FOUND', '읽음 상태를 확인할 수 없는 메시지예요');
     }
     return { items: unreadMembers(message) };
@@ -102,7 +138,10 @@ export const routes: MockRoute[] = [
     }
     message.text = text;
     message.editedAt = new Date().toISOString();
-    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message: withReadState(message) });
+    emit(`/topic/chat-rooms/${message.roomId}`, {
+      event: 'MESSAGE',
+      message: withReadState(message),
+    });
     return withReadState(message);
   }),
   del('/api/v1/user/chat-rooms/:roomId/messages/:messageId', ({ params, viewer }) => {
@@ -111,7 +150,10 @@ export const routes: MockRoute[] = [
     message.deletedAt = new Date().toISOString();
     message.text = null;
     message.imageUrls = [];
-    emit(`/topic/chat-rooms/${message.roomId}`, { event: 'MESSAGE', message: withReadState(message) });
+    emit(`/topic/chat-rooms/${message.roomId}`, {
+      event: 'MESSAGE',
+      message: withReadState(message),
+    });
     return undefined;
   }),
   patch('/api/v1/user/chat-rooms/:roomId/notification', ({ params, body }) => {
@@ -163,16 +205,26 @@ export const routes: MockRoute[] = [
   })),
   get('/api/v1/user/chat-rooms/:roomId/issue-cards', ({ params, query, viewer }) => {
     const room = roomOr404(params.roomId);
-    const card = resolveIssueCard(room.id, Number(query.get('number')), Number(query.get('repoId')), viewer.me!.id);
+    const card = resolveIssueCard(
+      room.id,
+      Number(query.get('number')),
+      Number(query.get('repoId')),
+      viewer.me!.id,
+    );
     if (!card) fail(404, 'NOT_FOUND', '이슈를 찾지 못했어요');
     return card;
   }),
-  get('/api/v1/user/chat-rooms/:roomId/link-preview', ({ query }) => ({
-    url: query.get('url'),
-    title: '링크 미리보기 제목',
-    description: '서버가 OG 태그를 읽어 온 설명이에요.',
-    imageUrl: null as string | null,
-  })),
+  get('/api/v1/user/chat-rooms/:roomId/link-preview', ({ params, query }) => {
+    const room = roomOr404(params.roomId);
+    // Room 10's counterpart is a mutual follow in the mock; other DMs have no OG preview.
+    if (room.kind === 'REQUEST' || (room.kind === 'DIRECT' && room.id !== 10)) return null;
+    return {
+      url: query.get('url'),
+      title: '링크 미리보기 제목',
+      description: '서버가 OG 태그를 읽어 온 설명이에요.',
+      imageUrl: null,
+    };
+  }),
   get('/api/v1/user/chat-rooms/:roomId/search', ({ params, query }) => {
     const q = (query.get('q') ?? '').trim();
     return {
@@ -184,35 +236,78 @@ export const routes: MockRoute[] = [
     };
   }),
   // Rooms I can share to: team rooms + open 1:1 rooms (04 POL-P-7)
-  get('/api/v1/user/me/share-targets', ({ query }) => {
-    const q = (query.get('q') ?? '').trim();
+  get('/api/v1/user/me/share-targets', ({ query, viewer }) => {
+    const q = (query.get('q') ?? '').trim().toLocaleLowerCase();
     return {
-      items: ROOMS.filter((r) => (r.kind === 'TEAM' && r.teamId !== 3) || r.kind === 'DIRECT')
-        .filter((r) => !q || r.title.includes(q))
+      items: ROOMS.filter(
+        (r) =>
+          r.kind !== 'REQUEST' &&
+          (viewer.role === 'recruiter' ? isRecruiterRoom(r.id) : !isRecruiterRoom(r.id)) &&
+          (!r.teamId || !['READ_ONLY', 'ARCHIVED'].includes(findTeam(r.teamId)?.status ?? '')) &&
+          (!r.counterpart || !isBlocked(r.counterpart.id)),
+      )
+        .filter((r) => !q || r.title.toLocaleLowerCase().includes(q))
+        .sort((a, b) =>
+          (lastMessage(b.id)?.createdAt ?? b.createdAt).localeCompare(
+            lastMessage(a.id)?.createdAt ?? a.createdAt,
+          ),
+        )
         .map(({ id, kind, title }) => ({ roomId: id, kind, title })),
     };
   }),
-  post('/api/v1/user/chat-rooms/:roomId/share-cards', ({ params, body }) => {
-    const target = POSTS.find((p) => p.id === Number(body.targetId));
+  post('/api/v1/user/chat-rooms/:roomId/share-cards', ({ params, body, viewer }) => {
+    const room = roomOr404(params.roomId);
+    if (
+      room.kind === 'REQUEST' ||
+      (room.teamId && ['READ_ONLY', 'ARCHIVED'].includes(findTeam(room.teamId)?.status ?? '')) ||
+      (viewer.role === 'recruiter' ? !isRecruiterRoom(room.id) : isRecruiterRoom(room.id)) ||
+      (room.counterpart && isBlocked(room.counterpart.id))
+    )
+      fail(403, 'FORBIDDEN', '공유할 수 없는 채팅방이에요.');
+    if (
+      !['POST', 'RECRUIT_POST', 'PROFILE'].includes(String(body.targetType)) ||
+      !Number.isSafeInteger(body.targetId) ||
+      Number(body.targetId) < 1 ||
+      typeof body.clientMessageId !== 'string' ||
+      !/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(body.clientMessageId)
+    ) {
+      fail(400, 'VALIDATION_ERROR', '공유할 대상을 확인해 주세요');
+    }
+    const existing = MESSAGES.find(
+      (item) => item.sender?.id === viewer.me!.id && item.clientMessageId === body.clientMessageId,
+    );
+    if (existing) {
+      if (
+        existing.roomId !== room.id ||
+        existing.type !== 'SHARE_CARD' ||
+        existing.payload?.targetType !== body.targetType ||
+        existing.payload?.targetId !== body.targetId
+      ) {
+        fail(409, 'STATE_CONFLICT', '이미 사용한 메시지 식별자예요');
+      }
+      return withReadState(existing);
+    }
     const message = {
-      id: newId(),
+      id: nextMessageId(),
       roomId: Number(params.roomId),
-      sender: brief(ME),
+      sender: brief(viewer.me!),
+      clientMessageId: body.clientMessageId,
       type: 'SHARE_CARD' as const,
       text: null,
       imageUrls: [],
       payload: {
         targetType: String(body.targetType ?? 'POST'),
         targetId: Number(body.targetId),
-        title: target?.intro ?? '공유한 항목',
-        subtitle: target?.author.name ?? '',
       },
       createdAt: new Date().toISOString(),
       editedAt: null,
       deletedAt: null,
     };
     MESSAGES.push(message);
-    return withReadState(message);
+    const response = withReadState(message);
+    emit(`/topic/chat-rooms/${room.id}`, { event: 'MESSAGE', message: response });
+    emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId: room.id });
+    return response;
   }),
   post(
     '/api/v1/user/chat-rooms/direct',
