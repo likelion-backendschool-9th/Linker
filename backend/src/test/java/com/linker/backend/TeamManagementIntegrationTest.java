@@ -117,6 +117,9 @@ class TeamManagementIntegrationTest {
     mvc.perform(get(base + "/settings").cookie(cookie(owner)))
         .andExpect(status().isOk()).andExpect(jsonPath("$.plan").value("FLEX"))
         .andExpect(jsonPath("$.memberLimit").isEmpty())
+        .andExpect(jsonPath("$.permissions.createInviteLink").value(false))
+        .andExpect(jsonPath("$.permissions.transferOwnership").value(false))
+        .andExpect(jsonPath("$.permissions.completeProject").value(false))
         .andExpect(jsonPath("$.billing.managerUserId").value(admin.getId()))
         .andExpect(jsonPath("$.billing.nextBillingAt").isEmpty());
     mvc.perform(get(base + "/members").cookie(cookie(admin)))

@@ -85,7 +85,8 @@ public class TeamManagementService {
     return new TeamSettingsResponse(teamId, team.getName(), team.getDescription(),
         team.getGithubOrgLogin(), team.getAvatarUrl(), team.getStatus().name(),
         flex ? "FLEX" : "FREE", role.name(),
-        new Permissions(admin, admin, admin, admin, owner, owner, admin,
+        // Do not advertise flows whose migration/contracts and endpoints are still pending.
+        new Permissions(admin, admin, false, admin, owner, false, false,
             owner, owner, role != TeamRole.OWNER && writable),
         linked, board, team.isAiSummaryEnabled(), flex ? null : (long) PlanLimits.TEAM_MEMBERS_FREE,
         billing);
