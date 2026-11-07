@@ -37,6 +37,7 @@ import com.linker.backend.repository.account.GithubTokenRepository;
 import com.linker.backend.repository.account.UserAgreementRepository;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
+import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.repository.profile.FollowRepository;
@@ -84,6 +85,9 @@ class AccountServiceTest {
 
 	@Mock
 	private FollowRepository follows;
+
+	@Mock
+	private UserBlockRepository blocks;
 
 	@Mock
 	private NotificationService notifications;
@@ -284,7 +288,7 @@ class AccountServiceTest {
 
 	private AccountService service() {
 		return new AccountService(
-				users, agreements, techTags, selectedTags, jobCategories, legal, ownedTeams, sessions, follows, notifications, posts,
+				users, agreements, techTags, selectedTags, jobCategories, legal, ownedTeams, sessions, follows, blocks, notifications, posts,
 				githubTokens, githubCipher, githubUsers, transactions, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
@@ -313,6 +317,30 @@ class AccountServiceTest {
 		assertThatThrownBy(() -> service().follow(principal(), "r-1"))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("채용 담당자는 팔로우할 수 없어요");
+	}
+
+	@Test
+	void followRejectsAnActiveBlockInEitherDirection() {
+		User follower = developer();
+		User target = developer();
+		ReflectionTestUtils.setField(target, "id", 8L);
+		ReflectionTestUtils.setField(target, "username", "hubot");
+		when(users.findById(7L)).thenReturn(Optional.of(follower));
+		when(users.findByUsername("hubot")).thenReturn(Optional.of(target));
+		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(7L, 8L)).thenReturn(true);
+
+		assertThatThrownBy(() -> service().follow(principal(), "hubot"))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("볼 수 없는 프로필");
+
+		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(7L, 8L)).thenReturn(false);
+		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(8L, 7L)).thenReturn(true);
+
+		assertThatThrownBy(() -> service().follow(principal(), "hubot"))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("볼 수 없는 프로필");
+		verify(follows, never()).save(any());
+		verify(notifications, never()).create(any());
 	}
 
 	@Test
