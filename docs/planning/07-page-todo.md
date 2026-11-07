@@ -313,8 +313,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 4: Link board**
 
-- [ ] If the org has no board, auto-create a "Linker" board + 4 statuses (Todo / In Progress / Blocked / Done) + Start date and Due date fields
-- [ ] `[Included]` If boards exist, choose "새로 만들기 / 기존 보드 쓰기"; for existing boards preview name, card count, status columns → map to the 4 statuses → add missing date fields. If the schedule slips, ship with "create new" only
+- [ ] If the org has no board, auto-create a "Linker" board + 4 statuses (Todo / In Progress / Blocked / Done; fixed colors GRAY / BLUE / RED / GREEN) + Start date and Due date fields
+- [ ] `[Included]` If boards exist, choose "새로 만들기 / 기존 보드 쓰기"; for existing boards preview name, card count, status columns + option `color` → map to the 4 statuses → persist option colors on `board_status_mappings` → add missing date fields. If the schedule slips, ship with "create new" only
 - [ ] One board per team; changing later only in team settings (09)
 
 **Step 5: Permission check and done**
@@ -388,7 +388,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: I-2, I-3, T-7, S-9, POL-I sync · Needs first: 08 · Skeleton of the issue screens and where GitHub sync is validated
 
 - [ ] Team layout and tabs
-- [ ] Issue row: repo, number, title, status, assignee avatars, due date, labels, overdue in red
+- [ ] Issue row: repo, number, title, status (+ shared `statusColor` from board mapping, with the name), assignee avatars, due date, labels, overdue in red
 - [ ] (sheet) Filters: repo, status, assignee, label, open/closed. Filters stored in URL (nuqs) → reused in 14, 15
 - [ ] "일정 없음" (no schedule) tab: issues not on the board or without a due date + "프로젝트에 추가" (add to project)
 - [ ] Pull to refresh (that screen's issues only, once per minute)
@@ -408,7 +408,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] (sheet) Assignees: team members with access to that repo, max 10; members who haven't accepted the org invite are excluded
 - [ ] (sheet) Labels
 - [ ] (sheet) Start / due date: start ≤ due; past dates confirm once with "이미 지난 날짜예요"
-- [ ] (sheet) Change status: 작업 전 / 작업 중 / 작업 중단 / 작업 완료. Moving to Done closes the issue, moving back from Done reopens it; Blocked stays open with a "중단" mark
+- [ ] (sheet) Change status: 작업 전 / 작업 중 / 작업 중단 / 작업 완료 (option colors from board mapping when available). Moving to Done closes the issue, moving back from Done reopens it; Blocked stays open with a "중단" mark. Detail response includes `statusColor`
 - [ ] Without repo write permission, assignee/label/status buttons disabled + toast with reason on tap
 - [ ] Server: after saving, verify from GitHub's response that the assignee was actually set
 - [ ] Server: assignment → create notification
@@ -442,7 +442,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: I-4 · Needs first: 12
 
-- [ ] 4 columns (작업 전 / 작업 중 / 작업 중단 / 작업 완료) + an "기타" (other) column for unmapped values
+- [ ] 4 columns (작업 전 / 작업 중 / 작업 중단 / 작업 완료) + an "기타" (other) column for unmapped values; column/card status color from shared `statusColor` (board mapping, POL-I-3), with the status name
 - [ ] Card: title, assignees, due date, labels, "중단" mark, overdue in red
 - [ ] Drag to change status (dnd-kit; long-press drag on mobile) + card menu "상태 바꾸기" (12's sheet)
 - [ ] Move first; if writing to GitHub fails, move back to the original column and notify

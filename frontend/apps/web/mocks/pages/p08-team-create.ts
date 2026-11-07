@@ -61,6 +61,12 @@ export const routes: MockRoute[] = [
         name: '로드맵',
         cardCount: 18,
         statusColumns: ['Backlog', 'Doing', 'Review', 'Done'],
+        statusOptions: [
+          { id: 'opt-backlog', name: 'Backlog', color: 'GRAY' },
+          { id: 'opt-doing', name: 'Doing', color: 'BLUE' },
+          { id: 'opt-review', name: 'Review', color: 'YELLOW' },
+          { id: 'opt-done', name: 'Done', color: 'GREEN' },
+        ],
       },
     ],
   })),

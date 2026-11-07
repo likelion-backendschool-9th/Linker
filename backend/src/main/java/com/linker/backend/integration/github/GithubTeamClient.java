@@ -25,7 +25,7 @@ public class GithubTeamClient implements GithubTeamSource {
   private static final String FIELDS =
       """
             nodes { __typename ... on ProjectV2Field { id name dataType }
-              ... on ProjectV2SingleSelectField { id name dataType options { id name } } }
+              ... on ProjectV2SingleSelectField { id name dataType options { id name color } } }
             pageInfo { hasNextPage endCursor }
             """;
   private static final String PROJECT =
@@ -169,7 +169,11 @@ public class GithubTeamClient implements GithubTeamSource {
         var options = new ArrayList<Option>();
         if (field.path("options").isArray())
           for (var option : field.path("options"))
-            options.add(new Option(required(option, "id"), required(option, "name")));
+            options.add(
+                new Option(
+                    required(option, "id"),
+                    required(option, "name"),
+                    option.path("color").asString("GRAY")));
         fields.add(
             new Field(
                 required(field, "id"),

@@ -13,7 +13,7 @@ import { IssueAssigneeSheet } from '../../../../_components/issue-sheets/issue-a
 import { IssueLabelSheet } from '../../../../_components/issue-sheets/issue-label-sheet';
 import { IssueScheduleSheet } from '../../../../_components/issue-sheets/issue-schedule-sheet';
 import { IssueStatusSheet } from '../../../../_components/issue-sheets/issue-status-sheet';
-import { ISSUE_STATUS_LABELS } from '../../../../../../_lib/issue-status';
+import { IssueStatusBadge } from '../../../../../../_components/issue-status-badge';
 import { isInputField } from '../../_lib/form-body';
 import type { FormField, ParsedTemplate } from './api';
 import styles from '../issue-create/IssueCreate.module.css';
@@ -193,7 +193,9 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
             </div>
             <div className={styles.row}>
               <dt className={styles.term}>상태</dt>
-              <dd className={styles.value}>{ISSUE_STATUS_LABELS[status]}</dd>
+              <dd className={styles.value}>
+                <IssueStatusBadge status={status} />
+              </dd>
               <dd className={styles.action}>
                 <Button variant="outline" aria-disabled={busy} onClick={open(sheets.status)}>
                   상태 바꾸기

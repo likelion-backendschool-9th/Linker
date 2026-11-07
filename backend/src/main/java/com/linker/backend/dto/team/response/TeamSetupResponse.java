@@ -27,8 +27,22 @@ public final class TeamSetupResponse {
 
   @Schema(
       name = "TeamSetupStatusOption",
-      requiredProperties = {"id", "name"})
-  public record Option(String id, String name) {}
+      requiredProperties = {"id", "name", "color"})
+  public record Option(
+      String id,
+      String name,
+      @Schema(
+              allowableValues = {
+                "BLUE",
+                "GRAY",
+                "GREEN",
+                "ORANGE",
+                "PINK",
+                "PURPLE",
+                "RED",
+                "YELLOW"
+              })
+          String color) {}
 
   @Schema(
       name = "TeamSetupBoardPreview",

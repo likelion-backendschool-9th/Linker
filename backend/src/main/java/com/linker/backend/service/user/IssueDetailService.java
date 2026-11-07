@@ -158,9 +158,10 @@ public class IssueDetailService {
           boolean allowed = canWrite;
           String why = reason;
           return tx.execute(
-              status -> {
+              txStatus -> {
                 recheck(user, s);
                 String author = row.author() == null ? "" : row.author();
+                String boardStatus = row.status();
                 return new IssueDetailResponse(
                     row.id(),
                     team,
@@ -169,7 +170,10 @@ public class IssueDetailService {
                     s.repo.fullName(),
                     row.title(),
                     IssueMarkdown.sanitize(live.body()),
-                    row.status(),
+                    boardStatus,
+                    com.linker.backend.entity.team.type.BoardStatusColors.forStatus(
+                            boardStatus, issueRepository.statusColors(team))
+                        .name(),
                     row.state(),
                     issueRepository.assignees(team, issue),
                     issueRepository.labels(issue),
@@ -177,7 +181,7 @@ public class IssueDetailService {
                     row.due(),
                     row.due() != null
                         && row.due().isBefore(LocalDate.now(clock.withZone(PlanLimits.APP_ZONE)))
-                        && !"DONE".equals(row.status()),
+                        && !"DONE".equals(boardStatus),
                     row.itemId() != null,
                     issueRepository.author(live.authorGithubId(), author),
                     row.url(),
@@ -318,7 +322,12 @@ public class IssueDetailService {
         Map.of("status", status),
         () -> {
           var r = issueRepository.detail(team, issue);
-          return new StatusResult(r.status(), r.state());
+          return new StatusResult(
+              r.status(),
+              com.linker.backend.entity.team.type.BoardStatusColors.forStatus(
+                      r.status(), issueRepository.statusColors(team))
+                  .name(),
+              r.state());
         });
   }
 

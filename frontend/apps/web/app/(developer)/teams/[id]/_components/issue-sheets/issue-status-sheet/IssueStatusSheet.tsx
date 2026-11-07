@@ -3,12 +3,20 @@
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 
-import { ISSUE_STATUS_LABELS, ISSUE_STATUSES, type IssueStatus } from '../../../../../_lib/issue-status';
+import {
+  ISSUE_STATUS_LABELS,
+  ISSUE_STATUSES,
+  boardStatusColorVar,
+  type BoardStatusColor,
+  type IssueStatus,
+} from '../../../../../_lib/issue-status';
 import styles from '../issue-sheets.module.css';
 import { useIssueStatusForm, useIssueStatusSheet } from './hook';
 
 type IssueStatusSheetProps = {
   value: IssueStatus;
+  /** Board mapping colors for the four statuses when the parent already has them (e.g. 14). */
+  statusColors?: Partial<Record<(typeof ISSUE_STATUSES)[number], BoardStatusColor>>;
   /** Rejecting keeps the sheet open with the reason */
   onSave: (status: IssueStatus) => Promise<unknown>;
 };
@@ -20,7 +28,7 @@ const HINTS: Record<(typeof ISSUE_STATUSES)[number], string> = {
   DONE: '끝난 일. GitHub 이슈도 닫혀요',
 };
 
-export function IssueStatusSheet({ value, onSave }: IssueStatusSheetProps) {
+export function IssueStatusSheet({ value, statusColors, onSave }: IssueStatusSheetProps) {
   const overlay = useIssueStatusSheet();
   return (
     <OverlaySheet
@@ -28,12 +36,24 @@ export function IssueStatusSheet({ value, onSave }: IssueStatusSheetProps) {
       title="상태 바꾸기"
       description="작업 완료로 옮기면 GitHub 이슈가 닫히고, 완료에서 되돌리면 다시 열려요."
     >
-      {overlay.isOpen && <StatusForm value={value} onSave={onSave} onDone={overlay.close} />}
+      {overlay.isOpen && (
+        <StatusForm
+          value={value}
+          statusColors={statusColors}
+          onSave={onSave}
+          onDone={overlay.close}
+        />
+      )}
     </OverlaySheet>
   );
 }
 
-function StatusForm({ value, onSave, onDone }: IssueStatusSheetProps & { onDone: () => void }) {
+function StatusForm({
+  value,
+  statusColors,
+  onSave,
+  onDone,
+}: IssueStatusSheetProps & { onDone: () => void }) {
   const { draft, setDraft, pending, error, name, submit } = useIssueStatusForm({
     value,
     onSave,
@@ -56,7 +76,16 @@ function StatusForm({ value, onSave, onDone }: IssueStatusSheetProps & { onDone:
                 onChange={() => setDraft(status)}
               />
               <span className={styles.optionText}>
-                <span className={styles.optionTitle}>{ISSUE_STATUS_LABELS[status]}</span>
+                <span className={styles.optionTitle}>
+                  <span
+                    className={styles.swatch}
+                    style={{
+                      backgroundColor: boardStatusColorVar(statusColors?.[status]),
+                    }}
+                    aria-hidden="true"
+                  />
+                  {ISSUE_STATUS_LABELS[status]}
+                </span>
                 <span className={styles.optionHint}>{HINTS[status]}</span>
               </span>
             </label>

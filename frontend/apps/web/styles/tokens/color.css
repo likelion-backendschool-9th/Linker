@@ -46,6 +46,20 @@
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
 
+  /*
+   * GitHub Projects Status option colors (enum only; no hex in components).
+   * SoT is board_status_mappings.color → API statusColor → these tokens.
+   * Always pair with the status name/label; never color alone.
+   */
+  --color-board-status-blue: #0969da;
+  --color-board-status-gray: #636c76;
+  --color-board-status-green: #1a7f37;
+  --color-board-status-orange: #bc4c00;
+  --color-board-status-pink: #bf3989;
+  --color-board-status-purple: #8250df;
+  --color-board-status-red: #cf222e;
+  --color-board-status-yellow: #9a6700;
+
   /* Focus and overlay */
   --color-focus-ring: var(--color-primary);
   --color-focus-ring-on-dark: #ffffff;

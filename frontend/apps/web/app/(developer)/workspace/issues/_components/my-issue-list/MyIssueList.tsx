@@ -8,7 +8,7 @@ import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { formatDate } from '@/lib/format/time';
 
-import { ISSUE_STATUS_LABELS } from '../../../../_lib/issue-status';
+import { IssueStatusBadge } from '../../../../_components/issue-status-badge';
 import type { MyIssue } from './api';
 import { useMyIssueList } from './hook';
 import styles from './MyIssueList.module.css';
@@ -56,7 +56,7 @@ function MyIssueRow({ issue }: { issue: MyIssue }) {
         </Link>
       </h2>
       <div className={styles.meta}>
-        <span className={styles.status}>{ISSUE_STATUS_LABELS[issue.status]}</span>
+        <IssueStatusBadge status={issue.status} statusColor={issue.statusColor} />
         {issue.dueDate ? (
           <span className={issue.overdue ? styles.overdue : styles.due}>
             마감 <time dateTime={issue.dueDate}>{formatDate(issue.dueDate)}</time>

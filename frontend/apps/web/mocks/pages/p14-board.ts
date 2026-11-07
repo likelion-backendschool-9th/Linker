@@ -1,5 +1,5 @@
 import { get, type MockRoute } from '../core/define';
-import { STATUS_LABELS, type IssueStatus } from '../fixtures/issues';
+import { mockStatusColor, STATUS_LABELS, type IssueStatus } from '../fixtures/issues';
 import { findTeam } from '../fixtures/teams';
 import { filterIssues, issueRow } from './p11-issue-list';
 
@@ -16,6 +16,7 @@ export const routes: MockRoute[] = [
       canWrite: team !== undefined && team.id !== 2 && team.status !== 'READ_ONLY',
       columns: COLUMNS.map((status) => ({
         status,
+        statusColor: mockStatusColor(status),
         label: STATUS_LABELS[status],
         cards: issues.filter((item) => item.status === status).map(issueRow),
       })),

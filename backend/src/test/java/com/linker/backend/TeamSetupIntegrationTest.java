@@ -179,9 +179,9 @@ class TeamSetupIntegrationTest {
                               "Status",
                               "SINGLE_SELECT",
                               List.of(
-                                  new Option("o1", "Todo"),
-                                  new Option("o2", "In Progress"),
-                                  new Option("o3", "Done")))));
+                                  new Option("o1", "Todo", "GRAY"),
+                                  new Option("o2", "In Progress", "BLUE"),
+                                  new Option("o3", "Done", "GREEN")))));
               projects.put(p.id(), p);
               return p;
             });
@@ -197,8 +197,11 @@ class TeamSetupIntegrationTest {
               var p = projects.get("P_1");
               var options = new ArrayList<Option>();
               int i = 0;
-              for (String name : (List<String>) invocation.getArgument(2))
-                options.add(new Option("opt" + i++, name));
+              var colors = List.of("GRAY", "BLUE", "RED", "GREEN");
+              for (String name : (List<String>) invocation.getArgument(2)) {
+                options.add(new Option("opt" + i, name, colors.get(i % colors.size())));
+                i++;
+              }
               projects.put(
                   p.id(),
                   new Project(
@@ -437,7 +440,7 @@ class TeamSetupIntegrationTest {
             "F_STATUS",
             "Status",
             "SINGLE_SELECT",
-            List.of(new Option("custom", "Waiting for review"))));
+            List.of(new Option("custom", "Waiting for review", "ORANGE"))));
     projects.put(
         original.id(),
         new Project(
@@ -898,15 +901,17 @@ class TeamSetupIntegrationTest {
                     "Status",
                     "SINGLE_SELECT",
                     List.of(
-                        new Option("a", "Backlog"),
-                        new Option("b", "Doing"),
-                        new Option("c", "Waiting"),
-                        new Option("d", "Shipped"),
-                        new Option("e", "Unmapped"))))));
+                        new Option("a", "Backlog", "GRAY"),
+                        new Option("b", "Doing", "BLUE"),
+                        new Option("c", "Waiting", "YELLOW"),
+                        new Option("d", "Shipped", "GREEN"),
+                        new Option("e", "Unmapped", "PINK"))))));
     mvc.perform(get("/api/v1/user/teams/{id}/setup/boards", team).cookie(session))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].cardCount").value(15))
-        .andExpect(jsonPath("$.items[0].statusOptions[0].id").value("a"));
+        .andExpect(jsonPath("$.items[0].statusOptions[0].id").value("a"))
+        .andExpect(jsonPath("$.items[0].statusOptions[0].color").value("GRAY"))
+        .andExpect(jsonPath("$.items[0].statusOptions[1].color").value("BLUE"));
     String command =
         "{\"mode\":\"EXISTING\",\"boardId\":\"P_1\",\"statusMapping\":{\"a\":\"TODO\",\"b\":\"IN_PROGRESS\",\"c\":\"BLOCKED\",\"d\":\"DONE\"}}";
     mvc.perform(
@@ -916,6 +921,13 @@ class TeamSetupIntegrationTest {
                 .content(command))
         .andExpect(status().isOk());
     assertThat(issueRepository.context(team).board().statuses().get("e")).isEqualTo("OTHER");
+    var saved =
+        jdbc.queryForList(
+            "select github_option_id, color from board_status_mappings where board_id = (select id from team_project_boards where team_id = ?) order by github_option_id",
+            team);
+    assertThat(saved)
+        .extracting(row -> row.get("github_option_id") + "=" + row.get("color"))
+        .containsExactly("a=GRAY", "b=BLUE", "c=YELLOW", "d=GREEN", "e=PINK");
     verify(github, never()).updateStatus(anyLong(), anyString(), anyList());
     mvc.perform(
             post("/api/v1/user/teams/{id}/setup/board", team)

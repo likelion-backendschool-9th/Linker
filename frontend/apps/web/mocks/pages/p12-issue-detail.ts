@@ -1,5 +1,11 @@
 import { fail, get, put, type MockRoute } from '../core/define';
-import { findIssue, isOverdue, LABELS, type IssueStatus } from '../fixtures/issues';
+import {
+  findIssue,
+  isOverdue,
+  LABELS,
+  mockStatusColor,
+  type IssueStatus,
+} from '../fixtures/issues';
 import { TEAM_MEMBERS } from '../fixtures/teams';
 
 /** 12 Issue detail: `IssueController`. Writes change the in-memory issue, so the board and list follow. */
@@ -27,6 +33,7 @@ export const routes: MockRoute[] = [
     const members = TEAM_MEMBERS[issue.teamId] ?? [];
     return {
       ...issue,
+      statusColor: mockStatusColor(issue.status),
       // Assignees no longer in the team show as "팀 밖 사용자" (04 ch. 7 exceptions)
       assignees: issue.assignees.map((user) => ({
         ...user,
@@ -96,7 +103,11 @@ export const routes: MockRoute[] = [
     issue.status = status;
     issue.state = status === 'DONE' ? 'CLOSED' : 'OPEN';
     issue.updatedAt = new Date().toISOString();
-    return { status: issue.status, state: issue.state };
+    return {
+      status: issue.status,
+      statusColor: mockStatusColor(issue.status),
+      state: issue.state,
+    };
   }),
   get('/api/v1/user/teams/:teamId/issues/:issueId/sub-issues', ({ params }) => {
     const issue = issueOr404(params.teamId!, params.issueId!);

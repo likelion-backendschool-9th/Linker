@@ -26,7 +26,8 @@ public interface GithubTeamSource {
       String parentFullName,
       String defaultBranch) {}
 
-  record Option(String id, String name) {}
+  /** {@code color} is GitHub's ProjectV2SingleSelectFieldOptionColor enum name. */
+  record Option(String id, String name, String color) {}
 
   record Field(String id, String name, String dataType, List<Option> options) {}
 

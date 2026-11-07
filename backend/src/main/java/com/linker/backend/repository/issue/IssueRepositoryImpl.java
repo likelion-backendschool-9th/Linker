@@ -22,6 +22,8 @@ import com.linker.backend.entity.issue.IssueLabel;
 import com.linker.backend.entity.issue.type.IssueState;
 import com.linker.backend.entity.issue.type.IssueSyncStatus;
 import com.linker.backend.entity.team.type.BoardStatus;
+import com.linker.backend.entity.team.type.BoardStatusColor;
+import com.linker.backend.entity.team.type.BoardStatusColors;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.IssueSource;
@@ -644,6 +646,7 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
   /** Shared 11/14/15 card: assignees (with team membership), labels and the KST overdue mark. */
   private List<IssueListResponse.Item> items(long teamId, List<Card> page, LocalDate today) {
     List<Long> ids = page.stream().map(Card::id).toList();
+    Map<BoardStatus, BoardStatusColor> statusColors = statusColors(teamId);
     Map<Long, List<IssueListResponse.Assignee>> assignees = new HashMap<>();
     for (Object[] r :
         entityManager
@@ -679,13 +682,15 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
             row -> {
               boolean closed = row.state() == IssueState.CLOSED;
               String status = row.status().name();
+              String effective = closed ? "DONE" : status;
               return new IssueListResponse.Item(
                   row.id(),
                   row.number(),
                   row.repoId(),
                   row.repoName(),
                   row.title(),
-                  closed ? "DONE" : status,
+                  effective,
+                  BoardStatusColors.forStatus(effective, statusColors).name(),
                   row.state().name(),
                   List.copyOf(assignees.getOrDefault(row.id(), List.of())),
                   List.copyOf(labels.getOrDefault(row.id(), List.of())),
@@ -701,6 +706,17 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
                   row.syncedAt());
             })
         .toList();
+  }
+
+  /** Board mapping colors for the four Linker statuses; empty when the team has no board yet. */
+  public Map<BoardStatus, BoardStatusColor> statusColors(long teamId) {
+    return teams
+        .findConnection(teamId)
+        .filter(found -> found.boardId() != null)
+        .map(
+            found ->
+                BoardStatusColors.byLinkerStatus(teams.findBoardStatusMappings(found.boardId())))
+        .orElse(Map.of());
   }
 
   /**

@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api/api-fetch';
 
 import type { IssueAssignee, IssueLabel, IssueUser } from './issue-queries';
-import type { IssueStatus } from '../../../_lib/issue-status';
+import type { BoardStatusColor, IssueStatus } from '../../../_lib/issue-status';
 
 /**
  * Provisional 12 `IssueController` contract (WBS 12). Hand-written until the controller is in
@@ -20,6 +20,7 @@ export type IssueDetail = {
   /** Sanitized Markdown from the server; rendered again through rehype-sanitize */
   body: string;
   status: IssueStatus;
+  statusColor: BoardStatusColor;
   state: 'OPEN' | 'CLOSED';
   assignees: IssueAssignee[];
   labels: IssueLabel[];
@@ -109,7 +110,7 @@ export function saveSchedule(teamId: string, issueId: string, schedule: IssueSch
 
 /** Done closes the issue, moving back reopens it (POL-I-3). The board (14) borrows this. */
 export function saveStatus(teamId: string, issueId: string, status: IssueStatus) {
-  return apiFetch<{ status: IssueStatus; state: 'OPEN' | 'CLOSED' }>(
+  return apiFetch<{ status: IssueStatus; statusColor: BoardStatusColor; state: 'OPEN' | 'CLOSED' }>(
     `${base(teamId, issueId)}/status`,
     json('PUT', { status }),
   );

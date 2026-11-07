@@ -113,14 +113,19 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
     return entityManager
         .createQuery(
             """
-            select m.githubOptionId, m.linkerStatus from BoardStatusMapping m
+            select m.githubOptionId, m.linkerStatus, m.color from BoardStatusMapping m
             where m.boardId = :board order by m.githubOptionId
             """,
             Object[].class)
         .setParameter("board", boardId)
         .getResultList()
         .stream()
-        .map(row -> new StatusMapping((String) row[0], (BoardStatus) row[1]))
+        .map(
+            row ->
+                new StatusMapping(
+                    (String) row[0],
+                    (BoardStatus) row[1],
+                    (com.linker.backend.entity.team.type.BoardStatusColor) row[2]))
         .toList();
   }
 
@@ -397,7 +402,8 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
               board,
               option.id(),
               option.name(),
-              BoardStatus.valueOf(mapping.getOrDefault(option.id(), "OTHER"))));
+              BoardStatus.valueOf(mapping.getOrDefault(option.id(), "OTHER")),
+              com.linker.backend.entity.team.type.BoardStatusColor.parse(option.color())));
     entityManager.flush();
   }
 

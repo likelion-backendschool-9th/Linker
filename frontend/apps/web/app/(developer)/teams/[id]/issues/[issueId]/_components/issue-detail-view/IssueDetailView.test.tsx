@@ -29,6 +29,7 @@ const issue = {
   title: '피드 카드 컴포넌트',
   body: '## 할 일\n- [x] 설계\n- [ ] 구현\n\n<script>alert(1)</script>[문서](https://docs.github.com)',
   status: 'IN_PROGRESS',
+  statusColor: 'BLUE',
   state: 'OPEN',
   assignees: [person(1, '한서준'), person(6, '강지우', false)],
   labels: [{ name: 'feature', color: '0e8a16' }],
@@ -52,8 +53,12 @@ function mockDetail(overrides: Partial<typeof issue> = {}) {
   let current = { ...issue, ...overrides };
   fetchMock.mockImplementation(async (url, init) => {
     if (init?.method === 'PUT' && url.endsWith('/status')) {
-      current = { ...current, status: 'DONE', state: 'CLOSED' };
-      return { status: current.status, state: current.state };
+      current = { ...current, status: 'DONE', statusColor: 'GREEN', state: 'CLOSED' };
+      return {
+        status: current.status,
+        statusColor: current.statusColor,
+        state: current.state,
+      };
     }
     return current;
   });
