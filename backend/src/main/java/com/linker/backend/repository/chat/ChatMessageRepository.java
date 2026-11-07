@@ -14,6 +14,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long>, ChatMessageRepositoryCustom {
 
+	/** Caller holds the team and room locks: system sender IDs are intentionally NULL. */
+	@Query("""
+			select count(m)>0 from ChatMessage m where m.room.id=:roomId
+			  and m.messageType='PR_EVENT' and m.clientMessageId=:deliveryKey
+			""")
+	boolean containsPullRequestDelivery(long roomId, String deliveryKey);
+
 	@Query("select m.room.id from ChatMessage m where m.id = :id")
 	Optional<Long> findRoomId(@Param("id") long id);
 

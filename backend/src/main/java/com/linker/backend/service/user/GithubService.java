@@ -27,6 +27,7 @@ public class GithubService {
   private final GithubAppClient github;
   private final GithubTeamSource setup;
   private final TeamRepository teams;
+  private final GithubPullRequestService requests;
 
   public GithubService(
       GithubAppProperties properties,
@@ -34,13 +35,15 @@ public class GithubService {
       GithubUserAccessTokenSource tokens,
       GithubAppClient github,
       GithubTeamSource setup,
-      TeamRepository teams) {
+      TeamRepository teams,
+      GithubPullRequestService requests) {
     this.properties = properties;
     this.states = states;
     this.tokens = tokens;
     this.github = github;
     this.setup = setup;
     this.teams = teams;
+    this.requests = requests;
   }
 
   @Transactional(propagation = Propagation.NEVER)
@@ -93,5 +96,10 @@ public class GithubService {
     if (user.userType() != UserType.DEVELOPER || user.status() != UserStatus.ACTIVE) {
       throw new ApiException(403, "FORBIDDEN", "이 기능을 사용할 수 없어요");
     }
+  }
+
+  public com.linker.backend.dto.github.response.ChatPullRequestsResponse pullRequests(
+      AuthenticatedUser user, long roomId, String state) {
+    return requests.list(user, roomId, state);
   }
 }

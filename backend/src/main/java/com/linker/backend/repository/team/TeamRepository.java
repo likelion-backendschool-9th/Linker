@@ -35,4 +35,21 @@ public interface TeamRepository extends JpaRepository<Team, Long>, TeamRepositor
     if (!team(expected.id()).equals(expected))
       throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요. 다시 확인해 주세요");
   }
+
+  @Query("""
+      select t.id from Team t, GithubInstallation i, TeamRepo link, GithubRepo r
+      where t.installationId=i.id and link.teamId=t.id and link.repoId=r.id
+        and i.githubInstallationId=:installationId and t.githubOrgId=:orgId
+        and r.githubRepoId=:githubRepoId and i.suspendedAt is null and i.removedAt is null
+        and t.status in ('ACTIVE','COMPLETED') and r.deletedAt is null
+        and lower(r.ownerLogin)=lower(t.githubOrgLogin)
+      """)
+  Optional<Long> findPullRequestTeam(long installationId, long orgId, long githubRepoId);
+
+  @Query("""
+      select t.id from Team t join GithubInstallation i on i.id=t.installationId
+      where t.status in ('ACTIVE','COMPLETED') and i.removedAt is null and i.suspendedAt is null
+      order by t.id
+      """)
+  java.util.List<Long> findPullRequestSyncTeams();
 }

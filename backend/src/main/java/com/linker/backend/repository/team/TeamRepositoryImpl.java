@@ -317,6 +317,15 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
 
   @Override
   @Transactional(propagation = Propagation.MANDATORY)
+  public void renameGithubRepository(long githubRepoId, String owner, String name, Instant now) {
+    // Names may change while the numeric repository identity stays fixed. Other metadata is not
+    // falsely marked refreshed from a partial webhook payload.
+    bulk("update GithubRepo r set r.ownerLogin=:p0,r.name=:p1,r.fullName=concat(:p0,'/',:p1),"
+        + "r.updatedAt=:p2 where r.githubRepoId=:p3", owner, name, now, githubRepoId);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.MANDATORY)
   public void saveRepos(
       long teamId, long userId, List<GithubTeamSource.Repository> repos, Instant now) {
     requireSchema("github_repos", "team_repos");
@@ -509,7 +518,8 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
         """
         insert into pull_requests(team_id,repo_id,github_pr_id,number,title,state,draft,author_login,html_url,merged_at,closed_at,github_updated_at,created_at,updated_at)
         values (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9,:p10,:p11,:p12,:p12)
-        on conflict(github_pr_id) do update set title=excluded.title,state=excluded.state,draft=excluded.draft,author_login=excluded.author_login,
+        on conflict(github_pr_id) do update set team_id=excluded.team_id,repo_id=excluded.repo_id,
+        title=excluded.title,state=excluded.state,draft=excluded.draft,author_login=excluded.author_login,
         html_url=excluded.html_url,merged_at=excluded.merged_at,closed_at=excluded.closed_at,github_updated_at=excluded.github_updated_at,updated_at=excluded.updated_at
         where pull_requests.github_updated_at<=excluded.github_updated_at
         """,
