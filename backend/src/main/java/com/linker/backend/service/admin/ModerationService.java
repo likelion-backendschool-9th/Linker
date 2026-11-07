@@ -222,6 +222,9 @@ public class ModerationService {
 			default -> throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
 		}
 		content.apply(row.getTargetType(), row.getTargetId(), action, now);
+		if (action == AdminActionType.DISMISS && row.getAutoHiddenAt() != null) {
+			content.undoAutoHide(row.getTargetType(), row.getTargetId());
+		}
 		actions.save(AdminAction.record(admin, action, row.getTargetType().name(), row.getTargetId(), row, reason));
 		notifyOutcome(row, action, reason);
 		boolean appealed = appeals.findPendingCaseIds().contains(caseId);

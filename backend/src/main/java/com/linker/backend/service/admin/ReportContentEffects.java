@@ -2,6 +2,7 @@ package com.linker.backend.service.admin;
 
 import java.time.Instant;
 
+import com.linker.backend.dto.chat.event.ChatMessageModerated;
 import com.linker.backend.entity.chat.ChatMessage;
 import com.linker.backend.entity.moderation.type.AdminActionType;
 import com.linker.backend.entity.moderation.type.ReportTargetType;
@@ -15,6 +16,7 @@ import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.RecruiterAdRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,18 +30,21 @@ public class ReportContentEffects {
 	private final CommentRepository comments;
 	private final RecruitPostRepository recruitPosts;
 	private final RecruiterAdRepository ads;
+	private final ApplicationEventPublisher events;
 
 	public ReportContentEffects(
 			ChatMessageRepository messages,
 			PostRepository posts,
 			CommentRepository comments,
 			RecruitPostRepository recruitPosts,
-			RecruiterAdRepository ads) {
+			RecruiterAdRepository ads,
+			ApplicationEventPublisher events) {
 		this.messages = messages;
 		this.posts = posts;
 		this.comments = comments;
 		this.recruitPosts = recruitPosts;
 		this.ads = ads;
+		this.events = events;
 	}
 
 	public void apply(ReportTargetType type, long targetId, AdminActionType action, Instant now) {
@@ -57,6 +62,21 @@ public class ReportContentEffects {
 		}
 	}
 
+	/**
+	 * Dismissing a case that was auto-hidden at {@code PlanLimits.REPORT_AUTO_HIDE_REPORTERS} reporters
+	 * shows the content again. Only the hide is undone; a sender's own deletion stays.
+	 * Only chat messages are auto-hidden today; other targets join when their report paths are wired.
+	 */
+	public void undoAutoHide(ReportTargetType type, long targetId) {
+		if (type != ReportTargetType.TEAM_MESSAGE && type != ReportTargetType.DM_MESSAGE) {
+			return;
+		}
+		ChatMessage message = messages.lockById(targetId)
+				.orElseThrow(this::missing);
+		message.unhide();
+		moderated(message);
+	}
+
 	private void chat(long targetId, AdminActionType action, Instant now) {
 		ChatMessage message = messages.lockById(targetId)
 				.orElseThrow(this::missing);
@@ -68,8 +88,14 @@ public class ReportContentEffects {
 			}
 			case RESTORE -> message.restore();
 			default -> {
+				return;
 			}
 		}
+		moderated(message);
+	}
+
+	private void moderated(ChatMessage message) {
+		events.publishEvent(new ChatMessageModerated(message.getRoom().getId(), message.getId()));
 	}
 
 	private void post(long targetId, AdminActionType action, Instant now) {
