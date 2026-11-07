@@ -91,7 +91,9 @@ public class UserAdministrationService {
     return new Detail(id,user.getUsername(),user.visibleName(),user.getAvatarUrl(),user.getUserType().name(),
         mask(user.getEmail()),user.getStatus().name(),user.getCreatedAt(),
         new Actions(admin.getAdminRole()==AdminRole.LEAD && actor.userId()!=id,admin.getAdminRole()==AdminRole.LEAD,actions.supportsRefundAudit()),
-        sanctions.findByUser_IdOrderByIdDesc(id).stream().map(s -> view(s,now)).toList(),
+        sanctions.findByUser_IdOrderByIdDesc(id).stream()
+            .filter(s -> !(s.getRevokedAt()!=null && s.getReasonCode()==null && s.getReasonDetail()==null))
+            .map(s -> view(s,now)).toList(),
         reportHistory,subscriptionHistory,paymentHistory,recruiter);
   }
 

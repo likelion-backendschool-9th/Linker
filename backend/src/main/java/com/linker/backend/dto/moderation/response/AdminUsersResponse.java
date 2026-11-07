@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record AdminUsersResponse(List<Item> items, String nextCursor, boolean reviewFilterSupported) {
   @Schema(name="AdminUserListItem")
   public record Item(long id, String login, String name, String avatarUrl, String userType,
-      String emailMasked, String status, Boolean needsReview, Instant joinedAt) {}
+      String emailMasked, String status, @Schema(nullable=true) Boolean needsReview, Instant joinedAt) {}
   @Schema(name="AdminUserSanction")
   public record SanctionView(long id, String step, String reason, String reasonCode,
       Instant startsAt, Instant endsAt, Instant revokedAt, boolean active) {}

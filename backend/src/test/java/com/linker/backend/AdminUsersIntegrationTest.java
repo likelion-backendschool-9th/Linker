@@ -147,6 +147,9 @@ class AdminUsersIntegrationTest {
         .content("{\"accept\":true,\"reason\":\"오인 확인\"}")).andExpect(status().isNoContent());
     assertThat(count("banned_github_ids")).isZero();
     assertThat(users.findById(target.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.ACTIVE);
+    mvc.perform(get("/api/v1/admin/users/"+target.getId()).cookie(root)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.sanctions").isEmpty());
+    assertThat(jdbc.queryForObject("select count(*) from admin_actions where action='APPEAL_ACCEPT'",Integer.class)).isEqualTo(1);
   }
   @Test void refundRequiresAuditSchemaBeforeAnyProviderCall() throws Exception {
     jdbc.execute("alter table admin_actions drop constraint admin_actions_action_chk");
@@ -231,6 +234,7 @@ class AdminUsersIntegrationTest {
     assertThat(schemas.path("AdminUserDetail").path("properties").has("email")).isFalse();
     assertThat(schemas.path("AdminUserRevealedEmail").path("properties").has("email")).isTrue();
     assertThat(schemas.path("AdminUserAllowedActions").path("properties").has("liftSanction")).isTrue();
+    assertThat(schemas.path("AdminUserListItem").path("properties").path("needsReview").toString()).contains("null");
   }
   private void apply(Cookie actor,String step,int expected) throws Exception {
     mvc.perform(post(path()).cookie(actor).contentType(MediaType.APPLICATION_JSON)
