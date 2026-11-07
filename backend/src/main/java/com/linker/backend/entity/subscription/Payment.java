@@ -134,6 +134,17 @@ public class Payment {
 		}
 	}
 
+	/** Full refund through the Toss cancel API; the cancel response replaces the stored Toss payment. */
+	public void refund(Instant canceledAt, String cancelReason, String rawResponse) {
+		this.status = PaymentStatus.CANCELED;
+		this.canceledAt = canceledAt;
+		this.cancelReason = cancelReason;
+		this.refundedAmount = this.amount;
+		if (rawResponse != null) {
+			this.rawResponse = rawResponse;
+		}
+	}
+
 	public Long getId() {
 		return id;
 	}

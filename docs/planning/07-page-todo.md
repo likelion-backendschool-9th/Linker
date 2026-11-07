@@ -742,10 +742,10 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 - [ ] Current plan, next billing date (or expiry), payment history
 - [ ] Cancel (confirm sheet): benefits kept until the paid period ends
-- [ ] Refund: within 7 days of payment + benefits unused → full refund via Toss Payments cancel
+- [ ] Refund: within 7 days of payment + benefits unused (its paid period has not started; latest payment only) → full refund via Toss Payments cancel
 - [ ] Server: on expiry switch to free. Existing photos/pinned posts/recruit posts stay; free limits apply from new writes/edits; team keeps existing members and only blocks new ones. When Scout ends, the job ad becomes "ended" (content kept) and the offer limit is 10
-- [ ] Server: Flex 30-day grace after it ends. Notify the team 7 days before Flex ends and 7 days before grace ends; when grace ends, hide messages older than 60 days (not deleted) and queue image originals older than 90 days for deletion
-- [ ] Server: on the Flex billing date compute the amount from that day's headcount (`subscriptions.seats`), notify "next payment: N members, amount" the day before
+- [ ] Server: Flex 30-day grace after it ends. Notify the team 7 days before Flex ends and 7 days before grace ends; when grace ends, hide messages older than 60 days (not deleted) and queue image originals older than 90 days for deletion. Pass 1 records `grace_ends_at` on expiry only; notices and hiding come with 17's `[Included]` full chat history (every team sees 60 days until then)
+- [ ] Server: on the Flex billing date compute the amount from that day's headcount (`subscriptions.seats`), notify "next payment: N members, amount" the day before. Needs a billing date, so it comes with `[Included]` auto-renewal (28); until then each payment uses the checkout headcount
 - [ ] `[Included]` Payment-failure banner and 7-day grace
 - [ ] `[Included]` Hand over Flex billing manager
 

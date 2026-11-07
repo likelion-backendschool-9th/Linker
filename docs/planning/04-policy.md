@@ -680,7 +680,7 @@ Detailed job ad rules are in [ch. 3 "Job ads"](#job-ads-pol-h-5789). The offer l
 | Free trial | Pro once per account, Flex once per team, 7 days (no trial for Scout). During the Flex trial, AI summary, the progress graph and full chat history all work. Notify billing date and amount one day before it ends |
 | Auto-renewal | Monthly/annual auto-renewal. Annual: notice 7 days before renewal. Price increases notified 30 days ahead with consent |
 | Cancellation | Anytime. Benefits continue until the paid period ends; no pro-rated refund |
-| Refund | Full refund within 7 days of payment if benefits unused. Refund flow demonstrated via payment cancellation even in test mode |
+| Refund | Full refund within 7 days of payment if benefits unused. "Unused" means the paid period has not started yet (a payment that extends a running subscription); once a period has started, cancel instead. Only the latest payment of a subscription can be refunded, and its period is taken back. Refund flow demonstrated via payment cancellation even in test mode |
 | Payment failure | Benefits kept for 7 days while retrying; if still failing, switch to free |
 | Switching to free | Existing photos, pinned posts and recruit posts stay; free limits apply when writing or editing from then on. If team members exceed 6, existing members stay and only new members are blocked. No new AI summaries; shared cards remain. The progress graph turns into a Flex prompt; snapshots keep accumulating. Job ads stop showing (content kept); offer limit becomes 10/day |
 | Flex grace period | When Flex ends, full chat history and image originals stay as they are for **30 days**. The whole team is notified 7 days before Flex ends and 7 days before the grace period ends. After 30 days, messages older than 60 days are hidden (not deleted; visible again on resubscribing) and image originals older than 90 days are deleted, leaving previews (not restored on resubscribing). Resubscribing within the grace period changes nothing |
@@ -718,6 +718,10 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Invite join | 팀에 합류하기 |
 | Invite GitHub start | GitHub로 빠르게 시작하기 |
 | Invite developer-only | 개발자 계정만 팀에 참여할 수 있어요. |
+| Refund: period already started | 이미 혜택이 시작된 결제는 환불할 수 없어요. 해지하면 남은 기간까지 쓸 수 있어요. |
+| Refund: not the latest payment | 가장 최근 결제부터 환불할 수 있어요. |
+| Refund: past 7 days | 결제 후 7일이 지나 환불할 수 없어요. |
+| Cancel: subscription already ended | 이미 끝난 구독이에요. |
 | Team invite notification | ○○ 팀에 초대됐어요. · 확인하기 |
 
 ## 13. Policies for later-phase features

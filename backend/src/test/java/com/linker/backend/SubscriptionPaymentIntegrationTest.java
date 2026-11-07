@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,7 @@ import com.linker.backend.integration.payment.PaymentGatewayException;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.issue.IssueRepository;
 import com.linker.backend.service.AuthService;
+import com.linker.backend.service.user.SubscriptionService;
 import com.linker.backend.support.TeamTestFixtures;
 
 import jakarta.servlet.http.Cookie;
@@ -64,7 +66,10 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-/** Page 28: plans, Flex team candidates, server checkout, Toss confirm (fake gateway) and fail return. */
+/**
+ * Pages 28 and 29: plans, Flex team candidates, server checkout, Toss confirm and cancel (fake gateway),
+ * fail return, subscription list, cancel, payment history, refund and expiry.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
@@ -122,6 +127,8 @@ class SubscriptionPaymentIntegrationTest {
 	private IssueRepository issues;
 	@Autowired
 	private ObjectMapper json;
+	@Autowired
+	private SubscriptionService subscriptionService;
 
 	@BeforeEach
 	void resetGateway() {
@@ -473,7 +480,403 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(jsonPath(fail + ".responses['200']").doesNotExist());
 	}
 
+	// ---------------------------------------------------------------- page 29
+
+	@Test
+	void mySubscriptionsListOwnProAndPaidFlexWithNextHeadcount() throws Exception {
+		User developer = user("manage", UserType.DEVELOPER);
+		mockMvc.perform(get("/api/v1/user/me/subscriptions").cookie(cookie(developer)))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", "no-store, private"))
+				.andExpect(jsonPath("$.items", hasSize(0)));
+		pay(developer, "PRO", "MONTHLY", null, 2_900);
+
+		User member = user("manage-m", UserType.DEVELOPER);
+		long team = TeamTestFixtures.team(jdbc, developer.getId(), "Manage Team", "ACTIVE");
+		member(team, developer, "OWNER", false);
+		member(team, member, "MEMBER", false);
+		pay(developer, "FLEX", "MONTHLY", team, 7_900);
+		for (int i = 0; i < 5; i++) {
+			member(team, user("manage-x" + i, UserType.DEVELOPER), "MEMBER", false);
+		}
+
+		mockMvc.perform(get("/api/v1/user/me/subscriptions").cookie(cookie(developer)))
+				.andExpect(jsonPath("$.items", hasSize(2)))
+				.andExpect(jsonPath("$.items[0].planKey").value("PRO"))
+				.andExpect(jsonPath("$.items[0].status").value("ACTIVE"))
+				.andExpect(jsonPath("$.items[0].billing").value("MONTHLY"))
+				.andExpect(jsonPath("$.items[0].expiresOn").value("2026-12-05"))
+				.andExpect(jsonPath("$.items[0].nextBillingOn").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].cancelAtPeriodEnd").value(false))
+				.andExpect(jsonPath("$.items[0].teamId").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].nextAmount").value(nullValue()))
+				.andExpect(jsonPath("$.items[1].planKey").value("FLEX"))
+				.andExpect(jsonPath("$.items[1].teamId").value(team))
+				.andExpect(jsonPath("$.items[1].teamName").value("Manage Team"))
+				.andExpect(jsonPath("$.items[1].seats").value(2))
+				.andExpect(jsonPath("$.items[1].nextSeats").value(7))
+				.andExpect(jsonPath("$.items[1].nextAmount").value(9_800));
+		// A team member who does not pay sees neither the owner's Pro nor the team's Flex.
+		mockMvc.perform(get("/api/v1/user/me/subscriptions").cookie(cookie(member)))
+				.andExpect(jsonPath("$.items", hasSize(0)));
+		mockMvc.perform(get("/api/v1/user/me/subscriptions")).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void paymentHistoryShowsPaidOrdersNewestFirstWithRefundReason() throws Exception {
+		User developer = user("history", UserType.DEVELOPER);
+		String first = pay(developer, "PRO", "MONTHLY", null, 2_900);
+		order(developer, "PRO", "MONTHLY", null); // READY order: not history
+		String failed = order(developer, "PRO", "MONTHLY", null);
+		mockMvc.perform(post("/api/v1/user/payments/" + failed + "/fail").cookie(cookie(developer))
+				.contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"PAY_PROCESS_CANCELED\"}"));
+		String second = pay(developer, "PRO", "MONTHLY", null, 2_900);
+
+		mockMvc.perform(get("/api/v1/user/me/payments").cookie(cookie(developer)))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", "no-store, private"))
+				.andExpect(jsonPath("$.items", hasSize(2)))
+				.andExpect(jsonPath("$.items[0].paymentId").value(paymentId(second)))
+				.andExpect(jsonPath("$.items[0].status").value("DONE"))
+				.andExpect(jsonPath("$.items[0].orderName").value("Pro 월간 구독"))
+				.andExpect(jsonPath("$.items[0].method").value("카드"))
+				.andExpect(jsonPath("$.items[0].approvedAt").value("2026-11-05T14:30:00Z"))
+				.andExpect(jsonPath("$.items[0].refundable").value(true))
+				.andExpect(jsonPath("$.items[0].refundReason").value(nullValue()))
+				.andExpect(jsonPath("$.items[1].paymentId").value(paymentId(first)))
+				.andExpect(jsonPath("$.items[1].refundable").value(false))
+				.andExpect(jsonPath("$.items[1].refundReason").value("가장 최근 결제부터 환불할 수 있어요."))
+				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
+
+		User other = user("history-other", UserType.DEVELOPER);
+		mockMvc.perform(get("/api/v1/user/me/payments").cookie(cookie(other)))
+				.andExpect(jsonPath("$.items", hasSize(0)));
+		mockMvc.perform(get("/api/v1/user/me/payments").param("cursor", "x").cookie(cookie(developer)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		mockMvc.perform(get("/api/v1/user/me/payments").param("cursor", String.valueOf(paymentId(second)))
+						.cookie(cookie(developer)))
+				.andExpect(jsonPath("$.items", hasSize(1)))
+				.andExpect(jsonPath("$.items[0].paymentId").value(paymentId(first)));
+	}
+
+	@Test
+	void historyPagesByTwenty() throws Exception {
+		User developer = user("paging", UserType.DEVELOPER);
+		for (int i = 0; i < 21; i++) {
+			pay(developer, "PRO", "MONTHLY", null, 2_900);
+		}
+		JsonNode page = body(mockMvc.perform(get("/api/v1/user/me/payments").cookie(cookie(developer)))
+				.andExpect(jsonPath("$.items", hasSize(20)))
+				.andReturn());
+		String cursor = page.get("nextCursor").asString();
+		assertThat(cursor).isEqualTo(page.get("items").get(19).get("paymentId").asString());
+		mockMvc.perform(get("/api/v1/user/me/payments").param("cursor", cursor).cookie(cookie(developer)))
+				.andExpect(jsonPath("$.items", hasSize(1)))
+				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
+	}
+
+	@Test
+	void cancelKeepsBenefitsUntilPeriodEndAndPayingAgainUndoesIt() throws Exception {
+		User developer = user("cancel", UserType.DEVELOPER);
+		pay(developer, "PRO", "MONTHLY", null, 2_900);
+		long subscriptionId = subscriptionId(developer);
+
+		mockMvc.perform(cancelSubscription(developer, subscriptionId))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", "no-store, private"))
+				.andExpect(jsonPath("$.subscriptionId").value(subscriptionId))
+				.andExpect(jsonPath("$.status").value("ACTIVE"))
+				.andExpect(jsonPath("$.cancelAtPeriodEnd").value(true))
+				.andExpect(jsonPath("$.expiresOn").value("2026-12-05"));
+		assertThat(jdbc.queryForObject("select canceled_at from subscriptions where id = ?", Timestamp.class,
+				subscriptionId).toInstant()).isEqualTo(NOW);
+		mockMvc.perform(cancelSubscription(developer, subscriptionId)).andExpect(status().isOk());
+		mockMvc.perform(get("/api/v1/user/plans").cookie(cookie(developer)))
+				.andExpect(jsonPath("$.currentPlan").value("PRO"));
+		mockMvc.perform(get("/api/v1/user/recruit-editor/options").cookie(cookie(developer)))
+				.andExpect(jsonPath("$.openLimit").value(10));
+
+		User stranger = user("cancel-stranger", UserType.DEVELOPER);
+		mockMvc.perform(cancelSubscription(stranger, subscriptionId))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
+
+		pay(developer, "PRO", "MONTHLY", null, 2_900);
+		assertThat(jdbc.queryForMap("select cancel_at_period_end, canceled_at from subscriptions where id = ?", subscriptionId))
+				.containsEntry("cancel_at_period_end", false).containsEntry("canceled_at", null);
+
+		jdbc.update("update subscriptions set current_period_start = ?, current_period_end = ? where id = ?",
+				Timestamp.from(NOW.minusSeconds(86_400 * 31L)), Timestamp.from(NOW.minusSeconds(60)), subscriptionId);
+		mockMvc.perform(cancelSubscription(developer, subscriptionId))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("SUBSCRIPTION_ENDED"));
+	}
+
+	@Test
+	void onlyTheFlexBillingOwnerCancels() throws Exception {
+		User owner = user("flex-cancel", UserType.DEVELOPER);
+		User admin = user("flex-cancel-admin", UserType.DEVELOPER);
+		long team = TeamTestFixtures.team(jdbc, owner.getId(), "Cancel Team", "ACTIVE");
+		member(team, owner, "OWNER", false);
+		member(team, admin, "ADMIN", false);
+		pay(owner, "FLEX", "MONTHLY", team, 7_900);
+		long subscriptionId = jdbc.queryForObject("select id from subscriptions where team_id = ?", Long.class, team);
+
+		mockMvc.perform(cancelSubscription(admin, subscriptionId))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(cancelSubscription(owner, subscriptionId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.planKey").value("FLEX"))
+				.andExpect(jsonPath("$.teamName").value("Cancel Team"))
+				.andExpect(jsonPath("$.cancelAtPeriodEnd").value(true));
+		assertThat(issues.flexActive(team, NOW)).isTrue();
+	}
+
+	@Test
+	void refundTakesBackOnlyAPaidPeriodThatHasNotStarted() throws Exception {
+		User developer = user("refund", UserType.DEVELOPER);
+		String first = pay(developer, "PRO", "MONTHLY", null, 2_900);
+		mockMvc.perform(refund(developer, paymentId(first)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("REFUND_BENEFITS_USED"));
+
+		String yearly = pay(developer, "PRO", "YEARLY", null, 29_000);
+		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2027-12-05T14:30:00Z"));
+		mockMvc.perform(refund(developer, paymentId(first)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("REFUND_NOT_LATEST"));
+		User stranger = user("refund-stranger", UserType.DEVELOPER);
+		mockMvc.perform(refund(stranger, paymentId(yearly)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("PAYMENT_NOT_FOUND"));
+		String ready = order(developer, "PRO", "MONTHLY", null);
+		mockMvc.perform(refund(developer, paymentId(ready)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("NOT_REFUNDABLE"));
+		assertThat(GATEWAY.cancels).isEmpty();
+
+		mockMvc.perform(refund(developer, paymentId(yearly)))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", "no-store, private"))
+				.andExpect(jsonPath("$.status").value("CANCELED"))
+				.andExpect(jsonPath("$.refundedAmount").value(29_000))
+				.andExpect(jsonPath("$.canceledAt").value("2026-11-05T15:00:00Z"))
+				.andExpect(jsonPath("$.refundable").value(false));
+		assertThat(GATEWAY.cancels).singleElement().satisfies(call -> {
+			assertThat(call.paymentKey()).isEqualTo("pay_" + yearly);
+			assertThat(call.cancelAmount()).isNull();
+			assertThat(call.idempotencyKey()).isEqualTo("cancel:" + yearly);
+		});
+		Map<String, Object> row = jdbc.queryForMap("""
+				select status, billing_cycle, current_period_start, current_period_end from subscriptions where user_id = ?
+				""", developer.getId());
+		assertThat(row).containsEntry("status", "ACTIVE").containsEntry("billing_cycle", "MONTHLY");
+		assertThat(((Timestamp) row.get("current_period_start")).toInstant()).isEqualTo(NOW);
+		assertThat(((Timestamp) row.get("current_period_end")).toInstant()).isEqualTo(Instant.parse("2026-12-05T14:30:00Z"));
+		assertThat(jdbc.queryForMap("""
+				select status, cancel_reason, refunded_amount, raw_response::text as raw from payments where order_id = ?
+				""", yearly))
+				.containsEntry("status", "CANCELED").containsEntry("refunded_amount", 29_000)
+				.containsEntry("cancel_reason", "7일 이내 혜택 시작 전 환불")
+				.hasEntrySatisfying("raw", raw -> assertThat((String) raw).contains("CANCELED"));
+
+		mockMvc.perform(refund(developer, paymentId(yearly)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("CANCELED"));
+		assertThat(GATEWAY.cancels).hasSize(1);
+		// A refunded order cannot be confirmed again to win the period back.
+		mockMvc.perform(confirm(developer, yearly, "pay_" + yearly, 29_000))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("ORDER_FAILED"));
+		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2026-12-05T14:30:00Z"));
+		mockMvc.perform(get("/api/v1/user/me/payments").cookie(cookie(developer)))
+				.andExpect(jsonPath("$.items[0].status").value("CANCELED"))
+				.andExpect(jsonPath("$.items[0].refundReason").value(nullValue()))
+				.andExpect(jsonPath("$.items[1].refundReason").value(
+						"이미 혜택이 시작된 결제는 환불할 수 없어요. 해지하면 남은 기간까지 쓸 수 있어요."));
+
+		// Past the 7-day window a not-yet-started period is still not refundable.
+		String late = pay(developer, "PRO", "MONTHLY", null, 2_900);
+		jdbc.update("update payments set approved_at = ? where order_id = ?",
+				Timestamp.from(NOW.minusSeconds(86_400 * 7L)), late);
+		mockMvc.perform(refund(developer, paymentId(late)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("REFUND_PERIOD_OVER"));
+	}
+
+	@Test
+	void flexRefundRestoresThePaidHeadcount() throws Exception {
+		User owner = user("flex-refund", UserType.DEVELOPER);
+		long team = TeamTestFixtures.team(jdbc, owner.getId(), "Refund Team", "ACTIVE");
+		member(team, owner, "OWNER", false);
+		pay(owner, "FLEX", "MONTHLY", team, 7_900);
+		for (int i = 0; i < 6; i++) {
+			member(team, user("flex-refund-m" + i, UserType.DEVELOPER), "MEMBER", false);
+		}
+		String extension = pay(owner, "FLEX", "MONTHLY", team, 9_800);
+		assertThat(jdbc.queryForObject("select seats from subscriptions where team_id = ?", Integer.class, team)).isEqualTo(7);
+
+		mockMvc.perform(refund(owner, paymentId(extension))).andExpect(status().isOk());
+		assertThat(jdbc.queryForMap("select seats, current_period_end from subscriptions where team_id = ?", team))
+				.containsEntry("seats", 1)
+				.hasEntrySatisfying("current_period_end", end ->
+						assertThat(((Timestamp) end).toInstant()).isEqualTo(Instant.parse("2026-12-05T14:30:00Z")));
+		assertThat(issues.flexActive(team, NOW)).isTrue();
+	}
+
+	@Test
+	void tossRefusalKeepsThePaymentAndALostAnswerIsRecordedOnRetry() throws Exception {
+		User developer = user("refund-fail", UserType.DEVELOPER);
+		pay(developer, "PRO", "MONTHLY", null, 2_900);
+		String extension = pay(developer, "PRO", "MONTHLY", null, 2_900);
+		long id = paymentId(extension);
+
+		GATEWAY.nextCancel.set(command -> {
+			throw new PaymentGatewayException(400, "NOT_CANCELABLE_PAYMENT", "취소할 수 없는 결제", "{}");
+		});
+		mockMvc.perform(refund(developer, id))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("REFUND_REJECTED"))
+				.andExpect(jsonPath("$.detail.providerCode").value("NOT_CANCELABLE_PAYMENT"));
+		GATEWAY.nextCancel.set(command -> {
+			throw new ResourceAccessException("read timed out");
+		});
+		mockMvc.perform(refund(developer, id))
+				.andExpect(status().isBadGateway())
+				.andExpect(jsonPath("$.code").value("PAYMENT_GATEWAY_ERROR"));
+		GATEWAY.nextCancel.set(command -> new PaymentCancelResult(command.paymentKey(), null, "PARTIAL_CANCELED",
+				2_900, 100, null, Map.of()));
+		mockMvc.perform(refund(developer, id)).andExpect(status().isBadGateway());
+		assertThat(paymentStatus(extension)).isEqualTo("DONE");
+		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2027-01-05T14:30:00Z"));
+
+		// The earlier cancel reached Toss after all: Toss now answers "already canceled".
+		GATEWAY.nextCancel.set(command -> {
+			throw new PaymentGatewayException(400, "ALREADY_CANCELED_PAYMENT", "이미 취소된 결제", "{}");
+		});
+		mockMvc.perform(refund(developer, id))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("CANCELED"))
+				.andExpect(jsonPath("$.canceledAt").value("2026-11-05T14:30:00Z"));
+		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2026-12-05T14:30:00Z"));
+		assertThat(GATEWAY.cancels).extracting(PaymentCancelCommand::idempotencyKey).containsOnly("cancel:" + extension);
+	}
+
+	@Test
+	void concurrentRefundsTakeThePeriodBackOnce() throws Exception {
+		User developer = user("refund-race", UserType.DEVELOPER);
+		pay(developer, "PRO", "MONTHLY", null, 2_900);
+		long id = paymentId(pay(developer, "PRO", "MONTHLY", null, 2_900));
+		List<Callable<Integer>> calls = new ArrayList<>();
+		CountDownLatch start = new CountDownLatch(1);
+		for (int i = 0; i < 3; i++) {
+			calls.add(() -> {
+				start.await();
+				return mockMvc.perform(refund(developer, id)).andReturn().getResponse().getStatus();
+			});
+		}
+		ExecutorService pool = Executors.newFixedThreadPool(calls.size());
+		try {
+			List<Future<Integer>> futures = new ArrayList<>();
+			for (Callable<Integer> call : calls) {
+				futures.add(pool.submit(call));
+			}
+			start.countDown();
+			for (Future<Integer> future : futures) {
+				assertThat(future.get(30, TimeUnit.SECONDS)).isEqualTo(200);
+			}
+		}
+		finally {
+			pool.shutdownNow();
+		}
+		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2026-12-05T14:30:00Z"));
+		assertThat(liveRows(developer)).isEqualTo(1);
+	}
+
+	@Test
+	void expiryEndsLapsedRowsAndRecordsTheFlexGrace() throws Exception {
+		User pro = user("expire-pro", UserType.DEVELOPER);
+		pay(pro, "PRO", "MONTHLY", null, 2_900);
+		User running = user("expire-running", UserType.DEVELOPER);
+		pay(running, "PRO", "MONTHLY", null, 2_900);
+		User owner = user("expire-flex", UserType.DEVELOPER);
+		long team = TeamTestFixtures.team(jdbc, owner.getId(), "Expire Team", "ACTIVE");
+		member(team, owner, "OWNER", false);
+		pay(owner, "FLEX", "MONTHLY", team, 7_900);
+
+		Instant ended = NOW.minusSeconds(3_600);
+		jdbc.update("""
+				update subscriptions set current_period_start = ?, current_period_end = ?
+				where user_id = ? or team_id = ?
+				""", Timestamp.from(ended.minusSeconds(86_400 * 30L)), Timestamp.from(ended), pro.getId(), team);
+
+		assertThat(subscriptionService.expireLapsed()).isGreaterThanOrEqualTo(2);
+		assertThat(jdbc.queryForMap("select status, grace_ends_at from subscriptions where user_id = ?", pro.getId()))
+				.containsEntry("status", "EXPIRED").containsEntry("grace_ends_at", null);
+		Map<String, Object> flex = jdbc.queryForMap("select status, grace_ends_at from subscriptions where team_id = ?", team);
+		assertThat(flex).containsEntry("status", "EXPIRED");
+		assertThat(((Timestamp) flex.get("grace_ends_at")).toInstant()).isEqualTo(ended.plusSeconds(86_400 * 30L));
+		assertThat(jdbc.queryForObject("select status from subscriptions where user_id = ?", String.class, running.getId()))
+				.isEqualTo("ACTIVE");
+		assertThat(subscriptionService.expireLapsed()).isZero();
+
+		mockMvc.perform(get("/api/v1/user/me/subscriptions").cookie(cookie(pro)))
+				.andExpect(jsonPath("$.items", hasSize(0)));
+		mockMvc.perform(get("/api/v1/user/recruit-editor/options").cookie(cookie(pro)))
+				.andExpect(jsonPath("$.openLimit").value(3));
+		// Expired rows stay as history; paying again starts a new live row.
+		pay(pro, "PRO", "MONTHLY", null, 2_900);
+		assertThat(jdbc.queryForObject("select count(*) from subscriptions where user_id = ?", Integer.class, pro.getId()))
+				.isEqualTo(2);
+		assertThat(liveRows(pro)).isEqualTo(1);
+	}
+
+	@Test
+	void openApiDocumentsPageTwentyNineRoutes() throws Exception {
+		String refund = "$.paths['/api/v1/user/me/payments/{paymentId}/refund'].post";
+		String cancel = "$.paths['/api/v1/user/me/subscriptions/{subscriptionId}/cancel'].post";
+		mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/subscriptions'].get.operationId").value("listMySubscriptions"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/subscriptions'].get.tags[0]").value("p29-subscription-manage"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/me/payments'].get.operationId").value("listMyPayments"))
+				.andExpect(jsonPath(cancel + ".operationId").value("cancelSubscription"))
+				.andExpect(jsonPath(cancel + ".responses['409']").exists())
+				.andExpect(jsonPath(refund + ".operationId").value("refundPayment"))
+				.andExpect(jsonPath(refund + ".responses['409']").exists())
+				.andExpect(jsonPath(refund + ".responses['502']").exists());
+	}
+
 	// ---------------------------------------------------------------- helpers
+
+	private String pay(User user, String plan, String billing, Long teamId, long amount) throws Exception {
+		String orderId = order(user, plan, billing, teamId);
+		mockMvc.perform(confirm(user, orderId, "pay_" + orderId, amount)).andExpect(status().isOk());
+		return orderId;
+	}
+
+	private long paymentId(String orderId) {
+		return jdbc.queryForObject("select id from payments where order_id = ?", Long.class, orderId);
+	}
+
+	private long subscriptionId(User user) {
+		return jdbc.queryForObject("select id from subscriptions where user_id = ? and status = 'ACTIVE'", Long.class,
+				user.getId());
+	}
+
+	private Instant periodEnd(User user) {
+		return jdbc.queryForObject("select current_period_end from subscriptions where user_id = ? and status = 'ACTIVE'",
+				Timestamp.class, user.getId()).toInstant();
+	}
+
+	private org.springframework.test.web.servlet.RequestBuilder cancelSubscription(User user, long subscriptionId) {
+		return post("/api/v1/user/me/subscriptions/" + subscriptionId + "/cancel").cookie(cookie(user));
+	}
+
+	private org.springframework.test.web.servlet.RequestBuilder refund(User user, long paymentId) {
+		return post("/api/v1/user/me/payments/" + paymentId + "/refund").cookie(cookie(user));
+	}
 
 	private String order(User user, String plan, String billing, Long teamId) throws Exception {
 		return body(mockMvc.perform(checkout(user, plan, billing, teamId)).andExpect(status().isOk()).andReturn())
@@ -526,10 +929,22 @@ class SubscriptionPaymentIntegrationTest {
 
 		final AtomicReference<Function<PaymentConfirmCommand, PaymentConfirmResult>> next = new AtomicReference<>();
 		final List<PaymentConfirmCommand> calls = new CopyOnWriteArrayList<>();
+		final AtomicReference<Function<PaymentCancelCommand, PaymentCancelResult>> nextCancel = new AtomicReference<>();
+		final List<PaymentCancelCommand> cancels = new CopyOnWriteArrayList<>();
+		/** paymentKey → approved amount, so a full cancel answers the paid amount like Toss. */
+		final Map<String, Long> approved = new ConcurrentHashMap<>();
 
 		void reset() {
 			next.set(FakeGateway::approve);
 			calls.clear();
+			nextCancel.set(this::refund);
+			cancels.clear();
+		}
+
+		PaymentCancelResult refund(PaymentCancelCommand command) {
+			long amount = approved.getOrDefault(command.paymentKey(), 0L);
+			return new PaymentCancelResult(command.paymentKey(), null, "CANCELED", amount, amount,
+					"2026-11-06T00:00:00+09:00", Map.of("status", "CANCELED", "paymentKey", command.paymentKey()));
 		}
 
 		static PaymentConfirmResult approve(PaymentConfirmCommand command) {
@@ -540,12 +955,15 @@ class SubscriptionPaymentIntegrationTest {
 		@Override
 		public PaymentConfirmResult confirm(PaymentConfirmCommand command) {
 			calls.add(command);
-			return next.get().apply(command);
+			PaymentConfirmResult result = next.get().apply(command);
+			approved.put(command.paymentKey(), command.amount());
+			return result;
 		}
 
 		@Override
 		public PaymentCancelResult cancel(PaymentCancelCommand command) {
-			throw new UnsupportedOperationException("refund is page 29");
+			cancels.add(command);
+			return nextCancel.get().apply(command);
 		}
 	}
 }

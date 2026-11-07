@@ -516,7 +516,7 @@
 | 29 | D | GET | `/api/v1/user/me/subscriptions` | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, next Flex headcount and amount | user |
 | 29 | D | GET | `/api/v1/user/me/payments` | Payment history | user |
 | 29 | D | POST | `/api/v1/user/me/subscriptions/{subscriptionId}/cancel` | Cancel (kept until period end) | user |
-| 29 | D | POST | `/api/v1/user/me/payments/{paymentId}/refund` | Refund (within 7 days + benefits unused) | user |
+| 29 | D | POST | `/api/v1/user/me/payments/{paymentId}/refund` | Refund (within 7 days + benefits unused = its paid period has not started; latest payment only) | user |
 | 29 | D | POST | `/api/v1/user/me/subscriptions/{subscriptionId}/billing-owner` | `[Included]` Hand over Flex billing owner | user · developers only |
 
 ### 4-16. 개인 통계 — `StatsController`
