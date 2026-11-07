@@ -3,6 +3,7 @@ package com.linker.backend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -20,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -83,6 +85,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.context.bean.override.mockito.MockReset;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -146,6 +150,8 @@ class FoundationIntegrationTest {
 	private ProfileVisitRepository visits;
 	@Autowired
 	private RecruiterViewNoticeSchedule recruiterViewNotices;
+	@MockitoSpyBean(reset = MockReset.AFTER)
+	private Clock clock;
 	@Autowired
 	private AuthService sessions;
 	@Autowired
@@ -1534,6 +1540,10 @@ class FoundationIntegrationTest {
 	@Test
 	void mondayRecruiterViewNoticeGoesToProDevelopers() {
 		LocalDate today = LocalDate.now(PlanLimits.APP_ZONE);
+		// This scheduled notice runs at 09:00 KST; the test must not depend on wall-clock quiet hours.
+		Clock morning = Clock.fixed(today.atTime(9, 0).atZone(PlanLimits.APP_ZONE).toInstant(), PlanLimits.APP_ZONE);
+		doReturn(morning.instant()).when(clock).instant();
+		doReturn(morning).when(clock).withZone(PlanLimits.APP_ZONE);
 		LocalDate weekEnd = today.with(TemporalAdjusters.previous(DayOfWeek.SUNDAY));
 		LocalDate weekStart = weekEnd.minusDays(6);
 		User active = saveUser("proactive", UserType.DEVELOPER);

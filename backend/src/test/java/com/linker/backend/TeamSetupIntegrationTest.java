@@ -1196,10 +1196,93 @@ class TeamSetupIntegrationTest {
       assertThat(rows).hasSize(5);
       assertThat(rows.getLast().status()).isEqualTo("ARCHIVED");
       assertThat(rows).allSatisfy(row -> assertThat(row.openIssueCount()).isNull());
-      assertThat(statistics.getPrepareStatementCount()).isEqualTo(queries).isEqualTo(3);
+      assertThat(statistics.getPrepareStatementCount()).isEqualTo(queries).isEqualTo(2);
     } finally {
       statistics.setStatisticsEnabled(enabled);
     }
+  }
+
+  @Test
+  void sharedTeamRelationshipKeepsEveryRoleAndNonDeletedTeamStatus() {
+    var first = user("shared-role-first", UserType.DEVELOPER);
+    var second = user("shared-role-second", UserType.DEVELOPER);
+    long team = com.linker.backend.support.TeamTestFixtures.team(jdbc, first.getId(), "공통 팀", "ACTIVE");
+    join(team, first, "OWNER", "MEMBER");
+    join(team, second, "MEMBER", "MEMBER");
+    // POL-C-4 relates people; it does not grant write access to an archived/read-only team chat.
+    for (String state : List.of("ACTIVE", "COMPLETED", "READ_ONLY", "ARCHIVED")) {
+      jdbc.update("update teams set status=? where id=?", state, team);
+      for (String role : List.of("OWNER", "ADMIN", "MEMBER")) {
+        jdbc.update("update team_members set role=? where team_id=? and user_id=?", role, team, second.getId());
+        assertSharedTeam(first, second, true);
+      }
+    }
+    jdbc.update("update teams set status='DELETED' where id=?", team);
+    assertSharedTeam(first, second, false);
+  }
+
+  @Test
+  void sharedTeamDoesNotConnectPeopleThroughDifferentTeamsOrAThirdPerson() {
+    var first = user("shared-separate-first", UserType.DEVELOPER);
+    var second = user("shared-separate-second", UserType.DEVELOPER);
+    var bridge = user("shared-separate-bridge", UserType.DEVELOPER);
+    var stranger = user("shared-separate-stranger", UserType.DEVELOPER);
+    long firstTeam = com.linker.backend.support.TeamTestFixtures.team(jdbc, first.getId(), "첫 팀", "ACTIVE");
+    long secondTeam = com.linker.backend.support.TeamTestFixtures.team(jdbc, second.getId(), "다른 팀", "ACTIVE");
+    join(firstTeam, first, "OWNER", "MEMBER");
+    join(firstTeam, bridge, "MEMBER", "MEMBER");
+    join(secondTeam, second, "OWNER", "MEMBER");
+    join(secondTeam, bridge, "MEMBER", "MEMBER");
+    assertSharedTeam(first, bridge, true);
+    assertSharedTeam(second, bridge, true);
+    assertSharedTeam(first, second, false);
+    assertSharedTeam(first, stranger, false);
+    assertThat(memberRows.existsSharedTeam(first.getId(), Long.MAX_VALUE)).isFalse();
+    assertThat(memberRows.existsSharedTeam(Long.MAX_VALUE, first.getId())).isFalse();
+  }
+
+  @Test
+  void sharedTeamUsesCurrentMembershipAfterEitherPersonLeavesAndRejoins() {
+    var first = user("shared-period-first", UserType.DEVELOPER);
+    var second = user("shared-period-second", UserType.DEVELOPER);
+    long team = com.linker.backend.support.TeamTestFixtures.team(jdbc, first.getId(), "현재 팀", "ACTIVE");
+    long deleted = com.linker.backend.support.TeamTestFixtures.team(jdbc, first.getId(), "삭제된 공통 팀", "DELETED");
+    for (long id : List.of(team, deleted)) {
+      join(id, first, "OWNER", "MEMBER");
+      join(id, second, "MEMBER", "MEMBER");
+    }
+    assertSharedTeam(first, second, true);
+    jdbc.update("update team_members set left_at=now(),leave_type='LEFT' where team_id=? and user_id=? and left_at is null", team, first.getId());
+    assertSharedTeam(first, second, false); // Current membership on the deleted team cannot reopen DM.
+    join(team, first, "MEMBER", "MEMBER");
+    assertSharedTeam(first, second, true); // Former rows remain; the new current period is authoritative.
+    jdbc.update("update team_members set left_at=now(),leave_type='KICKED' where team_id=? and user_id=? and left_at is null", team, second.getId());
+    assertSharedTeam(first, second, false);
+    join(team, second, "MEMBER", "MEMBER");
+    assertSharedTeam(first, second, true);
+    jdbc.update("update team_members set left_at=now(),leave_type='LEFT' where team_id=? and left_at is null", team);
+    assertSharedTeam(first, second, false);
+  }
+
+  @Test
+  void sharedTeamIsALinkerMembershipRelationshipRegardlessOfGithubInviteState() {
+    var first = user("shared-invite-first", UserType.DEVELOPER);
+    var second = user("shared-invite-second", UserType.DEVELOPER);
+    long team = com.linker.backend.support.TeamTestFixtures.team(jdbc, first.getId(), "초대 팀", "ACTIVE");
+    join(team, first, "MEMBER", "INVITED");
+    join(team, second, "MEMBER", "INVITED");
+    // Pending org invite acceptance restricts issue assignment, not Linker membership/chat (Policy ch. 5).
+    for (String state : List.of("INVITED", "MEMBER", "NOT_MEMBER")) {
+      jdbc.update("update team_members set github_org_state=? where team_id=? and user_id=?", state, team, second.getId());
+      assertSharedTeam(first, second, true);
+    }
+    jdbc.update("update team_members set left_at=now(),leave_type='ORG_REMOVED' where team_id=? and user_id=? and left_at is null", team, second.getId());
+    assertSharedTeam(first, second, false);
+  }
+
+  private void assertSharedTeam(User first, User second, boolean expected) {
+    assertThat(memberRows.existsSharedTeam(first.getId(), second.getId())).isEqualTo(expected);
+    assertThat(memberRows.existsSharedTeam(second.getId(), first.getId())).isEqualTo(expected);
   }
 
   private void seedMembership(User owner, long org, String status) {

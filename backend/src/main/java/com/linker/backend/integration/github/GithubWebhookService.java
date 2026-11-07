@@ -35,7 +35,6 @@ public class GithubWebhookService {
 	private final WebhookQueue queue;
 	private final ObjectMapper objectMapper;
 	private final List<GithubWebhookHandler> handlers;
-	private final GithubWebhookDispatchLock locks;
 	private final GithubWebhookSettings settings;
 	private final Clock clock;
 	private final TransactionTemplate transactions;
@@ -46,7 +45,6 @@ public class GithubWebhookService {
 			WebhookQueue queue,
 			ObjectMapper objectMapper,
 			List<GithubWebhookHandler> handlers,
-			GithubWebhookDispatchLock locks,
 			GithubWebhookSettings settings,
 			Clock clock,
 			PlatformTransactionManager transactionManager
@@ -56,7 +54,6 @@ public class GithubWebhookService {
 		this.queue = queue;
 		this.objectMapper = objectMapper;
 		this.handlers = handlers;
-		this.locks = locks;
 		this.settings = settings;
 		this.clock = clock;
 		this.transactions = new TransactionTemplate(transactionManager);
@@ -98,7 +95,7 @@ public class GithubWebhookService {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public void dispatch(long id) {
-		locks.withLock(id, () -> dispatchLocked(id));
+		deliveries.withDispatchLock(id, () -> dispatchLocked(id));
 	}
 
 	private void dispatchLocked(long id) {

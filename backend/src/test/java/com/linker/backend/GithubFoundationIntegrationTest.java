@@ -209,6 +209,83 @@ class GithubFoundationIntegrationTest {
 	}
 
 	@Test
+	void repositoryLockRetainsTheLegacyNegativeDeliveryKey() throws Exception {
+		long id = receive("legacy-key");
+		try (var connection = jdbc.getDataSource().getConnection()) {
+			connection.setAutoCommit(true);
+			try (var statement = connection.prepareStatement("select pg_try_advisory_lock(?)")) {
+				statement.setLong(1, -id);
+				try (var result = statement.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getBoolean(1)).isTrue();
+				}
+			}
+			try {
+				webhooks.dispatch(id);
+				assertThat(probe.calls.get()).isZero();
+				assertThat(deliveries.findById(id).orElseThrow().getStatus()).isEqualTo(WebhookStatus.RECEIVED);
+			} finally {
+				try (var statement = connection.prepareStatement("select pg_advisory_unlock(?)")) {
+					statement.setLong(1, -id);
+					statement.execute();
+				}
+			}
+		}
+		webhooks.dispatch(id);
+		assertThat(probe.calls.get()).isEqualTo(1);
+	}
+
+	@Test
+	void shortCallbackCommitsDoNotReleaseTheSessionLockAndExceptionsDoNotLeakIt() throws Exception {
+		long id = receive("short-commit");
+		var original = new com.linker.backend.global.error.ApiException(409, "STATE_CONFLICT", "synthetic callback failure");
+		assertThatThrownBy(() -> deliveries.withDispatchLock(id, () -> {
+			assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+			new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+					jdbc.update("update github_webhook_deliveries set updated_at=now() where id=?", id));
+			assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+			var calls = new AtomicInteger();
+			deliveries.withDispatchLock(id, calls::incrementAndGet);
+			assertThat(calls.get()).isZero();
+			throw original;
+		})).isSameAs(original);
+		var calls = new AtomicInteger();
+		deliveries.withDispatchLock(id, calls::incrementAndGet);
+		assertThat(calls.get()).isEqualTo(1);
+	}
+
+	@Test
+	void differentDeliveriesCanRunTogether() throws Exception {
+		long firstId = receive("parallel-first");
+		long secondId = receive("parallel-second");
+		probe.entered = new CountDownLatch(2);
+		probe.release = new CountDownLatch(1);
+		try (var executor = Executors.newFixedThreadPool(2)) {
+			var first = executor.submit(() -> webhooks.dispatch(firstId));
+			var second = executor.submit(() -> webhooks.dispatch(secondId));
+			try { assertThat(probe.entered.await(5, TimeUnit.SECONDS)).isTrue(); }
+			finally { probe.release.countDown(); }
+			first.get(5, TimeUnit.SECONDS);
+			second.get(5, TimeUnit.SECONDS);
+		}
+		assertThat(probe.calls.get()).isEqualTo(2);
+		assertThat(deliveries.findById(firstId).orElseThrow().getStatus()).isEqualTo(WebhookStatus.PROCESSED);
+		assertThat(deliveries.findById(secondId).orElseThrow().getStatus()).isEqualTo(WebhookStatus.PROCESSED);
+	}
+
+	@Test
+	void repositoryLockAlsoRejectsAnOuterTransactionAndIgnoresInvalidIds() {
+		var calls = new AtomicInteger();
+		deliveries.withDispatchLock(0, calls::incrementAndGet);
+		deliveries.withDispatchLock(-1, calls::incrementAndGet);
+		assertThat(calls.get()).isZero();
+		assertThatThrownBy(() -> new TransactionTemplate(transactionManager).execute(status -> {
+			deliveries.withDispatchLock(42, calls::incrementAndGet);
+			return null;
+		})).isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
+	}
+
+	@Test
 	void failedHandlerIsRetriedAfterDelayAndExhaustionStaysRecorded() throws Exception {
 		long id = receive("retry");
 		probe.fail = true;

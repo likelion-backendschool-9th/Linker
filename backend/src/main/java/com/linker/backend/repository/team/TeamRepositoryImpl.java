@@ -761,28 +761,15 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public List<TeamPersistenceView.WorkspaceTeam> findCurrentTeams(long userId) {
-    Map<Long, Long> issueCounts = new java.util.HashMap<>();
-    if (ready("issues", "github_repos", "team_repos")) {
-      // C's issue Entity does not exist yet. Read that optional cache in one native batch,
-      // without creating a duplicate Entity owned by B or querying once per team.
-      List<Object[]> cached =
-          nativeQuery(
-                  """
-                  select i.team_id,count(*) from issues i
-                  join github_repos r on r.id=i.repo_id and r.deleted_at is null
-                  join team_repos tr on tr.repo_id=i.repo_id and tr.team_id=i.team_id
-                  where i.state='OPEN' and i.deleted_at is null and exists (
-                    select 1 from team_members m where m.team_id=i.team_id
-                      and m.user_id=:p0 and m.left_at is null)
-                  group by i.team_id
-                  """,
-                  userId)
-              .getResultList();
-      for (var row : cached)
-        issueCounts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
-    }
+    // V22 supplies C's Issue entity. Keep the missing-cache fallback but fold its aggregate into
+    // the same JPQL as the team/chat projection. Zero is still unknown until full-sync is proven.
+    String issueCount = ready("issues", "github_repos", "team_repos") ? """
+        nullif((select count(issue) from Issue issue, GithubRepo repo, TeamRepo linked
+          where issue.teamId=t.id and issue.state='OPEN' and issue.deletedAt is null
+            and repo.id=issue.repoId and repo.deletedAt is null
+            and linked.repoId=issue.repoId and linked.teamId=issue.teamId),0)
+        """ : "cast(null as Long)";
     // Scalar projections avoid loading members/messages/rooms per team (no N+1).
     // Keep D's unread semantics, including hidden/deleted placeholders and null senders.
     return q(
@@ -793,14 +780,15 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
               case when participant.id is not null then (
                 select count(message) from ChatMessage message where message.room.id=room.id
                   and (participant.lastReadMessageId is null or message.id>participant.lastReadMessageId)
-                  and (message.senderId is null or message.senderId<>mine.userId)) end
+                  and (message.senderId is null or message.senderId<>mine.userId)) end,
+              %s
             from Team t join TeamMember mine on mine.teamId=t.id
             left join ChatRoom room on room.teamId=t.id and room.roomType='TEAM'
             left join ChatRoomMember participant on participant.room.id=room.id
               and participant.userId=mine.userId and participant.leftAt is null and participant.hiddenAt is null
             where mine.userId=:p0 and mine.leftAt is null and t.status<>'DELETED'
             order by case when t.status='ARCHIVED' then 1 else 0 end,mine.joinedAt desc,t.id desc
-            """,
+            """.formatted(issueCount),
             Object[].class,
             userId)
         .getResultList()
@@ -817,7 +805,7 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
                     (Instant) r[5],
                     (Long) r[7],
                     (Long) r[8],
-                    issueCounts.get((Long) r[0])))
+                    (Long) r[9]))
         .toList();
   }
 }
