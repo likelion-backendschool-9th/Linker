@@ -98,9 +98,11 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **A
 | Section title | 20px | 600 | 1.4 | `--font-size-section-title`, `--font-weight-semibold`, `--line-height-title` |
 | Card / group title | 18px | 600 | 1.4 | `--font-size-card-title`, `--font-weight-semibold`, `--line-height-title` |
 | Body | 16px | 400 | 1.6 | `--font-size-body`, `--font-weight-regular`, `--line-height-body` |
+| Medium | 16px | 500 | 1.6 | `--font-weight-medium`, `--font-size-body`, `--line-height-body` |
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
 
+- Medium (500) is for a frame that sets Pretendard Medium on both a clause title and its body, as on page 03. Other body copy stays 400.
 - Buttons and inputs: 16px; button weight 600, input value weight 400. Inputs smaller than 16px make iOS zoom in.
 - Error and notice messages: 14px at minimum, never the 13px meta size.
 - Hierarchy comes from size, weight and spacing together, not from small gray differences alone.

@@ -1,3 +1,4 @@
+import type { Route } from 'next';
 import Link from 'next/link';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
@@ -14,10 +15,16 @@ type LegalDocumentData = {
 };
 type LegalDocumentLink = Pick<LegalDocumentData, 'slug' | 'title' | 'version' | 'effectiveDate'>;
 
-function readHeadings(markdown: string) {
+type Heading = { depth: 2 | 3; title: string };
+
+/** Clause headings only. The markdown h1 repeats the stack-header title, so it is not a section. */
+function readHeadings(markdown: string): Heading[] {
   return markdown.split('\n').flatMap((line) => {
-    const match = /^(#{1,3})\s+(.+?)\s*#*\s*$/.exec(line);
-    return match ? [{ depth: match[1]!.length, title: match[2]!.replace(/[`*_]/g, '') }] : [];
+    const match = /^(#{2,3})\s+(.+?)\s*#*\s*$/.exec(line);
+    if (!match) return [];
+    const depth = match[1]!.length;
+    if (depth !== 2 && depth !== 3) return [];
+    return [{ depth, title: match[2]!.replace(/[`*_]/g, '') }];
   });
 }
 
@@ -31,13 +38,11 @@ export function LegalDocument({
   const headings = readHeadings(document.body);
   let headingIndex = 0;
   const components: Components = {
-    h1: ({ children }) => <h2 id={`legal-section-${headingIndex++}`}>{children}</h2>,
-    h2: ({ children }) => <h3 id={`legal-section-${headingIndex++}`}>{children}</h3>,
-    h3: ({ children }) => <h4 id={`legal-section-${headingIndex++}`}>{children}</h4>,
+    h1: () => null,
+    h2: ({ children }) => <h2 id={`legal-section-${headingIndex++}`}>{children}</h2>,
+    h3: ({ children }) => <h3 id={`legal-section-${headingIndex++}`}>{children}</h3>,
     a: ({ href, children }) => {
-      if (href?.startsWith('/') || href?.startsWith('#')) {
-        return <a href={href}>{children}</a>;
-      }
+      if (href?.startsWith('/')) return <Link href={href as Route}>{children}</Link>;
       return <a href={href}>{children}</a>;
     },
   };
@@ -70,7 +75,10 @@ export function LegalDocument({
             <h2>목차</h2>
             <ol>
               {headings.map((heading, index) => (
-                <li key={`${heading.title}-${index}`} className={styles[`depth${heading.depth}`]}>
+                <li
+                  key={`${heading.title}-${index}`}
+                  className={heading.depth === 3 ? styles.nested : undefined}
+                >
                   <a href={`#legal-section-${index}`}>{heading.title}</a>
                 </li>
               ))}
@@ -79,11 +87,7 @@ export function LegalDocument({
         )}
 
         <div className={styles.markdown}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeSanitize]}
-            components={components}
-          >
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]} components={components}>
             {document.body}
           </ReactMarkdown>
         </div>
