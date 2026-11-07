@@ -71,11 +71,12 @@ it('uses annual pricing only for Pro and requires a team for Flex checkout', asy
     teamId: 1,
   });
 });
-it('shows recruiters only Scout without querying developer team candidates', async () => {
+it('shows recruiters an empty plan list until Scout opens, without querying team candidates', async () => {
+  fetchMock.mockImplementation(async () => ({ plans: [], currentPlan: 'FREE', reason: null }));
   renderWithProviders(<PlanSelector reason="" />, {
     viewer: { role: 'recruiter', login: 'recruiter' },
   });
-  await screen.findByRole('heading', { name: 'Scout' });
+  expect(await screen.findByText('지금 결제할 수 있는 요금제가 없어요.')).toBeVisible();
   expect(screen.queryByRole('heading', { name: 'Pro' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '연간' })).not.toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([url]) => url.includes('team-candidates'))).toBe(false);

@@ -2,14 +2,15 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 import type {
   OfferCounts,
+  OfferFilter,
   OfferFirstMessage,
-  OfferStatus,
   OffersResponse,
 } from '../../_lib/offer-types';
 
-export function fetchOffers(status: OfferStatus) {
+export function fetchOffers(filter: OfferFilter) {
+  if (filter === 'ALL') return apiFetch<OffersResponse>('/api/v1/recruiter/offers');
   return apiFetch<OffersResponse>(
-    `/api/v1/recruiter/offers?${new URLSearchParams({ status })}`,
+    `/api/v1/recruiter/offers?${new URLSearchParams({ status: filter })}`,
   );
 }
 

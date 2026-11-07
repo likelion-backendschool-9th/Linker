@@ -1,5 +1,6 @@
 'use client';
 
+import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -8,10 +9,12 @@ import { Button } from '@/components/ui/button/Button';
 import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
 import { profileHref } from '@/lib/navigation/collaboration-links';
 
-import type { Offer, OfferCounts, OfferStatus, OffersResponse } from '../../_lib/offer-types';
-import { OFFER_STATUSES } from '../../_lib/offer-types';
+import type { Offer, OfferCounts, OfferFilter, OffersResponse } from '../../_lib/offer-types';
+import { OFFER_FILTERS } from '../../_lib/offer-types';
 import styles from '../recruiter-offers.module.css';
-import { STATUS_LABELS, useRecruiterOffersView } from './hook';
+import { FILTER_LABELS, STATUS_PILL_LABELS, useRecruiterOffersView } from './hook';
+
+const VISIBLE_TAGS = 4;
 
 export function RecruiterOffersView({
   initialStatus,
@@ -19,7 +22,7 @@ export function RecruiterOffersView({
   initialCounts,
   initialError,
 }: {
-  initialStatus: OfferStatus;
+  initialStatus: OfferFilter;
   initialOffers: OffersResponse | null;
   initialCounts: OfferCounts | null;
   initialError: string | null;
@@ -45,7 +48,6 @@ export function RecruiterOffersView({
 
   return (
     <div className={styles.page}>
-      <p className={styles.intro}>보낸 제안의 응답 상태와 첫 메시지를 확인할 수 있어요.</p>
       {listError || countsError ? (
         <section className={styles.error} role="alert" aria-labelledby="offers-error-title">
           <h2 id="offers-error-title">채용 제안을 불러오지 못했어요</h2>
@@ -63,20 +65,21 @@ export function RecruiterOffersView({
       ) : (
         <>
           <nav className={styles.tabs} aria-label="채용 제안 상태">
-            {OFFER_STATUSES.map((item) => (
-              <button
-                className={styles.tab}
-                key={item}
-                type="button"
-                aria-pressed={status === item}
-                onClick={() => void setStatus(item)}
-              >
-                <span className={styles.tabLabel}>{STATUS_LABELS[item]}</span>
-                <span className={styles.count} aria-label={`${counts.data?.[item] ?? 0}건`}>
-                  {counts.data?.[item] ?? 0}
-                </span>
-              </button>
-            ))}
+            {OFFER_FILTERS.map((item) => {
+              const count = item === 'ALL' ? null : (counts.data?.[item] ?? 0);
+              const label = count === null ? FILTER_LABELS[item] : `${FILTER_LABELS[item]} ${count}`;
+              return (
+                <button
+                  className={styles.tab}
+                  key={item}
+                  type="button"
+                  aria-pressed={status === item}
+                  onClick={() => void setStatus(item)}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </nav>
 
           {offers.isPending ? (
@@ -94,10 +97,10 @@ export function RecruiterOffersView({
           ) : sortedOffers.length === 0 ? (
             <section className={styles.empty} aria-labelledby="offers-filter-empty-title">
               <h2 id="offers-filter-empty-title">이 상태의 채용 제안이 없어요</h2>
-              <p>{STATUS_LABELS[status]} 제안이 생기면 여기에 표시돼요.</p>
+              <p>{FILTER_LABELS[status]} 제안이 생기면 여기에 표시돼요.</p>
             </section>
           ) : (
-            <ul className={styles.list} aria-label={`${STATUS_LABELS[status]} 채용 제안`}>
+            <ul className={styles.list} aria-label={`${FILTER_LABELS[status]} 채용 제안`}>
               {sortedOffers.map((offer) => (
                 <OfferCard
                   key={offer.roomId}
@@ -152,78 +155,56 @@ export function RecruiterOffersView({
 function OfferCard({ offer, onShowMessage }: { offer: Offer; onShowMessage: () => void }) {
   const developer = offer.developer;
   const visibleName = offer.unavailable || !developer ? '볼 수 없는 사용자' : developer.name;
-  const jobStatus =
-    developer?.jobStatus === 'SEEKING'
-      ? '구직 중'
-      : developer?.jobStatus === 'OPEN'
-        ? '제안만 받기'
-        : null;
+  const tags = offer.techStack.slice(0, VISIBLE_TAGS);
+  const hiddenTags = offer.techStack.length - tags.length;
+  const canOpen = Boolean(developer) && !offer.unavailable;
 
   return (
     <li>
-      <article className={styles.card} aria-label={`${visibleName}, ${STATUS_LABELS[offer.status]}`}>
-        <div className={styles.cardMain}>
-          <div className={styles.person}>
+      <article className={styles.card} aria-label={`${visibleName}, ${STATUS_PILL_LABELS[offer.status]}`}>
+        <div className={styles.person}>
+          <div className={styles.identity}>
             {developer && !offer.unavailable && developer.avatarUrl ? (
               <span className={styles.avatar}>
-                <Image src={developer.avatarUrl} alt="" fill sizes="48px" />
+                <Image src={developer.avatarUrl} alt="" fill sizes="44px" />
               </span>
             ) : (
               <span className={styles.avatar} aria-hidden="true" />
             )}
             <div className={styles.personInfo}>
-              {developer && !offer.unavailable ? (
-                <Link
-                  className={styles.personLink}
-                  href={profileHref(developer.login)}
-                >
+              {canOpen && developer ? (
+                <Link className={styles.personLink} href={profileHref(developer.login)}>
                   {visibleName}
                 </Link>
               ) : (
                 <span className={styles.personLink}>{visibleName}</span>
               )}
-              {developer && !offer.unavailable && (
-                <span className={styles.handle}>@{developer.login}</span>
-              )}
+              {canOpen && developer && <span className={styles.handle}>@{developer.login}</span>}
             </div>
           </div>
-
-          <div className={styles.statusLine}>
-            <span className={styles.status}>{STATUS_LABELS[offer.status]}</span>
-            {jobStatus && <span className={styles.badge}>{jobStatus}</span>}
-            <span className={styles.meta}>
-              <RelativeTime value={offer.sentAt} />
-            </span>
-          </div>
-
-          {offer.techStack.length > 0 && (
-            <ul className={styles.tags} aria-label="기술 스택">
-              {offer.techStack.slice(0, 3).map((tag) => (
-                <li className={styles.tag} key={tag}>
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <p className={styles.messagePreview}>{offer.firstMessage}</p>
+          <span className={`${styles.status} ${styles[offer.status]}`}>{STATUS_PILL_LABELS[offer.status]}</span>
         </div>
 
-        <div className={styles.actions}>
-          {offer.status === 'TALKING' && developer && !offer.unavailable ? (
-            <Button disabled aria-describedby={`chat-pending-${offer.roomId}`}>
-              대화 열기
-            </Button>
-          ) : offer.status !== 'TALKING' ? (
-            <Button variant="outline" onClick={onShowMessage}>
-              보낸 메시지 보기
-            </Button>
-          ) : null}
-        </div>
-        {offer.status === 'TALKING' && developer && !offer.unavailable && (
-          <p className={styles.meta} id={`chat-pending-${offer.roomId}`}>
-            채팅 화면(Page 17)이 준비되면 대화로 이동할 수 있어요.
-          </p>
+        {tags.length > 0 && (
+          <ul className={styles.tags} aria-label="기술 스택">
+            {tags.map((tag) => (
+              <li className={styles.tag} key={tag}>
+                {tag}
+              </li>
+            ))}
+            {hiddenTags > 0 && <li className={styles.tag}>+{hiddenTags}</li>}
+          </ul>
+        )}
+
+        {canOpen && offer.status === 'TALKING' && (
+          <Link className={styles.openChat} href={`/chats/${offer.roomId}` as Route}>
+            대화 열기
+          </Link>
+        )}
+        {canOpen && offer.status !== 'TALKING' && (
+          <button className={styles.openChat} type="button" onClick={onShowMessage}>
+            보낸 메시지 보기
+          </button>
         )}
       </article>
     </li>
