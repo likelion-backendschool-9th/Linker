@@ -1,7 +1,7 @@
 'use client';
 
-// Client boundary: viewer-dependent actions (apply / cancel / author tabs), sheets, URL tab
-import { MoreHorizontal } from 'lucide-react';
+// Client boundary: viewer-dependent actions (apply / cancel / applicants drawer), sheets
+import { AltArrowRightLinearIcon } from '@solar-icons/static/linear/alt-arrow-right';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -9,28 +9,34 @@ import Link from 'next/link';
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
 import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
-import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
+import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { RECRUIT_FORMAT_LABELS, RECRUIT_GOAL_LABELS } from '@/features/recruit/recruit-labels';
-import { formatDate } from '@/lib/format/time';
+import { formatDeadlineDate } from '@/lib/format/time';
 
-import type { RecruitDetail as Detail } from '../../_lib/detail-queries';
+import type { RecruitDetail as Detail, RecruitTeamMember } from '../../_lib/detail-queries';
 import { AcceptExceptionSheets } from '../accept-exception-sheets';
-import { ApplicantList } from '../applicant-list';
+import { ApplicantsSheet } from '../applicant-list';
 import { ApplicationSheet } from '../application-sheet';
 import { RecruitApplySheet } from '../recruit-apply-sheet';
-import styles from './RecruitDetail.module.css';
-import { useActionPanel, usePostView, useRecruitDetail } from './hook';
-import { ShareButton } from '@/features/share/share-button';
 import { RecruitMenuSheet } from '../recruit-menu-sheet';
 import { RejectSheet } from '../reject-sheet';
+import styles from './RecruitDetail.module.css';
+import { useActionPanel, usePostView, useRecruitDetail } from './hook';
+
+const TECH_TAG_VISIBLE = 4;
+
+const TEAM_ROLE_LABELS = {
+  OWNER: '오너',
+  ADMIN: '멤버',
+  MEMBER: '멤버',
+} as const;
 
 /**
- * 21 Recruit post detail (07 TODO 21). Everyone reads the post; guests get the login prompt on apply,
- * recruiters only read, applicants see their status, and the author gets a "지원자 N" tab.
+ * 21 Recruit post detail (Figma 92:578). Authors open applicants from the bottom CTA drawer.
  */
 export function RecruitDetail({ recruitId }: { recruitId: string }) {
-  const { detail, recruit, tab, setTab, showApplicants } = useRecruitDetail(recruitId);
+  const { detail, recruit } = useRecruitDetail(recruitId);
 
   if (detail.isPending) {
     return (
@@ -46,243 +52,180 @@ export function RecruitDetail({ recruitId }: { recruitId: string }) {
 
   return (
     <>
+      <PostView recruit={recruit} />
+
+      <RecruitApplySheet recruit={recruit} />
       {author && (
-        <div role="group" aria-label="모집 글 보기" className={styles.tabs}>
-          <button
-            type="button"
-            className={styles.tab}
-            aria-pressed={tab === 'post'}
-            onClick={() => setTab('post')}
-          >
-            모집 글
-          </button>
-          <button
-            type="button"
-            className={styles.tab}
-            aria-pressed={tab === 'applicants'}
-            onClick={() => setTab('applicants')}
-          >
-            지원자 {recruit.applicantCount}
-            <span className="sr-only">명 검토 대기</span>
-          </button>
-        </div>
-      )}
-
-      {author && tab === 'applicants' ? (
-        <ApplicantList recruit={recruit} />
-      ) : (
-        <PostView recruit={recruit} onShowApplicants={showApplicants} />
-      )}
-
-      <RecruitMenuSheet recruit={recruit} />
-      {author ? (
         <>
+          <ApplicantsSheet recruit={recruit} />
           <ApplicationSheet recruit={recruit} />
           <RejectSheet recruitId={recruitId} />
           <AcceptExceptionSheets recruit={recruit} />
         </>
-      ) : (
-        <RecruitApplySheet recruit={recruit} />
       )}
     </>
   );
 }
 
-function PostView({
-  recruit,
-  onShowApplicants,
-}: {
-  recruit: Detail;
-  onShowApplicants: () => void;
-}) {
-  const { openMenu, days, closed } = usePostView(recruit);
+function PostView({ recruit }: { recruit: Detail }) {
+  const { closed } = usePostView(recruit);
+  const totalHeadcount = recruit.roles.reduce((sum, role) => sum + role.headcount, 0);
+  const totalFilled = recruit.roles.reduce((sum, role) => sum + role.filled, 0);
+  const visibleTags = recruit.techTags.slice(0, TECH_TAG_VISIBLE);
+  const hiddenTagCount = Math.max(0, recruit.techTags.length - TECH_TAG_VISIBLE);
+
+  const hideBottomBar = recruit.isTeamMember && !recruit.isAuthor;
 
   return (
-    <div className={styles.layout}>
+    <div className={hideBottomBar ? styles.layoutNoCta : styles.layout}>
       <article aria-labelledby="recruit-title" className={styles.main}>
         <header className={styles.head}>
-          <div className={styles.headTop}>
-            <ShareButton
-              target={{
-                targetType: 'RECRUIT_POST',
-                targetId: recruit.id,
-                path: `/recruits/${recruit.id}`,
-              }}
-            />
-            <ul className={styles.badges} aria-label="모집 요약">
-              <li className={closed ? styles.closedBadge : styles.deadlineBadge}>
-                {closed ? '모집 마감' : days === 0 ? '오늘 마감' : `D-${days}`}
-              </li>
-              <li className={styles.badge}>
-                {RECRUIT_FORMAT_LABELS[recruit.format]}
-                {recruit.region && ` · ${recruit.region}`}
-              </li>
-              {recruit.goal && (
-                <li className={styles.badge}>{RECRUIT_GOAL_LABELS[recruit.goal]}</li>
-              )}
-            </ul>
-            <button type="button" className={styles.iconButton} onClick={openMenu}>
-              <MoreHorizontal aria-hidden />
-              <span className="sr-only">더보기</span>
-            </button>
+          <div className={styles.titleBlock}>
+            <div className={styles.titleLead}>
+              <div className={styles.chips}>
+                <span className={styles.formatChip}>{RECRUIT_FORMAT_LABELS[recruit.format]}</span>
+                {recruit.goal && (
+                  <span className={styles.goalChip}>{RECRUIT_GOAL_LABELS[recruit.goal]}</span>
+                )}
+              </div>
+              <div className={styles.titleRow}>
+                <h2 id="recruit-title" className={styles.title}>
+                  {recruit.title}
+                </h2>
+                <div className={styles.titleActions}>
+                  <RecruitMenuSheet recruit={recruit} />
+                </div>
+              </div>
+            </div>
+            <p className={styles.deadline}>
+              <time dateTime={recruit.deadline}>
+                {closed ? '모집 마감' : formatDeadlineDate(recruit.deadline)}
+              </time>
+            </p>
           </div>
-          <h2 id="recruit-title" className={styles.title}>
-            {recruit.title}
-          </h2>
-          <p className={styles.byline}>
-            <Image
-              src={recruit.author.avatarUrl}
-              alt=""
-              width={24}
-              height={24}
-              sizes="24px"
-              className={styles.bylineAvatar}
-            />
-            <Link href={`/user/${recruit.author.login}` as Route} className={styles.bylineName}>
-              {recruit.author.name}
-            </Link>
-            <span aria-hidden>·</span>
-            <RelativeTime value={recruit.createdAt} />
-          </p>
-        </header>
-
-        <section aria-labelledby="recruit-roles" className={styles.section}>
-          <h3 id="recruit-roles" className={styles.sectionTitle}>
-            모집 역할
-          </h3>
-          <ul className={styles.roles}>
-            {recruit.roles.map((role) => (
-              <li key={role.id} className={styles.role}>
-                <div className={styles.roleHead}>
-                  <span className={styles.roleName}>{role.name}</span>
-                  <span className={role.remaining > 0 ? styles.roleLeft : styles.roleFull}>
-                    {role.remaining > 0 ? `${role.remaining}명 남음` : '모집 완료'}
-                  </span>
-                </div>
-                {/* The text above carries the numbers; the bar is a picture of the same */}
-                <div className={styles.meter} aria-hidden>
-                  <span
-                    className={styles.meterFill}
-                    style={{ width: `${Math.min(100, (role.filled / role.headcount) * 100)}%` }}
-                  />
-                </div>
-                <p className={styles.roleCount}>
-                  {role.filled}/{role.headcount}명 함께하는 중
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="recruit-intro" className={styles.section}>
-          <h3 id="recruit-intro" className={styles.sectionTitle}>
-            소개
-          </h3>
           <p className={styles.intro}>{recruit.intro}</p>
-        </section>
-
-        <section aria-labelledby="recruit-info" className={styles.section}>
-          <h3 id="recruit-info" className={styles.sectionTitle}>
-            상세 정보
-          </h3>
-          <dl className={styles.info}>
-            <div className={styles.infoRow}>
-              <dt>진행 방식</dt>
-              <dd>
-                {RECRUIT_FORMAT_LABELS[recruit.format]}
-                {recruit.region && ` · ${recruit.region}`}
-              </dd>
-            </div>
-            <div className={styles.infoRow}>
-              <dt>모집 마감</dt>
-              <dd>
-                <time dateTime={recruit.deadline}>{formatDate(recruit.deadline)}</time>
-                {closed ? ' · 마감됨' : days === 0 ? ' · 오늘 마감' : ` · ${days}일 남음`}
-              </dd>
-            </div>
-            {recruit.duration && (
-              <div className={styles.infoRow}>
-                <dt>예상 기간</dt>
-                <dd>{recruit.duration}</dd>
-              </div>
-            )}
-            {recruit.goal && (
-              <div className={styles.infoRow}>
-                <dt>목표</dt>
-                <dd>{RECRUIT_GOAL_LABELS[recruit.goal]}</dd>
-              </div>
-            )}
-            <div className={styles.infoRow}>
-              <dt>팀</dt>
-              <dd>{recruit.teamName ?? '아직 팀을 만들지 않았어요'}</dd>
-            </div>
-          </dl>
           {recruit.techTags.length > 0 && (
             <ul className={styles.tags} aria-label="기술 스택">
-              {recruit.techTags.map((tag) => (
+              {visibleTags.map((tag) => (
                 <li key={tag} className={styles.tag}>
                   {tag}
                 </li>
               ))}
+              {hiddenTagCount > 0 && (
+                <li className={styles.tag} aria-label={`외 ${hiddenTagCount}개`}>
+                  +{hiddenTagCount}
+                </li>
+              )}
             </ul>
           )}
+        </header>
+
+        <section aria-labelledby="recruit-roles" className={styles.rolesSection}>
+          <div className={styles.sectionHead}>
+            <h3 id="recruit-roles" className={styles.sectionTitle}>
+              모집 역할
+            </h3>
+            <p className={styles.sectionMeta}>
+              전체 {totalHeadcount}명 중 {totalFilled}명 모집 완료
+            </p>
+          </div>
+          <ul className={styles.roles}>
+            {recruit.roles.map((role) => {
+              const full = role.remaining <= 0;
+              return (
+                <li key={role.id} className={styles.role}>
+                  <span className={styles.roleName}>{role.name}</span>
+                  <span className={styles.roleStatus}>
+                    <span className={full ? styles.roleFilled : styles.roleOpen}>
+                      {role.filled}/{role.headcount}
+                    </span>
+                    <span className={styles.roleLabel}>{full ? '마감' : '모집 중'}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </section>
+
+        <TeamProfiles members={recruit.teamMembers} />
       </article>
 
-      <aside aria-label="지원과 작성자" className={styles.aside}>
-        <ActionPanel recruit={recruit} closed={closed} onShowApplicants={onShowApplicants} />
-        <section aria-labelledby="recruit-author" className={styles.authorCard}>
-          <h3 id="recruit-author" className={styles.sectionTitle}>
-            작성자
-          </h3>
-          <div className={styles.authorRow}>
-            <Image
-              src={recruit.authorCard.avatarUrl}
-              alt=""
-              width={48}
-              height={48}
-              sizes="48px"
-              className={styles.authorAvatar}
-            />
-            <div className={styles.authorText}>
-              <p className={styles.authorName}>{recruit.authorCard.name}</p>
-              <p className={styles.authorLogin}>@{recruit.authorCard.login}</p>
-            </div>
-          </div>
-          {recruit.authorCard.bio && <p className={styles.authorBio}>{recruit.authorCard.bio}</p>}
-          <Button variant="soft" block asChild>
-            <Link href={`/user/${recruit.authorCard.login}` as Route}>프로필 보기</Link>
-          </Button>
-        </section>
-      </aside>
+      <ActionPanel recruit={recruit} closed={closed} />
     </div>
   );
 }
 
-type ActionPanelProps = { recruit: Detail; closed: boolean; onShowApplicants: () => void };
+function TeamProfiles({ members }: { members: RecruitTeamMember[] }) {
+  return (
+    <section aria-labelledby="recruit-team" className={styles.teamSection}>
+      <div className={styles.sectionHeadInline}>
+        <h3 id="recruit-team" className={styles.sectionTitle}>
+          팀원 프로필
+        </h3>
+        <p className={styles.sectionMeta}>총 {members.length}명</p>
+      </div>
+      <ul className={styles.members}>
+        {members.map((member) => (
+          <li key={member.id}>
+            <Link
+              href={`/user/${member.login}` as Route}
+              className={styles.memberRow}
+              aria-label={`${member.name} 프로필 보기`}
+            >
+              <Image
+                src={member.avatarUrl}
+                alt=""
+                width={40}
+                height={40}
+                sizes="40px"
+                className={styles.memberAvatar}
+              />
+              <span className={styles.memberText}>
+                <span className={styles.memberBadges}>
+                  <span className={styles.memberRole}>{TEAM_ROLE_LABELS[member.teamRole]}</span>
+                  {member.isAuthor && <span className={styles.authorBadge}>작성자</span>}
+                </span>
+                <span className={styles.memberName}>
+                  {member.name} @{member.login}
+                </span>
+              </span>
+              <Icon svg={AltArrowRightLinearIcon} className={styles.memberChevron} />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+type ActionPanelProps = { recruit: Detail; closed: boolean };
 
 /**
- * The one thing this viewer can do here (07 TODO 21): apply, see their status, cancel, or (author)
- * jump to applicants. Fixed to the bottom on mobile, inside the aside from desktop.
+ * Bottom bar: applicants CTA for authors; apply/status for others.
+ * Recruiters only read; other team members get no CTA (same as author apply ban).
  */
-function ActionPanel({ recruit, closed, onShowApplicants }: ActionPanelProps) {
-  const { viewer, mine, suspended, confirm, cancelPending, openApply, openCancel, confirmCancel } =
-    useActionPanel(recruit);
+function ActionPanel({ recruit, closed }: ActionPanelProps) {
+  const {
+    viewer,
+    mine,
+    suspended,
+    confirm,
+    cancelPending,
+    openApply,
+    openApplicants,
+    openCancel,
+    confirmCancel,
+  } = useActionPanel(recruit);
 
-  // Recruiters only read (04 ch. 2)
-  if (viewer.role === 'recruiter') return null;
+  // Recruiters only read (04 ch. 2). Non-author team members have nothing to do here.
+  if (viewer.role === 'recruiter' || (recruit.isTeamMember && !recruit.isAuthor)) return null;
 
   let content;
   if (recruit.isAuthor) {
     content = (
-      <div className={styles.actionRow}>
-        <Button variant="outline" asChild>
-          <Link href={`/recruits/${recruit.id}/edit` as Route}>수정하기</Link>
-        </Button>
-        <Button className={styles.actionMain} onClick={onShowApplicants}>
-          지원자 {recruit.applicantCount}명 보기
-        </Button>
-      </div>
+      <Button block className={styles.applyCta} onClick={openApplicants}>
+        지원자 {recruit.applicantCount}명 보기
+      </Button>
     );
   } else if (mine?.status === 'PENDING') {
     const roleName = recruit.roles.find((role) => role.id === mine.roleId)?.name;
@@ -314,13 +257,11 @@ function ActionPanel({ recruit, closed, onShowApplicants }: ActionPanelProps) {
         {mine.status === 'REJECTED' ? '이번엔 함께하지 못하게 됐어요' : '모집이 끝났어요'}
       </p>
     );
-  } else if (recruit.isTeamMember) {
-    content = <p className={styles.actionNote}>이미 함께하는 팀이에요</p>;
   } else if (closed) {
     content = <p className={styles.actionNote}>모집이 끝났어요</p>;
   } else {
     content = (
-      <Button block aria-disabled={suspended} onClick={openApply}>
+      <Button block className={styles.applyCta} aria-disabled={suspended} onClick={openApply}>
         지원하기
       </Button>
     );

@@ -44,7 +44,7 @@ export default async function RecruitDetailPage({ params }: PageProps<'/recruits
   const { recruit } = await loadRecruit(id);
 
   return (
-    <PageFrame title="모집 글" variant="stack" backHref="/recruits">
+    <PageFrame title="모집 글 상세" variant="stack" backHref="/recruits">
       {/* Recruit posts are not job postings (blueprint §8-3) */}
       <JsonLd
         data={{

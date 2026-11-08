@@ -41,6 +41,7 @@
 
   /* Status text — always paired with a message, never color alone */
   --color-status-error: #b91c1c; /* also delete, leave and other irreversible actions */
+  --color-required-dot: #ed0004; /* required-field mark (4×4 circle beside labels) */
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
 
@@ -84,6 +85,10 @@
   /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
   --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */
   --color-chip-goal-bg: rgb(35 193 4 / 0.15); /* 공모전/해커톤/출시/학습 */
+
+  /* 21 recruit detail (Figma 92:578): cool CTA and filled-role count */
+  --color-cta-cool: #2563eb; /* apply CTA fill; on-white text uses --color-on-primary */
+  --color-role-filled: #028714; /* filled headcount "1/1" before "마감" */
 
   /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
   --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */

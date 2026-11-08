@@ -113,6 +113,7 @@
   --admin-aside-width: 400px; /* admin detail column from 1024px */
   --icon-size: 24px;
   --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
+  --size-required-dot: 4px; /* required-field mark beside titles/labels */
   --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
   --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */

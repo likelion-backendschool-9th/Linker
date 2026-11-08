@@ -57,6 +57,7 @@ export const OVERLAY_KEYS = [
   'recruit-status',
   'recruit-menu',
   'recruit-apply',
+  'recruit-applicants',
   'recruit-application',
   'recruit-reject',
   'recruit-team-required',
