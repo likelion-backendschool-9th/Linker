@@ -13,7 +13,7 @@ public record ChatRoomInfoResponse(
 		@Schema(requiredMode = REQUIRED, description = "TEAM: team name. 1:1: counterpart name") String title,
 		@Schema(requiredMode = REQUIRED, nullable = true, allowableValues = {"SENT", "RECEIVED"}, description = "REQUEST only") String requestDirection,
 		@Schema(requiredMode = REQUIRED) boolean muted,
-		@Schema(requiredMode = REQUIRED) List<ChatMemberResponse> members,
+		@Schema(requiredMode = REQUIRED, description = "TEAM: owner, admins, then members") List<ChatRoomMemberResponse> members,
 		@Schema(requiredMode = REQUIRED, types = {"object", "null"}) ChatRoomTeamResponse team,
 		@Schema(requiredMode = REQUIRED, nullable = true, description = "Free team history window in days; null for 1:1") Integer historyLimitDays
 ) {
