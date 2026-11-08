@@ -21,12 +21,10 @@ test('08 intro keeps the Figma wording, disabled next step and server-issued ins
     'https://github.com/organizations/plan',
   );
   await page.getByRole('button', { name: 'GitHub로 시작하기' }).click();
-  await expect(page).toHaveURL(
-    /\/teams\/new\/callback\?installation_id=777&setup_action=install&state=mock/,
-  );
-  await expect(
-    page.getByRole('heading', { name: '아직 GitHub 연결을 확인할 수 없어요.' }),
-  ).toBeVisible();
+  await expect(page).toHaveURL('/teams/new?step=2');
+  await expect(page.getByRole('heading', { name: '팀 정보를 입력해 주세요' })).toBeVisible();
+  await expect(page.getByLabel('팀 이름', { exact: true })).toHaveValue('my-new-org');
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
 });
 
 test('08 back uses the existing workspace fallback', async ({ page }) => {
@@ -68,4 +66,61 @@ test('08 intro matches Figma geometry and stays within the mobile column', async
     });
   }
   expect(errors).toEqual([]);
+});
+
+test('08-2 matches the selected form and keeps unverified URL fields from enabling next', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/teams/new?step=2&installation_id=777&org=Dawn-Guys');
+  await page.getByLabel('팀 이름', { exact: true }).fill('새 프로젝트');
+  await page.getByLabel('팀 소개', { exact: true }).fill('팀 소개');
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await expect(page.getByRole('link', { name: /Dawn/ })).toHaveCount(0);
+  await page.goto('/teams/new');
+  await page.getByRole('button', { name: 'GitHub로 시작하기' }).click();
+  await expect(page).toHaveURL('/teams/new?step=2');
+  const name = page.getByLabel('팀 이름', { exact: true });
+  const description = page.getByLabel('팀 소개', { exact: true });
+  await name.fill('');
+  await page.getByRole('heading', { name: '팀 정보를 입력해 주세요' }).click();
+  await expect(name).toHaveAttribute('maxlength', '50');
+  await expect(description).toHaveAttribute('maxlength', '100');
+  await expect(page.getByText('0/100', { exact: true })).toBeVisible();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+  await expect(page.getByText('화면 미리보기예요.', { exact: false })).toHaveCount(0);
+  for (const width of [375, 360, 600, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    if (width === 375) {
+      expect((await name.boundingBox())?.y).toBe(308);
+      expect((await description.locator('..').boundingBox())?.height).toBe(100);
+      expect((await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y).toBe(
+        723,
+      );
+    }
+    await page.screenshot({
+      path: testInfo.outputPath(`team-setup-information-${width}.png`),
+      fullPage: true,
+      scale: 'css',
+      style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+    });
+  }
+  await name.fill('프론트 화면 검토팀');
+  await description.fill('팀원과 같은 디자인으로 만들어요.');
+  await expect(page.getByText('18/100', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page).toHaveURL(/step=3/);
+  await page.getByRole('button', { name: '5 확인' }).click();
+  await expect(page.getByText('프론트 화면 검토팀', { exact: true })).toBeVisible();
+});
+
+test('08 callback rejects forged state and returns to installation', async ({ page }) => {
+  await page.goto('/teams/new/callback?installation_id=777&setup_action=install&state=forged');
+  await expect(page.getByRole('alert').getByText('GitHub에 연결하지 못했어요.')).toBeVisible();
+  await page.getByRole('button', { name: '팀 만들기로 돌아가기' }).click();
+  await expect(page).toHaveURL('/teams/new');
 });

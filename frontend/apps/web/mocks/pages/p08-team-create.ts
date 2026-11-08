@@ -16,6 +16,8 @@ export const routes: MockRoute[] = [
   post(
     '/api/v1/user/team-setup/installations/verify',
     ({ body }) => {
+      if (body.state !== 'mock')
+        fail(400, 'VALIDATION_ERROR', '설치 요청이 만료됐거나 올바르지 않아요. 다시 시작해 주세요');
       const installationId = String(body.installationId ?? '777');
       if (installationId === '0') return { result: 'REQUESTED_FROM_OWNER' as const };
       if (installationId === '1') {

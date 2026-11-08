@@ -1,8 +1,11 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query';
+import type { VerifyInstallationResponse } from '@linker/api/openAPIDefinition.schemas';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { useState } from 'react';
+import { useViewer } from '@/lib/auth/viewer-context';
+import { isInstalledOrganization, verifiedInstallationKey } from '../../_lib/installation';
 
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { resolveSetupStep } from '../../_lib/setup-steps';
@@ -30,6 +33,11 @@ export function useTeamSetup() {
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState('');
+  const viewer = useViewer();
+  const installation = useQuery<VerifyInstallationResponse>({
+    queryKey: verifiedInstallationKey(viewer.login),
+    queryFn: skipToken,
+  });
   const [previewTeamId, setPreviewTeamId] = useState('');
   const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
   const [completePreview, setCompletePreview] = useState(false);
@@ -56,7 +64,11 @@ export function useTeamSetup() {
     ...setupPermissionOptions(previewTeamId),
     enabled: !!previewTeam && step === 5,
   });
-  const displayName = nameTouched ? name : (previewTeam?.orgLogin ?? '');
+  const displayName = nameTouched
+    ? name
+    : isInstalledOrganization(installation.data)
+      ? installation.data.org.login
+      : '';
   const boardSummary =
     boardDraft.mode === 'new'
       ? '새 Linker 보드'
@@ -73,6 +85,7 @@ export function useTeamSetup() {
   return {
     step,
     setStep,
+    installed: isInstalledOrganization(installation.data) ? installation.data : undefined,
     name,
     setName,
     setNameTouched,

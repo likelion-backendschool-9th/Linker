@@ -14,11 +14,9 @@ test.beforeEach(async ({ page }) => {
 test('setup preserves repo selection and existing board mapping across steps without creating a team', async ({
   page,
 }) => {
-  await page.goto('/teams/new?step=2');
+  await page.goto('/teams/new?step=3');
   await page.getByText('연결된 팀으로 선택 화면 미리보기', { exact: true }).click();
   await page.getByLabel('미리보기에 사용할 팀').selectOption('1');
-  await page.getByRole('button', { name: '2 팀 정보' }).click();
-  await expect(page.getByLabel('팀 이름', { exact: true })).toHaveValue('linker-hack');
   await page.getByRole('button', { name: '3 레포 연결' }).click();
   await page.getByRole('checkbox', { name: 'linker-hack/linker-web', exact: true }).check();
   await page.getByRole('button', { name: '4 보드 연결' }).click();
@@ -41,10 +39,10 @@ test('setup preserves repo selection and existing board mapping across steps wit
   await expect(page).toHaveURL('/teams/1/settings');
 });
 
-test('callback never trusts installation parameters and all result screens remain explicit previews', async ({
+test('callback without installation parameters keeps existing result previews', async ({
   page,
 }) => {
-  await page.goto('/teams/new/callback?installation_id=777&setup_action=install&state=forged');
+  await page.goto('/teams/new/callback');
   await expect(
     page.getByRole('heading', { name: '아직 GitHub 연결을 확인할 수 없어요.' }),
   ).toBeVisible();

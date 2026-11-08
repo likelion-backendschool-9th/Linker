@@ -14,12 +14,14 @@ import { TeamRepoSelection } from '../../../_components/team-repo-selection';
 import { TeamBoardSelection } from '../../../_components/team-board-selection';
 import { TeamSetupOutcome } from '../team-setup-outcome';
 import { TeamSetupIntro } from '../team-setup-intro/TeamSetupIntro';
+import { TeamSetupInformation } from '../team-setup-information/TeamSetupInformation';
 import { STEPS, STATUSES, useTeamSetup } from './hook';
 
 export function TeamSetup() {
   const {
     step,
     setStep,
+    installed,
     setName,
     setNameTouched,
     description,
@@ -47,6 +49,22 @@ export function TeamSetup() {
 
   if (step === 1)
     return <TeamSetupIntro teams={teams} atLimit={atLimit} openExternal={openExternal} />;
+
+  if (step === 2)
+    return (
+      <TeamSetupInformation
+        installed={installed}
+        name={displayName}
+        description={description}
+        onNameChange={(value) => {
+          setName(value);
+          setNameTouched(true);
+        }}
+        onDescriptionChange={setDescription}
+        onNext={() => void setStep(3, { history: 'push' })}
+        openExternal={openExternal}
+      />
+    );
 
   return (
     <div className={styles.stack}>
@@ -109,40 +127,6 @@ export function TeamSetup() {
         />
       )}
       <section className={`${styles.card} ${styles.stack}`} aria-labelledby="setup-step-title">
-        {step === 2 && (
-          <>
-            <h2 id="setup-step-title" className={styles.title}>
-              팀을 소개해 주세요
-            </h2>
-            <p className={styles.description}>
-              팀원들이 알아볼 이름과 함께할 프로젝트를 적어 주세요.
-            </p>
-            <div className={styles.field}>
-              <label htmlFor="team-name">팀 이름</label>
-              <input
-                id="team-name"
-                className={styles.input}
-                value={displayName}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setNameTouched(true);
-                }}
-                placeholder={previewTeam?.orgLogin ?? '팀 이름을 입력해 주세요'}
-                autoComplete="organization"
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="team-description">팀 소개</label>
-              <textarea
-                id="team-description"
-                className={styles.textarea}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="함께 만드는 프로젝트를 소개해 주세요"
-              />
-            </div>
-          </>
-        )}
         {step === 3 && (
           <>
             <h2 id="setup-step-title" className={styles.title}>

@@ -1,12 +1,18 @@
 'use client';
 
 import styles from '@/features/teams/team-ui.module.css';
+import { useSearchParams } from 'next/navigation';
+import { TeamInstallVerification } from '../team-install-verification/TeamInstallVerification';
 
 import { OUTCOME_LABELS, SETUP_OUTCOMES, TeamSetupOutcome } from '../team-setup-outcome';
 import { useTeamCallbackView } from './hook';
 
 export function TeamCallbackView() {
   const { preview, setPreview } = useTeamCallbackView();
+  const params = useSearchParams();
+  if (['installation_id', 'setup_action', 'state'].some((key) => params.has(key))) {
+    return <TeamInstallVerification />;
+  }
   return (
     <div className={styles.stack}>
       <TeamSetupOutcome state={preview} />

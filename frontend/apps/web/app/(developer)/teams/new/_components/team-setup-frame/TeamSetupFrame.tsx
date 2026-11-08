@@ -48,7 +48,7 @@ export function TeamSetupFrame({ children }: { children: ReactNode }) {
         id="main"
         tabIndex={-1}
         aria-labelledby="page-title"
-        className={step === 1 ? styles.main : styles.legacy}
+        className={step <= 2 ? styles.main : styles.legacy}
       >
         <StatusBanners />
         {children}

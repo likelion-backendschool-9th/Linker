@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
@@ -10,10 +10,15 @@ import { toast } from '@/stores/toast-store';
 
 import { installDestination } from '../../_lib/install-destination';
 import { getInstallUrl } from './api';
+import { useViewer } from '@/lib/auth/viewer-context';
+import { verifiedInstallationKey } from '../../_lib/installation';
 
 export function useTeamInstall() {
   const router = useRouter();
+  const client = useQueryClient();
+  const viewer = useViewer();
   return useMutation({
+    onMutate: () => client.removeQueries({ queryKey: verifiedInstallationKey(viewer.login) }),
     mutationFn: async () =>
       installDestination(await getInstallUrl({ cache: 'no-store' }), window.location.origin),
     onSuccess: (destination) => {
