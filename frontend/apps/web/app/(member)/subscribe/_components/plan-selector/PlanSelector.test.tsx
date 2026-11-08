@@ -109,3 +109,22 @@ it('a forged team id does not bypass the permitted candidate list', async () => 
     true,
   );
 });
+it('shows the server limit reason and keeps the free choice on the original screen', async () => {
+  fetchMock.mockImplementation(async (url) =>
+    url.includes('team-candidates')
+      ? { items: [] }
+      : {
+          plans: [
+            { key: 'FREE', name: '무료', monthly: 0, yearly: null, benefits: [], trialAvailable: false },
+            ...plans,
+          ],
+          currentPlan: 'FREE',
+          reason: null,
+        },
+  );
+  renderWithProviders(<PlanSelector reason="RECRUIT_POSTS" returnTo="/recruits/new" />, {
+    viewer: { role: 'developer', login: 'developer' },
+  });
+  expect(await screen.findByText('모집 글을 더 많이 열어 두고 싶으신가요?')).toBeVisible();
+  expect(screen.getByRole('link', { name: '무료로 이용하기' })).toHaveAttribute('href', '/recruits/new');
+});

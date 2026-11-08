@@ -1,11 +1,13 @@
 'use client';
 
+import type { Route } from 'next';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { ApiError } from '@/lib/api/api-error';
+import { safeReturnTo } from '@/lib/auth/return-to';
 import { SUBSCRIPTION_PRICE } from '@/lib/policy';
 import { formatWon } from '@/lib/format/number';
 
@@ -197,7 +199,7 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
                 </ul>
                 {plan.key === 'FREE' ? (
                   <Button variant="outline" asChild block>
-                    <Link href="/feed">무료로 이용하기</Link>
+                    <Link href={safeReturnTo(returnTo) as Route}>무료로 이용하기</Link>
                   </Button>
                 ) : (
                   <Button

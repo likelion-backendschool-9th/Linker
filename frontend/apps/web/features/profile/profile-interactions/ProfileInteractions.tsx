@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
@@ -21,12 +21,26 @@ import { profileQueryKey } from '../profile-types';
 
 import styles from './ProfileInteractions.module.css';
 
+export type ProfileInteractionApi = {
+  openPeople: (type: 'followers' | 'followings') => void;
+  showFollow: boolean;
+  following: boolean;
+  followPending: boolean;
+  toggleFollow: () => void;
+  showMore: boolean;
+  openMore: () => void;
+  actionError: string | null;
+};
+
 export function ProfileInteractions({
   profile,
   viewerRole,
+  children,
 }: {
   profile: PublicProfile;
   viewerRole: Role;
+  /** Developer profile supplies its own layout and reuses these actions. */
+  children?: (api: ProfileInteractionApi) => ReactNode;
 }) {
   const queryClient = useQueryClient();
   const requireLogin = useRequireLogin();
@@ -72,59 +86,13 @@ export function ProfileInteractions({
   const showDeveloperFollow = isDeveloper && !profile.isMe && viewerRole !== 'recruiter';
   const showMore = !profile.isMe;
 
-  return (
-    <>
-      <div className={styles.root}>
-        {isDeveloper && (
-          <div className={styles.counts} aria-label="팔로우 현황">
-            <button type="button" onClick={() => openPeople('followers')}>
-              <strong>{profile.followerCount}</strong> 팔로워
-            </button>
-            <button type="button" onClick={() => openPeople('followings')}>
-              <strong>{profile.followingCount}</strong> 팔로잉
-            </button>
-          </div>
-        )}
-        {profile.isMe ? (
-          <div className={styles.buttons}>
-            <Button asChild variant="outline">
-              <Link href="/settings/profile">프로필 편집</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className={styles.buttons}>
-            {showDeveloperFollow && (
-              <Button
-                variant={profile.isFollowing ? 'outline' : 'primary'}
-                aria-pressed={profile.isFollowing}
-                aria-busy={follow.isPending}
-                onClick={() => {
-                  if (!requireLogin()) return;
-                  follow.mutate(!profile.isFollowing);
-                }}
-              >
-                {profile.isFollowing ? '팔로잉' : '팔로우'}
-              </Button>
-            )}
-            {showMore && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (requireLogin()) actions.open();
-                }}
-              >
-                더 보기
-              </Button>
-            )}
-          </div>
-        )}
-        {actionError && (
-          <p className={styles.error} role="alert">
-            {actionError}
-          </p>
-        )}
-      </div>
+  function toggleFollow() {
+    if (!requireLogin()) return;
+    follow.mutate(!profile.isFollowing);
+  }
 
+  const sheets = (
+    <>
       <ProfilePeopleSheet login={profile.login} profile={profile} overlay={people} />
       <OverlaySheet
         overlay={actions}
@@ -153,6 +121,75 @@ export function ProfileInteractions({
       )}
     </>
   );
+
+  if (children) {
+    return (
+      <>
+        {children({
+          openPeople,
+          showFollow: showDeveloperFollow,
+          following: profile.isFollowing,
+          followPending: follow.isPending,
+          toggleFollow,
+          showMore,
+          openMore: () => {
+            if (requireLogin()) actions.open();
+          },
+          actionError,
+        })}
+        {sheets}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.root}>
+        {isDeveloper && (
+          <div className={styles.counts} aria-label="팔로우 현황">
+            <button type="button" onClick={() => openPeople('followers')}>
+              <strong>{profile.followerCount}</strong> 팔로워
+            </button>
+            <button type="button" onClick={() => openPeople('followings')}>
+              <strong>{profile.followingCount}</strong> 팔로잉
+            </button>
+          </div>
+        )}
+        {profile.isMe ? (
+          <div className={styles.buttons}>
+            <Button asChild variant="outline">
+              <Link href="/settings/profile">프로필 편집</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className={styles.buttons}>
+            {showDeveloperFollow && (
+              <Button
+                variant={profile.isFollowing ? 'outline' : 'primary'}
+                aria-pressed={profile.isFollowing}
+                aria-busy={follow.isPending}
+                onClick={toggleFollow}
+              >
+                {profile.isFollowing ? '팔로잉' : '팔로우'}
+              </Button>
+            )}
+            {showMore && (
+              <Button variant="outline" onClick={() => { if (requireLogin()) actions.open(); }}>
+                더 보기
+              </Button>
+            )}
+          </div>
+        )}
+        {actionError && (
+          <p className={styles.error} role="alert">
+            {actionError}
+          </p>
+        )}
+      </div>
+
+      {sheets}
+    </>
+  );
 }
 
 function ProfilePeopleSheet({
@@ -165,6 +202,7 @@ function ProfilePeopleSheet({
   overlay: ReturnType<typeof useOverlay>;
 }) {
   const type = overlay.id === 'followings' ? 'followings' : 'followers';
+  const [query, setQuery] = useState('');
   const people = useQuery({
     queryKey: ['profile-people', login, type],
     queryFn: () =>
@@ -172,11 +210,19 @@ function ProfilePeopleSheet({
     enabled: overlay.isOpen,
   });
 
+  const items = (people.data?.items ?? []).filter(({ user }) => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return true;
+    return user.name.toLowerCase().includes(keyword) || user.login.toLowerCase().includes(keyword);
+  });
+  const relation = type === 'followers' ? '팔로워' : '팔로잉';
+
   return (
     <OverlaySheet
       overlay={overlay}
-      title={type === 'followers' ? '팔로워' : '팔로잉'}
-      description={`${profile.name}님의 ${type === 'followers' ? '팔로워' : '팔로잉'} 목록`}
+      title="팔로우"
+      description={`${profile.name}님의 팔로우와 팔로잉 목록`}
+      describeHidden
     >
       <div className={styles.peopleTabs} role="tablist" aria-label="팔로우 목록">
         <button
@@ -187,7 +233,7 @@ function ProfilePeopleSheet({
           id="profile-followers-tab"
           onClick={() => overlay.open('followers')}
         >
-          팔로워 {profile.followerCount}
+          팔로우
         </button>
         <button
           type="button"
@@ -197,9 +243,17 @@ function ProfilePeopleSheet({
           id="profile-followings-tab"
           onClick={() => overlay.open('followings')}
         >
-          팔로잉 {profile.followingCount}
+          팔로잉
         </button>
       </div>
+      <label className={styles.search}>
+        <span className="sr-only">이름 또는 아이디 검색</span>
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="이름 또는 아이디 검색"
+        />
+      </label>
       <div
         id="profile-people-panel"
         role="tabpanel"
@@ -211,19 +265,22 @@ function ProfilePeopleSheet({
           <p className={styles.error} role="alert">
             목록을 불러오지 못했어요. 다시 시도해 주세요.
           </p>
-        ) : people.data.items.length === 0 ? (
+        ) : items.length === 0 ? (
           <p>아직 표시할 사용자가 없어요.</p>
         ) : (
           <ul className={styles.peopleList}>
-            {people.data.items.map(({ user }) => (
+            {items.map(({ user }) => (
               <li key={user.id}>
-                <Link href={profileHref(user.login)} onClick={overlay.close}>
+                <Link className={styles.person} href={profileHref(user.login)} onClick={overlay.close}>
                   <span className={styles.personAvatar}>
-                    {user.avatarUrl && <Image src={user.avatarUrl} alt="" fill sizes="32px" />}
+                    {user.avatarUrl && <Image src={user.avatarUrl} alt="" fill sizes="40px" />}
                   </span>
-                  <span className={styles.personName}>{user.name}</span>
-                  <span className={styles.personHandle}>@{user.login}</span>
+                  <span className={styles.personText}>
+                    <span className={styles.personName}>{user.name}</span>
+                    <span className={styles.personHandle}>@{user.login}</span>
+                  </span>
                 </Link>
+                <span className={styles.relation}>{relation}</span>
               </li>
             ))}
           </ul>

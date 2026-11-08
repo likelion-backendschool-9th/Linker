@@ -3,32 +3,34 @@ package com.linker.backend.global.realtime;
 import java.util.List;
 
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
+import com.linker.backend.entity.team.Team;
+import com.linker.backend.entity.team.type.TeamStatus;
+import com.linker.backend.repository.team.TeamMemberRepository;
+import com.linker.backend.repository.team.TeamRepository;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/** Reads the B-owned team schema for chat only. Missing schema never grants access. */
+/** Reads the B-owned team tables for chat only: a current member of a team that is not deleted. */
 @Component
 public class TeamChatAccess {
-	private final JdbcTemplate jdbc;
+	private final TeamRepository teams;
+	private final TeamMemberRepository members;
 
-	public TeamChatAccess(JdbcTemplate jdbc) {
-		this.jdbc = jdbc;
+	public TeamChatAccess(TeamRepository teams, TeamMemberRepository members) {
+		this.teams = teams;
+		this.members = members;
 	}
 
 	public TeamView readableBy(long userId, long teamId) {
-		try {
-			List<TeamView> rows = jdbc.query("""
-					select t.id, t.name, t.status, m.role
-					from teams t join team_members m on m.team_id=t.id
-					where t.id=? and m.user_id=? and m.left_at is null
-					  and t.status <> 'DELETED'
-					""", (rs, index) -> new TeamView(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4)), teamId, userId);
-			return rows.isEmpty() ? null : rows.getFirst();
-		}
-		catch (RuntimeException exception) {
+		Team team = teams.findById(teamId)
+				.filter(found -> found.getStatus() != TeamStatus.DELETED)
+				.orElse(null);
+		if (team == null) {
 			return null;
 		}
+		return members.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId)
+				.map(member -> new TeamView(team.getId(), team.getName(), team.getStatus().name(), member.getRole().name()))
+				.orElse(null);
 	}
 
 	public boolean writableBy(long userId, long teamId) {
@@ -45,20 +47,7 @@ public class TeamChatAccess {
 		if (readableBy(viewerId, teamId) == null) {
 			return List.of();
 		}
-		try {
-			return jdbc.query("""
-					select u.id, u.username, coalesce(nullif(u.display_name, ''), u.username), u.avatar_url
-					from team_members m join users u on u.id=m.user_id
-					where m.team_id=? and m.left_at is null
-					  and u.deleted_at is null and u.status='ACTIVE'
-					order by lower(u.username), u.id
-					""", (rs, index) -> new ChatMemberResponse(
-					rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4)
-			), teamId);
-		}
-		catch (RuntimeException exception) {
-			return List.of();
-		}
+		return members.findChatMentionCandidates(teamId);
 	}
 
 	public record TeamView(long id, String name, String status, String role) {

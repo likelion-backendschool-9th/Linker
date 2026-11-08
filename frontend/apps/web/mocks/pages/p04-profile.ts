@@ -133,10 +133,13 @@ export const routes: MockRoute[] = [
     { only: 'developer' },
   ),
 
-  get('/api/v1/public/user/:login/contributions', ({ query }) => {
-    const month = query.get('month') ?? new Date().toISOString().slice(0, 7);
-    return { month, days: contributionsFor(month), asOf: daysAgo(0) };
-  }),
+  ...['/api/v1/public/user/:login/contributions', '/api/v1/public/users/:login/contributions'].map(
+    (path) =>
+      get(path, ({ query }) => {
+        const month = query.get('month') ?? new Date().toISOString().slice(0, 7);
+        return { month, days: contributionsFor(month), asOf: daysAgo(0) };
+      }),
+  ),
   get('/api/v1/public/user/:login/posts', ({ params }) => {
     const target = userOr404(params.login);
     const own = POSTS.filter((post) => post.author.id === target.id);

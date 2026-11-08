@@ -310,6 +310,42 @@ class TeamManagementIntegrationTest {
     verifyNoInteractions(github);
   }
 
+  @Test
+  void teamChatAccessReadsCurrentMembersOfLiveTeamsThroughJpa() {
+    jdbc.update("update users set display_name='관리자' where id=?", admin.getId());
+    jdbc.update("update users set display_name='' where id=?", member.getId());
+    join(outsider, "MEMBER");
+    jdbc.update("update team_members set left_at=now(), leave_type='LEFT' where team_id=? and user_id=?",
+        team, outsider.getId());
+    User withdrawing = user(UserType.DEVELOPER);
+    join(withdrawing, "MEMBER");
+    jdbc.update("update users set status='WITHDRAWING' where id=?", withdrawing.getId());
+
+    var view = teamChat.readableBy(admin.getId(), team);
+    assertThat(view).isNotNull();
+    assertThat(view.name()).isEqualTo("기존 팀");
+    assertThat(view.status()).isEqualTo("ACTIVE");
+    assertThat(view.role()).isEqualTo("ADMIN");
+    assertThat(teamChat.canModerate(admin.getId(), team)).isTrue();
+    assertThat(teamChat.canModerate(member.getId(), team)).isFalse();
+    assertThat(teamChat.readableBy(outsider.getId(), team)).isNull();
+
+    var candidates = teamChat.mentionCandidates(member.getId(), team);
+    var expected = java.util.stream.Stream.of(owner, admin, member)
+        .sorted(java.util.Comparator.comparing((User u) -> u.getUsername().toLowerCase()).thenComparing(User::getId))
+        .map(User::getId).toList();
+    assertThat(candidates).extracting(c -> c.id()).containsExactlyElementsOf(expected);
+    assertThat(candidates).filteredOn(c -> c.id() == admin.getId()).extracting(c -> c.name())
+        .containsExactly("관리자");
+    assertThat(candidates).filteredOn(c -> c.id() == member.getId()).extracting(c -> c.name())
+        .containsExactly(member.getUsername());
+    assertThat(teamChat.mentionCandidates(outsider.getId(), team)).isEmpty();
+
+    jdbc.update("update teams set status='DELETED' where id=?", team);
+    assertThat(teamChat.readableBy(owner.getId(), team)).isNull();
+    assertThat(teamChat.mentionCandidates(owner.getId(), team)).isEmpty();
+  }
+
   private User user(UserType type) {
     var user = User.create("p09-" + UUID.randomUUID().toString().substring(0, 12), type);
     user.completeOnboarding(Instant.now());
