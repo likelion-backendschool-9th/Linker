@@ -64,6 +64,15 @@
   border: 0;
 }
 
+.teamToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+}
+
 .consentList {
   gap: var(--space-sm);
 }

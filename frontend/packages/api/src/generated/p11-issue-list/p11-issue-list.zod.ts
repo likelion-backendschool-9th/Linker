@@ -95,6 +95,7 @@ export const ListTeamIssuesQueryParams = zod.object({
   "status": zod.string().optional(),
   "assignee": zod.string().optional(),
   "label": zod.string().optional(),
+  "q": zod.string().optional().describe('이슈 제목 검색어(대소문자 무시, 최대 100자)'),
   "open": zod.boolean().default(listTeamIssuesQueryOpenDefault),
   "cursor": zod.string().optional(),
   "size": zod.int().default(listTeamIssuesQuerySizeDefault)

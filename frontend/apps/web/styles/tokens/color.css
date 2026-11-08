@@ -70,7 +70,7 @@
   --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1 */
   --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1 */
   --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1 */
-  --color-status-overdue: #e62e00; /* 07 overdue date, paired with "마감 지남". Low contrast: 4.42:1 */
+  --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
   --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
   --color-canvas-cool: #f3f4f6; /* 07 compact link fill */
@@ -88,9 +88,20 @@
   /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
   --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
   --color-fab-bg: #2e2e2e; /* write-recruit-post FAB fill */
-  --color-fab-border: #383838; /* write-recruit-post FAB stroke */
+  --color-search-panel-bg: #f7f7f7; /* scroll-revealed search panel, area B (Figma 253:2122) */
+  --color-text-placeholder-search: #a3a3a8; /* 19 search placeholder on white. Low contrast: 2.52:1 */
 
-  /* 19 recruit list scroll-revealed search panel, area B (Figma 253:2122) */
-  --color-search-panel-bg: #f7f7f7;
-  --color-text-placeholder-search: #a3a3a8;
+  /* Figma 11 values (team issue list). Low contrast ones are kept by design decision, like 07 */
+  --color-text-title-cool: #111827; /* 11 section titles, current team tab, search text */
+  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6 */
+  --color-progress-done: #158000; /* 11 "완료" count and trend line: 5.29:1 */
+  --color-progress-active: #007be6; /* 11 "진행" count and trend line: 4.37:1, low contrast */
+  --color-progress-blocked: #e62e00; /* 11 "정지" count and trend line: 4.42:1, low contrast */
+  --color-tab-indicator: #121212; /* 11 current team tab underline */
+  --color-hairline-tab: #ebebeb; /* 11 other team tabs underline */
+  --color-chart-grid: #e5e7eb; /* 11 trend chart dashed day lines */
+  --color-fab: #2e2e2e; /* 11 team chat shortcut fill */
+
+  /* Shared by 11 team-chat FAB and 19 write-recruit FAB (same hex, different fill tokens above) */
+  --color-fab-border: #383838;
 }

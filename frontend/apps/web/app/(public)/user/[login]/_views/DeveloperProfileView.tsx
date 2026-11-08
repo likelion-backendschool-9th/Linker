@@ -10,6 +10,7 @@ import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 import { ProfileInteractions } from '@/features/profile/profile-interactions/ProfileInteractions';
+import { ShareButton } from '@/features/share/share-button/ShareButton';
 import { apiFetch } from '@/lib/api/api-fetch';
 import type { Role } from '@/lib/auth/route-access';
 import type { PublicProfile } from '@/features/profile/profile-types';
@@ -17,6 +18,7 @@ import { profileQueryKey } from '@/features/profile/profile-types';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
 import { ContributionCalendar } from '../_components/contribution-calendar/ContributionCalendar';
+import { ProfileOutreach } from '../_components/profile-outreach/ProfileOutreach';
 import { ProfilePosts } from '../_components/profile-posts/ProfilePosts';
 import { ProfileTeams } from '../_components/profile-teams/ProfileTeams';
 import { useProfileTeams } from '../_components/profile-teams/hook';
@@ -90,6 +92,11 @@ export function DeveloperProfileView({
             </div>
 
             {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
+            {safeBlog(profile.blogUrl) && (
+              <a className={styles.blog} href={safeBlog(profile.blogUrl)!} target="_blank" rel="noreferrer">
+                {profile.blogUrl}
+              </a>
+            )}
 
             {profile.techStack.length > 0 && (
               <ul className={styles.stackRow} aria-label="기술 스택">
@@ -115,6 +122,14 @@ export function DeveloperProfileView({
               GitHub
             </a>
 
+            <ShareButton
+              target={{
+                targetType: 'PROFILE',
+                targetId: profile.id,
+                path: `/user/${profile.login}`,
+              }}
+            />
+            <ProfileOutreach profile={profile} viewerRole={viewerRole} />
             {showFollow && (
               <button
                 type="button"
@@ -186,4 +201,14 @@ export function DeveloperProfileView({
       )}
     </ProfileInteractions>
   );
+}
+
+function safeBlog(value: string | null) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
 }

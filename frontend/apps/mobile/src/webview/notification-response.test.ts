@@ -44,6 +44,20 @@ describe('notification taps', () => {
     expect(open).toHaveBeenCalledTimes(2);
   });
 
+  it('uses data.path from the server Expo envelope while preserving notification identity', () => {
+    const open = vi.fn(),
+      clear = vi.fn();
+    const receive = createNotificationReceiver(open, clear);
+    const tap = response('n17', '/invite/example?from=push');
+    tap.notification.request.content.data = {
+      notificationId: 17,
+      path: '/invite/example?from=push',
+    };
+    receive(tap);
+    expect(open).toHaveBeenCalledExactlyOnceWith('/invite/example?from=push');
+    expect(clear).toHaveBeenCalledOnce();
+  });
+
   it('ignores empty responses and discards unsafe native launch destinations', () => {
     const open = vi.fn(),
       clear = vi.fn();

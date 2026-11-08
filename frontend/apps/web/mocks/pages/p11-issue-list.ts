@@ -17,6 +17,18 @@ import {
 } from '../fixtures/issues';
 import { findTeam, TEAM_MEMBERS, type MockTeam } from '../fixtures/teams';
 
+/**
+ * Demo shape of the 14-day trend, as offsets from today's counts (the last day is 0, so it matches
+ * the status cards). Modeled on Figma 11 "최근 추이" (198:369): the top line (완료) dips and rises,
+ * the two lower lines (진행, 정지) wave out of step. For team 1 (완료 2 · 진행 2 · 정지 1) the lines
+ * never touch before today, where 완료 and 진행 meet at 2.
+ */
+const TREND_OFFSETS = {
+  done: [4, 4, 3, 2, 1, 1, 2, 3, 2, 2, 3, 2, 1, 0],
+  inProgress: [1, 1, 2, 1, 0, -1, -1, 0, 1, 0, 1, 0, -1, 0],
+  blocked: [1, 0, 0, 1, 0, -1, -1, 0, 1, 0, 0, -1, -1, 0],
+} as const;
+
 /** 11 Issue list: `IssueController`. `issueRow` and `filterIssues` are borrowed by 14 and 15. */
 
 /** List row / board card shape (WBS §1-3 rule 4: DTOs belong to the page) */
@@ -77,7 +89,10 @@ let lastRefreshAt = 0;
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/issues', (ctx) => {
     const team = teamOr404(ctx.params.teamId!);
+    // `q`: title search of the 11 search box (case-insensitive part of the title)
+    const q = ctx.query.get('q')?.trim().toLowerCase();
     const items = filterIssues(ctx, ctx.params.teamId!)
+      .filter((item) => !q || item.title.toLowerCase().includes(q))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .map(issueRow);
     return { ...paginate(items, ctx.query), total: items.length, canWrite: canWrite(team) };
@@ -139,13 +154,14 @@ export const routes: MockRoute[] = [
     // Last 14 days of snapshots, oldest first; today is drawn from current state (POL-T-7)
     const history = Array.from({ length: 14 }, (_, index) => {
       const day = 13 - index;
-      const finished = Math.max(0, done - Math.floor(day / 5));
+      const at = (status: IssueStatus, offsets: readonly number[]) =>
+        Math.max(0, count(status) + offsets[index]!);
       return {
         date: dateOnly(-day),
         todo: Math.max(0, count('TODO') + Math.floor(day / 4)),
-        inProgress: count('IN_PROGRESS'),
-        blocked: count('BLOCKED'),
-        done: finished,
+        inProgress: at('IN_PROGRESS', TREND_OFFSETS.inProgress),
+        blocked: at('BLOCKED', TREND_OFFSETS.blocked),
+        done: at('DONE', TREND_OFFSETS.done),
       };
     });
     return {

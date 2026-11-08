@@ -83,9 +83,14 @@ export default async function ProfilePage({ params }: ProfileRouteProps) {
       bottomTabs={false}
       actions={
         profile.isMe && profile.kind === 'DEVELOPER' ? (
-          <Link className={styles.editLink} href="/settings/profile">
-            프로필 편집
-          </Link>
+          <div className={styles.headerActions}>
+            <Link className={styles.editLink} href="/settings">
+              설정
+            </Link>
+            <Link className={styles.editLink} href="/settings/profile">
+              프로필 편집
+            </Link>
+          </div>
         ) : undefined
       }
     >

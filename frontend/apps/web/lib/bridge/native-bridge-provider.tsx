@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import { registerPushToken } from '@/features/notifications/push-tokens';
+import { PushPermissionSheet } from '@/features/notifications/push-permission-sheet/PushPermissionSheet';
 import { syncNativeSession } from '@/features/auth/sync-native-session';
 import { safeReturnTo } from '@/lib/auth/return-to';
 import { useActiveOverlay } from '@/lib/navigation/use-overlay';
@@ -26,8 +27,10 @@ export function NativeBridgeProvider({
   const activeOverlay = useActiveOverlay();
   // The listener is registered once; read the latest overlay state through a ref
   const overlayRef = useRef(activeOverlay);
+  const sessionRef = useRef(session);
   useEffect(() => {
     overlayRef.current = activeOverlay;
+    sessionRef.current = session;
   });
 
   useEffect(() => {
@@ -50,6 +53,8 @@ export function NativeBridgeProvider({
           }
           break;
         case 'PUSH_TOKEN':
+          // First-launch permission may be granted before login; native resends after SESSION_SAVE.
+          if (!sessionRef.current) break;
           void registerPushToken(msg.token, msg.platform).catch(() => {
             // Keep listening; a later login or permission grant can retry.
           });
@@ -70,5 +75,10 @@ export function NativeBridgeProvider({
     syncNativeSession(userId && userType ? { userId, userType } : null);
   }, [userId, userType]);
 
-  return children;
+  return (
+    <>
+      {children}
+      <PushPermissionSheet />
+    </>
+  );
 }

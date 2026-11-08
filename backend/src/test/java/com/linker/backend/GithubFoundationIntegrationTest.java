@@ -97,6 +97,8 @@ class GithubFoundationIntegrationTest {
 	@MockitoSpyBean RedisWebhookQueue queue;
 	@MockitoBean GithubAppClient github;
 	@MockitoBean GithubUserAccessTokenSource userTokens;
+	// This B contract test resets its isolated DB; unrelated scheduled delivery must not read it.
+	@MockitoBean com.linker.backend.async.notification.NotificationDeliveryService notificationDelivery;
 
 	@BeforeEach
 	void clean() {

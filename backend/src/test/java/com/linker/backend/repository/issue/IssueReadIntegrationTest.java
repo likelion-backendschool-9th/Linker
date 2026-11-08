@@ -768,6 +768,38 @@ class IssueReadIntegrationTest {
   }
 
   @Test
+  void titleSearchMatchesPartOfTitleAndEscapesWildcards() throws Exception {
+    sync.fullSync(10);
+    var cookie = login(1);
+    mvc.perform(get("/api/v1/user/teams/10/issues").cookie(cookie).param("q", " 로그인 "))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(1))
+        .andExpect(jsonPath("$.items[0].title").value("로그인 오류"));
+    mvc.perform(get("/api/v1/user/teams/10/issues").cookie(cookie).param("q", "%"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(0));
+    mvc.perform(get("/api/v1/user/teams/10/issues").cookie(cookie).param("q", "   "))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(2));
+    mvc.perform(get("/api/v1/user/teams/10/issues").cookie(cookie).param("q", "가".repeat(101)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    // A cursor from one search text is not valid for another
+    var first = issueRepository.list(
+        10, new IssueListQuery(null, null, null, null, "오류", false, null, 1), false, LocalDate.now());
+    assertThat(first.total()).isEqualTo(1);
+    var page = issueRepository.list(10, query(null, null, 1), false, LocalDate.now());
+    assertThatThrownBy(
+            () ->
+                issueRepository.list(
+                    10,
+                    new IssueListQuery(null, null, null, null, "오류", false, page.nextCursor(), 1),
+                    false,
+                    LocalDate.now()))
+        .isInstanceOf(ApiException.class);
+  }
+
+  @Test
   void manualRefreshOnlyTouchesMatchingIssuesAndRateIsEnforced() throws Exception {
     sync.fullSync(10);
     REQUESTS.clear();

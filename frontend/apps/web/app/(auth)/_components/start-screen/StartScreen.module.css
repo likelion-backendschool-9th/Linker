@@ -49,6 +49,19 @@
   text-align: center;
 }
 
+.intro {
+  display: grid;
+  gap: var(--space-xxs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-meta);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+  text-align: center;
+}
+
 .actions {
   display: grid;
   gap: var(--space-md);

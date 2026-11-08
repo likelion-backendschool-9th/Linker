@@ -36,7 +36,11 @@ public class ExpoPushGateway implements PushGateway {
 			item.put("to", message.token());
 			item.put("title", message.title());
 			item.put("body", message.body());
-			if (message.data() != null && !message.data().isEmpty()) item.put("data", message.data());
+			Map<String, Object> data = new java.util.HashMap<>();
+			if (message.data() != null) data.putAll(message.data());
+			// B's app consumes data.path; preserve D's notification metadata and existing linkPath.
+			if (message.linkPath() != null && !message.linkPath().isBlank()) data.put("path", message.linkPath());
+			if (!data.isEmpty()) item.put("data", data);
 			body.add(item);
 		}
 		try {
