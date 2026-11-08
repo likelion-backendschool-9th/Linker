@@ -9,12 +9,15 @@ import {
 } from '@tanstack/react-query';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 
 import { useViewer } from '@/lib/auth/viewer-context';
 import { toKstIso } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
+
+import { notificationTabParser } from '../../_lib/notification-tab';
 
 import {
   notificationCountOptions,
@@ -28,15 +31,18 @@ import {
 } from './api';
 
 type ReadAction =
-  | { kind: 'all' }
-  | { kind: 'one'; id: number; target: string | null; appeal: boolean };
+  { kind: 'all' } | { kind: 'one'; id: number; target: string | null; appeal: boolean };
 
 export function useNotificationList() {
   const { login } = useViewer();
   const router = useRouter();
   const client = useQueryClient();
   const overlay = useOverlay('appeal');
-  const list = useInfiniteQuery(notificationListOptions(login));
+  const [tab, setTab] = useQueryState(
+    'tab',
+    notificationTabParser.withOptions({ history: 'replace' }),
+  );
+  const list = useInfiniteQuery(notificationListOptions(login, tab));
   const count = useQuery(notificationCountOptions(login));
   const items = useMemo(() => {
     const unique = new Map<number, NotificationItem>();
@@ -56,10 +62,12 @@ export function useNotificationList() {
     mutationFn: (action: ReadAction) =>
       action.kind === 'all' ? readAllNotifications() : readNotification(action.id),
     onSuccess: async (_, action) => {
-      client.setQueryData<InfiniteData<NotificationPage>>(notificationKeys.list(login), (data) =>
-        updateNotifications(data, (item) =>
-          action.kind === 'all' || item.id === action.id ? { ...item, read: true } : item,
-        ),
+      client.setQueriesData<InfiniteData<NotificationPage>>(
+        { queryKey: notificationKeys.lists(login) },
+        (data) =>
+          updateNotifications(data, (item) =>
+            action.kind === 'all' || item.id === action.id ? { ...item, read: true } : item,
+          ),
       );
       if (action.kind === 'all') {
         client.setQueryData(notificationKeys.count(login), { count: 0 });
@@ -91,6 +99,8 @@ export function useNotificationList() {
   const selected = items.find((item) => String(item.id) === overlay.id) ?? null;
 
   return {
+    tab,
+    setTab,
     overlay,
     list,
     count,

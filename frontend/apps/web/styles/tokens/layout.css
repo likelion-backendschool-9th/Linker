@@ -36,6 +36,10 @@
   --space-card-gap: 15px; /* 11 progress card rows, section title to its content */
   --space-search-icon: 14px; /* 11 search field: inset and icon-to-text gap */
   --space-fab-bottom: 34px; /* 11 team chat shortcut from the screen bottom (Figma, incl. home indicator) */
+  /* Figma 18 notifications (248:1243) */
+  --space-notification-group: 25px; /* tabs to "전체 읽기", to the first day, and between days */
+  --space-notification-dot: 13px; /* unread/read dot to the notification text */
+  --notification-dot-size: 8px;
 
   /* Radius */
   --radius-none: 0;
