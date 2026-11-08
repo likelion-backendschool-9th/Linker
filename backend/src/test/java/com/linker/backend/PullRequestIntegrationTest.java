@@ -169,6 +169,11 @@ class PullRequestIntegrationTest {
     mvc.perform(get(list() + "?state=merged").cookie(cookie(member)))
         .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].githubPrId").value(prId))
         .andExpect(jsonPath("$.items[0].githubRepoId").value(githubRepoId))
+        .andExpect(jsonPath("$.items[0].repo").value(repo.fullName()))
+        .andExpect(jsonPath("$.items[0].number").value(12))
+        .andExpect(jsonPath("$.items[0].title").value("최신 PR"))
+        .andExpect(jsonPath("$.items[0].author").value("developer"))
+        .andExpect(jsonPath("$.items[0].url").value(live.url()))
         .andExpect(jsonPath("$.items[0].state").value("merged"));
     assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, room)).isEqualTo(2);
   }
