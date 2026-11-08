@@ -25,6 +25,8 @@ async function receive(page: Page, msg: NativeToWeb) {
 
 async function prepareApp(page: Page) {
   await page.addInitScript(() => {
+    // This suite exercises authentication after the separately-tested first-launch explanation.
+    localStorage.setItem('linker:push-permission-seen', 'true');
     window.contractMessages = [];
     window.ReactNativeWebView = {
       postMessage: (raw) => window.contractMessages!.push(JSON.parse(raw).msg),
@@ -103,7 +105,9 @@ test('A sends a new developer to onboarding after the same native callback', asy
   const state = await beginLogin(page);
   await page.goto(`/auth/callback?code=contract-code&state=${state}`);
   await expect(page).toHaveURL(/\/onboarding$/);
-  await expect(page.getByRole('heading', { name: '프로필 설정', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: '약관 동의', exact: true, level: 1 }),
+  ).toBeVisible();
 });
 
 test('cancelling native authentication keeps the sheet usable and retries with a new request', async ({

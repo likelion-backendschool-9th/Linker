@@ -9,6 +9,7 @@ export const OVERLAY_KEYS = [
   'report',
   'block',
   'external-link',
+  'push-permission',
   'delete-confirm',
   'plan-limit',
   'draft-restore',
