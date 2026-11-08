@@ -743,6 +743,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 > Basis: S-2 · Needs first: 28 · Needed for the MVP launch demo "test payment → benefits → cancel → back to free"
 
+- [ ] Figma 29 (294:306 Pro, 295:459 Flex, 364:1694 cancel modal): grey "현재 사용 중인 요금제" card ("{plan} 요금제", description, "요금제 변경하기" → 28), info box ("다음 결제일" — "이용 만료일"/"혜택 종료일" until auto-renewal exists, "현재 결제 주기", "월 결제 금액 2,900(Pro)", Flex adds "팀 인원 N명", "결제 담당자", "결제 담당자 변경", then "요금제 해지 ›"), "결제 내역" with "전체 보기" (3 rows first; date, "{plan} 월간 결제", "N 원 결제/환불"). Several subscriptions repeat card + info box; no subscription shows a "무료 요금제" card. Refund is a small "환불" button on refundable payment rows, confirmed in the same modal style (user decisions 2026-11-09). **"결제 담당자 변경" is shown but `[Included]` and not built: it toasts "미구현 기능입니다."** Server: subscription items add `amount` (current period price) and `payerName` (Flex billing manager).
 - [ ] Current plan, next billing date (or expiry), payment history
 - [ ] Cancel (confirm sheet): benefits kept until the paid period ends
 - [ ] Refund: within 7 days of payment + benefits unused (its paid period has not started; latest payment only) → full refund via Toss Payments cancel

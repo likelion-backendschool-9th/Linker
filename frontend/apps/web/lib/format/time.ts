@@ -29,6 +29,11 @@ export function formatRelativeTime(value: Date | string | number, now: Date = ne
   return formatDate(value, now);
 }
 
+/** "2026년 12월 3일" with the year always shown (29 subscription dates and payment history, Figma 294:306). */
+export function formatFullDate(value: Date | string | number): string {
+  return format(toKst(value), 'yyyy년 M월 d일');
+}
+
 /** "2026.11.16 마감" (19 recruit card, Figma 254:2298) — plain KST date, no leading zero on month/day. */
 export function formatDeadlineDate(date: string): string {
   return `${format(toKst(date), 'yyyy.M.d')} 마감`;

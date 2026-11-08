@@ -1,0 +1,108 @@
+/* Figma 364:1694: 320px white card, 10px corners, 20px padding, blurred scrim like the 07 sheet */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 2 * var(--page-gutter));
+  max-width: var(--dialog-width-manage);
+  max-height: var(--sheet-max-height);
+  padding: var(--space-plan-card);
+  overflow-y: auto;
+  border-radius: var(--radius-manage-dialog);
+  background-color: var(--color-canvas);
+  transform: translate(-50%, -50%);
+  outline: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* the 44px close target hangs 10px into the padding; the centred title still starts 20px in */
+  margin: calc(var(--space-row-block) * -1) calc(var(--space-row-block) * -1) 0 0;
+}
+
+.title {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-black);
+  cursor: pointer;
+}
+
+.description {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-row-block);
+  font-size: var(--font-size-caption);
+  line-height: normal;
+  color: var(--color-text-slate);
+}
+
+.error {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-slate);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-row-block);
+  margin-top: var(--space-lg);
+}
+
+.cancel,
+.confirm {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-row-block);
+  border: 0;
+  background: none;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.cancel {
+  color: var(--color-plan-accent);
+}
+
+/* Figma grey; low contrast (2.55:1), kept as drawn */
+.confirm {
+  color: var(--color-text-muted-cool);
+}
+
+.confirm[aria-disabled='true'] {
+  cursor: default;
+}
+
+.close:focus-visible,
+.cancel:focus-visible,
+.confirm:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
