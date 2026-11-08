@@ -2,8 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Route } from 'next';
@@ -11,9 +10,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
-import { Button } from '@/components/ui/button/Button';
-import { TechTagPicker } from '@/features/profile/tech-tag-picker/TechTagPicker';
-import { JobStatusPicker } from '@/features/profile/job-status-picker/JobStatusPicker';
+import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { PROFILE } from '@/lib/policy';
@@ -24,6 +21,12 @@ import { useUnsavedChangesStore } from '@/stores/unsaved-changes-store';
 
 import type { DeveloperProfileValues, JobCategory, TechTag } from '../_lib/form-types';
 import styles from '../_components/profile-edit-form.module.css';
+
+const JOB_STATUS = [
+  { value: 'SEEKING', label: '구직 중' },
+  { value: 'OPEN', label: '제안만 받기' },
+  { value: 'OFF', label: '끔' },
+] as const;
 
 const schema = z.object({
   kind: z.literal('DEVELOPER'),
@@ -57,7 +60,7 @@ const schema = z.object({
 export function DeveloperProfileForm({
   initial,
   login,
-  avatarUrl,
+  avatarUrl: _avatarUrl,
   techTags,
   jobCategories,
 }: {
@@ -67,9 +70,10 @@ export function DeveloperProfileForm({
   techTags: TechTag[];
   jobCategories: JobCategory[];
 }) {
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const picker = useOverlay('tech-tags');
+  const techSheet = useOverlay('profile-edit-tech');
+  const jobSheet = useOverlay('profile-edit-job');
+  const categorySheet = useOverlay('profile-edit-categories');
   const leave = useOverlay('profile-leave');
   const [error, setError] = useState<string | null>(null);
   const form = useForm<DeveloperProfileValues>({
@@ -79,7 +83,12 @@ export function DeveloperProfileForm({
   });
   const selectedTech = useWatch({ control: form.control, name: 'techStack' }) ?? [];
   const selectedCategories = useWatch({ control: form.control, name: 'jobCategories' }) ?? [];
+  const jobStatus = useWatch({ control: form.control, name: 'jobStatus' });
   const bio = useWatch({ control: form.control, name: 'bio' }) ?? '';
+  const jobLabel = JOB_STATUS.find((option) => option.value === jobStatus)?.label ?? '';
+  const categoryLabels = jobCategories
+    .filter((category) => selectedCategories.includes(category.key))
+    .map((category) => category.label);
 
   useEffect(() => {
     useUnsavedChangesStore.getState().setDirty(form.formState.isDirty);
@@ -115,7 +124,6 @@ export function DeveloperProfileForm({
       form.reset({ ...saved, kind: 'DEVELOPER' });
       await queryClient.invalidateQueries({ queryKey: profileQueryKey(login) });
       toast('프로필을 저장했어요.');
-      router.refresh();
     },
     onError: (cause) =>
       setError(
@@ -151,6 +159,7 @@ export function DeveloperProfileForm({
 
   function toggleTech(name: string) {
     const current = form.getValues('techStack');
+    if (!current.includes(name) && current.length >= PROFILE.techStackMax) return;
     form.setValue(
       'techStack',
       current.includes(name) ? current.filter((item) => item !== name) : [...current, name],
@@ -168,67 +177,51 @@ export function DeveloperProfileForm({
     );
   }
 
-  function goBack() {
-    if (form.formState.isDirty) leave.open();
-    else router.replace(`/user/${encodeURIComponent(login)}` as Route);
-  }
+  const pending = save.isPending || sync.isPending;
 
   return (
     <>
       <form
-        className={styles.form}
+        className={styles.sheetForm}
         noValidate
         onSubmit={form.handleSubmit((values) => {
           setError(null);
           save.mutate(values);
         })}
       >
-        <div className={styles.avatarRow}>
-          {avatarUrl && (
-            <span className={styles.avatar}>
-              <Image src={avatarUrl} alt="" fill sizes="80px" />
-            </span>
-          )}
-          <div className={styles.info}>
-            <p>GitHub 프로필 사진을 사용하고 있어요.</p>
-            <p className={styles.muted}>프로필 사진은 GitHub에서 변경할 수 있어요.</p>
-          </div>
-        </div>
-
-        <fieldset
-          className={styles.fields}
-          aria-label="개발자 프로필 정보"
-          disabled={save.isPending || sync.isPending}
-        >
-          <Field id="profile-name" label="이름" error={form.formState.errors.name?.message}>
+        <fieldset className={styles.fields} aria-label="개발자 프로필 정보" disabled={pending}>
+          <Field id="profile-name" label="이름" required error={form.formState.errors.name?.message}>
             <input
               id="profile-name"
               autoComplete="name"
+              placeholder="실명을 작성해 주세요"
               aria-invalid={!!form.formState.errors.name}
               aria-describedby={form.formState.errors.name ? 'profile-name-error' : undefined}
               {...form.register('name')}
             />
           </Field>
-          <Field id="profile-bio" label="소개" error={form.formState.errors.bio?.message}>
-            <textarea
-              id="profile-bio"
-              rows={4}
-              maxLength={PROFILE.bioMax}
-              aria-invalid={!!form.formState.errors.bio}
-              aria-describedby={
-                form.formState.errors.bio ? 'profile-bio-error' : 'profile-bio-count'
-              }
-              {...form.register('bio')}
-            />
-            <span id="profile-bio-count" className={styles.counter}>
-              {bio.length}/{PROFILE.bioMax}
+          <Field
+            id="profile-bio"
+            label="자기 소개"
+            required
+            error={form.formState.errors.bio?.message}
+          >
+            <span className={styles.control}>
+              <textarea
+                id="profile-bio"
+                rows={4}
+                maxLength={PROFILE.bioMax}
+                placeholder="개발자님을 간단하게 소개해 주세요"
+                aria-invalid={!!form.formState.errors.bio}
+                aria-describedby={form.formState.errors.bio ? 'profile-bio-error' : 'profile-bio-count'}
+                {...form.register('bio')}
+              />
+              <span id="profile-bio-count" className={styles.counter}>
+                {bio.length}/{PROFILE.bioMax}
+              </span>
             </span>
           </Field>
-          <Field
-            id="profile-blog"
-            label="블로그 주소"
-            error={form.formState.errors.blogUrl?.message}
-          >
+          <Field id="profile-blog" label="블로그 주소" error={form.formState.errors.blogUrl?.message}>
             <input
               id="profile-blog"
               type="url"
@@ -240,99 +233,184 @@ export function DeveloperProfileForm({
             />
           </Field>
 
-          <section className={styles.fieldset} aria-labelledby="tech-title">
-            <span className={styles.label} id="tech-title">
-              기술 스택
+          <div className={styles.pickerField}>
+            <span className={styles.labelRow} id="job-status-label">
+              구직 상태
+              <span className={styles.required} aria-hidden="true" />
             </span>
-            <p className={styles.help}>
-              {selectedTech.length}/{PROFILE.techStackMax}개 선택
-            </p>
-            <ul className={styles.tags} aria-label="선택한 기술 스택">
-              {selectedTech.map((tag) => (
-                <li key={tag}>{tag}</li>
-              ))}
-            </ul>
-            <Button type="button" variant="outline" onClick={() => picker.open()}>
-              기술 스택 선택
-            </Button>
-          </section>
+            <button
+              type="button"
+              className={styles.selectRow}
+              data-filled="true"
+              aria-label={`구직 상태, ${jobLabel}`}
+              onClick={() => jobSheet.open()}
+            >
+              <span>{jobLabel}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className={styles.pickerField}>
+            <span className={styles.labelRow} id="tech-title">
+              기술 스택
+              <span className={styles.hint}>최대 {PROFILE.techStackMax}개</span>
+            </span>
+            <button
+              type="button"
+              className={styles.selectRow}
+              data-filled={selectedTech.length > 0}
+              aria-label={
+                selectedTech.length > 0
+                  ? `기술 스택, ${selectedTech.join(', ')}`
+                  : `기술 스택, 최대 ${PROFILE.techStackMax}개를 선택하실 수 있습니다`
+              }
+              onClick={() => techSheet.open()}
+            >
+              <span>
+                {selectedTech.length > 0
+                  ? selectedTech.join(', ')
+                  : `최대 ${PROFILE.techStackMax}개를 선택하실 수 있습니다`}
+              </span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+          </div>
+
+          <fieldset className={styles.pickerField}>
+            <legend className={styles.labelRow}>
+              관심 직군
+              <span className={styles.hint}>최대 {PROFILE.jobCategoriesMax}개</span>
+            </legend>
+            <button
+              type="button"
+              className={styles.selectRow}
+              data-filled={categoryLabels.length > 0}
+              onClick={() => categorySheet.open()}
+            >
+              <span>
+                {categoryLabels.length > 0
+                  ? categoryLabels.join(', ')
+                  : '관심있는 직군을 선택해 주세요'}
+              </span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+          </fieldset>
 
           <label className={styles.option}>
             <input type="checkbox" {...form.register('lookingForTeam')} />
             함께할 팀을 찾고 있어요
           </label>
-
-          <JobStatusPicker
-            register={form.register('jobStatus')}
-            disabled={save.isPending || sync.isPending}
-          />
-
-          <fieldset className={styles.fieldset}>
-            <legend>
-              관심 직군 <span className={styles.muted}>(선택)</span>
-            </legend>
-            <p className={styles.help}>
-              관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요.
-            </p>
-            <ul className={styles.categories}>
-              {jobCategories.map((category) => {
-                const checked = selectedCategories.includes(category.key);
-                return (
-                  <li key={category.key}>
-                    <label className={styles.option}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={!checked && selectedCategories.length >= PROFILE.jobCategoriesMax}
-                        onChange={() => toggleCategory(category.key)}
-                      />
-                      {category.label}
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
-            <span className={styles.counter}>
-              {selectedCategories.length}/{PROFILE.jobCategoriesMax}개 선택
-            </span>
-          </fieldset>
         </fieldset>
 
-        <div className={styles.actions}>
-          <Button
+        <div className={styles.footer}>
+          <button
             type="button"
-            variant="outline"
+            className={styles.syncButton}
             onClick={() => sync.mutate()}
-            disabled={sync.isPending || form.formState.isDirty}
+            disabled={sync.isPending || form.formState.isDirty || pending}
             aria-busy={sync.isPending}
           >
             {sync.isPending ? '불러오는 중…' : 'GitHub에서 다시 불러오기'}
-          </Button>
-          <Button type="button" variant="outline" onClick={goBack}>
-            취소
-          </Button>
-          <Button
+          </button>
+          <button
             type="submit"
+            className={styles.saveButton}
             disabled={!form.formState.isDirty || save.isPending}
             aria-busy={save.isPending}
           >
             {save.isPending ? '저장 중…' : '저장'}
-          </Button>
+          </button>
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
         </div>
-        {error && (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        )}
       </form>
 
-      <TechTagPicker
-        overlay={picker}
-        tags={techTags}
-        selected={selectedTech}
-        max={PROFILE.techStackMax}
-        onToggle={toggleTech}
-      />
+      <OverlaySheet
+        overlay={jobSheet}
+        title="구직 상태"
+        description="현재 구직 상태를 선택해 주세요."
+        describeHidden
+      >
+        <div className={styles.choiceList} role="radiogroup" aria-label="구직 상태">
+          {JOB_STATUS.map((option) => (
+            <label key={option.value} className={styles.choice} data-selected={jobStatus === option.value}>
+              <input
+                className="sr-only"
+                type="radio"
+                value={option.value}
+                checked={jobStatus === option.value}
+                onChange={() =>
+                  form.setValue('jobStatus', option.value, { shouldDirty: true, shouldValidate: true })
+                }
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+        <button type="button" className={styles.saveButton} onClick={() => jobSheet.close()}>
+          완료
+        </button>
+      </OverlaySheet>
+
+      <OverlaySheet
+        overlay={techSheet}
+        title="기술 스택"
+        description={`최대 ${PROFILE.techStackMax}개까지 선택할 수 있어요.`}
+        describeHidden
+      >
+        <ul className={styles.chipCloud}>
+          {techTags.map((tag) => {
+            const checked = selectedTech.includes(tag.name);
+            return (
+              <li key={tag.id}>
+                <label className={styles.chip} data-selected={checked}>
+                  <input
+                    className="sr-only"
+                    type="checkbox"
+                    checked={checked}
+                    disabled={!checked && selectedTech.length >= PROFILE.techStackMax}
+                    onChange={() => toggleTech(tag.name)}
+                  />
+                  {tag.name}
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <button type="button" className={styles.saveButton} onClick={() => techSheet.close()}>
+          완료
+        </button>
+      </OverlaySheet>
+
+      <OverlaySheet
+        overlay={categorySheet}
+        title="관심 직군"
+        description="관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요."
+      >
+        <div className={styles.choiceList}>
+          {jobCategories.map((category) => {
+            const checked = selectedCategories.includes(category.key);
+            return (
+              <label key={category.key} className={styles.choice} data-selected={checked}>
+                <input
+                  className="sr-only"
+                  type="checkbox"
+                  checked={checked}
+                  disabled={!checked && selectedCategories.length >= PROFILE.jobCategoriesMax}
+                  onChange={() => toggleCategory(category.key)}
+                />
+                {category.label}
+              </label>
+            );
+          })}
+        </div>
+        <button type="button" className={styles.saveButton} onClick={() => categorySheet.close()}>
+          완료
+        </button>
+      </OverlaySheet>
+
       <ConfirmDialog
         overlay={leave}
         title="수정 중인 내용을 나갈까요?"
@@ -348,17 +426,22 @@ export function DeveloperProfileForm({
 function Field({
   id,
   label,
+  required = false,
   error,
   children,
 }: {
   id: string;
   label: string;
+  required?: boolean;
   error?: string;
   children: ReactNode;
 }) {
   return (
     <div className={styles.field}>
-      <label htmlFor={id}>{label}</label>
+      <label className={styles.labelRow} htmlFor={id}>
+        {label}
+        {required && <span className={styles.required} aria-hidden="true" />}
+      </label>
       {children}
       {error && (
         <span id={`${id}-error`} className={styles.fieldError} role="alert">

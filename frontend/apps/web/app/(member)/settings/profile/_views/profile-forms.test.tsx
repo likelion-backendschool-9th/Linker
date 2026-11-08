@@ -65,11 +65,13 @@ describe('profile edit forms', () => {
     );
 
     expect(screen.getByRole('button', { name: '저장' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: '관심있는 직군을 선택해 주세요' }));
     await user.click(screen.getByLabelText('프론트엔드'));
     await user.click(screen.getByLabelText('백엔드'));
     await user.click(screen.getByLabelText('풀스택'));
     expect(screen.getByLabelText('모바일(iOS/Android)')).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.click(screen.getByRole('button', { name: '완료' }));
+    screen.getByRole('button', { name: '저장', hidden: true }).click();
 
     let init: RequestInit | undefined;
     await waitFor(() => {
