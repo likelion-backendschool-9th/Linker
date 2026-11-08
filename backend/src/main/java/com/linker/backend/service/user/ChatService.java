@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -40,6 +41,7 @@ import com.linker.backend.dto.chat.response.ChatHistoryLimitResponse;
 import com.linker.backend.dto.chat.response.ChatLastMessageResponse;
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
 import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
+import com.linker.backend.dto.chat.response.ChatRoomMemberResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
@@ -296,13 +298,16 @@ public class ChatService {
 			if (team == null) {
 				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
 			}
-			List<ChatMemberResponse> people = members.findActiveInRoom(roomId).stream()
+			Map<Long, String> roles = teamChat.roles(team.id());
+			List<ChatRoomMemberResponse> people = members.findActiveInRoom(roomId).stream()
 					.map(member -> accounts.findById(member.getUserId()).orElse(null))
 					.filter(Objects::nonNull)
-					.map(ChatService::memberView)
+					.map(person -> roomMemberView(person, roles.get(person.getId())))
+					// Figma 17 room info: owner first, then admins, then members (stable within a role)
+					.sorted(Comparator.comparingInt(member -> roleRank(member.role())))
 					.toList();
 			return new ChatRoomInfoResponse(room.getId(), "TEAM", team.name(), null, membership.isMuted(), people,
-					new ChatRoomTeamResponse(team.id(), team.name(), team.status(), team.role()),
+					new ChatRoomTeamResponse(team.id(), team.name(), team.status(), team.role(), team.avatarUrl()),
 					PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
 		}
 		String kind;
@@ -324,7 +329,7 @@ public class ChatService {
 		else {
 			throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
 		}
-		List<ChatMemberResponse> people = new ArrayList<>();
+		List<ChatRoomMemberResponse> people = new ArrayList<>();
 		ChatMemberResponse counterpart = null;
 		for (ChatRoomMember member : members.findActiveInRoom(roomId)) {
 			User person = accounts.findById(member.getUserId()).orElse(null);
@@ -335,7 +340,7 @@ public class ChatService {
 				throw new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요");
 			}
 			ChatMemberResponse view = memberView(person);
-			people.add(view);
+			people.add(roomMemberView(person, null));
 			if (counterpart == null && !person.getId().equals(user.userId())) {
 				counterpart = view;
 			}
@@ -1420,6 +1425,18 @@ public class ChatService {
 		catch (IllegalArgumentException exception) {
 			return false;
 		}
+	}
+
+	private static ChatRoomMemberResponse roomMemberView(User person, String role) {
+		ChatMemberResponse view = memberView(person);
+		return new ChatRoomMemberResponse(view.id(), view.login(), view.name(), view.avatarUrl(), role);
+	}
+
+	private static int roleRank(String role) {
+		if ("OWNER".equals(role)) {
+			return 0;
+		}
+		return "ADMIN".equals(role) ? 1 : 2;
 	}
 
 	private static ChatMemberResponse memberView(User person) {

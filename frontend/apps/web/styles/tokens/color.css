@@ -118,6 +118,13 @@
   --color-board-label-blue: #ebf7ff; /* 14 label fill, odd labels */
   --color-board-label-purple: #f4ebff; /* 14 label fill, even labels */
 
+  /* Figma 17 chat room (92:768, 346:243, 351:580) */
+  --color-chat-bubble-mine: #121212; /* my message bubble, white text 18.7:1 */
+  --color-chat-bubble-other: #f3f4f6; /* others' bubble, request panel buttons and divider */
+  --color-chat-send: #2563eb; /* send button fill, white arrow 5.17:1 */
+  --color-chat-accent: #2563eb; /* PR card event line, request panel guide, team owner label: 5.17:1 */
+  --color-chat-danger: #e00000; /* request panel 거절/차단 text: 4.6:1 on --color-chat-bubble-other */
+
   /* Figma 15 values (calendar, 234:219 and the 368:2753/368:3024 sheets) */
   --color-sheet-picker: #f9f9f9; /* 15 date picker sheet fill */
   --color-text-wheel: #374151; /* 15 date wheel, selected row */

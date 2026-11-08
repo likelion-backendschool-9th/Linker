@@ -133,13 +133,15 @@ export const GetChatRoomResponse = zod.object({
   "id": zod.int(),
   "login": zod.string().nullable().describe('null for a withdrawn account'),
   "name": zod.string().describe('Display name, or the withdrawn placeholder'),
-  "avatarUrl": zod.string().nullable()
-})),
+  "avatarUrl": zod.string().nullable(),
+  "role": zod.union([zod.literal('OWNER'),zod.literal('ADMIN'),zod.literal('MEMBER'),zod.literal(null)]).nullable().describe('Team role; null in a 1:1 room')
+})).describe('TEAM: owner, admins, then members'),
   "team": zod.object({
   "id": zod.int(),
   "name": zod.string(),
   "status": zod.enum(['ACTIVE', 'COMPLETED', 'READ_ONLY', 'ARCHIVED']),
-  "myRole": zod.enum(['OWNER', 'ADMIN', 'MEMBER'])
+  "myRole": zod.enum(['OWNER', 'ADMIN', 'MEMBER']),
+  "avatarUrl": zod.string().nullable().describe('Team photo')
 }).nullable(),
   "historyLimitDays": zod.int().nullable().describe('Free team history window in days; null for 1:1')
 })
