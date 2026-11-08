@@ -80,4 +80,17 @@
   --color-radio-border: #eaeaea;
   --color-sheet-cta: #121212; /* 07 sheet CTA fill */
   --color-on-sheet-cta: #f8f9f6;
+
+  /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
+  --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */
+  --color-chip-goal-bg: rgb(35 193 4 / 0.15); /* 공모전/해커톤/출시/학습 */
+
+  /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
+  --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
+  --color-fab-bg: #2e2e2e; /* write-recruit-post FAB fill */
+  --color-fab-border: #383838; /* write-recruit-post FAB stroke */
+
+  /* 19 recruit list scroll-revealed search panel, area B (Figma 253:2122) */
+  --color-search-panel-bg: #f7f7f7;
+  --color-text-placeholder-search: #a3a3a8;
 }

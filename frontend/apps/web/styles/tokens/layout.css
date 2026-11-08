@@ -25,6 +25,12 @@
   --space-sheet-block: 15px; /* 07 sheet top and bottom padding */
   --space-sheet-action: 30px; /* 07 sheet list to its CTA */
   --space-icon-text-compact: 2px; /* 07 compact link, text to icon */
+  /* Figma 19 values off the 4px grid */
+  --space-card-row: 22px; /* 19 recruit card: gap between the author, info and meta blocks */
+  --space-card-info: 25px; /* 19 recruit card: chip/deadline row to title/description gap */
+  --space-card-meta: 13px; /* 19 recruit card: role chips row to "자세히 보기" gap */
+  --space-chip-block: 3px; /* 19 recruit card role-count chip vertical padding */
+  --space-detail-block: 14px; /* 19 recruit card "자세히 보기" detail panel top/bottom padding (Figma) */
 
   /* Radius */
   --radius-none: 0;
@@ -36,6 +42,7 @@
   --radius-lg: 20px; /* frosted pills when Figma uses them */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
+  --radius-control-lg: 12px; /* 19 recruit search field */
 
   /* Size */
   --touch-target-min: 44px; /* CTA, list rows, tabs, form controls */
@@ -44,6 +51,10 @@
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
   --control-height-sheet: 53px; /* 07 sheet CTA */
   --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
+  --control-height-chip: 30px; /* 19 recruit filter chip */
+  --tabs-row-height: 48px; /* 19 recruit list segmented tabs row */
+  /* 19 area B open height (Figma 253:2122): 44 search + 15 gap + 30 chips + 15 + 15 padding */
+  --recruit-search-panel-height: 119px;
   --icon-size-add: 20px; /* 07 add-issue icon */
   --icon-size-team-entry: 20px; /* 07 team-card › / ∨ icon (Figma 5×12); hit area stays --touch-target-min */
   --avatar-size-team: 50px; /* 07 selected-team image */
@@ -69,6 +80,8 @@
   --tab-bar-gap-4: 36px; /* gap between bottom GNB tabs: 4 tabs, guest (Figma 453:227) */
   --tab-bar-gap-5: 20px; /* gap between bottom GNB tabs: 5 tabs, signed-in incl. profile (Figma 453:258/455:316) */
   --tab-bar-padding-wide: 80px; /* bottom GNB side padding at the 600px upper bound (Figma 476:563/593) */
+  --fab-size: 40px; /* 19 recruit list write-post FAB diameter (Figma 254:2156) */
+  --detail-label-width: 80px; /* 19 recruit card detail panel label column (Figma 361:981) */
 
   /* Layers: page chrome < overlays < toasts */
   --z-chrome: 10;
@@ -77,6 +90,7 @@
 
   /* Motion (off under prefers-reduced-motion via globals.css) */
   --duration-overlay: 200ms;
+  --duration-chrome-collapse: 320ms; /* 19 recruit list scroll-driven header/tabs/search-panel reveal */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --blur-chrome: blur(20px); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
   --blur-header-open: blur(4px); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
@@ -86,4 +100,6 @@
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
   /* Exception: 07 compact link, Figma value by the front-end owner's decision (Figma first) */
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
+  /* Exception: 19 recruit list write-post FAB ambient shadow (Figma) */
+  --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
 }

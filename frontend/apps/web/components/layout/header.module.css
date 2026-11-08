@@ -19,6 +19,25 @@
 
 .header {
   padding-top: env(safe-area-inset-top);
+  max-height: calc(env(safe-area-inset-top) + var(--header-height));
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    max-height var(--duration-chrome-collapse) var(--ease-standard),
+    padding-top var(--duration-chrome-collapse) var(--ease-standard),
+    opacity var(--duration-chrome-collapse) var(--ease-standard);
+}
+
+/*
+ * Opt-in scroll-hide (19 recruit list scenario 2): collapses as soon as scroll leaves the top,
+ * and only slides back open at `scrollY === 0` (see `useRecruitHeaderCollapse`). Shares
+ * `--duration-chrome-collapse` with the tab chrome's pin slide so header and tabs ease together.
+ * Every other tab screen never toggles the class, so its header is unaffected.
+ */
+:global(.recruit-header-collapsed) .header {
+  max-height: 0;
+  padding-top: 0;
+  opacity: 0;
 }
 
 /* Width comes from the ancestor .app/.entry column (shell.module.css), not from here */
