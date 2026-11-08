@@ -1,8 +1,33 @@
 import { queryOptions } from '@tanstack/react-query';
 
+import type { RecruitFormat, RecruitGoal, RecruitRoleKey } from '@/features/recruit/recruit-labels';
 import { apiFetch } from '@/lib/api/api-fetch';
 
-import type { ApplicationStatus, RecruitSummary } from '../../_lib/recruit-list-queries';
+/** Cancelled applications aren't listed (04 ch. 5 "Application status") */
+export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+
+/** Provisional WBS 19/21 `RecruitmentController` contract; replace with Orval types when OpenAPI is available. */
+export type RecruitSummary = {
+  id: number;
+  title: string;
+  author: { id: number; login: string; name: string; avatarUrl: string };
+  format: RecruitFormat;
+  region: string | null;
+  goal: RecruitGoal | null;
+  /** `yyyy-MM-dd` in KST */
+  deadline: string;
+  status: 'OPEN' | 'CLOSED';
+  techTags: string[];
+  roles: {
+    id: number;
+    role: RecruitRoleKey;
+    name: string;
+    headcount: number;
+    filled: number;
+    remaining: number;
+  }[];
+  createdAt: string;
+};
 
 /** Provisional WBS 21 `RecruitmentController` contract; replace with Orval types when OpenAPI is available. */
 export type RecruitDetail = RecruitSummary & {
@@ -135,4 +160,9 @@ export function sendGithubInvite(teamId: number, userId: number) {
     `/api/v1/user/teams/${teamId}/members/${userId}/github-invitation`,
     { method: 'POST' },
   );
+}
+
+/** Only while pending (POL-R-3); also borrowed by 19's list tabs */
+export function cancelApplication(applicationId: number) {
+  return apiFetch<void>(`/api/v1/user/me/applications/${applicationId}`, { method: 'DELETE' });
 }

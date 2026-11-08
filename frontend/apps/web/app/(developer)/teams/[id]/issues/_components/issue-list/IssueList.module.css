@@ -136,8 +136,8 @@
 .chips {
   display: flex;
   gap: var(--space-xs);
-  margin-block: calc((var(--control-height-chip) - var(--touch-target-min)) / 2);
-  padding-block: calc((var(--touch-target-min) - var(--control-height-chip)) / 2);
+  margin-block: calc((var(--control-height-chip-sm) - var(--touch-target-min)) / 2);
+  padding-block: calc((var(--touch-target-min) - var(--control-height-chip-sm)) / 2);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -145,7 +145,7 @@
 .chip {
   position: relative;
   flex-shrink: 0;
-  height: var(--control-height-chip);
+  height: var(--control-height-chip-sm);
   padding: var(--space-chip-block) var(--space-xs);
   font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
@@ -159,7 +159,7 @@
 
 .chip::after {
   position: absolute;
-  inset: calc((var(--control-height-chip) - var(--touch-target-min)) / 2) 0;
+  inset: calc((var(--control-height-chip-sm) - var(--touch-target-min)) / 2) 0;
   content: '';
 }
 

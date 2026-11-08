@@ -328,6 +328,20 @@ export function useOverlay(key: OverlayKey) {
 ### 7-5. Top-bar back
 `useAppBack(fallbackHref)`: `getNavDepth() > 0 ? router.back() : router.replace(fallbackHref)`, so a shared-link visitor never leaves the app. `nav-depth.ts` tracks depth in `sessionStorage` (popstate −1, other path change +1, first entry 0) behind the §11-1 guard.
 
+### 7-6. Scroll lock vs. the 600px column
+The page scrolls on `html`/`body`, not inside `.app`/`.entry` (the centered 600px column itself has no `overflow`) — see design guide §3-1. Every sheet/dialog is Radix Dialog, which locks background scroll via `react-remove-scroll`: it sets `body[data-scroll-locked]` and injects `margin-right: <scrollbar width>px !important` on `body` so *normal-flow* content doesn't shift when the scrollbar disappears.
+
+Our sheets and scrims are `position: fixed` (`overlay.module.css` `.sheet`/`.scrim`), so they center against the viewport directly and never see that `body` margin — while `.app`/`.entry`'s own `margin: 0 auto` centering does. Left uncorrected, the sheet ends up visibly offset from the page behind it on viewports ≥ 600px (the two no longer share a center point). Fixed globally in `globals.css`:
+
+```css
+/* Higher specificity than react-remove-scroll's own injected (and later-loaded) `!important` rule */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+```
+
+This neutralizes the compensation instead of relocating it — the brief reflow of the dimmed background behind the scrim when a sheet opens/closes isn't visible, so it's an acceptable trade for keeping the sheet aligned with the page. **NEVER** remove this rule or reintroduce per-page margin/padding compensation for `data-scroll-locked`; it would reopen the misalignment. Moving the scroll container itself inside `.entry` (`height: 100dvh; overflow-y: auto`) was considered as a deeper fix but rejected: it touches sticky/fixed layout and native WebView scroll feel (momentum, pull-to-refresh) across every page for a problem the CSS override already fully resolves.
+
 ## 8. SEO and metadata
 ### 8-1. Search exposure (04 POL-A-9)
 | Page | Index | Sitemap |

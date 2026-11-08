@@ -30,4 +30,5 @@
   --line-height-body: 1.6;
   --line-height-caption: 1.5; /* caption and meta */
   --line-height-compact: 22px; /* 07 issue row lines (Figma) */
+  --line-height-card-desc: 20px; /* 19 recruit card description (Figma) */
 }
