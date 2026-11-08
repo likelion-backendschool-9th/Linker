@@ -18,6 +18,7 @@ const COLORS = {
   BLOCKED: 'RED',
   DONE: 'GREEN',
   OTHER: 'GRAY',
+  NONE: 'GRAY',
 } as const;
 
 const card = (id: number, title: string, status: keyof typeof COLORS, extra: object = {}) => ({
@@ -39,7 +40,9 @@ const card = (id: number, title: string, status: keyof typeof COLORS, extra: obj
   ...extra,
 });
 
-function board(canWrite: boolean, withOther = false) {
+const jun = { id: 1, login: 'jun', name: '이준호', avatarUrl: '/a.png', inTeam: true };
+
+function board(canWrite: boolean, other: ReturnType<typeof card>[] = []) {
   return {
     canWrite,
     columns: [
@@ -47,7 +50,17 @@ function board(canWrite: boolean, withOther = false) {
         status: 'TODO',
         statusColor: 'GRAY',
         label: '작업 전',
-        cards: [card(1018, '필터 시트 개선', 'TODO')],
+        cards: [
+          card(1018, '필터 시트 개선', 'TODO', {
+            assignees: [jun],
+            dueDate: '2026-11-06',
+            labels: [
+              { name: 'frontend', color: '#0075ca' },
+              { name: 'UI/UX', color: '#a2eeef' },
+            ],
+          }),
+          card(1030, '보드 정렬', 'TODO'),
+        ],
       },
       { status: 'IN_PROGRESS', statusColor: 'BLUE', label: '작업 중', cards: [] },
       {
@@ -57,80 +70,131 @@ function board(canWrite: boolean, withOther = false) {
         cards: [card(1009, '웹훅 검증', 'BLOCKED', { dueDate: '2026-10-01', overdue: true })],
       },
       { status: 'DONE', statusColor: 'GREEN', label: '작업 완료', cards: [] },
-      {
-        status: 'OTHER',
-        statusColor: 'GRAY',
-        label: '기타',
-        cards: withOther ? [card(1014, '배포 정리', 'OTHER')] : [],
-      },
+      { status: 'OTHER', statusColor: 'GRAY', label: '기타', cards: other },
     ],
   };
 }
 
-/** A column by its exact name ("작업 중" vs "작업 중단"); `hidden` too, since an open sheet hides the board */
-const column = (name: string) =>
-  screen.getByRole('region', { name: new RegExp(`^${name}\\d`), hidden: true });
+const developer = { viewer: { role: 'developer' as const, login: 'me' } };
+/** A column by its exact name ("작업 중" vs "작업 중단") */
+const column = (name: string) => screen.getByRole('region', { name: new RegExp(`^${name} \\d+개$`) });
+const titles = (region: HTMLElement) =>
+  within(region)
+    .getAllByRole('heading', { level: 3 })
+    .map((heading) => heading.textContent);
 
 beforeEach(() => {
   fetchMock.mockReset();
   useToastStore.setState({ toasts: [] });
 });
 
-it('shows four columns (기타 only when it has cards) with the 중단 mark and overdue text, accessibly', async () => {
+it('shows Figma 14: toolbar, status columns with counts, cards with assignee, date, repo, labels and status', async () => {
   fetchMock.mockResolvedValue(board(true));
-  const { container } = renderWithProviders(<BoardView teamId="1" />, {
-    viewer: { role: 'developer', login: 'me' },
-  });
+  const { container } = renderWithProviders(<BoardView teamId="1" />, developer);
   expect(await screen.findAllByRole('heading', { level: 2 })).toHaveLength(4);
-  const blocked = column('작업 중단');
-  expect(within(blocked).getByText('중단')).toBeVisible();
-  expect(within(blocked).getByText(/마감 지남/)).toBeVisible();
-  expect(screen.getByRole('button', { name: '필터 시트 개선 옮기기' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '상태 필터' })).toHaveAttribute('aria-haspopup', 'menu');
+  expect(screen.getByRole('button', { name: '정렬, 최신순' })).toBeVisible();
+
+  const todo = column('작업 전');
+  expect(within(todo).getByRole('heading', { level: 2 })).toHaveTextContent('작업 전 2개');
+  // Newest first: 1030 above 1018
+  const first = within(todo).getByRole('article', { name: '필터 시트 개선' });
+  expect(within(first).getByText('이준호 담당')).toBeVisible();
+  expect(within(first).getByText('11월 6일')).toHaveAttribute('dateTime', '2026-11-06');
+  expect(within(first).getByText('linker-web')).toBeVisible();
+  expect(within(first).getByText('#18')).toBeVisible();
+  expect(within(first).getByRole('link', { name: '필터 시트 개선' })).toHaveAttribute(
+    'href',
+    '/teams/1/issues/1018',
+  );
+  expect(within(within(first).getByRole('list', { name: '라벨' })).getAllByRole('listitem')).toHaveLength(2);
+  expect(within(first).getByRole('button', { name: '상태 작업 전, 필터 시트 개선' })).toBeVisible();
+  // Overdue: date in red, read out as 마감 지남 (no visible text, 07 decision)
+  expect(within(column('작업 중단')).getByText('마감 지남,', { exact: false })).toHaveClass('sr-only');
+  // "+" per column → 13 (write permission only)
+  expect(within(todo).getByRole('link', { name: '이슈 작성' })).toHaveAttribute(
+    'href',
+    '/teams/1/issues/new',
+  );
+  expect(screen.getAllByRole('link', { name: '이슈 작성' })).toHaveLength(4);
+  // 기타 only with cards
+  expect(screen.queryByRole('region', { name: /^기타/ })).not.toBeInTheDocument();
   expect(await axe(container)).toHaveNoViolations();
 });
 
-it('shows the 기타 column when unmapped cards exist', async () => {
-  fetchMock.mockResolvedValue(board(true, true));
-  renderWithProviders(<BoardView teamId="1" />, { viewer: { role: 'developer', login: 'me' } });
-  expect(await screen.findByRole('region', { name: /^기타/ })).toBeVisible();
+it('keeps NONE and unmapped cards in 기타, read as 기타', async () => {
+  fetchMock.mockResolvedValue(board(true, [card(1014, '배포 정리', 'NONE')]));
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  const other = await screen.findByRole('region', { name: /^기타 1개$/ });
+  expect(within(other).getByRole('button', { name: '상태 기타, 배포 정리' })).toBeVisible();
 });
 
-it('moves a card right away and back again when GitHub refuses (POL-I-4)', async () => {
-  let release: (value: unknown) => void = () => undefined;
-  fetchMock.mockImplementation(async (url, init) => {
-    if (init?.method === 'PUT') {
-      await new Promise((resolve) => {
-        release = resolve;
-      });
-      throw new ApiError(502, { code: 'GITHUB_UNAVAILABLE', message: 'GitHub 오류' });
-    }
-    return board(true);
-  });
+it('sorts each column newest first, and oldest first from the 정렬 menu', async () => {
+  const urls: string[] = [];
+  fetchMock.mockResolvedValue(board(true));
   renderWithProviders(<BoardView teamId="1" />, {
-    viewer: { role: 'developer', login: 'me' },
-    searchParams: '?overlay=issue-status&oid=1018',
+    ...developer,
+    onUrlUpdate: ({ queryString }) => urls.push(queryString),
   });
-  await userEvent.click(await screen.findByRole('radio', { name: /^작업 중\s*지금/ }));
-  await userEvent.click(screen.getByRole('button', { name: '저장' }));
-  // Shown in the new column before GitHub answers
-  await waitFor(() => expect(within(column('작업 중')).getByText('필터 시트 개선')).toBeVisible());
-  release(undefined);
-  await waitFor(() => expect(within(column('작업 전')).getByText('필터 시트 개선')).toBeVisible());
-  expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
-    'GitHub에 반영하지 못했어요. 카드를 원래 자리로 돌려놨어요.',
+  await screen.findAllByRole('heading', { level: 2 });
+  expect(titles(column('작업 전'))).toEqual(['보드 정렬', '필터 시트 개선']);
+
+  await userEvent.click(screen.getByRole('button', { name: '정렬, 최신순' }));
+  const menu = screen.getByRole('menu', { name: '정렬' });
+  expect(within(menu).getByRole('menuitemradio', { name: '최신순' })).toHaveAttribute(
+    'aria-checked',
+    'true',
   );
+  expect(within(menu).getByRole('menuitemradio', { name: '최신순' })).toHaveFocus();
+  await userEvent.keyboard('{ArrowDown}{Enter}');
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '정렬, 오래 된 순' })).toHaveFocus();
+  expect(titles(column('작업 전'))).toEqual(['필터 시트 개선', '보드 정렬']);
+  expect(urls.at(-1)).toBe('?sort=oldest');
 });
 
-it("saves a move through 12's status API", async () => {
-  fetchMock.mockImplementation(async (url, init) =>
+it('the 필터 menu keeps one status column; choosing it again shows all', async () => {
+  fetchMock.mockResolvedValue(board(true));
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  await screen.findAllByRole('heading', { level: 2 });
+
+  await userEvent.click(screen.getByRole('button', { name: '상태 필터' }));
+  expect(
+    within(screen.getByRole('menu', { name: '상태 필터' }))
+      .getAllByRole('menuitemradio')
+      .map((item) => item.textContent),
+  ).toEqual(['작업 중', '작업 전', '작업 완료', '작업 중단']);
+  await userEvent.click(screen.getByRole('menuitemradio', { name: '작업 중단' }));
+  expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
+  expect(column('작업 중단')).toBeVisible();
+  const trigger = screen.getByRole('button', { name: '상태 필터, 작업 중단 칸만 보는 중' });
+  expect(trigger).toHaveAttribute('data-active', 'true');
+
+  await userEvent.click(trigger);
+  await userEvent.click(screen.getByRole('menuitemradio', { name: '작업 중단' }));
+  expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4);
+});
+
+it('Escape closes a menu and returns focus to its button', async () => {
+  fetchMock.mockResolvedValue(board(true));
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  const trigger = await screen.findByRole('button', { name: '상태 필터' });
+  await userEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await userEvent.keyboard('{Escape}');
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+});
+
+it("moves a card from its status menu through 12's status API", async () => {
+  fetchMock.mockImplementation(async (_url, init) =>
     init?.method === 'PUT' ? { status: 'DONE', state: 'CLOSED' } : board(true),
   );
-  renderWithProviders(<BoardView teamId="1" />, {
-    viewer: { role: 'developer', login: 'me' },
-    searchParams: '?overlay=issue-status&oid=1018',
-  });
-  await userEvent.click(await screen.findByRole('radio', { name: /작업 완료/ }));
-  await userEvent.click(screen.getByRole('button', { name: '저장' }));
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  await userEvent.click(
+    await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' }),
+  );
+  await userEvent.click(screen.getByRole('menuitemradio', { name: '작업 완료' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/1/issues/1018/status', {
       method: 'PUT',
@@ -140,12 +204,39 @@ it("saves a move through 12's status API", async () => {
   );
 });
 
-it('has no drag handles without write permission, and explains why', async () => {
+it('moves a card right away and back again when GitHub refuses (POL-I-4)', async () => {
+  let release: (value: unknown) => void = () => undefined;
+  fetchMock.mockImplementation(async (_url, init) => {
+    if (init?.method === 'PUT') {
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+      throw new ApiError(502, { code: 'GITHUB_UNAVAILABLE', message: 'GitHub 오류' });
+    }
+    return board(true);
+  });
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  await userEvent.click(
+    await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' }),
+  );
+  await userEvent.click(screen.getByRole('menuitemradio', { name: '작업 중' }));
+  // Shown in the new column before GitHub answers
+  await waitFor(() => expect(titles(column('작업 중'))).toEqual(['필터 시트 개선']));
+  release(undefined);
+  await waitFor(() => expect(titles(column('작업 전'))).toContain('필터 시트 개선'));
+  expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
+    'GitHub에 반영하지 못했어요. 카드를 원래 자리로 돌려놨어요.',
+  );
+});
+
+it('without write permission the status menu does not open and explains why', async () => {
   fetchMock.mockResolvedValue(board(false));
-  renderWithProviders(<BoardView teamId="2" />, { viewer: { role: 'developer', login: 'me' } });
-  await screen.findAllByRole('heading', { level: 2 });
-  expect(screen.queryByRole('button', { name: /옮기기$/ })).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole('button', { name: /상태 바꾸기: 필터 시트 개선/ }));
+  renderWithProviders(<BoardView teamId="2" />, developer);
+  const trigger = await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' });
+  expect(trigger).toHaveAttribute('aria-disabled', 'true');
+  expect(screen.queryByRole('link', { name: '이슈 작성' })).not.toBeInTheDocument();
+  await userEvent.click(trigger);
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
     '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.',
   );

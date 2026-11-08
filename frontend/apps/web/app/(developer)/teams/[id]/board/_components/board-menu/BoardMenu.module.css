@@ -1,0 +1,129 @@
+/* Figma 14 "필터"/"최신순" (368:3714): 30px gray button, 15px Medium, blue while open or set */
+.control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-board-control-icon);
+  height: var(--control-height-board);
+  padding: var(--space-board-control-block) var(--space-board-control-inline);
+  font-size: var(--font-size-board-control);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-black);
+  background-color: var(--color-board-control);
+  border: 0;
+  border-radius: var(--radius-xxs);
+}
+
+/* 44px hit area around the 30px button */
+.control::after {
+  position: absolute;
+  inset: calc((var(--control-height-board) - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+
+.control[data-active='true'] {
+  color: var(--color-text-inverse);
+  background-color: var(--color-board-control-active);
+}
+
+.control .chevron {
+  width: var(--icon-size-board-chevron);
+  height: var(--icon-size-board-chevron);
+}
+
+/* Figma 14 card status field (227:157): 40px, dot + status name + chevron */
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  height: var(--control-height-board-status);
+  padding-inline: var(--space-sm);
+  font-size: var(--font-size-board-control);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  text-align: start;
+  background-color: var(--color-canvas-cool);
+  border: 1px solid var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+.status .chevron {
+  width: var(--icon-size-board-status-chevron);
+  height: var(--icon-size-board-status-chevron);
+  margin-inline-start: auto;
+}
+
+.control:focus-visible,
+.status:focus-visible,
+.item:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.chevron {
+  display: block;
+  flex: none;
+}
+
+.chevron > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Menus: fixed under the trigger (top/left from the hook) */
+.controlMenu,
+.statusMenu {
+  position: fixed;
+  z-index: var(--z-overlay);
+  margin: 0;
+  padding: 0 var(--space-board-card-inline);
+  list-style: none;
+  border-radius: var(--radius-xxs);
+  box-shadow: var(--shadow-board-menu);
+}
+
+/* Figma 368:3556: 111px, gray with a 1px line */
+.controlMenu {
+  width: var(--board-menu-width);
+  margin-top: var(--space-board-menu-offset);
+  background-color: var(--color-board-control);
+  border: 1px solid var(--color-board-menu-border);
+}
+
+/* Figma 368:3876: as wide as the status field, no outline */
+.statusMenu {
+  margin-top: var(--space-board-status-menu-offset);
+  background-color: var(--color-canvas-cool);
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-board-menu-border);
+}
+
+/* Rows: 38px, 14px centered; the checked one dark, others gray (Figma) */
+.item {
+  display: block;
+  width: 100%;
+  min-height: var(--board-menu-row-height);
+  padding: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+  text-align: center;
+  background: none;
+  border: 0;
+}
+
+.controlMenu .item[aria-checked='true'] {
+  color: var(--color-text-black);
+}
+
+.statusMenu .item[aria-checked='true'] {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+}
