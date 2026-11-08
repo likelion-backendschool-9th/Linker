@@ -33,7 +33,7 @@ export function CallbackFlow({
 }) {
   const router = useRouter();
   const refreshSession = useAccountSessionRefresh();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; code: string } | null>(null);
   const [pending, setPending] = useState(true);
   const callbackRequest = useRef<Promise<CallbackResult> | null>(null);
 
@@ -52,7 +52,7 @@ export function CallbackFlow({
         return;
       }
       if (errorCode || !code || !state) {
-        setError('로그인을 완료하지 못했어요. 다시 시도해 주세요.');
+        setError({ code: 'OAUTH', message: '로그인을 완료하지 못했어요. 다시 시도해 주세요.' });
         setPending(false);
         return;
       }
@@ -78,11 +78,11 @@ export function CallbackFlow({
         router.replace((result.isNew ? '/onboarding' : safeReturnTo(result.returnTo)) as Route);
       } catch (cause) {
         if (!active) return;
-        const message =
+        setError(
           cause instanceof ApiError
-            ? cause.message
-            : '로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.';
-        setError(message);
+            ? { code: cause.code, message: cause.message }
+            : { code: 'UNKNOWN', message: '로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.' },
+        );
         setPending(false);
       }
     }
@@ -120,10 +120,10 @@ export function CallbackFlow({
         ) : (
           <div className={styles.failure}>
             <h1 id="callback-title" className={styles.title}>
-              로그인할 수 없어요
+              {error?.code === 'FORBIDDEN' ? '이용이 제한된 GitHub 계정이에요' : '로그인할 수 없어요'}
             </h1>
             <p className={styles.error} role="alert">
-              {error}
+              {error?.message}
             </p>
             <button type="button" className={styles.retry} onClick={() => router.replace('/')}>
               다시 시도
