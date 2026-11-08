@@ -79,22 +79,24 @@ export function CalendarView({ teamId }: { teamId: string }) {
               {CHIP_LABELS[status]}
             </li>
           ))}
+          <li>
+            <button
+              ref={buttonRef}
+              type="button"
+              className={styles.help}
+              aria-expanded={open}
+              aria-controls={open ? popoverId : undefined}
+              onClick={toggle}
+            >
+              <span
+                aria-hidden
+                className={styles.icon}
+                dangerouslySetInnerHTML={{ __html: QuestionCircleLinearIcon }}
+              />
+              <span className="sr-only">캘린더 안내</span>
+            </button>
+          </li>
         </ul>
-        <button
-          ref={buttonRef}
-          type="button"
-          className={styles.help}
-          aria-expanded={open}
-          aria-controls={open ? popoverId : undefined}
-          onClick={toggle}
-        >
-          <span
-            aria-hidden
-            className={styles.icon}
-            dangerouslySetInnerHTML={{ __html: QuestionCircleLinearIcon }}
-          />
-          <span className="sr-only">캘린더 안내</span>
-        </button>
         {open && (
           <div ref={popoverRef} id={popoverId} className={styles.popover}>
             <p>마감일이 없는 이슈는 캘린더에 보이지 않아요.</p>

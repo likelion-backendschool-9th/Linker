@@ -22,7 +22,7 @@
 | 항목 | 결정 |
 | --- | --- |
 | 날짜 휠 | 사용자 결정: **연도 · 월** 휠. 저장하면 그 달 1일로 이동(이번 달이면 `date` 제거). 연도는 현재 ±5년 |
-| `?` 아이콘 | 사용자 결정: 14 드롭다운 모양의 작은 안내 팝오버. 기존 문구 "마감일이 없는 이슈는 캘린더에 보이지 않아요."와 `/teams/{id}/issues?view=unscheduled` 링크만 넣었다. Figma에 열린 화면이 없다 |
+| `?` 아이콘 | 준호님 리뷰 반영: 오른쪽 끝이 아니라 마지막 칩 바로 옆, 간격 10px(Figma 234:219 자동 레이아웃 간격, 기존 `--space-calendar-chip`). 사용자 결정: 14 드롭다운 모양의 작은 안내 팝오버. 기존 문구 "마감일이 없는 이슈는 캘린더에 보이지 않아요."와 `/teams/{id}/issues?view=unscheduled` 링크만 넣었다. Figma에 열린 화면이 없다 |
 | 필터 · FAB | 사용자 결정: 헤더 아이콘은 11 필터 시트, FAB은 `TeamFrame`의 팀 채팅 링크 |
 | 상태 칩 | 사용자 결정(2026-11-09): 칩 문구만 11 칩(`STATUS_CHIPS`, 재사용)과 같은 **작업 전 / 진행 / 완료 / 정지**로 맞췄다. 순서는 Figma 15대로. 그 밖의 상태 이름(화면 낭독 등)은 Policy POL-I-3 문구 그대로다. 색은 보드 상태 색(해당 상태 이슈의 `statusColor`, 없으면 회색·파랑·초록·빨강) 15% 투명 배경. 360·375px에서 한 줄(e2e로 확인) |
 | 주 시작 | Figma대로 월요일. `calendar-grid.ts`의 `weekStartsOn`을 1로 바꿨고 테스트를 맞췄다 |
@@ -50,7 +50,7 @@ Policy·Page TODO는 수정하지 않았다.
 
 - frontend `pnpm lint` 오류 0(경고 6개는 이번 변경과 무관), `pnpm typecheck` 통과.
 - Vitest `calendar` 10개 통과(`--maxWorkers=2`; 공용 `IssueSummaryRow` 변경 때 `issues`·`_components`까지 42개 통과 확인). 새 `CalendarView.test.tsx` 4개(칩·월요일 시작·날짜 버튼·axe, `?` 팝오버, 날짜 시트, 날짜 선택 후 URL).
-- e2e `c-issue-calendar.spec.ts` 6개 통과(`pnpm dev:mock`, 서버 하나, 끝난 뒤 종료): 머리글·칩·`?`, 360·375·600px에서 칩 4개 한 줄, 날짜 시트 → 12, 연도 휠 → URL, 360·375·600px 가로 스크롤 없음 + axe(`color-contrast` 제외).
+- e2e `c-issue-calendar.spec.ts` 6개 통과(`pnpm dev:mock`, 서버 하나, 끝난 뒤 종료): 머리글·칩·`?`, 360·375·600px에서 칩 4개와 `?`가 한 줄·간격 10px, 날짜 시트 → 12, 연도 휠 → URL, 360·375·600px 가로 스크롤 없음 + axe(`color-contrast` 제외).
 - 화면 확인: 375px 캡처를 Figma와 비교해 제목·칩·요일·막대 간격을 맞췄다.
 - `pnpm test` 전체, `pnpm build`, 백엔드는 돌리지 않았다. 푸시하지 않았다.
 

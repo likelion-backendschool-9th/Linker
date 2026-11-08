@@ -37,7 +37,7 @@
   outline-offset: 2px;
 }
 
-/* Status chips + "?" */
+/* Status chips + "?" in one row: the "?" follows the last chip 10px away (Figma 234:219, auto layout gap 10) */
 .legend {
   position: relative;
   display: flex;
@@ -83,7 +83,7 @@
   width: var(--touch-target-min);
   height: var(--touch-target-min);
   margin: calc((var(--control-height-calendar-chip) - var(--touch-target-min)) / 2)
-    calc((var(--icon-size-calendar) - var(--touch-target-min)) / 2) 0 auto;
+    calc((var(--icon-size-calendar) - var(--touch-target-min)) / 2) 0;
   color: var(--color-text-muted-cool);
 }
 

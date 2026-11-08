@@ -88,6 +88,18 @@ for (const width of [360, 375, 600]) {
       .evaluateAll((items) => items.map((item) => Math.round(item.getBoundingClientRect().top)));
     expect(tops).toHaveLength(4);
     expect(new Set(tops).size).toBe(1);
+    // The "?" sits on that row, 10px after the last chip (Figma 234:219)
+    const [lastChip, help] = await Promise.all([
+      page
+        .getByRole('listitem')
+        .filter({ hasText: /^정지$/ })
+        .boundingBox(),
+      page.getByRole('button', { name: '캘린더 안내' }).locator('[aria-hidden]').boundingBox(),
+    ]);
+    expect(Math.abs(help!.x - (lastChip!.x + lastChip!.width) - 10)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(help!.y + help!.height / 2 - (lastChip!.y + lastChip!.height / 2)),
+    ).toBeLessThanOrEqual(1);
     await check();
     await page.screenshot({ path: testInfo.outputPath(`calendar-${width}.png`) });
     await issueDay(page).click();
