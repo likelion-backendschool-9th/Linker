@@ -1,12 +1,13 @@
 'use client';
 
-// Client boundary: virtualized infinite feed, seen logging, recruiter toggle, write button, ads
-import { Plus } from 'lucide-react';
+// Client boundary: virtualized infinite feed, seen logging, recruiter toggle, write FAB, ads
+import { PenLinearIcon } from '@solar-icons/static/linear/pen';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button/Button';
 import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
+import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 import { AdMenuSheet } from '../../../_components/recruiter-ad-card/ad-menu-sheet';
@@ -35,7 +36,7 @@ export function FeedList() {
   } = useFeedList();
 
   return (
-    <>
+    <div className={styles.feed}>
       {recruiter && (
         <div className={styles.toolbar}>
           <button
@@ -87,27 +88,28 @@ export function FeedList() {
 
       {!recruiter && <WriteButton />}
       <AdMenuSheet onHidden={hideAd} />
-    </>
+    </div>
   );
 }
 
-/** "게시물 쓰기" → 22; guests get the login prompt, recruiters have none (07 TODO 24) */
+/** Write FAB (Figma 92:289) → 22; guests get the login prompt, recruiters have none */
 function WriteButton() {
   const { isGuest, promptLogin } = useWriteButton();
-  const label = (
-    <>
-      <Plus aria-hidden />
-      게시물 쓰기
-    </>
+  const visual = (
+    <span className={styles.fabVisual}>
+      <Icon svg={PenLinearIcon} className={styles.fabIcon} />
+    </span>
   );
   return (
-    <div className={styles.write}>
+    <div className={styles.fabLayer}>
       {isGuest ? (
-        <Button onClick={promptLogin}>{label}</Button>
+        <button type="button" className={styles.fab} aria-label="게시물 쓰기" onClick={promptLogin}>
+          {visual}
+        </button>
       ) : (
-        <Button asChild>
-          <Link href="/posts/new">{label}</Link>
-        </Button>
+        <Link href="/posts/new" className={styles.fab} aria-label="게시물 쓰기">
+          {visual}
+        </Link>
       )}
     </div>
   );

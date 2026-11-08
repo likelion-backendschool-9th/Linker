@@ -6,7 +6,6 @@ import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { useViewer } from '@/lib/auth/viewer-context';
 
 import { feedOptions, sendSeen, type FeedItem } from '../../_lib/feed-queries';
@@ -56,10 +55,9 @@ export function useWriteButton() {
   };
 }
 
+/** Figma 91:105 is a single mobile column — no multi-lane tablet/desktop feed. */
 export function useVirtualFeedLanes() {
-  const tablet = useMediaQuery('(min-width: 600px)');
-  const desktop = useMediaQuery('(min-width: 1024px)');
-  return desktop ? 3 : tablet ? 2 : 1;
+  return 1;
 }
 
 type UseVirtualLanesArgs = {

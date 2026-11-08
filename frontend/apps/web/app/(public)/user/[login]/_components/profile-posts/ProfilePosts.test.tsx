@@ -21,6 +21,7 @@ const post = {
     jobStatus: 'OFF' as const,
   },
   intro: '함께 만든 소개',
+  excerpt: '프로필에 보이는 작업물 미리보기입니다.',
   coverUrl: null,
   repoFullName: 'octocat/demo',
   language: 'TypeScript',
