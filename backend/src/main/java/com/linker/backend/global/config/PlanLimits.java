@@ -124,6 +124,8 @@ public final class PlanLimits {
 	/** Policy ch. 2 — share actions, separate from normal message sends. */
 	public static final int CHAT_SHARES_PER_MINUTE = 10;
 	public static final int CHAT_SHARES_PER_DAY = 100;
+	/** Policy ch. 12 "Chat notification" — message preview in the notification body and push. */
+	public static final int CHAT_NOTIFICATION_PREVIEW_MAX_CHARS = 100;
 
 	/** Policy ch. 11 — free team history window (Flex = unlimited). */
 	public static final int TEAM_CHAT_HISTORY_DAYS_FREE = 60;

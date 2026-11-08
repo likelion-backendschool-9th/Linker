@@ -1,11 +1,26 @@
-import { useQueryClient } from '@tanstack/react-query';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
+import { act } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { axe } from 'vitest-axe';
 
-import { chatKeys } from '@/features/chat/chat-queries';
+import {
+  chatKeys,
+  chatRoomsOptions,
+  type UnreadSummary,
+} from '@/features/chat/chat-queries';
 import { apiFetch } from '@/lib/api/api-fetch';
+import { ViewerProvider } from '@/lib/auth/viewer-context';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { ChatList } from './ChatList';
@@ -34,6 +49,50 @@ beforeEach(() => {
     if (url.endsWith('/accept')) return { roomId: 3 };
     return { items: [], nextCursor: null };
   });
+});
+
+it('renders the request badge in server HTML and hydrates without a recoverable error', async () => {
+  const summary: UnreadSummary = { TEAM: 0, DIRECT: 0, REQUEST: 1, total: 1, requestCount: 1 };
+  const makeTree = (client: QueryClient) => (
+    <QueryClientProvider client={client}>
+      <HydrationBoundary state={dehydrate(client)}>
+        <NuqsTestingAdapter>
+          <ViewerProvider
+            viewer={{ role: 'developer', login: 'developer', status: 'ACTIVE', suspendedUntil: null }}
+          >
+            <ChatList initialSummary={summary} />
+          </ViewerProvider>
+        </NuqsTestingAdapter>
+      </HydrationBoundary>
+    </QueryClientProvider>
+  );
+  const makeClient = () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(chatRoomsOptions('developer', 'TEAM').queryKey, {
+      pages: [{ items: [], nextCursor: null }],
+      pageParams: [null],
+    });
+    // No summary in the cache: as on the Next server, the badge must come from `initialSummary`.
+    return client;
+  };
+  const container = document.createElement('div');
+  container.innerHTML = renderToString(makeTree(makeClient()));
+  document.body.append(container);
+  expect(container.querySelector('span[aria-label="받은 요청 1건"]')).not.toBeNull();
+
+  const hydrationErrors: unknown[] = [];
+  let root: Root | undefined;
+  try {
+    await act(async () => {
+      root = hydrateRoot(container, makeTree(makeClient()), {
+        onRecoverableError: (error) => hydrationErrors.push(error),
+      });
+    });
+    expect(hydrationErrors).toEqual([]);
+  } finally {
+    if (root) await act(async () => root!.unmount());
+    container.remove();
+  }
 });
 
 it('changes tabs through the URL and shows request actions with accessible markup', async () => {

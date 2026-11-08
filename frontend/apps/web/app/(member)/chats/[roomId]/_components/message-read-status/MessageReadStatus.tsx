@@ -9,7 +9,7 @@ type Props = {
 };
 
 export function MessageReadStatus({ message, kind, mine, onUnread }: Props) {
-  if (message.deletedAt || message.visibility === 'HIDDEN' || message.visibility === 'UNDER_REVIEW' ||
+  if (message.deletedAt || message.visibility === 'HIDDEN' ||
     message.type === 'SYSTEM' || message.type === 'PR_EVENT' || kind === 'REQUEST') return null;
   // A missing or invalid server value must never look like confirmation that everyone read it.
   if (!Number.isInteger(message.unreadCount) || message.unreadCount < 0) {

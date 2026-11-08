@@ -69,7 +69,6 @@ export const routes: MockRoute[] = [
         ? {
             id: team.id,
             name: team.name,
-            plan: team.plan,
             myRole: team.myRole,
             status: team.status,
           }

@@ -17,6 +17,7 @@ import {
   deleteChatRequest,
   unreadSummaryOptions,
   type ChatTab,
+  type UnreadSummary,
 } from './api';
 
 export const LABELS: Record<ChatTab, string> = { TEAM: '팀', DIRECT: '개인', REQUEST: '요청' };
@@ -32,7 +33,7 @@ export const EMPTY: Record<ChatTab, { title: string; description: string }> = {
   },
 };
 
-export function useChatList() {
+export function useChatList(initialSummary?: UnreadSummary) {
   const viewer = useViewer();
   const recruiter = viewer.role === 'recruiter';
   const [selected, setTab] = useQueryState(
@@ -44,7 +45,7 @@ export function useChatList() {
   const client = useQueryClient();
   const router = useRouter();
   const rooms = useInfiniteQuery(chatRoomsOptions(viewer.login, tab));
-  const summary = useQuery(unreadSummaryOptions(viewer.login));
+  const summary = useQuery({ ...unreadSummaryOptions(viewer.login), initialData: initialSummary });
   const overlay = useOverlay('delete-confirm');
   const refresh = () => client.invalidateQueries({ queryKey: chatKeys.account(viewer.login) });
   const accept = useMutation({

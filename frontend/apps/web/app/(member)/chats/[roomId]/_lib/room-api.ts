@@ -1,53 +1,32 @@
+import type {
+  ChatMemberResponse,
+  ChatMessagePageResponse,
+  ChatMessageResponse,
+  ChatRoomInfoResponse,
+} from '@linker/api/openAPIDefinition.schemas';
+import {
+  deleteChatMessage,
+  editChatMessage,
+  getChatRoom,
+  leaveChatRoom,
+  listChatMessages,
+  listUnreadChatMembers,
+  markChatRead,
+  updateChatNotification,
+} from '@linker/api/p17-chat-room/p17-chat-room';
 import { infiniteQueryOptions, queryOptions, type InfiniteData } from '@tanstack/react-query';
 
 import { CHAT } from '@/lib/policy';
-import { apiFetch } from '@/lib/api/api-fetch';
 
-import type { ChatIssueCard } from './chat-reference-types';
+export type ChatMember = ChatMemberResponse;
+/** `team` carries the caller's `myRole`; it drives other-message delete and @all. */
+export type RoomInfo = ChatRoomInfoResponse;
+/** `updatedAt` is the row version: every edit, delete, hide and restore moves it forward. */
+export type RoomMessage = ChatMessageResponse;
+/** `nextAfter` is set when `after` stopped at the 500 cap; `loadAfter` follows it to the end. */
+export type MessagePage = Pick<ChatMessagePageResponse, 'items' | 'hasMore'> &
+  Partial<Omit<ChatMessagePageResponse, 'items' | 'hasMore'>>;
 
-/** Provisional WBS 17 DTOs; replace with generated Orval contracts once Spring publishes OpenAPI. */
-export type ChatMember = { id: number; login: string; name: string; avatarUrl: string | null };
-export type RoomInfo = {
-  id: number;
-  kind: 'TEAM' | 'DIRECT' | 'REQUEST';
-  title: string;
-  requestDirection: 'SENT' | 'RECEIVED' | null;
-  muted: boolean;
-  members: (ChatMember | null)[];
-  team: {
-    id: number;
-    name: string;
-    plan: 'FREE' | 'FLEX';
-    myRole: 'OWNER' | 'ADMIN' | 'MEMBER';
-    status: string;
-  } | null;
-  historyLimitDays: number | null;
-};
-export type RoomMessage = {
-  id: number;
-  roomId: number;
-  /** Other current participants who have not read this message (server-calculated). */
-  unreadCount: number;
-  clientMessageId?: string;
-  sender: ChatMember | null;
-  type: 'TEXT' | 'IMAGE' | 'ISSUE_CARD' | 'PR_EVENT' | 'SYSTEM' | 'AI_SUMMARY' | 'SHARE_CARD';
-  text: string | null;
-  imageUrls: string[];
-  payload: (Record<string, unknown> & { issueCards?: ChatIssueCard[] }) | null;
-  createdAt: string;
-  editedAt: string | null;
-  deletedAt: string | null;
-  visibility?: 'VISIBLE' | 'UNDER_REVIEW' | 'HIDDEN';
-};
-export type MessagePage = {
-  items: RoomMessage[];
-  hasMore: boolean;
-  /** `after` stopped at the 500 cap. Continue from `nextAfter`; this screen does not auto-page it. */
-  catchUpLimited?: boolean;
-  nextAfter?: number | null;
-  /** Team history actually applied. Absent for 1:1. Flex is not granted by this field. */
-  history?: { applied: 'FREE_60_DAYS'; flexSupported: false } | null;
-};
 export const roomKey = (login: string | null, id: number) => ['chat', login, 'room', id] as const;
 export const messagesKey = (login: string | null, id: number) =>
   [...roomKey(login, id), 'messages'] as const;
@@ -56,54 +35,64 @@ export function roomInfoOptions(login: string | null, id: number) {
   return queryOptions({
     staleTime: 0,
     queryKey: [...roomKey(login, id), 'info'],
-    queryFn: ({ signal }) => apiFetch<RoomInfo>(`/api/v1/user/chat-rooms/${id}`, { signal }),
+    queryFn: ({ signal }) => getChatRoom(id, { signal }),
   });
 }
+
+/**
+ * Every message newer than `after`, following `nextAfter` past the server's 500 cap (Policy: load
+ * everything at once). `catchUpLimited` stays true when any batch was capped, so the screen can show
+ * the 500+ notice. `after` must be a message id in this room.
+ */
+export async function loadAfter(id: number, after: number, signal?: AbortSignal): Promise<MessagePage> {
+  const items: RoomMessage[] = [];
+  let cursor = after;
+  let limited = false;
+  for (;;) {
+    const page = await listChatMessages(id, { after: cursor }, { signal });
+    items.push(...page.items);
+    if (!page.catchUpLimited) break;
+    limited = true;
+    const next = page.nextAfter ?? page.items.at(-1)?.id;
+    if (next === undefined || next <= cursor) break;
+    cursor = next;
+  }
+  return { items, hasMore: false, catchUpLimited: limited, nextAfter: null };
+}
+
 export function messagesOptions(login: string | null, id: number) {
   return infiniteQueryOptions({
     staleTime: 0,
     queryKey: messagesKey(login, id),
     initialPageParam: null as number | null,
-    queryFn: async ({ pageParam, signal, client }) => {
+    queryFn: async ({ pageParam, signal, client }): Promise<MessagePage> => {
       const previous = client.getQueryData<InfiniteData<MessagePage>>(messagesKey(login, id))?.pages[0];
       // A large reconnect batch also contains the last-read anchor. Refetching only
       // the default latest page on READ would discard it and move the viewport.
       if (pageParam === null && previous && previous.items.length > CHAT.catchUpMax) {
-        const after = Math.max(0, previous.items[0]!.id - 1);
-        const page = await apiFetch<MessagePage>(
-          `/api/v1/user/chat-rooms/${id}/messages?after=${after}`, { signal },
-        );
-        return { ...page, hasMore: previous.hasMore };
+        const [anchor] = previous.items;
+        // `after` must name a message in this room, so the anchor itself is kept from the cache.
+        const page = await loadAfter(id, anchor!.id, signal);
+        return { ...page, items: [anchor!, ...page.items], hasMore: previous.hasMore };
       }
-      return apiFetch<MessagePage>(
-        `/api/v1/user/chat-rooms/${id}/messages${pageParam === null ? '' : `?before=${pageParam}`}`,
-        { signal },
-      );
+      return listChatMessages(id, pageParam === null ? undefined : { before: pageParam }, { signal });
     },
     getNextPageParam: (page) => (page.hasMore ? page.items[0]?.id : undefined),
   });
 }
 /** `after` returns only newer ids. An edit or delete of an older message is not in that page. */
 export function missedMessages(id: number, after: number) {
-  return apiFetch<MessagePage>(`/api/v1/user/chat-rooms/${id}/messages?after=${after}`);
+  return loadAfter(id, after);
 }
 export function markRead(id: number, lastReadMessageId: number) {
-  return apiFetch<void>(`/api/v1/user/chat-rooms/${id}/read`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lastReadMessageId }),
-  });
+  return markChatRead(id, { lastReadMessageId });
 }
 export function leaveRoom(id: number) {
-  return apiFetch<void>(`/api/v1/user/chat-rooms/${id}/members/me`, { method: 'DELETE' });
+  return leaveChatRoom(id);
 }
 
 export function setMuted(id: number, muted: boolean) {
-  return apiFetch<void>(`/api/v1/user/chat-rooms/${id}/notification`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ muted }),
-  });
+  return updateChatNotification(id, { muted });
 }
 
 /**
@@ -126,13 +115,18 @@ function editedAtMicros(value: string | null): bigint | null {
 }
 
 /**
- * Live frames can arrive out of commit order. A later delete or edit wins over an older snapshot.
- * A hidden or deleted row is not replaced by text from an earlier frame.
- * Edit order uses the full microsecond `editedAt`. Two bodies with the same microsecond are not
- * ordered: the body already on screen stays.
+ * Live frames can arrive out of commit order. The row with the later `updatedAt` wins, so a
+ * restore after a hide or an operator undelete reaches an open screen, while a delayed older
+ * frame does not undo a newer state. Equal versions keep what is on screen.
+ * Rows without `updatedAt` (an older server) fall back to direction rules: a hidden or deleted row
+ * is not replaced by an earlier frame's text, and edits compare the full microsecond `editedAt`.
  */
 export function mergeRoomMessage(current: RoomMessage | undefined, incoming: RoomMessage): RoomMessage {
   if (!current) return incoming;
+  const currentVersion = editedAtMicros(current.updatedAt ?? null);
+  const incomingVersion = editedAtMicros(incoming.updatedAt ?? null);
+  if (currentVersion !== null && incomingVersion !== null)
+    return incomingVersion > currentVersion ? incoming : current;
   if (current.visibility === 'HIDDEN' && incoming.visibility !== 'HIDDEN') return current;
   if (current.deletedAt && !incoming.deletedAt) return current;
   if (incoming.deletedAt) return incoming;
@@ -147,7 +141,7 @@ export function mergeRoomMessage(current: RoomMessage | undefined, incoming: Roo
 export function orderedMessages(pages: MessagePage[]): RoomMessage[] {
   const unique = new Map<number, RoomMessage>();
   for (const page of [...pages].reverse())
-    for (const message of page.items) unique.set(message.id, message);
+    for (const message of page.items) unique.set(message.id, mergeRoomMessage(unique.get(message.id), message));
   return [...unique.values()].sort((a, b) => a.id - b.id);
 }
 
@@ -166,17 +160,11 @@ export function mergeCatchUpHistory(
 }
 
 export function editMessage(roomId: number, messageId: number, text: string) {
-  return apiFetch<RoomMessage>(`/api/v1/user/chat-rooms/${roomId}/messages/${messageId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
+  return editChatMessage(roomId, messageId, { text });
 }
 
 export function deleteMessage(roomId: number, messageId: number) {
-  return apiFetch<void>(`/api/v1/user/chat-rooms/${roomId}/messages/${messageId}`, {
-    method: 'DELETE',
-  });
+  return deleteChatMessage(roomId, messageId);
 }
 
 export const unreadMembersKey = (login: string | null, roomId: number) =>
@@ -187,9 +175,6 @@ export function unreadMembersOptions(login: string | null, roomId: number, messa
     queryKey: [...unreadMembersKey(login, roomId), messageId],
     staleTime: 0,
     enabled: messageId !== null,
-    queryFn: ({ signal }) => apiFetch<{ items: ChatMember[] }>(
-      `/api/v1/user/chat-rooms/${roomId}/messages/${messageId}/unread-members`,
-      { signal, cache: 'no-store' },
-    ),
+    queryFn: ({ signal }) => listUnreadChatMembers(roomId, messageId!, { signal, cache: 'no-store' }),
   });
 }

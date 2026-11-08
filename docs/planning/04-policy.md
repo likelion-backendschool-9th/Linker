@@ -453,7 +453,7 @@ Flex teams get a "진행 현황" (Progress) card at the top of the issue tab. It
 | Chat retention | Team chat kept while the team exists. 1:1 chat deleted when both leave |
 | Team chat search & scroll-back | Keyword search in team chat rooms. Free teams can search and scroll back only through the last 60 days (older messages are hidden, not deleted, and reappear with Flex). Flex teams: all history. Deleted/hidden messages not searchable. 1:1 chat search excluded from MVP |
 | POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers), team invite (`TEAM_INVITE` → `/invite/[code]`) |
-| POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
+| POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one: one push per room, and in the in-app list one unread row per room (the newest message replaces it; once read, the next message starts a new row). A mention keeps its own row. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
 | Muting | MVP: mute per chat room and the "푸시 알림" (Push notifications) on/off switch in settings only. Turning push off stops push only; the in-app notification list keeps filling. Per-type settings in phase 2 |
 | Push devices | Only the Android app (development build) receives push. iOS app push needs a paid Apple developer account, so it is out of the MVP; browser web push is phase 2 (N-2) |
 
@@ -724,6 +724,10 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Refund: past 7 days | 결제 후 7일이 지나 환불할 수 없어요. |
 | Cancel: subscription already ended | 이미 끝난 구독이에요. |
 | Team invite notification | ○○ 팀에 초대됐어요. · 확인하기 |
+| Chat notification | ○○님이 메시지를 보냈어요. Body: the message, whitespace collapsed, first 100 characters + "…"; photo only → 사진을 보냈어요. Team rooms prefix "{team name} · " |
+| Chat mention notification | {team name} · ○○님이 회원님을 언급했어요. Body as above |
+| Message request notification | ○○님이 메시지 요청을 보냈어요. Body: the first message, as above |
+| Notification without text | 새 알림이 도착했어요 |
 
 ## 13. Policies for later-phase features
 

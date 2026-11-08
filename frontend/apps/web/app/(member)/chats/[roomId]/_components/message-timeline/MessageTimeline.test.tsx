@@ -17,7 +17,7 @@ vi.mock('@/lib/navigation/use-overlay', () => ({ useActiveOverlay: () => ({ over
 vi.mock('./chat-message', () => ({ ChatMessage: () => <p>대화</p> }));
 const message = (id: number): RoomMessage => ({
   id, roomId: 1, unreadCount: 0, sender: null, type: 'TEXT', text: '긴 메시지', imageUrls: [], payload: null,
-  createdAt: '2026-11-01T00:00:00Z', editedAt: null, deletedAt: null,
+  createdAt: '2026-11-01T00:00:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z',
 });
 let notify: IntersectionObserverCallback;
 beforeEach(() => {

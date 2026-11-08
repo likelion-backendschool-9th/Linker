@@ -11,8 +11,7 @@ export function useChatPhotoViewer(messages: RoomMessage[]) {
   const visible =
     !!message &&
     !message.deletedAt &&
-    message.visibility !== 'HIDDEN' &&
-    message.visibility !== 'UNDER_REVIEW';
+    message.visibility !== 'HIDDEN';
   const photos = visible
     ? message.imageUrls.map((src, photoIndex) => ({
         src,

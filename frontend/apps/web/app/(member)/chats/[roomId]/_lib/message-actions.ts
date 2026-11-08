@@ -10,7 +10,7 @@ export function messageActions(
   now: number,
 ) {
   const visible = !message.deletedAt &&
-    message.visibility !== 'HIDDEN' && message.visibility !== 'UNDER_REVIEW';
+    message.visibility !== 'HIDDEN';
   const regular = message.type !== 'SYSTEM' && message.type !== 'PR_EVENT';
   const mine = login !== null && message.sender?.login === login;
   const age = now - Date.parse(message.createdAt);

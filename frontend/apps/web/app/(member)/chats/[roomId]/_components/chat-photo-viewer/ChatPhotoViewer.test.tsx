@@ -9,7 +9,7 @@ import { ChatPhotoViewer } from './ChatPhotoViewer';
 const message: RoomMessage = {
   id: 100, roomId: 1, unreadCount: 0, sender: null, type: 'IMAGE', text: null,
   imageUrls: ['/mock/cover-1.svg', '/mock/cover-2.svg'], payload: null,
-  createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null,
+  createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z',
 };
 it('opens the selected image and keeps its message ID while changing photos with replace', async () => {
   const user = userEvent.setup();
@@ -24,7 +24,7 @@ it('opens the selected image and keeps its message ID while changing photos with
   await user.keyboard('{Escape}');
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });
-it.each([{ deletedAt: '2026-11-03T01:00:00Z' }, { visibility: 'HIDDEN' as const }, { visibility: 'UNDER_REVIEW' as const }])('does not reveal removed or hidden image URLs', (state) => {
+it.each([{ deletedAt: '2026-11-03T01:00:00Z' }, { visibility: 'HIDDEN' as const }])('does not reveal removed or hidden image URLs', (state) => {
   renderWithProviders(<ChatPhotoViewer messages={[{ ...message, ...state }]} />, { searchParams: '?overlay=chat-photo&oid=100:0' });
   expect(screen.getByText('사진을 볼 수 없어요')).toBeVisible();
   expect(screen.queryByRole('img')).not.toBeInTheDocument();
