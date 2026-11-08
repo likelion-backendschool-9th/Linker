@@ -319,6 +319,28 @@ class PullRequestIntegrationTest {
     assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, room)).isZero();
   }
 
+  @Test void damagedPeriodicCheckpointIsRepairedAndProviderFailureRemainsRetryable() {
+    String key = "pull-requests:last-full-sync:" + team;
+    redis.opsForValue().set(key, "invalid-date");
+    requests.syncDueTeams();
+    verify(github).pullRequests(eq(installation), any());
+    assertThatCode(() -> Instant.parse(redis.opsForValue().get(key))).doesNotThrowAnyException();
+    clearInvocations(github);
+    requests.syncDueTeams();
+    verify(github, never()).pullRequests(eq(installation), any());
+
+    String overdue = Instant.now().minusSeconds(16 * 60).toString();
+    redis.opsForValue().set(key, overdue);
+    when(github.pullRequests(eq(installation), any()))
+        .thenThrow(new ApiException(503, "SERVICE_UNAVAILABLE", "provider unavailable"));
+    requests.syncDueTeams();
+    assertThat(redis.opsForValue().get(key)).isEqualTo(overdue);
+    when(github.pullRequests(eq(installation), any())).thenReturn(List.of(live));
+    requests.syncDueTeams();
+    assertThat(redis.opsForValue().get(key)).isNotEqualTo(overdue);
+    assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, room)).isZero();
+  }
+
   private void replayOrBusy(GithubWebhookDelivery delivery) {
     try { requests.receive(delivery); }
     catch (ApiException busy) { assertThat(busy.getCode()).isEqualTo("STATE_CONFLICT"); }

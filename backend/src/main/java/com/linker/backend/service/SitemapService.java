@@ -9,6 +9,8 @@ import com.linker.backend.dto.sitemap.SitemapItem;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.post.PostRepository;
+import com.linker.backend.repository.recruit.RecruitPostRepository;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,15 +19,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Paired entry for {@link com.linker.backend.controller.SitemapController}.
- * Posts/recruits stay empty until those tables exist; users are listed from the account repository.
+ * Uses the existing content repositories; public indexing never borrows a user's personalized feed.
  */
 @Service
 public class SitemapService {
 
 	private final UserRepository users;
+	private final PostRepository posts;
+	private final RecruitPostRepository recruits;
 
-	public SitemapService(UserRepository users) {
+	public SitemapService(UserRepository users, PostRepository posts, RecruitPostRepository recruits) {
 		this.users = users;
+		this.posts = posts;
+		this.recruits = recruits;
 	}
 
 	@Transactional(readOnly = true)
@@ -46,7 +52,8 @@ public class SitemapService {
 							user.getUpdatedAt()
 					))
 					.toList();
-			case POSTS, RECRUITS -> List.of();
+			case POSTS -> posts.findIndexable(PageRequest.of(page - 1, size));
+			case RECRUITS -> recruits.findIndexable(PageRequest.of(page - 1, size));
 		};
 	}
 

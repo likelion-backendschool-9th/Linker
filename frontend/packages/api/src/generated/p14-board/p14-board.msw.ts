@@ -28,6 +28,16 @@ export const getGetTeamIssueBoardResponseMock = (
         'DONE',
         'OTHER',
       ] as const),
+      statusColor: faker.helpers.arrayElement([
+        'BLUE',
+        'GRAY',
+        'GREEN',
+        'ORANGE',
+        'PINK',
+        'PURPLE',
+        'RED',
+        'YELLOW',
+      ] as const),
       label: faker.string.alpha({ length: { min: 10, max: 20 } }),
       cards: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => ({
@@ -43,6 +53,16 @@ export const getGetTeamIssueBoardResponseMock = (
             'DONE',
             'OTHER',
             'NONE',
+          ] as const),
+          statusColor: faker.helpers.arrayElement([
+            'BLUE',
+            'GRAY',
+            'GREEN',
+            'ORANGE',
+            'PINK',
+            'PURPLE',
+            'RED',
+            'YELLOW',
           ] as const),
           state: faker.helpers.arrayElement(['OPEN', 'CLOSED'] as const),
           assignees: Array.from(

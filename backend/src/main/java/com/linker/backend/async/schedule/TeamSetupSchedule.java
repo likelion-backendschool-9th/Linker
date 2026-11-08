@@ -19,6 +19,11 @@ public class TeamSetupSchedule {
     sync.drain();
   }
 
+  @Scheduled(fixedDelayString = "${linker.team-setup.lifecycle-poll-delay-ms:60000}")
+  public void reconcile() {
+    sync.reconcileDueTeams();
+  }
+
   @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
   public void archive() {
     sync.archiveReadOnly();

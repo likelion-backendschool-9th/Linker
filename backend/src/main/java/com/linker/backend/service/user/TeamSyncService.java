@@ -167,6 +167,7 @@ public class TeamSyncService {
           new LinkedHashMap<GithubTeamSource.Repository, List<GithubTeamSource.PullRequest>>();
       for (var repo : repos) snapshots.put(repo, github.pullRequests(team.installationId(), repo));
       failedStep = "MEMBERS";
+      var observedBefore = clock.instant();
       var memberIds = github.memberIds(team.installationId(), team.orgLogin(), team.orgId());
       write.executeWithoutResult(
           status -> {
@@ -175,7 +176,7 @@ public class TeamSyncService {
                 || !access.hasRole(actor, teamId, TeamRole.Level.OWNER))
               throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
             savePullRequests(teamId, snapshots);
-            reconcileMembers(teamId, memberIds);
+            reconcileMembers(teamId, memberIds, observedBefore);
           });
       redis.opsForHash().put(key, "state", "COMPLETED");
       redis.opsForHash().delete(key, "failedStep");
@@ -205,18 +206,19 @@ public class TeamSyncService {
     }
   }
 
-  private void reconcileMembers(long teamId, List<Long> githubIds) {
+  private void reconcileMembers(
+      long teamId, List<Long> githubIds, java.time.Instant observedBefore) {
     for (var member : teams.githubMembers(teamId)) {
       long user = member.userId();
       if (githubIds.contains(Long.parseLong(member.githubUserId())))
         teams.confirmMember(teamId, user, clock.instant());
-      else if ("MEMBER".equals(member.githubState())) removeMember(teamId, user);
+      else if ("MEMBER".equals(member.githubState())) removeMember(teamId, user, observedBefore);
     }
   }
 
-  private void removeMember(long teamId, long userId) {
+  private void removeMember(long teamId, long userId, java.time.Instant observedBefore) {
     var now = clock.instant();
-    if (teams.removeOrgMember(teamId, userId, now) == 0) return;
+    if (teams.removeOrgMember(teamId, userId, now, observedBefore) == 0) return;
     teams.closeChatMembership(teamId, userId, now);
     var recipients = new HashSet<>(teams.currentOwnerIds(teamId, false));
     recipients.add(userId);
@@ -245,41 +247,143 @@ public class TeamSyncService {
     teams.withTeamSetupLock(
         linked,
         () -> {
-          // Read after acquiring the session lock: a waiting older event cannot reuse stale truth.
-          // The lock is not a DB transaction, so this provider call remains outside transactions.
+          var expected = teams.team(linked);
           var current = github.installation(installationId);
-          if (current != null && current.orgId() != orgId)
-            throw new ApiException(400, "VALIDATION_ERROR", "설치 조직을 확인해 주세요");
-          write.executeWithoutResult(
-              status -> {
-                var team = teams.team(linked);
-                teams.assertUnchanged(team);
-                if (current == null) {
-                  // An old installation's deletion must not disable its verified replacement.
-                  if (team.installationId() != installationId) return;
-                  teams.markInstallationRemoved(installationId, clock.instant());
-                  markReadOnly(linked);
-                } else {
-                  long creator = teams.creatorId(linked);
-                  long local =
-                      teams.upsertInstallation(
-                          creator,
-                          new com.linker.backend.dto.github.response.GithubInstallationView(
-                              current.id(),
-                              current.orgId(),
-                              current.login(),
-                              "",
-                              current.repositorySelection()),
-                          clock.instant());
-                  teams.suspendInstallation(local, current.suspended() ? clock.instant() : null);
-                  teams.linkInstallation(linked, local, current.login(), clock.instant());
-                  if (current.suspended()) markReadOnly(linked);
-                  else teams.restoreActive(linked, clock.instant());
-                }
-              });
-          invalidate(linked);
+          validateInstallation(current, installationId, orgId);
+          boolean changed =
+              Boolean.TRUE.equals(
+                  write.execute(tx -> applyInstallation(expected, installationId, current)));
+          if (changed) invalidate(linked);
           return null;
         });
+  }
+
+  /**
+   * Called under the existing team session lock; GitHub has already been queried outside this
+   * transaction.
+   */
+  private boolean applyInstallation(
+      com.linker.backend.dto.team.response.TeamPersistenceView.Team expected,
+      long installationId,
+      GithubTeamSource.Installation current) {
+    teams.assertUnchanged(expected);
+    if (current == null && expected.installationId() != installationId) return false;
+    var known =
+        teams
+            .findInstallationForTeam(expected.id())
+            .orElseThrow(() -> new ApiException(404, "NOT_FOUND", "팀 설치 정보를 찾을 수 없어요"));
+    if (current == null) {
+      if (known.getRemovedAt() != null
+          && !List.of("ACTIVE", "COMPLETED").contains(expected.status())) return false;
+      teams.markInstallationRemoved(installationId, clock.instant());
+      markReadOnly(expected.id());
+      return true;
+    }
+    boolean metadataChanged =
+        known.getGithubInstallationId() != installationId
+            || known.getRemovedAt() != null
+            || (known.getSuspendedAt() != null) != current.suspended()
+            || !Objects.equals(known.getAccountLogin(), current.login())
+            || !Objects.equals(known.getRepositorySelection(), current.repositorySelection());
+    boolean statusChanged =
+        current.suspended()
+            ? List.of("ACTIVE", "COMPLETED").contains(expected.status())
+            : "READ_ONLY".equals(expected.status());
+    if (!metadataChanged && !statusChanged && Objects.equals(expected.orgLogin(), current.login()))
+      return false;
+    long local =
+        teams.upsertInstallation(
+            teams.creatorId(expected.id()),
+            new com.linker.backend.dto.github.response.GithubInstallationView(
+                current.id(), current.orgId(), current.login(), "", current.repositorySelection()),
+            clock.instant());
+    teams.suspendInstallation(local, current.suspended() ? clock.instant() : null);
+    if (!Objects.equals(expected.orgLogin(), current.login()))
+      teams.renameOrganization(
+          expected.id(), installationId, expected.orgLogin(), current.login(), clock.instant());
+    teams.linkInstallation(expected.id(), local, current.login(), clock.instant());
+    if (current.suspended()) markReadOnly(expected.id());
+    else teams.restoreActive(expected.id(), clock.instant());
+    return true;
+  }
+
+  private static void validateInstallation(
+      GithubTeamSource.Installation current, long id, long orgId) {
+    if (current != null
+        && (current.id() != id
+            || current.orgId() != orgId
+            || current.login() == null
+            || !current.login().matches("[A-Za-z0-9][A-Za-z0-9-]{0,38}")
+            || !Set.of("ALL", "SELECTED")
+                .contains(
+                    current.repositorySelection() == null ? "" : current.repositorySelection())))
+      throw new ApiException(400, "VALIDATION_ERROR", "설치 조직을 확인해 주세요");
+  }
+
+  /** Durable catch-up of installation/member changes whose webhooks never arrived. */
+  public void reconcileDueTeams() {
+    for (long id : teams.findLifecycleSyncTeams()) {
+      try {
+        var context = teams.team(id);
+        var interval =
+            "ACTIVE".equals(context.status())
+                ? java.time.Duration.ofMinutes(
+                    com.linker.backend.global.config.PlanLimits.ISSUE_ACTIVE_SYNC_MINUTES)
+                : java.time.Duration.ofDays(1);
+        String last = redis.opsForValue().get(lifecycleKey(id));
+        boolean due = true;
+        if (last != null) {
+          try {
+            due = !java.time.Instant.parse(last).plus(interval).isAfter(clock.instant());
+          } catch (java.time.format.DateTimeParseException ignored) {
+            /* An invalid cache value cannot disable reconciliation. */
+          }
+        }
+        if (due) reconcileTeam(id);
+      } catch (RuntimeException failure) {
+        org.slf4j.LoggerFactory.getLogger(getClass())
+            .warn(
+                "Team lifecycle refresh failed for {}: {}", id, failure.getClass().getSimpleName());
+      }
+    }
+  }
+
+  public void reconcileTeam(long teamId) {
+    teams.withTeamSetupLock(
+        teamId,
+        () -> {
+          var context = teams.team(teamId);
+          if (!List.of("ACTIVE", "COMPLETED", "READ_ONLY").contains(context.status())) return null;
+          var installation = github.installation(context.installationId());
+          validateInstallation(installation, context.installationId(), context.orgId());
+          boolean changed =
+              Boolean.TRUE.equals(
+                  write.execute(
+                      tx -> applyInstallation(context, context.installationId(), installation)));
+          if (changed) invalidate(teamId);
+          if (installation != null && !installation.suspended()) {
+            var verified = teams.team(teamId);
+            if (!List.of("ACTIVE", "COMPLETED").contains(verified.status())) return null;
+            var observedBefore = clock.instant();
+            var ids =
+                github.memberIds(installation.id(), installation.login(), installation.orgId());
+            write.executeWithoutResult(
+                tx -> {
+                  teams.assertUnchanged(verified);
+                  reconcileMembers(teamId, ids, observedBefore);
+                });
+          }
+          // Only a complete successful pass advances the checkpoint. Retrying committed removals is
+          // idempotent.
+          redis
+              .opsForValue()
+              .set(lifecycleKey(teamId), clock.instant().toString(), java.time.Duration.ofDays(2));
+          return null;
+        });
+  }
+
+  private static String lifecycleKey(long id) {
+    return "linker:team-setup:last-lifecycle-sync:" + id;
   }
 
   private void markReadOnly(long teamId) {
@@ -306,13 +410,14 @@ public class TeamSyncService {
         () -> {
           var team = teams.team(linked);
           if (team.installationId() != installationId) return null;
+          var observedBefore = clock.instant();
           var ids = github.memberIds(installationId, login, orgId);
           write.executeWithoutResult(
               status -> {
                 teams.assertUnchanged(team);
                 teams.renameOrganization(
                     linked, installationId, team.orgLogin(), login, clock.instant());
-                reconcileMembers(linked, ids);
+                reconcileMembers(linked, ids, observedBefore);
               });
           return null;
         });

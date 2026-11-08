@@ -60,6 +60,7 @@ class WorkspaceTeamIntegrationTest {
 	@Autowired MockMvc mvc;
 	@Autowired JdbcTemplate jdbc;
 	@Autowired UserRepository users;
+	@Autowired com.linker.backend.repository.subscription.SubscriptionRepository subscriptions;
 	@Autowired AuthService sessions;
 	@Autowired ObjectMapper json;
 	// This B read-contract test resets its isolated DB. Delivery has its own integration tests;
@@ -264,17 +265,80 @@ class WorkspaceTeamIntegrationTest {
 	}
 
 	@Test
-	void unconnectedIssueAndPlanMetricsNeverBecomeFakeZeroOrFree() throws Exception {
+	void unconnectedIssueMetricsRemainUnknownWhileAnUnsubscribedTeamIsFree() throws Exception {
 		User me = user("partial");
 		join(team(me, "ACTIVE"), me, "OWNER", "2026-11-01T00:00:00Z", false);
 		var result = mvc.perform(get("/api/v1/user/me/teams").cookie(cookie(me)))
 				.andExpect(status().isOk()).andReturn();
 		var item = json.readTree(result.getResponse().getContentAsString()).path("items").get(0);
-		for (String key : new String[]{"plan", "openIssueCount", "unreadCount", "chatRoomId"}) {
+		assertThat(item.path("plan").asText()).isEqualTo("FREE");
+		for (String key : new String[]{"openIssueCount", "unreadCount", "chatRoomId"}) {
 			assertThat(item.has(key)).isTrue();
 			assertThat(item.path(key).isNull()).isTrue();
 		}
 	}
+
+  @Test
+  void workspacePlanMatchesSettingsAcrossCancelRefundAndExpiry() throws Exception {
+    User me = user("billing");
+    long team = team(me, "ACTIVE");
+    join(team, me, "OWNER", "2026-11-01T00:00:00Z", false);
+    var paid =
+        subscriptions.saveAndFlush(
+            com.linker.backend.entity.subscription.Subscription.paid(
+                com.linker.backend.entity.subscription.type.SubscriptionPlan.FLEX,
+                null,
+                team,
+                me.getId(),
+                com.linker.backend.entity.subscription.type.BillingCycle.MONTHLY,
+                1,
+                java.time.Instant.now().minusSeconds(10),
+                java.time.Instant.now().plusSeconds(3600)));
+    Cookie session = cookie(me);
+    mvc.perform(get("/api/v1/user/me/teams").cookie(session))
+        .andExpect(jsonPath("$.items[0].plan").value("FLEX"));
+    mvc.perform(get("/api/v1/user/teams/" + team + "/settings").cookie(session))
+        .andExpect(jsonPath("$.plan").value("FLEX"));
+    paid.cancelAtPeriodEnd(java.time.Instant.now());
+    subscriptions.saveAndFlush(paid);
+    mvc.perform(get("/api/v1/user/me/teams").cookie(session))
+        .andExpect(jsonPath("$.items[0].plan").value("FLEX"));
+    paid.endNow(java.time.Instant.now());
+    subscriptions.saveAndFlush(paid);
+    mvc.perform(get("/api/v1/user/me/teams").cookie(session))
+        .andExpect(jsonPath("$.items[0].plan").value("FREE"));
+    mvc.perform(get("/api/v1/user/teams/" + team + "/settings").cookie(session))
+        .andExpect(jsonPath("$.plan").value("FREE"));
+  }
+
+  @Test
+  void missingSubscriptionSchemaStaysUnknownWithoutInventingFree() throws Exception {
+    User me = user("unknown-plan");
+    long team = team(me, "ACTIVE");
+    join(team, me, "OWNER", "2026-11-01T00:00:00Z", false);
+    jdbc.execute("alter table subscriptions rename to temporarily_missing_subscriptions");
+    try {
+      mvc.perform(get("/api/v1/user/me/teams").cookie(cookie(me)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.items[0].plan").isEmpty());
+    } finally {
+      jdbc.execute("alter table temporarily_missing_subscriptions rename to subscriptions");
+    }
+  }
+
+  @Test
+  void archivedTeamHandoffKeepsWorkspaceEntryButDoesNotGrantIssueAccess() throws Exception {
+    User me = user("archived-handoff");
+    long team = team(me, "ARCHIVED");
+    join(team, me, "MEMBER", "2026-11-01T00:00:00Z", false);
+    Cookie session = cookie(me);
+    mvc.perform(get("/api/v1/user/me/teams").cookie(session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].status").value("ARCHIVED"));
+    mvc.perform(get("/api/v1/user/me/issues").cookie(session).param("teamId", Long.toString(team)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+  }
 
 	@Test
 	void openIssueSummaryUsesCsLinkedRepositoryAndDeletionScope() throws Exception {
@@ -356,6 +420,7 @@ class WorkspaceTeamIntegrationTest {
 		var result = mvc.perform(get("/api/v1/user/me/teams").cookie(cookie(me)))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1)).andReturn();
 		var item = json.readTree(result.getResponse().getContentAsString()).path("items").get(0);
+		assertThat(item.path("plan").asText()).isEqualTo("FREE");
 		assertThat(item.has("openIssueCount")).isTrue();
 		assertThat(item.path("openIssueCount").isNull()).isTrue();
 	}

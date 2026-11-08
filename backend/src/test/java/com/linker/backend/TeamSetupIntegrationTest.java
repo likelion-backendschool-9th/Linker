@@ -1331,6 +1331,266 @@ class TeamSetupIntegrationTest {
     return users.saveAndFlush(User.create(name, type));
   }
 
+  @Test
+  void periodicReconcileClosesMissedOrgRemovalsOnceAndKeepsHealthySetupCheckpoint()
+      throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    long team = create(cookie(owner));
+    var former = user("former", UserType.DEVELOPER);
+    identity(former, 701);
+    join(team, former, "MEMBER", "MEMBER");
+    var invited = user("invited", UserType.DEVELOPER);
+    identity(invited, 702);
+    join(team, invited, "MEMBER", "INVITED");
+    redis.opsForValue().set("linker:team-setup:completed:" + team, "unchanged-completed-job");
+    sync.reconcileTeam(team);
+    assertThat(access.hasRole(former.getId(), team, TeamRole.Level.MEMBER)).isFalse();
+    assertThat(access.hasRole(invited.getId(), team, TeamRole.Level.MEMBER)).isTrue();
+    assertThat(
+            jdbc.queryForObject(
+                "select left_at is not null from chat_room_members where user_id=?",
+                Boolean.class,
+                former.getId()))
+        .isTrue();
+    assertThat(jdbc.queryForObject("select count(*) from notifications", Long.class)).isEqualTo(2);
+    assertThat(redis.opsForValue().get("linker:team-setup:completed:" + team))
+        .isEqualTo("unchanged-completed-job");
+    sync.reconcileTeam(team);
+    assertThat(jdbc.queryForObject("select count(*) from notifications", Long.class)).isEqualTo(2);
+  }
+
+  @Test
+  void periodicReconcileDetectsUninstallWithoutRemovingMembersOrResettingArchiveDeadline()
+      throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    long team = create(cookie(owner));
+    when(github.installation(42))
+        .thenAnswer(
+            inv -> {
+              outside();
+              return null;
+            });
+    sync.reconcileTeam(team);
+    var since =
+        jdbc.queryForObject(
+            "select read_only_since from teams where id=?", java.sql.Timestamp.class, team);
+    assertThat(jdbc.queryForObject("select status from teams where id=?", String.class, team))
+        .isEqualTo("READ_ONLY");
+    sync.reconcileTeam(team);
+    assertThat(
+            jdbc.queryForObject(
+                "select read_only_since from teams where id=?", java.sql.Timestamp.class, team))
+        .isEqualTo(since);
+    assertThat(jdbc.queryForObject("select count(*) from notifications", Long.class)).isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from team_members where left_at is null", Long.class))
+        .isEqualTo(1);
+    verify(github, never()).memberIds(anyLong(), anyString(), anyLong());
+  }
+
+  @Test
+  void periodicReconcileRecoversMissedUnsuspendAndTracksOrganizationRename() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    Cookie session = cookie(owner);
+    long team = create(session);
+    link(session, team);
+    when(github.installation(42))
+        .thenAnswer(
+            inv -> {
+              outside();
+              return new Installation(42, 500, "org", "ALL", true);
+            });
+    sync.reconcileTeam(team);
+    assertThat(jdbc.queryForObject("select status from teams where id=?", String.class, team))
+        .isEqualTo("READ_ONLY");
+    when(github.installation(42))
+        .thenAnswer(
+            inv -> {
+              outside();
+              return new Installation(42, 500, "new-org", "ALL", false);
+            });
+    sync.reconcileTeam(team);
+    assertThat(jdbc.queryForObject("select status from teams where id=?", String.class, team))
+        .isEqualTo("ACTIVE");
+    assertThat(
+            jdbc.queryForObject(
+                "select full_name from github_repos where github_repo_id=900", String.class))
+        .isEqualTo("new-org/api");
+    assertThat(
+            jdbc.queryForObject(
+                "select is_private from github_repos where github_repo_id=900", Boolean.class))
+        .isTrue();
+    verify(github).memberIds(42, "new-org", 500);
+    assertThat(
+            jdbc.queryForObject(
+                "select suspended_at is null and removed_at is null from github_installations where"
+                    + " github_installation_id=42",
+                Boolean.class))
+        .isTrue();
+  }
+
+  @Test
+  void failedOrWrongInstallationProbeNeverAdvancesCheckpointOrRemovesMembers() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    long team = create(cookie(owner));
+    when(github.installation(42))
+        .thenThrow(new ApiException(503, "SERVICE_UNAVAILABLE", "provider unavailable"));
+    assertThatThrownBy(() -> sync.reconcileTeam(team)).isInstanceOf(ApiException.class);
+    doReturn(new Installation(43, 500, "org", "ALL", false)).when(github).installation(42);
+    assertThatThrownBy(() -> sync.reconcileTeam(team)).isInstanceOf(ApiException.class);
+    doReturn(new Installation(42, 501, "org", "ALL", false)).when(github).installation(42);
+    assertThatThrownBy(() -> sync.reconcileTeam(team)).isInstanceOf(ApiException.class);
+    assertThat(redis.opsForValue().get("linker:team-setup:last-lifecycle-sync:" + team)).isNull();
+    assertThat(jdbc.queryForObject("select status from teams where id=?", String.class, team))
+        .isEqualTo("ACTIVE");
+    assertThat(jdbc.queryForObject("select count(*) from notifications", Long.class)).isZero();
+    verify(github, never()).memberIds(anyLong(), anyString(), anyLong());
+  }
+
+  @Test
+  void memberReadFailureDoesNotCommitPartialMembershipChanges() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    long team = create(cookie(owner));
+    var former = user("former", UserType.DEVELOPER);
+    identity(former, 701);
+    join(team, former, "MEMBER", "MEMBER");
+    when(github.memberIds(42, "org", 500))
+        .thenThrow(new ApiException(503, "SERVICE_UNAVAILABLE", "provider unavailable"));
+    assertThatThrownBy(() -> sync.reconcileTeam(team)).isInstanceOf(ApiException.class);
+    assertThat(access.hasRole(former.getId(), team, TeamRole.Level.MEMBER)).isTrue();
+    assertThat(redis.opsForValue().get("linker:team-setup:last-lifecycle-sync:" + team)).isNull();
+    assertThat(jdbc.queryForObject("select count(*) from notifications", Long.class)).isZero();
+  }
+
+  @Test
+  void lifecyclePollUsesExistingCadenceAndIsolatesOneTeamsFailure() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    long active = create(cookie(owner));
+    long completed =
+        com.linker.backend.support.TeamTestFixtures.team(jdbc, owner.getId(), "완료 팀", "COMPLETED");
+    long archived =
+        com.linker.backend.support.TeamTestFixtures.team(jdbc, owner.getId(), "보관 팀", "ARCHIVED");
+    var completedContext = teamRows.team(completed);
+    var archivedContext = teamRows.team(archived);
+    when(github.installation(completedContext.installationId()))
+        .thenAnswer(
+            inv -> {
+              outside();
+              return new Installation(
+                  completedContext.installationId(),
+                  completedContext.orgId(),
+                  completedContext.orgLogin(),
+                  "ALL",
+                  false);
+            });
+    when(github.memberIds(
+            completedContext.installationId(),
+            completedContext.orgLogin(),
+            completedContext.orgId()))
+        .thenAnswer(
+            inv -> {
+              outside();
+              return List.of();
+            });
+    redis
+        .opsForValue()
+        .set(
+            "linker:team-setup:last-lifecycle-sync:" + active,
+            Instant.now().minusSeconds(14 * 60).toString());
+    redis
+        .opsForValue()
+        .set(
+            "linker:team-setup:last-lifecycle-sync:" + completed,
+            Instant.now().minusSeconds(23 * 3600).toString());
+    clearInvocations(github);
+    sync.reconcileDueTeams();
+    verify(github, never()).installation(anyLong());
+    redis
+        .opsForValue()
+        .set(
+            "linker:team-setup:last-lifecycle-sync:" + active,
+            Instant.now().minusSeconds(16 * 60).toString());
+    redis
+        .opsForValue()
+        .set(
+            "linker:team-setup:last-lifecycle-sync:" + completed,
+            Instant.now().minusSeconds(25 * 3600).toString());
+    when(github.installation(42))
+        .thenThrow(new ApiException(503, "SERVICE_UNAVAILABLE", "provider unavailable"));
+    sync.reconcileDueTeams();
+    assertThat(redis.opsForValue().get("linker:team-setup:last-lifecycle-sync:" + completed))
+        .isNotNull();
+    assertThat(jdbc.queryForObject("select status from teams where id=?", String.class, completed))
+        .isEqualTo("COMPLETED");
+    verify(github).installation(completedContext.installationId());
+    verify(github, never()).installation(archivedContext.installationId());
+    doAnswer(
+            inv -> {
+              outside();
+              return new Installation(42, 500, "org", "ALL", false);
+            })
+        .when(github)
+        .installation(42);
+    redis.opsForValue().set("linker:team-setup:last-lifecycle-sync:" + active, "invalid-date");
+    sync.reconcileDueTeams();
+    assertThatCode(
+            () ->
+                Instant.parse(
+                    redis.opsForValue().get("linker:team-setup:last-lifecycle-sync:" + active)))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void lifecycleProbeCannotUndoConcurrentArchive() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    long team = create(cookie(owner));
+    when(github.installation(42))
+        .thenAnswer(
+            inv -> {
+              outside();
+              jdbc.update("update teams set status='ARCHIVED' where id=?", team);
+              return new Installation(42, 500, "org", "ALL", false);
+            });
+    assertThatThrownBy(() -> sync.reconcileTeam(team)).isInstanceOf(ApiException.class);
+    assertThat(jdbc.queryForObject("select status from teams where id=?", String.class, team))
+        .isEqualTo("ARCHIVED");
+    verify(github, never()).memberIds(anyLong(), anyString(), anyLong());
+    assertThat(redis.opsForValue().get("linker:team-setup:last-lifecycle-sync:" + team)).isNull();
+  }
+
+  @Test
+  void memberAddedAfterTheProviderSnapshotIsNotRemovedByThatOlderSnapshot() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner, 700);
+    long team = create(cookie(owner));
+    var recent = user("recent", UserType.DEVELOPER);
+    identity(recent, 701);
+    when(github.memberIds(42, "org", 500))
+        .thenAnswer(
+            inv -> {
+              outside();
+              join(team, recent, "MEMBER", "MEMBER");
+              // Database precision is microseconds; this period definitely began after the captured
+              // observation.
+              jdbc.update(
+                  "update team_members set joined_at=? where team_id=? and user_id=?",
+                  java.sql.Timestamp.from(Instant.now().plusSeconds(1)),
+                  team,
+                  recent.getId());
+              return List.of(700L);
+            });
+    sync.reconcileTeam(team);
+    assertThat(access.hasRole(recent.getId(), team, TeamRole.Level.MEMBER)).isTrue();
+    assertThat(jdbc.queryForObject("select count(*) from notifications", Long.class)).isZero();
+  }
+
   private void join(long team, User user, String role, String githubState) {
     jdbc.update(
         "insert into"

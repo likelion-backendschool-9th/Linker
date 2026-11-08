@@ -566,14 +566,15 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
 
   @Override
   @Transactional(propagation = Propagation.MANDATORY)
-  public int removeOrgMember(long teamId, long userId, Instant now) {
+  public int removeOrgMember(long teamId, long userId, Instant now, Instant observedBefore) {
     return bulk(
         "update TeamMember m set"
             + " m.leftAt=:p0,m.leaveType='ORG_REMOVED',m.githubOrgState='NOT_MEMBER',m.updatedAt=:p0"
-            + " where m.teamId=:p1 and m.userId=:p2 and m.leftAt is null",
+            + " where m.teamId=:p1 and m.userId=:p2 and m.leftAt is null and m.joinedAt<=:p3",
         now,
         teamId,
-        userId);
+        userId,
+        observedBefore);
   }
 
   @Override
