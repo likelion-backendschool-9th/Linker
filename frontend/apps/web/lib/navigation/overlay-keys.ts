@@ -22,6 +22,8 @@ export const OVERLAY_KEYS = [
   'profile-edit-tech',
   'profile-edit-job',
   'profile-edit-categories',
+  'profile-message',
+  'profile-offer',
   'settings-blocks',
   'recruiter-offer-message',
   'admin-report-action',

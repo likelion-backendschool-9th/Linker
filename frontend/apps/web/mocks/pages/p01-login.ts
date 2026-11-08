@@ -1,4 +1,4 @@
-import { get, post, type MockRoute } from '../core/define';
+import { fail, get, post, type MockRoute } from '../core/define';
 
 /**
  * 01 Start / login: `AuthController`.
@@ -15,6 +15,9 @@ export const routes: MockRoute[] = [
     };
   }),
   post('/api/v1/public/auth/github/callback', ({ body, setMockRole }) => {
+    if (body.code === 'banned-github') {
+      fail(403, 'FORBIDDEN', '이용이 제한된 GitHub 계정이에요');
+    }
     setMockRole('developer');
     return { isNew: false, restored: false, returnTo: String(body.returnTo ?? '/feed') };
   }),

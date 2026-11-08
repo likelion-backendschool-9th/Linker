@@ -50,6 +50,11 @@ export function RecruiterMyPageView({ profile }: { profile: PublicProfile }) {
               프로필 편집
             </Link>
           </li>
+          <li>
+            <Link className={styles.actionButton} href="/settings">
+              설정
+            </Link>
+          </li>
         </ul>
       </header>
       <RecruiterOfferSummary />

@@ -234,6 +234,25 @@ export function OnboardingForm({
                       )}
                     </div>
                     <div className={styles.field}>
+                      <label htmlFor="blog-url">블로그 주소</label>
+                      <input
+                        id="blog-url"
+                        type="url"
+                        inputMode="url"
+                        placeholder="https://"
+                        {...form.register('blogUrl')}
+                        aria-invalid={!!form.formState.errors.blogUrl}
+                        aria-describedby={form.formState.errors.blogUrl ? 'blog-error' : undefined}
+                      />
+                      {form.formState.errors.blogUrl && (
+                        <FieldError id="blog-error">{form.formState.errors.blogUrl.message}</FieldError>
+                      )}
+                    </div>
+                    <label className={styles.teamToggle}>
+                      <input type="checkbox" {...form.register('lookingForTeam')} />
+                      <span>함께할 팀을 찾고 있어요</span>
+                    </label>
+                    <div className={styles.field}>
                       <span className={styles.fieldName}>기술 스택</span>
                       <button type="button" className={styles.select} onClick={() => picker.open()}>
                         <span className={selectedTech.length ? styles.value : styles.placeholder}>
