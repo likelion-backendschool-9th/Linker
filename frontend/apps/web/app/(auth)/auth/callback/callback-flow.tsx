@@ -6,7 +6,6 @@ import type { Route } from 'next';
 import { useEffect, useRef, useState } from 'react';
 
 import { SkipLink } from '@/components/layout/skip-link/SkipLink';
-import { Button } from '@/components/ui/button/Button';
 import { saveNativeSession } from '@/features/auth/sync-native-session';
 import { useAccountSessionRefresh } from '@/features/auth/use-account-session-refresh';
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -104,16 +103,32 @@ export function CallbackFlow({
         aria-labelledby="callback-title"
         aria-live="polite"
       >
-        <h1 id="callback-title">{pending ? '로그인을 확인하고 있어요' : '로그인할 수 없어요'}</h1>
+        <div className={styles.dots} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
         {pending ? (
-          <p role="status">잠시만 기다려 주세요.</p>
-        ) : (
           <>
+            <h1 id="callback-title" className="sr-only">
+              로그인을 확인하고 있어요
+            </h1>
+            <p className="sr-only" role="status">
+              잠시만 기다려 주세요.
+            </p>
+          </>
+        ) : (
+          <div className={styles.failure}>
+            <h1 id="callback-title" className={styles.title}>
+              로그인할 수 없어요
+            </h1>
             <p className={styles.error} role="alert">
               {error}
             </p>
-            <Button onClick={() => router.replace('/')}>다시 시도</Button>
-          </>
+            <button type="button" className={styles.retry} onClick={() => router.replace('/')}>
+              다시 시도
+            </button>
+          </div>
         )}
       </main>
     </>
