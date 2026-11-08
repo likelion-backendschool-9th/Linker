@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 
+import com.linker.backend.dto.notification.event.NotificationsChanged;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
@@ -16,6 +17,7 @@ import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.notification.NotificationRepository;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,11 +33,14 @@ public class NotificationService {
 	private final UserRepository users;
 	private final NotificationRepository notifications;
 	private final Clock clock;
+	private final ApplicationEventPublisher events;
 
-	public NotificationService(UserRepository users, NotificationRepository notifications, Clock clock) {
+	public NotificationService(UserRepository users, NotificationRepository notifications, Clock clock,
+			ApplicationEventPublisher events) {
 		this.users = users;
 		this.notifications = notifications;
 		this.clock = clock;
+		this.events = events;
 	}
 
 	@Transactional
@@ -54,7 +59,11 @@ public class NotificationService {
 				command.groupKey(),
 				deliverAfter
 		);
-		return notifications.save(notification);
+		Notification saved = notifications.save(notification);
+		if (deliverAfter == null || !deliverAfter.isAfter(Instant.now(clock))) {
+			events.publishEvent(new NotificationsChanged(command.recipientUserId()));
+		}
+		return saved;
 	}
 
 	private User requireActiveUser(long userId) {

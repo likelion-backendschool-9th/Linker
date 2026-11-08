@@ -906,7 +906,9 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Tables: new push_tokens · shared notifications, users, appeals (after 25 — A creates the table in 25; the appeal API is wired on D7)
-- 목록·단건 읽음·모두 읽음·Android 토큰 저장과 삭제, 본인 제재 이의 1회는 구현한다. `deliver_after` 전 행은 목록과 미독 수에서 빠지고 모두 읽음도 바꾸지 않는다. Expo 발송과 보류분 아침 발송은 1분 주기 작업으로 구현한다(위 18 설명).
+- 목록·단건 읽음·모두 읽음·Android 토큰 저장과 삭제, 본인 제재 이의 1회는 구현한다. `deliver_after` 전 행은 목록과 미독 수에서 빠지고 모두 읽음도 바꾸지 않는다
+- 헤더 벨 실시간: 알림이 지금 보이게 저장되거나(조용 시간 보류 행 제외) 단건·모두 읽음으로 바뀌면 커밋 후 수신자 `/user/queue/notifications`로 `{event:"UPDATED"}`만 보낸다. 내용은 REST로 다시 읽는다. 세 역할의 `NotificationService.create`가 같은 이벤트를 쓴다. 조용 시간이 끝나 보이게 된 행은 통지하지 않는다(다음 조회·포커스 때 반영)
+- 채팅 알림 문구는 생성 시 `payload.title`·`payload.body`에 저장하고 목록과 푸시가 같이 쓴다(Policy 12장). 같은 방의 안 읽은 `CHAT` 행은 새 메시지가 오면 지워지고 새 행 하나로 남는다(POL-N-1). `CHAT_MENTION`은 묶지 않는다. 문구가 없는 행의 제목은 "새 알림이 도착했어요". Expo 발송과 보류분 아침 발송은 1분 주기 작업으로 구현한다(위 18 설명).
 - [ ] Server: non-chat notifications between 10 PM and 8 AM batched and sent in the morning, Expo push sending (Android; skipped while `push_enabled` is off)
 - [ ] Frontend: list (incl. `TEAM_INVITE` → `/invite/[code]`), navigation, read state, live bell badge, appeal sheet, push permission prompt (Android app; iOS out of MVP)
 

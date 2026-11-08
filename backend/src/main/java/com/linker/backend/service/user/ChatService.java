@@ -123,6 +123,7 @@ public class ChatService {
 
 	static final String DELETED_PREVIEW = "삭제된 메시지입니다";
 	static final String HIDDEN_PREVIEW = "운영 정책에 따라 숨겨진 메시지예요";
+	static final String IMAGE_NOTIFICATION = "사진을 보냈어요";
 
 	private final ChatRoomAccess chatRooms;
 	private final ChatRoomRepository rooms;
@@ -497,7 +498,8 @@ public class ChatService {
 				"CHAT_ROOM",
 				room.getId(),
 				"/chats/" + room.getId(),
-				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + "}",
+				notificationPayload(room.getId(), message, null,
+						me.visibleName() + "님이 메시지 요청을 보냈어요", null),
 				"message-request:" + room.getId()
 		));
 		announceRoom(room.getId(), me.getId(), targetId);
@@ -922,7 +924,7 @@ public class ChatService {
 						"CHAT_ROOM",
 						roomId,
 						"/chats/" + roomId,
-						"{\"roomId\":" + roomId + ",\"messageId\":" + message.getId() + "}",
+						notificationPayload(roomId, message, null, current.visibleName() + "님이 메시지를 보냈어요", null),
 						"chat:" + roomId
 				));
 			}
@@ -955,22 +957,27 @@ public class ChatService {
 				.collect(Collectors.toSet());
 		List<Long> reachable = recipientIds.stream().filter(mentionable::contains).toList();
 		List<Long> people = command.mentionedUserIds().stream().filter(reachable::contains).toList();
+		TeamChatAccess.TeamView team = teamChat.readableBy(sender.getId(), room.getTeamId());
+		String teamName = team == null ? null : team.name();
 		for (Long personId : people) {
 			mentions.save(ChatMessageMention.person(message, personId));
-			notifications.create(roomNotification(personId, sender, room, message, NotificationTypes.CHAT_MENTION, "mention"));
+			notifications.create(roomNotification(personId, sender, room, message, NotificationTypes.CHAT_MENTION, "mention",
+					sender.visibleName() + "님이 회원님을 언급했어요", teamName));
 		}
 		if (command.mentionAll()) {
 			mentions.save(ChatMessageMention.everyone(message));
 			for (Long memberId : reachable) {
 				if (!people.contains(memberId)) {
-					notifications.create(roomNotification(memberId, sender, room, message, NotificationTypes.CHAT, "mentionAll"));
+					notifications.create(roomNotification(memberId, sender, room, message, NotificationTypes.CHAT, "mentionAll",
+							sender.visibleName() + "님이 메시지를 보냈어요", teamName));
 				}
 			}
 		}
 	}
 
-	private static CreateNotificationCommand roomNotification(
-			long recipientId, User sender, ChatRoom room, ChatMessage message, String type, String flag
+	private CreateNotificationCommand roomNotification(
+			long recipientId, User sender, ChatRoom room, ChatMessage message, String type, String flag,
+			String title, String teamName
 	) {
 		return new CreateNotificationCommand(
 				recipientId,
@@ -979,9 +986,37 @@ public class ChatService {
 				"CHAT_ROOM",
 				room.getId(),
 				"/chats/" + room.getId(),
-				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + ",\"" + flag + "\":true}",
+				notificationPayload(room.getId(), message, flag, title, teamName),
 				"chat:" + room.getId()
 		);
+	}
+
+	/**
+	 * Payload for chat notifications (Policy ch. 12 "Chat notification"). {@code title} and {@code body} are
+	 * what the in-app list and the push show; team rooms prefix the team name.
+	 */
+	private String notificationPayload(long roomId, ChatMessage message, String flag, String title, String teamName) {
+		Map<String, Object> payload = new java.util.LinkedHashMap<>();
+		payload.put("roomId", roomId);
+		payload.put("messageId", message.getId());
+		if (flag != null) {
+			payload.put(flag, true);
+		}
+		payload.put("title", teamName == null ? title : teamName + " · " + title);
+		payload.put("body", notificationPreview(message));
+		return json.writeValueAsString(payload);
+	}
+
+	static String notificationPreview(ChatMessage message) {
+		String text = message.getBody() == null ? "" : message.getBody().strip().replaceAll("\\s+", " ");
+		if (text.isEmpty()) {
+			return message.getMessageType() == MessageType.IMAGE ? IMAGE_NOTIFICATION : null;
+		}
+		int max = PlanLimits.CHAT_NOTIFICATION_PREVIEW_MAX_CHARS;
+		if (text.codePointCount(0, text.length()) <= max) {
+			return text;
+		}
+		return text.substring(0, text.offsetByCodePoints(0, max)) + "…";
 	}
 
 	private void confirmStored(long userId, long roomId, SendCommand command) {

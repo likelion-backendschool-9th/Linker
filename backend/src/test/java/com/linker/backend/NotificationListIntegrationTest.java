@@ -188,7 +188,8 @@ class NotificationListIntegrationTest {
 				.andExpect(jsonPath("$.items[2].title").value("제목"))
 				.andExpect(jsonPath("$.items[2].body").value("본문"))
 				.andExpect(jsonPath("$.items[2].targetUrl").value("/invite/abc"))
-				.andExpect(jsonPath("$.items[3].title").value("CHAT"))
+				// A row without text shows the generic line, never the type code.
+				.andExpect(jsonPath("$.items[3].title").value("새 알림이 도착했어요"))
 				.andExpect(jsonPath("$.items[3].body").value(nullValue()))
 				.andExpect(jsonPath("$.items[4].appeal").value(nullValue()))
 				.andExpect(jsonPath("$.items[5].appeal").value(nullValue()))

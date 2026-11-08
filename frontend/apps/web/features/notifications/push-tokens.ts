@@ -1,5 +1,8 @@
 import { apiFetch } from '@/lib/api/api-fetch';
 
+// Hand-written on purpose: the generated `deletePushToken` does not encode the path, and Expo tokens
+// contain `[` and `]`.
+
 /** Last Expo token seen in this tab; used to DELETE on logout (WBS 18). */
 let currentToken: string | null = null;
 let pendingRegistration: Promise<void> = Promise.resolve();

@@ -344,7 +344,7 @@ export interface CreateAppealRequest {
 }
 
 export interface CreateAppealResponse {
-  appealId?: number;
+  appealId: number;
 }
 
 export interface CreateBlockRequest {
@@ -943,24 +943,33 @@ export interface NotificationEmailResponse {
 }
 
 export interface AppealState {
-  sanctionId?: number;
-  submitted?: boolean;
+  sanctionId: number;
+  submitted: boolean;
 }
 
 export interface NotificationItemResponse {
-  id?: number;
-  type?: string;
-  title?: string;
-  body?: string;
-  targetUrl?: string;
-  read?: boolean;
-  createdAt?: string;
-  appeal?: AppealState;
+  id: number;
+  /** notifications.notification_type, e.g. CHAT, CHAT_MENTION, MESSAGE_REQUEST, TEAM_INVITE, SANCTION */
+  type: string;
+  /** Stored title, or a generic line when the row has none */
+  title: string;
+  /** @nullable */
+  body: string | null;
+  /** In-app path; empty when the row has no destination */
+  targetUrl: string;
+  read: boolean;
+  createdAt: string;
+  /**
+     * Only on the caller's own sanction notification
+     * @nullable
+     */
+  appeal: AppealState | null;
 }
 
 export interface NotificationPageResponse {
-  items?: NotificationItemResponse[];
-  nextCursor?: string;
+  items: NotificationItemResponse[];
+  /** @nullable */
+  nextCursor: string | null;
 }
 
 export interface OfferCounts {
@@ -1416,7 +1425,7 @@ export interface TechTagResponse {
 }
 
 export interface UnreadCountResponse {
-  count?: number;
+  count: number;
 }
 
 export interface UnreadMembersResponse {
