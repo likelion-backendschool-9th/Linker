@@ -13,7 +13,7 @@ import { RECRUITER } from '@/lib/policy';
 import { toast } from '@/stores/toast-store';
 
 import type { SettingsData } from '../_lib/settings-types';
-import { AccountPlan, errorMessage, SettingsCommon } from './SettingsCommon';
+import { errorMessage, SettingsCommon } from './SettingsCommon';
 import styles from './settings-view.module.css';
 
 const passwordSchema = z.object({
@@ -26,7 +26,7 @@ const passwordSchema = z.object({
 });
 type PasswordValues = z.infer<typeof passwordSchema>;
 
-export function RecruiterSettingsView({ login, settings }: { login: string; settings: SettingsData }) {
+export function RecruiterSettingsView({ login, settings, blockCount }: { login: string; settings: SettingsData; blockCount: number }) {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const form = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), mode: 'onSubmit' });
   const changePassword = useMutation({
@@ -45,15 +45,14 @@ export function RecruiterSettingsView({ login, settings }: { login: string; sett
   });
 
   return (
-    <SettingsCommon login={login} settings={settings}>
-      <AccountPlan settings={settings} />
-      <section className={styles.section} aria-labelledby="scout-heading">
-        <h2 id="scout-heading">Scout</h2>
-        <p className={styles.description}>채용 담당자 전용 요금제예요. Scout 구독과 결제 정보는 구독 관리에서 확인할 수 있어요.</p>
+    <SettingsCommon login={login} settings={settings} blockCount={blockCount}>
+      <section className={styles.group} aria-labelledby="scout-heading">
+        <h2 id="scout-heading" className={styles.groupTitle}>Scout</h2>
+        <p className={styles.note}>채용 담당자 전용 요금제예요. Scout 구독과 결제 정보는 구독 관리에서 확인할 수 있어요.</p>
       </section>
-      <section className={styles.section} aria-labelledby="password-heading">
-        <h2 id="password-heading">비밀번호 변경</h2>
-        <form className={styles.form} onSubmit={form.handleSubmit((values) => { setPasswordError(null); changePassword.mutate(values); })}>
+      <section className={styles.group} aria-labelledby="password-heading">
+        <h2 id="password-heading" className={styles.groupTitle}>비밀번호 변경</h2>
+        <form className={`${styles.form} ${styles.card}`} onSubmit={form.handleSubmit((values) => { setPasswordError(null); changePassword.mutate(values); })}>
           <PasswordField id="current-password" label="현재 비밀번호" error={form.formState.errors.currentPassword?.message} register={form.register('currentPassword')} />
           <PasswordField id="new-password" label="새 비밀번호" error={form.formState.errors.newPassword?.message} register={form.register('newPassword')} />
           <PasswordField id="confirm-password" label="새 비밀번호 확인" error={form.formState.errors.confirmPassword?.message} register={form.register('confirmPassword')} />

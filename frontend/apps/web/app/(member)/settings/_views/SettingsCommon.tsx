@@ -30,11 +30,17 @@ type EmailValues = z.infer<typeof emailSchema>;
 export function SettingsCommon({
   login,
   settings,
+  accountStart,
+  personal,
+  blockCount,
   children,
 }: {
   login: string;
   settings: SettingsData;
-  children: ReactNode;
+  accountStart?: ReactNode;
+  personal?: ReactNode;
+  blockCount?: number;
+  children?: ReactNode;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -46,6 +52,7 @@ export function SettingsCommon({
   const [pushEnabled, setPushEnabled] = useState(settings.pushEnabled);
   const [requestingPush, setRequestingPush] = useState(false);
   const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
+  const [blockQuery, setBlockQuery] = useState('');
   const form = useForm<EmailValues>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: settings.notificationEmail },
@@ -173,68 +180,78 @@ export function SettingsCommon({
     onError: (error) => toast(errorMessage(error, '차단을 해제하지 못했어요.'), { tone: 'alert' }),
   });
 
+  const blockRows = Array.isArray(blocks.data) ? blocks.data : [];
+  const visibleBlocks = blockRows.filter(({ user }) => {
+    const query = blockQuery.trim().toLowerCase();
+    return query.length === 0 || user.name.toLowerCase().includes(query) || user.login.toLowerCase().includes(query);
+  });
+
   return (
     <div className={styles.content}>
-      <section className={styles.section} aria-labelledby="account-heading">
-        <h2 id="account-heading">계정</h2>
-        <div className={styles.row}>
-          <div className={styles.rowInfo}><span className={styles.label}>링커 아이디</span><span className={styles.value}>@{login}</span></div>
-        </div>
-        <form className={styles.form} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
-          <div className={styles.field}>
+      <section className={styles.group} aria-labelledby="account-heading">
+        <h2 id="account-heading" className={styles.groupTitle}>계정 및 연결</h2>
+        <div className={styles.card}>
+          {accountStart}
+          <form className={styles.emailRow} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
             <label htmlFor="notification-email">알림 이메일</label>
             <input id="notification-email" type="email" autoComplete="email" {...form.register('email')} aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} />
-            {form.formState.errors.email && <span id="email-error" className={styles.error}>{form.formState.errors.email.message}</span>}
-          </div>
+            <button type="submit" className={styles.save} disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '알림 이메일 저장'}</button>
+          </form>
+          {form.formState.errors.email && <span id="email-error" className={styles.error}>{form.formState.errors.email.message}</span>}
           {form.formState.errors.root && <p className={styles.error} role="alert">{form.formState.errors.root.message}</p>}
-          <Button type="submit" variant="outline" disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '알림 이메일 저장'}</Button>
-        </form>
-      </section>
-
-      <section className={styles.section} aria-labelledby="notification-heading">
-        <h2 id="notification-heading">알림</h2>
-        <div className={styles.row}>
-          <div className={styles.rowInfo}><span className={styles.label}>푸시 알림</span><span className={styles.description}>끄면 푸시만 중단되고 앱 내 알림은 계속 쌓여요. 푸시는 Android 앱에서만 받을 수 있어요.</span></div>
-          <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} disabled={requestingPush || pushSave.isPending} aria-busy={requestingPush || pushSave.isPending} onClick={() => void togglePush()}>{pushSave.isPending ? '…' : pushEnabled ? '켜짐' : '꺼짐'}</button>
+          <AccountPlan settings={settings} />
+          <div className={styles.row}>
+            <span>푸시 알림</span>
+            <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} disabled={requestingPush || pushSave.isPending} aria-busy={requestingPush || pushSave.isPending} onClick={() => void togglePush()}><span className={styles.knob} /></button>
+          </div>
+          <p className={styles.note}>끄면 푸시만 중단되고 앱 내 알림은 계속 쌓여요. 푸시는 Android 앱에서만 받아요.</p>
+          <button type="button" className={styles.row} onClick={() => logoutOverlay.open()}>
+            <span>로그아웃</span><span className={styles.chevron} aria-hidden="true" />
+          </button>
+          <button type="button" className={styles.row} onClick={() => withdrawalCheck.mutate()} disabled={withdrawalCheck.isPending}>
+            <span>{withdrawalCheck.isPending ? '확인 중…' : '계정 탈퇴'}</span><span className={styles.chevron} aria-hidden="true" />
+          </button>
         </div>
       </section>
 
       {children}
 
-      <section className={styles.section} aria-labelledby="info-heading">
-        <h2 id="info-heading">도움말 및 정보</h2>
-        <nav className={styles.links} aria-label="약관 및 정책">
-          <Link className={styles.link} href="/legal/terms">이용약관</Link>
-          <Link className={styles.link} href="/legal/privacy">개인정보 처리방침</Link>
-          <Link className={styles.link} href="/legal/community">커뮤니티 정책</Link>
-          <a className={styles.link} href="mailto:support@linker.example">문의하기</a>
+      <section className={styles.group} aria-labelledby="personal-heading">
+        <h2 id="personal-heading" className={styles.groupTitle}>개인 정보</h2>
+        <div className={styles.card}>
+          {personal}
+          <button type="button" className={styles.row} onClick={() => blocksOverlay.open()}>
+            <span>차단한 사용자 보기</span>
+            <span className={styles.trailing}><span className={styles.value}>{`${blocks.isSuccess && Array.isArray(blocks.data) ? blocks.data.length : (blockCount ?? 0)}명`}</span><span className={styles.chevron} aria-hidden="true" /></span>
+          </button>
+        </div>
+      </section>
+
+      <section className={styles.group} aria-labelledby="info-heading">
+        <h2 id="info-heading" className={styles.groupTitle}>기타</h2>
+        <nav className={styles.card} aria-label="약관 및 정책">
+          <Link className={styles.row} href="/legal/terms"><span>이용약관</span><span className={styles.chevron} aria-hidden="true" /></Link>
+          <Link className={styles.row} href="/legal/privacy"><span>개인정보 처리방침</span><span className={styles.chevron} aria-hidden="true" /></Link>
+          <Link className={styles.row} href="/legal/community"><span>커뮤니티 정책</span><span className={styles.chevron} aria-hidden="true" /></Link>
+          <a className={styles.row} href="mailto:support@linker.example"><span>문의하기</span><span className={styles.chevron} aria-hidden="true" /></a>
+          <div className={styles.row}><span>링커 아이디</span><span className={styles.value}>@{login}</span></div>
         </nav>
-      </section>
-
-      <section className={styles.section} aria-labelledby="blocked-heading">
-        <h2 id="blocked-heading">차단 관리</h2>
-        <p className={styles.description}>차단한 사용자를 확인하고 차단을 해제할 수 있어요.</p>
-        <Button variant="outline" onClick={() => blocksOverlay.open()}>차단한 사용자 보기</Button>
-      </section>
-
-      <section className={styles.section} aria-labelledby="account-action-heading">
-        <h2 id="account-action-heading">계정 관리</h2>
-        <Button variant="outline" onClick={() => logoutOverlay.open()}>로그아웃</Button>
-        <Button variant="danger" onClick={() => withdrawalCheck.mutate()} disabled={withdrawalCheck.isPending}>{withdrawalCheck.isPending ? '확인 중…' : '계정 탈퇴'}</Button>
       </section>
 
       <ConfirmDialog
         overlay={logoutOverlay}
-        title="로그아웃할까요?"
-        description="다시 이용하려면 로그인해야 해요."
+        title="로그아웃"
+        description="로그아웃을 하시면 서비스 이용에 제약이 생깁니다. 로그아웃 하시겠습니까?"
         confirmLabel={logout.isPending ? '로그아웃 중…' : '로그아웃'}
         pending={logout.isPending}
         onConfirm={() => logout.mutate()}
       />
-      <OverlaySheet overlay={blocksOverlay} title="차단한 사용자" description="차단을 해제할 사용자를 선택해 주세요.">
-        {blocks.isPending ? <p role="status">차단 목록을 불러오는 중…</p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : blocks.data?.length ? (
-          <ul className={styles.blockList}>{blocks.data.map(({ user }) => <li className={styles.blockItem} key={user.id}><span>{user.name} · @{user.login}</span><Button variant="outline" disabled={unblock.isPending} onClick={() => unblock.mutate(user.id)}>차단 해제</Button></li>)}</ul>
-        ) : <p>차단한 사용자가 없어요.</p>}
+      <OverlaySheet overlay={blocksOverlay} title="차단한 사용자">
+        <label className={styles.searchLabel} htmlFor="block-search">이름 또는 아이디 검색</label>
+        <input id="block-search" className={styles.search} value={blockQuery} onChange={(event) => setBlockQuery(event.target.value)} placeholder="이름 또는 아이디 검색" />
+        {blocks.isPending ? <p role="status">차단 목록을 불러오는 중…</p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : visibleBlocks.length ? (
+          <ul className={styles.blockList}>{visibleBlocks.map(({ user }) => <li className={styles.blockItem} key={user.id}><span className={styles.person}><span>{user.name}</span><span className={styles.value}>@{user.login}</span></span><button type="button" className={styles.unblock} aria-label={`${user.name} 차단 해제`} disabled={unblock.isPending} onClick={() => unblock.mutate(user.id)}>-</button></li>)}</ul>
+        ) : <p>{blockRows.length ? '검색 결과가 없어요.' : '차단한 사용자가 없어요.'}</p>}
       </OverlaySheet>
       <OverlaySheet overlay={withdrawalSheet} title="계정 탈퇴 안내" description="탈퇴 전에 소유한 팀을 확인해 주세요.">
         <p>탈퇴하면 바로 서비스 이용이 중단되고, 30일 후 계정이 삭제돼요. 삭제 전 다시 로그인하면 계정을 복구할 수 있어요.</p>
@@ -263,13 +280,10 @@ export function SettingsCommon({
 
 export function AccountPlan({ settings }: { settings: SettingsData }) {
   return (
-    <section className={styles.section} aria-labelledby="plan-heading">
-      <h2 id="plan-heading">요금제 및 구독</h2>
-      <div className={styles.row}>
-        <div className={styles.rowInfo}><span className={styles.label}>{settings.plan.label}</span><span className={styles.description}>{settings.plan.renewsOn ? `다음 결제일 ${settings.plan.renewsOn}` : settings.plan.kind === 'SCOUT' ? '채용 담당자용 Scout 요금제' : '이용 중인 요금제'}</span></div>
-        <Link className={styles.link} href="/settings/subscription">구독 관리</Link>
-      </div>
-    </section>
+    <Link className={styles.row} href="/settings/subscription" aria-label="구독 관리">
+      <span>구독과 결제</span>
+      <span className={styles.trailing}><span className={styles.value}>{settings.plan.label}</span><span className={styles.chevron} aria-hidden="true" /></span>
+    </Link>
   );
 }
 

@@ -2,30 +2,51 @@
 
 import Link from 'next/link';
 
-import { Button } from '@/components/ui/button/Button';
-
 import type { SettingsData } from '../_lib/settings-types';
-import { AccountPlan, SettingsCommon } from './SettingsCommon';
+import { SettingsCommon } from './SettingsCommon';
 import styles from './settings-view.module.css';
 
-export function DeveloperSettingsView({ login, settings }: { login: string; settings: SettingsData }) {
+const JOB_STATUS_LABEL = { SEEKING: '구직 중', OPEN: '제안만 받기', OFF: '끔' } as const;
+
+export function DeveloperSettingsView({
+  login,
+  settings,
+  jobStatus,
+  blockCount,
+}: {
+  login: string;
+  settings: SettingsData;
+  jobStatus: keyof typeof JOB_STATUS_LABEL;
+  blockCount: number;
+}) {
   return (
-    <SettingsCommon login={login} settings={settings}>
-      <section className={styles.section} aria-labelledby="github-heading">
-        <h2 id="github-heading">GitHub 연결</h2>
-        {settings.github?.connected ? (
-          <div className={styles.row}>
-            <div className={styles.rowInfo}><span className={styles.label}>연결된 계정</span><span className={styles.value}>@{settings.github.login}</span></div>
-            <span className={styles.value}>연결됨</span>
-          </div>
-        ) : <p className={styles.description}>연결된 GitHub 계정이 없어요.</p>}
-        <p className={styles.description}>연결 및 해제 기능은 현재 제공되는 계정 API에 포함되어 있지 않아요.</p>
-      </section>
-      <AccountPlan settings={settings} />
-      <section className={styles.section} aria-labelledby="profile-heading">
-        <h2 id="profile-heading">프로필</h2>
-        <div className={styles.links}><Button asChild variant="outline"><Link href="/settings/profile">프로필 수정</Link></Button></div>
-      </section>
-    </SettingsCommon>
+    <SettingsCommon
+      login={login}
+      settings={settings}
+      blockCount={blockCount}
+      accountStart={
+        <div className={styles.row}>
+          <h2 className={styles.rowLabel}>GitHub 연결</h2>
+          <span className={styles.trailing}>
+            {settings.github?.login && <span>@{settings.github.login}</span>}
+            {settings.github?.connected ? (
+              <span className={styles.connected}><span className={styles.dot} aria-hidden="true" />연결 됨</span>
+            ) : (
+              <span className={styles.value}>연결 안 됨</span>
+            )}
+          </span>
+        </div>
+      }
+      personal={
+        <Link className={styles.row} href="/settings/profile">
+          <span>구직 상태</span>
+          <span className={styles.trailing}><span className={styles.value}>{JOB_STATUS_LABEL[jobStatus]}</span><Chevron /></span>
+        </Link>
+      }
+    />
   );
+}
+
+function Chevron() {
+  return <span className={styles.chevron} aria-hidden="true" />;
 }
