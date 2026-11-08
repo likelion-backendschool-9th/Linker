@@ -71,15 +71,16 @@ public class NotificationController {
 	@Tag(name = "p18-notifications")
 	@Operation(operationId = "listNotifications")
 	@ApiResponse(responseCode = "200", description = "Notification page")
-	@ApiResponse(responseCode = "400", description = "VALIDATION_ERROR (cursor)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "400", description = "VALIDATION_ERROR (cursor, unread)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
 	public ResponseEntity<NotificationPageResponse> list(
 			@AuthenticationPrincipal AuthenticatedUser user,
-			@RequestParam(required = false) String cursor
+			@RequestParam(required = false) String cursor,
+			@RequestParam(defaultValue = "false") boolean unread
 	) {
 		return ResponseEntity.ok()
 				.cacheControl(CacheControl.noStore())
-				.body(notifications.list(user, cursor));
+				.body(notifications.list(user, cursor, unread));
 	}
 
 	@PatchMapping("/notifications/{notificationId}/read")

@@ -1,87 +1,85 @@
-.toolbar {
+/* Figma 248:1243. Tabs bleed to the column edges like page 19's tabs. */
+.tabs {
+  display: flex;
+  height: var(--tabs-row-height);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) 0;
+  background-color: var(--color-canvas);
+}
+
+.tab {
+  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
-}
-.group {
-  margin-block: var(--space-lg);
-}
-.date {
+  justify-content: center;
+  border: 0;
+  border-bottom: 1px solid var(--color-tab-divider);
+  background: none;
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
 }
+
+.tab[aria-current='page'] {
+  border-bottom: 2px solid var(--color-text-slate);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+}
+
+/* "전체 읽기": a plain text button (Figma 253:2045) */
+.readAll {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  margin-top: calc(
+    var(--space-notification-group) -
+      (var(--touch-target-min) - var(--font-size-body) * var(--line-height-title)) / 2
+  );
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.readAll:disabled {
+  color: var(--color-text-muted-cool);
+  cursor: default;
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-notification-group);
+  margin-top: calc(
+    var(--space-notification-group) -
+      (var(--touch-target-min) - var(--font-size-body) * var(--line-height-title)) / 2
+  );
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row-block);
+}
+
+/* "11월 5일" + muted "오늘" (Figma 248:1409) */
+.date {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.age {
+  color: var(--color-text-muted-cool);
+}
+
 .list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-}
-.item {
-  padding-block: var(--space-md);
-  border-bottom: 1px solid var(--color-hairline-soft);
-}
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  min-height: var(--touch-target-min);
-  min-width: 0;
-  padding: var(--space-xs);
-  border-radius: var(--radius-sm);
-}
-a.body:hover {
-  background: var(--color-canvas-soft);
-}
-.heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-.title {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-title);
-  overflow-wrap: anywhere;
-}
-.description {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
-  overflow-wrap: anywhere;
-}
-.time {
-  font-size: var(--font-size-meta);
-  color: var(--color-text-meta);
-}
-a.body:hover .time {
-  color: var(--color-text-subtle-on-tint);
-}
-.unread {
-  font-size: var(--font-size-meta);
-  padding-inline: var(--space-xs);
-  border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-subtle-on-tint);
-}
-.form {
-  display: grid;
-  gap: var(--space-md);
-}
-.input {
-  resize: vertical;
-  width: 100%;
-  min-height: var(--control-height);
-  padding: var(--space-md);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--color-field);
-  font-size: var(--font-size-body);
-}
-.error {
-  color: var(--color-status-error);
-  font-size: var(--font-size-caption);
 }

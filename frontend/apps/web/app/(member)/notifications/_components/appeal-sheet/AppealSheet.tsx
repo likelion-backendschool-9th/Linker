@@ -6,7 +6,7 @@ import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import type { NotificationItem } from '@/features/notifications/notification-queries';
 import { ApiError } from '@/lib/api/api-error';
 
-import styles from '../notification-list/NotificationList.module.css';
+import styles from './AppealSheet.module.css';
 
 import { useAppealSheet } from './hook';
 
