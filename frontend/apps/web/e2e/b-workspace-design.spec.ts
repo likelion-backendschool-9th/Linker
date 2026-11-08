@@ -75,7 +75,85 @@ test('main screen keeps Figma geometry and the centered mobile column at each su
       path: testInfo.outputPath(`workspace-${width}.png`),
       scale: 'css',
       fullPage: true,
+      // Hide development-only diagnostics, never application content.
+      style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
     });
   }
   expect(errors).toEqual([]);
+});
+
+test('07 sheet matches its 293px frame and cancellation restores focus without applying the draft', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/workspace');
+  const trigger = page.getByRole('button', { name: '팀 변경, 현재 Linker 해커톤팀' });
+  await trigger.click();
+  const sheet = page.getByRole('dialog', { name: '팀 변경' });
+  await expect(sheet).toBeVisible();
+  await expect.poll(async () => Math.round((await sheet.boundingBox())!.y)).toBe(507);
+  const box = (await sheet.boundingBox())!;
+  expect(box.width).toBe(375);
+  expect(box.height).toBeCloseTo(293, 1);
+  const choices = sheet.getByRole('radio');
+  await expect(choices).toHaveCount(3);
+  expect((await choices.first().locator('..').boundingBox())?.height).toBeCloseTo(40, 1);
+  expect(
+    (await sheet.getByRole('button', { name: '팀 변경', exact: true }).boundingBox())?.height,
+  ).toBeCloseTo(53, 1);
+  await page.screenshot({
+    path: testInfo.outputPath('workspace-team-sheet-375.png'),
+    scale: 'css',
+    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+  });
+  await sheet.getByRole('radio', { name: '오픈소스 스터디' }).check();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page).toHaveURL('/workspace');
+  await trigger.click();
+  await expect(sheet.getByRole('radio', { name: 'Linker 해커톤팀' })).toBeChecked();
+  await sheet.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(trigger).toBeFocused();
+});
+
+test('direct-link and browser-back sheet closing never adds a new history entry', async ({
+  page,
+}) => {
+  await page.goto('/feed');
+  await page.goto('/workspace?overlay=my-issues-team');
+  const sheet = page.getByRole('dialog', { name: '팀 변경' });
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page).toHaveURL('/workspace');
+  await page.goBack();
+  await expect(page).toHaveURL('/feed');
+  await page.goto('/workspace');
+  await page.getByRole('button', { name: '팀 변경, 현재 Linker 해커톤팀' }).click();
+  await expect(sheet).toBeVisible();
+  await page.goBack();
+  await expect(sheet).toBeHidden();
+  await expect(page).toHaveURL('/workspace');
+});
+
+test('07 uses its approved profile header and four tabs without changing the shared frame on other pages', async ({
+  page,
+}) => {
+  await page.goto('/workspace');
+  await page.waitForLoadState('networkidle');
+  const menu = page.getByRole('navigation', { name: '주 메뉴' });
+  await expect(menu.getByRole('link')).toHaveCount(4);
+  await expect(page.getByRole('banner').getByRole('link', { name: '내 프로필' })).toHaveAttribute(
+    'href',
+    '/user/seojun-han',
+  );
+  await expect(page.getByRole('banner').getByRole('link', { name: '설정' })).toHaveCount(0);
+  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await expect(page.getByRole('searchbox')).toBeVisible();
+  await page.getByRole('button', { name: '검색창 닫기' }).click();
+  await expect(page.getByRole('searchbox')).toBeHidden();
+  await page.goto('/feed');
+  await expect(page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link')).toHaveCount(5);
+  await expect(page.getByRole('banner').getByRole('link', { name: '설정' })).toBeVisible();
 });

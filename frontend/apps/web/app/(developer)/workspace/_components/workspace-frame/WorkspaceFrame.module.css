@@ -1,0 +1,95 @@
+/* Figma 7 header 123:2094 / four-tab bar 123:2064. Page-07-only, approved variant. */
+.frame {
+  --workspace-header-height: 60px;
+  --workspace-logo-inset: 13px;
+  --workspace-header-gap: 11px;
+  --workspace-search-size: 23px;
+  --workspace-header-ink: #414141;
+  --workspace-profile-size: 25px;
+  --workspace-profile-border: #efefef;
+  --workspace-tab-plate: rgb(243 243 243 / 0.95);
+  min-height: 100dvh;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  height: calc(var(--workspace-header-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) var(--page-gutter) 0 var(--workspace-logo-inset);
+}
+.logo {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: var(--touch-target-min);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--workspace-header-gap);
+}
+.iconButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  color: var(--workspace-header-ink);
+}
+.search {
+  display: flex;
+}
+.search > button {
+  position: relative;
+  width: var(--workspace-search-size);
+  color: var(--workspace-header-ink);
+}
+.search > button > span:first-child {
+  --icon-box-size: var(--workspace-search-size);
+  --icon-stroke-width: calc(2 * 24 / 23);
+  transform: none;
+}
+.search > button::after {
+  position: absolute;
+  inset: calc((var(--workspace-search-size) - var(--touch-target-icon)) / 2);
+  content: '';
+}
+.profile {
+  position: relative;
+  display: block;
+  width: var(--workspace-profile-size);
+  height: var(--workspace-profile-size);
+  background: var(--color-canvas-cool);
+  border-radius: var(--radius-full);
+  outline: 1px solid var(--workspace-profile-border);
+}
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+.profile::after {
+  position: absolute;
+  inset: calc((var(--workspace-profile-size) - var(--touch-target-min)) / 2);
+  content: '';
+}
+.main {
+  padding: var(--space-list-action) var(--page-gutter)
+    calc(var(--tab-bar-height) + var(--space-xxl) + env(safe-area-inset-bottom));
+  outline: none;
+}
+.bottomTabs {
+  --color-gnb-bg: var(--workspace-tab-plate);
+  --line-height-caption: normal;
+}
+.bottomTabs > nav {
+  bottom: max(0px, calc(var(--space-md) - env(safe-area-inset-bottom)));
+}
+
+.profile:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

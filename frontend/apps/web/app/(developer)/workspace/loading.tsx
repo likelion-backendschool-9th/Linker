@@ -1,10 +1,10 @@
-import { PageFrame } from '@/components/layout/page-frame/PageFrame';
+import { WorkspaceFrame } from './_components/workspace-frame/WorkspaceFrame';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 export default function Loading() {
   return (
-    <PageFrame title="워크스페이스" hideTitle>
+    <WorkspaceFrame>
       <Skeleton variant="card" count={3} />
-    </PageFrame>
+    </WorkspaceFrame>
   );
 }

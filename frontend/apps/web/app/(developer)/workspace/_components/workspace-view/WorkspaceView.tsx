@@ -18,7 +18,7 @@ import { teamEntryHref } from '@/features/teams/team-entry';
 import { PLAN_LIMITS } from '@/lib/policy';
 
 import { IssueSummaryRow } from '../../../_components/issue-summary-row';
-import { TeamChangeSheet } from '../../../_components/team-change-sheet';
+import { WorkspaceTeamSheet } from '../workspace-team-sheet/WorkspaceTeamSheet';
 import type { MyTeam } from './api';
 import { FILTERS, LABELS, useWorkspaceView } from './hook';
 import styles from './WorkspaceView.module.css';
@@ -57,9 +57,8 @@ export function WorkspaceView() {
               팀 목록
             </h2>
             <div className={styles.selectedCard}>
-              <TeamChangeSheet
+              <WorkspaceTeamSheet
                 overlay={overlay}
-                description="내 이슈를 확인할 팀을 선택해요."
                 trigger={
                   <button type="button" className={styles.teamTrigger}>
                     <span className="sr-only">팀 변경, 현재 {team.name}</span>
@@ -76,7 +75,6 @@ export function WorkspaceView() {
                 }
                 teams={teams.data.items}
                 selectedId={team.id}
-                name="workspace-team"
                 onSubmit={(id) => void overlay.closeAnd(() => selectTeam(id))}
               />
               {selectedHref && (
