@@ -76,6 +76,36 @@
   height: var(--icon-size-sm);
 }
 
+/* 20 (Figma 301:1914): solid fill, no border, no check icon — unlike the outline chip above */
+.chipFilled {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.chipFilled:has(.checkbox:checked) {
+  color: var(--color-on-primary);
+  background-color: var(--color-selection);
+}
+
+.chipFilled:has(.checkbox:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chipFilled:has(.checkbox:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
 .actions {
   display: flex;
   flex-direction: column-reverse;

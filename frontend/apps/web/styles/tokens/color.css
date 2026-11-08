@@ -46,9 +46,10 @@
 
   /* Status text — always paired with a message, never color alone */
   --color-status-error: #b91c1c; /* also delete, leave and other irreversible actions */
-  --color-required-dot: #ed0004; /* required-field mark (4×4 circle beside labels) */
+  --color-required-dot: #ed0004; /* required-field mark (4×4 circle beside labels); also 20 recruit editor (Figma 257:2592), sr-only "(필수)" carries the meaning */
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
+  --color-submit-disabled: #92b1f5; /* 20 submit CTA disabled fill (Figma 600:729); enabled uses --color-selection */
 
   /*
    * GitHub Projects Status option colors (enum only; no hex in components).
@@ -72,15 +73,15 @@
 
   /* Figma 07 values. The three marked low contrast fall below 4.5:1 on white by design decision */
   --color-text-black: #000000; /* 07 section labels */
-  --color-text-sheet-title: #111827; /* 07 sheet title, selected option */
-  --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1 */
-  --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1 */
-  --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1 */
+  --color-text-sheet-title: #111827; /* 07 sheet title, selected option; also 20 field labels and heading text */
+  --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1; also 20 unselected segmented button and "역할 추가" label */
+  --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1; also 20 "최대 N자" hint */
+  --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1; also 20 disabled submit label */
   --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
-  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card */
+  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
-  --color-canvas-cool: #f3f4f6; /* 07 compact link fill */
-  --color-selection: #2563eb; /* 07 sheet selected radio */
+  --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
+  --color-selection: #2563eb; /* 07 sheet selected radio; also 20 selected segmented button fill */
   --color-scrim-team-picker: rgb(
     25 31 40 / 0.32
   ); /* 07 sheet scrim: Figma #191f28 32%, with --blur-scrim */
@@ -116,7 +117,7 @@
 
   /* Figma 11 values (team issue list). Low contrast ones are kept by design decision, like 07 */
   --color-text-title-cool: #111827; /* 11 section titles, current team tab, search text */
-  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6 */
+  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6; also 20 field placeholder */
   --color-progress-done: #158000; /* 11 "완료" count and trend line: 5.29:1 */
   --color-progress-active: #007be6; /* 11 "진행" count and trend line: 4.37:1, low contrast */
   --color-progress-blocked: #e62e00; /* 11 "정지" count and trend line: 4.42:1, low contrast */

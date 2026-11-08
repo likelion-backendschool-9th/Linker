@@ -8,7 +8,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { RecruitEditor } from '../_components/recruit-editor';
 import { editorOptions } from '../_lib/editor-queries';
 
-export const metadata = buildMetadata({ title: '모집 글 쓰기' });
+export const metadata = buildMetadata({ title: '모집 글 작성' });
 
 /** 20 Write recruit post (07 TODO 20, `RecruitmentController`) */
 export default async function RecruitNewPage() {
@@ -17,7 +17,7 @@ export default async function RecruitNewPage() {
   await client.prefetchQuery(editorOptions(session?.login ?? null));
 
   return (
-    <PageFrame title="모집 글 쓰기" variant="stack" backHref="/recruits">
+    <PageFrame title="모집 글 작성" variant="stack" backHref="/recruits">
       <HydrationBoundary state={dehydrate(client)}>
         <RecruitEditor mode="create" />
       </HydrationBoundary>

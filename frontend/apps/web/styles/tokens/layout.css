@@ -45,14 +45,15 @@
   --space-post-search: 25px; /* hint to search field */
   --space-post-repo: 13px; /* gap between repo rows */
   --stepper-height: 4px; /* top progress bar */
+  --space-field-gap: 20px; /* 20 recruit editor: gap between fields (Figma itemSpacing) */
 
   /* Radius */
   --radius-none: 0;
   --radius-xxs: 4px; /* offer cards, status chips, and the open-chat button */
   --radius-xs: 8px; /* the floating mobile bottom GNB pill */
   --radius-sm: 16px; /* inputs, FAQ rows, small cards */
-  --radius-control-sm: 10px; /* 07 compact link */
-  --radius-control-md: 14px; /* 07 sheet CTA */
+  --radius-control-sm: 10px; /* 07 compact link; also 20 "역할 추가" button (Figma) */
+  --radius-control-md: 14px; /* 07 sheet CTA; also 20 field inputs, dropdown triggers and submit button (Figma) */
   --radius-lg: 20px; /* frosted pills when Figma uses them */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
@@ -141,6 +142,8 @@
   --header-height-admin: 56px; /* admin top bar */
   --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
   --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
+  --textarea-height-intro: 120px; /* 20 프로젝트 소개 textarea (Figma) */
+  --wheel-row-height-recruit: 39px; /* 20 마감일 휠 피커 row (Figma 368:3920) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */

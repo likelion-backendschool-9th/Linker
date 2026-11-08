@@ -1,4 +1,4 @@
-/* Shared by the regions of the 20 editor (form, role rows, status section) */
+/* Shared by the regions of the 20 editor (form, role rows, status section). Figma 257:2512 */
 
 .editor {
   display: grid;
@@ -9,48 +9,30 @@
 
 .form {
   display: grid;
-  gap: var(--space-xl);
-}
-
-/* Whitespace groups the sections (guide ch. 3); a hairline only between them */
-.section {
-  display: grid;
-  gap: var(--space-md);
-  padding-bottom: var(--space-xl);
-  border-bottom: 1px solid var(--color-hairline-soft);
-}
-
-.sectionHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-.sectionTitle {
-  font-size: var(--font-size-section-title);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-title);
-  color: var(--color-text-heading);
-}
-
-.optional {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
+  gap: var(--space-field-gap);
 }
 
 .field {
   display: grid;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
 .fieldset {
   display: grid;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   min-width: 0;
   margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Label row: name + optional hint + required dot, all inline (Figma). Also used as a <legend>,
+   so browser default padding/border are reset here too. */
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
   padding: 0;
   border: 0;
 }
@@ -58,33 +40,123 @@
 .label {
   padding: 0;
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   line-height: var(--line-height-caption);
-  color: var(--color-text-heading);
+  color: var(--color-text-sheet-title);
 }
 
-/* Text input look (guide ch. 5) */
+.labelHint {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted-cool);
+}
+
+/* Figma shows no visible marker for optional fields; sr-only text keeps it announced */
+.optional {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.requiredDot {
+  display: inline-block;
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  flex-shrink: 0;
+  background-color: var(--color-required-dot);
+  border-radius: var(--radius-full);
+}
+
+/* Text input look (Figma: filled gray, 14 radius; "Figma wins" over the ch.5 default recipe) */
 .input,
-.textarea {
+.textarea,
+.dropdownTrigger {
   width: 100%;
   min-height: var(--control-height);
   padding: var(--space-sm) var(--space-md);
+  /* Never below 16px: smaller input text makes iOS zoom on focus (guide ch. 2) */
   font-size: var(--font-size-body);
+  font-family: var(--font-sans);
   color: var(--color-text-body);
-  background-color: var(--color-field);
+  background-color: var(--color-canvas-cool);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control-md);
+}
+
+/* Only the title and intro fields carry a hairline border in Figma; dropdown-style fields don't */
+.input,
+.textarea {
+  border-color: var(--color-hairline-cool);
+}
+
+/* The shared global outline (guide ch. 2) stays; this adds the page's own blue focus border
+   on top of it, same technique as the header search field's --color-focus-ring-search */
+.input:focus,
+.textarea:focus,
+.dropdownTrigger:focus-visible {
+  border-color: var(--color-selection);
 }
 
 .textarea {
+  min-height: var(--textarea-height-intro);
+  resize: none;
   line-height: var(--line-height-body);
-  resize: vertical;
+}
+
+.introField {
+  position: relative;
+}
+
+/* Overlaid on the textarea's bottom-right corner (Figma); the shared CharCounter default is
+   14px/--color-text-meta, this field is 12px/--color-text-muted-cool */
+.introCounter.introCounter {
+  position: absolute;
+  right: var(--space-md);
+  bottom: var(--space-sm);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted-cool);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-text-placeholder-cool);
 }
 
 .input[aria-invalid='true'],
 .textarea[aria-invalid='true'],
 .stepValue[aria-invalid='true'] {
   border-color: var(--color-status-error);
+}
+
+/* Button-triggered dropdowns (마감일, 기술 스택): no border, trailing chevron.
+   프로젝트 목적 / 연결할 팀 use the ./dropdown/Dropdown component instead (Figma 588:613). */
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--font-size-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownTrigger > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dropdownPlaceholder {
+  color: var(--color-text-placeholder-cool);
+}
+
+.dropdownChevron {
+  --icon-size: var(--icon-size-sm);
+  flex-shrink: 0;
+  color: var(--color-text-unselected);
 }
 
 .fieldFoot {
@@ -110,33 +182,33 @@
   color: var(--color-status-error);
 }
 
-/* Radio pills (format, goal): outline; checked = primary fill + check icon */
+/* Segmented format buttons (Figma): selected = filled blue, unselected = white + hairline */
 .chips {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-xs);
 }
 
 .chip {
   position: relative;
   display: inline-flex;
+  flex: 1;
   align-items: center;
-  gap: var(--space-xxs);
+  justify-content: center;
   min-height: var(--touch-target-min);
-  padding: 0 var(--space-md);
+  padding: 0 var(--space-sm);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-body);
+  color: var(--color-text-slate);
   background-color: var(--color-canvas);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-full);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 
 .chip:has(.radio:checked) {
   color: var(--color-on-primary);
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  background-color: var(--color-selection);
+  border-color: var(--color-selection);
 }
 
 .chip:has(.radio:focus-visible) {
@@ -158,7 +230,7 @@
   height: var(--icon-size-sm);
 }
 
-/* Chosen tech tags: removable outline pills */
+/* Chosen tech tags: removable outline pills under the dropdown-look trigger */
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -178,7 +250,7 @@
   border-radius: var(--radius-full);
 }
 
-/* Role rows: featured surface (guide ch. 5), role + headcount side by side from tablet */
+/* Role rows (Figma 361:1112): one compact row per added role — name, inline stepper, delete */
 .roles {
   display: grid;
   gap: var(--space-sm);
@@ -187,58 +259,47 @@
 .roleRow {
   display: grid;
   gap: var(--space-xs);
-  padding: var(--space-md);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-sm);
 }
 
 .roleMain {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-sm);
-}
-
-.roleMain > .field:first-child {
-  grid-column: 1 / -1;
-}
-
-/* On the tinted row the input sits on white so it still reads as a field */
-.roleRow .input,
-.roleRow .stepValue {
+  min-height: 39px;
+  padding-inline: var(--space-sm);
   background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-sm);
+}
+
+.roleName {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
 }
 
 .roleRow .hint {
   color: var(--color-text-subtle-on-tint);
 }
 
-.lockedRole {
+/* Minus / count / plus / delete, inline (Figma itemSpacing 20, reusing the form's field gap) */
+.stepperInline {
   display: flex;
   align-items: center;
-  min-height: var(--control-height);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-title);
+  gap: var(--space-field-gap);
 }
 
-.stepper {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xxs);
-}
-
+/* Visual box stays the small Figma size (24, radius ~2); the button itself keeps a 44px hit
+   area via invisible padding (guide ch. 3-3) */
 .stepButton,
 .removeButton {
   display: inline-grid;
   flex-shrink: 0;
   place-items: center;
-  width: var(--control-height);
-  height: var(--control-height);
-  color: var(--color-text-heading);
-  background-color: var(--color-canvas);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-full);
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: calc((var(--touch-target-min) - 24px) / -2);
 }
 
 .stepButton:disabled {
@@ -246,20 +307,49 @@
   opacity: 0.5;
 }
 
-.removeButton {
-  color: var(--color-status-error);
+.stepButtonBox {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+.stepIcon {
+  --icon-size: var(--icon-size-sm);
+  color: var(--color-text-slate);
+}
+
+.removeButtonBox {
+  width: 24px;
+  height: 24px;
+  background-color: var(--color-required-dot);
+  border-radius: var(--radius-full);
+  position: relative;
+}
+
+.removeButtonBox::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 1px;
+  content: '';
+  background-color: var(--color-on-primary);
+  transform: translate(-50%, -50%);
 }
 
 .stepValue {
-  width: var(--control-height);
-  min-height: var(--control-height);
+  width: 24px;
+  min-height: 0;
   padding: 0;
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
   text-align: center;
-  color: var(--color-text-body);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  color: var(--color-text-heading);
+  background-color: transparent;
+  border: 0;
   appearance: textfield;
 }
 
@@ -269,41 +359,30 @@
   appearance: none;
 }
 
-@media (min-width: 600px) {
-  .roleMain {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-
-  .roleMain > .field:first-child {
-    grid-column: auto;
-  }
-}
-
-/* Open-post count above the form: featured surface; at the cap, warning text */
-.limit,
-.limitFull {
-  display: grid;
+/* "역할 추가" button (Figma): white, hairline border, 10 radius, 40 height, slate label */
+.addRoleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: var(--space-xxs);
-  padding: var(--space-sm) var(--space-md);
+  width: 100%;
+  min-height: var(--control-height-choice);
+  padding: 0 var(--space-md);
   font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-sm);
 }
 
-.limitFull {
-  color: var(--color-status-warning);
+.addRoleIcon {
+  --icon-size: var(--icon-size-sm);
 }
 
-.limitText {
-  font-weight: var(--font-weight-regular);
-}
-
-.inlineLink {
-  font-weight: var(--font-weight-semibold);
-  text-decoration: underline;
+.addRoleButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .failure {
@@ -314,7 +393,7 @@
   line-height: var(--line-height-caption);
   color: var(--color-status-error);
   border: 1px solid var(--color-status-error);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control-md);
 }
 
 /* The submit stays reachable at the bottom of the viewport while scrolling a long form */
@@ -325,6 +404,27 @@
   padding: var(--space-sm) 0 calc(var(--space-sm) + env(safe-area-inset-bottom));
   background-color: var(--color-canvas);
   border-top: 1px solid var(--color-hairline-soft);
+}
+
+/*
+ * Submit button (Figma 600:729): 14 radius (not the ch.5 default pill), blue instead of the
+ * default black CTA fill, and a lighter-blue disabled fill instead of 50% opacity —
+ * "Figma wins" per guide ch. 5.
+ */
+/* Doubled to win over Button.module.css's .primary regardless of CSS bundle load order
+   (same technique as TeamChangeSheet's .scrim.scrim) */
+.submitButton.submitButton {
+  height: var(--control-height-sheet);
+  font-size: var(--font-size-card-title);
+  color: var(--color-on-primary);
+  background-color: var(--color-selection);
+  border-radius: var(--radius-control-md);
+}
+
+.submitButton.submitButton[aria-disabled='true'] {
+  color: var(--color-on-primary);
+  background-color: var(--color-submit-disabled);
+  opacity: 1;
 }
 
 @media (min-width: 600px) {
@@ -341,6 +441,14 @@
 .statusSection {
   display: grid;
   gap: var(--space-md);
+}
+
+/* Not in the Figma frame (edit-only state); kept at the previous "section title" size */
+.sectionTitle {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
 }
 
 .statusText {

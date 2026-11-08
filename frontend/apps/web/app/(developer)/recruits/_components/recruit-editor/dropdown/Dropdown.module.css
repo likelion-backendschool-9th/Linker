@@ -1,0 +1,75 @@
+/* Figma 600:733: expands inline below the trigger (not a floating popover) — both boxes use
+   the same filled-gray field look as the rest of the page, just stacked with a small gap */
+
+.trigger {
+  display: flex;
+  width: 100%;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+  font-family: var(--font-sans);
+  color: var(--color-text-body);
+  text-align: left;
+  background-color: var(--color-canvas-cool);
+  border: 0;
+  border-radius: var(--radius-control-md);
+  cursor: pointer;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--color-selection);
+  outline-offset: 2px;
+}
+
+.trigger.placeholder {
+  color: var(--color-text-placeholder-cool);
+}
+
+.chevron,
+.chevronOpen {
+  --icon-size: var(--icon-size-sm);
+  flex-shrink: 0;
+  color: var(--color-text-unselected);
+  transition: transform var(--duration-overlay) var(--ease-standard);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.panel {
+  margin-top: var(--space-xxs);
+  overflow: hidden;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-body);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-hairline-cool);
+  cursor: pointer;
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.item[aria-selected='true'] {
+  color: var(--color-text-heading);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-selection);
+  outline-offset: -2px;
+}

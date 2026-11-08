@@ -20,10 +20,13 @@ type TechTagSheetProps = {
   /** From `policy.ts` (e.g. `RECRUIT.techTagsMax`) */
   max: number;
   onSave: (names: string[]) => void;
+  /** 'outline' (default, 02/05/22): outline pill + check icon. 'filled' (20, Figma 301:1914):
+   *  solid selection color, no icon — Figma differs per screen for this shared sheet. */
+  variant?: 'outline' | 'filled';
 };
 
 /** Open with `useOverlay('tech-tags').open()`; choices apply on "완료", other ways out keep the old value */
-export function TechTagSheet({ value, max, onSave }: TechTagSheetProps) {
+export function TechTagSheet({ value, max, onSave, variant = 'outline' }: TechTagSheetProps) {
   const overlay = useOverlay('tech-tags');
   return (
     <OverlaySheet
@@ -32,7 +35,9 @@ export function TechTagSheet({ value, max, onSave }: TechTagSheetProps) {
       description={`최대 ${max}개까지 고를 수 있어요.`}
     >
       {/* Mounted on open, so the draft starts from `value` each time */}
-      {overlay.isOpen && <TagChoices value={value} max={max} onSave={onSave} overlay={overlay} />}
+      {overlay.isOpen && (
+        <TagChoices value={value} max={max} onSave={onSave} overlay={overlay} variant={variant} />
+      )}
     </OverlaySheet>
   );
 }
@@ -42,7 +47,8 @@ function TagChoices({
   max,
   onSave,
   overlay,
-}: TechTagSheetProps & { overlay: OverlayControl }) {
+  variant,
+}: TechTagSheetProps & { overlay: OverlayControl; variant: 'outline' | 'filled' }) {
   const tags = useQuery(techTagsOptions());
   const [selected, setSelected] = useState(value);
   const full = selected.length >= max;
@@ -70,8 +76,9 @@ function TagChoices({
         <div className={styles.chips}>
           {tags.data.map((tag) => {
             const checked = selected.includes(tag.name);
+            const chipClass = variant === 'filled' ? styles.chipFilled : styles.chip;
             return (
-              <label key={tag.id} className={styles.chip}>
+              <label key={tag.id} className={chipClass}>
                 <input
                   type="checkbox"
                   className={styles.checkbox}
@@ -85,7 +92,7 @@ function TagChoices({
                     )
                   }
                 />
-                {checked && <Check aria-hidden className={styles.check} />}
+                {variant === 'outline' && checked && <Check aria-hidden className={styles.check} />}
                 {tag.name}
               </label>
             );

@@ -86,6 +86,7 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
   );
   const restoreSheet = useOverlay('draft-restore');
   const tagSheet = useOverlay('tech-tags');
+  const deadlineSheet = useOverlay('recruit-deadline');
   const [today] = useState(() => todayKst());
   const atLimit = creating && options.openCount >= options.openLimit;
   const [failure, setFailure] = useState<string | null>(null);
@@ -206,6 +207,7 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
     techTags,
     today,
     tagSheet,
+    deadlineSheet,
     save,
     submit,
     removeTechTag,

@@ -36,7 +36,8 @@ export type RecruitFormValues = {
 export const EMPTY_RECRUIT_FORM: RecruitFormValues = {
   title: '',
   intro: '',
-  roles: [{ id: null, role: 'FRONTEND', headcount: RECRUIT.headcountPerRole.min }],
+  // Empty until the user adds one via the "역할 추가" sheet (Figma 257:2512 empty state)
+  roles: [],
   format: 'ONLINE',
   region: '',
   goal: '',
