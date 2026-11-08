@@ -35,4 +35,15 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
         and t.status <> 'DELETED'
       """)
   boolean existsSharedTeam(long firstUserId, long secondUserId);
+
+  /** Team chat @mention candidates (17): current members whose account is active, by login. */
+  @Query("""
+      select new com.linker.backend.dto.chat.response.ChatMemberResponse(
+          u.id, u.username, coalesce(nullif(u.displayName, ''), u.username), u.avatarUrl)
+      from TeamMember m, User u
+      where m.userId = u.id and m.teamId = :teamId and m.leftAt is null
+        and u.deletedAt is null and u.status = 'ACTIVE'
+      order by lower(u.username), u.id
+      """)
+  List<com.linker.backend.dto.chat.response.ChatMemberResponse> findChatMentionCandidates(long teamId);
 }
