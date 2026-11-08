@@ -33,7 +33,7 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 			      and (m.senderId is null or o.userId <> m.senderId)
 			      and (o.lastReadMessageId is null or o.lastReadMessageId < m.id)),
 			  m.clientMessageId, m.senderId, u.username, u.displayName, u.avatarUrl, u.status,
-			  m.messageType, m.body, m.payload, m.visibility, m.deletedAt, m.createdAt, m.editedAt
+			  m.messageType, m.body, m.payload, m.visibility, m.deletedAt, m.createdAt, m.editedAt, m.updatedAt
 			from ChatMessage m
 			left join User u on u.id = m.senderId
 			""";
@@ -258,7 +258,8 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 				((Enum<?>) r[12]).name(),
 				(Instant) r[13],
 				(Instant) r[14],
-				(Instant) r[15]
+				(Instant) r[15],
+				(Instant) r[16]
 		);
 	}
 }

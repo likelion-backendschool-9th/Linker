@@ -115,6 +115,7 @@ class ChatReportAutoHideIntegrationTest {
 		List<User> reporters = reporters("auto-reporter");
 		ChatRoom team = team(sender, viewer, reporters);
 		ChatMessage target = messages.saveAndFlush(ChatMessage.text(team, sender.getId(), "신고될 원문"));
+		Instant original = updatedAt(history(viewer, team), target);
 		StompSession socket = connect(viewer);
 		List<String> topic = frames(socket, "/topic/chat-rooms/" + team.getId());
 
@@ -133,6 +134,8 @@ class ChatReportAutoHideIntegrationTest {
 		waitUntil(() -> topic.stream().anyMatch(frame -> frame.contains("event=EDIT") && frame.contains(HIDDEN_COPY)));
 		assertThat(topic).noneMatch(frame -> frame.contains("신고될 원문"));
 		assertThat(history(viewer, team)).contains(HIDDEN_COPY).doesNotContain("신고될 원문");
+		Instant hidden = updatedAt(history(viewer, team), target);
+		assertThat(hidden).isAfter(original);
 		report(user("auto-late"), target).andExpect(status().isNotFound());
 
 		topic.clear();
@@ -141,6 +144,8 @@ class ChatReportAutoHideIntegrationTest {
 		assertThat(visibility(target)).isEqualTo("VISIBLE");
 		waitUntil(() -> topic.stream().anyMatch(frame -> frame.contains("event=EDIT") && frame.contains("신고될 원문")));
 		assertThat(history(viewer, team)).contains("신고될 원문").doesNotContain(HIDDEN_COPY);
+		// A restore is a newer row than the hidden copy, so an open screen can accept it.
+		assertThat(updatedAt(history(viewer, team), target)).isAfter(hidden);
 		socket.disconnect();
 	}
 
@@ -183,6 +188,12 @@ class ChatReportAutoHideIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"targetType\":\"TEAM_MESSAGE\",\"targetId\":%d,\"reason\":\"ABUSE\"}".formatted(message.getId()))
 				.cookie(cookie(reporter)));
+	}
+
+	private static Instant updatedAt(String history, ChatMessage message) {
+		List<String> values = com.jayway.jsonpath.JsonPath.read(history, "$.items[?(@.id == " + message.getId() + ")].updatedAt");
+		assertThat(values).hasSize(1);
+		return Instant.parse(values.getFirst());
 	}
 
 	private String visibility(ChatMessage message) {

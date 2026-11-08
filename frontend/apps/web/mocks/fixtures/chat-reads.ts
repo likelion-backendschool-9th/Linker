@@ -30,9 +30,19 @@ export function unreadMembers(message: MockMessage) {
   );
 }
 
+/** The newest of the row's own timestamps stands in for the server's `updated_at` row version. */
+function rowVersion(message: MockMessage) {
+  return [message.createdAt, message.editedAt, message.deletedAt]
+    .filter((value): value is string => !!value)
+    .reduce((latest, value) => (Date.parse(value) > Date.parse(latest) ? value : latest));
+}
+
 export function withReadState(message: MockMessage) {
   return {
     ...message,
+    clientMessageId: message.clientMessageId ?? null,
+    visibility: 'VISIBLE' as const,
+    updatedAt: rowVersion(message),
     payload: withShareCards(message, withChatReferences(message)),
     unreadCount: unreadMembers(message).length,
   };

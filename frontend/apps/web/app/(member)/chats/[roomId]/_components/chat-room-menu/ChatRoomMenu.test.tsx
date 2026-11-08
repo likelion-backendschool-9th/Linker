@@ -27,7 +27,7 @@ const team: RoomInfo = {
   id: 3,
   kind: 'TEAM',
   title: '팀',
-  team: { id: 3, name: '팀', plan: 'FREE', myRole: 'MEMBER', status: 'ACTIVE' },
+  team: { id: 3, name: '팀', myRole: 'MEMBER', status: 'ACTIVE' },
 };
 
 beforeEach(() => {

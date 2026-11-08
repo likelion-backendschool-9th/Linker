@@ -45,6 +45,7 @@ import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.ChatRoomTeamResponse;
 import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
 import com.linker.backend.dto.chat.response.ChatShareCardResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
@@ -252,7 +253,7 @@ public class ChatService {
 		room.markLastMessage(message.getId(), now);
 		events.publishEvent(new ChatMessageReady(room.getId(), new ChatMessageResponse(
 				message.getId(), room.getId(), unreadCount(message), key, null, "PR_EVENT",
-				message.getBody(), List.of(), payload, now, null, null, "VISIBLE")));
+				message.getBody(), List.of(), payload, now, null, null, "VISIBLE", message.getUpdatedAt())));
 		for (long memberId : members.findActiveUserIds(room.getId()))
 			events.publishEvent(new ChatRoomsChanged(memberId, room.getId()));
 	}
@@ -300,7 +301,8 @@ public class ChatService {
 					.map(ChatService::memberView)
 					.toList();
 			return new ChatRoomInfoResponse(room.getId(), "TEAM", team.name(), null, membership.isMuted(), people,
-					Map.of("id", team.id(), "status", team.status()), PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
+					new ChatRoomTeamResponse(team.id(), team.name(), team.status(), team.role()),
+					PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
 		}
 		String kind;
 		String direction;
@@ -807,6 +809,10 @@ public class ChatService {
 		User account = requireActive(principal);
 		ChatRoomMember member = members.lockActive(roomId, account.getId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		// Team rooms follow team membership; leaving a team is page 09's flow, not this endpoint.
+		if (member.getRoom().getRoomType() == RoomType.TEAM) {
+			throw new ApiException(403, "FORBIDDEN", "팀 채팅방은 나갈 수 없어요");
+		}
 		member.leave(DatabaseInstant.now(clock));
 		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
 	}
@@ -1134,7 +1140,8 @@ public class ChatService {
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				message.getDeletedAt(),
-				message.getVisibility().name()
+				message.getVisibility().name(),
+				message.getUpdatedAt()
 		);
 	}
 
@@ -1404,7 +1411,8 @@ public class ChatService {
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				null,
-				"VISIBLE"
+				"VISIBLE",
+				message.getUpdatedAt()
 		);
 	}
 
@@ -1431,7 +1439,8 @@ public class ChatService {
 				row.createdAt(),
 				row.editedAt(),
 				row.deletedAt(),
-				row.visibility()
+				row.visibility(),
+				row.updatedAt()
 		);
 	}
 

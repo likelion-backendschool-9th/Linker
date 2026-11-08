@@ -10,7 +10,7 @@ import { UnreadMembersSheet } from './UnreadMembersSheet';
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
 const fetchMock = vi.mocked(apiFetch);
 const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: null, historyLimitDays: null };
-const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 1, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null };
+const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 1, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z' };
 beforeEach(() => { fetchMock.mockReset(); });
 it('does not request a list until the sheet is open', () => {
   renderWithProviders(<UnreadMembersSheet room={room} messages={[message]} login="me" />);

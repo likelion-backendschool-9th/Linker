@@ -56,51 +56,138 @@ export interface BlockView {
 }
 
 export interface ChatMemberResponse {
-  id?: number;
-  login?: string;
-  name?: string;
-  avatarUrl?: string;
+  id: number;
+  /**
+     * null for a withdrawn account
+     * @nullable
+     */
+  login: string | null;
+  /** Display name, or the withdrawn placeholder */
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
 }
 
+export type ChatMessageResponseType = typeof ChatMessageResponseType[keyof typeof ChatMessageResponseType];
+
+
+export const ChatMessageResponseType = {
+  TEXT: 'TEXT',
+  IMAGE: 'IMAGE',
+  ISSUE_CARD: 'ISSUE_CARD',
+  PR_EVENT: 'PR_EVENT',
+  SYSTEM: 'SYSTEM',
+  AI_SUMMARY: 'AI_SUMMARY',
+  SHARE_CARD: 'SHARE_CARD',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ChatMessageResponsePayload = {[key: string]: unknown} | null;
+
+export type ChatMessageResponseVisibility = typeof ChatMessageResponseVisibility[keyof typeof ChatMessageResponseVisibility];
+
+
+export const ChatMessageResponseVisibility = {
+  VISIBLE: 'VISIBLE',
+  HIDDEN: 'HIDDEN',
+} as const;
+
 export interface ChatMessageResponse {
-  id?: number;
-  roomId?: number;
-  unreadCount?: number;
-  clientMessageId?: string;
-  sender?: ChatMemberResponse;
-  type?: string;
-  text?: string;
-  imageUrls?: string[];
-  payload?: unknown;
-  createdAt?: string;
-  editedAt?: string;
-  deletedAt?: string;
-  visibility?: string;
+  id: number;
+  roomId: number;
+  /** Other current participants who have not read it */
+  unreadCount: number;
+  /** @nullable */
+  clientMessageId: string | null;
+  /**
+     * null for SYSTEM and PR_EVENT
+     * @nullable
+     */
+  sender: ChatMemberResponse | null;
+  type: ChatMessageResponseType;
+  /** @nullable */
+  text: string | null;
+  imageUrls: string[];
+  /** @nullable */
+  payload: ChatMessageResponsePayload;
+  createdAt: string;
+  /** @nullable */
+  editedAt: string | null;
+  /** @nullable */
+  deletedAt: string | null;
+  visibility: ChatMessageResponseVisibility;
+  /** Row version (microseconds); compare to order frames */
+  updatedAt: string;
 }
 
 export interface ChatHistoryLimitResponse {
-  applied?: string;
-  flexSupported?: boolean;
+  applied: ChatHistoryLimitResponseApplied;
+  flexSupported: boolean;
 }
 
 export interface ChatMessagePageResponse {
-  items?: ChatMessageResponse[];
-  hasMore?: boolean;
-  catchUpLimited?: boolean;
-  nextAfter?: number;
-  history?: ChatHistoryLimitResponse;
+  items: ChatMessageResponse[];
+  hasMore: boolean;
+  catchUpLimited: boolean;
+  /**
+     * Continue the catch-up with after=nextAfter
+     * @nullable
+     */
+  nextAfter: number | null;
+  /**
+     * Team rooms only
+     * @nullable
+     */
+  history: ChatHistoryLimitResponse | null;
 }
 
 export interface ChatRoomInfoResponse {
-  id?: number;
-  kind?: string;
-  title?: string;
-  requestDirection?: string;
-  muted?: boolean;
-  members?: ChatMemberResponse[];
-  team?: unknown;
-  historyLimitDays?: number;
+  id: number;
+  kind: ChatRoomInfoResponseKind;
+  /** TEAM: team name. 1:1: counterpart name */
+  title: string;
+  /**
+     * REQUEST only
+     * @nullable
+     */
+  requestDirection: ChatRoomInfoResponseRequestDirection;
+  muted: boolean;
+  members: ChatMemberResponse[];
+  /** @nullable */
+  team: ChatRoomTeamResponse | null;
+  /**
+     * Free team history window in days; null for 1:1
+     * @nullable
+     */
+  historyLimitDays: number | null;
 }
+
+export interface ChatPullRequest {
+  id: number;
+  repoId: number;
+  githubRepoId: number;
+  githubPrId: number;
+  repo: string;
+  number: number;
+  title: string;
+  state: string;
+  draft: boolean;
+  author: string;
+  url: string;
+}
+
+export interface ChatPullRequestsResponse {
+  items: ChatPullRequest[];
+}
+
+export type ChatHistoryLimitResponseApplied = typeof ChatHistoryLimitResponseApplied[keyof typeof ChatHistoryLimitResponseApplied];
+
+
+export const ChatHistoryLimitResponseApplied = {
+  FREE_60_DAYS: 'FREE_60_DAYS',
+} as const;
 
 export interface ChatCounterpartResponse {
   /**
@@ -182,6 +269,53 @@ export interface ChatRoomPageResponse {
   items: ChatRoomItemResponse[];
   /** @nullable */
   nextCursor: string | null;
+}
+
+export type ChatRoomInfoResponseKind = typeof ChatRoomInfoResponseKind[keyof typeof ChatRoomInfoResponseKind];
+
+
+export const ChatRoomInfoResponseKind = {
+  TEAM: 'TEAM',
+  DIRECT: 'DIRECT',
+  REQUEST: 'REQUEST',
+} as const;
+
+/**
+ * REQUEST only
+ * @nullable
+ */
+export type ChatRoomInfoResponseRequestDirection = typeof ChatRoomInfoResponseRequestDirection[keyof typeof ChatRoomInfoResponseRequestDirection] | null;
+
+
+export const ChatRoomInfoResponseRequestDirection = {
+  SENT: 'SENT',
+  RECEIVED: 'RECEIVED',
+} as const;
+
+export type ChatRoomTeamResponseStatus = typeof ChatRoomTeamResponseStatus[keyof typeof ChatRoomTeamResponseStatus];
+
+
+export const ChatRoomTeamResponseStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  READ_ONLY: 'READ_ONLY',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type ChatRoomTeamResponseMyRole = typeof ChatRoomTeamResponseMyRole[keyof typeof ChatRoomTeamResponseMyRole];
+
+
+export const ChatRoomTeamResponseMyRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+} as const;
+
+export interface ChatRoomTeamResponse {
+  id: number;
+  name: string;
+  status: ChatRoomTeamResponseStatus;
+  myRole: ChatRoomTeamResponseMyRole;
 }
 
 export interface CompleteTeamSetupRequest {
@@ -703,6 +837,25 @@ export interface ListResponse {
 
 export interface MarkChatReadRequest {
   lastReadMessageId?: number;
+}
+
+export interface StartDirectChatRequest {
+  userId?: number;
+  message?: string;
+}
+
+export type StartDirectChatResponseKind = typeof StartDirectChatResponseKind[keyof typeof StartDirectChatResponseKind];
+
+
+export const StartDirectChatResponseKind = {
+  DIRECT: 'DIRECT',
+  REQUEST: 'REQUEST',
+} as const;
+
+export interface StartDirectChatResponse {
+  /** @nullable */
+  roomId: number | null;
+  kind: StartDirectChatResponseKind;
 }
 
 export interface MeResponse {
@@ -1267,7 +1420,11 @@ export interface UnreadCountResponse {
 }
 
 export interface UnreadMembersResponse {
-  items?: ChatMemberResponse[];
+  items: ChatMemberResponse[];
+}
+
+export interface ChatMentionCandidatesResponse {
+  items: ChatMemberResponse[];
 }
 
 export interface UnreadSummaryResponse {
@@ -1385,6 +1542,10 @@ export type ListNotificationsParams = {
 cursor?: string;
 };
 
+export type ListChatShareTargetsParams = {
+q?: string;
+};
+
 export type ListChatRoomsParams = {
 tab?: ListChatRoomsTab;
 cursor?: string;
@@ -1398,6 +1559,10 @@ export const ListChatRoomsTab = {
   DIRECT: 'DIRECT',
   REQUEST: 'REQUEST',
 } as const;
+
+export type ListChatPullRequestsParams = {
+state?: string;
+};
 
 export type ListChatMessagesParams = {
 before?: number;
@@ -1461,6 +1626,7 @@ export type GetTeamIssueBoardParams = {
   label?: string;
   open?: boolean;
 };
+
 export interface IssueCalendarResponse {
   from: string;
   to: string;
@@ -1591,6 +1757,12 @@ export interface PaymentItemResponse {
   refundReason: string | null;
 }
 
+export interface ShareChatCardRequest {
+  targetType?: string;
+  targetId?: number;
+  clientMessageId?: string;
+}
+
 export interface PlanResponse {
   key: string;
   name: string;
@@ -1638,6 +1810,16 @@ export interface TeamCandidatesResponse {
 export interface SubscriptionsResponse {
   /** Running subscriptions; empty means the free plan */
   items: SubscriptionItemResponse[];
+}
+
+export interface ChatShareTargetResponse {
+  roomId?: number;
+  kind?: string;
+  title?: string;
+}
+
+export interface ChatShareTargetsResponse {
+  items?: ChatShareTargetResponse[];
 }
 
 export interface PaymentsResponse {

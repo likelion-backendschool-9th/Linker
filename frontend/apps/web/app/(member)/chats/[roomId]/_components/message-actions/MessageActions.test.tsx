@@ -13,7 +13,7 @@ const room: RoomInfo = { id: 1, kind: 'DIRECT', title: '대화', requestDirectio
 const message = (): RoomMessage => ({
   id: 10, roomId: 1, unreadCount: 0, sender: { id: 1, login: 'me', name: '나', avatarUrl: '' },
   type: 'TEXT', text: '원래 메시지', imageUrls: [], payload: null,
-  createdAt: new Date().toISOString(), editedAt: null, deletedAt: null,
+  createdAt: new Date().toISOString(), editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z',
 });
 beforeEach(() => { fetchMock.mockReset(); });
 

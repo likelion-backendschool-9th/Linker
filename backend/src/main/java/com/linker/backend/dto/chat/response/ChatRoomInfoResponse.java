@@ -1,18 +1,20 @@
 package com.linker.backend.dto.chat.response;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+
 import java.util.List;
 
-/**
- * Page 17 room header. {@code team} and {@code historyLimitDays} stay null until team rooms open.
- */
+import io.swagger.v3.oas.annotations.media.Schema;
+
+/** Page 17 room header. {@code team} and {@code historyLimitDays} are set only for a team room. */
 public record ChatRoomInfoResponse(
-		long id,
-		String kind,
-		String title,
-		String requestDirection,
-		boolean muted,
-		List<ChatMemberResponse> members,
-		Object team,
-		Integer historyLimitDays
+		@Schema(requiredMode = REQUIRED) long id,
+		@Schema(requiredMode = REQUIRED, allowableValues = {"TEAM", "DIRECT", "REQUEST"}) String kind,
+		@Schema(requiredMode = REQUIRED, description = "TEAM: team name. 1:1: counterpart name") String title,
+		@Schema(requiredMode = REQUIRED, nullable = true, allowableValues = {"SENT", "RECEIVED"}, description = "REQUEST only") String requestDirection,
+		@Schema(requiredMode = REQUIRED) boolean muted,
+		@Schema(requiredMode = REQUIRED) List<ChatMemberResponse> members,
+		@Schema(requiredMode = REQUIRED, types = {"object", "null"}) ChatRoomTeamResponse team,
+		@Schema(requiredMode = REQUIRED, nullable = true, description = "Free team history window in days; null for 1:1") Integer historyLimitDays
 ) {
 }

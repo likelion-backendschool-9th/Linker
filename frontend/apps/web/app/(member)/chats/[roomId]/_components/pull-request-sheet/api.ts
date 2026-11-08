@@ -1,20 +1,13 @@
-import { apiFetch } from '@/lib/api/api-fetch';
+import type { ChatPullRequest } from '@linker/api/openAPIDefinition.schemas';
+import { listChatPullRequests } from '@linker/api/p17-chat-room/p17-chat-room';
 
-export type PullRequest = {
-  number: number;
-  title: string;
-  state: 'open' | 'merged';
-  author: string;
-  url: string;
-};
+/** B's `GithubController` list. `state` is lowercase `open` or `merged`. */
+export type PullRequest = ChatPullRequest;
 
 export function fetchPullRequests(
   roomId: number,
   state: 'open' | 'merged',
   signal?: AbortSignal,
 ) {
-  return apiFetch<{ items: PullRequest[] }>(
-    `/api/v1/user/chat-rooms/${roomId}/pull-requests?state=${state}`,
-    { signal },
-  );
+  return listChatPullRequests(roomId, { state }, { signal });
 }
