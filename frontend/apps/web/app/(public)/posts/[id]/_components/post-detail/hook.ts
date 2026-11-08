@@ -10,7 +10,6 @@ import { toast } from '@/stores/toast-store';
 import {
   postDetailOptions,
   postKeys,
-  sameRepoOptions,
   setLike,
   type PostDetail as Detail,
 } from '../../_lib/post-detail-queries';
@@ -25,16 +24,6 @@ export function usePostDetail(postId: string) {
   const canReact = Boolean(post && !recruiter && !underReview);
 
   return { viewer, detail, post, underReview: Boolean(underReview), canReact };
-}
-
-export function useAuthorRow() {
-  const requireLogin = useRequireLogin();
-  const menu = useOverlay('post-menu');
-  return {
-    openMenu: () => {
-      if (requireLogin()) menu.open();
-    },
-  };
 }
 
 export function useReactionBar(post: Detail, canReact: boolean) {
@@ -79,9 +68,4 @@ export function useReactionBar(post: Detail, canReact: boolean) {
       if (requireLogin()) likers.open();
     },
   };
-}
-
-export function useSameRepoPosts(postId: string) {
-  const posts = useQuery(sameRepoOptions(postId));
-  return posts.data?.items ?? [];
 }

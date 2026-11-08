@@ -13,13 +13,6 @@ export function usePhotoCarousel(photos: string[], repoName: string) {
     alt: photos.length > 1 ? `${repoName} 이미지 ${position + 1}` : `${repoName} 이미지`,
   }));
 
-  const scrollTo = (next: number) => {
-    const element = track.current;
-    if (!element) return;
-    element.scrollTo({ left: next * element.clientWidth });
-    setIndex(next);
-  };
-
   const onScroll = (element: HTMLUListElement) => {
     setIndex(Math.round(element.scrollLeft / Math.max(element.clientWidth, 1)));
   };
@@ -29,7 +22,6 @@ export function usePhotoCarousel(photos: string[], repoName: string) {
     track,
     index,
     items,
-    scrollTo,
     onScroll,
     openViewer: (position: number) => viewer.open(String(position)),
   };

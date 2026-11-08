@@ -19,6 +19,8 @@
   --color-header-bg: rgb(
     255 255 255 / 0.8
   ); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
+    255 255 255 / 0.9
+  ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
   --color-gnb-bg: rgb(243 243 243 / 0.8); /* bottom GNB pill frosted fill, with --blur-chrome */
   --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
@@ -154,4 +156,11 @@
 
   /* Figma 29 subscription (294:306, 295:459, 364:1694); the card uses --color-canvas-cool */
   --color-manage-divider: #f1f1f1; /* rows inside the subscription info box */
+
+  /* Figma 23 post detail (285:154); text and lines reuse the 07/11 cool values */
+  --color-photo-count-bg: rgb(255 255 255 / 0.7); /* "1/5" pill over the photo */
+  --color-photo-count: #121212; /* "1/5" text: 14:1 on the pill over white */
+  --color-post-author-divider: #eaeaea; /* author row bottom line */
+  --color-github-mark: #121212; /* repo card GitHub mark */
+  --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */
 }

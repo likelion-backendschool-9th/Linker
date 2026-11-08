@@ -217,4 +217,26 @@
   --radius-manage-dialog: 10px; /* 해지 confirm modal */
   --dialog-width-manage: 320px; /* 해지 confirm modal */
   --icon-size-manage-chevron: 20px; /* "요금제 해지" and "전체 보기" chevron */
+
+  /* Figma 23 post detail (285:154) */
+  --post-photo-height: 270px; /* full-bleed photo strip under the header */
+  --space-photo-count: 14px; /* "1/5" pill to the photo's bottom edge (side inset is --page-gutter) */
+  --space-post-author: 18px; /* author row top and bottom padding */
+  --space-post-section: 20px; /* author row to content, band to reactions, reactions to comment input */
+  --space-post-block: 26px; /* between title block, body, links, tags and repo card */
+  --space-post-link-inline: 11px; /* "프로젝트 주소" button side padding */
+  --space-post-link-icon: 6px; /* "프로젝트 주소" text to its link icon */
+  --icon-size-post-link: 14px; /* "프로젝트 주소" link icon */
+  --space-post-follow-inline: 6px; /* author row "팔로우" side padding (block is --space-xxs) */
+  --radius-post-link: 3px; /* "프로젝트 주소" button */
+  --space-post-repo: 15px; /* repo card padding inside its 1px line */
+  --icon-size-post-github: 42px; /* repo card GitHub mark */
+  --avatar-size-post: 44px; /* author and commenter photos */
+  --icon-size-reaction: 20px; /* like / comment / share icons */
+  --space-comment-block: 30px; /* comment top and bottom padding; repo card to the band */
+  --control-height-comment: 42px; /* comment input */
+  --border-width-comment: 1px; /* comment input line at rest (transparent, as in Figma 287:317) */
+  --border-width-comment-focus: 2px; /* comment input line on focus (Figma 364:1950), drawn inside */
+  --size-comment-send: 34px; /* send button inside the input (4px inset); hit area extends to the field */
+  --icon-size-comment-send: 24px; /* arrow inside the send button (Figma 14px, enlarged to 24px by the page owner) */
 }

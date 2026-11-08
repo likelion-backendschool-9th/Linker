@@ -1,35 +1,34 @@
 'use client';
 
 // Client boundary: viewer-dependent actions (like, comment, menus), optimistic like, sheets
-import { ExternalLink, GitFork, Heart, MessageCircle, MoreHorizontal, Star } from 'lucide-react';
+import { ChatRoundLinearIcon } from '@solar-icons/static/linear/chat-round';
+import { HeartBoldIcon } from '@solar-icons/static/bold/heart';
+import { LinkMinimalisticBoldIcon } from '@solar-icons/static/bold/link-minimalistic';
+import { HeartOutlineIcon } from '@solar-icons/static/outline/heart';
+import { Plane3OutlineIcon } from '@solar-icons/static/outline/plane-3';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
-import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
+import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
+import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 import { ShareButton } from '@/features/share/share-button';
+import { formatWrittenDate, toKstIso } from '@/lib/format/time';
 
 import { linkify } from '../../_lib/linkify';
 import type { PostDetail as Detail } from '../../_lib/post-detail-queries';
 import { CommentSection } from '../comment-section';
 import { LikersSheet } from '../likers-sheet';
 import { PhotoCarousel } from '../photo-carousel';
-import styles from './PostDetail.module.css';
-import { useAuthorRow, usePostDetail, useReactionBar, useSameRepoPosts } from './hook';
 import { PostMenuSheet } from '../post-menu-sheet';
-import { ReadmeSection } from '../readme-section';
-
-/** `yyyy-MM` → "2026년 10월" */
-const monthLabel = (value: string) => {
-  const [year, month] = value.split('-');
-  return `${year}년 ${Number(month)}월`;
-};
+import styles from './PostDetail.module.css';
+import { usePostDetail, useReactionBar } from './hook';
 
 /**
- * 23 Project post detail (07 TODO 23). Guests read everything but like / comment / more ask them
+ * 23 Project post detail (Figma 285:154). Guests read everything but like / comment / more ask them
  * to log in; recruiters read lists without the like button and comment input (04 ch. 2).
  */
 export function PostDetail({ postId }: { postId: string }) {
@@ -45,6 +44,8 @@ export function PostDetail({ postId }: { postId: string }) {
   }
   if (detail.isError || !post) return <ErrorState onRetry={() => void detail.refetch()} />;
 
+  const [owner = '', repoName = post.repo.fullName] = post.repo.fullName.split('/');
+
   return (
     <>
       {underReview && (
@@ -54,26 +55,46 @@ export function PostDetail({ postId }: { postId: string }) {
         </p>
       )}
 
-      <div className={styles.layout}>
-        <article aria-labelledby="post-intro" className={styles.main}>
-          <AuthorRow post={post} />
-          <h2 id="post-intro" className={styles.intro}>
-            {post.intro}
-          </h2>
-          {post.photos.length > 0 && (
-            <PhotoCarousel photos={post.photos} repoName={post.repo.fullName.split('/')[1] ?? ''} />
-          )}
-          <ReactionBar post={post} canReact={canReact} />
-          {post.body && <PostBody text={post.body} />}
-          <PostFields post={post} />
-          <CommentSection post={post} canWrite={canReact} />
-        </article>
+      <article aria-labelledby="post-intro" className={styles.post}>
+        {post.photos.length > 0 && <PhotoCarousel photos={post.photos} repoName={repoName} />}
+        <AuthorRow post={post} />
 
-        <aside aria-label="레포와 관련 게시물" className={styles.aside}>
-          <RepoCard post={post} />
-          <SameRepoPosts postId={postId} />
-        </aside>
-      </div>
+        <div className={styles.content}>
+          <header className={styles.head}>
+            <div className={styles.titleLead}>
+              {post.myRole && (
+                <p className={styles.chips}>
+                  <span className="sr-only">내 역할 </span>
+                  <span className={styles.roleChip}>{post.myRole}</span>
+                </p>
+              )}
+              <h2 id="post-intro" className={styles.intro}>
+                {post.intro}
+              </h2>
+            </div>
+            <p className={styles.date}>
+              <time dateTime={toKstIso(post.createdAt)}>{formatWrittenDate(post.createdAt)}</time>
+            </p>
+          </header>
+
+          {post.body && <PostBody text={post.body} />}
+          <DemoLinks links={post.demoLinks} />
+          {post.tags.length > 0 && (
+            <ul className={styles.tags} aria-label="태그">
+              {post.tags.map((tag) => (
+                <li key={tag} className={styles.tag}>
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          )}
+          <RepoCard post={post} owner={owner} repoName={repoName} />
+        </div>
+
+        <hr className={styles.band} />
+        <ReactionBar post={post} canReact={canReact} />
+        <CommentSection post={post} canWrite={canReact} />
+      </article>
 
       <PostMenuSheet post={post} />
       <LikersSheet postId={postId} />
@@ -81,71 +102,28 @@ export function PostDetail({ postId }: { postId: string }) {
   );
 }
 
+/** Figma 287:329: photo, name, @login, follow (follow is visual only for now) */
 function AuthorRow({ post }: { post: Detail }) {
-  const { openMenu } = useAuthorRow();
   return (
     <div className={styles.authorRow}>
       <Link href={`/user/${post.author.login}` as Route} className={styles.author}>
         <Image
           src={post.author.avatarUrl}
           alt=""
-          width={40}
-          height={40}
-          sizes="40px"
-          className={styles.authorAvatar}
+          width={44}
+          height={44}
+          sizes="44px"
+          className={styles.avatar}
         />
         <span className={styles.authorText}>
-          <span className={styles.authorName}>
-            {post.author.name}
-            {/* Only "구직 중" is public (POL-H-4) */}
-            {post.author.jobStatus === 'SEEKING' && <span className={styles.seeking}>구직 중</span>}
-          </span>
-          <span className={styles.meta}>
-            <RelativeTime value={post.createdAt} />
-            {post.editedAt && ' · 수정됨'}
-          </span>
+          <span className={styles.authorName}>{post.author.name}</span>
+          <span className={styles.login}>@{post.author.login}</span>
         </span>
       </Link>
-      <button type="button" className={styles.iconButton} onClick={openMenu}>
-        <MoreHorizontal aria-hidden />
-        <span className="sr-only">게시물 더보기</span>
-      </button>
-    </div>
-  );
-}
-
-/** Like applied on screen first and reverted on failure (04 ch. 2 "Network and failures") */
-function ReactionBar({ post, canReact }: { post: Detail; canReact: boolean }) {
-  const { likedByMe, likeCount, commentCount, toggleLike, openLikers } = useReactionBar(
-    post,
-    canReact,
-  );
-
-  return (
-    <div className={styles.reactions}>
-      {canReact && (
-        <button
-          type="button"
-          className={styles.likeButton}
-          aria-pressed={likedByMe}
-          onClick={toggleLike}
-        >
-          <Heart aria-hidden className={likedByMe ? styles.heartOn : styles.heart} />
-          좋아요
+      {!post.isAuthor && (
+        <button type="button" className={styles.follow}>
+          팔로우
         </button>
-      )}
-      <button type="button" className={styles.countButton} onClick={openLikers}>
-        좋아요 {likeCount.toLocaleString('ko-KR')}
-        <span className="sr-only">명, 좋아요한 사람 보기</span>
-      </button>
-      <span className={styles.commentCount}>
-        <MessageCircle aria-hidden className={styles.metaIcon} />
-        댓글 {commentCount.toLocaleString('ko-KR')}
-      </span>
-      {post.visibility === 'VISIBLE' && (
-        <ShareButton
-          target={{ targetType: 'POST', targetId: post.id, path: `/posts/${post.id}` }}
-        />
       )}
     </div>
   );
@@ -180,160 +158,117 @@ function PostBody({ text }: { text: string }) {
   );
 }
 
-function PostFields({ post }: { post: Detail }) {
+/** Figma 287:442: one outlined "프로젝트 주소" button per demo link; the address is for screen readers */
+function DemoLinks({ links }: { links: string[] }) {
   const openExternal = useOpenExternal();
-  const hasFields =
-    post.myRole || post.period || post.teamSize !== null || post.demoLinks.length > 0;
-  if (!hasFields && post.tags.length === 0) return null;
+  if (links.length === 0) return null;
 
   return (
-    <section aria-labelledby="post-fields" className={styles.section}>
-      <h3 id="post-fields" className={styles.sectionTitle}>
-        프로젝트 정보
-      </h3>
-      {hasFields && (
-        <dl className={styles.info}>
-          {post.myRole && (
-            <div className={styles.infoRow}>
-              <dt>내 역할</dt>
-              <dd>{post.myRole}</dd>
-            </div>
-          )}
-          {post.period && (
-            <div className={styles.infoRow}>
-              <dt>진행 기간</dt>
-              <dd>
-                {monthLabel(post.period.start)} ~{' '}
-                {post.period.end ? monthLabel(post.period.end) : '진행 중'}
-              </dd>
-            </div>
-          )}
-          {post.teamSize !== null && (
-            <div className={styles.infoRow}>
-              <dt>팀 규모</dt>
-              <dd>{post.teamSize}명</dd>
-            </div>
-          )}
-          {post.demoLinks.length > 0 && (
-            <div className={styles.infoRow}>
-              <dt>데모</dt>
-              <dd>
-                <ul className={styles.links}>
-                  {post.demoLinks.map((url) => (
-                    <li key={url}>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.link}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          openExternal(url);
-                        }}
-                      >
-                        {url.replace(/^https:\/\//, '')}
-                        <span className="sr-only"> (새 창)</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          )}
-        </dl>
-      )}
-      {post.tags.length > 0 && (
-        <ul className={styles.tags} aria-label="태그">
-          {post.tags.map((tag) => (
-            <li key={tag} className={styles.tag}>
-              {tag}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <ul className={styles.demoLinks} aria-label="프로젝트 링크">
+      {links.map((url) => (
+        <li key={url}>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.demoLink}
+            onClick={(event) => {
+              event.preventDefault();
+              openExternal(url);
+            }}
+          >
+            프로젝트 주소
+            <span className="sr-only"> {url.replace(/^https:\/\//, '')} (새 창)</span>
+            <Icon svg={LinkMinimalisticBoldIcon} className={styles.demoLinkIcon} />
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-/** Repo card with my commits and handled issues; private or deleted → "레포를 볼 수 없음" (POL-P-1) */
-function RepoCard({ post }: { post: Detail }) {
+/** Figma 287:399: GitHub mark, repo name, owner. Private or deleted → "레포를 볼 수 없음" (POL-P-1) */
+function RepoCard({ post, owner, repoName }: { post: Detail; owner: string; repoName: string }) {
   const openExternal = useOpenExternal();
-  const { repo } = post;
-  const available = repo.state === 'PUBLIC';
+  const available = post.repo.state === 'PUBLIC';
+
+  const summary = (
+    <>
+      <GitHubMark className={styles.githubMark} />
+      <span className={styles.repoText}>
+        <span className={styles.repoName}>{repoName}</span>
+        <span className={styles.repoOwner}>{available ? owner : '레포를 볼 수 없음'}</span>
+      </span>
+    </>
+  );
+
+  return available ? (
+    <button
+      type="button"
+      className={styles.repoCard}
+      onClick={() => openExternal(`https://github.com/${post.repo.fullName}`)}
+    >
+      {summary}
+      <span className="sr-only"> GitHub에서 보기</span>
+    </button>
+  ) : (
+    <div className={styles.repoCard}>{summary}</div>
+  );
+}
+
+/** Figma 287:450: like (toggle) + count (likers sheet), comment count, share */
+function ReactionBar({ post, canReact }: { post: Detail; canReact: boolean }) {
+  const { likedByMe, likeCount, commentCount, toggleLike, openLikers } = useReactionBar(
+    post,
+    canReact,
+  );
+  const heart = (
+    <Icon svg={likedByMe ? HeartBoldIcon : HeartOutlineIcon} className={styles.heart} />
+  );
 
   return (
-    <section aria-labelledby="post-repo" className={styles.repoCard}>
-      <h3 id="post-repo" className={styles.repoName}>
-        {repo.fullName}
-      </h3>
-      {available ? (
-        <>
-          <p className={styles.repoMeta}>
-            {repo.language && <span>{repo.language}</span>}
-            <span className={styles.iconText}>
-              <Star aria-hidden className={styles.metaIcon} />
-              <span className="sr-only">스타 </span>
-              {repo.stars}
-            </span>
-            <span className={styles.iconText}>
-              <GitFork aria-hidden className={styles.metaIcon} />
-              <span className="sr-only">포크 수 </span>
-              {repo.forks}
-            </span>
-            {repo.isFork && <span className={styles.forkBadge}>포크</span>}
-          </p>
-          {repo.description && <p className={styles.repoDescription}>{repo.description}</p>}
-        </>
-      ) : (
-        <p className={styles.unavailable}>레포를 볼 수 없음</p>
-      )}
-      <dl className={styles.contribution}>
-        <div>
-          <dt>{post.author.name}님의 커밋</dt>
-          <dd>{repo.authorCommitCount}개</dd>
-        </div>
-        <div>
-          <dt>Linker에서 처리한 이슈</dt>
-          <dd>{repo.handledIssueCount}개</dd>
-        </div>
-      </dl>
-      {available && (
-        <>
+    <div className={styles.reactions}>
+      <span className={styles.stat}>
+        {canReact ? (
           <button
             type="button"
-            className={styles.githubLink}
-            onClick={() => openExternal(`https://github.com/${repo.fullName}`)}
+            className={styles.statButton}
+            aria-pressed={likedByMe}
+            onClick={toggleLike}
           >
-            GitHub에서 보기
-            <ExternalLink aria-hidden className={styles.metaIcon} />
+            {heart}
+            <span className="sr-only">좋아요</span>
           </button>
-          <ReadmeSection postId={String(post.id)} />
-        </>
+        ) : (
+          heart
+        )}
+        <button
+          type="button"
+          className={styles.statCount}
+          aria-label={`좋아요 ${likeCount.toLocaleString('ko-KR')}명, 좋아요한 사람 보기`}
+          onClick={openLikers}
+        >
+          {likeCount.toLocaleString('ko-KR')}
+        </button>
+      </span>
+      <span className={styles.stat}>
+        <Icon svg={ChatRoundLinearIcon} className={styles.statIcon} />
+        <span className={styles.statCount}>
+          <span className="sr-only">댓글 </span>
+          {commentCount.toLocaleString('ko-KR')}
+        </span>
+      </span>
+      {post.visibility === 'VISIBLE' && (
+        <ShareButton
+          target={{ targetType: 'POST', targetId: post.id, path: `/posts/${post.id}` }}
+          trigger={
+            <button type="button" className={styles.statButton}>
+              <Icon svg={Plane3OutlineIcon} className={styles.statIcon} />
+              <span className="sr-only">공유</span>
+            </button>
+          }
+        />
       )}
-    </section>
-  );
-}
-
-/** Teammates who posted the same repo (04 ch. 4 exceptions) */
-function SameRepoPosts({ postId }: { postId: string }) {
-  const items = useSameRepoPosts(postId);
-  if (items.length === 0) return null;
-
-  return (
-    <section aria-labelledby="same-repo" className={styles.section}>
-      <h3 id="same-repo" className={styles.sectionTitle}>
-        이 레포의 다른 게시물
-      </h3>
-      <ul className={styles.samePosts}>
-        {items.map((item) => (
-          <li key={item.id}>
-            <Link href={`/posts/${item.id}` as Route} className={styles.samePost}>
-              <span className={styles.samePostIntro}>{item.intro}</span>
-              <span className={styles.meta}>{item.author.name}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    </div>
   );
 }
