@@ -94,6 +94,12 @@
   --color-cta-cool: #2563eb; /* apply CTA fill; on-white text uses --color-on-primary */
   --color-role-filled: #028714; /* filled headcount "1/1" before "마감" */
 
+  /* 24 home feed (Figma 91:105 / 92:181): card shell + reaction icons */
+  --color-feed-card: #f6f6f6;
+  --color-feed-follow: #e5e5e5; /* follow chip on card — #f3f4f6 blended into the shell */
+  --color-reaction-liked: #ff3040;
+  --color-icon-ink: #3c3c3c;
+
   /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
   --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
   --color-fab-bg: #2e2e2e; /* write-recruit-post FAB fill */

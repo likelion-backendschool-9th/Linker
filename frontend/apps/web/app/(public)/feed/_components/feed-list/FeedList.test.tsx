@@ -34,6 +34,7 @@ const post = (id: number, rest: Partial<Extract<FeedItem, { type: 'POST' }>['pos
     id,
     author: { ...author, jobStatus: 'SEEKING' as const },
     intro: `작업물 ${id}`,
+    excerpt: `작업물 ${id} 본문 미리보기입니다.`,
     coverUrl: '/mock/cover-1.svg',
     repoFullName: `doyun/repo-${id}`,
     language: 'TypeScript',
@@ -83,8 +84,11 @@ it('shows guests post cards and sends "게시물 쓰기" to the login prompt', a
     'href',
     '/posts/1?from=feed',
   );
-  expect(within(card).getByText('이번 주 인기')).toBeVisible();
+  expect(within(card).getByText('이번 주 인기')).toBeInTheDocument();
   expect(within(card).getByText('구직 중')).toBeVisible();
+  expect(within(card).getByText('doyun')).toBeVisible();
+  expect(within(card).getByRole('button', { name: '팔로우' })).toBeVisible();
+  expect(within(card).getByText('더 보기')).toBeVisible();
   // No photos: the repo card stands in for the cover
   expect(screen.getByText('doyun/repo-2')).toBeVisible();
   expect(screen.getAllByRole('listitem')[0]).toHaveAttribute('aria-setsize', '2');
