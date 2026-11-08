@@ -1,59 +1,16 @@
-/* Figma 248:1236: gradient "AI 채팅 요약" label with a pointer, over the dark logo FAB */
-.fab {
-  position: absolute;
-  right: var(--space-row-inline);
-  bottom: var(--space-chat-row);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--chat-ai-pointer-size);
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-
-.label {
-  position: relative;
-  padding: var(--space-xxs);
-  border-radius: var(--radius-chat-ai-label);
-  background: var(--color-chat-bubble-other);
-  font-size: var(--font-size-micro);
-  line-height: normal;
-}
-
-/* Gradient text on its own span so the label background stays flat */
-.labelText {
-  background-image: linear-gradient(
-    to right,
-    var(--color-chat-ai-from),
-    var(--color-chat-ai-via) 50.7%,
-    var(--color-chat-ai-to)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.label::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  right: calc((var(--fab-size) - var(--chat-ai-pointer-size)) / 2);
-  border: calc(var(--chat-ai-pointer-size) / 2) solid transparent;
-  border-top-color: var(--color-chat-bubble-other);
-}
-
-.circle {
+/* Figma 248:1236 dark logo circle, sized like the composer's send button, just left of it */
+.button {
   display: grid;
   place-items: center;
-  width: var(--fab-size);
-  height: var(--fab-size);
+  flex: 0 0 var(--control-height-chat);
+  width: var(--control-height-chat);
+  height: var(--control-height-chat);
+  padding: 0;
   overflow: hidden;
   border: 1px solid var(--color-fab-border);
   border-radius: var(--radius-full);
   background: var(--color-fab-bg);
-  box-shadow: var(--shadow-fab);
+  cursor: pointer;
 }
 
 .logo {
@@ -61,7 +18,7 @@
   height: var(--chat-ai-logo-size);
 }
 
-.fab:focus-visible {
+.button:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }

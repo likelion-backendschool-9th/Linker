@@ -9,7 +9,7 @@
   background: var(--color-canvas);
 }
 
-/* Timeline + the floating "AI 채팅 요약" button */
+/* Timeline column; fills the space above the composer */
 .timelineArea {
   position: relative;
   display: flex;

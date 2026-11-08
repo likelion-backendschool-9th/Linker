@@ -124,7 +124,4 @@
   --color-chat-send: #2563eb; /* send button fill, white arrow 5.17:1 */
   --color-chat-accent: #2563eb; /* PR card event line, request panel guide, team owner label: 5.17:1 */
   --color-chat-danger: #e00000; /* request panel 거절/차단 text: 4.6:1 on --color-chat-bubble-other */
-  --color-chat-ai-from: #2563eb; /* "AI 채팅 요약" label gradient */
-  --color-chat-ai-via: #822ad6;
-  --color-chat-ai-to: #c600c6;
 }
