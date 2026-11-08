@@ -14,6 +14,7 @@ import styles from '@/features/teams/team-ui.module.css';
 import { teamEntryHref } from '@/features/teams/team-entry';
 import { collaborationLinks } from '@/lib/navigation/collaboration-links';
 
+import { MyIssuesSection } from '../my-issues-section';
 import type { MyTeam } from './api';
 import { FILTERS, LABELS, useWorkspaceTeams, useWorkspaceView } from './hook';
 
@@ -21,25 +22,7 @@ export function WorkspaceView() {
   const { myIssuesHref } = useWorkspaceView();
   return (
     <div className={styles.stack}>
-      <section
-        className={`${styles.card} ${styles.section}`}
-        aria-labelledby="workspace-issues-title"
-      >
-        <div className={styles.heading}>
-          <h2 id="workspace-issues-title" className={styles.title}>
-            내 이슈
-          </h2>
-          <Button asChild variant="outline">
-            <Link href={myIssuesHref}>
-              내 이슈 전체 보기
-              <ArrowRight aria-hidden />
-            </Link>
-          </Button>
-        </div>
-        <p className={styles.description}>
-          선택한 팀에서 나에게 배정된 이슈를 마감일 순으로 확인해요.
-        </p>
-      </section>
+      <MyIssuesSection previewRows={3} allIssuesHref={myIssuesHref} />
       <div className={styles.actions}>
         <Button asChild variant="soft">
           <Link href={collaborationLinks.myStats}>내 통계</Link>

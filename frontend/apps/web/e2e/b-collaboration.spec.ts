@@ -104,7 +104,7 @@ test('B workspace and real PR 35 list connect through issue detail and back', as
   await page.getByRole('link', { name: '내 이슈 전체 보기' }).click();
   await expect(page).toHaveURL('/workspace/issues');
   await expect(page.getByRole('heading', { level: 1, name: '내 이슈' })).toBeVisible();
-  const issue = page.getByRole('main').locator('a[href^="/teams/"][href*="/issues/"]').first();
+  const issue = page.getByRole('article').locator('a[href^="/teams/"][href*="/issues/"]').first();
   await issue.click();
   await expect(page).toHaveURL(/\/teams\/\d+\/issues\/\d+$/);
   await page.goBack();

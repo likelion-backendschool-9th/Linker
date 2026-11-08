@@ -2,10 +2,11 @@ import type { MyTeamsResponse } from '@linker/api/openAPIDefinition.schemas';
 
 import { TEAM } from '@/lib/policy';
 
-import { get, type MockRoute } from '../core/define';
-import { ISSUES, isOverdue } from '../fixtures/issues';
+import { fail, get, type MockRoute } from '../core/define';
+import { ISSUES } from '../fixtures/issues';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 import { ME } from '../fixtures/users';
+import { issueRow } from './p11-issue-list';
 
 /** 07 Workspace home: `TeamController / IssueController` */
 
@@ -37,24 +38,28 @@ export const routes: MockRoute[] = [
     },
     { only: 'developer' },
   ),
-  // `[Included]` issues assigned to me across all teams, by due date
+  // `[Included]` open issues assigned to me in one of my teams: due date ascending, no due date last
   get(
     '/api/v1/user/me/issues',
-    () => ({
-      items: ISSUES.filter((i) => i.state === 'OPEN' && i.assignees.some((a) => a.id === ME.id))
-        .sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
-        .map((i) => ({
-          id: i.id,
-          teamId: i.teamId,
-          teamName: TEAMS.find((t) => t.id === i.teamId)?.name ?? '',
-          repoName: i.repoName,
-          number: i.number,
-          title: i.title,
-          status: i.status,
-          dueDate: i.dueDate,
-          overdue: isOverdue(i),
-        })),
-    }),
+    ({ query }) => {
+      const raw = query.get('teamId');
+      const teamId = raw === null ? Number.NaN : Number(raw);
+      const isMine = (TEAM_MEMBERS[teamId] ?? []).some((member) => member.user.id === ME.id);
+      if (!Number.isInteger(teamId) || !isMine) {
+        fail(400, 'VALIDATION_ERROR', '내 팀만 선택할 수 있어요.');
+      }
+      return {
+        teamId,
+        items: ISSUES.filter(
+          (i) =>
+            i.teamId === teamId && i.state === 'OPEN' && i.assignees.some((a) => a.id === ME.id),
+        )
+          .sort(
+            (a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') || a.id - b.id,
+          )
+          .map(issueRow),
+      };
+    },
     { only: 'developer' },
   ),
 ];

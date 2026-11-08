@@ -22,6 +22,12 @@ const team = (id: number, status: MyTeam['status']): MyTeam => ({
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
 });
+// The home also loads C's my-issues preview; these tests only stub the team list
+function stubTeams(body: Record<string, unknown>) {
+  vi.mocked(apiFetch).mockImplementation(async (url: string) =>
+    url === '/api/v1/user/me/teams' ? body : { teamId: 0, items: [] },
+  );
+}
 
 it('keeps cross-owner entry links available when the team list fails without loading C data', async () => {
   vi.mocked(apiFetch).mockRejectedValue(new Error('team service unavailable'));
@@ -44,7 +50,7 @@ it('empty teams provide both documented navigation choices', async () => {
   expect(screen.getByRole('link', { name: '팀 찾으러 가기' })).toHaveAttribute('href', '/recruits');
 });
 it('the ten-team limit cannot be bypassed from an empty status filter', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
+  stubTeams({
     items: Array.from({ length: 10 }, (_, index) => team(index + 1, 'ACTIVE')),
     teamLimit: 10,
     teamCount: 10,
@@ -59,7 +65,7 @@ it('the ten-team limit cannot be bypassed from an empty status filter', async ()
   ).toBe(true);
 });
 it('archived teams do not consume the membership limit and link only to chat history', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
+  stubTeams({
     items: [
       ...Array.from({ length: 9 }, (_, index) => team(index + 1, 'ACTIVE')),
       team(10, 'ARCHIVED'),
@@ -75,7 +81,7 @@ it('archived teams do not consume the membership limit and link only to chat his
   expect(screen.getByRole('link', { name: '팀 만들기' })).toHaveAttribute('href', '/teams/new');
 });
 it('read-only teams retain the readable team entry and an explicit status', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
+  stubTeams({
     items: [team(1, 'READ_ONLY')],
     teamLimit: 10,
     teamCount: 1,
@@ -88,7 +94,7 @@ it('read-only teams retain the readable team entry and an explicit status', asyn
 });
 
 it('shows nullable server data without inventing Free, issue counts, images or chat links', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
+  stubTeams({
     items: [
       {
         ...team(1, 'ARCHIVED'),
@@ -114,7 +120,7 @@ it('shows nullable server data without inventing Free, issue counts, images or c
 });
 
 it('keeps valid live-team navigation and real zero counts while summaries are partly unknown', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
+  stubTeams({
     items: [
       {
         ...team(1, 'ACTIVE'),
@@ -130,7 +136,8 @@ it('keeps valid live-team navigation and real zero counts while summaries are pa
     nextCursor: null,
   });
   renderWithProviders(<WorkspaceView />);
-  const card = await screen.findByRole('link', { name: /프로젝트 1/ });
+  const article = await screen.findByRole('article', { name: '프로젝트 1' });
+  const card = within(article).getByRole('link');
   expect(card).toHaveAttribute('href', '/teams/1/issues');
   expect(card).toHaveTextContent('열린 이슈 0개');
   expect(card).toHaveTextContent('안 읽은 메시지 3개');
@@ -138,7 +145,7 @@ it('keeps valid live-team navigation and real zero counts while summaries are pa
 });
 
 it('uses the server membership count for the limit instead of the visible subset', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
+  stubTeams({
     items: [team(1, 'ACTIVE')],
     teamLimit: 10,
     teamCount: 10,
@@ -150,15 +157,15 @@ it('uses the server membership count for the limit instead of the visible subset
   expect(screen.getByText('참여 중인 팀 10/10 · 보관된 팀 제외')).toBeVisible();
 });
 
-it('preserves the selected team on the handoff to C without fetching C data', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
-    items: [],
+it('preserves the selected team on the handoff to C', async () => {
+  stubTeams({
+    items: [team(42, 'ACTIVE')],
     teamLimit: 10,
-    teamCount: 0,
+    teamCount: 1,
     nextCursor: null,
   });
   renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=42' });
-  expect(screen.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
     'href',
     '/workspace/issues?teamId=42',
   );

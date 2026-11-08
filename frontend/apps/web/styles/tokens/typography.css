@@ -15,10 +15,11 @@
   --font-size-body: 1rem; /* 16px, also buttons and inputs */
   --font-size-caption: 0.875rem; /* 14px, helper text; minimum for errors and notices */
   --font-size-meta: 0.8125rem; /* 13px, time, view count */
+  --font-size-micro: 0.75rem; /* 12px, 07 issue row meta (Figma) */
 
   /* Weight */
   --font-weight-regular: 400; /* body, input values */
-  --font-weight-medium: 500; /* Pretendard Medium: legal clauses (03), offer cards and tabs (33) */
+  --font-weight-medium: 500; /* Pretendard Medium: legal clauses (03), offer cards and tabs (33), 07 labels and issue titles */
   --font-weight-semibold: 600; /* section and card titles, buttons */
   --font-weight-bold: 700; /* page title */
 
@@ -27,4 +28,5 @@
   --line-height-title: 1.4; /* section and card titles */
   --line-height-body: 1.6;
   --line-height-caption: 1.5; /* caption and meta */
+  --line-height-compact: 22px; /* 07 issue row lines (Figma) */
 }

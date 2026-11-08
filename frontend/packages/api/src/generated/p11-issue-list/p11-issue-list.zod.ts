@@ -108,6 +108,7 @@ export const ListTeamIssuesResponse = zod.object({
   "repoName": zod.string(),
   "title": zod.string(),
   "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "statusColor": zod.enum(['BLUE', 'GRAY', 'GREEN', 'ORANGE', 'PINK', 'PURPLE', 'RED', 'YELLOW']).describe('GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.'),
   "state": zod.enum(['OPEN', 'CLOSED']),
   "assignees": zod.array(zod.object({
   "id": zod.int().nullable(),
@@ -156,6 +157,7 @@ export const ListUnscheduledTeamIssuesResponse = zod.object({
   "repoName": zod.string(),
   "title": zod.string(),
   "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "statusColor": zod.enum(['BLUE', 'GRAY', 'GREEN', 'ORANGE', 'PINK', 'PURPLE', 'RED', 'YELLOW']).describe('GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.'),
   "state": zod.enum(['OPEN', 'CLOSED']),
   "assignees": zod.array(zod.object({
   "id": zod.int().nullable(),
