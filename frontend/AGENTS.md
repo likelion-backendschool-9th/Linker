@@ -31,7 +31,7 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 - Contrast ≥ 4.5:1 for text, 3:1 for large text/icons; retain focus-visible rings; provide button alternatives to dragging.
 - Touch: primary CTA / list rows / tabs / inputs ≥ 44×44px; dense header icon clusters ≥ 24×24px hit with Figma visual size (do not enlarge icons to 44).
 - Honor reduced motion with `MotionConfig reducedMotion="user"`; allow zoom; no hover-only interaction.
-- App UI = mobile column only (CSS Modules, no utility-class framework). Implement 360–600px; at/above 600px use `max-width: var(--content-max-width)` (600px) centered — header and bottom tabs stay in that column. Do not invent tablet/desktop app layouts. Only admin (25–27) is two-column from 1024px.
+- App UI = mobile column only (CSS Modules, no utility-class framework). Implement 360–600px; at/above 600px use `max-width: var(--content-max-width)` (600px) centered — header and bottom tabs stay in that column. Do not invent tablet/desktop app layouts. Admin (25–27) is a separate, desktop-only tool with no mobile layout, outside this rule.
 - Visual authority: page Figma → `styles/tokens/` → Design Guide. Mobbin is retired. Prefer page `_components/` over growing a shared kit.
 - Use `100dvh`, `viewportFit: cover`, safe-area on header (top) and tabs/composers/sheets/toasts (bottom), and input fonts ≥ 16px.
 
