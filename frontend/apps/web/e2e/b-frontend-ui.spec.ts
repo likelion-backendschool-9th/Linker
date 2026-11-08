@@ -109,6 +109,8 @@ test('audit dates validate and statistics expose accessible data tables', async 
 
 test('PR sheet is team-only and the system event offers no editing action', async ({ page }) => {
   await page.goto('/chats/1');
+  // 17 Figma: PR 목록 lives in the room info screen behind the header ☰
+  await page.getByRole('button', { name: '채팅방 정보' }).click();
   await page.getByRole('button', { name: 'PR 목록' }).click();
   const sheet = page.getByRole('dialog', { name: 'Pull requests' });
   await expect(sheet).toBeVisible();

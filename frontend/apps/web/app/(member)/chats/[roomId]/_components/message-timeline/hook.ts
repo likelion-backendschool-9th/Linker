@@ -56,12 +56,24 @@ export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
     } else if (previous && previous.first !== first && previous.last === last) {
       element.scrollTop += Math.max(0, totalSize - previous.size);
     } else if (!previous || (atBottom && (previous.last !== last || previous.size !== totalSize))) {
-      const offset = Math.max(0, totalSize - element.clientHeight);
+      // scrollHeight, not totalSize: the viewport's top padding sits above the rows, and leaving it
+      // out stopped the room that many pixels short of the bottom.
+      const offset = Math.max(0, element.scrollHeight - element.clientHeight);
       element.scrollTop = offset;
       virtualizer.scrollToOffset(offset);
     }
     prior.current = { first, last, size: totalSize };
-  }, [first, last, totalSize, renderedCount, messages.length, atBottom, virtualizer, messages, readPosition]);
+  }, [
+    first,
+    last,
+    totalSize,
+    renderedCount,
+    messages.length,
+    atBottom,
+    virtualizer,
+    messages,
+    readPosition,
+  ]);
 
   // Only rows intersecting the message viewport while the document is visible count as read.
   useEffect(() => {
@@ -113,7 +125,8 @@ export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
     rows,
     jumpToLatest: () => {
       setAtBottom(true);
-      virtualizer.scrollToOffset(virtualizer.getTotalSize());
+      const element = root.current;
+      if (element) virtualizer.scrollToOffset(element.scrollHeight - element.clientHeight);
     },
   };
 }

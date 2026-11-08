@@ -1,0 +1,24 @@
+/* Figma 248:1236 dark logo circle, sized like the composer's send button, just left of it */
+.button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--control-height-chat);
+  width: var(--control-height-chat);
+  height: var(--control-height-chat);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  background: var(--color-fab-bg);
+  cursor: pointer;
+}
+
+.logo {
+  width: var(--chat-ai-logo-size);
+  height: var(--chat-ai-logo-size);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

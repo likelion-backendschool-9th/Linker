@@ -1,9 +1,12 @@
 package com.linker.backend.global.realtime;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.linker.backend.dto.chat.response.ChatMemberResponse;
 import com.linker.backend.entity.team.Team;
+import com.linker.backend.entity.team.TeamMember;
 import com.linker.backend.entity.team.type.TeamStatus;
 import com.linker.backend.repository.team.TeamMemberRepository;
 import com.linker.backend.repository.team.TeamRepository;
@@ -29,7 +32,7 @@ public class TeamChatAccess {
 			return null;
 		}
 		return members.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId)
-				.map(member -> new TeamView(team.getId(), team.getName(), team.getStatus().name(), member.getRole().name()))
+				.map(member -> new TeamView(team.getId(), team.getName(), team.getStatus().name(), member.getRole().name(), team.getAvatarUrl()))
 				.orElse(null);
 	}
 
@@ -50,6 +53,15 @@ public class TeamChatAccess {
 		return members.findChatMentionCandidates(teamId);
 	}
 
-	public record TeamView(long id, String name, String status, String role) {
+	/** Current members' team roles by user id, for the room info member list. Call after {@link #readableBy}. */
+	public Map<Long, String> roles(long teamId) {
+		Map<Long, String> roles = new HashMap<>();
+		for (TeamMember member : members.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(teamId)) {
+			roles.put(member.getUserId(), member.getRole().name());
+		}
+		return roles;
+	}
+
+	public record TeamView(long id, String name, String status, String role, String avatarUrl) {
 	}
 }

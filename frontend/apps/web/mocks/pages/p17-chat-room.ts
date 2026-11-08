@@ -63,14 +63,18 @@ export const routes: MockRoute[] = [
     return {
       ...room,
       members: room.teamId
-        ? (TEAM_MEMBERS[room.teamId] ?? []).map((m) => m.user)
-        : [brief(ME), room.counterpart],
+        ? (TEAM_MEMBERS[room.teamId] ?? []).map((m) => ({ ...m.user, role: m.role }))
+        : [
+            { ...brief(ME), role: null },
+            { ...room.counterpart, role: null },
+          ],
       team: team
         ? {
             id: team.id,
             name: team.name,
             myRole: team.myRole,
             status: team.status,
+            avatarUrl: team.orgAvatarUrl ?? null,
           }
         : null,
       aiSummaryEnabled: team?.plan === 'FLEX',

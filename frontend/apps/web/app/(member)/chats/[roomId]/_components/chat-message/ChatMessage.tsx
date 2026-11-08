@@ -30,7 +30,7 @@ function SenderAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string })
   return (
     <div className={styles.avatar} aria-hidden>
       {avatarUrl ? (
-        <Image src={avatarUrl} alt="" fill sizes="40px" />
+        <Image src={avatarUrl} alt="" fill sizes="46px" />
       ) : (
         <span className={styles.avatarFallback}>{initial}</span>
       )}
@@ -42,11 +42,14 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const payload = messagePayload(message.payload);
   const hidden = message.visibility === 'HIDDEN';
-  const issueCards = Array.isArray(payload?.issueCards) ? (payload.issueCards as ChatIssueCard[]) : [];
+  const issueCards = Array.isArray(payload?.issueCards)
+    ? (payload.issueCards as ChatIssueCard[])
+    : [];
   const canMenu = !system && !hidden && !message.deletedAt && !!onMenu;
   const menu = useMessageMenu(canMenu, () => onMenu?.(message.id));
   const senderName = message.sender?.name ?? '탈퇴한 사용자';
-  const authorLabel = system ? (message.type === 'PR_EVENT' ? 'GitHub' : '안내') : senderName;
+  // Figma 17: "오명석 님"; the withdrawn placeholder keeps no honorific
+  const authorLabel = message.sender ? `${senderName} 님` : senderName;
 
   const bubble = (
     <div
@@ -66,11 +69,7 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
         <p>운영 정책에 따라 숨겨진 메시지예요</p>
       ) : (
         <>
-          {message.type === 'PR_EVENT' ? (
-            <PrEventCard message={message} />
-          ) : (
-            message.text && <p className={styles.text}>{message.text}</p>
-          )}
+          {message.text && <p className={styles.text}>{message.text}</p>}
           {!!message.imageUrls.length && (
             <div className={styles.images}>
               {message.imageUrls.map((url, index) => (
@@ -91,9 +90,7 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
               ))}
             </div>
           )}
-          {issueCards.length > 0 && (
-            <IssueMessageCards cards={issueCards} />
-          )}
+          {issueCards.length > 0 && <IssueMessageCards cards={issueCards} />}
           {message.type === 'SHARE_CARD' && <SharedContentCard value={payload} />}
           {message.type !== 'SHARE_CARD' && !!payload?.linkerCard && (
             <SharedContentCard value={payload.linkerCard} />
@@ -124,6 +121,14 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
     </div>
   );
 
+  // Figma 248:1223: a PR event is a card in the bubble column, without photo, name or bubble
+  if (message.type === 'PR_EVENT' && !hidden && !message.deletedAt)
+    return (
+      <article className={`${styles.message} ${styles.eventRow}`}>
+        <PrEventCard message={message} />
+      </article>
+    );
+
   return (
     <article
       className={`${styles.message} ${mine ? styles.mine : ''} ${system ? styles.system : ''}`}
@@ -141,7 +146,6 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
         </div>
       ) : (
         <>
-          {system && <p className={styles.author}>{authorLabel}</p>}
           <div className={styles.messageRow}>
             {bubble}
             {meta}
