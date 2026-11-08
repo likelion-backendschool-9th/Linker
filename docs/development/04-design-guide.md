@@ -50,9 +50,15 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-scrim-team-picker` | `rgb(25 31 40 / 0.32)` | Page 07 sheet scrim (Figma `#191f28` 32%), with `--blur-scrim`. Other overlays keep `--color-scrim` |
 | `--color-radio-surface` / `--color-radio-border` | `#f6f7fb` / `#eaeaea` | Page 07 sheet radio fill and unselected outline |
 | `--color-sheet-cta` / `--color-on-sheet-cta` | `#121212` / `#f8f9f6` | Page 07 sheet CTA fill and label |
+| `--color-chip-format-bg` | `rgb(37 99 235 / 0.1)` | Page 19 recruit card format chip (온라인/오프라인/하이브리드), fixed regardless of the value |
+| `--color-chip-goal-bg` | `rgb(35 193 4 / 0.15)` | Page 19 recruit card goal chip (공모전/해커톤/출시/학습), fixed regardless of the value |
+| `--color-tab-divider` | `#ebebeb` | Page 19 inactive tab underline and the scroll-revealed search panel's bottom border (Figma) |
+| `--color-fab-bg` | `#2e2e2e` | Page 19 write-recruit-post FAB fill (Figma) |
+| `--color-search-panel-bg` | `#f7f7f7` | Page 19 scroll-revealed search panel background, area B (Figma) |
 | `--color-tab-indicator` / `--color-hairline-tab` | `#121212` / `#ebebeb` | Team tabs of 11–15 and 09 (Figma 11): current tab 2px underline / other tabs 1px underline |
 | `--color-chart-grid` | `#e5e7eb` | Page 11 trend chart dashed day lines |
-| `--color-fab` / `--color-fab-border` | `#2e2e2e` / `#383838` | Page 11 team chat shortcut fill and outline |
+| `--color-fab` | `#2e2e2e` | Page 11 team chat shortcut fill |
+| `--color-fab-border` | `#383838` | Shared FAB stroke for page 11 team-chat and page 19 write-recruit |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -79,6 +85,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-text-muted-cool` | `#98a3b4` | Page 07 issue meta. Low contrast, see §1-3 | Micro |
 | `--color-text-unselected` | `#b0b8c1` | Page 07 unselected sheet option. Low contrast, see §1-3 | Caption |
 | `--color-status-overdue` | `#e62e00` | Overdue due date on the issue rows of 07 and 11: the date alone in this color, no "마감 지남" text (07 decision). Low contrast, see §1-3 | Caption |
+| `--color-text-placeholder-search` | `#a3a3a8` | Page 19 scroll-revealed search input placeholder. Low contrast, see §1-3 | Caption |
 | `--color-text-title-cool` | `#111827` | Page 11 section titles, current team tab, search text | Card title / Caption |
 | `--color-text-placeholder-cool` | `#a3a3a8` | Page 11 search placeholder on `#f3f4f6`. Low contrast, see §1-3 | Body |
 | `--color-progress-done` / `-active` / `-blocked` | `#158000` / `#007be6` / `#e62e00` | Page 11 status card counts and trend lines, always with the status word. `-active`, `-blocked` low contrast, see §1-3 | Caption |
@@ -111,6 +118,7 @@ Measured ratios, so nobody has to recompute:
 | `#e62e00` overdue | white | 4.42 | **below 4.5**, Figma value kept (team decision, page 07) |
 | `#98a3b4` muted-cool | white | 2.55 | **below 4.5**, Figma value kept (team decision, page 07) |
 | `#b0b8c1` unselected | white | 2.01 | **below 4.5**, Figma value kept (team decision, page 07) |
+| `#a3a3a8` search placeholder | white | 2.52 | **below 4.5**, Figma value kept (team decision, page 19 — a placeholder, not required reading content) |
 | `#98a3b4` muted-cool (team tabs) | white | 2.55 | **below 4.5**, Figma 11 value kept (page 11 "Figma first" decision; team tabs also show on B's 09, B review pending) |
 | `#a3a3a8` placeholder-cool | `#f3f4f6` | 2.48 | **below 4.5**, Figma value kept (page 11) |
 | `#158000` progress-done | white | 5.29 | pass |
@@ -135,6 +143,7 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **A
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
 | Micro (page 07 issue meta) | 12px | 500 | 22px | `--font-size-micro`, `--font-weight-medium`, `--line-height-compact` |
+| Caption, recruit card description (page 19) | 14px | 400 | 20px | `--font-size-caption`, `--font-weight-regular`, `--line-height-card-desc` |
 
 - Medium (500) is Pretendard Medium for a clause title and its body (page 03) and for offer names, tabs, chips, and status labels (page 33). Other body copy stays 400.
 - Buttons and inputs: 16px; button weight 600, input value weight 400. Inputs smaller than 16px make iOS zoom in.
@@ -167,6 +176,11 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 | `--space-sheet-block` | 15px | Page 07 sheet top and bottom padding (Figma) |
 | `--space-sheet-action` | 30px | Page 07 sheet list to its CTA (Figma) |
 | `--space-icon-text-compact` | 2px | Page 07 compact link, text to icon (Figma) |
+| `--space-card-row` | 22px | Page 19 recruit card: gap between the info and meta blocks (Figma) |
+| `--space-card-info` | 25px | Page 19 recruit card: chip/deadline row to title/description gap (Figma) |
+| `--space-card-meta` | 13px | Page 19 recruit card: role chips row to "자세히 보기" gap (Figma) |
+| `--space-chip-block` | 3px | Page 11 filter chip and page 19 role-count / search-panel filter chip vertical padding (Figma) |
+| `--space-detail-block` | 14px | Page 19 recruit card "자세히 보기" detail panel top/bottom padding (Figma) |
 
 ### 3-1. App column (non-admin)
 
@@ -209,10 +223,10 @@ Apply on app screens (WebView and mobile Safari):
 ### 3-4. Other frame tokens
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Frame sizes:** `--header-height` 56px; `--search-input-height` 52px (mobile search field in the open panel, focus border `--color-focus-ring-search` — the one input that does **not** use the global `--color-focus-ring`); `--badge-dot-size` 6px; `--font-size-badge` 8px (GNB unread chip numeral only); `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--icon-size-lg` 26px (bottom GNB tab icon); `--icon-stroke-width` 2 (Solar Icons; overrides the linear style's own thinner 1.5 default to match Figma `strokeWeight` — the bottom GNB scopes this back to 1.5 locally, its own Figma value); `--space-tab-icon-gap` 6px (GNB icon↔label); `--tab-bar-gap-4` / `--tab-bar-gap-5` 36px / 20px (gap between GNB tabs below 600px, guest vs. signed-in with profile); `--tab-bar-padding-wide` 80px (GNB side padding at/above 600px, replacing the fixed gap with `space-between`); `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet); `--control-height-choice` 40px (page 07 sheet option row, below the 44px minimum: Figma value, front-end owner's decision); `--icon-size-add` 20px (page 07 add-issue icon, hit area stays 44px); `--icon-size-team-entry` 20px (page 07 team-card › / ∨ icon, Figma 5×12 with a 1.5px line, hit area stays 44px).
-- **Page 11 sizes (Figma 197:66):** `--space-section-inset` 25px (progress band top padding); `--space-card-gap` 15px; `--space-search-icon` 14px (search inset and icon gap); `--space-chip-block` 3px; `--space-fab-bottom` 34px (chat shortcut from the bottom, incl. home indicator); `--radius-card-compact` 12px (status cards, search field); `--control-height-search` 42px; `--control-height-chip` 28px (hit area stays 44px); `--control-height-tab` 48px (team tabs); `--icon-size-progress-sm` 20px / `--icon-size-progress-md` 22px (card icons, Figma frames); `--card-height-progress` 85px; `--fab-size` 40px (hit area stays 44px); `--chart-height` 223px; `--chart-point-size` 10px; `--legend-dot-size` 5px; `--divider-section` 6px (band between trend and list).
+- **Frame sizes:** `--header-height` 56px; `--search-input-height` 52px (mobile search field in the open panel, focus border `--color-focus-ring-search` — the one input that does **not** use the global `--color-focus-ring`); `--badge-dot-size` 6px; `--font-size-badge` 8px (GNB unread chip numeral only); `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--icon-size-lg` 26px (bottom GNB tab icon); `--icon-stroke-width` 2 (Solar Icons; overrides the linear style's own thinner 1.5 default to match Figma `strokeWeight` — the bottom GNB scopes this back to 1.5 locally, its own Figma value); `--space-tab-icon-gap` 6px (GNB icon↔label); `--tab-bar-gap-4` / `--tab-bar-gap-5` 36px / 20px (gap between GNB tabs below 600px, guest vs. signed-in with profile); `--tab-bar-padding-wide` 80px (GNB side padding at/above 600px, replacing the fixed gap with `space-between`); `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet); `--control-height-choice` 40px (page 07 sheet option row, below the 44px minimum: Figma value, front-end owner's decision); `--icon-size-add` 20px (page 07 add-issue icon, hit area stays 44px); `--icon-size-team-entry` 20px (page 07 team-card › / ∨ icon, Figma 5×12 with a 1.5px line, hit area stays 44px); `--control-height-chip` 30px (page 19 filter chip); `--tabs-row-height` 48px (page 19 segmented tabs row); `--recruit-search-panel-height` 119px (page 19 area B open height); `--fab-size` 40px (page 11 team-chat shortcut and page 19 write-recruit FAB; hit area stays 44px via `--touch-target-min`, see §3-3); `--detail-label-width` 80px (page 19 recruit card "자세히 보기" detail panel label column, Figma).
+- **Page 11 sizes (Figma 197:66):** `--space-section-inset` 25px (progress band top padding); `--space-card-gap` 15px; `--space-search-icon` 14px (search inset and icon gap); `--space-chip-block` 3px; `--space-fab-bottom` 34px (chat shortcut from the bottom, incl. home indicator); `--radius-card-compact` 12px (status cards, search field); `--control-height-search` 42px; `--control-height-chip-sm` 28px (hit area stays 44px; separate from page 19's `--control-height-chip` 30px); `--control-height-tab` 48px (team tabs); `--icon-size-progress-sm` 20px / `--icon-size-progress-md` 22px (card icons, Figma frames); `--card-height-progress` 85px; `--chart-height` 223px; `--chart-point-size` 10px; `--legend-dot-size` 5px; `--divider-section` 6px (band between trend and list).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`. The sticky header is a frosted `--color-header-bg` + `--blur-chrome` (`--blur-header-open` when the mobile search panel is down) plate, not a solid fill — the header and open search panel share one frosted plate rather than two. The bottom GNB pill uses the same `--blur-chrome` frost over `--color-gnb-bg`.
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; `--duration-chrome-collapse` 320ms (page 19 scroll-driven header/tabs/search-panel reveal — slower than `--duration-overlay` so the slide reads as deliberate, not a snap); globals.css turns it off under `prefers-reduced-motion`. The sticky header is a frosted `--color-header-bg` + `--blur-chrome` (`--blur-header-open` when the mobile search panel is down) plate, not a solid fill — the header and open search panel share one frosted plate rather than two. The bottom GNB pill uses the same `--blur-chrome` frost over `--color-gnb-bg`.
 - **Images:** keep a fixed aspect ratio and `--radius-md` corners unless Figma says otherwise. Use `next/image` (blueprint ch. 10).
 
 ### 3-5. Scroll and touch (WebView)
@@ -299,6 +313,7 @@ Validate on **iOS React Native WebView** and **Android React Native WebView**:
 | `--radius-xs` | 8px | Floating mobile bottom GNB pill (if Figma uses it) |
 | `--radius-control-sm` | 10px | Page 07 compact link |
 | `--radius-control-md` | 14px | Page 07 sheet CTA (Figma) |
+| `--radius-control-lg` | 12px | Page 19 recruit search field (Figma) |
 | `--radius-sm` | 16px | Inputs, small cards, accordion rows |
 | `--radius-lg` | 20px | Frosted pills when Figma uses them |
 | `--radius-md` | 24px | Content cards, bottom sheet top corners, footer top corners |
@@ -315,7 +330,7 @@ Avatars are circles (`--radius-full`).
 
 - No drop shadow on cards, buttons or nav. The one exception is the active segment of a segmented control (`--shadow-segment-active`).
 - Recorded exception: page 07 compact link uses `--shadow-compact-link` (`0 0 4px rgb(0 0 0 / 0.12)`). 07 Figma value, front-end owner's decision (Figma first). Do not reuse it elsewhere.
-- Recorded exception: page 11 team chat shortcut uses `--shadow-fab` (`0 0 2px rgb(222 222 222 / 0.25)`). 11 Figma value ("Figma first"). Do not reuse it elsewhere.
+- Recorded exception: page 11 team chat shortcut and page 19 write-recruit-post FAB share `--shadow-fab` (`0 0 2px rgb(222 222 222 / 0.25)`). Figma values for those screens. Do not reuse it elsewhere.
 - Bottom sheets, dialogs and drawers are separated from the page by `--color-scrim`, not by a shadow. Sheets use `--radius-md` on their top corners unless Figma specifies otherwise.
 
 ## 5. Components

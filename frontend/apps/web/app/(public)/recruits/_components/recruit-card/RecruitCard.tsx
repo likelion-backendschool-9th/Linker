@@ -1,94 +1,99 @@
-import type { Route } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
+'use client';
 
-import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
-import { RECRUIT_FORMAT_LABELS, RECRUIT_GOAL_LABELS } from '@/features/recruit/recruit-labels';
-import { daysUntil, formatDate } from '@/lib/format/time';
+import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
+import { useId, useState } from 'react';
 
-import type { RecruitSummary } from '../../_lib/recruit-list-queries';
+import { Icon } from '@/components/ui/icon';
+
 import styles from './RecruitCard.module.css';
 
-const MAX_TAGS = 4;
+export type RecruitCardData = {
+  id: string;
+  format: string;
+  goal: string;
+  deadlineLabel: string;
+  deadlineFullLabel: string;
+  title: string;
+  description: string;
+  roles: string[];
+  /** "모집 직군" in the detail panel (Figma 346:573): a single summary value, independent of `roles` */
+  recruitingRoleLabel: string;
+  techStack: string[];
+};
 
-/**
- * One recruit post: D-day, format, goal, title, remaining slots per role, tech stack, author (07 TODO 19).
- * The whole card opens 21 through the title link.
- */
-export function RecruitCard({ recruit }: { recruit: RecruitSummary }) {
-  const titleId = `recruit-${recruit.id}-title`;
-  const shownTags = recruit.techTags.slice(0, MAX_TAGS);
-  const hiddenTags = recruit.techTags.length - shownTags.length;
+/** 19 recruit list card (Figma 254:2255). "자세히 보기" expand/collapse is scenario 4 (Figma 346:573). */
+export function RecruitCard({ recruit }: { recruit: RecruitCardData }) {
+  const [expanded, setExpanded] = useState(false);
+  const detailId = useId();
 
   return (
-    <article aria-labelledby={titleId} className={styles.card}>
-      <div className={styles.badges}>
-        <RecruitDeadlineBadge deadline={recruit.deadline} closed={recruit.status === 'CLOSED'} />
-        <span className={styles.badge}>
-          {RECRUIT_FORMAT_LABELS[recruit.format]}
-          {recruit.region && ` · ${recruit.region}`}
-        </span>
-        {recruit.goal && <span className={styles.badge}>{RECRUIT_GOAL_LABELS[recruit.goal]}</span>}
+    <li className={styles.card} data-expanded={expanded}>
+      <div className={styles.body}>
+        <div className={styles.chipRow}>
+          <div className={styles.chips}>
+            <span className={styles.formatChip}>{recruit.format}</span>
+            <span className={styles.goalChip}>{recruit.goal}</span>
+          </div>
+          <span className={styles.deadline}>{recruit.deadlineLabel}</span>
+        </div>
+        <div className={styles.textBlock}>
+          <h2 className={styles.title}>{recruit.title}</h2>
+          <p className={styles.description}>{recruit.description}</p>
+        </div>
       </div>
-
-      <h2 id={titleId} className={styles.title}>
-        <Link href={`/recruits/${recruit.id}` as Route} className={styles.link}>
-          {recruit.title}
-        </Link>
-      </h2>
-
-      <ul className={styles.roles} aria-label="모집 역할">
-        {recruit.roles.map((role) => (
-          <li key={role.id} className={role.remaining > 0 ? styles.role : styles.roleFull}>
-            <span className={styles.roleName}>{role.name}</span>
-            {role.remaining > 0 ? `${role.remaining}명 남음` : '모집 완료'}
-          </li>
-        ))}
-      </ul>
-
-      {shownTags.length > 0 && (
-        <ul className={styles.tags} aria-label="기술 스택">
-          {shownTags.map((tag) => (
-            <li key={tag} className={styles.tag}>
-              {tag}
+      <div className={styles.meta}>
+        <ul className={styles.roles}>
+          {recruit.roles.map((role) => (
+            <li key={role} className={styles.roleChip}>
+              {role}
             </li>
           ))}
-          {hiddenTags > 0 && (
-            <li className={styles.more}>
-              +{hiddenTags}
-              <span className="sr-only">개 더 있음</span>
-            </li>
-          )}
         </ul>
-      )}
-
-      <p className={styles.author}>
-        <Image
-          src={recruit.author.avatarUrl}
-          alt=""
-          width={24}
-          height={24}
-          sizes="24px"
-          className={styles.avatar}
-        />
-        <span className={styles.name}>{recruit.author.name}</span>
-        <span aria-hidden>·</span>
-        <RelativeTime value={recruit.createdAt} />
-      </p>
-    </article>
-  );
-}
-
-/** "D-n" until the deadline, "오늘 마감" on the day, "모집 마감" once closed; the date is read out too */
-function RecruitDeadlineBadge({ deadline, closed }: { deadline: string; closed: boolean }) {
-  const days = daysUntil(deadline);
-  if (closed || days < 0) return <span className={styles.closed}>모집 마감</span>;
-  return (
-    <span className={styles.deadline}>
-      {days === 0 ? '오늘 마감' : `D-${days}`}
-      <span className="sr-only">
-        , <time dateTime={deadline}>{formatDate(deadline)}</time> 마감
-      </span>
-    </span>
+        <div className={styles.expandSection}>
+          <button
+            type="button"
+            className={styles.expandButton}
+            aria-expanded={expanded}
+            aria-controls={detailId}
+            onClick={() => setExpanded((open) => !open)}
+          >
+            자세히 보기
+            <Icon svg={AltArrowDownLinearIcon} className={styles.expandIcon} />
+          </button>
+          <div id={detailId} className={styles.detailWrap} data-expanded={expanded}>
+            <div className={styles.detailInner}>
+              <dl className={styles.detailList}>
+                <div className={styles.detailRow}>
+                  <dt>진행 방식</dt>
+                  <dd>{recruit.format}</dd>
+                </div>
+                <div className={styles.detailRow}>
+                  <dt>목적</dt>
+                  <dd>{recruit.goal}</dd>
+                </div>
+                <div className={styles.detailRow}>
+                  <dt>마감일</dt>
+                  <dd>{recruit.deadlineFullLabel}</dd>
+                </div>
+                <div className={styles.detailRow}>
+                  <dt>모집 직군</dt>
+                  <dd>{recruit.recruitingRoleLabel}</dd>
+                </div>
+                <div className={styles.detailRow}>
+                  <dt>기술 스택</dt>
+                  <dd>
+                    <ul className={styles.techList}>
+                      {recruit.techStack.map((tech) => (
+                        <li key={tech}>{tech}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
   );
 }

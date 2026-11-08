@@ -90,6 +90,19 @@ button {
   outline-offset: 2px;
 }
 
+/*
+ * Every sheet/dialog (OverlaySheet, OverlayDialog, ConfirmDialog) is Radix Dialog, which locks
+ * scroll via react-remove-scroll: it adds `margin-right` to body to keep normal-flow content from
+ * shifting when the scrollbar disappears. Our sheets and scrims are `position: fixed`, though, so
+ * they center against the viewport directly and never see that margin — leaving the sheet visibly
+ * offset from the page behind it. Drop the compensation instead: both then center against the same
+ * viewport width, and the brief reflow of the dimmed background behind the scrim isn't visible.
+ */
+/* Higher specificity than react-remove-scroll's own injected (and later-loaded) `!important` rule */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
