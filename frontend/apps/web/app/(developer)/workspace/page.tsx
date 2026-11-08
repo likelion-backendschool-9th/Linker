@@ -19,7 +19,7 @@ export default async function WorkspacePage({
   await client.prefetchQuery(myTeamsOptions());
   await prefetchMyIssues(client, await searchParams);
   return (
-    <PageFrame title="워크스페이스">
+    <PageFrame title="워크스페이스" hideTitle>
       <HydrationBoundary state={dehydrate(client)}>
         <WorkspaceView />
       </HydrationBoundary>
