@@ -16,8 +16,9 @@ export function HeaderLogoOrb() {
       size={32}
       theme="light"
       color={ORB_INK}
+      speed={0.55}
       dots={1.5}
-      opts={{ lineW: 4, thr: 1, signals: 8 }}
+      opts={{ lineW: 4.4, thr: 1, signals: 8 }}
       aria-hidden
     />
   );
