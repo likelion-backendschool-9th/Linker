@@ -30,8 +30,8 @@ export function TabHeader({ role, hasUnread = false }: TabHeaderProps) {
   return (
     <MobileSearchProvider>
       <HeaderChrome>
-        <header className={styles.header}>
-          <div className={styles.inner}>
+        <header className={`${styles.header} ${styles.headerTab}`}>
+          <div className={`${styles.inner} ${styles.innerTab}`}>
             <Link href="/feed" className={styles.logo}>
               <HeaderLogoOrb />
               <Image src="/textlogo.svg" alt="Linker" width={79} height={24} priority />

@@ -24,7 +24,7 @@ export type PostDetail = {
     stars: number;
     forks: number;
     isFork: boolean;
-    /** PRIVATE_OR_DELETED → "레포를 볼 수 없음", README hidden (POL-P-1) */
+    /** PRIVATE_OR_DELETED → "레포를 볼 수 없음" (POL-P-1) */
     state: 'PUBLIC' | 'PRIVATE_OR_DELETED';
     authorCommitCount: number;
     handledIssueCount: number;
@@ -48,22 +48,12 @@ export type PostDetail = {
   canSendOffer: boolean;
 };
 
+/** Flat list: no replies (POL-P-5 reply level removed on 23) */
 export type PostComment = {
   id: number;
-  parentId: number | null;
   author: Pick<PostAuthor, 'id' | 'login' | 'name' | 'avatarUrl'>;
-  /** "삭제된 댓글입니다" when deleted but kept for its replies */
-  text: string | null;
-  deleted: boolean;
+  text: string;
   createdAt: string;
-  editedAt: string | null;
-};
-
-export type SamePostCard = {
-  id: number;
-  intro: string;
-  author: PostAuthor;
-  coverUrl: string | null;
 };
 
 const encode = (postId: string) => encodeURIComponent(postId);
@@ -72,9 +62,7 @@ export const postKeys = {
   // Under ['posts', login] so 22's writes (invalidate ['posts']) refresh it too
   detail: (login: string | null, postId: string) => ['posts', login, 'detail', postId] as const,
   comments: (postId: string) => ['posts', 'comments', postId] as const,
-  readme: (postId: string) => ['posts', 'readme', postId] as const,
   likers: (login: string | null, postId: string) => ['posts', login, 'likers', postId] as const,
-  sameRepo: (postId: string) => ['posts', 'same-repo', postId] as const,
 };
 
 /**
@@ -106,16 +94,6 @@ export function commentsOptions(postId: string) {
   });
 }
 
-/** `[Included]` README: cached 1 hour and sanitized by the server (POL-P-3) */
-export function readmeOptions(postId: string) {
-  return queryOptions({
-    queryKey: postKeys.readme(postId),
-    staleTime: 60 * 60_000,
-    queryFn: ({ signal }) =>
-      apiFetch<{ markdown: string }>(`/api/v1/public/posts/${encode(postId)}/readme`, { signal }),
-  });
-}
-
 /** People list, so login only (POL-A-9) */
 export function likersOptions(login: string | null, postId: string) {
   return queryOptions({
@@ -124,19 +102,6 @@ export function likersOptions(login: string | null, postId: string) {
       apiFetch<{ items: { user: Pick<PostAuthor, 'id' | 'login' | 'name' | 'avatarUrl'> }[] }>(
         `/api/v1/user/posts/${encode(postId)}/likes`,
         { signal },
-      ),
-  });
-}
-
-export function sameRepoOptions(postId: string) {
-  return queryOptions({
-    queryKey: postKeys.sameRepo(postId),
-    queryFn: ({ signal }) =>
-      apiFetch<{ items: SamePostCard[] }>(
-        `/api/v1/public/posts/${encode(postId)}/same-repo-posts`,
-        {
-          signal,
-        },
       ),
   });
 }
@@ -152,25 +117,11 @@ export function setLike(postId: string, like: boolean) {
   });
 }
 
-/** 500 chars, 10/min and 300/day; `parentId` = reply to a top-level comment (one level) */
-export function writeComment(postId: string, body: { text: string; parentId: number | null }) {
+/** 500 chars, 10/min and 300/day */
+export function writeComment(postId: string, body: { text: string }) {
   return apiFetch<PostComment>(`/api/v1/user/posts/${encode(postId)}/comments`, {
     method: 'POST',
     ...json(body),
-  });
-}
-
-export function editComment(postId: string, commentId: number, text: string) {
-  return apiFetch<PostComment>(`/api/v1/user/posts/${encode(postId)}/comments/${commentId}`, {
-    method: 'PATCH',
-    ...json({ text }),
-  });
-}
-
-/** Comment author or post owner; with replies it stays as "삭제된 댓글입니다" (POL-P-5) */
-export function deleteComment(postId: string, commentId: number) {
-  return apiFetch<void>(`/api/v1/user/posts/${encode(postId)}/comments/${commentId}`, {
-    method: 'DELETE',
   });
 }
 

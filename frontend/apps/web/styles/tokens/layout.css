@@ -136,7 +136,11 @@
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
   --form-max-width: 600px; /* writing forms stay within the app column */
-  --header-height: 56px; /* top bar of tab and stack screens */
+  --header-height: 54px; /* stack screens' top bar: back + title (Figma 364:1884, same on every stack frame) */
+  --header-height-tab: 56px; /* tab screens' logo header (its own Figma pass is separate) */
+  --header-height-admin: 56px; /* admin top bar */
+  --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
+  --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
@@ -217,4 +221,26 @@
   --radius-manage-dialog: 10px; /* 해지 confirm modal */
   --dialog-width-manage: 320px; /* 해지 confirm modal */
   --icon-size-manage-chevron: 20px; /* "요금제 해지" and "전체 보기" chevron */
+
+  /* Figma 23 post detail (285:154) */
+  --post-photo-height: 270px; /* full-bleed photo strip under the header */
+  --space-photo-count: 14px; /* "1/5" pill to the photo's bottom edge (side inset is --page-gutter) */
+  --space-post-author: 18px; /* author row top and bottom padding */
+  --space-post-section: 20px; /* author row to content, band to reactions, reactions to comment input */
+  --space-post-block: 26px; /* between title block, body, links, tags and repo card */
+  --space-post-link-inline: 11px; /* "프로젝트 주소" button side padding */
+  --space-post-link-icon: 6px; /* "프로젝트 주소" text to its link icon */
+  --icon-size-post-link: 14px; /* "프로젝트 주소" link icon */
+  --space-post-follow-inline: 6px; /* author row "팔로우" side padding (block is --space-xxs) */
+  --radius-post-link: 3px; /* "프로젝트 주소" button */
+  --space-post-repo: 15px; /* repo card padding inside its 1px line */
+  --icon-size-post-github: 42px; /* repo card GitHub mark */
+  --avatar-size-post: 44px; /* author and commenter photos */
+  --icon-size-reaction: 20px; /* like / comment / share icons */
+  --space-comment-block: 30px; /* comment top and bottom padding; repo card to the band */
+  --control-height-comment: 42px; /* comment input */
+  --border-width-comment: 1px; /* comment input line at rest (transparent, as in Figma 287:317) */
+  --border-width-comment-focus: 2px; /* comment input line on focus (Figma 364:1950), drawn inside */
+  --size-comment-send: 34px; /* send button inside the input (4px inset); hit area extends to the field */
+  --icon-size-comment-send: 24px; /* arrow inside the send button (Figma 14px, enlarged to 24px by the page owner) */
 }
