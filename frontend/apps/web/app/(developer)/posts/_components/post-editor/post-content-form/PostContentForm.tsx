@@ -1,26 +1,88 @@
 'use client';
 
-// Own region: step 2 of 22 (and the edit screen): repo card, intro, body, photos, optional fields
-import { ExternalLink, GitFork, Plus, Star, Trash2, X } from 'lucide-react';
+// Own region: step 2 of 22 (Figma 274:283) — labels/layout follow the frame
+import { AddBoldIcon } from '@solar-icons/static/bold/add';
+import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
+import { RotateCw, X } from 'lucide-react';
+import Image from 'next/image';
 
-import { Button } from '@/components/ui/button/Button';
 import { CharCounter } from '@/components/ui/char-counter/CharCounter';
-import { ImageUploader } from '@/features/image-upload/image-uploader/ImageUploader';
+import { Icon } from '@/components/ui/icon';
+import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 import { TechTagSheet } from '@/features/tech-tags/tech-tag-sheet/TechTagSheet';
 import { countChars } from '@/lib/format/text';
+import { useOverlay } from '@/lib/navigation/use-overlay';
 import { POST } from '@/lib/policy';
 
-import styles from '../post-editor.module.css';
-import { GITHUB_EMAIL_SETTINGS, usePostContentForm, type PostContentFormProps } from './hook';
+import { PostPeriodSheet, type PeriodField } from '../post-period-sheet';
+import styles from './PostContentForm.module.css';
+import { usePostContentForm, type PostContentFormProps } from './hook';
+
+function formatPeriodLabel(value: string) {
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `${match[1]}.${match[2]}`;
+}
 
 export type { PostContentFormProps };
 
-export function PostContentForm(props: PostContentFormProps) {
-  const { repo } = props;
+function splitRepo(fullName: string) {
+  const slash = fullName.indexOf('/');
+  if (slash < 0) return { owner: fullName, name: fullName };
+  return { owner: fullName.slice(0, slash), name: fullName.slice(slash + 1) };
+}
+
+function FieldLabel({
+  label,
+  hint,
+  required,
+  htmlFor,
+  asLegend,
+}: {
+  label: string;
+  hint?: string;
+  required?: boolean;
+  htmlFor?: string;
+  asLegend?: boolean;
+}) {
+  const content = (
+    <>
+      <span className={styles.label}>{label}</span>
+      {hint && <span className={styles.labelHint}>{hint}</span>}
+      {required && (
+        <>
+          <span className={styles.requiredDot} aria-hidden />
+          <span className="sr-only">(필수)</span>
+        </>
+      )}
+    </>
+  );
+
+  // legend is out of CSS grid flow in fieldsets, so the visible row is a div (gap 12px)
+  if (asLegend) {
+    return (
+      <>
+        <legend className="sr-only">{label}</legend>
+        <div className={styles.labelRow} aria-hidden>
+          {content}
+        </div>
+      </>
+    );
+  }
+
+  const Tag = htmlFor ? 'label' : 'div';
+  return (
+    <Tag className={styles.labelRow} {...(htmlFor ? { htmlFor } : {})}>
+      {content}
+    </Tag>
+  );
+}
+
+export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps) {
+  const { repo, photoLimit } = props;
   const {
     field,
     errorId,
-    openExternal,
     tagSheet,
     creating,
     failure,
@@ -37,121 +99,117 @@ export function PostContentForm(props: PostContentFormProps) {
     removeTag,
     saveTags,
   } = usePostContentForm(props);
-  const optional = <span className={styles.optional}> (선택)</span>;
+  const periodSheet = useOverlay('post-period');
+  const { owner, name } = splitRepo(repo.fullName);
+  const photoInputId = field('photo-input');
+  const { items, max } = uploader;
+
+  function savePeriod(which: PeriodField, value: string) {
+    form.setValue(which === 'start' ? 'periodStart' : 'periodEnd', value, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
 
   return (
     <>
-      <section aria-labelledby={field('repo')} className={styles.repoCard}>
-        <h2 id={field('repo')} className={styles.repoCardName}>
-          {repo.fullName}
-        </h2>
-        <p className={styles.repoMeta}>
-          {repo.language && <span>{repo.language}</span>}
-          <span className={styles.stars}>
-            <Star aria-hidden className={styles.metaIcon} />
-            <span className="sr-only">스타 </span>
-            {repo.stars}
-          </span>
-          {repo.isFork && (
-            <span className={styles.fork}>
-              <GitFork aria-hidden className={styles.metaIcon} />
-              포크{repo.parentFullName && ` · 원본 ${repo.parentFullName}`}
-            </span>
-          )}
-        </p>
-        {repo.description && <p className={styles.repoDescription}>{repo.description}</p>}
-        <dl className={styles.contribution}>
-          <div>
-            <dt>내 커밋</dt>
-            <dd>{repo.authorCommitCount}개</dd>
-          </div>
-          <div>
-            <dt>Linker에서 처리한 이슈</dt>
-            <dd>{repo.handledIssueCount}개</dd>
-          </div>
-        </dl>
-        {repo.authorCommitCount === 0 && (
-          <div className={styles.commitNotice}>
-            <p>커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 숫자에 잡혀요.</p>
-            <Button variant="outline" onClick={() => openExternal(GITHUB_EMAIL_SETTINGS)}>
-              GitHub 이메일 설정 열기
-              <ExternalLink aria-hidden />
-            </Button>
-          </div>
-        )}
-      </section>
-
       <form className={styles.form} noValidate aria-busy={save.isPending} onSubmit={submit}>
-        <section aria-labelledby={field('content')} className={styles.section}>
-          <h2 id={field('content')} className={styles.sectionTitle}>
-            소개
+        {/* 선택한 저장소 — Figma 274:339 */}
+        <section aria-labelledby={field('repo')} className={styles.block}>
+          <h2 id={field('repo')} className={styles.label}>
+            선택한 저장소
           </h2>
-          <div className={styles.field}>
-            <label htmlFor={field('intro')} className={styles.label}>
-              한 줄 소개 <span aria-hidden>*</span>
-              <span className="sr-only">(필수)</span>
-            </label>
-            <input
-              id={field('intro')}
-              className={styles.input}
-              placeholder="예: 팀 협업을 GitHub 이슈와 채팅으로 묶은 웹앱"
-              aria-invalid={errors.intro ? true : undefined}
-              aria-describedby={describe(field('intro-count'), errors.intro && errorId('intro'))}
-              {...form.register('intro')}
-            />
-            <div className={styles.fieldFoot}>
-              {errors.intro && (
-                <p id={errorId('intro')} className={styles.error}>
-                  {errors.intro.message}
+          <div className={styles.repoCard}>
+            <div className={styles.repoMain}>
+              <GitHubMark className={styles.repoMark} />
+              <div className={styles.repoText}>
+                <p className={styles.repoName} title={repo.fullName}>
+                  {name}
                 </p>
-              )}
-              <CharCounter
-                id={field('intro-count')}
-                count={countChars(watched.intro ?? '')}
-                max={POST.intro.max}
-              />
-            </div>
-          </div>
-          <div className={styles.field}>
-            <label htmlFor={field('body')} className={styles.label}>
-              본문{optional}
-            </label>
-            <textarea
-              id={field('body')}
-              className={styles.textarea}
-              rows={10}
-              placeholder="어떤 문제를 풀었는지, 내가 맡은 일, 데모와 배운 점을 적어 주세요."
-              aria-invalid={errors.body ? true : undefined}
-              aria-describedby={describe(
-                field('body-hint'),
-                field('body-count'),
-                errors.body && errorId('body'),
-              )}
-              {...form.register('body')}
-            />
-            <p id={field('body-hint')} className={styles.hint}>
-              마크다운은 쓸 수 없어요. 줄바꿈과 링크만 그대로 보여요.
-            </p>
-            <div className={styles.fieldFoot}>
-              {errors.body && (
-                <p id={errorId('body')} className={styles.error}>
-                  {errors.body.message}
+                <p className={styles.repoOwner}>
+                  <span>@{owner}</span>
                 </p>
-              )}
-              <CharCounter
-                id={field('body-count')}
-                count={countChars(watched.body ?? '')}
-                max={POST.bodyMax}
-              />
+              </div>
             </div>
+            {onChangeRepo && (
+              <button type="button" className={styles.changeRepo} onClick={onChangeRepo}>
+                변경 하기
+              </button>
+            )}
           </div>
         </section>
 
-        <section aria-labelledby={field('photos')} className={styles.section}>
-          <h2 id={field('photos')} className={styles.sectionTitle}>
-            사진{optional}
-          </h2>
-          <ImageUploader uploader={uploader} label="스크린샷·데모 사진" reorderable />
+        {/* 프로젝트 사진 — Figma 274:315 */}
+        <section aria-labelledby={field('photos')} className={styles.block}>
+          <FieldLabel
+            label="프로젝트 사진"
+            hint={`최대 ${photoLimit}장`}
+            required
+            htmlFor={photoInputId}
+          />
+          <span id={field('photos')} className="sr-only">
+            프로젝트 사진
+          </span>
+          <ul className={styles.photos}>
+            {items.map((item, index) => (
+              <li key={item.key} className={styles.photoCell}>
+                <div className={styles.photo}>
+                  <Image
+                    src={item.previewUrl}
+                    alt={`선택한 사진 ${index + 1}`}
+                    fill
+                    sizes="74px"
+                    unoptimized
+                    className={styles.photoImage}
+                  />
+                  {index === 0 && <span className={styles.coverBadge}>대표 이미지</span>}
+                  {item.status === 'failed' && (
+                    <button
+                      type="button"
+                      className={styles.photoRetry}
+                      onClick={() => uploader.retry(item.key)}
+                    >
+                      <RotateCw aria-hidden />
+                      <span className="sr-only">사진 {index + 1} 다시 올리기</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.photoRemove}
+                    onClick={() => uploader.remove(item.key)}
+                  >
+                    <X aria-hidden />
+                    <span className="sr-only">사진 {index + 1} 빼기</span>
+                  </button>
+                </div>
+              </li>
+            ))}
+            {items.length < max && (
+              <li className={styles.photoCell}>
+                <label htmlFor={photoInputId} className={styles.photoAdd}>
+                  <Icon svg={AddBoldIcon} className={styles.photoAddIcon} />
+                  <span className={styles.photoAddCount} aria-live="polite">
+                    <span className={styles.photoAddMuted}>(</span>
+                    <span>{items.length}</span>
+                    <span className={styles.photoAddMuted}>/{max})</span>
+                  </span>
+                  <span className="sr-only">사진 추가</span>
+                </label>
+              </li>
+            )}
+          </ul>
+          <input
+            id={photoInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="sr-only"
+            onChange={(event) => {
+              const files = event.target.files;
+              if (files?.length) uploader.add(files);
+              event.target.value = '';
+            }}
+          />
           {photoWait && !uploader.allDone && (
             <p className={styles.error} role="alert">
               사진이 모두 올라가야 게시할 수 있어요. 실패한 사진은 다시 올리거나 빼 주세요.
@@ -159,41 +217,92 @@ export function PostContentForm(props: PostContentFormProps) {
           )}
         </section>
 
-        <section aria-labelledby={field('more')} className={styles.section}>
-          <h2 id={field('more')} className={styles.sectionTitle}>
-            추가 정보{optional}
-          </h2>
+        {/* 프로젝트 소개 — Figma 274:301 */}
+        <div className={styles.block}>
+          <FieldLabel
+            label="프로젝트 소개"
+            hint="최대 60자"
+            required
+            htmlFor={field('intro')}
+          />
+          <input
+            id={field('intro')}
+            className={styles.input}
+            placeholder="프로젝트 제목을 작성해 주세요."
+            aria-invalid={errors.intro ? true : undefined}
+            aria-describedby={describe(field('intro-count'), errors.intro && errorId('intro'))}
+            {...form.register('intro')}
+          />
+          {errors.intro && (
+            <p id={errorId('intro')} className={styles.error}>
+              {errors.intro.message}
+            </p>
+          )}
+          <span className="sr-only">
+            <CharCounter
+              id={field('intro-count')}
+              count={countChars(watched.intro ?? '')}
+              max={POST.intro.max}
+            />
+          </span>
+        </div>
 
-          <div className={styles.field}>
-            <label htmlFor={field('role')} className={styles.label}>
-              내 역할
-            </label>
+        {/* 프로젝트 본문 — Figma 274:329 */}
+        <div className={styles.block}>
+          <FieldLabel label="프로젝트 본문" hint="최대 500자" required htmlFor={field('body')} />
+          <div className={styles.textareaWrap}>
+            <textarea
+              id={field('body')}
+              className={styles.textarea}
+              rows={5}
+              placeholder="프로젝트에 관해 간단하게 글을 작성해 주세요"
+              aria-invalid={errors.body ? true : undefined}
+              aria-describedby={describe(field('body-count'), errors.body && errorId('body'))}
+              {...form.register('body')}
+            />
+            <CharCounter
+              id={field('body-count')}
+              className={styles.bodyCounter}
+              count={countChars(watched.body ?? '')}
+              /* Figma 274:332 shows 0/500; Policy POST.bodyMax stays the validation cap */
+              max={500}
+            />
+          </div>
+          {errors.body && (
+            <p id={errorId('body')} className={styles.error}>
+              {errors.body.message}
+            </p>
+          )}
+        </div>
+
+        {/* 내 역할 — Figma 276:416 (dropdown look) */}
+        <div className={styles.block}>
+          <FieldLabel label="내 역할" htmlFor={field('role')} />
+          <div className={styles.selectField}>
             <input
               id={field('role')}
               className={styles.input}
-              placeholder="예: 프론트엔드, 채팅 기능 담당"
+              placeholder="프로젝트 역할을 선택해 주세요"
               aria-invalid={errors.myRole ? true : undefined}
-              aria-describedby={describe(field('role-count'), errors.myRole && errorId('role'))}
+              aria-describedby={errors.myRole ? errorId('role') : undefined}
               {...form.register('myRole')}
             />
-            <div className={styles.fieldFoot}>
-              {errors.myRole && (
-                <p id={errorId('role')} className={styles.error}>
-                  {errors.myRole.message}
-                </p>
-              )}
-              <CharCounter
-                id={field('role-count')}
-                count={countChars(watched.myRole ?? '')}
-                max={POST.roleMax}
-              />
-            </div>
+            <Icon svg={AltArrowDownLinearIcon} className={styles.selectChevron} />
           </div>
+          {errors.myRole && (
+            <p id={errorId('role')} className={styles.error}>
+              {errors.myRole.message}
+            </p>
+          )}
+        </div>
 
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.label}>데모 링크</legend>
-            <p className={styles.hint}>https 주소만, {POST.demoLinksMax}개까지 넣을 수 있어요.</p>
-            {links.fields.map((item, index) => {
+        {/* 프로젝트 링크 — Figma 276:432 */}
+        <fieldset className={styles.block}>
+          <FieldLabel label="프로젝트 링크" hint="최대 3개" asLegend />
+          <div className={styles.links}>
+            {Array.from({ length: POST.demoLinksMax }, (_, index) => {
+              const item = links.fields[index];
+              if (!item) return null;
               const linkError = errors.demoLinks?.[index]?.url;
               const inputId = field(`link-${index}`);
               return (
@@ -211,149 +320,158 @@ export function PostContentForm(props: PostContentFormProps) {
                     aria-describedby={linkError ? `${inputId}-error` : undefined}
                     {...form.register(`demoLinks.${index}.url`)}
                   />
-                  <button
-                    type="button"
-                    className={styles.iconButton}
-                    onClick={() => links.remove(index)}
-                  >
-                    <Trash2 aria-hidden />
-                    <span className="sr-only">데모 링크 {index + 1} 빼기</span>
-                  </button>
                   {linkError && (
-                    <p id={`${inputId}-error`} className={styles.linkError}>
+                    <p id={`${inputId}-error`} className={styles.error}>
                       {linkError.message}
                     </p>
                   )}
                 </div>
               );
             })}
-            {links.fields.length < POST.demoLinksMax && (
-              <Button variant="outline" onClick={() => links.append({ url: '' })}>
-                <Plus aria-hidden />
-                링크 추가
-              </Button>
-            )}
-          </fieldset>
-
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.label}>진행 기간</legend>
-            <div className={styles.period}>
-              <div className={styles.field}>
-                <label htmlFor={field('start')} className={styles.subLabel}>
-                  시작한 달
-                </label>
-                <input
-                  id={field('start')}
-                  type="month"
-                  className={styles.input}
-                  aria-invalid={errors.periodStart ? true : undefined}
-                  aria-describedby={errors.periodStart ? errorId('start') : undefined}
-                  {...form.register('periodStart')}
-                />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor={field('end')} className={styles.subLabel}>
-                  끝난 달
-                </label>
-                <input
-                  id={field('end')}
-                  type="month"
-                  className={styles.input}
-                  aria-invalid={errors.periodEnd ? true : undefined}
-                  aria-describedby={describe(field('end-hint'), errors.periodEnd && errorId('end'))}
-                  {...form.register('periodEnd')}
-                />
-              </div>
-            </div>
-            <p id={field('end-hint')} className={styles.hint}>
-              아직 진행 중이면 끝난 달은 비워 두세요.
-            </p>
-            {errors.periodStart && (
-              <p id={errorId('start')} className={styles.error}>
-                {errors.periodStart.message}
-              </p>
-            )}
-            {errors.periodEnd && (
-              <p id={errorId('end')} className={styles.error}>
-                {errors.periodEnd.message}
-              </p>
-            )}
-          </fieldset>
-
-          <div className={styles.field}>
-            <label htmlFor={field('team')} className={styles.label}>
-              팀 규모
-            </label>
-            <div className={styles.suffixInput}>
-              <input
-                id={field('team')}
-                type="number"
-                inputMode="numeric"
-                min={POST.teamSize.min}
-                max={POST.teamSize.max}
-                className={styles.input}
-                aria-invalid={errors.teamSize ? true : undefined}
-                aria-describedby={errors.teamSize ? errorId('team') : undefined}
-                {...form.register('teamSize')}
-              />
-              <span aria-hidden>명</span>
-            </div>
-            {errors.teamSize && (
-              <p id={errorId('team')} className={styles.error}>
-                {errors.teamSize.message}
-              </p>
-            )}
           </div>
+        </fieldset>
 
-          <div className={styles.field}>
-            <div className={styles.fieldHead}>
-              <p className={styles.label} id={field('tags')}>
-                태그
-              </p>
-              <Button
-                variant="soft"
-                aria-describedby={field('tags')}
-                onClick={() => tagSheet.open()}
+        {/* 프로젝트 기간 — Figma 285:112; sheet 368:3896 */}
+        <fieldset className={styles.block}>
+          <FieldLabel label="프로젝트 기간" asLegend />
+          <div className={styles.period}>
+            <div className={styles.selectField}>
+              <button
+                type="button"
+                id={field('start')}
+                className={styles.periodTrigger}
+                aria-label={
+                  watched.periodStart
+                    ? `시작일 ${formatPeriodLabel(watched.periodStart)}`
+                    : '시작일'
+                }
+                aria-invalid={errors.periodStart ? true : undefined}
+                aria-describedby={errors.periodStart ? errorId('start') : undefined}
+                aria-haspopup="dialog"
+                onClick={() => periodSheet.open('start')}
               >
-                <Plus aria-hidden />
-                {tags.length > 0 ? '바꾸기' : '고르기'}
-              </Button>
+                {watched.periodStart ? (
+                  <span aria-hidden>{formatPeriodLabel(watched.periodStart)}</span>
+                ) : (
+                  <span className={styles.periodPlaceholder} aria-hidden>
+                    시작일
+                  </span>
+                )}
+              </button>
+              <Icon svg={AltArrowDownLinearIcon} className={styles.selectChevron} />
+              <input type="hidden" {...form.register('periodStart')} />
             </div>
-            {tags.length === 0 ? (
-              <p className={styles.hint}>기술 스택 태그를 {POST.tagsMax}개까지 고를 수 있어요.</p>
-            ) : (
-              <ul className={styles.tags} aria-labelledby={field('tags')}>
-                {tags.map((tag) => (
-                  <li key={tag}>
-                    <button type="button" className={styles.tag} onClick={() => removeTag(tag)}>
-                      <span aria-hidden>{tag}</span>
-                      <X aria-hidden className={styles.metaIcon} />
-                      <span className="sr-only">{tag} 빼기</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className={styles.selectField}>
+              <button
+                type="button"
+                id={field('end')}
+                className={styles.periodTrigger}
+                aria-label={
+                  watched.periodEnd ? `마감일 ${formatPeriodLabel(watched.periodEnd)}` : '마감일'
+                }
+                aria-invalid={errors.periodEnd ? true : undefined}
+                aria-describedby={errors.periodEnd ? errorId('end') : undefined}
+                aria-haspopup="dialog"
+                onClick={() => periodSheet.open('end')}
+              >
+                {watched.periodEnd ? (
+                  <span aria-hidden>{formatPeriodLabel(watched.periodEnd)}</span>
+                ) : (
+                  <span className={styles.periodPlaceholder} aria-hidden>
+                    마감일
+                  </span>
+                )}
+              </button>
+              <Icon svg={AltArrowDownLinearIcon} className={styles.selectChevron} />
+              <input type="hidden" {...form.register('periodEnd')} />
+            </div>
           </div>
-        </section>
+          {errors.periodStart && (
+            <p id={errorId('start')} className={styles.error}>
+              {errors.periodStart.message}
+            </p>
+          )}
+          {errors.periodEnd && (
+            <p id={errorId('end')} className={styles.error}>
+              {errors.periodEnd.message}
+            </p>
+          )}
+        </fieldset>
+
+        {/* 팀 규모 — Figma 285:113 */}
+        <div className={styles.block}>
+          <FieldLabel label="팀 규모" htmlFor={field('team')} />
+          <input
+            id={field('team')}
+            type="number"
+            inputMode="numeric"
+            min={POST.teamSize.min}
+            max={POST.teamSize.max}
+            className={styles.input}
+            placeholder="팀 인원을 작성해 주세요"
+            aria-invalid={errors.teamSize ? true : undefined}
+            aria-describedby={errors.teamSize ? errorId('team') : undefined}
+            {...form.register('teamSize')}
+          />
+          {errors.teamSize && (
+            <p id={errorId('team')} className={styles.error}>
+              {errors.teamSize.message}
+            </p>
+          )}
+        </div>
+
+        {/* 저장소 태그 — Figma 285:139 */}
+        <div className={styles.block}>
+          <FieldLabel label="저장소 태그" hint="최대 5개" htmlFor={field('tags')} />
+          <button
+            type="button"
+            id={field('tags')}
+            className={styles.tagField}
+            onClick={() => tagSheet.open()}
+          >
+            {tags.length === 0 ? (
+              <span className={styles.tagPlaceholder}>#을 기준으로 태그를 나눠주세요</span>
+            ) : (
+              <span className={styles.tagValue}>{tags.join(' · ')}</span>
+            )}
+          </button>
+          {tags.length > 0 && (
+            <ul className={styles.tags} aria-label="선택한 태그">
+              {tags.map((tag) => (
+                <li key={tag}>
+                  <button type="button" className={styles.tag} onClick={() => removeTag(tag)}>
+                    <span aria-hidden>{tag}</span>
+                    <X aria-hidden className={styles.tagIcon} />
+                    <span className="sr-only">{tag} 빼기</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         {failure && (
           <div className={styles.failure} role="alert">
             <p>{failure}</p>
-            <Button variant="outline" onClick={() => void submit()}>
+            <button type="button" className={styles.retry} onClick={() => void submit()}>
               다시 보내기
-            </Button>
+            </button>
           </div>
         )}
 
         <div className={styles.submitBar}>
-          <Button type="submit" block aria-disabled={save.isPending}>
+          <button type="submit" className={styles.cta} aria-disabled={save.isPending || undefined}>
             {save.isPending ? '저장하는 중…' : creating ? '게시하기' : '수정 완료'}
-          </Button>
+          </button>
         </div>
       </form>
 
       <TechTagSheet value={tags} max={POST.tagsMax} onSave={saveTags} />
+      <PostPeriodSheet
+        start={watched.periodStart ?? ''}
+        end={watched.periodEnd ?? ''}
+        onSave={savePeriod}
+      />
     </>
   );
 }

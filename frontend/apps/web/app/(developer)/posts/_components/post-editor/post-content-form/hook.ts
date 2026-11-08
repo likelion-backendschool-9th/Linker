@@ -36,6 +36,8 @@ export type PostContentFormProps = {
   draftKey: string;
   /** Leave for the post (23) without the editor left in history (blueprint §7-4) */
   onSaved: (postId: number) => void;
+  /** Create step only: go back to repo selection (Figma "변경 하기") */
+  onChangeRepo?: () => void;
 };
 
 /** Why saving failed, with the 04 ch. 12 copy; the content is kept on the device first */

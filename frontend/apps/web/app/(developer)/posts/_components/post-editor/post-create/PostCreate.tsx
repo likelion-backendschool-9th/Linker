@@ -1,7 +1,6 @@
 'use client';
 
 // Client boundary: steps in the URL (`?step=&repo=&teamId=`) and the device draft restore
-import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet/DraftRestoreSheet';
@@ -31,18 +30,21 @@ export function PostCreate() {
   return (
     <div className={styles.editor}>
       <ol className={styles.steps} aria-label="작성 단계">
-        {STEPS.map((label, index) => (
-          <li
-            key={label}
-            className={styles.stepItem}
-            aria-current={step === index + 1 ? 'step' : undefined}
-          >
-            <span className={styles.stepNumber} aria-hidden>
-              {index + 1}
-            </span>
-            {label}
-          </li>
-        ))}
+        {STEPS.map((label, index) => {
+          const reached = index < step;
+          return (
+            <li
+              key={label}
+              className={reached ? styles.stepItemReached : styles.stepItem}
+              aria-current={step === index + 1 ? 'step' : undefined}
+            >
+              <span className="sr-only">
+                {index + 1}. {label}
+                {reached ? ' 완료' : ''}
+              </span>
+            </li>
+          );
+        })}
       </ol>
 
       {leaving ? (
@@ -97,26 +99,18 @@ function ContentStep({ repoId, restored, onChangeRepo, onSaved }: ContentStepPro
   }
 
   return (
-    <>
-      <div className={styles.chosen}>
-        <p className={styles.chosenText}>고른 레포</p>
-        <Button variant="soft" onClick={onChangeRepo}>
-          레포 바꾸기
-        </Button>
-      </div>
-      <PostContentForm
-        target={{ mode: 'create', repoId }}
-        repo={summary.data}
-        photoLimit={summary.data.photoLimit}
-        // The body starts from the repo description (07 TODO 22)
-        initial={
-          restored
-            ? { values: restored.values, photos: restored.photos }
-            : { values: emptyValues!, photos: [] }
-        }
-        draftKey={POST_DRAFT_NEW}
-        onSaved={onSaved}
-      />
-    </>
+    <PostContentForm
+      target={{ mode: 'create', repoId }}
+      repo={summary.data}
+      photoLimit={summary.data.photoLimit}
+      initial={
+        restored
+          ? { values: restored.values, photos: restored.photos }
+          : { values: emptyValues!, photos: [] }
+      }
+      draftKey={POST_DRAFT_NEW}
+      onSaved={onSaved}
+      onChangeRepo={onChangeRepo}
+    />
   );
 }
