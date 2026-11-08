@@ -14,6 +14,7 @@ export const OVERLAY_KEYS = [
   'draft-restore',
   'tech-tags',
   'profile-people',
+  'profile-tech',
   'profile-actions',
   'profile-leave',
   'settings-blocks',
