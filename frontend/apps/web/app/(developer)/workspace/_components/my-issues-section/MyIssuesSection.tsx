@@ -1,7 +1,6 @@
 'use client';
 
 // client boundary: selected team in the URL and the my-issues query
-import type { IssueListItem } from '@linker/api/openAPIDefinition.schemas';
 import { AddBoldIcon } from '@solar-icons/static/bold/add';
 import { ArrowRightUpLinearIcon } from '@solar-icons/static/linear/arrow-right-up';
 import type { Route } from 'next';
@@ -10,13 +9,8 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
-import { formatDate } from '@/lib/format/time';
 
-import {
-  boardStatusColorVar,
-  ISSUE_STATUS_LABELS,
-  type IssueStatus,
-} from '../../../_lib/issue-status';
+import { IssueSummaryRow } from '../../../_components/issue-summary-row';
 import { MyIssuesTeamPicker } from '../my-issues-team-picker';
 import { useMyIssuesSection } from './hook';
 import styles from './MyIssuesSection.module.css';
@@ -82,7 +76,7 @@ export function MyIssuesSection({ previewRows, allIssuesHref }: MyIssuesSectionP
           <ul>
             {shown.map((issue) => (
               <li key={issue.id}>
-                <MyIssueRow teamId={team.id} issue={issue} />
+                <IssueSummaryRow teamId={team.id} issue={issue} />
               </li>
             ))}
           </ul>
@@ -90,55 +84,5 @@ export function MyIssuesSection({ previewRows, allIssuesHref }: MyIssuesSectionP
         {allIssuesLink}
       </section>
     </div>
-  );
-}
-
-function MyIssueRow({ teamId, issue }: { teamId: number; issue: IssueListItem }) {
-  const titleId = `my-issue-${issue.id}-title`;
-  const assignees = issue.assignees.map((user) => user.name).join(', ');
-  return (
-    <article aria-labelledby={titleId} className={styles.row}>
-      <div className={styles.body}>
-        <div className={styles.titleLine}>
-          <h3 id={titleId} className={styles.issueTitle}>
-            <Link href={`/teams/${teamId}/issues/${issue.id}` as Route} className={styles.link}>
-              {issue.title}
-            </Link>
-          </h3>
-          <IssueStatusDot status={issue.status} statusColor={issue.statusColor} />
-        </div>
-        <p className={styles.meta}>
-          <span>#{issue.number}</span>
-          <span className={styles.separator} aria-hidden />
-          <span className={styles.metaText}>{issue.repoName}</span>
-          {assignees && (
-            <>
-              <span className={styles.separator} aria-hidden />
-              <span className={styles.metaText}>{assignees}</span>
-            </>
-          )}
-        </p>
-      </div>
-      {issue.dueDate && (
-        <time dateTime={issue.dueDate} className={issue.overdue ? styles.overdue : styles.due}>
-          {formatDate(issue.dueDate)}
-        </time>
-      )}
-    </article>
-  );
-}
-
-// Dot only on 07 (front-end owner's decision, Figma); the name is for screen readers. NONE has none.
-function IssueStatusDot({ status, statusColor }: Pick<IssueListItem, 'status' | 'statusColor'>) {
-  const name = status === 'NONE' ? null : ISSUE_STATUS_LABELS[status as IssueStatus];
-  return (
-    <>
-      <span
-        className={styles.statusDot}
-        style={{ backgroundColor: boardStatusColorVar(statusColor) }}
-        aria-hidden
-      />
-      {name && <span className="sr-only">{name}</span>}
-    </>
   );
 }

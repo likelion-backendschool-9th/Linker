@@ -1,33 +1,36 @@
-/* Segmented control (guide ch. 5) */
+/* Figma 11 (197:66) team tabs: full column width, 48px, underlined (2px current, 1px others) */
 .nav {
-  margin-bottom: var(--space-lg);
+  /* Cancels PageFrame's top padding so the tabs sit under the header; 11 pulls its band back up */
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) var(--space-md);
 }
 
 .tabs {
   display: flex;
-  gap: var(--space-xxs);
-  padding: var(--space-xxs);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
 }
 
 .tabItem {
   flex: 1;
+  min-width: 0;
 }
 
 .tab {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--touch-target-min);
-  padding: var(--space-xs);
-  color: var(--color-text-subtle-on-tint);
-  border-radius: var(--radius-full);
+  height: var(--control-height-tab);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+  border-bottom: 1px solid var(--color-hairline-tab);
 }
 
 .tab[aria-current='page'] {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
-  background-color: var(--color-canvas);
-  box-shadow: var(--shadow-segment-active);
+  color: var(--color-text-title-cool);
+  border-bottom: 2px solid var(--color-tab-indicator);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }

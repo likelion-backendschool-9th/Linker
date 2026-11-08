@@ -96,6 +96,9 @@ public class IssueController {
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String assignee,
       @RequestParam(required = false) String label,
+      @io.swagger.v3.oas.annotations.Parameter(description = "이슈 제목 검색어(대소문자 무시, 최대 100자)")
+          @RequestParam(required = false)
+          String q,
       @RequestParam(defaultValue = "false") boolean open,
       @RequestParam(required = false) String cursor,
       @RequestParam(defaultValue = "20") int size) {
@@ -105,7 +108,7 @@ public class IssueController {
             issues.list(
                 user,
                 teamId,
-                new IssueListQuery(repo, status, assignee, label, open, cursor, size),
+                new IssueListQuery(repo, status, assignee, label, q, open, cursor, size),
                 false));
   }
 

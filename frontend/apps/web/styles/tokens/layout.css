@@ -50,6 +50,23 @@
   --radio-size: 20px;
   --radio-dot-size: 12.5px;
   --separator-dot-size: 2px; /* dot between meta items */
+  --space-section-inset: 25px; /* 11 progress section top padding */
+  --space-card-gap: 15px; /* 11 progress card rows, section title to its content */
+  --space-search-icon: 14px; /* 11 search field: inset and icon-to-text gap */
+  --space-chip-block: 3px; /* 11 filter chip vertical padding */
+  --space-fab-bottom: 34px; /* 11 team chat shortcut from the screen bottom (Figma, incl. home indicator) */
+  --radius-card-compact: 12px; /* 11 progress cards and search field */
+  --control-height-search: 42px; /* 11 search field */
+  --control-height-chip: 28px; /* 11 filter chips; hit area stays --touch-target-min */
+  --control-height-tab: 48px; /* 11 team tabs */
+  --icon-size-progress-sm: 20px; /* 11 "진행" card icon (Figma frame) */
+  --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
+  --card-height-progress: 85px; /* 11 status cards */
+  --fab-size: 40px; /* 11 team chat shortcut; hit area stays --touch-target-min */
+  --chart-height: 223px; /* 11 trend chart plot area */
+  --chart-point-size: 10px; /* 11 trend chart today marker */
+  --legend-dot-size: 5px; /* 11 trend chart legend dot */
+  --divider-section: 6px; /* 11 band between the trend chart and the issue list */
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
@@ -86,4 +103,5 @@
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
   /* Exception: 07 compact link, Figma value by the front-end owner's decision (Figma first) */
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
+  --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25); /* 11 team chat shortcut (Figma exception) */
 }

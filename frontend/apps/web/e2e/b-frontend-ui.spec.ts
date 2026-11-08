@@ -23,8 +23,8 @@ test('workspace filters teams and reuses the team switcher without a navigation 
   await expect(page).toHaveURL(/\/workspace$/);
   await page.getByRole('article', { name: 'Linker 해커톤팀' }).getByRole('link').click();
   await expect(page).toHaveURL(/\/teams\/1\/issues$/);
-  await page.getByRole('button', { name: /Linker 해커톤팀.*팀 전환/ }).click();
-  await expect(page.getByRole('dialog', { name: '팀 전환' })).toBeVisible();
+  await page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ }).click();
+  await expect(page.getByRole('dialog', { name: '팀 변경' })).toBeVisible();
   await page.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   await page.goBack();
