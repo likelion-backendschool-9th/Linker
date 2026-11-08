@@ -13,7 +13,7 @@ export default async function RecruiterLoginPage({ searchParams }: PageProps<'/r
   const returnTo = first(query.returnTo) ?? '/feed';
 
   return (
-    <PageFrame title="채용 담당자 로그인" variant="stack" backHref="/" bottomTabs={false}>
+    <PageFrame title="기업 로그인" variant="stack" backHref="/" bottomTabs={false}>
       <RecruiterLoginForm returnTo={returnTo} />
     </PageFrame>
   );
