@@ -79,6 +79,28 @@
   --legend-dot-size: 5px; /* 11 trend chart legend dot */
   --divider-section: 6px; /* 11 band between the trend chart and the issue list */
   --detail-label-width: 80px; /* 19 recruit card detail panel label column (Figma 361:981) */
+  --board-column-width: 240px; /* 14 status column */
+  --board-column-gap: 20px; /* 14 between columns, toolbar to columns, tabs to toolbar */
+  --board-column-line: 4px; /* 14 status-colored top line of a column */
+  --space-board-column: 15px; /* 14 column padding, header to cards, between cards */
+  --space-board-card-block: 12px; /* 14 card top and bottom padding */
+  --space-board-card-inline: 10px; /* 14 card side padding, menu side padding */
+  --space-board-card-head: 13px; /* 14 assignee/date line to repo line */
+  --space-board-label-gap: 10px; /* 14 between labels */
+  --space-board-control-gap: 9px; /* 14 between "필터" and "최신순" */
+  --space-board-control-block: 6px; /* 14 button vertical padding */
+  --space-board-control-inline: 10px; /* 14 button side padding */
+  --space-board-control-icon: 5px; /* 14 button text to chevron, name to count, repo to number */
+  --space-board-menu-offset: 5px; /* 14 button to its menu */
+  --space-board-status-menu-offset: 3px; /* 14 card status field to its menu */
+  --radius-board-card: 5px; /* 14 card */
+  --control-height-board: 30px; /* 14 "필터"/"최신순" visual height; hit area stays --touch-target-min */
+  --control-height-board-status: 40px; /* 14 card status field */
+  --board-menu-width: 111px; /* 14 "필터"/"최신순" menus */
+  --board-menu-row-height: 38px; /* 14 menu row */
+  --board-status-dot-size: 8px; /* 14 status dot in the card status field */
+  --icon-size-board-chevron: 16px; /* 14 button chevron (Figma frame) */
+  --icon-size-board-status-chevron: 12px; /* 14 card status field chevron */
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
@@ -118,4 +140,6 @@
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
   /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
+  --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
+  --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
 }

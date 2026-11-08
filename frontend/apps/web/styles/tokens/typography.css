@@ -17,6 +17,7 @@
   --font-size-meta: 0.8125rem; /* 13px, time, view count */
   --font-size-badge: 0.5rem; /* 8px, numeral inside a small count chip only (e.g. GNB unread chip) */
   --font-size-micro: 0.75rem; /* 12px, 07 issue row meta (Figma) */
+  --font-size-board-control: 0.9375rem; /* 15px, 14 buttons and card status field (Figma) */
 
   /* Weight */
   --font-weight-regular: 400; /* body, input values */
@@ -31,4 +32,5 @@
   --line-height-caption: 1.5; /* caption and meta */
   --line-height-compact: 22px; /* 07 issue row lines (Figma) */
   --line-height-card-desc: 20px; /* 19 recruit card description (Figma) */
+  --line-height-board-control: 1.2; /* 14 buttons, menus, column names (Figma text boxes) */
 }

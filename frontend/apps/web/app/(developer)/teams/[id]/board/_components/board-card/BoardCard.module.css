@@ -1,0 +1,147 @@
+/* Figma 14 card (214:104): white, 1px cool outline, 5px corners */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-board-column);
+  padding: var(--space-board-card-block) var(--space-board-card-inline);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-board-card-border);
+  border-radius: var(--radius-board-card);
+}
+
+/* Long press drags on touch; keep the system callout from taking it */
+.card[data-draggable='true'] {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.card[data-dragging='true'] {
+  opacity: 0.4;
+}
+
+.card[data-overlay='true'] {
+  box-shadow: var(--shadow-board-menu);
+}
+
+.card[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+/* "{담당자} 담당" left, date right */
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  margin-bottom: calc(var(--space-board-card-head) - var(--space-board-column));
+}
+
+.assignees {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  overflow-wrap: anywhere;
+}
+
+.due,
+.overdue {
+  flex: none;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+}
+
+.overdue {
+  color: var(--color-status-overdue);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-board-column);
+}
+
+.repo {
+  display: flex;
+  gap: var(--space-board-control-icon);
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+}
+
+.repoName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-title-cool);
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Labels: 12px on alternating light blue / purple (Figma 224:126, 224:134) */
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-board-label-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.label {
+  padding: var(--space-icon-text-compact) var(--space-board-control-icon);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  background-color: var(--color-board-label-blue);
+  border-radius: var(--radius-xxs);
+}
+
+.label:nth-child(even) {
+  background-color: var(--color-board-label-purple);
+}
+
+.dot {
+  flex: none;
+  width: var(--board-status-dot-size);
+  height: var(--board-status-dot-size);
+  border-radius: var(--radius-full);
+}
+
+/* Same look as the status field, for the drag preview */
+.statusPreview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: var(--control-height-board-status);
+  padding-inline: var(--space-sm);
+  font-size: var(--font-size-board-control);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
