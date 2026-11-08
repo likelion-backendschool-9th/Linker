@@ -11,12 +11,12 @@ test.beforeEach(async ({ page }) => {
 
 test('workspace preserves C full-list navigation with the Figma more control', async ({ page }) => {
   await page.goto('/workspace');
-  await expect(page.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
     'href',
     '/workspace/issues',
   );
   await expect(page.getByRole('link', { name: '내 통계', exact: true })).toHaveCount(0);
-  await page.getByRole('link', { name: '내 이슈 전체 보기' }).click();
+  await page.getByRole('link', { name: /내 이슈 전체 보기/ }).click();
   await expect(page).toHaveURL('/workspace/issues');
   await page.getByRole('button', { name: '뒤로', exact: true }).click();
   await expect(page).toHaveURL('/workspace');
@@ -102,7 +102,7 @@ test('admin reports handoff uses only A supported list filters and closes mobile
 
 test('B workspace and real PR 35 list connect through issue detail and back', async ({ page }) => {
   await page.goto('/workspace');
-  await page.getByRole('link', { name: '내 이슈 전체 보기' }).click();
+  await page.getByRole('link', { name: /내 이슈 전체 보기/ }).click();
   await expect(page).toHaveURL('/workspace/issues');
   await expect(page.getByRole('heading', { level: 1, name: '내 이슈' })).toBeVisible();
   const issue = page.getByRole('article').locator('a[href^="/teams/"][href*="/issues/"]').first();

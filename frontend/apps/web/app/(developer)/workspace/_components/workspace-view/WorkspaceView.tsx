@@ -42,7 +42,7 @@ export function WorkspaceView() {
     return (
       <div className={styles.workspace}>
         <ErrorState onRetry={() => void teams.refetch()} />
-        <Link href={myIssuesHref} className={styles.more} aria-label="내 이슈 전체 보기">
+        <Link href={myIssuesHref} className={styles.more} aria-label="더 보기, 내 이슈 전체 보기">
           더 보기 <Icon svg={ArrowRightUpLinearIcon} className={styles.moreIcon} />
         </Link>
       </div>
@@ -115,7 +115,11 @@ export function WorkspaceView() {
             ) : (
               <EmptyState title="배정된 이슈가 없어요." />
             )}
-            <Link href={myIssuesHref} className={styles.more} aria-label="내 이슈 전체 보기">
+            <Link
+              href={myIssuesHref}
+              className={styles.more}
+              aria-label="더 보기, 내 이슈 전체 보기"
+            >
               더 보기 <Icon svg={ArrowRightUpLinearIcon} className={styles.moreIcon} />
             </Link>
           </section>
@@ -132,7 +136,7 @@ export function WorkspaceView() {
               aria-pressed={filter === status}
               onClick={() => void setFilter(status)}
             >
-              <span>{LABELS[status]}</span>
+              <span>{LABELS[status]}</span>{' '}
               <span>{teams.data.items.filter((item) => item.status === status).length}</span>
             </button>
           ))}

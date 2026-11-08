@@ -13,17 +13,19 @@ test('team selection is a draft until applied and survives refresh without an ov
   await page.getByRole('button', { name: '팀 변경, 현재 Linker 해커톤팀' }).click();
   const sheet = page.getByRole('dialog', { name: '팀 변경' });
   await sheet.getByRole('radio', { name: '오픈소스 스터디' }).check();
-  await expect(page.getByRole('heading', { name: '내 Linker 해커톤팀 팀의 이슈', includeHidden: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: '내 Linker 해커톤팀 팀의 이슈', includeHidden: true }),
+  ).toBeVisible();
   await sheet.getByRole('button', { name: '팀 변경', exact: true }).click();
   await expect(sheet).toBeHidden();
   await expect(page).toHaveURL('/workspace?teamId=2');
-  await expect(page.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
     'href',
     '/workspace/issues?teamId=2',
   );
   await page.reload();
   await expect(page.getByRole('button', { name: '팀 변경, 현재 오픈소스 스터디' })).toBeVisible();
-  await page.getByRole('link', { name: '내 이슈 전체 보기' }).click();
+  await page.getByRole('link', { name: /내 이슈 전체 보기/ }).click();
   await expect(page).toHaveURL('/workspace/issues?teamId=2');
   await page.goBack();
   await expect(page).toHaveURL('/workspace?teamId=2');
