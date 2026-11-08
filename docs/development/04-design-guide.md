@@ -56,7 +56,11 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-chip-fork-bg` | `rgb(230 46 0 / 0.1)` | Page 22 fork chip fill; label `--color-status-overdue` |
 | `--color-text-disabled-cool` | `#b2b7c3` | Page 22 already-posted repo name and idle check icon (Figma text/`disabled-button`) |
 | `--color-tab-divider` | `#ebebeb` | Page 19 inactive tab underline and the scroll-revealed search panel's bottom border (Figma) |
-| `--color-fab-bg` | `#2e2e2e` | Page 19 write-recruit-post FAB fill (Figma) |
+| `--color-fab-bg` | `#2e2e2e` | Page 19 write-recruit-post FAB fill (Figma); page 24 write FAB reuses |
+| `--color-feed-card` | `#f6f6f6` | Page 24 post card shell fill (Figma 92:181) |
+| `--color-feed-follow` | `#e5e5e5` | Page 24 follow chip on card shell |
+| `--color-reaction-liked` | `#ff3040` | Liked heart fill (Figma feed/detail) |
+| `--color-icon-ink` | `#3c3c3c` | Page 24 reaction icon stroke (Figma 92:231) |
 | `--color-search-panel-bg` | `#f7f7f7` | Page 19 scroll-revealed search panel background, area B (Figma) |
 | `--color-tab-indicator` / `--color-hairline-tab` | `#121212` / `#ebebeb` | Team tabs of 11–15 and 09 (Figma 11): current tab 2px underline / other tabs 1px underline |
 | `--color-chart-grid` | `#e5e7eb` | Page 11 trend chart dashed day lines |

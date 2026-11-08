@@ -211,12 +211,14 @@ export function findPost(id: string | number) {
   return POSTS.find((post) => post.id === Number(id));
 }
 
-/** Feed/list shape: no body, a cover and counts */
+/** Feed/list shape: cover, intro, short body excerpt, counts (Figma 92:249) */
 export function postCard(post: MockPost) {
+  const excerpt = post.body.replace(/\s+/g, ' ').trim();
   return {
     id: post.id,
     author: post.author,
     intro: post.intro,
+    excerpt: excerpt.length > 0 ? excerpt : null,
     coverUrl: post.photos[0] ?? null,
     repoFullName: post.repo.fullName,
     language: post.repo.language,
