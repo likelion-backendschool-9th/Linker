@@ -412,17 +412,17 @@
 | 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
 | 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
-| 20 | E | POST | `/api/v1/user/recruits` | Create (5/day, concurrent 3 / Pro 10) | user · developers only |
+| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day, concurrent 3 / Pro 10) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
 | 20 | E | PUT | `/api/v1/user/recruits/{recruitId}` | Edit | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/close` | Close — also borrowed by 21's menu | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/reopen` | Reopen | author |
 | 20 | E | DELETE | `/api/v1/user/recruits/{recruitId}` | Delete (expire pending applications + notify) | author |
 | 21 | E | GET | `/api/v1/public/recruits/{recruitId}` | Body, remaining headcount per role, author card. If logged in: my application status, whether already a team member, whether I'm the author | public |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role + 300 chars, 20/day, one re-apply) | user · developers only |
-| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants tab (days left until 14-day expiry) | author |
-| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | Application sheet (stack, contribution graph, posts, completion record, message) | author |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Accept → team member + team chat + notification. No team, role full, team limit returned as codes | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role, 20/day, one re-apply; message unused / empty) | user · developers only |
+| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants drawer (days left until 14-day expiry) | author |
+| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | `[Included]` Application detail (profile is reviewed on 04 instead) | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Invite → team member + team chat + notification; org owner also sends GitHub org invite. Role full / team limit returned as codes | author |
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy) | author |
 
 ### 4-12. 작업물·피드·반응 — `PostController`
@@ -961,7 +961,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: GitHub org invite → 09's `members/{userId}/github-invitation`, cancel application → 19, close/delete → 20, report → 00
 - Tables: new applications · shared recruit_posts, recruit_roles, users, user_tech_tags, contribution_days, completion_records, posts (after 22), team_members, chat_room_members, github_org_invitations, notifications, reports
 - [ ] Server: application-received notification, auto-expire after 14 days unhandled, `[Included]` reminder if org invite not accepted 7 days after acceptance, `[Included]` mark as fake recruiting if team deleted within 7 days after acceptance
-- [ ] Frontend: screens for guest / applicant / author (guest "지원하기" (Apply) → login prompt), apply sheet, applicants tab and application sheet, 3 acceptance-exception sheets (team member limit shows a Flex prompt), reject sheet, `[Included]` share button (00 share sheet), `generateMetadata` + `opengraph-image.tsx` (title, remaining roles, D-n, blueprint 8-3)
+- [ ] Frontend: screens for guest / applicant / author (guest "지원하기" (Apply) → login prompt), apply sheet (role only), applicants drawer (radio + row 거절 + bottom 초대하기; 대기 stays / 완료 leaves list), capacity blocks without Flex/BM upsell on this page (reason or optional "인원 늘리고 초대"), reject sheet, `[Included]` share button (00 share sheet), `generateMetadata` + `opengraph-image.tsx` (title, remaining roles, D-n, blueprint 8-3)
 
 </details>
 

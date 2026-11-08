@@ -29,12 +29,21 @@ export type RecruitSummary = {
   createdAt: string;
 };
 
+/** Team roster on the public detail (Figma 21 "팀원 프로필"); author is always included. */
+export type RecruitTeamMember = RecruitSummary['author'] & {
+  teamRole: 'OWNER' | 'ADMIN' | 'MEMBER';
+  /** True when this member is the recruit-post author */
+  isAuthor: boolean;
+};
+
 /** Provisional WBS 21 `RecruitmentController` contract; replace with Orval types when OpenAPI is available. */
 export type RecruitDetail = RecruitSummary & {
   intro: string;
   duration: string | null;
   teamName: string | null;
   authorCard: RecruitSummary['author'] & { bio: string | null };
+  /** Linked team roster for the profile list; author-only when there is no team yet */
+  teamMembers: RecruitTeamMember[];
   /** Logged in only; false for guests */
   isAuthor: boolean;
   isTeamMember: boolean;

@@ -38,6 +38,7 @@ const base: Detail = {
   intro: '2주 뒤 데모데이를 목표로 해요.',
   duration: '2주',
   teamName: 'Linker',
+  teamMembers: [{ ...author, teamRole: 'OWNER', isAuthor: true }],
   isAuthor: false,
   isTeamMember: false,
   myApplication: null,
@@ -47,8 +48,8 @@ const base: Detail = {
 const applicant: ApplicantRow = {
   id: 9,
   applicant: { id: 7, login: 'taeyang', name: '정태양', avatarUrl: '/mock/avatar.png' },
-  roleId: 12,
-  roleName: '디자이너',
+  roleId: 11,
+  roleName: '백엔드',
   status: 'PENDING',
   appliedAt: '2026-10-30T00:00:00Z',
   daysLeft: 12,
@@ -89,9 +90,13 @@ it('shows the post to guests and sends "지원하기" to the login prompt', asyn
   const onUrlUpdate = vi.fn();
   const { container } = renderWithProviders(<RecruitDetail recruitId="1" />, { onUrlUpdate });
   expect(await screen.findByRole('heading', { name: base.title })).toBeVisible();
-  expect(screen.getByText('1명 남음')).toBeVisible();
-  expect(screen.getByText('모집 완료')).toBeVisible();
-  expect(screen.getByText('끝까지 만드는 걸 좋아해요.')).toBeVisible();
+  expect(screen.getByText('전체 3명 중 2명 모집 완료')).toBeVisible();
+  expect(screen.getByText('1/2')).toBeVisible();
+  expect(screen.getByText('모집 중')).toBeVisible();
+  expect(screen.getByText('1/1')).toBeVisible();
+  expect(screen.getByText('마감')).toBeVisible();
+  expect(screen.getByRole('link', { name: '김링커 프로필 보기' })).toBeVisible();
+  expect(screen.getByText('작성자')).toBeVisible();
   expect(await axe(container)).toHaveNoViolations();
 
   await user.click(screen.getByRole('button', { name: '지원하기' }));
@@ -102,24 +107,25 @@ it('shows the post to guests and sends "지원하기" to the login prompt', asyn
   );
 });
 
-it('lets a developer apply with one open role and a message', async () => {
+it('lets a developer apply with one open role', async () => {
   serve(base);
   const user = userEvent.setup();
   renderWithProviders(<RecruitDetail recruitId="1" />, {
     viewer: { role: 'developer', login: 'developer' },
   });
   await user.click(await screen.findByRole('button', { name: '지원하기' }));
-  const dialog = await screen.findByRole('dialog', { name: '지원하기' });
+  const dialog = await screen.findByRole('dialog', { name: /지원하기/ });
   // Only one role is open, so it's already chosen; the full one is disabled
   expect(within(dialog).getByRole('radio', { name: /백엔드/ })).toBeChecked();
   expect(within(dialog).getByRole('radio', { name: /디자이너/ })).toBeDisabled();
-  await user.type(within(dialog).getByLabelText(/하고 싶은 말/), '주말에 가능해요.');
+  expect(within(dialog).queryByLabelText(/하고 싶은 말/)).not.toBeInTheDocument();
+  expect(within(dialog).queryByRole('button', { name: '취소' })).not.toBeInTheDocument();
   await user.click(within(dialog).getByRole('button', { name: '지원하기' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/recruits/1/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roleId: 11, message: '주말에 가능해요.' }),
+      body: JSON.stringify({ roleId: 11, message: '' }),
     }),
   );
 });
@@ -142,26 +148,29 @@ it('shows a pending application with cancel, and nothing for recruiters', async 
   expect(screen.queryByRole('button', { name: '지원하기' })).not.toBeInTheDocument();
 });
 
-it('gives the author an applicants tab and the role-full sheet on accept', async () => {
-  serve({ ...base, isAuthor: true }, () => {
+it('lets the author open the applicants drawer and hit ROLE_FULL on accept', async () => {
+  serve({ ...base, isAuthor: true, applicantCount: 1 }, () => {
     throw new ApiError(409, { code: 'ROLE_FULL', message: '이 역할은 이미 다 찼어요' });
   });
   const user = userEvent.setup();
   const { container } = renderWithProviders(<RecruitDetail recruitId="1" />, {
     viewer: { role: 'developer', login: 'linker' },
-    searchParams: '?tab=applicants',
   });
-  const card = await screen.findByRole('article', { name: '정태양' });
-  expect(within(card).getByText('12일 뒤 자동으로 만료돼요')).toBeVisible();
+  await user.click(await screen.findByRole('button', { name: '지원자 1명 보기' }));
+  const drawer = await screen.findByRole('dialog', { name: '지원자' });
+  const card = within(drawer).getByRole('article', { name: '정태양' });
+  expect(within(card).getByText(/12일 뒤 만료/)).toBeVisible();
+  expect(within(card).getByRole('link', { name: '정태양 프로필 보기' })).toHaveAttribute(
+    'href',
+    '/user/taeyang',
+  );
   expect(await axe(container)).toHaveNoViolations();
 
-  await user.click(within(card).getByRole('button', { name: '지원서 보기: 정태양' }));
-  const sheet = await screen.findByRole('dialog', { name: '지원서' });
-  expect(within(sheet).getByText('디자인 시스템을 만들어 봤어요.')).toBeVisible();
-  expect(within(sheet).getByText('82%')).toBeVisible();
-  await user.click(within(sheet).getByRole('button', { name: '수락' }));
+  expect(within(card).getByRole('button', { name: '거절' })).toBeVisible();
+  await user.click(within(card).getByRole('radio', { name: '정태양 선택' }));
+  await user.click(within(drawer).getByRole('button', { name: '초대하기' }));
   expect(await screen.findByRole('dialog', { name: '이 역할은 자리가 다 찼어요' })).toBeVisible();
-  expect(screen.getByText('디자이너 1명 → 2명')).toBeVisible();
+  expect(screen.getByText('백엔드 2명 → 3명')).toBeVisible();
 });
 
 it('summarizes remaining roles and the deadline', () => {

@@ -18,16 +18,19 @@ describe('LoginPromptSheet', () => {
     vi.mocked(startGithubLogin).mockResolvedValue(undefined);
   });
 
-  it('opens from the URL with the policy copy and no axe violations', async () => {
+  it('opens from the URL with the Figma copy and no axe violations', async () => {
     renderWithProviders(<LoginPromptSheet />, {
       searchParams: '?overlay=login&returnTo=/workspace',
     });
 
     const dialog = await screen.findByRole('dialog', {
-      name: '로그인한 사용자만 쓸 수 있는 기능이에요',
+      name: '로그인 하기',
     });
-    expect(screen.getByRole('button', { name: 'GitHub로 시작' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '채용 담당자 로그인' })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(
+      '해당 기능은 로그인한 사용자들만 사용할 수 있습니다.로그인 하시겠습니까?',
+    );
+    expect(screen.getByRole('button', { name: '로그인하기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '취소하기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '닫기' })).toBeInTheDocument();
     expect(await axe(dialog)).toHaveNoViolations();
   });
@@ -41,7 +44,7 @@ describe('LoginPromptSheet', () => {
     renderWithProviders(<LoginPromptSheet />, {
       searchParams: '?overlay=login&returnTo=/workspace',
     });
-    await userEvent.click(await screen.findByRole('button', { name: 'GitHub로 시작' }));
+    await userEvent.click(await screen.findByRole('button', { name: '로그인하기' }));
     expect(startGithubLogin).toHaveBeenCalledWith('/workspace');
   });
 
@@ -51,9 +54,7 @@ describe('LoginPromptSheet', () => {
     const updates: UrlUpdateEvent[] = [];
     renderWithProviders(<LoginPromptSheet />, { onUrlUpdate: (event) => updates.push(event) });
 
-    expect(
-      await screen.findByRole('dialog', { name: '로그인한 사용자만 쓸 수 있는 기능이에요' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: '로그인 하기' })).toBeInTheDocument();
     await waitFor(() =>
       expect(updates.some((event) => event.searchParams.get('returnTo') === '/posts/1')).toBe(true),
     );

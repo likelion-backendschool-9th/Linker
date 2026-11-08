@@ -10,7 +10,7 @@ import styles from '../overlay.module.css';
 
 type OverlaySheetProps = {
   overlay: OverlayControl;
-  title: string;
+  title: ReactNode;
   /** Every overlay has a description; pass `describeHidden` when it would only repeat the title */
   description: string;
   describeHidden?: boolean;

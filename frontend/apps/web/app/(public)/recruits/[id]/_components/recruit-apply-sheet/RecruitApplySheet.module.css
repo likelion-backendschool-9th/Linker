@@ -1,1 +1,114 @@
-/* Styles for RecruitApplySheet */
+/* Hug content; shared sheet max-height stays as a ceiling only (no fixed height) */
+.sheet {
+  height: fit-content;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+/* Required-field mark: 4×4 circle beside the title */
+.requiredDot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--size-required-dot);
+  height: var(--size-required-dot);
+  background-color: var(--color-required-dot);
+  border-radius: var(--radius-full);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-lg);
+  /* Shared .body top is --space-lg; keep title → roles with clear gap */
+  margin-top: 0;
+}
+
+.fieldset {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  border-color: var(--color-selection);
+  background-color: color-mix(in srgb, var(--color-selection) 8%, transparent);
+}
+
+.option:has(input:disabled) {
+  cursor: not-allowed;
+  border-color: var(--color-gnb-inactive);
+  color: var(--color-gnb-inactive);
+  opacity: 1;
+}
+
+.option:has(input:disabled) .optionTitle,
+.option:has(input:disabled) .optionMeta {
+  color: var(--color-gnb-inactive);
+}
+
+/* Custom radio: unselected/disabled ring = inactive; checked = selection */
+.control {
+  flex-shrink: 0;
+  width: var(--radio-size);
+  height: var(--radio-size);
+  margin: 0;
+  appearance: none;
+  background-color: var(--color-canvas);
+  border: 2px solid var(--color-gnb-inactive);
+  border-radius: var(--radius-full);
+}
+
+.control:checked {
+  border-color: var(--color-selection);
+  background-color: var(--color-selection);
+  /* Inner white ring so the center reads as a filled dot */
+  box-shadow: inset 0 0 0 calc((var(--radio-size) - var(--radio-dot-size)) / 2) var(--color-canvas);
+}
+
+.control:disabled {
+  border-color: var(--color-gnb-inactive);
+  background-color: var(--color-canvas);
+  box-shadow: none;
+}
+
+.optionTitle {
+  flex: 1;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.optionMeta {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+/* Same cool CTA as page 21 bottom bar */
+.applyCta {
+  min-height: var(--control-height-sheet);
+  color: var(--color-on-primary);
+  background-color: var(--color-cta-cool);
+  border-radius: var(--radius-control-md);
+}
