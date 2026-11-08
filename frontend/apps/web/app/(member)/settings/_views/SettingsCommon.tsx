@@ -246,7 +246,7 @@ export function SettingsCommon({
         pending={logout.isPending}
         onConfirm={() => logout.mutate()}
       />
-      <OverlaySheet overlay={blocksOverlay} title="차단한 사용자">
+      <OverlaySheet overlay={blocksOverlay} title="차단한 사용자" description="차단을 해제할 사용자를 선택해 주세요." describeHidden>
         <label className={styles.searchLabel} htmlFor="block-search">이름 또는 아이디 검색</label>
         <input id="block-search" className={styles.search} value={blockQuery} onChange={(event) => setBlockQuery(event.target.value)} placeholder="이름 또는 아이디 검색" />
         {blocks.isPending ? <p role="status">차단 목록을 불러오는 중…</p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : visibleBlocks.length ? (
