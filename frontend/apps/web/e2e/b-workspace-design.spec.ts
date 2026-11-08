@@ -137,23 +137,50 @@ test('direct-link and browser-back sheet closing never adds a new history entry'
   await expect(page).toHaveURL('/workspace');
 });
 
-test('07 uses its approved profile header and four tabs without changing the shared frame on other pages', async ({
+test('07 reuses the shared header and signed-in five-tab menu used by other pages', async ({
   page,
 }) => {
   await page.goto('/workspace');
   await page.waitForLoadState('networkidle');
   const menu = page.getByRole('navigation', { name: '주 메뉴' });
-  await expect(menu.getByRole('link')).toHaveCount(4);
-  await expect(page.getByRole('banner').getByRole('link', { name: '내 프로필' })).toHaveAttribute(
+  await expect(menu.getByRole('link')).toHaveCount(5);
+  await expect(menu.getByRole('link', { name: '프로필' })).toHaveAttribute(
     'href',
     '/user/seojun-han',
   );
-  await expect(page.getByRole('banner').getByRole('link', { name: '설정' })).toHaveCount(0);
+  const header = page.getByRole('banner');
+  await expect(header.getByRole('link', { name: '설정' })).toHaveAttribute('href', '/settings');
+  await expect(header.getByRole('link', { name: '내 프로필' })).toHaveCount(0);
+  await expect(header.getByRole('img', { name: 'Linker', exact: true })).toHaveAttribute(
+    'src',
+    '/textlogo.svg',
+  );
+  const headerStyles = await header.evaluate((node) => ({
+    className: node.className,
+    height: node.getBoundingClientRect().height,
+    iconTargets: Array.from(node.querySelectorAll('button, a')).map(
+      (item) => item.getAttribute('aria-label') ?? item.textContent?.trim(),
+    ),
+  }));
+  expect(headerStyles.height).toBe(56);
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('searchbox')).toBeVisible();
   await page.getByRole('button', { name: '검색창 닫기' }).click();
   await expect(page.getByRole('searchbox')).toBeHidden();
-  await page.goto('/feed');
-  await expect(page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link')).toHaveCount(5);
-  await expect(page.getByRole('banner').getByRole('link', { name: '설정' })).toBeVisible();
+  for (const path of ['/feed', '/recruits']) {
+    await page.goto(path);
+    await expect(page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link')).toHaveCount(
+      5,
+    );
+    await expect(page.getByRole('banner').getByRole('link', { name: '설정' })).toBeVisible();
+    expect(
+      await page.getByRole('banner').evaluate((node) => ({
+        className: node.className,
+        height: node.getBoundingClientRect().height,
+        iconTargets: Array.from(node.querySelectorAll('button, a')).map(
+          (item) => item.getAttribute('aria-label') ?? item.textContent?.trim(),
+        ),
+      })),
+    ).toEqual(headerStyles);
+  }
 });

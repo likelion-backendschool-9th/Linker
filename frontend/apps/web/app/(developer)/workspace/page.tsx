@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 
-import { WorkspaceFrame } from './_components/workspace-frame/WorkspaceFrame';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 import { getQueryClient } from '@/lib/api/query-client';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -19,10 +19,10 @@ export default async function WorkspacePage({
   await client.prefetchQuery(myTeamsOptions());
   await prefetchMyIssues(client, await searchParams);
   return (
-    <WorkspaceFrame>
+    <PageFrame title="워크스페이스" hideTitle>
       <HydrationBoundary state={dehydrate(client)}>
         <WorkspaceView />
       </HydrationBoundary>
-    </WorkspaceFrame>
+    </PageFrame>
   );
 }
