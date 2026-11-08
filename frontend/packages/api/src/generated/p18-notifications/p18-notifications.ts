@@ -6,6 +6,7 @@
  */
 import {
   queryOptions as queryOptionsBuilder,
+  useMutation,
   useQuery,
   useSuspenseQuery
 } from '@tanstack/react-query';
@@ -13,10 +14,13 @@ import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
@@ -24,6 +28,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiErrorBody,
+  CreateAppealRequest,
+  CreateAppealResponse,
+  ListNotificationsParams,
+  NotificationPageResponse,
+  RegisterPushTokenRequest,
   UnreadCountResponse
 } from '../openAPIDefinition.schemas';
 
@@ -52,6 +62,466 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getRegisterPushTokenUrl = () => {
+
+
+
+
+  return `/api/v1/user/push-tokens`
+}
+
+export const registerPushToken = async (registerPushTokenRequest: RegisterPushTokenRequest, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<void>(getRegisterPushTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(registerPushTokenRequest)
+  }
+);}
+
+
+
+
+
+export const getRegisterPushTokenMutationKey = () => ['registerPushToken'] as const;
+
+export const getRegisterPushTokenMutationOptions = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,RegisterPushTokenMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,RegisterPushTokenMutationVariables, TContext> => {
+
+const mutationKey = getRegisterPushTokenMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerPushToken>>, RegisterPushTokenMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerPushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof registerPushToken>>>
+    export type RegisterPushTokenMutationBody = RegisterPushTokenRequest
+    export type RegisterPushTokenMutationError = ApiErrorBody
+    export type RegisterPushTokenMutationVariables = {data: RegisterPushTokenRequest}
+
+    export const useRegisterPushToken = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,RegisterPushTokenMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof registerPushToken>>,
+        TError,
+        RegisterPushTokenMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRegisterPushTokenMutationOptions(options), queryClient);
+    }
+    export const getMarkAllNotificationsReadUrl = () => {
+
+
+
+
+  return `/api/v1/user/notifications/read-all`
+}
+
+export const markAllNotificationsRead = async ( options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getMarkAllNotificationsReadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkAllNotificationsReadMutationKey = () => ['markAllNotificationsRead'] as const;
+
+export const getMarkAllNotificationsReadMutationOptions = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext> => {
+
+const mutationKey = getMarkAllNotificationsReadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAllNotificationsRead>>, void> = () => {
+
+
+          return  markAllNotificationsRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkAllNotificationsReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAllNotificationsRead>>>
+
+    export type MarkAllNotificationsReadMutationError = ApiErrorBody
+
+
+    export const useMarkAllNotificationsRead = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markAllNotificationsRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getMarkAllNotificationsReadMutationOptions(options), queryClient);
+    }
+    export const getCreateAppealUrl = () => {
+
+
+
+
+  return `/api/v1/user/appeals`
+}
+
+export const createAppeal = async (createAppealRequest: CreateAppealRequest, options?: Parameters<typeof apiFetch>[1]): Promise<CreateAppealResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<CreateAppealResponse>(getCreateAppealUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createAppealRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateAppealMutationKey = () => ['createAppeal'] as const;
+
+export const getCreateAppealMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAppeal>>, TError,CreateAppealMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAppeal>>, TError,CreateAppealMutationVariables, TContext> => {
+
+const mutationKey = getCreateAppealMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAppeal>>, CreateAppealMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAppeal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAppealMutationResult = NonNullable<Awaited<ReturnType<typeof createAppeal>>>
+    export type CreateAppealMutationBody = CreateAppealRequest
+    export type CreateAppealMutationError = unknown
+    export type CreateAppealMutationVariables = {data: CreateAppealRequest}
+
+    export const useCreateAppeal = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAppeal>>, TError,CreateAppealMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAppeal>>,
+        TError,
+        CreateAppealMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAppealMutationOptions(options), queryClient);
+    }
+    export const getMarkNotificationReadUrl = (notificationId: number,) => {
+
+
+
+
+  return `/api/v1/user/notifications/${notificationId}/read`
+}
+
+export const markNotificationRead = async (notificationId: number, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getMarkNotificationReadUrl(notificationId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkNotificationReadMutationKey = () => ['markNotificationRead'] as const;
+
+export const getMarkNotificationReadMutationOptions = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,MarkNotificationReadMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,MarkNotificationReadMutationVariables, TContext> => {
+
+const mutationKey = getMarkNotificationReadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNotificationRead>>, MarkNotificationReadMutationVariables> = (props) => {
+          const {notificationId} = props ?? {};
+
+          return  markNotificationRead(notificationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNotificationReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNotificationRead>>>
+
+    export type MarkNotificationReadMutationError = ApiErrorBody
+    export type MarkNotificationReadMutationVariables = {notificationId: number}
+
+    export const useMarkNotificationRead = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationRead>>, TError,MarkNotificationReadMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markNotificationRead>>,
+        TError,
+        MarkNotificationReadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkNotificationReadMutationOptions(options), queryClient);
+    }
+    export const getListNotificationsUrl = (params?: ListNotificationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/user/notifications?${stringifiedParams}` : `/api/v1/user/notifications`
+}
+
+export const listNotifications = async (params?: ListNotificationsParams, options?: Parameters<typeof apiFetch>[1]): Promise<NotificationPageResponse> => {
+
+  return apiFetch<NotificationPageResponse>(getListNotificationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationsQueryKey = (params?: ListNotificationsParams,) => {
+    return [
+    `/api/v1/user/notifications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotifications>>> = ({ signal }) => listNotifications(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotifications>>>
+export type ListNotificationsQueryError = ApiErrorBody
+
+
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params: undefined |  ListNotificationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof listNotifications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof listNotifications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListNotificationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const prefetchListNotificationsQuery = async <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ queryClient: QueryClient, params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+
+  ): Promise<QueryClient> => {
+
+  const queryOptions = getListNotificationsQueryOptions(params,options)
+
+  await queryClient.query(queryOptions).catch(() => {});
+
+  return queryClient;
+}
+
+
+
+
+
+export const getListNotificationsSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(params?: ListNotificationsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotifications>>> = ({ signal }) => listNotifications(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListNotificationsSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listNotifications>>>
+export type ListNotificationsSuspenseQueryError = ApiErrorBody
+
+
+export function useListNotificationsSuspense<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params: undefined |  ListNotificationsParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNotificationsSuspense<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params?: ListNotificationsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNotificationsSuspense<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params?: ListNotificationsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListNotificationsSuspense<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ApiErrorBody>(
+ params?: ListNotificationsParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListNotificationsSuspenseQueryOptions(params,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export const getGetUnreadNotificationCountUrl = () => {
 
@@ -83,7 +553,7 @@ export const getGetUnreadNotificationCountQueryKey = () => {
     }
 
 
-export const getGetUnreadNotificationCountQueryOptions = <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getGetUnreadNotificationCountQueryOptions = <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -102,10 +572,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetUnreadNotificationCountQueryResult = NonNullable<Awaited<ReturnType<typeof getUnreadNotificationCount>>>
-export type GetUnreadNotificationCountQueryError = unknown
+export type GetUnreadNotificationCountQueryError = ApiErrorBody
 
 
-export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getUnreadNotificationCount>>,
@@ -115,7 +585,7 @@ export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof 
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getUnreadNotificationCount>>,
@@ -125,12 +595,12 @@ export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof 
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -142,7 +612,7 @@ export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
-export const prefetchGetUnreadNotificationCountQuery = async <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export const prefetchGetUnreadNotificationCountQuery = async <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
  queryClient: QueryClient,  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 
   ): Promise<QueryClient> => {
@@ -158,7 +628,7 @@ export const prefetchGetUnreadNotificationCountQuery = async <TData = Awaited<Re
 
 
 
-export const getGetUnreadNotificationCountSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getGetUnreadNotificationCountSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>( options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -177,23 +647,23 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetUnreadNotificationCountSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getUnreadNotificationCount>>>
-export type GetUnreadNotificationCountSuspenseQueryError = unknown
+export type GetUnreadNotificationCountSuspenseQueryError = ApiErrorBody
 
 
-export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = unknown>(
+export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ApiErrorBody>(
   options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -210,3 +680,70 @@ export function useGetUnreadNotificationCountSuspense<TData = Awaited<ReturnType
 
 
 
+export const getDeletePushTokenUrl = (token: string,) => {
+
+
+
+
+  return `/api/v1/user/push-tokens/${token}`
+}
+
+export const deletePushToken = async (token: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getDeletePushTokenUrl(token),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePushTokenMutationKey = () => ['deletePushToken'] as const;
+
+export const getDeletePushTokenMutationOptions = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePushToken>>, TError,DeletePushTokenMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePushToken>>, TError,DeletePushTokenMutationVariables, TContext> => {
+
+const mutationKey = getDeletePushTokenMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePushToken>>, DeletePushTokenMutationVariables> = (props) => {
+          const {token} = props ?? {};
+
+          return  deletePushToken(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof deletePushToken>>>
+
+    export type DeletePushTokenMutationError = ApiErrorBody
+    export type DeletePushTokenMutationVariables = {token: string}
+
+    export const useDeletePushToken = <TError = ApiErrorBody,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePushToken>>, TError,DeletePushTokenMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deletePushToken>>,
+        TError,
+        DeletePushTokenMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeletePushTokenMutationOptions(options), queryClient);
+    }

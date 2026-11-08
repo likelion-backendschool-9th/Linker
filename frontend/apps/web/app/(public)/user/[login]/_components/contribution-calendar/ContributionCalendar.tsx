@@ -5,7 +5,7 @@ import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
 import styles from '../profile.module.css';
 import { CONTRIBUTION_WEEKDAYS, useContributionCalendar } from './hook';
 
-export function ContributionCalendar({ login }: { login: string }) {
+export function ContributionCalendar({ login, compact = false }: { login: string; compact?: boolean }) {
   const {
     contributions,
     data,
@@ -24,18 +24,37 @@ export function ContributionCalendar({ login }: { login: string }) {
 
   if (contributions.isPending) {
     return (
-      <section className={styles.section} aria-labelledby="contribution-title">
-        <h2 id="contribution-title">GitHub 기여</h2>
+      <section className={compact ? styles.compactCalendar : styles.section} aria-labelledby="contribution-title">
+        <h2 id="contribution-title" className={compact ? 'sr-only' : undefined}>
+          GitHub 기여
+        </h2>
         <p role="status">기여 기록을 불러오고 있어요.</p>
+      </section>
+    );
+  }
+  if (contributions.isError) {
+    return (
+      <section className={compact ? styles.compactCalendar : styles.section} aria-labelledby="contribution-title">
+        <h2 id="contribution-title" className={compact ? 'sr-only' : undefined}>
+          GitHub 기여
+        </h2>
+        <p className={styles.error} role="status">
+          기여 기록을 불러오지 못했어요.
+        </p>
       </section>
     );
   }
   if (!data) return null;
 
   return (
-    <section className={styles.section} aria-labelledby="contribution-title">
+    <section
+      className={compact ? styles.compactCalendar : styles.section}
+      aria-labelledby="contribution-title"
+    >
       <div className={styles.calendarHeader}>
-        <h2 id="contribution-title">GitHub 기여</h2>
+        <h2 id="contribution-title" className={compact ? 'sr-only' : undefined}>
+          GitHub 기여
+        </h2>
         <div>
           <button
             type="button"

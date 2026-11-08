@@ -7,6 +7,38 @@
 import * as zod from 'zod';
 
 
+export const ShareChatCardParams = zod.object({
+  "roomId": zod.int()
+})
+
+export const ShareChatCardBody = zod.object({
+  "targetType": zod.string().optional(),
+  "targetId": zod.int().optional(),
+  "clientMessageId": zod.string().optional()
+})
+
+export const ShareChatCardResponse = zod.object({
+  "id": zod.int(),
+  "roomId": zod.int(),
+  "unreadCount": zod.int().describe('Other current participants who have not read it'),
+  "clientMessageId": zod.string().nullable(),
+  "sender": zod.object({
+  "id": zod.int(),
+  "login": zod.string().nullable().describe('null for a withdrawn account'),
+  "name": zod.string().describe('Display name, or the withdrawn placeholder'),
+  "avatarUrl": zod.string().nullable()
+}).nullable().describe('null for SYSTEM and PR_EVENT'),
+  "type": zod.enum(['TEXT', 'IMAGE', 'ISSUE_CARD', 'PR_EVENT', 'SYSTEM', 'AI_SUMMARY', 'SHARE_CARD']),
+  "text": zod.string().nullable(),
+  "imageUrls": zod.array(zod.string()),
+  "payload": zod.record(zod.string(), zod.unknown()).nullable(),
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "editedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "deletedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "visibility": zod.enum(['VISIBLE', 'HIDDEN']),
+  "updatedAt": zod.iso.datetime({"offset":true}).describe('Row version (microseconds); compare to order frames')
+})
+
 export const MarkChatReadParams = zod.object({
   "roomId": zod.int()
 })
@@ -16,6 +48,16 @@ export const MarkChatReadBody = zod.object({
 })
 
 export const MarkChatReadResponse = zod.void()
+
+export const StartDirectChatBody = zod.object({
+  "userId": zod.int().optional(),
+  "message": zod.string().optional()
+})
+
+export const StartDirectChatResponse = zod.object({
+  "roomId": zod.int().nullable(),
+  "kind": zod.enum(['DIRECT', 'REQUEST'])
+})
 
 export const UpdateChatNotificationParams = zod.object({
   "roomId": zod.int()
@@ -44,24 +86,88 @@ export const EditChatMessageBody = zod.object({
 })
 
 export const EditChatMessageResponse = zod.object({
-  "id": zod.int().optional(),
-  "roomId": zod.int().optional(),
-  "unreadCount": zod.int().optional(),
-  "clientMessageId": zod.string().optional(),
+  "id": zod.int(),
+  "roomId": zod.int(),
+  "unreadCount": zod.int().describe('Other current participants who have not read it'),
+  "clientMessageId": zod.string().nullable(),
   "sender": zod.object({
-  "id": zod.int().optional(),
-  "login": zod.string().optional(),
-  "name": zod.string().optional(),
-  "avatarUrl": zod.string().optional()
-}).optional(),
-  "type": zod.string().optional(),
-  "text": zod.string().optional(),
-  "imageUrls": zod.array(zod.string()).optional(),
-  "payload": zod.unknown().optional(),
-  "createdAt": zod.iso.datetime({"offset":true}).optional(),
-  "editedAt": zod.iso.datetime({"offset":true}).optional(),
-  "deletedAt": zod.iso.datetime({"offset":true}).optional(),
-  "visibility": zod.string().optional()
+  "id": zod.int(),
+  "login": zod.string().nullable().describe('null for a withdrawn account'),
+  "name": zod.string().describe('Display name, or the withdrawn placeholder'),
+  "avatarUrl": zod.string().nullable()
+}).nullable().describe('null for SYSTEM and PR_EVENT'),
+  "type": zod.enum(['TEXT', 'IMAGE', 'ISSUE_CARD', 'PR_EVENT', 'SYSTEM', 'AI_SUMMARY', 'SHARE_CARD']),
+  "text": zod.string().nullable(),
+  "imageUrls": zod.array(zod.string()),
+  "payload": zod.record(zod.string(), zod.unknown()).nullable(),
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "editedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "deletedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "visibility": zod.enum(['VISIBLE', 'HIDDEN']),
+  "updatedAt": zod.iso.datetime({"offset":true}).describe('Row version (microseconds); compare to order frames')
+})
+
+export const ListChatShareTargetsQueryParams = zod.object({
+  "q": zod.string().optional()
+})
+
+export const ListChatShareTargetsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "roomId": zod.int().optional(),
+  "kind": zod.string().optional(),
+  "title": zod.string().optional()
+})).optional()
+})
+
+export const GetChatRoomParams = zod.object({
+  "roomId": zod.int()
+})
+
+export const GetChatRoomResponse = zod.object({
+  "id": zod.int(),
+  "kind": zod.enum(['TEAM', 'DIRECT', 'REQUEST']),
+  "title": zod.string().describe('TEAM: team name. 1:1: counterpart name'),
+  "requestDirection": zod.union([zod.literal('SENT'),zod.literal('RECEIVED'),zod.literal(null)]).nullable().describe('REQUEST only'),
+  "muted": zod.boolean(),
+  "members": zod.array(zod.object({
+  "id": zod.int(),
+  "login": zod.string().nullable().describe('null for a withdrawn account'),
+  "name": zod.string().describe('Display name, or the withdrawn placeholder'),
+  "avatarUrl": zod.string().nullable()
+})),
+  "team": zod.object({
+  "id": zod.int(),
+  "name": zod.string(),
+  "status": zod.enum(['ACTIVE', 'COMPLETED', 'READ_ONLY', 'ARCHIVED']),
+  "myRole": zod.enum(['OWNER', 'ADMIN', 'MEMBER'])
+}).nullable(),
+  "historyLimitDays": zod.int().nullable().describe('Free team history window in days; null for 1:1')
+})
+
+export const ListChatPullRequestsParams = zod.object({
+  "roomId": zod.int()
+})
+
+export const listChatPullRequestsQueryStateDefault = `open`;
+
+export const ListChatPullRequestsQueryParams = zod.object({
+  "state": zod.string().default(listChatPullRequestsQueryStateDefault)
+})
+
+export const ListChatPullRequestsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.int(),
+  "repoId": zod.int(),
+  "githubRepoId": zod.int(),
+  "githubPrId": zod.int(),
+  "repo": zod.string(),
+  "number": zod.int(),
+  "title": zod.string(),
+  "state": zod.string(),
+  "draft": zod.boolean(),
+  "author": zod.string(),
+  "url": zod.string()
+}))
 })
 
 export const ListChatMessagesParams = zod.object({
@@ -75,32 +181,33 @@ export const ListChatMessagesQueryParams = zod.object({
 
 export const ListChatMessagesResponse = zod.object({
   "items": zod.array(zod.object({
-  "id": zod.int().optional(),
-  "roomId": zod.int().optional(),
-  "unreadCount": zod.int().optional(),
-  "clientMessageId": zod.string().optional(),
+  "id": zod.int(),
+  "roomId": zod.int(),
+  "unreadCount": zod.int().describe('Other current participants who have not read it'),
+  "clientMessageId": zod.string().nullable(),
   "sender": zod.object({
-  "id": zod.int().optional(),
-  "login": zod.string().optional(),
-  "name": zod.string().optional(),
-  "avatarUrl": zod.string().optional()
-}).optional(),
-  "type": zod.string().optional(),
-  "text": zod.string().optional(),
-  "imageUrls": zod.array(zod.string()).optional(),
-  "payload": zod.unknown().optional(),
-  "createdAt": zod.iso.datetime({"offset":true}).optional(),
-  "editedAt": zod.iso.datetime({"offset":true}).optional(),
-  "deletedAt": zod.iso.datetime({"offset":true}).optional(),
-  "visibility": zod.string().optional()
-})).optional(),
-  "hasMore": zod.boolean().optional(),
-  "catchUpLimited": zod.boolean().optional(),
-  "nextAfter": zod.int().optional(),
+  "id": zod.int(),
+  "login": zod.string().nullable().describe('null for a withdrawn account'),
+  "name": zod.string().describe('Display name, or the withdrawn placeholder'),
+  "avatarUrl": zod.string().nullable()
+}).nullable().describe('null for SYSTEM and PR_EVENT'),
+  "type": zod.enum(['TEXT', 'IMAGE', 'ISSUE_CARD', 'PR_EVENT', 'SYSTEM', 'AI_SUMMARY', 'SHARE_CARD']),
+  "text": zod.string().nullable(),
+  "imageUrls": zod.array(zod.string()),
+  "payload": zod.record(zod.string(), zod.unknown()).nullable(),
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "editedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "deletedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "visibility": zod.enum(['VISIBLE', 'HIDDEN']),
+  "updatedAt": zod.iso.datetime({"offset":true}).describe('Row version (microseconds); compare to order frames')
+})),
+  "hasMore": zod.boolean(),
+  "catchUpLimited": zod.boolean(),
+  "nextAfter": zod.int().nullable().describe('Continue the catch-up with after=nextAfter'),
   "history": zod.object({
-  "applied": zod.string().optional(),
-  "flexSupported": zod.boolean().optional()
-}).optional()
+  "applied": zod.enum(['FREE_60_DAYS']),
+  "flexSupported": zod.boolean()
+}).nullable().describe('Team rooms only')
 })
 
 export const ListUnreadChatMembersParams = zod.object({
@@ -110,10 +217,29 @@ export const ListUnreadChatMembersParams = zod.object({
 
 export const ListUnreadChatMembersResponse = zod.object({
   "items": zod.array(zod.object({
-  "id": zod.int().optional(),
-  "login": zod.string().optional(),
-  "name": zod.string().optional(),
-  "avatarUrl": zod.string().optional()
-})).optional()
+  "id": zod.int(),
+  "login": zod.string().nullable().describe('null for a withdrawn account'),
+  "name": zod.string().describe('Display name, or the withdrawn placeholder'),
+  "avatarUrl": zod.string().nullable()
+}))
 })
+
+export const ListChatMentionCandidatesParams = zod.object({
+  "roomId": zod.int()
+})
+
+export const ListChatMentionCandidatesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.int(),
+  "login": zod.string().nullable().describe('null for a withdrawn account'),
+  "name": zod.string().describe('Display name, or the withdrawn placeholder'),
+  "avatarUrl": zod.string().nullable()
+}))
+})
+
+export const LeaveChatRoomParams = zod.object({
+  "roomId": zod.int()
+})
+
+export const LeaveChatRoomResponse = zod.void()
 

@@ -45,6 +45,7 @@ import com.linker.backend.dto.chat.response.ChatMessageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
+import com.linker.backend.dto.chat.response.ChatRoomTeamResponse;
 import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
 import com.linker.backend.dto.chat.response.ChatShareCardResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
@@ -122,6 +123,7 @@ public class ChatService {
 
 	static final String DELETED_PREVIEW = "삭제된 메시지입니다";
 	static final String HIDDEN_PREVIEW = "운영 정책에 따라 숨겨진 메시지예요";
+	static final String IMAGE_NOTIFICATION = "사진을 보냈어요";
 
 	private final ChatRoomAccess chatRooms;
 	private final ChatRoomRepository rooms;
@@ -252,7 +254,7 @@ public class ChatService {
 		room.markLastMessage(message.getId(), now);
 		events.publishEvent(new ChatMessageReady(room.getId(), new ChatMessageResponse(
 				message.getId(), room.getId(), unreadCount(message), key, null, "PR_EVENT",
-				message.getBody(), List.of(), payload, now, null, null, "VISIBLE")));
+				message.getBody(), List.of(), payload, now, null, null, "VISIBLE", message.getUpdatedAt())));
 		for (long memberId : members.findActiveUserIds(room.getId()))
 			events.publishEvent(new ChatRoomsChanged(memberId, room.getId()));
 	}
@@ -300,7 +302,8 @@ public class ChatService {
 					.map(ChatService::memberView)
 					.toList();
 			return new ChatRoomInfoResponse(room.getId(), "TEAM", team.name(), null, membership.isMuted(), people,
-					Map.of("id", team.id(), "status", team.status()), PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
+					new ChatRoomTeamResponse(team.id(), team.name(), team.status(), team.role()),
+					PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
 		}
 		String kind;
 		String direction;
@@ -495,7 +498,8 @@ public class ChatService {
 				"CHAT_ROOM",
 				room.getId(),
 				"/chats/" + room.getId(),
-				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + "}",
+				notificationPayload(room.getId(), message, null,
+						me.visibleName() + "님이 메시지 요청을 보냈어요", null),
 				"message-request:" + room.getId()
 		));
 		announceRoom(room.getId(), me.getId(), targetId);
@@ -807,6 +811,10 @@ public class ChatService {
 		User account = requireActive(principal);
 		ChatRoomMember member = members.lockActive(roomId, account.getId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		// Team rooms follow team membership; leaving a team is page 09's flow, not this endpoint.
+		if (member.getRoom().getRoomType() == RoomType.TEAM) {
+			throw new ApiException(403, "FORBIDDEN", "팀 채팅방은 나갈 수 없어요");
+		}
 		member.leave(DatabaseInstant.now(clock));
 		events.publishEvent(new ChatRoomsChanged(account.getId(), roomId));
 	}
@@ -916,7 +924,7 @@ public class ChatService {
 						"CHAT_ROOM",
 						roomId,
 						"/chats/" + roomId,
-						"{\"roomId\":" + roomId + ",\"messageId\":" + message.getId() + "}",
+						notificationPayload(roomId, message, null, current.visibleName() + "님이 메시지를 보냈어요", null),
 						"chat:" + roomId
 				));
 			}
@@ -949,22 +957,27 @@ public class ChatService {
 				.collect(Collectors.toSet());
 		List<Long> reachable = recipientIds.stream().filter(mentionable::contains).toList();
 		List<Long> people = command.mentionedUserIds().stream().filter(reachable::contains).toList();
+		TeamChatAccess.TeamView team = teamChat.readableBy(sender.getId(), room.getTeamId());
+		String teamName = team == null ? null : team.name();
 		for (Long personId : people) {
 			mentions.save(ChatMessageMention.person(message, personId));
-			notifications.create(roomNotification(personId, sender, room, message, NotificationTypes.CHAT_MENTION, "mention"));
+			notifications.create(roomNotification(personId, sender, room, message, NotificationTypes.CHAT_MENTION, "mention",
+					sender.visibleName() + "님이 회원님을 언급했어요", teamName));
 		}
 		if (command.mentionAll()) {
 			mentions.save(ChatMessageMention.everyone(message));
 			for (Long memberId : reachable) {
 				if (!people.contains(memberId)) {
-					notifications.create(roomNotification(memberId, sender, room, message, NotificationTypes.CHAT, "mentionAll"));
+					notifications.create(roomNotification(memberId, sender, room, message, NotificationTypes.CHAT, "mentionAll",
+							sender.visibleName() + "님이 메시지를 보냈어요", teamName));
 				}
 			}
 		}
 	}
 
-	private static CreateNotificationCommand roomNotification(
-			long recipientId, User sender, ChatRoom room, ChatMessage message, String type, String flag
+	private CreateNotificationCommand roomNotification(
+			long recipientId, User sender, ChatRoom room, ChatMessage message, String type, String flag,
+			String title, String teamName
 	) {
 		return new CreateNotificationCommand(
 				recipientId,
@@ -973,9 +986,37 @@ public class ChatService {
 				"CHAT_ROOM",
 				room.getId(),
 				"/chats/" + room.getId(),
-				"{\"roomId\":" + room.getId() + ",\"messageId\":" + message.getId() + ",\"" + flag + "\":true}",
+				notificationPayload(room.getId(), message, flag, title, teamName),
 				"chat:" + room.getId()
 		);
+	}
+
+	/**
+	 * Payload for chat notifications (Policy ch. 12 "Chat notification"). {@code title} and {@code body} are
+	 * what the in-app list and the push show; team rooms prefix the team name.
+	 */
+	private String notificationPayload(long roomId, ChatMessage message, String flag, String title, String teamName) {
+		Map<String, Object> payload = new java.util.LinkedHashMap<>();
+		payload.put("roomId", roomId);
+		payload.put("messageId", message.getId());
+		if (flag != null) {
+			payload.put(flag, true);
+		}
+		payload.put("title", teamName == null ? title : teamName + " · " + title);
+		payload.put("body", notificationPreview(message));
+		return json.writeValueAsString(payload);
+	}
+
+	static String notificationPreview(ChatMessage message) {
+		String text = message.getBody() == null ? "" : message.getBody().strip().replaceAll("\\s+", " ");
+		if (text.isEmpty()) {
+			return message.getMessageType() == MessageType.IMAGE ? IMAGE_NOTIFICATION : null;
+		}
+		int max = PlanLimits.CHAT_NOTIFICATION_PREVIEW_MAX_CHARS;
+		if (text.codePointCount(0, text.length()) <= max) {
+			return text;
+		}
+		return text.substring(0, text.offsetByCodePoints(0, max)) + "…";
 	}
 
 	private void confirmStored(long userId, long roomId, SendCommand command) {
@@ -1134,7 +1175,8 @@ public class ChatService {
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				message.getDeletedAt(),
-				message.getVisibility().name()
+				message.getVisibility().name(),
+				message.getUpdatedAt()
 		);
 	}
 
@@ -1404,7 +1446,8 @@ public class ChatService {
 				message.getCreatedAt(),
 				message.getEditedAt(),
 				null,
-				"VISIBLE"
+				"VISIBLE",
+				message.getUpdatedAt()
 		);
 	}
 
@@ -1431,7 +1474,8 @@ public class ChatService {
 				row.createdAt(),
 				row.editedAt(),
 				row.deletedAt(),
-				row.visibility()
+				row.visibility(),
+				row.updatedAt()
 		);
 	}
 

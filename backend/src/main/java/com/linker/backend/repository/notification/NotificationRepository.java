@@ -111,5 +111,19 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			""")
 	int markPushed(@Param("ids") Collection<Long> ids, @Param("now") Instant now);
 
+	/**
+	 * Removes the caller's unread rows of one group, so the next row stands for the whole chat room.
+	 * No automatic clear: it runs inside the chat send transaction, whose entities must stay managed.
+	 */
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			delete from Notification notification
+			where notification.user.id = :userId
+			  and notification.notificationType = :type
+			  and notification.groupKey = :groupKey
+			  and notification.readAt is null
+			""")
+	int deleteUnreadInGroup(@Param("userId") long userId, @Param("type") String type, @Param("groupKey") String groupKey);
+
 	boolean existsByUser_IdAndGroupKey(long userId, String groupKey);
 }

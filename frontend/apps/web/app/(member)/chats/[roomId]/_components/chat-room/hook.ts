@@ -110,6 +110,12 @@ export function useChatRoom(roomId: number) {
   );
   const catchUp = useCallback(async () => {
     try {
+      if (latest.current === 0) {
+        // No message to anchor `after` on (empty room or history not loaded): reload the latest page.
+        await client.invalidateQueries({ queryKey: messagesKey(viewer.login, roomId) });
+        setCatchUpError(false);
+        return;
+      }
       const position = lastSeen.current || latest.current;
       const page = await missedMessages(roomId, latest.current);
       if (page.catchUpLimited || page.items.length > CHAT.catchUpMax) {

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { RoomMessage } from '../../_lib/room-api';
 import { MessageReadStatus } from './MessageReadStatus';
 
-const message: RoomMessage = { id: 1, roomId: 1, unreadCount: 2, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null };
+const message: RoomMessage = { id: 1, roomId: 1, unreadCount: 2, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z' };
 it('shows the team unread count and opens its message-specific list', async () => {
   const onUnread = vi.fn();
   render(<MessageReadStatus message={message} kind="TEAM" mine={false} onUnread={onUnread} />);
@@ -25,7 +25,7 @@ it('does not display the recipient status on incoming direct messages or pending
   rerender(<MessageReadStatus message={message} kind="REQUEST" mine />);
   expect(container).toBeEmptyDOMElement();
 });
-it.each([{ deletedAt: '2026-11-03' }, { visibility: 'HIDDEN' as const }, { visibility: 'UNDER_REVIEW' as const }, { type: 'SYSTEM' as const }, { type: 'PR_EVENT' as const }])('hides read details on unavailable and system messages', (state) => {
+it.each([{ deletedAt: '2026-11-03' }, { visibility: 'HIDDEN' as const }, { type: 'SYSTEM' as const }, { type: 'PR_EVENT' as const }])('hides read details on unavailable and system messages', (state) => {
   const { container } = render(<MessageReadStatus message={{ ...message, ...state }} kind="TEAM" mine />);
   expect(container).toBeEmptyDOMElement();
 });

@@ -8,6 +8,7 @@ import { messageUrls } from '@/features/share/message-links';
 
 import { useMessageMenu } from '../../_hooks/use-message-menu';
 import type { RoomInfo, RoomMessage } from '../../_lib/room-api';
+import type { ChatIssueCard } from '../../_lib/chat-reference-types';
 import styles from '../chat-room/ChatRoom.module.css';
 import { MessageReadStatus } from '../message-read-status';
 import { IssueMessageCards } from '../issue-message-cards';
@@ -40,7 +41,8 @@ function SenderAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string })
 export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const payload = messagePayload(message.payload);
-  const hidden = message.visibility === 'HIDDEN' || message.visibility === 'UNDER_REVIEW';
+  const hidden = message.visibility === 'HIDDEN';
+  const issueCards = Array.isArray(payload?.issueCards) ? (payload.issueCards as ChatIssueCard[]) : [];
   const canMenu = !system && !hidden && !message.deletedAt && !!onMenu;
   const menu = useMessageMenu(canMenu, () => onMenu?.(message.id));
   const senderName = message.sender?.name ?? '탈퇴한 사용자';
@@ -89,8 +91,8 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
               ))}
             </div>
           )}
-          {!!message.payload?.issueCards?.length && (
-            <IssueMessageCards cards={message.payload.issueCards} />
+          {issueCards.length > 0 && (
+            <IssueMessageCards cards={issueCards} />
           )}
           {message.type === 'SHARE_CARD' && <SharedContentCard value={payload} />}
           {message.type !== 'SHARE_CARD' && !!payload?.linkerCard && (

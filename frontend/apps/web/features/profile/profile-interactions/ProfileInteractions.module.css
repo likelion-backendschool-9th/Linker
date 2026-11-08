@@ -64,13 +64,51 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.peopleList a {
+.search {
+  display: flex;
+  margin-bottom: var(--space-md);
+}
+
+.search input {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  background: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-xs);
+}
+
+.peopleList li {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   min-height: var(--touch-target-min);
+}
+
+.person {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
   color: var(--color-text-heading);
   text-decoration: none;
+}
+
+.personText {
+  display: grid;
+  min-width: 0;
+}
+
+.relation {
+  flex: none;
+  padding: var(--space-xxs) var(--space-sm);
+  color: var(--color-text-body);
+  font-size: var(--font-size-caption);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-xs);
 }
 
 .personAvatar {

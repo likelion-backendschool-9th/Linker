@@ -1,4 +1,4 @@
-import type { ChatMember } from './room-api';
+import type { MentionCandidate } from './chat-reference-api';
 
 /** Whitespace/opening brackets delimit tokens; URLs and email addresses are not references. */
 const mentions = /(?:^|[\s(])@([\p{L}\p{N}_-]+)(?=$|[^\p{L}\p{N}_-])/gu;
@@ -13,7 +13,7 @@ export function activeMention(text: string, caret: number) {
   const match = /(?:^|[\s(])@([\p{L}\p{N}_-]*)$/u.exec(text.slice(0, caret));
   return match ? { start: caret - match[1]!.length - 1, end: caret, search: match[1]! } : null;
 }
-export function resolveMentions(text: string, candidates: ChatMember[]) {
+export function resolveMentions(text: string, candidates: MentionCandidate[]) {
   const tokens = mentionTokens(text);
   return {
     mentionedUserIds: candidates.filter((member) => tokens.includes(member.login)).map((member) => member.id),

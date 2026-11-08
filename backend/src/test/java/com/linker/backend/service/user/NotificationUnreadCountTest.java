@@ -38,7 +38,7 @@ class NotificationUnreadCountTest {
 		AuthenticatedUser principal = new AuthenticatedUser(
 				7L, "octocat", UserType.DEVELOPER, UserStatus.ACTIVE, null, false, false, false, 9L);
 
-		long count = new NotificationService(users, notifications, Clock.fixed(NOW, ZoneOffset.UTC), null, null, null)
+		long count = new NotificationService(users, notifications, Clock.fixed(NOW, ZoneOffset.UTC), null, null, null, event -> { })
 				.unreadCount(principal);
 
 		assertThat(count).isEqualTo(2L);
@@ -51,7 +51,7 @@ class NotificationUnreadCountTest {
 		AuthenticatedUser principal = new AuthenticatedUser(
 				7L, "octocat", UserType.DEVELOPER, UserStatus.ACTIVE, null, false, false, false, 9L);
 
-		boolean saved = new NotificationService(users, notifications, Clock.fixed(NOW, ZoneOffset.UTC), null, null, null)
+		boolean saved = new NotificationService(users, notifications, Clock.fixed(NOW, ZoneOffset.UTC), null, null, null, event -> { })
 				.setPushEnabled(principal, false);
 
 		assertThat(saved).isFalse();

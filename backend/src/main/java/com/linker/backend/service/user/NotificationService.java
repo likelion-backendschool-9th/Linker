@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.linker.backend.dto.notification.event.NotificationsChanged;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
 import com.linker.backend.dto.notification.response.NotificationItemResponse;
 import com.linker.backend.dto.notification.response.NotificationItemResponse.AppealState;
@@ -35,6 +36,7 @@ import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.repository.notification.NotificationRepository;
 import com.linker.backend.repository.notification.PushTokenRepository;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 
 import tools.jackson.databind.JsonNode;
@@ -55,6 +57,9 @@ public class NotificationService {
 	/** Technical page size, not a Policy limit. */
 	static final int PAGE_SIZE = 20;
 
+	/** Rows stored without text (older chat rows, operator auto-hide) show the push default, not a type code. */
+	static final String FALLBACK_TITLE = "새 알림이 도착했어요";
+
 	private static final int CURSOR_VERSION = 1;
 	private static final int MAX_CURSOR_LENGTH = 160;
 
@@ -64,6 +69,7 @@ public class NotificationService {
 	private final SanctionRepository sanctions;
 	private final AppealRepository appeals;
 	private final Clock clock;
+	private final ApplicationEventPublisher events;
 	private final JsonMapper json = JsonMapper.builder().build();
 
 	public NotificationService(
@@ -72,8 +78,10 @@ public class NotificationService {
 			Clock clock,
 			PushTokenRepository tokens,
 			SanctionRepository sanctions,
-			AppealRepository appeals
+			AppealRepository appeals,
+			ApplicationEventPublisher events
 	) {
+		this.events = events;
 		this.users = users;
 		this.notifications = notifications;
 		this.clock = clock;
@@ -87,6 +95,11 @@ public class NotificationService {
 		User recipient = requireActiveUser(command.recipientUserId());
 		User actor = command.actorUserId() == null ? null : requireActiveUser(command.actorUserId());
 		Instant deliverAfter = deliverAfter(command.notificationType(), Instant.now(clock));
+		if (NotificationTypes.CHAT.equals(command.notificationType()) && command.groupKey() != null) {
+			// Policy POL-N-1: one in-app row per chat room. The newest message replaces the unread row;
+			// a mention (CHAT_MENTION) keeps its own row.
+			notifications.deleteUnreadInGroup(command.recipientUserId(), NotificationTypes.CHAT, command.groupKey());
+		}
 		Notification notification = Notification.create(
 				recipient,
 				command.notificationType(),
@@ -98,7 +111,11 @@ public class NotificationService {
 				command.groupKey(),
 				deliverAfter
 		);
-		return notifications.save(notification);
+		Notification saved = notifications.save(notification);
+		if (deliverAfter == null || !deliverAfter.isAfter(Instant.now(clock))) {
+			events.publishEvent(new NotificationsChanged(command.recipientUserId()));
+		}
+		return saved;
 	}
 
 	/** Header bell. Quiet-hours rows stay hidden until {@code deliver_after}. */
@@ -138,12 +155,17 @@ public class NotificationService {
 		if (!row.getUser().getId().equals(user.userId())) {
 			throw new ApiException(404, "NOT_FOUND", "대상을 찾을 수 없어요");
 		}
-		row.markRead(DatabaseInstant.now(clock));
+		if (row.getReadAt() == null) {
+			row.markRead(DatabaseInstant.now(clock));
+			events.publishEvent(new NotificationsChanged(user.userId()));
+		}
 	}
 
 	@Transactional
 	public void markAllRead(AuthenticatedUser user) {
-		notifications.markVisibleUnread(user.userId(), DatabaseInstant.now(clock));
+		if (notifications.markVisibleUnread(user.userId(), DatabaseInstant.now(clock)) > 0) {
+			events.publishEvent(new NotificationsChanged(user.userId()));
+		}
 	}
 
 	/** Stores an Android Expo token. This does not send a push or set {@code pushed_at}. */
@@ -219,7 +241,7 @@ public class NotificationService {
 
 	private NotificationItemResponse toItem(Notification row, Map<Long, Sanction> owned, Set<Long> appealed) {
 		PayloadText text = payloadText(row.getPayload());
-		String title = text.title() != null ? text.title() : text.message() != null ? text.message() : row.getNotificationType();
+		String title = text.title() != null ? text.title() : text.message() != null ? text.message() : FALLBACK_TITLE;
 		String body = text.body() != null ? text.body() : text.reason();
 		Long sanctionId = sanctionId(row.getPayload());
 		AppealState appeal = sanctionId != null && owned.containsKey(sanctionId)

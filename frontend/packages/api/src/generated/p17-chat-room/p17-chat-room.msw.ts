@@ -14,25 +14,63 @@ import {
 } from 'msw';
 import type {
   HttpResponseResolver,
+  PathParams,
   RequestHandlerOptions
 } from 'msw';
 
 import type {
+  ChatMentionCandidatesResponse,
   ChatMessagePageResponse,
   ChatMessageResponse,
+  ChatPullRequestsResponse,
+  ChatRoomInfoResponse,
+  ChatShareTargetsResponse,
   EditChatMessageRequest,
   MarkChatReadRequest,
+  ShareChatCardRequest,
+  StartDirectChatRequest,
+  StartDirectChatResponse,
   UnreadMembersResponse,
   UpdateChatNotificationRequest
 } from '../openAPIDefinition.schemas';
 
 
-export const getEditChatMessageResponseMock = (overrideResponse: Partial<Extract<ChatMessageResponse, object>> = {}): ChatMessageResponse => ({id: faker.helpers.arrayElement([faker.number.int(), undefined]), roomId: faker.helpers.arrayElement([faker.number.int(), undefined]), unreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]), clientMessageId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), sender: faker.helpers.arrayElement([{id: faker.helpers.arrayElement([faker.number.int(), undefined]), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])}, undefined]), type: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), text: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), imageUrls: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), undefined]), payload: faker.helpers.arrayElement([{}, undefined]), createdAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', undefined]), editedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', undefined]), deletedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', undefined]), visibility: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), ...overrideResponse})
+export const getShareChatCardResponseMock = (overrideResponse: Partial<Extract<ChatMessageResponse, object>> = {}): ChatMessageResponse => ({id: faker.number.int(), roomId: faker.number.int(), unreadCount: faker.number.int(), clientMessageId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), sender: faker.helpers.arrayElement([{id: faker.number.int(), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])},null,]), type: faker.helpers.arrayElement(['TEXT','IMAGE','ISSUE_CARD','PR_EVENT','SYSTEM','AI_SUMMARY','SHARE_CARD'] as const), text: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), imageUrls: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), payload: faker.helpers.arrayElement([{
+        [faker.string.alphanumeric(5)]: {}
+      },null,]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', editedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), deletedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), visibility: faker.helpers.arrayElement(['VISIBLE','HIDDEN'] as const), updatedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getListChatMessagesResponseMock = (overrideResponse: Partial<Extract<ChatMessagePageResponse, object>> = {}): ChatMessagePageResponse => ({items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.helpers.arrayElement([faker.number.int(), undefined]), roomId: faker.helpers.arrayElement([faker.number.int(), undefined]), unreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]), clientMessageId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), sender: faker.helpers.arrayElement([{id: faker.helpers.arrayElement([faker.number.int(), undefined]), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])}, undefined]), type: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), text: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), imageUrls: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), undefined]), payload: faker.helpers.arrayElement([{}, undefined]), createdAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', undefined]), editedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', undefined]), deletedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', undefined]), visibility: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), undefined]), hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), catchUpLimited: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), nextAfter: faker.helpers.arrayElement([faker.number.int(), undefined]), history: faker.helpers.arrayElement([{applied: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), flexSupported: faker.helpers.arrayElement([faker.datatype.boolean(), undefined])}, undefined]), ...overrideResponse})
+export const getStartDirectChatResponseMock = (overrideResponse: Partial<Extract<StartDirectChatResponse, object>> = {}): StartDirectChatResponse => ({roomId: faker.helpers.arrayElement([faker.number.int(), null]), kind: faker.helpers.arrayElement(['DIRECT','REQUEST'] as const), ...overrideResponse})
 
-export const getListUnreadChatMembersResponseMock = (overrideResponse: Partial<Extract<UnreadMembersResponse, object>> = {}): UnreadMembersResponse => ({items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.helpers.arrayElement([faker.number.int(), undefined]), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), undefined]), ...overrideResponse})
+export const getEditChatMessageResponseMock = (overrideResponse: Partial<Extract<ChatMessageResponse, object>> = {}): ChatMessageResponse => ({id: faker.number.int(), roomId: faker.number.int(), unreadCount: faker.number.int(), clientMessageId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), sender: faker.helpers.arrayElement([{id: faker.number.int(), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])},null,]), type: faker.helpers.arrayElement(['TEXT','IMAGE','ISSUE_CARD','PR_EVENT','SYSTEM','AI_SUMMARY','SHARE_CARD'] as const), text: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), imageUrls: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), payload: faker.helpers.arrayElement([{
+        [faker.string.alphanumeric(5)]: {}
+      },null,]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', editedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), deletedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), visibility: faker.helpers.arrayElement(['VISIBLE','HIDDEN'] as const), updatedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
+export const getListChatShareTargetsResponseMock = (overrideResponse: Partial<Extract<ChatShareTargetsResponse, object>> = {}): ChatShareTargetsResponse => ({items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({roomId: faker.helpers.arrayElement([faker.number.int(), undefined]), kind: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), title: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), undefined]), ...overrideResponse})
+
+export const getGetChatRoomResponseMock = (overrideResponse: Partial<Extract<ChatRoomInfoResponse, object>> = {}): ChatRoomInfoResponse => ({id: faker.number.int(), kind: faker.helpers.arrayElement(['TEAM','DIRECT','REQUEST'] as const), title: faker.string.alpha({length: {min: 10, max: 20}}), requestDirection: faker.helpers.arrayElement([faker.helpers.arrayElement(['SENT','RECEIVED'] as const), null]), muted: faker.datatype.boolean(), members: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])})), team: faker.helpers.arrayElement([{id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['ACTIVE','COMPLETED','READ_ONLY','ARCHIVED'] as const), myRole: faker.helpers.arrayElement(['OWNER','ADMIN','MEMBER'] as const)},null,]), historyLimitDays: faker.helpers.arrayElement([faker.number.int(), null]), ...overrideResponse})
+
+export const getListChatPullRequestsResponseMock = (overrideResponse: Partial<Extract<ChatPullRequestsResponse, object>> = {}): ChatPullRequestsResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), repoId: faker.number.int(), githubRepoId: faker.number.int(), githubPrId: faker.number.int(), repo: faker.string.alpha({length: {min: 10, max: 20}}), number: faker.number.int(), title: faker.string.alpha({length: {min: 10, max: 20}}), state: faker.string.alpha({length: {min: 10, max: 20}}), draft: faker.datatype.boolean(), author: faker.string.alpha({length: {min: 10, max: 20}}), url: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getListChatMessagesResponseMock = (overrideResponse: Partial<Extract<ChatMessagePageResponse, object>> = {}): ChatMessagePageResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), roomId: faker.number.int(), unreadCount: faker.number.int(), clientMessageId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), sender: faker.helpers.arrayElement([{id: faker.number.int(), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])},null,]), type: faker.helpers.arrayElement(['TEXT','IMAGE','ISSUE_CARD','PR_EVENT','SYSTEM','AI_SUMMARY','SHARE_CARD'] as const), text: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), imageUrls: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), payload: faker.helpers.arrayElement([{
+        [faker.string.alphanumeric(5)]: {}
+      },null,]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', editedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), deletedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), visibility: faker.helpers.arrayElement(['VISIBLE','HIDDEN'] as const), updatedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), hasMore: faker.datatype.boolean(), catchUpLimited: faker.datatype.boolean(), nextAfter: faker.helpers.arrayElement([faker.number.int(), null]), history: faker.helpers.arrayElement([{applied: faker.helpers.arrayElement(['FREE_60_DAYS'] as const), flexSupported: faker.datatype.boolean()},null,]), ...overrideResponse})
+
+export const getListUnreadChatMembersResponseMock = (overrideResponse: Partial<Extract<UnreadMembersResponse, object>> = {}): UnreadMembersResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])})), ...overrideResponse})
+
+export const getListChatMentionCandidatesResponseMock = (overrideResponse: Partial<Extract<ChatMentionCandidatesResponse, object>> = {}): ChatMentionCandidatesResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), login: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])})), ...overrideResponse})
+
+
+export const getShareChatCardMockHandler = (overrideResponse?: ChatMessageResponse | ((info: Parameters<HttpResponseResolver<{ roomId: string }, ShareChatCardRequest>>[0]) => Promise<ChatMessageResponse> | ChatMessageResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ roomId: string }, ShareChatCardRequest>('*/api/v1/user/chat-rooms/:roomId/share-cards', async (info: Parameters<HttpResponseResolver<{ roomId: string }, ShareChatCardRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getShareChatCardResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 
 export const getMarkChatReadMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ roomId: string }, MarkChatReadRequest>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
   return http.post<{ roomId: string }, MarkChatReadRequest>('*/api/v1/user/chat-rooms/:roomId/read', async (info: Parameters<HttpResponseResolver<{ roomId: string }, MarkChatReadRequest>>[0]) => {
@@ -40,6 +78,18 @@ export const getMarkChatReadMockHandler = (overrideResponse?: void | ((info: Par
 
     return new HttpResponse(null,
       { status: 204
+      })
+  }, options)
+}
+
+export const getStartDirectChatMockHandler = (overrideResponse?: StartDirectChatResponse | ((info: Parameters<HttpResponseResolver<PathParams, StartDirectChatRequest>>[0]) => Promise<StartDirectChatResponse> | StartDirectChatResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, StartDirectChatRequest>('*/api/v1/user/chat-rooms/direct', async (info: Parameters<HttpResponseResolver<PathParams, StartDirectChatRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStartDirectChatResponseMock(),
+      { status: 200
       })
   }, options)
 }
@@ -76,6 +126,42 @@ export const getEditChatMessageMockHandler = (overrideResponse?: ChatMessageResp
   }, options)
 }
 
+export const getListChatShareTargetsMockHandler = (overrideResponse?: ChatShareTargetsResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<ChatShareTargetsResponse> | ChatShareTargetsResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/api/v1/user/me/share-targets', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListChatShareTargetsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetChatRoomMockHandler = (overrideResponse?: ChatRoomInfoResponse | ((info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => Promise<ChatRoomInfoResponse> | ChatRoomInfoResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ roomId: string }>('*/api/v1/user/chat-rooms/:roomId', async (info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetChatRoomResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListChatPullRequestsMockHandler = (overrideResponse?: ChatPullRequestsResponse | ((info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => Promise<ChatPullRequestsResponse> | ChatPullRequestsResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ roomId: string }>('*/api/v1/user/chat-rooms/:roomId/pull-requests', async (info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListChatPullRequestsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getListChatMessagesMockHandler = (overrideResponse?: ChatMessagePageResponse | ((info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => Promise<ChatMessagePageResponse> | ChatMessagePageResponse), options?: RequestHandlerOptions) => {
   return http.get<{ roomId: string }>('*/api/v1/user/chat-rooms/:roomId/messages', async (info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => {
 
@@ -99,11 +185,40 @@ export const getListUnreadChatMembersMockHandler = (overrideResponse?: UnreadMem
       })
   }, options)
 }
+
+export const getListChatMentionCandidatesMockHandler = (overrideResponse?: ChatMentionCandidatesResponse | ((info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => Promise<ChatMentionCandidatesResponse> | ChatMentionCandidatesResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ roomId: string }>('*/api/v1/user/chat-rooms/:roomId/mention-candidates', async (info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListChatMentionCandidatesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getLeaveChatRoomMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ roomId: string }>('*/api/v1/user/chat-rooms/:roomId/members/me', async (info: Parameters<HttpResponseResolver<{ roomId: string }>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
 export const getP17ChatRoomMock = () => [
+  getShareChatCardMockHandler(),
   getMarkChatReadMockHandler(),
+  getStartDirectChatMockHandler(),
   getUpdateChatNotificationMockHandler(),
   getDeleteChatMessageMockHandler(),
   getEditChatMessageMockHandler(),
+  getListChatShareTargetsMockHandler(),
+  getGetChatRoomMockHandler(),
+  getListChatPullRequestsMockHandler(),
   getListChatMessagesMockHandler(),
-  getListUnreadChatMembersMockHandler()
+  getListUnreadChatMembersMockHandler(),
+  getListChatMentionCandidatesMockHandler(),
+  getLeaveChatRoomMockHandler()
 ]

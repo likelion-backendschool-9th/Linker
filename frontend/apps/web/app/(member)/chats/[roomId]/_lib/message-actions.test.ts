@@ -7,7 +7,7 @@ const now = Date.parse('2026-11-03T03:00:00Z');
 const message: RoomMessage = {
   id: 1, roomId: 1, unreadCount: 0, sender: { id: 1, login: 'me', name: '나', avatarUrl: '' },
   type: 'TEXT', text: '메시지', imageUrls: [], payload: null,
-  createdAt: new Date(now - 1000).toISOString(), editedAt: null, deletedAt: null,
+  createdAt: new Date(now - 1000).toISOString(), editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z',
 };
 it('allows author edits before the deadline, but only deletion after the deadline', () => {
   expect(messageActions(message, 'me', null, false, now)).toEqual({ copy: true, edit: true, delete: true, report: false });
@@ -22,7 +22,7 @@ it('allows team admins to delete others, but never edit them', () => {
 it.each(['SYSTEM', 'PR_EVENT'] as const)('protects %s messages even from team owners', (type) => {
   expect(Object.values(messageActions({ ...message, type }, 'me', 'OWNER', false, now))).not.toContain(true);
 });
-it.each([{ deletedAt: new Date(now).toISOString() }, { visibility: 'HIDDEN' as const }, { visibility: 'UNDER_REVIEW' as const }])('does not expose hidden or deleted content', (state) => {
+it.each([{ deletedAt: new Date(now).toISOString() }, { visibility: 'HIDDEN' as const }])('does not expose hidden or deleted content', (state) => {
   expect(Object.values(messageActions({ ...message, ...state }, 'me', 'OWNER', false, now))).not.toContain(true);
 });
 it('keeps read-only and suspended viewers from mutating or reporting', () => {
