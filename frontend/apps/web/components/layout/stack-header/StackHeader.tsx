@@ -13,14 +13,14 @@ type StackHeaderProps = {
   actions?: ReactNode;
 };
 
-/** Top bar of stack screens: back, title (the page's h1), optional actions. */
+/** Top bar of stack screens (Figma 364:1884): back arrow, title (the page's h1), optional actions. */
 export function StackHeader({ title, titleContent, backHref, actions }: StackHeaderProps) {
   return (
-    <div className={styles.chrome}>
+    <div className={`${styles.chrome} ${styles.chromeStack}`}>
       <header className={styles.header}>
-        <div className={styles.inner}>
+        <div className={`${styles.inner} ${styles.innerStack}`}>
           {backHref && <BackButton fallbackHref={backHref} />}
-          <h1 id="page-title" className={styles.title}>
+          <h1 id="page-title" className={`${styles.title} ${styles.titleStack}`}>
             {titleContent ?? title}
           </h1>
           {actions && <div className={styles.actions}>{actions}</div>}

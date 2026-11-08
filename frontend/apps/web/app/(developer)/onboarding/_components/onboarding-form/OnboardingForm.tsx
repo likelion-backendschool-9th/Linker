@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronDown, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import { useWatch } from 'react-hook-form';
@@ -97,7 +97,7 @@ export function OnboardingForm({
               className={headerStyles.iconButton}
               onClick={step === 'EMAIL' ? () => setStep('AGREEMENTS') : goBackFromProfile}
             >
-              <ChevronLeft aria-hidden />
+              <ArrowLeft aria-hidden className={headerStyles.backIcon} />
               <span className="sr-only">뒤로</span>
             </button>
           )}

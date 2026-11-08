@@ -74,6 +74,36 @@
   padding-left: var(--space-xs);
 }
 
+/* Tab screens keep their own (taller) logo header height */
+.headerTab {
+  max-height: calc(env(safe-area-inset-top) + var(--header-height-tab));
+}
+
+.innerTab {
+  height: var(--header-height-tab);
+}
+
+/* Stack header (Figma 364:1884, the same on every stack frame): 54 high, white 90% frost, the
+   arrow's 24px box 12 from the edge, title at 64 in 18 semibold #111827 */
+.chromeStack {
+  background-color: var(--color-header-stack-bg);
+}
+
+.innerStack {
+  gap: var(--space-header-back-title);
+  padding-right: var(--space-header-stack-end);
+  padding-left: var(--space-sm);
+}
+
+.innerStack > .title:first-child {
+  padding-left: calc(var(--page-gutter) - var(--space-sm));
+}
+
+.titleStack {
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
 .search {
   display: none;
   flex: 1;
@@ -182,4 +212,11 @@
   display: flex;
   max-width: none;
   margin: 0;
+}
+
+/* Back arrow (Figma lucide/arrow-left): black, stroke 2 */
+.backIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-black);
 }

@@ -19,6 +19,7 @@
   --color-header-bg: rgb(
     255 255 255 / 0.8
   ); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
+  --color-header-stack-bg: rgb(
     255 255 255 / 0.9
   ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
   --color-gnb-bg: rgb(243 243 243 / 0.8); /* bottom GNB pill frosted fill, with --blur-chrome */

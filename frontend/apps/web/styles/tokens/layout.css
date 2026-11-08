@@ -136,7 +136,11 @@
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
   --form-max-width: 600px; /* writing forms stay within the app column */
-  --header-height: 56px; /* top bar of tab and stack screens */
+  --header-height: 54px; /* stack screens' top bar: back + title (Figma 364:1884, same on every stack frame) */
+  --header-height-tab: 56px; /* tab screens' logo header (its own Figma pass is separate) */
+  --header-height-admin: 56px; /* admin top bar */
+  --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
+  --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */

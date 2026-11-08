@@ -7,8 +7,8 @@ import { DropdownMenu } from 'radix-ui';
 import { usePostMenuButton } from './hook';
 import styles from './PostMenuSheet.module.css';
 
-/** Figma 622:347 ends at the 16px gutter; the header icon ends 8px from the edge (header inset) */
-const MENU_ALIGN_OFFSET = 8;
+/** Figma 622:347 ends at the 16px gutter; the header icon box ends 6px from the edge */
+const MENU_ALIGN_OFFSET = 10;
 
 /** Header action of 23 (Figma 285:227): 24px vertical dots, 24×24 hit like other header icons */
 export function PostMenuButton({ postId }: { postId: string }) {
@@ -43,7 +43,7 @@ export function PostMenuButton({ postId }: { postId: string }) {
           side="bottom"
           align="end"
           alignOffset={MENU_ALIGN_OFFSET}
-          sideOffset={4}
+          sideOffset={5}
           collisionPadding={16}
         >
           {post.isAuthor ? (
