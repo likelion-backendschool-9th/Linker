@@ -14,14 +14,16 @@ type StackHeaderProps = {
 /** Top bar of stack screens: back, title (the page's h1), optional actions. */
 export function StackHeader({ title, backHref, actions }: StackHeaderProps) {
   return (
-    <header className={styles.header}>
-      <div className={styles.inner}>
-        {backHref && <BackButton fallbackHref={backHref} />}
-        <h1 id="page-title" className={styles.title}>
-          {title}
-        </h1>
-        {actions && <div className={styles.actions}>{actions}</div>}
-      </div>
-    </header>
+    <div className={styles.chrome}>
+      <header className={styles.header}>
+        <div className={styles.inner}>
+          {backHref && <BackButton fallbackHref={backHref} />}
+          <h1 id="page-title" className={styles.title}>
+            {title}
+          </h1>
+          {actions && <div className={styles.actions}>{actions}</div>}
+        </div>
+      </header>
+    </div>
   );
 }

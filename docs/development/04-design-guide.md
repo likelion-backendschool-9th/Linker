@@ -12,7 +12,7 @@
 1. **Visual authority (conflict order):** **① the page’s Figma frame** → **② `styles/tokens/`** (if Figma differs, update the token first, then use it) → **③ this guide’s recipes**. **NEVER** invent tablet/desktop layout variants that are not in Figma. The old Mobbin-based look is **retired** as an authority (see ch. 6).
 2. **MUST** style with CSS Modules (`*.module.css` next to the component) and read every color, size, space and radius through `var(--token)`. **NEVER** write a hex color, a font size or a radius as a raw value in a component.
 3. **MUST NOT** add a new color, font size or radius in a component. Add the token first (token file + this guide), then use it.
-4. **App screens = mobile column only.** Design and implement for **360–600px**. Below 600px the column is full width; **above 600px** the app column is **`max-width: var(--content-max-width)` (600px), centered**, with canvas showing outside. **NEVER** add a separate tablet/desktop app layout. **Ops / admin (pages 25–27)** is the only exception (wide / two-column shell).
+4. **App screens = mobile column only.** Design and implement for **360–600px**. Below 600px the column is full width; **above 600px** the app column is **`max-width: var(--content-max-width)` (600px), centered**, with `--color-canvas-outside` (dark) showing outside it. **NEVER** add a separate tablet/desktop app layout. Ops / admin (pages 25–27) is a separate, desktop-only tool with its own shell (ch. 3-1, 6-6) — it has no mobile layout, keeps `--color-canvas`, and sits outside this rule entirely.
 5. Header and bottom tab bar live **inside the same 600px column** as the page (not full-bleed across a wide browser).
 6. Source order when token roles conflict: **text color and type** (ch. 2) over **palette** (ch. 1) over **everything else** (ch. 3–5). Text on a white surface uses the `--color-text-*` tokens only.
 7. Shadow-free. Depth comes from fill differences and 1px hairlines (ch. 4). The only shadow token is `--shadow-segment-active`.
@@ -32,10 +32,14 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-primary` | `#141414` | Primary CTA fill, footer band, focus ring |
 | `--color-on-primary` | `#ffffff` | Text and icons on `--color-primary` (18.4:1) |
 | `--color-accent` | `#0066ff` | Popular/new badges, savings emphasis. **NEVER** a CTA fill |
-| `--color-gnb-current` | `#005fed` | Current GNB label/icon on the gray pill (4.90:1 on `--color-canvas-soft`); preserves blue emphasis with readable mobile text |
-| `--color-canvas` | `#ffffff` | Page and card background; also the area outside the 600px column on wide browsers |
+| `--color-gnb-current` | `#2563eb` | Active bottom GNB label/icon on the gray pill (4.65:1 on `--color-canvas-soft`) |
+| `--color-gnb-inactive` | `#b2b7c3` | Inactive bottom GNB label/icon (1.81:1 on `--color-canvas-soft` — below AA text contrast; accepted because every tab keeps an icon + label, and the active tab's `--color-gnb-current` carries the real affordance, not color alone) |
+| `--color-canvas` | `#ffffff` | Page and card background |
+| `--color-canvas-outside` | `#0c0c0c` | `body` background outside the 600px app column on wide browsers (Figma 472:415); AdminShell overrides back to `--color-canvas` |
 | `--color-canvas-soft` | `#f3f3f3` | Nav pill, featured card, accordion row, toggle track, soft pill |
 | `--color-field` | `#f0f0f0` | Input fill |
+| `--color-header-bg` | `rgb(255 255 255 / 0.8)` | Sticky header / open search panel frosted fill, with `--blur-chrome` (`--blur-header-open` when the panel is down) |
+| `--color-gnb-bg` | `rgb(243 243 243 / 0.8)` | Bottom GNB pill frosted fill, with `--blur-chrome` |
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
@@ -46,8 +50,6 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-scrim-team-picker` | `rgb(25 31 40 / 0.32)` | Page 07 sheet scrim (Figma `#191f28` 32%), with `--blur-scrim`. Other overlays keep `--color-scrim` |
 | `--color-radio-surface` / `--color-radio-border` | `#f6f7fb` / `#eaeaea` | Page 07 sheet radio fill and unselected outline |
 | `--color-sheet-cta` / `--color-on-sheet-cta` | `#121212` / `#f8f9f6` | Page 07 sheet CTA fill and label |
-| `--color-scroll-header` | `rgb(236 236 236 / 0.8)` | Frosted fill when a scrolled top chrome needs it (only if Figma specifies) |
-| `--color-gnb-pill` | `rgb(244 244 244 / 0.8)` | Frosted GNB fill when Figma specifies blur |
 
 `--color-field` and `--color-hairline-soft` share a value but keep separate tokens because they play different roles. Same for `--color-primary` / `--color-text-*`.
 
@@ -96,7 +98,8 @@ Measured ratios, so nobody has to recompute:
 | `#adadad` (palette "Faint") | white | 2.24 | **fail** → never on a light surface |
 | `#adadad` inverse-secondary | `#141414` | 8.21 | pass |
 | `#0066ff` accent text | white / `#f3f3f3` | 4.83 / 4.36 | accent text only on white |
-| `#005fed` GNB current text | `#f3f3f3` | 4.90 | pass; use `--color-gnb-current` for the selected tab |
+| `#2563eb` GNB current text | `#f3f3f3` | 4.65 | pass; use `--color-gnb-current` for the active tab |
+| `#b2b7c3` GNB inactive text | `#f3f3f3` | 1.81 | **fail** by itself — accepted only because every tab always shows an icon + label, never color alone |
 | `#ffffff` on accent badge | `#0066ff` | 4.83 | pass |
 | `#4b5563` slate | white / `#f3f4f6` | 7.56 / 6.87 | pass |
 | `#e62e00` overdue | white | 4.42 | **below 4.5**, Figma value kept (team decision, page 07) |
@@ -158,9 +161,9 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 
 - **Supported width:** 360–600px for layout QA. Figma frames are the visual source; implement the frame, then verify at 360 and 600.
 - **`< 600px`:** column = 100% of the viewport (minus nothing except gutters inside the column).
-- **`≥ 600px`:** column = `--content-max-width` (**600px**), horizontally centered. Outside the column: `--color-canvas` only — **NEVER** stretch page content, header, or GNB to the full desktop width.
+- **`≥ 600px`:** column = `--content-max-width` (**600px**), horizontally centered. Outside the column: `--color-canvas-outside` (dark `body`, Figma 472:415) only — **NEVER** stretch page content, header, or GNB to the full desktop width.
 - **Page gutter** `--page-gutter`: **16px** inside the app column (match Figma; do not grow gutter just because the browser is wide).
-- **Admin (25–27):** outside this rule — own shell, two columns from 1024px, aside `--admin-aside-width` (blueprint §6-6).
+- **Admin (25–27):** a separate, desktop-only tool with no mobile layout — own shell, two columns, aside `--admin-aside-width` (blueprint §6-6).
 
 ### 3-2. Safe areas and chrome clearance
 
@@ -195,9 +198,9 @@ Apply on app screens (WebView and mobile Safari):
 ### 3-4. Other frame tokens
 
 - **Whitespace groups content.** Separate sections with `--space-section`, not divider lines. Cards keep `--space-lg` padding so content stays off the edge.
-- **Frame sizes:** `--header-height` 56px; `--badge-dot-size` 6px; `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet); `--control-height-choice` 40px (page 07 sheet option row, below the 44px minimum: Figma value, front-end owner's decision); `--icon-size-add` 20px (page 07 add-issue icon, hit area stays 44px); `--icon-size-team-entry` 20px (page 07 team-card › / ∨ icon, Figma 5×12 with a 1.5px line, hit area stays 44px).
+- **Frame sizes:** `--header-height` 56px; `--search-input-height` 52px (mobile search field in the open panel, focus border `--color-focus-ring-search` — the one input that does **not** use the global `--color-focus-ring`); `--badge-dot-size` 6px; `--font-size-badge` 8px (GNB unread chip numeral only); `--tab-bar-height` (content/toast clearance, plus safe-area separately); `--content-max-width` **600px**; `--sheet-max-width` 600px (same as the app column); `--form-max-width` 600px; `--sheet-max-height` 85dvh; `--dialog-max-width` 400px; `--admin-aside-width` 400px; `--icon-size` 24px; `--icon-size-sm` 16px; `--icon-size-lg` 26px (bottom GNB tab icon); `--icon-stroke-width` 2 (Solar Icons; overrides the linear style's own thinner 1.5 default to match Figma `strokeWeight` — the bottom GNB scopes this back to 1.5 locally, its own Figma value); `--space-tab-icon-gap` 6px (GNB icon↔label); `--tab-bar-gap-4` / `--tab-bar-gap-5` 36px / 20px (gap between GNB tabs below 600px, guest vs. signed-in with profile); `--tab-bar-padding-wide` 80px (GNB side padding at/above 600px, replacing the fixed gap with `space-between`); `--control-height-compact` 37px (page 07 link, hit area stays 44px); `--control-height-sheet` 53px; `--avatar-size-team` 50px; `--radio-size` 20px; `--radio-dot-size` 12.5px; `--separator-dot-size` 2px; `--blur-scrim` 6px (page 07 sheet); `--control-height-choice` 40px (page 07 sheet option row, below the 44px minimum: Figma value, front-end owner's decision); `--icon-size-add` 20px (page 07 add-issue icon, hit area stays 44px); `--icon-size-team-entry` 20px (page 07 team-card › / ∨ icon, Figma 5×12 with a 1.5px line, hit area stays 44px).
 - **Layers:** `--z-chrome` 10 (sticky header, bottom tabs) < `--z-overlay` 100 (scrim, sheets, dialogs) < `--z-toast` 200 (toasts, focused skip link).
-- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`.
+- **Motion:** `--duration-overlay` 200ms with `--ease-standard` for sheets, dialogs and toasts; globals.css turns it off under `prefers-reduced-motion`. The sticky header is a frosted `--color-header-bg` + `--blur-chrome` (`--blur-header-open` when the mobile search panel is down) plate, not a solid fill — the header and open search panel share one frosted plate rather than two. The bottom GNB pill uses the same `--blur-chrome` frost over `--color-gnb-bg`.
 - **Images:** keep a fixed aspect ratio and `--radius-md` corners unless Figma says otherwise. Use `next/image` (blueprint ch. 10).
 
 ### 3-5. Scroll and touch (WebView)
@@ -339,12 +342,12 @@ Each item says the default Linker recipe. **When Figma for that screen conflicts
 **Segmented control** (tab-like toggle)
 - Track `--color-canvas-soft`, `--radius-full`. Active option is a `--color-canvas` pill with `--shadow-segment-active`; inactive label `--color-text-secondary`. Each option is at least 44px high.
 
-**Top nav** — sticky, width capped with the app column (`--content-max-width`). Logo + icon actions per Figma (search, notifications, profile/settings). Icon clusters use §3-3 (24px hit, Figma visual). Unread: `--badge-dot-size` accent dot + sr-only text. **NEVER** switch to a desktop search-field layout on wide browsers.
+**Top nav** — sticky, width capped with the app column (`--content-max-width`). Logo + icon actions per Figma (search, notifications, settings — no profile icon here). Icon clusters use §3-3 (24px hit, Figma visual). Unread: `--badge-dot-size` accent dot + sr-only text. **NEVER** switch to a desktop search-field layout on wide browsers.
 
 **Footer**
 - `--color-primary` band with `--radius-md` top corners when used. Wordmark and emphasis links in `--color-text-inverse`; tagline and ordinary links in `--color-text-inverse-secondary`. Focus ring inside it uses `--color-focus-ring-on-dark`.
 
-**Bottom tab bar** — sits in the same centered app column; bottom safe-area inset. Icon + label per Figma; current tab `--color-gnb-current` with a semibold label (not color alone). Profile is not a tab — it lives in the header. **NEVER** replace icons with a desktop text-only GNB on wide browsers.
+**Bottom tab bar** — sits in the same centered app column; bottom safe-area inset. Icon + label per Figma; active tab `--color-gnb-current`, inactive `--color-gnb-inactive`, both with a semibold label for the active tab (not color alone). Guests get 4 tabs (`--tab-bar-gap-4`); signed-in members add a 5th **프로필** tab — the viewer's own avatar image, not a Solar icon — and use `--tab-bar-gap-5`. At the **600px** upper bound the pill switches from a centered block with a fixed gap to edge-anchored tabs — fixed `--tab-bar-padding-wide` (80px) side padding, gap computed by `space-between` (Figma 476:563/593), same for 4- and 5-tab. **NEVER** replace icons with a desktop text-only GNB on wide browsers.
 
 **Bottom sheet / dialog** — `--color-canvas` surface over `--color-scrim`. Sheets: `--radius-md` top corners, `--space-lg` padding, at most `--sheet-max-height`, safe-area aware. Dialogs: `--radius-md`, at most `--dialog-max-width`. Title in section-title type, description in caption `--color-text-secondary`. Close control: Figma visual + §3-3 hit rules.
 

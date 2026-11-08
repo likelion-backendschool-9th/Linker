@@ -15,6 +15,7 @@
   --space-xxl: 48px;
   --space-section: 48px; /* gap between page sections */
   --space-section-lg: 80px; /* gap between major blocks */
+  --space-tab-icon-gap: 6px; /* bottom GNB: gap between a tab's icon and its label (Figma itemSpacing) */
   /* Figma 07 values off the 4px grid */
   --space-row-inline: 5px; /* compact list row side padding, title to meta */
   --space-row-block: 10px; /* compact list row vertical padding, meta gap */
@@ -54,14 +55,20 @@
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
   --form-max-width: 600px; /* writing forms stay within the app column */
   --header-height: 56px; /* top bar of tab and stack screens */
-  --header-search-width: 512px; /* legacy desktop search field width; app chrome should follow Figma mobile, not grow at ≥600 */
+  --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
   --dialog-max-width: 400px; /* centered dialogs and confirm modals */
   --admin-aside-width: 400px; /* admin detail column from 1024px */
   --icon-size: 24px;
   --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
+  --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
+  --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
+  --chip-size: 14px; /* GNB unread-count chip diameter (Figma 455:316) */
+  --tab-bar-gap-4: 36px; /* gap between bottom GNB tabs: 4 tabs, guest (Figma 453:227) */
+  --tab-bar-gap-5: 20px; /* gap between bottom GNB tabs: 5 tabs, signed-in incl. profile (Figma 453:258/455:316) */
+  --tab-bar-padding-wide: 80px; /* bottom GNB side padding at the 600px upper bound (Figma 476:563/593) */
 
   /* Layers: page chrome < overlays < toasts */
   --z-chrome: 10;
@@ -71,7 +78,8 @@
   /* Motion (off under prefers-reduced-motion via globals.css) */
   --duration-overlay: 200ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --blur-header-scroll: blur(20px); /* backdrop blur when Figma specifies frosted chrome */
+  --blur-chrome: blur(20px); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
+  --blur-header-open: blur(4px); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
   --blur-scrim: blur(6px); /* 07 sheet scrim */
 
   /* The only shadow: the active segment of a segmented control */

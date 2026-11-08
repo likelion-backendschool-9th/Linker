@@ -1,7 +1,10 @@
 'use client';
 
-import { Search, X } from 'lucide-react';
+import { CloseLinearIcon } from '@solar-icons/static/linear/close';
+import { MagnifierLinearIcon } from '@solar-icons/static/linear/magnifier';
 import { useId, useRef, useState } from 'react';
+
+import { Icon } from '@/components/ui/icon';
 
 import styles from '../header.module.css';
 
@@ -10,7 +13,7 @@ type HeaderSearchProps = {
   className?: string;
 };
 
-/** Top nav search field: blur/focus/active states (04 frontend task 4). Desktop: persistent. Mobile: the panel below the search icon. */
+/** Top nav search field: blur/focus/active states (04 frontend task 4). Rendered in the panel below the search icon. */
 export function HeaderSearch({ className }: HeaderSearchProps) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -18,7 +21,7 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
 
   return (
     <div className={`${styles.search} ${className ?? ''}`}>
-      <Search aria-hidden className={styles.searchIcon} />
+      <Icon svg={MagnifierLinearIcon} className={`${styles.searchIcon} ${styles.magnifierIcon}`} />
       <label htmlFor={inputId} className="sr-only">
         검색어를 입력해 주세요
       </label>
@@ -40,7 +43,7 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
             inputRef.current?.focus();
           }}
         >
-          <X aria-hidden className={styles.searchClearIcon} />
+          <Icon svg={CloseLinearIcon} />
           <span className="sr-only">검색어 지우기</span>
         </button>
       )}

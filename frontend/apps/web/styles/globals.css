@@ -17,6 +17,8 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Dark outside the 600px app column on wide browsers (Figma 472:415); AdminShell overrides back
+   to --color-canvas since admin isn't a mobile column. */
 body {
   min-height: 100dvh;
   font-family: var(--font-sans);
@@ -24,7 +26,7 @@ body {
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-body);
   color: var(--color-text-body);
-  background-color: var(--color-canvas);
+  background-color: var(--color-canvas-outside);
   -webkit-font-smoothing: antialiased;
   word-break: keep-all;
   overflow-wrap: anywhere;
