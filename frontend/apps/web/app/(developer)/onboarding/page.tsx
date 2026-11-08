@@ -41,8 +41,6 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <PageFrame title="프로필 설정" variant="stack" bottomTabs={false}>
-      <OnboardingForm initial={initial} techTags={techTags} techStackMax={PROFILE.techStackMax} />
-    </PageFrame>
+    <OnboardingForm initial={initial} techTags={techTags} techStackMax={PROFILE.techStackMax} />
   );
 }

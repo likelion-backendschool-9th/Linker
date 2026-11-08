@@ -1,28 +1,61 @@
-.form {
-  display: grid;
-  gap: var(--space-xl);
-  width: min(100%, 720px);
-  margin-inline: auto;
-  padding: 0 var(--page-gutter) var(--space-section);
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--color-canvas);
 }
 
-.progress {
+.main {
   display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: min(100%, var(--content-max-width));
+  margin-inline: auto;
+  outline: none;
+}
+
+.form,
+.complete {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--header-height) - env(safe-area-inset-top));
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   gap: var(--space-lg);
+  padding: var(--space-md) var(--page-gutter) var(--space-md);
+}
+
+.intro {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.intro h2,
+.complete h2 {
   margin: 0;
-  padding: 0;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+}
+
+.intro p,
+.help {
+  margin: 0;
   color: var(--color-text-meta);
   font-size: var(--font-size-caption);
-  list-style: none;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
 }
 
-.progress [aria-current='step'] {
-  color: var(--color-text-heading);
-  font-weight: var(--font-weight-semibold);
-}
-
-.fieldset,
-.profile {
+.consents,
+.consentList,
+.fields {
   display: grid;
   gap: var(--space-md);
   min-width: 0;
@@ -31,156 +64,211 @@
   border: 0;
 }
 
-.fieldset legend,
-.profile h2 {
-  margin-bottom: var(--space-xs);
-  color: var(--color-text-heading);
-  font-size: var(--font-size-section-title);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-title);
+.consentList {
+  gap: var(--space-sm);
 }
 
-.profile h2 {
+.consentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+}
+
+.consent {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  color: var(--color-text-body);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body);
+}
+
+.consent input {
+  position: absolute;
+  width: var(--icon-size);
+  height: var(--icon-size);
   margin: 0;
+  opacity: 0;
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  border: 2px solid var(--color-text-meta);
+  border-radius: var(--radius-full);
+  color: var(--color-on-primary);
+}
+
+.mark svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  opacity: 0;
+}
+
+.consent input:checked + .mark {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+}
+
+.consent input:checked + .mark svg {
+  opacity: 1;
+}
+
+.consent input:focus-visible + .mark {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.detail {
+  flex: none;
+  color: var(--color-accent);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  white-space: nowrap;
 }
 
 .field {
   display: grid;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
-.field > label,
-.label {
-  color: var(--color-text-heading);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
+.field label,
+.fieldName {
+  color: var(--color-text-body);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.select {
   width: 100%;
   min-height: var(--control-height);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid transparent;
+  padding: 0 var(--space-md);
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  background-color: var(--color-canvas-soft);
+  border: 0;
   border-radius: var(--radius-sm);
-  background: var(--color-field);
-  color: var(--color-text-body);
-  font: inherit;
 }
 
 .field textarea {
+  box-sizing: border-box;
+  height: calc(var(--control-height) * 2.5);
+  padding-block: var(--space-md);
   resize: vertical;
 }
 
-.field input[aria-invalid='true'],
-.field textarea[aria-invalid='true'] {
-  border-color: var(--color-status-error);
-}
-
-.checkbox,
-.radio {
+.select {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-sm);
-  min-height: var(--touch-target-min);
-  color: var(--color-text-body);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
+  text-align: left;
 }
 
-.checkbox input,
-.radio input {
+.select svg {
+  flex: none;
   width: var(--icon-size);
   height: var(--icon-size);
-  flex: 0 0 auto;
-  accent-color: var(--color-primary);
+  color: var(--color-text-meta);
 }
 
-.checkbox a {
-  color: var(--color-text-heading);
-  text-decoration: underline;
-  text-underline-offset: var(--space-xxs);
+.placeholder {
+  color: var(--color-text-subtle-on-tint);
 }
 
-.help {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: var(--space-md) var(--page-gutter) calc(var(--space-lg) + env(safe-area-inset-bottom));
+  background-color: var(--color-canvas);
+}
+
+.next {
+  width: 100%;
+  min-height: var(--control-height);
+  color: var(--color-text-subtle-on-tint);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.nextReady {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.next:disabled {
+  cursor: default;
 }
 
 .fieldError,
 .apiError {
+  margin: 0;
   color: var(--color-status-error);
   font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-caption);
 }
 
 .apiError {
-  margin: 0;
+  margin-top: var(--space-sm);
 }
 
-.chips,
-.tagList {
+.options {
+  display: grid;
+  margin-bottom: var(--space-lg);
+}
+
+.option {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.chips li {
-  display: inline-flex;
   align-items: center;
   min-height: var(--touch-target-min);
-  padding-inline: var(--space-md);
-  border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-heading);
+  border-bottom: 1px solid var(--color-hairline-soft);
+  color: var(--color-text-meta);
   font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-caption);
 }
 
-.tagList {
-  max-height: 50dvh;
-  overflow-y: auto;
-  margin-bottom: var(--space-md);
-}
-
-.tagList li {
-  flex: 1 1 40%;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  justify-content: flex-end;
-}
-
-.complete {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-md);
-  width: min(100%, 720px);
-  margin-inline: auto;
-  padding: var(--space-lg) var(--page-gutter);
-}
-
-.complete h2 {
+.option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   margin: 0;
-  color: var(--color-text-heading);
-  font-size: var(--font-size-section-title);
+  opacity: 0;
 }
 
-.complete p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
+.option:has(input:checked) {
+  color: var(--color-text-body);
+  font-weight: var(--font-weight-medium);
 }
 
-@media (min-width: 600px) {
-  .form {
-    padding-inline: var(--space-lg);
-  }
+.option:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
