@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 export default function OnboardingLoading() {
   return (
-    <PageFrame title="프로필 설정" variant="stack" bottomTabs={false}>
+    <PageFrame title="약관 동의" variant="stack" backHref="/feed" bottomTabs={false}>
       <Skeleton variant="line" count={6} />
     </PageFrame>
   );
