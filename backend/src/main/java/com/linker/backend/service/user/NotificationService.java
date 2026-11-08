@@ -124,14 +124,15 @@ public class NotificationService {
 		return notifications.countVisibleUnread(user.userId(), Instant.now(clock));
 	}
 
+	/** {@code unreadOnly} narrows the same keyset page to unread rows (18 "읽지 않음" tab). */
 	@Transactional(readOnly = true)
-	public NotificationPageResponse list(AuthenticatedUser user, String rawCursor) {
+	public NotificationPageResponse list(AuthenticatedUser user, String rawCursor, boolean unreadOnly) {
 		Instant now = Instant.now(clock);
 		Cursor cursor = decodeCursor(user.userId(), rawCursor);
 		PageRequest limit = PageRequest.of(0, PAGE_SIZE + 1);
 		List<Notification> rows = cursor == null
-				? notifications.findFirstVisiblePage(user.userId(), now, limit)
-				: notifications.findVisiblePageAfter(user.userId(), now, cursor.createdAt(), cursor.id(), limit);
+				? notifications.findFirstVisiblePage(user.userId(), now, unreadOnly, limit)
+				: notifications.findVisiblePageAfter(user.userId(), now, unreadOnly, cursor.createdAt(), cursor.id(), limit);
 		boolean more = rows.size() > PAGE_SIZE;
 		List<Notification> page = more ? rows.subList(0, PAGE_SIZE) : rows;
 		Map<Long, Sanction> owned = ownedSanctions(user.userId(), page);

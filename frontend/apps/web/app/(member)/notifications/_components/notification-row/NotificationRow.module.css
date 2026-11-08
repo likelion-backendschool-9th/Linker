@@ -1,1 +1,47 @@
-/* Styles for NotificationRow */
+/* Figma 248:1387 notification row: 8px dot, 13px gap, 14px Medium text, 10px vertical padding */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-notification-dot);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding-block: var(--space-row-block);
+  border: 0;
+  background: none;
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+  text-align: left;
+}
+
+.row[data-state='read'] {
+  color: var(--color-text-muted-cool);
+}
+
+button.row:disabled {
+  cursor: default;
+}
+
+.dot {
+  flex: none;
+  align-self: flex-start;
+  /* Centre the dot on the first line of text */
+  margin-top: calc((1em * var(--line-height-caption) - var(--notification-dot-size)) / 2);
+  width: var(--notification-dot-size);
+  height: var(--notification-dot-size);
+  border-radius: var(--radius-full);
+  background-color: currentColor;
+}
+
+.text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.appeal {
+  display: block;
+  margin-top: var(--space-xxs);
+  font-size: var(--font-size-meta);
+  text-decoration: underline;
+}

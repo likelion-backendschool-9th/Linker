@@ -544,7 +544,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
 - [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
-- [ ] Tap → navigate to the screen + mark read; "모두 읽음" (mark all read). Team invite → `/invite/[code]` (10)
+- [ ] Tabs: 전체 (all) / 읽지 않음 (unread, server `unread=true`; empty → "읽지 않은 알림이 없어요."), kept in the URL (nuqs). Rows grouped by day ("11월 5일" + "오늘" / "N일 전"); each row is a dot (unread dark, read muted) + the title only (Figma 248:1243)
+- [ ] Tap → navigate to the screen + mark read; "전체 읽기" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
 - [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning

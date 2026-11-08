@@ -1,1 +1,30 @@
-/* Styles for AppealSheet */
+/* Appeal sheet. The sanction line keeps the old title/body treatment (no Figma frame for this sheet). */
+.form {
+  display: grid;
+  gap: var(--space-md);
+}
+.input {
+  resize: vertical;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-md);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-field);
+  font-size: var(--font-size-body);
+}
+.error {
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+}
+.title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+  overflow-wrap: anywhere;
+}
+.description {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}

@@ -161,6 +161,9 @@ class NotificationRealtimeIntegrationTest {
 						.contentType("application/json")
 						.content("{\"userId\":" + target.getId() + ",\"message\":\"처음 인사드려요\"}"))
 				.andExpect(status().isOk());
+		// Between 22:00 and 08:00 KST a non-chat row is held until morning and hidden from the list.
+		// This test checks the wording, not quiet hours, so it must not depend on when CI runs.
+		jdbc.update("update notifications set deliver_after = null where user_id = ?", target.getId());
 
 		mockMvc.perform(get("/api/v1/user/notifications").cookie(cookie(target)))
 				.andExpect(jsonPath("$.items[0].type").value("MESSAGE_REQUEST"))

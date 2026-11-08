@@ -1600,6 +1600,7 @@ repoId: number;
 
 export type ListNotificationsParams = {
 cursor?: string;
+unread?: boolean;
 };
 
 export type ListChatShareTargetsParams = {
