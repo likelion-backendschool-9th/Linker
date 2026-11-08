@@ -1,1 +1,466 @@
-/* Styles for PostContentForm */
+/* Step 2 of 22 content form (Figma 274:283 / 276:431) */
+
+.form {
+  display: grid;
+  gap: var(--space-group); /* Figma content itemSpacing 20 */
+  min-width: 0;
+  padding-bottom: calc(
+    var(--control-height-sheet) + var(--space-md) + env(safe-area-inset-bottom)
+  );
+}
+
+.block {
+  display: grid;
+  gap: var(--space-sm); /* Figma section label→field 12 */
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-title-cool);
+}
+
+.labelHint {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-muted-cool);
+}
+
+.requiredDot {
+  display: inline-block;
+  width: var(--size-required-dot);
+  height: var(--size-required-dot);
+  flex-shrink: 0;
+  background-color: var(--color-required-dot);
+  border-radius: var(--radius-full);
+}
+
+/* Selected repo card — Figma 274:341 */
+.repoCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: 18px var(--space-list-action);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+}
+
+.repoMain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.repoMark {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  color: var(--color-sheet-cta);
+}
+
+.repoText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.repoName {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.repoOwner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-row-block);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+}
+
+.repoDot {
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+.changeRepo {
+  flex-shrink: 0;
+  padding: 2px var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-on-primary);
+  background-color: var(--color-sheet-cta);
+  border: 1px solid var(--color-text-title-cool);
+  border-radius: var(--radius-xxs);
+}
+
+/* Photos — Figma 274:320 (74×74, gap 16) */
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photoCell {
+  flex-shrink: 0;
+}
+
+.photo {
+  position: relative;
+  width: var(--size-post-photo);
+  height: var(--size-post-photo);
+  overflow: hidden;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-post-photo);
+}
+
+.photoImage {
+  object-fit: cover;
+}
+
+.coverBadge {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  padding: 2px 4px;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: 14px;
+  color: var(--color-on-primary);
+  white-space: nowrap;
+  background-color: color-mix(in srgb, var(--color-sheet-cta) 80%, transparent);
+  border-radius: var(--radius-xxs);
+  transform: translateX(-50%);
+}
+
+.photoRemove,
+.photoRetry {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-on-primary);
+  background-color: color-mix(in srgb, var(--color-sheet-cta) 60%, transparent);
+  border-radius: var(--radius-full);
+}
+
+.photoRetry {
+  top: auto;
+  right: 4px;
+  bottom: 4px;
+}
+
+.photoAdd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: var(--size-post-photo);
+  height: var(--size-post-photo);
+  cursor: pointer;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-post-photo);
+}
+
+.photoAddIcon {
+  --icon-size: var(--icon-size);
+  color: var(--color-text-slate);
+}
+
+.photoAddCount {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.1em;
+  color: var(--color-text-title-cool);
+}
+
+.photoAddMuted {
+  color: var(--color-text-muted-cool);
+}
+
+/*
+ * Inputs — 1px hairline at rest, 2px on focus, without content shift:
+ * always reserve a 2px border box; draw the resting 1px with inset (not a drop shadow).
+ */
+.input,
+.textarea,
+.tagField {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-list-action);
+  font-size: var(--font-size-body);
+  font-family: var(--font-sans);
+  color: var(--color-text-body);
+  background-color: var(--color-canvas-cool);
+  border: 2px solid transparent;
+  border-radius: var(--radius-control-md);
+  box-shadow: inset 0 0 0 1px var(--color-hairline-cool);
+  filter: none;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-placeholder-cool);
+}
+
+.input:focus,
+.textarea:focus,
+.tagField:focus-visible {
+  border-color: var(--color-focus-ring-search);
+  outline: none;
+  box-shadow: none;
+}
+
+.input[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-status-error);
+}
+
+.input[aria-invalid='true']:focus,
+.textarea[aria-invalid='true']:focus {
+  border-color: var(--color-status-error);
+  box-shadow: none;
+}
+
+.textareaWrap {
+  position: relative;
+}
+
+.textarea {
+  min-height: 120px;
+  padding-bottom: var(--space-xl);
+  resize: none;
+  line-height: var(--line-height-body);
+}
+
+.bodyCounter.bodyCounter {
+  position: absolute;
+  right: var(--space-list-action);
+  bottom: var(--space-sm);
+  margin: 0;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted-cool);
+}
+
+/* Role / period dropdown look — Figma chevron */
+.selectField {
+  position: relative;
+  min-width: 0;
+}
+
+.selectField .input {
+  padding-right: calc(var(--icon-size) + var(--space-sm));
+}
+
+.selectChevron {
+  position: absolute;
+  top: 50%;
+  right: var(--space-xs);
+  --icon-size: var(--icon-size-sm);
+  color: var(--color-text-disabled-cool);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.periodTrigger {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) calc(var(--icon-size) + var(--space-sm)) var(--space-sm)
+    var(--space-list-action);
+  font-size: var(--font-size-body);
+  font-family: var(--font-sans);
+  text-align: left;
+  color: var(--color-text-body);
+  cursor: pointer;
+  background-color: var(--color-canvas-cool);
+  border: 2px solid transparent;
+  border-radius: var(--radius-control-md);
+  box-shadow: inset 0 0 0 1px var(--color-hairline-cool);
+}
+
+.periodTrigger:focus-visible {
+  border-color: var(--color-focus-ring-search);
+  outline: none;
+  box-shadow: none;
+}
+
+.periodTrigger[aria-invalid='true'] {
+  box-shadow: inset 0 0 0 1px var(--color-status-error);
+}
+
+.periodTrigger[aria-invalid='true']:focus-visible {
+  border-color: var(--color-status-error);
+  box-shadow: none;
+}
+
+.periodPlaceholder {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-placeholder-cool);
+}
+
+.period {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-row-block);
+}
+
+.links {
+  display: grid;
+  gap: var(--space-row-block);
+}
+
+.linkRow {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.tagField {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tagPlaceholder {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-placeholder-cool);
+}
+
+.tagValue {
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-sm) 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-full);
+}
+
+.tagIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+}
+
+.failure {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+  border: 1px solid var(--color-status-error);
+  border-radius: var(--radius-control-md);
+}
+
+.retry {
+  justify-self: start;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-full);
+}
+
+/* Viewport-fixed publish CTA (Figma 287:271) */
+.submitBar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--z-chrome);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: var(--space-sm) var(--page-gutter) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  background-color: transparent;
+}
+
+.cta {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  padding: var(--space-md);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-on-primary);
+  background-color: var(--color-cta-cool);
+  border: 0;
+  border-radius: var(--radius-control-md);
+}
+
+.cta:disabled,
+.cta[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

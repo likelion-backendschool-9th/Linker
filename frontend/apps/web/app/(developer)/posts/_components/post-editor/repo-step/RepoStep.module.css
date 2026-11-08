@@ -44,6 +44,7 @@
   pointer-events: none;
 }
 
+/* Resting 1px hairline via inset; 2px border always reserved so focus doesn't shift text */
 .searchInput {
   box-sizing: border-box;
   width: 100%;
@@ -55,18 +56,20 @@
   letter-spacing: -0.03em;
   color: var(--color-text-body);
   background-color: var(--color-canvas-cool);
-  border: 2px solid #E5E7EB;
+  border: 2px solid transparent;
   border-radius: var(--radius-card-compact);
+  box-shadow: inset 0 0 0 1px var(--color-hairline-cool);
+  filter: none;
 }
 
 .searchInput::placeholder {
   color: var(--color-text-placeholder-cool);
 }
 
-/* Focus uses a 2px blue border box instead of the global outline (same idea as 19 search) */
 .searchInput:focus {
-  border: 2px solid var(--color-focus-ring-search);
+  border-color: var(--color-focus-ring-search);
   outline: none;
+  box-shadow: none;
 }
 
 .fieldset {

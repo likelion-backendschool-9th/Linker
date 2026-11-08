@@ -112,6 +112,7 @@ export function usePostCreateContentStep(repoId: number) {
   const summary = useQuery(repoSummaryOptions(viewer.login, repoId));
   return {
     summary,
-    emptyValues: summary.data ? emptyPostForm(summary.data.description ?? '') : null,
+    // Figma 274:329: empty body so the placeholder shows (not the repo description)
+    emptyValues: summary.data ? emptyPostForm() : null,
   };
 }

@@ -145,6 +145,8 @@
   --icon-size: 24px;
   --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
   --size-required-dot: 4px; /* required-field mark beside titles/labels */
+  --size-post-photo: 74px; /* 22 photo tile (Figma 274:321) */
+  --radius-post-photo: 6px; /* 22 photo tile corner (Figma 274:321) */
   --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
   --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
@@ -185,7 +187,8 @@
   --space-calendar-chip: 10px; /* 15 between status chips */
   --space-calendar-sheet-bottom: 40px; /* 15 day sheet bottom padding */
   --space-calendar-date-top: 18px; /* 15 date sheet top padding */
-  --space-calendar-date-cta: 35px; /* 15 date wheels to "저장" */
+  --space-calendar-date-cta: 35px; /* 15 date wheels to "저장"; also 22 period sheet */
+  --space-post-period-sheet-bottom: 28px; /* 22 period sheet bottom (Figma 368:3896) */
   --control-height-calendar-chip: 27px; /* 15 status chip */
   --calendar-weekday-height: 52px; /* 15 weekday row */
   --calendar-day-height: 30px; /* 15 date number row */
