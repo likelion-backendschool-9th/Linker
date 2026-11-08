@@ -1,132 +1,216 @@
-/* Card (guide ch. 5); the title link stretches over the whole card */
 .card {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  height: 100%;
-  padding: var(--space-lg);
-  background-color: var(--color-canvas);
-  border: 1px solid var(--color-hairline-soft);
-  border-radius: var(--radius-md);
+  gap: var(--space-card-row);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 6px solid var(--color-canvas-cool);
+  transition: padding-bottom var(--duration-overlay) var(--ease-standard);
 }
 
-.badges {
+/* Expanded: the detail panel already fills to the card's edge and supplies its own bottom
+   padding, so the card's own padding-bottom would just add an extra gap below it */
+.card[data-expanded='true'] {
+  padding-bottom: 0;
+}
+
+.body {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xxs);
+  flex-direction: column;
+  gap: var(--space-card-info);
 }
 
-/* Neutral badge (guide ch. 5) */
-.badge,
-.deadline,
-.closed {
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
+.chipRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.formatChip,
+.goalChip {
+  padding: var(--space-row-inline) var(--space-row-block);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-sheet-title);
+  white-space: nowrap;
   border-radius: var(--radius-full);
 }
 
-/* The D-day leads the row: same badge, heading color and weight */
-.deadline {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
+.formatChip {
+  background-color: var(--color-chip-format-bg);
 }
 
-/* Closed says so in text; the outline only separates it from open badges */
-.closed {
-  font-weight: var(--font-weight-semibold);
-  background-color: var(--color-canvas);
-  border: 1px solid var(--color-hairline);
+.goalChip {
+  background-color: var(--color-chip-goal-bg);
+}
+
+.deadline {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+}
+
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-list-action);
 }
 
 .title {
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   line-height: var(--line-height-title);
-  color: var(--color-text-title);
-  overflow-wrap: anywhere;
+  color: var(--color-text-sheet-title);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
-.link::after {
-  position: absolute;
-  inset: 0;
-  content: '';
-  border-radius: var(--radius-md);
+.description {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-slate);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-card-meta);
 }
 
 .roles {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xxs) var(--space-sm);
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roleChip {
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+/* The button and the detail panel it opens both run edge-to-edge, past the card's own side
+   padding (Figma 346:600/361:981 are both full card width, unlike the role chips above them) */
+.expandSection {
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--space-md));
+}
+
+.expandButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-row-inline);
+  width: 100%;
+  min-height: var(--touch-target-min);
   font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+  background: none;
+  border: none;
 }
 
-.role,
-.roleFull {
-  display: inline-flex;
-  gap: var(--space-xxs);
-  color: var(--color-text-secondary);
+.expandIcon {
+  --icon-box-size: 14px;
+  --icon-stroke-width: 1.5;
+  transition: transform var(--duration-overlay) var(--ease-standard);
 }
 
-.roleName {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-body);
+.expandButton[aria-expanded='true'] .expandIcon {
+  transform: rotate(180deg);
 }
 
-/* Filled roles say "모집 완료"; dimmed color is secondary to that text */
-.roleFull,
-.roleFull .roleName {
-  color: var(--color-text-meta);
+/* CSS grid 0fr/1fr accordion (scenario 4): animates smoothly regardless of the detail content's
+   actual height, so it doesn't need a hardcoded max-height like the fixed-size search panel does */
+.detailWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-overlay) var(--ease-standard);
+}
+
+.detailWrap[data-expanded='true'] {
+  grid-template-rows: 1fr;
+}
+
+.detailInner {
+  overflow: hidden;
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sheet-block);
+  margin: 0;
+  padding: var(--space-detail-block) var(--space-md);
+  background-color: var(--color-canvas-cool);
+}
+
+.detailRow {
+  display: flex;
+  gap: var(--space-sheet-block);
+}
+
+.detailRow dt {
+  flex: 0 0 var(--detail-label-width);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+}
+
+.detailRow dd {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-micro);
   font-weight: var(--font-weight-regular);
+  color: var(--color-text-slate);
 }
 
-.tags {
+.techList {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xxs);
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.tag,
-.more {
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-body);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-full);
-}
-
-.more {
-  color: var(--color-text-meta);
-}
-
-/* Pushed to the bottom so cards in one grid row line up */
-.author {
+.techList li {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  margin-top: auto;
-  padding-top: var(--space-xs);
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-meta);
 }
 
-.avatar {
-  width: var(--icon-size);
-  height: var(--icon-size);
+/* Dot separator between tech names, not after the last one on each wrapped line */
+.techList li:not(:last-child)::after {
+  content: '';
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: var(--color-text-slate);
+  opacity: 0.6;
   border-radius: var(--radius-full);
-  object-fit: cover;
-}
-
-.name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text-secondary);
 }
