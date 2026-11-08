@@ -31,18 +31,21 @@ export function PostCreate() {
   return (
     <div className={styles.editor}>
       <ol className={styles.steps} aria-label="작성 단계">
-        {STEPS.map((label, index) => (
-          <li
-            key={label}
-            className={styles.stepItem}
-            aria-current={step === index + 1 ? 'step' : undefined}
-          >
-            <span className={styles.stepNumber} aria-hidden>
-              {index + 1}
-            </span>
-            {label}
-          </li>
-        ))}
+        {STEPS.map((label, index) => {
+          const reached = index < step;
+          return (
+            <li
+              key={label}
+              className={reached ? styles.stepItemReached : styles.stepItem}
+              aria-current={step === index + 1 ? 'step' : undefined}
+            >
+              <span className="sr-only">
+                {index + 1}. {label}
+                {reached ? ' 완료' : ''}
+              </span>
+            </li>
+          );
+        })}
       </ol>
 
       {leaving ? (

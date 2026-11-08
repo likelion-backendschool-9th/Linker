@@ -40,6 +40,11 @@
   --space-notification-group: 25px; /* tabs to "전체 읽기", to the first day, and between days */
   --space-notification-dot: 13px; /* unread/read dot to the notification text */
   --notification-dot-size: 8px;
+  /* Figma 22 post editor (265:142) */
+  --space-post-intro: 10px; /* step-1 title to hint */
+  --space-post-search: 25px; /* hint to search field */
+  --space-post-repo: 13px; /* gap between repo rows */
+  --stepper-height: 4px; /* top progress bar */
 
   /* Radius */
   --radius-none: 0;

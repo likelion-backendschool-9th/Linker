@@ -94,6 +94,11 @@
   --color-cta-cool: #2563eb; /* apply CTA fill; on-white text uses --color-on-primary */
   --color-role-filled: #028714; /* filled headcount "1/1" before "마감" */
 
+  /* 22 post editor (Figma 265:142): cool CTA disabled + fork chip + list disabled text */
+  --color-cta-cool-disabled: #92b1f5; /* bottom CTA when nothing selected; white label kept by Figma */
+  --color-chip-fork-bg: rgb(230 46 0 / 0.1); /* Fork chip fill (#E62E00 @ 10%) */
+  --color-text-disabled-cool: #b2b7c3; /* already-posted repo name / unselected check */
+
   /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
   --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
   --color-fab-bg: #2e2e2e; /* write-recruit-post FAB fill */

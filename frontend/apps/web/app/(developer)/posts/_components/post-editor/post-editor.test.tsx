@@ -82,15 +82,17 @@ it('lists repos with forks and already-posted ones disabled', async () => {
     );
   }
   const { container } = renderWithProviders(<Harness />, developer);
-  expect(await screen.findByText('포크 · 원본 facebook/react')).toBeVisible();
+  expect(await screen.findByText('저장소를 선택해 주세요')).toBeVisible();
+  expect(screen.getByPlaceholderText('저장소 검색하기')).toBeVisible();
+  expect(await screen.findByText('포크')).toBeVisible();
   expect(screen.getByRole('radio', { name: /linker-web/ })).toBeDisabled();
-  expect(screen.getByText('이미 올린 레포')).toBeVisible();
+  expect(screen.getByText('(이미 피드에 올린 레포)')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
   expect(await axe(container)).toHaveNoViolations();
 
-  await user.click(screen.getByRole('button', { name: '다음' }));
-  expect(await screen.findByText('소개할 레포를 골라 주세요.')).toBeVisible();
   await user.click(screen.getByRole('radio', { name: /react-fork/ }));
   expect(onSelect).toHaveBeenCalledWith(42);
+  expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
   await user.click(screen.getByRole('button', { name: '다음' }));
   expect(onNext).toHaveBeenCalledWith(42);
 });

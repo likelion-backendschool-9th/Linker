@@ -9,7 +9,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { PostCreate } from '../_components/post-editor/post-create/PostCreate';
 import { editorReposOptions, repoSummaryOptions } from '../_lib/editor-queries';
 
-export const metadata = buildMetadata({ title: '게시물 쓰기' });
+export const metadata = buildMetadata({ title: '피드 작성' });
 
 const loadNav = createLoader({ step: parseAsInteger, repo: parseAsInteger, teamId: parseAsString });
 
@@ -23,7 +23,7 @@ export default async function PostNewPage({ searchParams }: PageProps<'/posts/ne
   else await client.prefetchQuery(editorReposOptions(login, '', teamId));
 
   return (
-    <PageFrame title="게시물 쓰기" variant="stack" backHref="/feed">
+    <PageFrame title="피드 작성" variant="stack" backHref="/feed">
       <HydrationBoundary state={dehydrate(client)}>
         <PostCreate />
       </HydrationBoundary>

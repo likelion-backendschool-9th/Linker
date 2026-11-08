@@ -33,8 +33,6 @@ export function useRepoStep({ teamId, repoId, onSelect }: RepoStepArgs) {
     if (teamId && repoId === null && selectable.length === 1) onSelect(selectable[0]!.repoId);
   }, [teamId, repoId, selectable, onSelect]);
 
-  const [missing, setMissing] = useState(false);
-
   return {
     id,
     text,
@@ -42,7 +40,5 @@ export function useRepoStep({ teamId, repoId, onSelect }: RepoStepArgs) {
     q,
     repos,
     items,
-    missing,
-    setMissing,
   };
 }
