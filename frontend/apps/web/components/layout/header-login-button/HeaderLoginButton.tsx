@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 
 type HeaderLoginButtonProps = {
-  /** "설정" / "무료로 시작하기" text (desktop) or an icon + sr-only label (mobile 설정) */
+  /** Icon + sr-only label, e.g. 설정 */
   children: ReactNode;
   className?: string;
 };

@@ -50,7 +50,7 @@ export async function PageFrame({
     <>
       <SkipLink />
       {variant === 'tab' ? (
-        <TabHeader role={role} login={session?.login ?? null} hasUnread={hasUnread} />
+        <TabHeader role={role} hasUnread={hasUnread} />
       ) : (
         <StackHeader title={title} backHref={backHref} actions={actions} />
       )}
@@ -68,7 +68,11 @@ export async function PageFrame({
         )}
         {children}
       </main>
-      {showTabs && <BottomTabBar tabs={tabsFor(role)} />}
+      {showTabs && (
+        <BottomTabBar
+          tabs={tabsFor(role, session ? { login: session.login, userId: session.userId } : null)}
+        />
+      )}
     </>
   );
 }
