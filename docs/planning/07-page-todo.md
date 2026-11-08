@@ -493,7 +493,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
-- [ ] (sheet) Room info: members, mute, leave (1:1), `[Included]` photo gallery
+- [ ] Room info (full screen from the header ☰, Figma 351:580): team card (photo, name, "멤버 N명" → 11), members with team role (오너/관리자/멤버, owner first), mute, PR list, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
 - [ ] Server: rooms, participants (last read message), messages tables shared by team and 1:1
 - [ ] Server: STOMP auth, new message notifications (bundled per room)
 
@@ -505,6 +505,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
+- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; between the input and the send button) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
 **AI chat summary (Flex, after 28)** `[Included]`
@@ -520,7 +521,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **1:1 chat only (with 22–24)**
 
 - [ ] Start rules: direct if mutual follow or same team; otherwise only 1 first message goes to requests
-- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees accept/delete at the top
+- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees a bottom panel in place of the composer (Figma 350:123): "{name}님이 메시지 요청을 보냈어요" / "수락 버튼을 누르시면 대화하실 수 있습니다" + 수락 · 거절 (= delete) · 차단
 - [ ] Delete (reject) isn't disclosed, and blocks new requests from the same person for 30 days
 - [ ] Blocking hides the room from my list and the other's messages aren't delivered to me
 - [ ] `[Included]` First external link preview (OG; 1:1 only when mutual follow)
@@ -544,7 +545,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
 - [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
-- [ ] Tap → navigate to the screen + mark read; "모두 읽음" (mark all read). Team invite → `/invite/[code]` (10)
+- [ ] Tabs: 전체 (all) / 읽지 않음 (unread, server `unread=true`; empty → "읽지 않은 알림이 없어요."), kept in the URL (nuqs). Rows grouped by day ("11월 5일" + "오늘" / "N일 전"); each row is a dot (unread dark, read muted) + the title only (Figma 248:1243)
+- [ ] Tap → navigate to the screen + mark read; "전체 읽기" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
 - [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning
@@ -727,6 +729,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 > Basis: S-1, S-3, S-7, H-5 · Needs first: screens with benefits (04, 09, 17, 20, 22) · Merged: plan comparison + web checkout + payment complete → one page and two return URLs
 
 - [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Flex is monthly only
+- [ ] Figma 28 (288:471 developer, 293:218 recruiter): title "Linker를 구독하고 / 더 좋은 서비스를 경험해 보세요" + subtitle, "월간 결제 / 연간 결제" toggle, plan cards (name, one-line pitch, price + "월간 청구"/"연간 청구", "{plan} 플랜 구독하기", checked benefits), terms/privacy links, blue note "계정 당 Pro, Flex의 무료 체험은 1회만 제공 됩니다". No card for the free plan; Flex picks its team in a "결제할 팀 선택" sheet opened by its button (user decisions 2026-11-09). **The trial note is Figma copy shown by user decision, but the free trial is `[Included]` and not implemented yet**, so no account actually gets a trial. The recruiter frame's Scout card appears once the server sells Scout (the server's recruiter checkout is still `[Included]`); until then recruiters see "지금 결제할 수 있는 요금제가 없어요."
 - [ ] Server: plans API includes personal trial eligibility. Return `Cache-Control: private, no-store`; frontend uses server `no-store` and account-scoped TanStack queries, with no shared Next cache
 - [ ] Monthly/annual toggle; show the entry reason (`?reason=photo-limit` etc. when coming from a limit prompt sheet)
 - [ ] Flex requires choosing a team (where I'm owner or billing manager) + price from current headcount (₩7,900 up to 6, ₩1,900 per member from the 7th), "인원이 바뀌면 다음 결제일부터 반영돼요" (headcount changes apply from the next billing date)
@@ -741,6 +744,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 > Basis: S-2 · Needs first: 28 · Needed for the MVP launch demo "test payment → benefits → cancel → back to free"
 
+- [ ] Figma 29 (294:306 Pro, 295:459 Flex, 364:1694 cancel modal): grey "현재 사용 중인 요금제" card ("{plan} 요금제", description, "요금제 변경하기" → 28), info box ("다음 결제일" — "이용 만료일"/"혜택 종료일" until auto-renewal exists, "현재 결제 주기", "월 결제 금액 2,900(Pro)", Flex adds "팀 인원 N명", "결제 담당자", "결제 담당자 변경", then "요금제 해지 ›"), "결제 내역" with "전체 보기" (3 rows first; date, "{plan} 월간 결제", "N 원 결제/환불"). Several subscriptions repeat card + info box; no subscription shows a "무료 요금제" card. Refund is a small "환불" button on refundable payment rows, confirmed in the same modal style (user decisions 2026-11-09). **"결제 담당자 변경" is shown but `[Included]` and not built: it toasts "미구현 기능입니다."** Server: subscription items add `amount` (current period price) and `payerName` (Flex billing manager).
 - [ ] Current plan, next billing date (or expiry), payment history
 - [ ] Cancel (confirm sheet): benefits kept until the paid period ends
 - [ ] Refund: within 7 days of payment + benefits unused (its paid period has not started; latest payment only) → full refund via Toss Payments cancel

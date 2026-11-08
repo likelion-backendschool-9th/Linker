@@ -7,6 +7,7 @@ import { formatWon } from '@/lib/format/number';
 import { formatDate } from '@/lib/format/time';
 
 import styles from '../subscription.module.css';
+import { BenefitList } from '../benefit-list';
 import { planLabel } from './api';
 import { usePaymentSuccess } from './hook';
 
@@ -49,11 +50,7 @@ export function PaymentSuccess({
       <p>
         {formatWon(result.amount)} · 이용 기간 {formatDate(result.expiresOn)}까지
       </p>
-      <ul className={styles.benefits}>
-        {result.benefits.map((benefit) => (
-          <li key={benefit}>{benefit}</li>
-        ))}
-      </ul>
+      <BenefitList benefits={result.benefits} />
       <Button onClick={goService}>서비스 이용하기</Button>
       <Button variant="outline" onClick={goManage}>
         구독 관리

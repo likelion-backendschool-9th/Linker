@@ -27,11 +27,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			select notification from Notification notification
 			where notification.user.id = :userId
 			  and (notification.deliverAfter is null or notification.deliverAfter <= :now)
+			  and (:unreadOnly = false or notification.readAt is null)
 			order by notification.createdAt desc, notification.id desc
 			""")
 	List<Notification> findFirstVisiblePage(
 			@Param("userId") long userId,
 			@Param("now") Instant now,
+			@Param("unreadOnly") boolean unreadOnly,
 			Pageable pageable
 	);
 
@@ -39,6 +41,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			select notification from Notification notification
 			where notification.user.id = :userId
 			  and (notification.deliverAfter is null or notification.deliverAfter <= :now)
+			  and (:unreadOnly = false or notification.readAt is null)
 			  and (
 			    notification.createdAt < :createdAt
 			    or (notification.createdAt = :createdAt and notification.id < :id)
@@ -48,6 +51,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 	List<Notification> findVisiblePageAfter(
 			@Param("userId") long userId,
 			@Param("now") Instant now,
+			@Param("unreadOnly") boolean unreadOnly,
 			@Param("createdAt") Instant createdAt,
 			@Param("id") long id,
 			Pageable pageable

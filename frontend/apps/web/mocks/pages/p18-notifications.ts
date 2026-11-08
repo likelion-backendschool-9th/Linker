@@ -182,9 +182,9 @@ export function addChatNotification(
 export const routes: MockRoute[] = [
   get('/api/v1/user/notifications', ({ query, viewer }) =>
     paginate(
-      [...accountItems(viewer)].sort(
-        (a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id,
-      ),
+      accountItems(viewer)
+        .filter((n) => query.get('unread') !== 'true' || !n.read)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id),
       query,
     ),
   ),

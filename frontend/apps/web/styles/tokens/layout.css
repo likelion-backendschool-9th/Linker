@@ -36,6 +36,10 @@
   --space-card-gap: 15px; /* 11 progress card rows, section title to its content */
   --space-search-icon: 14px; /* 11 search field: inset and icon-to-text gap */
   --space-fab-bottom: 34px; /* 11 team chat shortcut from the screen bottom (Figma, incl. home indicator) */
+  /* Figma 18 notifications (248:1243) */
+  --space-notification-group: 25px; /* tabs to "전체 읽기", to the first day, and between days */
+  --space-notification-dot: 13px; /* unread/read dot to the notification text */
+  --notification-dot-size: 8px;
 
   /* Radius */
   --radius-none: 0;
@@ -101,6 +105,28 @@
   --board-status-dot-size: 8px; /* 14 status dot in the card status field */
   --icon-size-board-chevron: 16px; /* 14 button chevron (Figma frame) */
   --icon-size-board-status-chevron: 12px; /* 14 card status field chevron */
+  /* Figma 17 chat room (92:768 messages, 346:243 request panel, 351:580 room info) */
+  --chat-avatar-size: 46px; /* sender photo beside others' messages */
+  --space-chat-avatar: 9px; /* sender photo to name/bubble column */
+  --space-chat-name: 7px; /* sender name to bubble, bubble to cards below */
+  --space-chat-row: 20px; /* between messages */
+  --space-chat-bubble-inline: 14px; /* bubble side padding; block padding is --space-row-block */
+  --radius-chat-bubble: 14px;
+  --control-height-chat: 42px; /* composer photo button, input and send button */
+  --space-chat-input-inline: 15px; /* composer input text inset */
+  --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
+  --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
+  --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
+  --chat-ai-logo-size: 33px; /* logo inside the "AI 채팅 요약" button (--control-height-chat circle) */
+  --space-chat-card: 14px; /* PR card padding */
+  --chat-request-panel-height: 140px; /* request panel replacing the composer */
+  --space-chat-request-title: 19px; /* request panel top to its title */
+  --space-chat-request-guide: 6px; /* request title to the blue guide line */
+  --space-chat-request-actions: 22px; /* guide line to the 수락/거절/차단 row */
+  --space-chat-request-button: 9px; /* request button vertical padding */
+  --space-room-info-team: 15px; /* room info: header to the team card */
+  --space-room-member: 15px; /* room info: between member rows */
+  --room-member-avatar-size: 44px;
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
@@ -131,8 +157,12 @@
   --duration-overlay: 200ms;
   --duration-chrome-collapse: 320ms; /* 19 recruit list scroll-driven header/tabs/search-panel reveal */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --blur-chrome: blur(20px); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
-  --blur-header-open: blur(4px); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
+  --blur-chrome: blur(
+    20px
+  ); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
+  --blur-header-open: blur(
+    4px
+  ); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
   --blur-scrim: blur(6px); /* 07 sheet scrim */
 
   /* The only shadow: the active segment of a segmented control */
@@ -143,4 +173,40 @@
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
+  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */
+
+  /* Figma 15 values (calendar) */
+  --space-calendar-legend: 14px; /* 15 status chips to weekday row */
+  --space-calendar-chip: 10px; /* 15 between status chips */
+  --space-calendar-sheet-bottom: 40px; /* 15 day sheet bottom padding */
+  --space-calendar-date-top: 18px; /* 15 date sheet top padding */
+  --space-calendar-date-cta: 35px; /* 15 date wheels to "저장" */
+  --control-height-calendar-chip: 27px; /* 15 status chip */
+  --calendar-weekday-height: 52px; /* 15 weekday row */
+  --calendar-day-height: 30px; /* 15 date number row */
+  --calendar-week-height: 101px; /* 15 week row: date number + three bar lanes */
+  --calendar-bar-height: 18px; /* 15 issue bar and its lane step */
+  --radius-calendar-bar: 2px; /* 15 issue bar */
+  --icon-size-calendar: 24px; /* 15 month chevron and help icon */
+  --wheel-row-height: 37px; /* 15 date wheel row */
+  --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
+
+  /* Figma 28 plans (288:471, 293:218) */
+  --space-plan-card: 20px; /* card padding, card sections, between cards, header to title */
+  --space-plan-intro: 25px; /* subtitle to the 월간/연간 toggle */
+  --space-plan-toggle: 30px; /* toggle to the first card, last card to the footer links */
+  --control-height-plan-toggle: 52px; /* 월간/연간 toggle (each side is the hit area) */
+  --radius-plan-card: 14px;
+  --icon-size-plan-check: 18px; /* benefit check */
+
+  /* Figma 29 subscription (294:306, 295:459, 364:1694) */
+  --space-manage-block: 15px; /* header to plan card, plan card to info box, info box to payment history */
+  --space-manage-card: 13px; /* plan card padding */
+  --space-manage-name: 7px; /* plan name to its description */
+  --space-manage-row: 17px; /* info box side padding */
+  --row-height-manage-info: 35px; /* info box row (tappable rows keep --touch-target-min) */
+  --radius-manage-card: 6px;
+  --radius-manage-dialog: 10px; /* 해지 confirm modal */
+  --dialog-width-manage: 320px; /* 해지 confirm modal */
+  --icon-size-manage-chevron: 20px; /* "요금제 해지" and "전체 보기" chevron */
 }

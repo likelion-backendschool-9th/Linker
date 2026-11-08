@@ -1,1 +1,65 @@
-/* Styles for PrEventCard */
+/* Figma 248:1223 PR event card */
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-card-gap);
+  width: 100%;
+  padding: var(--space-chat-card);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+  background: var(--color-canvas);
+  text-align: left;
+}
+
+button.card {
+  cursor: pointer;
+}
+
+button.card:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.mark {
+  flex: 0 0 var(--icon-size-chat-event);
+  width: var(--icon-size-chat-event);
+  height: var(--icon-size-chat-event);
+  color: var(--color-text-black);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row-block);
+  min-width: 0;
+}
+
+.event {
+  font-size: var(--font-size-caption);
+  color: var(--color-chat-accent);
+}
+
+.title {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-row-block);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+}
+
+.dot {
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  border-radius: var(--radius-full);
+  background: currentColor;
+}

@@ -9,6 +9,7 @@ public record ChatRoomTeamResponse(
 		@Schema(requiredMode = REQUIRED) long id,
 		@Schema(requiredMode = REQUIRED) String name,
 		@Schema(requiredMode = REQUIRED, allowableValues = {"ACTIVE", "COMPLETED", "READ_ONLY", "ARCHIVED"}) String status,
-		@Schema(requiredMode = REQUIRED, allowableValues = {"OWNER", "ADMIN", "MEMBER"}) String myRole
+		@Schema(requiredMode = REQUIRED, allowableValues = {"OWNER", "ADMIN", "MEMBER"}) String myRole,
+		@Schema(requiredMode = REQUIRED, nullable = true, description = "Team photo") String avatarUrl
 ) {
 }

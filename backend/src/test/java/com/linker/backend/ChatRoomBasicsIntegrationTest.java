@@ -574,7 +574,8 @@ class ChatRoomBasicsIntegrationTest {
 				.andExpect(jsonPath("$.team").value(nullValue()))
 				.andExpect(jsonPath("$.historyLimitDays").value(nullValue()))
 				.andExpect(jsonPath("$.members.length()").value(2))
-				.andExpect(jsonPath("$.members[0].id").value(firstId));
+				.andExpect(jsonPath("$.members[0].id").value(firstId))
+				.andExpect(jsonPath("$.members[0].role").value(nullValue()));
 
 		ChatRoomMember seat = members.findActive(accepted.getId(), mina.getId()).orElseThrow();
 		seat.mute(true);

@@ -42,7 +42,7 @@ vi.mock('./message-timeline', () => ({
   ),
 }));
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
-const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', myRole: 'MEMBER', status: 'ACTIVE' }, historyLimitDays: 60 };
+const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', myRole: 'MEMBER', status: 'ACTIVE', avatarUrl: null }, historyLimitDays: 60 };
 const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 2, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z' };
 it('refreshes both the message count and the open unread-members sheet on a READ event', async () => {
   let read = false;

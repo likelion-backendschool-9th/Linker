@@ -1,9 +1,12 @@
 'use client';
 
-import { Plus, ImagePlus } from 'lucide-react';
+import { FileImageLinearIcon } from '@solar-icons/static/linear/file-image';
+import { ArrowUp, ImagePlus } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
+import { Icon } from '@/components/ui/icon/Icon';
 import { ImageUploader } from '@/features/image-upload/image-uploader/ImageUploader';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { CHAT, IMAGE } from '@/lib/policy';
@@ -20,9 +23,11 @@ type Props = {
   room?: RoomInfo;
   login?: string | null;
   onSend: (message: { text: string; images: UploadedImage[]; references?: ChatReferences }) => void;
+  /** Extra button between the input and send (the team room's "AI 채팅 요약") */
+  beforeSend?: ReactNode;
 };
 
-export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
+export function ChatComposer({ disabled, onSend, room, login = null, beforeSend }: Props) {
   const {
     uploader,
     attachments,
@@ -49,14 +54,14 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
           title="사진 첨부"
           description="사진을 선택하고 업로드 상태를 확인해 주세요."
           trigger={
-            <Button
-              variant="outline"
+            <button
+              type="button"
               disabled={disabled}
-              aria-label="첨부 기능 열기"
+              aria-label="사진 첨부"
               className={styles.attachmentToggle}
             >
-              <Plus aria-hidden />
-            </Button>
+              <Icon svg={FileImageLinearIcon} />
+            </button>
           }
         >
           <fieldset disabled={disabled} className={styles.attachments}>
@@ -83,7 +88,7 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
           rows={1}
           disabled={disabled}
           aria-invalid={tooLong}
-          aria-describedby="chat-character-count"
+          aria-describedby={tooLong ? 'chat-character-count' : undefined}
           onChange={(event) => {
             setText(event.target.value);
             setCaret(event.target.selectionStart);
@@ -101,12 +106,14 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
               }
             }
           }}
-          placeholder="메시지를 입력해 주세요"
+          placeholder="채팅을 입력해 주세요."
           className={styles.input}
         />
-        <Button type="submit" disabled={!canSubmit}>
-          보내기
-        </Button>
+        {beforeSend}
+        <button type="submit" disabled={!canSubmit} className={styles.send}>
+          <ArrowUp aria-hidden />
+          <span className="sr-only">보내기</span>
+        </button>
       </div>
       {!!uploader.items.length && (
         <button
@@ -125,12 +132,13 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
         </button>
       )}
       {references.team && <ChatReferenceTools control={references} onMention={onMention} />}
-      <div className={styles.composeActions}>
-        <p id="chat-character-count" className={tooLong ? styles.error : styles.meta}>
-          {count.toLocaleString('ko-KR')} / {CHAT.messageMax.toLocaleString('ko-KR')}자
-          {tooLong && ' · 글자 수를 줄여 주세요.'}
+      {/* Figma shows no counter; it appears only once the limit is passed */}
+      {tooLong && (
+        <p id="chat-character-count" role="alert" className={styles.error}>
+          글자 수를 줄여 주세요. ({count.toLocaleString('ko-KR')} /{' '}
+          {CHAT.messageMax.toLocaleString('ko-KR')}자)
         </p>
-      </div>
+      )}
     </form>
   );
 }

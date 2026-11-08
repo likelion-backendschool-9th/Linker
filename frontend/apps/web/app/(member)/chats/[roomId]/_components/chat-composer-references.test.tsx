@@ -10,7 +10,7 @@ import { ChatComposer } from './chat-composer/ChatComposer';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
 const fetchMock = vi.mocked(apiFetch);
-const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', myRole: 'MEMBER', status: 'ACTIVE' }, historyLimitDays: null };
+const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', myRole: 'MEMBER', status: 'ACTIVE', avatarUrl: null }, historyLimitDays: null };
 beforeEach(() => {
   resetOverlayHistory();
   fetchMock.mockReset();

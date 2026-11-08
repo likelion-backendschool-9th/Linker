@@ -29,21 +29,60 @@ it('marks all read, updates the count, and exposes readable status with no axe v
   const { container } = renderWithProviders(<NotificationList />, {
     viewer: { role: 'developer', login: 'developer' },
   });
-  await screen.findByText('읽지 않음');
+  await screen.findByRole('link', { name: /^읽지 않음,\s*팀 채팅$/ });
   expect(await axe(container)).toHaveNoViolations();
   fetchMock.mockImplementation(async (url) =>
     url.endsWith('unread-count')
       ? { count: 0 }
       : { items: [{ ...notice, read: true }], nextCursor: null },
   );
-  await userEvent.click(screen.getByRole('button', { name: '모두 읽음' }));
+  await userEvent.click(screen.getByRole('button', { name: '전체 읽기' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/notifications/read-all', {
       method: 'POST',
     }),
   );
   await screen.findByText('읽지 않은 알림 0개');
-  expect(screen.queryByText('읽지 않음')).not.toBeInTheDocument();
+  expect(await screen.findByRole('link', { name: '팀 채팅' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '전체 읽기' })).toBeDisabled();
+});
+it('shows only the title of each row, grouped under its day', async () => {
+  renderWithProviders(<NotificationList />, { viewer: { role: 'developer', login: 'developer' } });
+  await screen.findByRole('link', { name: /^읽지 않음,\s*팀 채팅$/ });
+  expect(screen.queryByText('새 메시지')).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 2, name: /11월 1일/ })).toBeVisible();
+});
+it('asks the server for unread rows on the "읽지 않음" tab and keeps the tab in the URL', async () => {
+  const onUrlUpdate = vi.fn();
+  renderWithProviders(<NotificationList />, {
+    viewer: { role: 'developer', login: 'developer' },
+    onUrlUpdate,
+  });
+  expect(await screen.findByRole('button', { name: '전체' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await userEvent.click(screen.getByRole('button', { name: '읽지 않음' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/user/notifications?unread=true',
+      expect.anything(),
+    ),
+  );
+  expect(onUrlUpdate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ queryString: '?tab=unread' }),
+  );
+  expect(screen.getByRole('button', { name: '읽지 않음' })).toHaveAttribute('aria-current', 'page');
+});
+it('says when there is nothing unread', async () => {
+  fetchMock.mockImplementation(async (url) =>
+    url.endsWith('unread-count') ? { count: 0 } : { items: [], nextCursor: null },
+  );
+  renderWithProviders(<NotificationList />, {
+    viewer: { role: 'developer', login: 'developer' },
+    searchParams: '?tab=unread',
+  });
+  expect(await screen.findByText('읽지 않은 알림이 없어요.')).toBeVisible();
 });
 it('keeps the list and a retry action when marking an item read fails', async () => {
   renderWithProviders(<NotificationList />, { viewer: { role: 'developer', login: 'developer' } });

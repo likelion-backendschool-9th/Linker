@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -8,11 +9,15 @@ import { toast } from '@/stores/toast-store';
 
 import {
   cancelSubscription,
+  NOT_IMPLEMENTED,
   paymentsOptions,
   refundPayment,
   subscriptionKeys,
   subscriptionsOptions,
 } from './api';
+
+/** Figma 29 lists the three newest payments; "전체 보기" shows the rest of the first page. */
+export const PAYMENT_PREVIEW = 3;
 
 export function useSubscriptionManager() {
   const { login } = useViewer();
@@ -21,6 +26,7 @@ export function useSubscriptionManager() {
   const payments = useQuery(paymentsOptions(login));
   const cancel = useOverlay('subscription-cancel');
   const refund = useOverlay('payment-refund');
+  const [showAll, setShowAll] = useState(false);
   const action = useMutation({
     mutationFn: async (input: { kind: 'cancel' | 'refund'; id: number }) =>
       input.kind === 'cancel' ? cancelSubscription(input.id) : refundPayment(input.id),
@@ -47,6 +53,9 @@ export function useSubscriptionManager() {
     action,
     selectedSub,
     selectedPayment,
+    showAll,
+    onShowAll: () => setShowAll(true),
+    onNotImplemented: () => toast(NOT_IMPLEMENTED),
     submit: (kind: 'cancel' | 'refund', id: number) => {
       if (!action.isPending) action.mutate({ kind, id });
     },

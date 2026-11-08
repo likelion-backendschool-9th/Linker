@@ -16,7 +16,9 @@
   --color-canvas: #ffffff; /* page and card background */
   --color-canvas-soft: #f3f3f3; /* nav pill, featured card, FAQ row, toggle track */
   --color-field: #f0f0f0; /* input fill */
-  --color-header-bg: rgb(255 255 255 / 0.8); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
+  --color-header-bg: rgb(
+    255 255 255 / 0.8
+  ); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
   --color-gnb-bg: rgb(243 243 243 / 0.8); /* bottom GNB pill frosted fill, with --blur-chrome */
   --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
@@ -76,7 +78,9 @@
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
   --color-canvas-cool: #f3f4f6; /* 07 compact link fill */
   --color-selection: #2563eb; /* 07 sheet selected radio */
-  --color-scrim-team-picker: rgb(25 31 40 / 0.32); /* 07 sheet scrim: Figma #191f28 32%, with --blur-scrim */
+  --color-scrim-team-picker: rgb(
+    25 31 40 / 0.32
+  ); /* 07 sheet scrim: Figma #191f28 32%, with --blur-scrim */
   --color-radio-surface: #f6f7fb;
   --color-radio-border: #eaeaea;
   --color-sheet-cta: #121212; /* 07 sheet CTA fill */
@@ -118,4 +122,25 @@
   --color-board-menu-border: #e4e4e4; /* 14 menu outline and row dividers */
   --color-board-label-blue: #ebf7ff; /* 14 label fill, odd labels */
   --color-board-label-purple: #f4ebff; /* 14 label fill, even labels */
+
+  /* Figma 17 chat room (92:768, 346:243, 351:580) */
+  --color-chat-bubble-mine: #121212; /* my message bubble, white text 18.7:1 */
+  --color-chat-bubble-other: #f3f4f6; /* others' bubble, request panel buttons and divider */
+  --color-chat-send: #2563eb; /* send button fill, white arrow 5.17:1 */
+  --color-chat-accent: #2563eb; /* PR card event line, request panel guide, team owner label: 5.17:1 */
+  --color-chat-danger: #e00000; /* request panel 거절/차단 text: 4.6:1 on --color-chat-bubble-other */
+
+  /* Figma 15 values (calendar, 234:219 and the 368:2753/368:3024 sheets) */
+  --color-sheet-picker: #f9f9f9; /* 15 date picker sheet fill */
+  --color-text-wheel: #374151; /* 15 date wheel, selected row */
+
+  /* Figma 28 plans (288:471, 293:218) */
+  --color-plan-card: #f0f0f0; /* plan card fill; texts on it keep 4.5:1 or more */
+  --color-plan-toggle: #e7e7e7; /* 월간/연간 toggle track */
+  --color-plan-toggle-off: #a3a3a8; /* unselected toggle label. Low contrast: 2.05:1 on the track */
+  --color-plan-ink: #121212; /* selected toggle and plan CTA fill, plan name and price */
+  --color-plan-accent: #2563eb; /* benefit check, trial note: 5.17:1 on white */
+
+  /* Figma 29 subscription (294:306, 295:459, 364:1694); the card uses --color-canvas-cool */
+  --color-manage-divider: #f1f1f1; /* rows inside the subscription info box */
 }
