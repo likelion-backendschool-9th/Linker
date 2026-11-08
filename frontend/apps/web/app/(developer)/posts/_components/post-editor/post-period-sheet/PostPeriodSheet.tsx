@@ -98,10 +98,8 @@ function Wheels({
     () => Array.from({ length: dayCount }, (_, index) => ({ value: index + 1, unit: '일' })),
     [dayCount],
   );
-
-  useEffect(() => {
-    if (day > dayCount) setDay(dayCount);
-  }, [day, dayCount]);
+  // Clamp during render when the month shrinks (e.g. 31 → Feb) instead of syncing state in an effect
+  const selectedDay = Math.min(day, dayCount);
 
   return (
     <>
@@ -117,7 +115,7 @@ function Wheels({
           format={(value) => String(value).slice(-2)}
         />
         <Wheel label="월" options={MONTHS} value={month} onChange={setMonth} />
-        <Wheel label="일" options={days} value={Math.min(day, dayCount)} onChange={setDay} />
+        <Wheel label="일" options={days} value={selectedDay} onChange={setDay} />
       </div>
       <button
         type="button"
