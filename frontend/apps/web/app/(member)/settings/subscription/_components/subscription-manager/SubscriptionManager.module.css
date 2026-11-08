@@ -1,49 +1,239 @@
-.content {
-  display: grid;
-  gap: var(--space-xl);
-}
-.content section {
-  display: grid;
-  gap: var(--space-md);
-}
-.content h2 {
-  font-size: var(--font-size-section-title);
-  font-weight: var(--font-weight-bold);
-}
-.content h3 {
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-semibold);
-  overflow-wrap: anywhere;
-}
-.content p {
-  color: var(--color-text-secondary);
-}
-.content a {
-  min-height: var(--touch-target-min);
+/* Figma 29 (294:306 Pro, 295:459 Flex) */
+.page {
   display: flex;
-  align-items: center;
-  text-decoration: underline;
+  flex-direction: column;
+  gap: var(--space-manage-block);
+  /* main already pads the top by about Figma's 15px header gap */
+  padding-bottom: var(--space-lg);
 }
-.notice {
-  padding: var(--space-md);
-  background: var(--color-canvas-soft);
-  border-radius: var(--radius-sm);
+
+.subscription {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-manage-block);
 }
-.list {
-  display: grid;
-  gap: var(--space-md);
+
+.status {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
 }
+
+/* Current plan card (294:394) */
 .card {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-lg);
-  border: 1px solid var(--color-hairline-soft);
-  border-radius: var(--radius-md);
-}
-.row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  padding: var(--space-manage-card);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-manage-card);
+  background: var(--color-canvas-cool);
+}
+
+.cardLabel {
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  color: var(--color-plan-accent);
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-manage-name);
+  margin-top: var(--space-sm);
+}
+
+.planName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+}
+
+.teamName {
+  font-weight: var(--font-weight-regular);
+}
+
+.planDescription {
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  color: var(--color-text-slate);
+}
+
+/* "요금제 변경하기" (294:399): Figma 36px, raised to the 44px touch minimum */
+.change {
+  display: grid;
+  place-items: center;
+  min-height: var(--touch-target-min);
+  margin-top: var(--space-plan-card);
+  border-radius: var(--radius-xxs);
+  background: var(--color-plan-ink);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-inverse);
+  text-decoration: none;
+}
+
+/* Info box (294:361): label left, value right, hairline between rows */
+.info {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-row-inline) var(--space-manage-row);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xxs);
+}
+
+.facts {
+  margin: 0;
+}
+
+.fact,
+.action {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  color: var(--color-text-slate);
+  border-bottom: 1px solid var(--color-manage-divider);
+}
+
+.fact {
+  min-height: var(--row-height-manage-info);
+}
+
+.fact dd {
+  margin: 0;
+  text-align: right;
+}
+
+.action {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border-top: 0;
+  border-inline: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+p.action {
+  cursor: default;
+}
+
+.info > .action:last-child {
+  border-bottom: 0;
+}
+
+.action:disabled {
+  cursor: default;
+}
+
+.chevron {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: currentColor;
+  --icon-box-size: var(--icon-size-manage-chevron);
+  --icon-stroke-width: 1.5;
+}
+
+/* Payment history (295:533) */
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row-block);
+}
+
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 1px;
+}
+
+.historyTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+
+/* "전체 보기 ›": 20px tall in Figma; the 44px target overlaps the row above and below */
+.showAll {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  margin-block: calc((var(--icon-size-manage-chevron) - var(--touch-target-min)) / 2);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--font-size-caption);
+  color: var(--color-plan-accent);
+  cursor: pointer;
+}
+
+.payments {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-row-block) var(--space-row-inline);
+  border-bottom: 1px solid var(--color-hairline-cool);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
+}
+
+.paymentText,
+.paymentSide {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.paymentSide {
+  align-items: flex-end;
+  flex: none;
+}
+
+.paymentDate {
+  color: var(--color-text-slate);
+}
+
+.paymentName {
+  color: var(--color-text-muted-cool);
+}
+
+.paymentAmount {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+}
+
+/* Refund (user decision, not in the frame): small text button under the amount */
+.refund {
+  min-height: var(--line-height-compact);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-plan-accent);
+  cursor: pointer;
+}
+
+.refund:disabled {
+  cursor: default;
+}
+
+.change:focus-visible,
+.action:focus-visible,
+.showAll:focus-visible,
+.refund:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }

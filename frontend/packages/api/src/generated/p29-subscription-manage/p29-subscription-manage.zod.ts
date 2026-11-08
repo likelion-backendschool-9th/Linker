@@ -26,7 +26,9 @@ export const CancelSubscriptionResponse = zod.object({
   "cancelAtPeriodEnd": zod.boolean().describe('Canceled: benefits continue until expiresOn'),
   "seats": zod.int().nullable().describe('FLEX: headcount the current period was paid for'),
   "nextSeats": zod.int().nullable().describe('FLEX: current headcount, used by the next payment'),
-  "nextAmount": zod.int().nullable().describe('FLEX: next payment amount for nextSeats (KRW)')
+  "nextAmount": zod.int().nullable().describe('FLEX: next payment amount for nextSeats (KRW)'),
+  "amount": zod.int().describe('Price of the current period (KRW): Pro by billing cycle, Flex for the paid seats, Scout monthly'),
+  "payerName": zod.string().nullable().describe('FLEX: name of the member who pays (billing manager); null for Pro/Scout or a withdrawn payer')
 })
 
 /**
@@ -68,7 +70,9 @@ export const ListMySubscriptionsResponse = zod.object({
   "cancelAtPeriodEnd": zod.boolean().describe('Canceled: benefits continue until expiresOn'),
   "seats": zod.int().nullable().describe('FLEX: headcount the current period was paid for'),
   "nextSeats": zod.int().nullable().describe('FLEX: current headcount, used by the next payment'),
-  "nextAmount": zod.int().nullable().describe('FLEX: next payment amount for nextSeats (KRW)')
+  "nextAmount": zod.int().nullable().describe('FLEX: next payment amount for nextSeats (KRW)'),
+  "amount": zod.int().describe('Price of the current period (KRW): Pro by billing cycle, Flex for the paid seats, Scout monthly'),
+  "payerName": zod.string().nullable().describe('FLEX: name of the member who pays (billing manager); null for Pro/Scout or a withdrawn payer')
 })).describe('Running subscriptions; empty means the free plan')
 })
 

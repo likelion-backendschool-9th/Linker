@@ -135,4 +135,7 @@
   --color-plan-toggle-off: #a3a3a8; /* unselected toggle label. Low contrast: 2.05:1 on the track */
   --color-plan-ink: #121212; /* selected toggle and plan CTA fill, plan name and price */
   --color-plan-accent: #2563eb; /* benefit check, trial note: 5.17:1 on white */
+
+  /* Figma 29 subscription (294:306, 295:459, 364:1694); the card uses --color-canvas-cool */
+  --color-manage-divider: #f1f1f1; /* rows inside the subscription info box */
 }
