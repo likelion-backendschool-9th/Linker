@@ -15,6 +15,7 @@ export const OVERLAY_KEYS = [
   'tech-tags',
   'onboarding-job-status',
   'profile-people',
+  'profile-tech',
   'profile-actions',
   'profile-leave',
   'settings-blocks',
