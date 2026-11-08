@@ -5,7 +5,7 @@ import { renderWithProviders as render } from '@/test/render-with-providers';
 import type { RoomMessage } from '../_lib/room-api';
 import { ChatMessage } from './chat-message/ChatMessage';
 
-const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 2, sender: { id: 1, login: 'me', name: '나', avatarUrl: '' }, type: 'TEXT', text: '안녕하세요', imageUrls: [], payload: null, createdAt: '2026-11-03T06:12:00Z', editedAt: null, deletedAt: null };
+const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 2, sender: { id: 1, login: 'me', name: '나', avatarUrl: '' }, type: 'TEXT', text: '안녕하세요', imageUrls: [], payload: null, createdAt: '2026-11-03T06:12:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z' };
 beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal('PointerEvent', class extends MouseEvent {

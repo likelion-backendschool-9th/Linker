@@ -7,7 +7,58 @@
 import * as zod from 'zod';
 
 
-export const GetUnreadNotificationCountResponse = zod.object({
-  "count": zod.int().optional()
+export const RegisterPushTokenBody = zod.object({
+  "token": zod.string().optional(),
+  "platform": zod.string().optional()
 })
+
+export const RegisterPushTokenResponse = zod.void()
+
+export const MarkAllNotificationsReadResponse = zod.void()
+
+export const CreateAppealBody = zod.object({
+  "sanctionId": zod.int().optional(),
+  "body": zod.string().optional()
+})
+
+export const CreateAppealResponse = zod.object({
+  "appealId": zod.int()
+})
+
+export const MarkNotificationReadParams = zod.object({
+  "notificationId": zod.int()
+})
+
+export const MarkNotificationReadResponse = zod.void()
+
+export const ListNotificationsQueryParams = zod.object({
+  "cursor": zod.string().optional()
+})
+
+export const ListNotificationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.int(),
+  "type": zod.string().describe('notifications.notification_type, e.g. CHAT, CHAT_MENTION, MESSAGE_REQUEST, TEAM_INVITE, SANCTION'),
+  "title": zod.string().describe('Stored title, or a generic line when the row has none'),
+  "body": zod.string().nullable(),
+  "targetUrl": zod.string().describe('In-app path; empty when the row has no destination'),
+  "read": zod.boolean(),
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "appeal": zod.object({
+  "sanctionId": zod.int(),
+  "submitted": zod.boolean()
+}).nullable().describe('Only on the caller\'s own sanction notification')
+})),
+  "nextCursor": zod.string().nullable()
+})
+
+export const GetUnreadNotificationCountResponse = zod.object({
+  "count": zod.int()
+})
+
+export const DeletePushTokenParams = zod.object({
+  "token": zod.string()
+})
+
+export const DeletePushTokenResponse = zod.void()
 

@@ -9,8 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { ChatRoomRow } from '../chat-room-row';
 import styles from './ChatList.module.css';
 import { EMPTY, LABELS, useChatList } from './hook';
+import type { UnreadSummary } from './api';
 
-export function ChatList() {
+export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary }) {
   const {
     viewer,
     tab,
@@ -25,7 +26,7 @@ export function ChatList() {
     items,
     mutationError,
     onConfirmDelete,
-  } = useChatList();
+  } = useChatList(initialSummary);
 
   return (
     <>

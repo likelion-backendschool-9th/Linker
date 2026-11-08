@@ -13,6 +13,7 @@ export const OVERLAY_KEYS = [
   'plan-limit',
   'draft-restore',
   'tech-tags',
+  'onboarding-job-status',
   'profile-people',
   'profile-tech',
   'profile-actions',

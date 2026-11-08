@@ -1,20 +1,19 @@
+import type {
+  NotificationItemResponse,
+  NotificationPageResponse,
+} from '@linker/api/openAPIDefinition.schemas';
+import {
+  createAppeal,
+  getUnreadNotificationCount,
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '@linker/api/p18-notifications/p18-notifications';
 import { infiniteQueryOptions, queryOptions, type InfiniteData } from '@tanstack/react-query';
 
-import { apiFetch } from '@/lib/api/api-fetch';
-
-/** Provisional WBS 18 contract; switch to Orval when OpenAPI is published. */
-export type NotificationItem = {
-  id: number;
-  type: string;
-  title: string;
-  body: string | null;
-  targetUrl: string;
-  read: boolean;
-  createdAt: string;
-  /** The server supplies eligibility and the sanction identifier; never infer it from notification ID. */
-  appeal?: { sanctionId: number; submitted: boolean };
-};
-export type NotificationPage = { items: NotificationItem[]; nextCursor: string | null };
+/** `appeal` is set by the server for the caller's own sanction; never infer it from the notification id. */
+export type NotificationItem = NotificationItemResponse;
+export type NotificationPage = NotificationPageResponse;
 export const notificationKeys = {
   account: (login: string | null) => ['notifications', login] as const,
   list: (login: string | null) => ['notifications', login, 'list'] as const,
@@ -26,10 +25,7 @@ export function notificationListOptions(login: string | null) {
     refetchOnMount: 'always',
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
-      apiFetch<NotificationPage>(
-        `/api/v1/user/notifications${pageParam === null ? '' : `?cursor=${encodeURIComponent(pageParam)}`}`,
-        { signal },
-      ),
+      listNotifications(pageParam === null ? undefined : { cursor: pageParam }, { signal }),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }
@@ -37,22 +33,17 @@ export function notificationCountOptions(login: string | null) {
   return queryOptions({
     queryKey: notificationKeys.count(login),
     refetchOnMount: 'always',
-    queryFn: ({ signal }) =>
-      apiFetch<{ count: number }>('/api/v1/user/notifications/unread-count', { signal }),
+    queryFn: ({ signal }) => getUnreadNotificationCount({ signal }),
   });
 }
 export function readNotification(id: number) {
-  return apiFetch<void>(`/api/v1/user/notifications/${id}/read`, { method: 'PATCH' });
+  return markNotificationRead(id);
 }
 export function readAllNotifications() {
-  return apiFetch<void>('/api/v1/user/notifications/read-all', { method: 'POST' });
+  return markAllNotificationsRead();
 }
 export function submitAppeal(sanctionId: number, body: string) {
-  return apiFetch<{ appealId: number }>('/api/v1/user/appeals', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sanctionId, body }),
-  });
+  return createAppeal({ sanctionId, body });
 }
 export function updateNotifications(
   data: InfiniteData<NotificationPage> | undefined,

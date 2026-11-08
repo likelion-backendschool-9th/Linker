@@ -1,6 +1,5 @@
 'use client';
 
-import type { Route } from 'next';
 import { useEffect } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
@@ -8,9 +7,11 @@ import { Button } from '@/components/ui/button/Button';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 
+import { planLimitSubscribeHref } from './hook';
+
 /**
  * Limit-reached subscription prompt (07 TODO 00). Mounted once in providers; opens on API PLAN_LIMIT
- * with the server's copy, and leads to `/subscribe?reason=` (blueprint §5-4).
+ * with the server's copy, and leads to `/subscribe?reason=&returnTo=` (blueprint §5-4).
  */
 export function PlanLimitSheet() {
   const overlay = useOverlay('plan-limit');
@@ -35,9 +36,7 @@ export function PlanLimitSheet() {
         block
         onClick={() => {
           useAppSignalStore.setState({ planLimit: null });
-          overlay.closeThen(
-            (reason ? `/subscribe?reason=${encodeURIComponent(reason)}` : '/subscribe') as Route,
-          );
+          overlay.closeThen(planLimitSubscribeHref(reason, window.location.href));
         }}
       >
         구독 알아보기

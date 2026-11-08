@@ -22,7 +22,6 @@ export function useUnreadMembersSheet({
     !!message &&
     !message.deletedAt &&
     message.visibility !== 'HIDDEN' &&
-    message.visibility !== 'UNDER_REVIEW' &&
     message.type !== 'SYSTEM' &&
     message.type !== 'PR_EVENT';
   const query = useQuery(unreadMembersOptions(login, room.id, available ? message.id : null));

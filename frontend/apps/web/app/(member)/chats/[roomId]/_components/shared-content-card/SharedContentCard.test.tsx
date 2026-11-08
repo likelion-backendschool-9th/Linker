@@ -25,7 +25,7 @@ const message: RoomMessage = {
   payload: card,
   createdAt: '2026-11-08T00:00:00Z',
   editedAt: null,
-  deletedAt: null,
+  deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z',
 };
 
 it('renders one card link for both an explicit share and a pasted Linker URL without requiring mutual follows', async () => {

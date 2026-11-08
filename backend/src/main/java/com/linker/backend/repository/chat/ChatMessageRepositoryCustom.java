@@ -45,7 +45,8 @@ public interface ChatMessageRepositoryCustom {
 			String visibility,
 			Instant deletedAt,
 			Instant createdAt,
-			Instant editedAt
+			Instant editedAt,
+			Instant updatedAt
 	) {
 	}
 }

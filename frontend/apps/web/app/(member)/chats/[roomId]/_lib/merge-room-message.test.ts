@@ -4,6 +4,7 @@ const base = (patch: Partial<RoomMessage>): RoomMessage => ({
   id: 10,
   roomId: 1,
   unreadCount: 0,
+  clientMessageId: null,
   sender: null,
   type: 'TEXT',
   text: '원문',
@@ -13,6 +14,8 @@ const base = (patch: Partial<RoomMessage>): RoomMessage => ({
   editedAt: null,
   deletedAt: null,
   visibility: 'VISIBLE',
+  // Empty: a row from a server without the row version, which uses the direction rules below.
+  updatedAt: '',
   ...patch,
 });
 
@@ -47,4 +50,39 @@ it('does not order two different bodies that share one microsecond', () => {
 it('does not reveal a hidden message from an older visible snapshot', () => {
   const hidden = base({ text: '운영 정책에 따라 숨겨진 메시지예요', visibility: 'HIDDEN' });
   expect(mergeRoomMessage(hidden, base({ text: '신고 원문' })).text).toBe('운영 정책에 따라 숨겨진 메시지예요');
+});
+
+describe('with the row version', () => {
+  const at = (micros: string) => `2026-11-05T00:00:00.${micros}Z`;
+
+  it('accepts a restore that is newer than the hidden copy on screen', () => {
+    const hidden = base({ text: '운영 정책에 따라 숨겨진 메시지예요', visibility: 'HIDDEN', updatedAt: at('000200') });
+    const restored = base({ text: '신고 원문', updatedAt: at('000300') });
+    expect(mergeRoomMessage(hidden, restored).text).toBe('신고 원문');
+  });
+
+  it('accepts an operator undelete that is newer than the deleted copy', () => {
+    const deleted = base({ text: '삭제된 메시지입니다', deletedAt: at('000100'), updatedAt: at('000100') });
+    const restored = base({ text: '복원된 원문', updatedAt: at('000150') });
+    expect(mergeRoomMessage(deleted, restored).text).toBe('복원된 원문');
+  });
+
+  it('keeps a newer hide when a delayed older visible frame arrives', () => {
+    const hidden = base({ text: '운영 정책에 따라 숨겨진 메시지예요', visibility: 'HIDDEN', updatedAt: at('000300') });
+    const stale = base({ text: '신고 원문', updatedAt: at('000200') });
+    expect(mergeRoomMessage(hidden, stale).visibility).toBe('HIDDEN');
+  });
+
+  it('keeps the latest state when an edit and a hide cross on the socket', () => {
+    const edit = base({ text: '고친 글', editedAt: at('000100'), updatedAt: at('000100') });
+    const hide = base({ text: '운영 정책에 따라 숨겨진 메시지예요', visibility: 'HIDDEN', editedAt: at('000100'), updatedAt: at('000200') });
+    expect(mergeRoomMessage(edit, hide).visibility).toBe('HIDDEN');
+    expect(mergeRoomMessage(hide, edit).visibility).toBe('HIDDEN');
+  });
+
+  it('keeps what is on screen for the same version', () => {
+    const first = base({ text: '화면', updatedAt: at('000100') });
+    const second = base({ text: '같은 버전', updatedAt: at('000100') });
+    expect(mergeRoomMessage(first, second).text).toBe('화면');
+  });
 });

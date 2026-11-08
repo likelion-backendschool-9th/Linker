@@ -11,10 +11,12 @@ const subscription = vi.hoisted(() => ({
   handlers: new Map<string, (event: { event?: string; type?: string; roomId?: number; clientMessageId?: string; retryable?: boolean; message?: object }) => void>(),
   acknowledge: vi.fn(),
   reject: vi.fn(),
+  resubscribe: new Map<string, () => void>(),
 }));
 vi.mock('@/lib/realtime/use-stomp', () => ({
   useStompConnectionState: () => 'idle',
-  useStompSubscription: (destination: string, handler: (event: never) => void) => {
+  useStompSubscription: (destination: string, handler: (event: never) => void, options?: { onResubscribe?: () => void }) => {
+    if (options?.onResubscribe) subscription.resubscribe.set(destination, options.onResubscribe);
     subscription.handlers.set(destination, handler as (event: {
       event?: string;
       type?: string;
@@ -35,13 +37,13 @@ vi.mock('./message-timeline', () => ({
   MessageTimeline: ({ messages, onUnread }: { messages: RoomMessage[]; onUnread: (id: number) => void }) => (
     <>
       <div>{messages.map((item) => <span key={item.id}>{item.text}</span>)}</div>
-      <button onClick={() => onUnread(messages[0]!.id)}>안 읽음 {messages[0]!.unreadCount}명</button>
+      {messages[0] && <button onClick={() => onUnread(messages[0]!.id)}>안 읽음 {messages[0]!.unreadCount}명</button>}
     </>
   ),
 }));
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
-const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', plan: 'FREE', myRole: 'MEMBER', status: 'ACTIVE' }, historyLimitDays: 60 };
-const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 2, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null };
+const room: RoomInfo = { id: 1, kind: 'TEAM', title: '팀', requestDirection: null, muted: false, members: [], team: { id: 1, name: '팀', myRole: 'MEMBER', status: 'ACTIVE' }, historyLimitDays: 60 };
+const message: RoomMessage = { id: 10, roomId: 1, unreadCount: 2, sender: null, type: 'TEXT', text: '대화', imageUrls: [], payload: null, createdAt: '2026-11-03T00:00:00Z', editedAt: null, deletedAt: null, clientMessageId: null, visibility: 'VISIBLE', updatedAt: '2026-11-01T00:00:00Z' };
 it('refreshes both the message count and the open unread-members sheet on a READ event', async () => {
   let read = false;
   vi.mocked(apiFetch).mockImplementation(async (path) => {
@@ -109,20 +111,38 @@ it('merges an EDIT into the cached message without refetching history', async ()
   const calls = vi.mocked(apiFetch).mock.calls.length;
   act(() => handler!({
     event: 'EDIT',
-    message: { ...message, text: '고친 대화', editedAt: '2026-11-05T01:00:00Z' },
+    message: { ...message, text: '고친 대화', editedAt: '2026-11-05T01:00:00Z', updatedAt: '2026-11-05T01:00:00Z' },
   }));
   await waitFor(() => expect(screen.getByText('고친 대화')).toBeVisible());
   expect(screen.queryByText('대화')).not.toBeInTheDocument();
   expect(vi.mocked(apiFetch).mock.calls.length).toBe(calls);
   act(() => handler!({
     event: 'DELETE',
-    message: { ...message, text: '삭제된 메시지입니다', deletedAt: '2026-11-05T02:00:00Z' },
+    message: { ...message, text: '삭제된 메시지입니다', deletedAt: '2026-11-05T02:00:00Z', updatedAt: '2026-11-05T02:00:00Z' },
   }));
   await waitFor(() => expect(screen.getByText('삭제된 메시지입니다')).toBeVisible());
   act(() => handler!({
     event: 'EDIT',
-    message: { ...message, text: '지연된 원문', editedAt: '2026-11-05T00:30:00Z', deletedAt: null },
+    message: { ...message, text: '지연된 원문', editedAt: '2026-11-05T00:30:00Z', deletedAt: null, updatedAt: '2026-11-05T00:30:00Z' },
   }));
   expect(screen.getByText('삭제된 메시지입니다')).toBeVisible();
   expect(screen.queryByText('지연된 원문')).not.toBeInTheDocument();
+});
+
+it('reloads the latest page instead of asking for after=0 when an empty room reconnects', async () => {
+  let reloaded = 0;
+  vi.mocked(apiFetch).mockImplementation(async (path) => {
+    if (path === '/api/v1/user/chat-rooms/1') return room;
+    if (path === '/api/v1/user/chat-rooms/1/messages') {
+      reloaded += 1;
+      return { items: reloaded > 1 ? [message] : [], hasMore: false };
+    }
+    throw new Error(`unexpected API: ${path}`);
+  });
+  renderWithProviders(<ChatRoom roomId={1} />, { viewer: { login: 'me', role: 'developer' } });
+  await waitFor(() => expect(reloaded).toBe(1));
+  await act(async () => { subscription.resubscribe.get('/topic/chat-rooms/1')!(); });
+  expect(await screen.findByText('대화')).toBeVisible();
+  expect(vi.mocked(apiFetch).mock.calls.map(([path]) => path)).not.toContain('/api/v1/user/chat-rooms/1/messages?after=0');
+  expect(screen.queryByText('놓친 메시지를 불러오지 못했어요')).not.toBeInTheDocument();
 });

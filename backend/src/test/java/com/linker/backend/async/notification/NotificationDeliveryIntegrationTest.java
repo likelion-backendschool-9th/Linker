@@ -208,7 +208,7 @@ class NotificationDeliveryIntegrationTest {
 	}
 
 	@Test
-	void oneRoomIsOnePushAndEveryRowOfTheBundleIsMarkedPushed() {
+	void oneRoomIsOneUnreadRowAndOnePush() {
 		User recipient = withToken("bundle");
 		User sender = user("sender-b");
 		ChatRoom room = room(sender, recipient, false);
@@ -216,11 +216,13 @@ class NotificationDeliveryIntegrationTest {
 		long second = chat(recipient, sender, room, NotificationTypes.CHAT);
 		long third = chat(recipient, sender, room, NotificationTypes.CHAT);
 
+		// POL-N-1: the newest unread CHAT row stands for the room in the list too.
+		assertThat(exists(first)).isFalse();
+		assertThat(exists(second)).isFalse();
+
 		delivery.deliverChat();
 
 		assertThat(SENT).hasSize(1);
-		assertThat(pushed(first)).isTrue();
-		assertThat(pushed(second)).isTrue();
 		assertThat(pushed(third)).isTrue();
 		delivery.deliverChat();
 		assertThat(SENT).as("covered rows must not come back as a second push").hasSize(1);
@@ -237,9 +239,10 @@ class NotificationDeliveryIntegrationTest {
 
 		delivery.deliverChat();
 
+		// The mention keeps its own row; the older CHAT row was replaced by the newer one.
+		assertThat(exists(before)).isFalse();
 		assertThat(SENT).hasSize(1);
 		assertThat(SENT.get(0).data()).containsEntry("notificationId", mention);
-		assertThat(pushed(before)).isTrue();
 		assertThat(pushed(mention)).isTrue();
 		assertThat(pushed(after)).isTrue();
 	}
@@ -391,6 +394,10 @@ class NotificationDeliveryIntegrationTest {
 	private long holdUntil(long notificationId, Instant at) {
 		jdbc.update("update notifications set deliver_after = ? where id = ?", Timestamp.from(at), notificationId);
 		return notificationId;
+	}
+
+	private boolean exists(long notificationId) {
+		return jdbc.queryForObject("select count(*) from notifications where id = ?", Long.class, notificationId) == 1;
 	}
 
 	private boolean pushed(long notificationId) {
