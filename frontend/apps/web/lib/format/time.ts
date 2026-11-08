@@ -29,6 +29,11 @@ export function formatRelativeTime(value: Date | string | number, now: Date = ne
   return formatDate(value, now);
 }
 
+/** "2026.11.16 마감" (19 recruit card, Figma 254:2298) — plain KST date, no leading zero on month/day. */
+export function formatDeadlineDate(date: string): string {
+  return `${format(toKst(date), 'yyyy.M.d')} 마감`;
+}
+
 /** Today's date in KST as `yyyy-MM-dd`, the format of issue start/due dates (POL-I-4: team timezone is KST). */
 export function todayKst(now: Date = new Date()): string {
   return format(toKst(now), 'yyyy-MM-dd');

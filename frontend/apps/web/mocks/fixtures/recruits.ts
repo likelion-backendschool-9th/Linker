@@ -211,6 +211,7 @@ export function recruitCard(item: MockRecruit) {
   return {
     id: item.id,
     title: item.title,
+    description: item.intro,
     author: item.author,
     format: item.format,
     region: item.region,
