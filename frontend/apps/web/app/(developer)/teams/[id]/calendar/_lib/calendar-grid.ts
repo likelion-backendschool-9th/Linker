@@ -16,14 +16,14 @@ import type { IssueRow } from '../../_lib/issue-queries';
 /**
  * Calendar math on `yyyy-MM-dd` strings, the issues' date format (KST calendar dates, POL-I-4).
  * Only calendar days are added and compared, so the result is the same on a UTC server and a KST browser.
- * Weeks start on Sunday.
+ * Weeks start on Monday (Figma 15).
  */
 
 export const CALENDAR_VIEWS = ['month', 'week'] as const;
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
 
 const DAY = 'yyyy-MM-dd';
-const WEEK = { weekStartsOn: 0 } as const;
+const WEEK = { weekStartsOn: 1 } as const;
 
 const toDay = (date: Date) => format(date, DAY);
 
@@ -65,7 +65,7 @@ export function spanOf(issue: IssueRow): { start: string; end: string; dot: bool
 export type Segment = {
   issue: IssueRow;
   lane: number;
-  /** 0 = Sunday */
+  /** 0 = Monday */
   startCol: number;
   span: number;
   /** The issue starts / ends inside this week (rounded bar ends) */

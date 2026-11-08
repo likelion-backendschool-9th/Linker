@@ -134,8 +134,12 @@
   --duration-overlay: 200ms;
   --duration-chrome-collapse: 320ms; /* 19 recruit list scroll-driven header/tabs/search-panel reveal */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --blur-chrome: blur(20px); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
-  --blur-header-open: blur(4px); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
+  --blur-chrome: blur(
+    20px
+  ); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
+  --blur-header-open: blur(
+    4px
+  ); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
   --blur-scrim: blur(6px); /* 07 sheet scrim */
 
   /* The only shadow: the active segment of a segmented control */
@@ -146,4 +150,20 @@
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
+
+  /* Figma 15 values (calendar) */
+  --space-calendar-legend: 14px; /* 15 status chips to weekday row */
+  --space-calendar-chip: 10px; /* 15 between status chips */
+  --space-calendar-sheet-bottom: 40px; /* 15 day sheet bottom padding */
+  --space-calendar-date-top: 18px; /* 15 date sheet top padding */
+  --space-calendar-date-cta: 35px; /* 15 date wheels to "저장" */
+  --control-height-calendar-chip: 27px; /* 15 status chip */
+  --calendar-weekday-height: 52px; /* 15 weekday row */
+  --calendar-day-height: 30px; /* 15 date number row */
+  --calendar-week-height: 101px; /* 15 week row: date number + three bar lanes */
+  --calendar-bar-height: 18px; /* 15 issue bar and its lane step */
+  --radius-calendar-bar: 2px; /* 15 issue bar */
+  --icon-size-calendar: 24px; /* 15 month chevron and help icon */
+  --wheel-row-height: 37px; /* 15 date wheel row */
+  --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
 }
