@@ -1,0 +1,6 @@
+/* Figma 11 (197:66): the gray progress band starts right under the team tabs */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: calc(-1 * var(--space-md));
+}

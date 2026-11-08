@@ -15,6 +15,9 @@ vi.mock('@/lib/realtime/stomp-client', () => ({ ensureConnected: vi.fn() }));
 vi.mock('@/features/notifications/push-tokens', () => ({
   registerPushToken: vi.fn(async () => {}),
 }));
+vi.mock('@/features/notifications/push-permission-sheet/PushPermissionSheet', () => ({
+  PushPermissionSheet: () => null,
+}));
 
 describe('native message routing', () => {
   const router = {
@@ -77,6 +80,24 @@ describe('native message routing', () => {
     const token = { type: 'PUSH_TOKEN', token: 'ExpoPushToken[t]', platform: 'android' } as const;
     receive(token);
     expect(registerPushToken).toHaveBeenCalledWith(token.token, token.platform);
+  });
+
+  it('ignores a permission token before login and after the session clears', () => {
+    const view = renderWithProviders(
+      <NativeBridgeProvider session={null}>page</NativeBridgeProvider>,
+    );
+    receive({ type: 'PUSH_TOKEN', token: 'ExpoPushToken[guest]', platform: 'android' });
+    expect(registerPushToken).not.toHaveBeenCalled();
+    view.rerender(
+      <NativeBridgeProvider session={{ userId: 1, userType: 'DEVELOPER' }}>
+        page
+      </NativeBridgeProvider>,
+    );
+    receive({ type: 'PUSH_TOKEN', token: 'ExpoPushToken[member]', platform: 'android' });
+    expect(registerPushToken).toHaveBeenCalledExactlyOnceWith('ExpoPushToken[member]', 'android');
+    view.rerender(<NativeBridgeProvider session={null}>page</NativeBridgeProvider>);
+    receive({ type: 'PUSH_TOKEN', token: 'ExpoPushToken[late]', platform: 'android' });
+    expect(registerPushToken).toHaveBeenCalledOnce();
   });
 
   it('resets query focus in the background and reconnects on resume', () => {

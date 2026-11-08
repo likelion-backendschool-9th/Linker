@@ -30,6 +30,16 @@ export const getGetTeamIssueCalendarResponseMock = (
       'OTHER',
       'NONE',
     ] as const),
+    statusColor: faker.helpers.arrayElement([
+      'BLUE',
+      'GRAY',
+      'GREEN',
+      'ORANGE',
+      'PINK',
+      'PURPLE',
+      'RED',
+      'YELLOW',
+    ] as const),
     state: faker.helpers.arrayElement(['OPEN', 'CLOSED'] as const),
     assignees: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => ({

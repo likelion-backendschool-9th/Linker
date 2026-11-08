@@ -17,11 +17,20 @@ public class TeamService {
   private final TeamRepository teams;
   private final TeamSetupService setup;
   private final TeamManagementService management;
+  private final com.linker.backend.repository.subscription.SubscriptionRepository subscriptions;
+  private final java.time.Clock clock;
 
-  public TeamService(TeamRepository teams, TeamSetupService setup, TeamManagementService management) {
+  public TeamService(
+      TeamRepository teams,
+      TeamSetupService setup,
+      TeamManagementService management,
+      com.linker.backend.repository.subscription.SubscriptionRepository subscriptions,
+      java.time.Clock clock) {
     this.teams = teams;
     this.setup = setup;
     this.management = management;
+    this.subscriptions = subscriptions;
+    this.clock = clock;
   }
 
   @Transactional(readOnly = true)
@@ -34,6 +43,16 @@ public class TeamService {
     }
     var rows = teams.findCurrentTeams(user.userId());
     long counted = rows.stream().filter(team -> !"ARCHIVED".equals(team.status())).count();
+    // V24 is now integrated. Unknown remains unknown only when the subscription schema is
+    // unavailable.
+    var schema = subscriptions.benefitSchema(null);
+    boolean plansReady = schema.ready() && schema.grace();
+    java.util.Set<Long> flexTeams =
+        plansReady && !rows.isEmpty()
+            ? new java.util.HashSet<>(
+                subscriptions.findTeamsWithFlexBenefit(
+                    rows.stream().map(r -> r.id()).toList(), clock.instant()))
+            : java.util.Set.of();
     var items =
         rows.stream()
             .map(
@@ -47,8 +66,7 @@ public class TeamService {
                         team.memberCount(),
                         team.joinedAt(),
                         team.chatRoomId(),
-                        // Subscription is not connected yet: unknown is not Free.
-                        null,
+                        plansReady ? (flexTeams.contains(team.id()) ? "FLEX" : "FREE") : null,
                         team.openIssueCount(),
                         team.unreadCount()))
             .toList();

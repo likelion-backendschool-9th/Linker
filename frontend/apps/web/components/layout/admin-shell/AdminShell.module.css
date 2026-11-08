@@ -1,5 +1,8 @@
+/* Admin isn't a mobile column, so it keeps the light canvas even though body is now dark
+   outside the app column (design guide ch. 6-6). */
 .shell {
   min-height: 100dvh;
+  background-color: var(--color-canvas);
 }
 
 .header {

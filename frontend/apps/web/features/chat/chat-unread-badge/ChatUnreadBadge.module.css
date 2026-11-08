@@ -1,7 +1,18 @@
+/* Overlays the GNB chat icon's top-right corner; the icon wrapper (.iconSlot) is position:relative */
 .badge {
-  padding-inline: var(--space-xxs);
+  position: absolute;
+  top: 0;
+  right: -9.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--chip-size);
+  height: var(--chip-size);
+  border: 1px solid var(--color-canvas-soft);
   border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-subtle-on-tint);
-  font-size: var(--font-size-meta);
+  background: var(--color-gnb-current);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
 }

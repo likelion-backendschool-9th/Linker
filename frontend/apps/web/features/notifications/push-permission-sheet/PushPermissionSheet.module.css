@@ -1,0 +1,9 @@
+.actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.error {
+  margin-block-end: var(--space-sm);
+  color: var(--color-text-body);
+}

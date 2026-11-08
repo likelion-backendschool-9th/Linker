@@ -19,6 +19,8 @@ type PageFrameProps = {
   variant?: 'tab' | 'stack';
   /** tab screens whose h1 would repeat the logo/tabs (e.g. 홈) keep it for screen readers only */
   hideTitle?: boolean;
+  /** stack: optional h1 content in place of the plain title (e.g. the team-switch button of 11–15) */
+  titleContent?: ReactNode;
   /** stack: where back goes when there's no in-app history */
   backHref?: Route;
   /** stack: header actions (share, more) */
@@ -36,6 +38,7 @@ export async function PageFrame({
   title,
   variant = 'tab',
   hideTitle = false,
+  titleContent,
   backHref,
   actions,
   bottomTabs,
@@ -50,9 +53,14 @@ export async function PageFrame({
     <>
       <SkipLink />
       {variant === 'tab' ? (
-        <TabHeader role={role} login={session?.login ?? null} hasUnread={hasUnread} />
+        <TabHeader role={role} hasUnread={hasUnread} />
       ) : (
-        <StackHeader title={title} backHref={backHref} actions={actions} />
+        <StackHeader
+          title={title}
+          titleContent={titleContent}
+          backHref={backHref}
+          actions={actions}
+        />
       )}
       <main
         id="main"
@@ -68,7 +76,11 @@ export async function PageFrame({
         )}
         {children}
       </main>
-      {showTabs && <BottomTabBar tabs={tabsFor(role)} />}
+      {showTabs && (
+        <BottomTabBar
+          tabs={tabsFor(role, session ? { login: session.login, userId: session.userId } : null)}
+        />
+      )}
     </>
   );
 }

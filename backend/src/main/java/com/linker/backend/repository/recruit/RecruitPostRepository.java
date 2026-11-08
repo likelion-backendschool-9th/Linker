@@ -19,6 +19,17 @@ import org.springframework.data.repository.query.Param;
 
 public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> {
 
+  /** WBS S18: only open, visible recruitment posts by active developers are indexable. */
+  @Query("""
+      select new com.linker.backend.dto.sitemap.SitemapItem(
+          p.id, concat('/recruits/', cast(p.id as String)), p.updatedAt)
+      from RecruitPost p where p.deletedAt is null and p.visibility='VISIBLE' and p.status='OPEN'
+        and p.author.userType='DEVELOPER' and p.author.status='ACTIVE'
+        and p.author.deletedAt is null
+      order by p.id asc
+      """)
+  List<com.linker.backend.dto.sitemap.SitemapItem> findIndexable(Pageable page);
+
 	long countByAuthorIdAndStatusAndDeletedAtIsNull(long authorId, RecruitStatus status);
 
 	@Query("""

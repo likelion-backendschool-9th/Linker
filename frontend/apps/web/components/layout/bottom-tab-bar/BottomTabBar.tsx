@@ -1,21 +1,26 @@
 'use client';
 
-import { Briefcase, House, MessageCircle, UsersRound } from 'lucide-react';
+import { ChatRoundLineLinearIcon } from '@solar-icons/static/linear/chat-round-line';
+import { CodeScanLinearIcon } from '@solar-icons/static/linear/code-scan';
+import { HomeLinearIcon } from '@solar-icons/static/linear/home';
+import { Radar2LinearIcon } from '@solar-icons/static/linear/radar-2';
 import type { Route } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { Icon } from '@/components/ui/icon';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { ChatUnreadBadge } from '@/features/chat/chat-unread-badge/ChatUnreadBadge';
 
 import type { TabItem, TabKey } from '../bottom-tabs.config';
 import styles from './BottomTabBar.module.css';
 
-const ICONS: Record<TabKey, typeof House> = {
-  home: House,
-  recruits: UsersRound,
-  workspace: Briefcase,
-  chats: MessageCircle,
+const ICONS: Record<Exclude<TabKey, 'profile'>, string> = {
+  home: HomeLinearIcon,
+  recruits: Radar2LinearIcon,
+  workspace: CodeScanLinearIcon,
+  chats: ChatRoundLineLinearIcon,
 };
 
 function isCurrent(pathname: string, href: string) {
@@ -24,8 +29,8 @@ function isCurrent(pathname: string, href: string) {
 
 /**
  * The page's main-menu nav, after `main` in the DOM (blueprint §6-1). Guests' login-only tabs are
- * buttons. Mobile: icon + label. Tablet/desktop: a floating text-only pill, no icons (profile now
- * lives in the top header on every size, so it isn't one of these tabs).
+ * buttons. Icon + label; signed-in members get a 5th 프로필 tab showing the viewer's own avatar
+ * instead of a Solar icon (Figma 453:258, 455:316).
  */
 export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
   const pathname = usePathname();
@@ -33,16 +38,19 @@ export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
 
   return (
     <nav aria-label="주 메뉴" className={styles.bar}>
-      <ul className={styles.list}>
+      <ul className={`${styles.list} ${tabs.length > 4 ? styles.listFive : ''}`}>
         {tabs.map((tab) => {
-          const Icon = ICONS[tab.key];
           const content = (
             <>
-              <Icon aria-hidden className={styles.icon} />
-              <span className={styles.label}>
-                {tab.label}
+              <span className={styles.iconSlot}>
+                {tab.avatarUrl ? (
+                  <Image src={tab.avatarUrl} alt="" width={25} height={25} className={styles.avatar} />
+                ) : (
+                  <Icon svg={ICONS[tab.key as Exclude<TabKey, 'profile'>]} className={styles.icon} />
+                )}
                 {tab.key === 'chats' && !tab.requiresLogin && <ChatUnreadBadge />}
               </span>
+              <span className={styles.label}>{tab.label}</span>
             </>
           );
           return (

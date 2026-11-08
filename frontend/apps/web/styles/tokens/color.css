@@ -9,18 +9,16 @@
   --color-primary: #141414; /* primary CTA fill, footer, focus ring */
   --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
   --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
-  --color-gnb-current: #005fed; /* current GNB label/icon: 4.90:1 on --color-canvas-soft */
+  --color-gnb-current: #2563eb; /* active bottom GNB icon/label (Figma 453:227/258, 455:316) */
+  --color-gnb-inactive: #b2b7c3; /* inactive bottom GNB icon/label */
 
   /* Surface */
   --color-canvas: #ffffff; /* page and card background */
   --color-canvas-soft: #f3f3f3; /* nav pill, featured card, FAQ row, toggle track */
   --color-field: #f0f0f0; /* input fill */
-  --color-scroll-header: rgb(
-    236 236 236 / 0.8
-  ); /* frosted fill of the scrolled top nav, with --blur-header-scroll */
-  --color-gnb-pill: rgb(
-    244 244 244 / 0.8
-  ); /* tablet/desktop bottom GNB frosted fill, with --blur-header-scroll */
+  --color-header-bg: rgb(255 255 255 / 0.8); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
+  --color-gnb-bg: rgb(243 243 243 / 0.8); /* bottom GNB pill frosted fill, with --blur-chrome */
+  --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
   /* Border */
   --color-hairline-soft: #f0f0f0; /* 1px outline of cards on white */
@@ -62,6 +60,36 @@
 
   /* Focus and overlay */
   --color-focus-ring: var(--color-primary);
+  --color-focus-ring-search: #2563eb; /* search field focus border only (Figma 51:275); other inputs keep --color-focus-ring */
   --color-focus-ring-on-dark: #ffffff;
   --color-scrim: rgb(20 20 20 / 0.5); /* behind bottom sheets, dialogs, drawers */
+
+  /* Figma 07 values. The three marked low contrast fall below 4.5:1 on white by design decision */
+  --color-text-black: #000000; /* 07 section labels */
+  --color-text-sheet-title: #111827; /* 07 sheet title, selected option */
+  --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1 */
+  --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1 */
+  --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1 */
+  --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
+  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card */
+  --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
+  --color-canvas-cool: #f3f4f6; /* 07 compact link fill */
+  --color-selection: #2563eb; /* 07 sheet selected radio */
+  --color-scrim-team-picker: rgb(25 31 40 / 0.32); /* 07 sheet scrim: Figma #191f28 32%, with --blur-scrim */
+  --color-radio-surface: #f6f7fb;
+  --color-radio-border: #eaeaea;
+  --color-sheet-cta: #121212; /* 07 sheet CTA fill */
+  --color-on-sheet-cta: #f8f9f6;
+
+  /* Figma 11 values (team issue list). Low contrast ones are kept by design decision, like 07 */
+  --color-text-title-cool: #111827; /* 11 section titles, current team tab, search text */
+  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6 */
+  --color-progress-done: #158000; /* 11 "완료" count and trend line: 5.29:1 */
+  --color-progress-active: #007be6; /* 11 "진행" count and trend line: 4.37:1, low contrast */
+  --color-progress-blocked: #e62e00; /* 11 "정지" count and trend line: 4.42:1, low contrast */
+  --color-tab-indicator: #121212; /* 11 current team tab underline */
+  --color-hairline-tab: #ebebeb; /* 11 other team tabs underline */
+  --color-chart-grid: #e5e7eb; /* 11 trend chart dashed day lines */
+  --color-fab: #2e2e2e; /* 11 team chat shortcut fill */
+  --color-fab-border: #383838;
 }

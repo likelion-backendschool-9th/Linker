@@ -1,0 +1,14 @@
+/* --icon-box-size lets a parent scope a smaller rendered size (e.g. inside a small round button)
+   without colliding with that parent's own --icon-size-based width/height. */
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: var(--icon-box-size, var(--icon-size));
+  height: var(--icon-box-size, var(--icon-size));
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: var(--icon-stroke-width);
+}

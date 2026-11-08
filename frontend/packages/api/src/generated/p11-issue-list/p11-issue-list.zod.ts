@@ -95,6 +95,7 @@ export const ListTeamIssuesQueryParams = zod.object({
   "status": zod.string().optional(),
   "assignee": zod.string().optional(),
   "label": zod.string().optional(),
+  "q": zod.string().optional().describe('이슈 제목 검색어(대소문자 무시, 최대 100자)'),
   "open": zod.boolean().default(listTeamIssuesQueryOpenDefault),
   "cursor": zod.string().optional(),
   "size": zod.int().default(listTeamIssuesQuerySizeDefault)
@@ -108,6 +109,7 @@ export const ListTeamIssuesResponse = zod.object({
   "repoName": zod.string(),
   "title": zod.string(),
   "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "statusColor": zod.enum(['BLUE', 'GRAY', 'GREEN', 'ORANGE', 'PINK', 'PURPLE', 'RED', 'YELLOW']).describe('GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.'),
   "state": zod.enum(['OPEN', 'CLOSED']),
   "assignees": zod.array(zod.object({
   "id": zod.int().nullable(),
@@ -156,6 +158,7 @@ export const ListUnscheduledTeamIssuesResponse = zod.object({
   "repoName": zod.string(),
   "title": zod.string(),
   "status": zod.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'OTHER', 'NONE']),
+  "statusColor": zod.enum(['BLUE', 'GRAY', 'GREEN', 'ORANGE', 'PINK', 'PURPLE', 'RED', 'YELLOW']).describe('GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY.'),
   "state": zod.enum(['OPEN', 'CLOSED']),
   "assignees": zod.array(zod.object({
   "id": zod.int().nullable(),

@@ -32,7 +32,7 @@
 8. Per page: 1 `header`, 1 `main`, 1 main-menu `nav`, exactly one `h1` (ch. 6).
 9. Actions are `<button>`, navigation is `<Link>`. `div onClick` NEVER.
 10. Numbers (character counts, limits, plan values) come from `src/lib/policy.ts` (values from 04 Policy), never hard-coded.
-11. App UI is a **mobile column**: implement 360–600px. Below 600px = full width of the viewport column; at/above 600px = `max-width: var(--content-max-width)` (**600px**), centered. **NEVER** add tablet/desktop app layouts that are not in Figma. **Admin (25–27) only** may use a wide / two-column shell from 1024px.
+11. App UI is a **mobile column**: implement 360–600px. Below 600px = full width of the viewport column; at/above 600px = `max-width: var(--content-max-width)` (**600px**), centered. **NEVER** add tablet/desktop app layouts that are not in Figma. Admin (25–27) is a separate, desktop-only tool with its own shell — it has no mobile layout and sits outside this rule entirely.
 12. APIs only through orval hooks/functions. Direct `fetch('/api/v1/...')` NEVER outside `src/lib/api/`.
 13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + Design Guide first. No CSS-in-JS, no utility-class framework. **Visual authority:** page Figma → tokens → Design Guide. Mobbin is retired as an authority (Design Guide ch. 6).
 
@@ -271,10 +271,10 @@ All overlays are Radix `Dialog` (styled in `components/overlay/`): focus trap, `
 - Infinite lists end with a "더 보기" button; virtualized items get `aria-setsize`/`aria-posinset`.
 - Every page needs a unique `title` (Next route announcer reads it).
 
-### 6-6. Mobile column (app) and admin exception
-- **App screens (all non-admin):** one mobile layout. QA at **360** and **600**. Viewport width **&lt; 600** → column fills the width; **≥ 600** → column `max-width: var(--content-max-width)` (**600px**), centered; outside the column is canvas only. Side gutter `var(--page-gutter)` (16px). Header and bottom tab bar share that same centered column — do not full-bleed chrome across a wide browser.
+### 6-6. Mobile column (app) and the admin tool
+- **App screens (all non-admin):** one mobile layout. QA at **360** and **600**. Viewport width **&lt; 600** → column fills the width; **≥ 600** → column `max-width: var(--content-max-width)` (**600px**), centered; outside the column is `--color-canvas-outside` (dark `body`, Figma 472:415) only. Side gutter `var(--page-gutter)` (16px). Header and bottom tab bar share that same centered column — do not full-bleed chrome across a wide browser.
 - **Safe areas:** `env(safe-area-inset-top)` on the sticky header; `env(safe-area-inset-bottom)` on bottom tabs, composers, sheets, and toasts. Main content clears `--header-height` + top inset and `--tab-bar-height` (or composer) + bottom inset so chrome never covers actions.
-- **Admin (25–27) only:** separate shell; two-column from 1024px (`--admin-aside-width`). Not constrained to the 600px app column.
+- **Admin (25–27):** a separate, desktop-only tool with no mobile layout — not part of the app's mobile-column rule. Own shell, two-column (`--admin-aside-width`).
 - `100dvh`; `viewportFit: 'cover'`.
 - Input font ≥ 16px. No hover-only UI; long-press has a "더보기" button alternative.
 - Match the page’s **Figma** frame. Do not invent desktop top-nav / text-only GNB / multi-column app grids absent from Figma.

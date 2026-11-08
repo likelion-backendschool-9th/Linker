@@ -1,13 +1,22 @@
+import {
+  addTeamIssueToProject,
+  getTeamIssueProgress,
+  listTeamIssues,
+  listUnscheduledTeamIssues,
+  refreshTeamIssues,
+} from '@linker/api/p11-issue-list/p11-issue-list';
+import type { ListTeamIssuesParams } from '@linker/api/openAPIDefinition.schemas';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
+import { ISSUE } from '@/lib/policy';
 
-import { issueFilterQuery, type IssueFilters } from './issue-filters';
+import { issueFilterParams, type IssueFilters } from './issue-filters';
 import type { BoardStatusColor, IssueStatus } from '../../../_lib/issue-status';
 
 /**
- * Provisional 11 IssueController contract (WBS 11). Hand-written until the controller is in
- * OpenAPI; then replace with the orval `p11-issue-list` hooks.
+ * 11 IssueController (`p11-issue-list`). List, counts, progress, refresh and "프로젝트에 추가" call the
+ * generated orval functions. The row types below stay for 12–15, which still read them.
  */
 
 export type IssueUser = { id: number; login: string; name: string; avatarUrl: string };
@@ -55,28 +64,61 @@ export type IssueFilterOptions = {
 
 export type IssueListView = 'all' | 'unscheduled';
 
+/** Everything sits under `['issues', teamId]` so 11–15 invalidate it together (07 too). */
 export const issueKeys = {
   team: (teamId: string) => ['issues', teamId] as const,
-  list: (teamId: string, view: IssueListView, filters: IssueFilters) =>
-    ['issues', teamId, 'list', view, filters] as const,
+  list: (teamId: string, view: IssueListView, filters: IssueFilters, q: string | null) =>
+    ['issues', teamId, 'list', view, filters, q] as const,
+  count: (teamId: string, params: ListTeamIssuesParams) =>
+    ['issues', teamId, 'count', params] as const,
+  progress: (teamId: string) => ['issues', teamId, 'progress'] as const,
   filterOptions: (teamId: string) => ['issues', teamId, 'filter-options'] as const,
 };
 
 const base = (teamId: string) => `/api/v1/user/teams/${encodeURIComponent(teamId)}`;
 
-/** All issues (filtered) or the "일정 없음" tab: not on the board or no due date (POL-I-3) */
-export function issueListOptions(teamId: string, view: IssueListView, filters: IssueFilters) {
+/**
+ * All issues (filters + title search `q`) or the "일정 없음" list (`?view=unscheduled`, opened from 15's
+ * calendar link): not on the board or no due date (POL-I-3). The unscheduled endpoint takes no filters.
+ */
+export function issueListOptions(
+  teamId: string,
+  view: IssueListView,
+  filters: IssueFilters,
+  q: string | null,
+) {
   return infiniteQueryOptions({
-    queryKey: issueKeys.list(teamId, view, filters),
+    queryKey: issueKeys.list(teamId, view, filters, q),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => {
-      const query = view === 'all' ? issueFilterQuery(filters) : new URLSearchParams();
-      if (pageParam !== null) query.set('cursor', pageParam);
-      const search = query.size > 0 ? `?${query}` : '';
-      const path = view === 'all' ? '/issues' : '/issues/unscheduled';
-      return apiFetch<IssuePage>(`${base(teamId)}${path}${search}`, { signal });
+      const cursor = pageParam ?? undefined;
+      return view === 'all'
+        ? listTeamIssues(
+            Number(teamId),
+            { ...issueFilterParams(filters), q: q ?? undefined, cursor },
+            { signal },
+          )
+        : listUnscheduledTeamIssues(Number(teamId), { cursor }, { signal });
     },
     getNextPageParam: (page) => page.nextCursor ?? undefined,
+  });
+}
+
+/** How many issues match: one row is enough, `total` is the count (status chips and cards of 11). */
+export function issueCountOptions(teamId: string, params: ListTeamIssuesParams) {
+  return queryOptions({
+    queryKey: issueKeys.count(teamId, params),
+    queryFn: ({ signal }) => listTeamIssues(Number(teamId), { ...params, size: 1 }, { signal }),
+    select: (page) => page.total,
+  });
+}
+
+/** `[Included]` Progress of a Flex team (POL-T-7): the 14-day trend of 11. Free teams get PLAN_LIMIT. */
+export function issueProgressOptions(teamId: string) {
+  return queryOptions({
+    queryKey: issueKeys.progress(teamId),
+    queryFn: ({ signal }) =>
+      getTeamIssueProgress(Number(teamId), { days: ISSUE.progressDays }, { signal }),
   });
 }
 
@@ -92,17 +134,16 @@ export function issueFilterOptions(teamId: string) {
 
 /**
  * Re-fetch only this screen's issues from GitHub (once a minute, 04 ch. 7 "Sync"): the current tab
- * and filters go along as the query. The `view` + filter query is a proposal beyond WBS 11.
+ * and filters go along as the query.
  */
 export function refreshIssues(teamId: string, view: IssueListView, filters: IssueFilters) {
-  const query = view === 'all' ? issueFilterQuery(filters) : new URLSearchParams();
-  query.set('view', view);
-  return apiFetch<{ refreshedAt: string }>(`${base(teamId)}/issues/refresh?${query}`, {
-    method: 'POST',
+  return refreshTeamIssues(Number(teamId), {
+    ...(view === 'all' ? issueFilterParams(filters) : {}),
+    view,
   });
 }
 
 /** "프로젝트에 추가": put an issue on the team's Projects board */
 export function addIssueToProject(teamId: string, issueId: number) {
-  return apiFetch<void>(`${base(teamId)}/issues/${issueId}/project-item`, { method: 'POST' });
+  return addTeamIssueToProject(Number(teamId), issueId);
 }

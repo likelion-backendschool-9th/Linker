@@ -1,3 +1,5 @@
+/* Capped to the app column (not just left:0/right:0) so the pill's own 16px padding keeps
+   insetting it from the content column at every width ≥600px, not just exactly at 600px */
 .bar {
   position: fixed;
   right: 0;
@@ -6,20 +8,41 @@
   z-index: var(--z-chrome);
   display: flex;
   justify-content: center;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
   padding: 0 var(--space-md);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Frosted pill: gap is a fixed per-item value (not space-around), centered within the bar */
 .list {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
+  gap: var(--tab-bar-gap-4);
   width: 100%;
-  max-width: var(--content-max-width);
   margin-bottom: var(--space-xs);
   padding: var(--space-xs) 0;
-  background-color: var(--color-canvas-soft);
+  background-color: var(--color-gnb-bg);
+  -webkit-backdrop-filter: var(--blur-chrome);
+  backdrop-filter: var(--blur-chrome);
   border-radius: var(--radius-xs);
+}
+
+/* Signed-in members: 5 tabs (incl. 프로필) use a tighter gap than guests' 4 (Figma 453:258/455:316) */
+.listFive {
+  gap: var(--tab-bar-gap-5);
+}
+
+/* At the 600px upper bound, Figma switches both the 4-tab and 5-tab pill from a centered block
+   with a fixed gap to edge-anchored tabs: fixed 80px side padding, gap computed by space-between
+   (Figma 476:563/593) */
+@media (min-width: 600px) {
+  .list {
+    gap: 0;
+    justify-content: space-between;
+    padding: var(--space-xs) var(--tab-bar-padding-wide);
+  }
 }
 
 .item {
@@ -31,15 +54,25 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-xxs);
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-sm);
-  color: var(--color-text-body);
+  gap: var(--space-tab-icon-gap);
+  color: var(--color-gnb-inactive);
 }
 
+.iconSlot {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Bottom GNB icons are bigger (26px) and thinner (1.5) than the header's (24px / 2) */
 .icon {
-  width: var(--icon-size);
-  height: var(--icon-size);
+  --icon-box-size: var(--icon-size-lg);
+  --icon-stroke-width: 1.5;
+}
+
+.avatar {
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-full);
+  object-fit: cover;
 }
 
 .label {
@@ -48,35 +81,11 @@
   line-height: var(--line-height-caption);
 }
 
-/* Current tab: accessible blue on the gray pill, plus a heavier label (not color alone). */
+/* Active tab: accessible blue on the gray pill, plus a heavier label (not color alone). */
 .tab[aria-current='page'] {
   color: var(--color-gnb-current);
 }
 
 .tab[aria-current='page'] .label {
   font-weight: var(--font-weight-semibold);
-}
-
-/* Tablet and desktop share one layout: a floating frosted pill, text-only (no icons) */
-@media (min-width: 640px) {
-  .list {
-    margin-bottom: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-    background-color: var(--color-gnb-pill);
-    backdrop-filter: var(--blur-header-scroll);
-    border-radius: var(--radius-lg);
-  }
-
-  .icon {
-    display: none;
-  }
-
-  .tab {
-    padding: 0 var(--space-md);
-  }
-
-  .label {
-    font-size: var(--font-size-card-title);
-    line-height: var(--line-height-title);
-  }
 }

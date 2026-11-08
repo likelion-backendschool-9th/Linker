@@ -539,6 +539,20 @@ export interface IssueSubIssueCounts {
   done: number;
 }
 
+export type IssueDetailResponseStatusColor = typeof IssueDetailResponseStatusColor[keyof typeof IssueDetailResponseStatusColor];
+
+
+export const IssueDetailResponseStatusColor = {
+  BLUE: 'BLUE',
+  GRAY: 'GRAY',
+  GREEN: 'GREEN',
+  ORANGE: 'ORANGE',
+  PINK: 'PINK',
+  PURPLE: 'PURPLE',
+  RED: 'RED',
+  YELLOW: 'YELLOW',
+} as const;
+
 export interface IssueDetailResponse {
   id: number;
   teamId: number;
@@ -548,6 +562,8 @@ export interface IssueDetailResponse {
   title: string;
   body: string;
   status: IssueDetailResponseStatus;
+  /** GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY. */
+  statusColor: IssueDetailResponseStatusColor;
   state: IssueDetailResponseState;
   assignees: IssueAssignee[];
   labels: IssueLabel[];
@@ -636,6 +652,20 @@ export const IssueListItemSyncStatus = {
   FAILED: 'FAILED',
 } as const;
 
+export type IssueListItemStatusColor = typeof IssueListItemStatusColor[keyof typeof IssueListItemStatusColor];
+
+
+export const IssueListItemStatusColor = {
+  BLUE: 'BLUE',
+  GRAY: 'GRAY',
+  GREEN: 'GREEN',
+  ORANGE: 'ORANGE',
+  PINK: 'PINK',
+  PURPLE: 'PURPLE',
+  RED: 'RED',
+  YELLOW: 'YELLOW',
+} as const;
+
 export interface IssueListItem {
   id: number;
   number: number;
@@ -643,6 +673,8 @@ export interface IssueListItem {
   repoName: string;
   title: string;
   status: IssueListItemStatus;
+  /** GitHub Projects Status option color from board_status_mappings. OTHER/NONE → GRAY. */
+  statusColor: IssueListItemStatusColor;
   state: IssueListItemState;
   assignees: IssueAssignee[];
   labels: IssueLabel[];
@@ -744,8 +776,23 @@ export interface IssueStatusRequest {
   status: IssueStatusRequestStatus;
 }
 
+export type IssueStatusResultStatusColor = typeof IssueStatusResultStatusColor[keyof typeof IssueStatusResultStatusColor];
+
+
+export const IssueStatusResultStatusColor = {
+  BLUE: 'BLUE',
+  GRAY: 'GRAY',
+  GREEN: 'GREEN',
+  ORANGE: 'ORANGE',
+  PINK: 'PINK',
+  PURPLE: 'PURPLE',
+  RED: 'RED',
+  YELLOW: 'YELLOW',
+} as const;
+
 export interface IssueStatusResult {
   status: string;
+  statusColor: IssueStatusResultStatusColor;
   state: string;
 }
 
@@ -1508,6 +1555,10 @@ repo?: number;
 status?: string;
 assignee?: string;
 label?: string;
+/**
+ * 이슈 제목 검색어(대소문자 무시, 최대 100자)
+ */
+q?: string;
 open?: boolean;
 cursor?: string;
 size?: number;
@@ -1616,8 +1667,24 @@ export const IssueBoardColumnStatus = {
   OTHER: 'OTHER',
 } as const;
 
+export type IssueBoardColumnStatusColor = typeof IssueBoardColumnStatusColor[keyof typeof IssueBoardColumnStatusColor];
+
+
+export const IssueBoardColumnStatusColor = {
+  BLUE: 'BLUE',
+  GRAY: 'GRAY',
+  GREEN: 'GREEN',
+  ORANGE: 'ORANGE',
+  PINK: 'PINK',
+  PURPLE: 'PURPLE',
+  RED: 'RED',
+  YELLOW: 'YELLOW',
+} as const;
+
 export interface IssueBoardColumn {
   status: IssueBoardColumnStatus;
+  /** Column color from board_status_mappings for the four statuses; OTHER → GRAY. */
+  statusColor: IssueBoardColumnStatusColor;
   label: string;
   cards: IssueListItem[];
 }

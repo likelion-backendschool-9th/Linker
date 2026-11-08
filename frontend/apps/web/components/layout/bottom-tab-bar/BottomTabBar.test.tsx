@@ -26,7 +26,7 @@ describe('BottomTabBar', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('shows recruiters home and chats only (profile lives in the header)', () => {
+  it('shows recruiters home and chats only', () => {
     renderWithProviders(<BottomTabBar tabs={tabsFor('recruiter')} />, {
       viewer: { role: 'recruiter', login: 'r-12' },
     });
@@ -34,5 +34,18 @@ describe('BottomTabBar', () => {
       '홈 피드',
       '채팅방',
     ]);
+  });
+
+  it('adds a 프로필 tab with the avatar for signed-in developers', () => {
+    renderWithProviders(
+      <BottomTabBar tabs={tabsFor('developer', { login: 'yunsu', userId: 1 })} />,
+      { viewer: { role: 'developer', login: 'yunsu' } },
+    );
+    const profileLink = screen.getByRole('link', { name: '프로필' });
+    expect(profileLink).toHaveAttribute('href', '/user/yunsu');
+    expect(profileLink.querySelector('img')).toHaveAttribute(
+      'src',
+      expect.stringContaining('avatars.githubusercontent.com'),
+    );
   });
 });

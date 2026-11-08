@@ -1,27 +1,34 @@
-.header {
+/* Sticky frosted plate shared by the header row and the open search panel (HeaderChrome) */
+.chrome {
   position: sticky;
   top: 0;
   z-index: var(--z-chrome);
-  padding-top: env(safe-area-inset-top);
-  background-color: var(--color-canvas);
-  transition: background-color var(--duration-overlay) var(--ease-standard);
+  background-color: var(--color-header-bg);
+  -webkit-backdrop-filter: var(--blur-chrome);
+  backdrop-filter: var(--blur-chrome);
+  transition:
+    -webkit-backdrop-filter var(--duration-overlay) var(--ease-standard),
+    backdrop-filter var(--duration-overlay) var(--ease-standard);
 }
 
+.chromeOpen {
+  -webkit-backdrop-filter: var(--blur-header-open);
+  backdrop-filter: var(--blur-header-open);
+  border-bottom: 1px solid var(--color-canvas-soft);
+}
+
+.header {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Width comes from the ancestor .app/.entry column (shell.module.css), not from here */
 .inner {
   display: flex;
   align-items: center;
   gap: var(--space-xxs);
-  max-width: var(--content-max-width);
   height: var(--header-height);
-  margin: 0 auto;
   /* Logo and icon buttons carry their own inset, so the visible gutter equals --page-gutter */
   padding: 0 calc(var(--page-gutter) - var(--space-xs));
-  border-radius: var(--radius-none);
-  transition:
-    margin-top var(--duration-overlay) var(--ease-standard),
-    border-radius var(--duration-overlay) var(--ease-standard),
-    background-color var(--duration-overlay) var(--ease-standard),
-    backdrop-filter var(--duration-overlay) var(--ease-standard);
 }
 
 .logo {
@@ -53,8 +60,7 @@
   flex: 1;
   align-items: center;
   gap: var(--space-sm);
-  max-width: var(--header-search-width);
-  height: var(--control-height);
+  height: var(--search-input-height);
   margin: 0 auto;
   padding: 0 var(--space-md);
   background-color: var(--color-field);
@@ -63,14 +69,17 @@
 }
 
 .search:focus-within {
-  border-color: var(--color-focus-ring);
+  border-color: var(--color-focus-ring-search);
 }
 
 .searchIcon {
-  flex-shrink: 0;
-  width: var(--icon-size);
-  height: var(--icon-size);
-  color: var(--color-text-subtle-on-tint);
+  color: var(--color-text-heading);
+}
+
+/* Solar's magnifier glyph is a 19px lens in a 24px box; shrink it to an 18px lens (handle scales
+   with it) without changing the 24x24 hit area it sits in. */
+.magnifierIcon {
+  transform: scale(calc(18 / 19));
 }
 
 .searchInput {
@@ -106,11 +115,8 @@
   color: var(--color-text-body);
   background-color: var(--color-hairline);
   border-radius: var(--radius-full);
-}
-
-.searchClearIcon {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
+  /* Scopes the nested Icon down to --icon-size-sm (see Icon.module.css) */
+  --icon-box-size: var(--icon-size-sm);
 }
 
 .actions {
@@ -120,116 +126,41 @@
   margin-left: auto;
 }
 
-.softPillButton,
-.ctaButton,
-.profileButton {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  height: var(--control-height);
-  white-space: nowrap;
-  border-radius: var(--radius-full);
-}
-
-.softPillButton,
-.ctaButton {
-  padding: 0 var(--space-md);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-}
-
-.softPillButton {
-  position: relative;
-  color: var(--color-text-heading);
-  background-color: var(--color-field);
-}
-
-.unreadDot {
-  position: absolute;
-  top: var(--space-xs);
-  right: var(--space-xs);
-  width: var(--badge-dot-size);
-  height: var(--badge-dot-size);
-  background-color: var(--color-accent);
-  border-radius: var(--radius-full);
-}
-
-.ctaButton {
-  color: var(--color-on-primary);
-  background-color: var(--color-primary);
-}
-
-.profileButton {
-  width: var(--control-height);
-  color: var(--color-text-heading);
-  background-color: var(--color-canvas-soft);
-  border: 1px solid var(--color-hairline-soft);
-}
-
+/* Figma-exact 24x24 hit area, not --touch-target-min: dense header icon clusters trade the 44px
+   target for the spacing the design calls for (design guide ch. 3-3). */
 .iconButton {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
   color: var(--color-text-heading);
   border-radius: var(--radius-full);
 }
 
-/* Mobile/tablet-only icon controls; the desktop block below replaces them with text pills */
-.mobileOnly {
-  display: inline-flex;
+/* The search icon's input row, below the header (04 mobile header task 4-6). Slides down into
+   view on open; .chrome behind it already carries the frosted background. */
+@keyframes mobileSearchReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Mobile/tablet: the search icon's input row, below the header (04 mobile header task 4-6) */
 .mobileSearchPanel {
   padding: 0 var(--page-gutter) var(--space-sm);
-  background-color: var(--color-canvas);
+  animation: mobileSearchReveal var(--duration-overlay) var(--ease-standard);
 }
 
 .searchMobile {
   display: flex;
   max-width: none;
   margin: 0;
-}
-
-@media (min-width: 1024px) {
-  .search {
-    display: flex;
-  }
-
-  .softPillButton,
-  .ctaButton,
-  .profileButton {
-    display: inline-flex;
-  }
-
-  .mobileOnly {
-    display: none;
-  }
-
-  .mobileSearchPanel {
-    display: none;
-  }
-
-  /* The floating "scroll header" (04 frontend task 2), desktop only: mobile has no scroll
-     animation. The Figma reference is already capped at --content-max-width at rest, so
-     shrinking to 1440px is this pill becoming visible, not a width change. */
-  .headerScrolled {
-    background-color: transparent;
-  }
-
-  .innerScrolled {
-    margin-top: var(--space-sm);
-    background-color: var(--color-scroll-header);
-    backdrop-filter: var(--blur-header-scroll);
-    border-radius: var(--radius-lg);
-  }
-
-  .innerScrolled .search,
-  .innerScrolled .softPillButton {
-    background-color: var(--color-canvas);
-  }
 }
