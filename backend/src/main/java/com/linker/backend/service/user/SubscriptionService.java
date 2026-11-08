@@ -106,11 +106,14 @@ public class SubscriptionService {
 
 	private static final List<String> FREE_BENEFITS = List.of(
 			"팔로우·좋아요·댓글", "작업물 올리기", "팀·이슈·캘린더·상태 보드");
+	/** Figma 28 (288:471, 293:218) benefit copy; the 28 screen sets a few words in Medium. */
 	private static final List<String> PRO_BENEFITS = List.of(
-			"채용 담당자 프로필 열람 알림", "게시물 유입 경로 통계", "사진 10장", "대표 게시물 5개", "모집 글 동시 10개");
+			"채용 담당자 프로필 조회 알림", "게시물 통계 확장 : 유입 경로, README 확장", "피드 저장소 사진 10장으로 확장",
+			"대표 작업물 고정 5개로 확장", "팀 모집글 최대 10개로 확장");
 	private static final List<String> FLEX_BENEFITS = List.of(
-			"팀원 수 제한 없음", "채팅 전체 기간 검색", "AI 채팅 요약", "진행 현황 그래프");
-	private static final List<String> SCOUT_BENEFITS = List.of("채용 제안 하루 50건", "피드 채용 광고 1개");
+			"팀 인원 무제한", "팀 채팅 검색 및 스크롤 백 무제한", "팀 채팅 이미지 보관", "AI 채팅 요약 하루 인당 10회",
+			"진행 현황 그래프");
+	private static final List<String> SCOUT_BENEFITS = List.of("피드 채용 광고 1건", "채용 제안 일 10회에서 일 50회");
 
 	private final SubscriptionRepository subscriptions;
 	private final PaymentRepository payments;
