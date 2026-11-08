@@ -390,6 +390,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Team layout and tabs
 - [ ] Issue row: repo, number, title, status (+ shared `statusColor` from board mapping, with the name), assignee avatars, due date, labels, overdue in red
 - [ ] (sheet) Filters: repo, status, assignee, label, open/closed. Filters stored in URL (nuqs) → reused in 14, 15
+- [ ] Title search box (11 only, POL-I-6), stored in URL as `q`; status chips 전체 / 작업 전 / 진행 / 정지 / 완료 with counts (Figma 11)
 - [ ] "일정 없음" (no schedule) tab: issues not on the board or without a due date + "프로젝트에 추가" (add to project)
 - [ ] Pull to refresh (that screen's issues only, once per minute)
 - [ ] "이슈 작성" (create issue) button (hidden for read-only teams / no write permission)

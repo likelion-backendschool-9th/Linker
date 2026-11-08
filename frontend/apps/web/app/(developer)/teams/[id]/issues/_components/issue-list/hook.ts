@@ -1,27 +1,50 @@
 'use client';
 
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useQueryState, useQueryStates } from 'nuqs';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { ISSUE } from '@/lib/policy';
 import { toast } from '@/stores/toast-store';
 
-import { activeFilterCount, issueFilterParsers } from '../../../_lib/issue-filters';
+import {
+  activeFilterCount,
+  issueFilterParams,
+  issueFilterParsers,
+} from '../../../_lib/issue-filters';
 import { PULL_MAX, usePullToRefresh } from '../../_hooks/use-pull-to-refresh';
-import { issueViewParser } from '../../_lib/issue-view';
+import { ISSUE_SEARCH_MAX_LENGTH, issueSearchParser, issueViewParser } from '../../_lib/issue-view';
 import {
   addIssueToProject,
+  issueCountOptions,
   issueKeys,
   issueListOptions,
   refreshIssues,
-  type IssueListView,
 } from './api';
 
-export const VIEW_LABELS: Record<IssueListView, string> = { all: '전체', unscheduled: '일정 없음' };
 export { PULL_MAX };
+
+/**
+ * Status chips of Figma 11. There is no "일정 없음" chip (Figma 11, user decision 2026-11-08): the
+ * `?view=unscheduled` list is reached only from 15's calendar link.
+ */
+export const STATUS_CHIPS = [
+  { status: null, label: '전체' },
+  { status: 'TODO', label: '작업 전' },
+  { status: 'IN_PROGRESS', label: '진행' },
+  { status: 'BLOCKED', label: '정지' },
+  { status: 'DONE', label: '완료' },
+] as const;
+export type ChipStatus = (typeof STATUS_CHIPS)[number]['status'];
+
+const SEARCH_DELAY_MS = 300;
 
 /** Seconds left until the next refresh is allowed (`null` = allowed now) */
 function useCooldown() {
@@ -48,6 +71,10 @@ function useCooldown() {
   };
 }
 
+function searchText(draft: string) {
+  return draft.trim().slice(0, ISSUE_SEARCH_MAX_LENGTH) || null;
+}
+
 export function useIssueList(teamId: string) {
   const viewer = useViewer();
   const client = useQueryClient();
@@ -55,9 +82,46 @@ export function useIssueList(teamId: string) {
     'view',
     issueViewParser.withOptions({ history: 'replace' }),
   );
-  const [filters] = useQueryStates(issueFilterParsers);
-  const issues = useInfiniteQuery(issueListOptions(teamId, view, filters));
+  const [filters, setFilters] = useQueryStates(issueFilterParsers, { history: 'replace' });
+  // Search box: typed locally, written to `?q=` after a short pause or on Enter
+  const [q, setQ] = useQueryState('q', issueSearchParser.withOptions({ history: 'replace' }));
+  const [draft, setDraft] = useState(q ?? '');
+  const applySearch = useCallback(
+    (next: string | null) => {
+      void setQ(next);
+      // The unscheduled endpoint has no search: searching shows all issues again
+      if (next && view === 'unscheduled') void setView(null);
+    },
+    [setQ, setView, view],
+  );
+  useEffect(() => {
+    const next = searchText(draft);
+    if (next === q) return;
+    const timer = window.setTimeout(() => applySearch(next), SEARCH_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [draft, q, applySearch]);
+  const search = {
+    q,
+    draft,
+    setDraft,
+    submit: (event: FormEvent) => {
+      event.preventDefault();
+      applySearch(searchText(draft));
+    },
+  };
+  const issues = useInfiniteQuery(issueListOptions(teamId, view, filters, q));
   const cooldown = useCooldown();
+
+  // Chip counts follow the other filters and the search, never the chip's own status
+  const scope = { ...issueFilterParams({ ...filters, status: null }), q: q ?? undefined };
+  const counts = useQueries({
+    queries: [
+      ...STATUS_CHIPS.map((chip) =>
+        issueCountOptions(teamId, chip.status ? { ...scope, status: chip.status } : scope),
+      ),
+    ],
+  });
+  const chipCounts = counts.map((query) => query.data);
 
   const refresh = useMutation({
     mutationFn: () => refreshIssues(teamId, view, filters),
@@ -92,9 +156,9 @@ export function useIssueList(teamId: string) {
 
   const pages = issues.data?.pages ?? [];
   const items = pages.flatMap((page) => page.items);
-  const total = pages[0]?.total ?? 0;
+  const total = pages[0]?.total;
   const canWrite = (pages[0]?.canWrite ?? false) && viewer.status !== 'SUSPENDED';
-  const filtered = view === 'all' && activeFilterCount(filters) > 0;
+  const filtered = view === 'all' && (activeFilterCount(filters) > 0 || q !== null);
 
   function onRefreshClick() {
     if (cooldown.left !== null) {
@@ -104,19 +168,42 @@ export function useIssueList(teamId: string) {
     if (!refresh.isPending) refresh.mutate();
   }
 
+  function selectStatus(status: ChipStatus) {
+    void setView(null);
+    void setFilters({ status });
+  }
+
+  // Next page when the end of the list scrolls into view (Figma has no "더 보기")
+  const sentinel = useRef<HTMLDivElement>(null);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = issues;
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!node || !hasNextPage || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting) && !isFetchingNextPage) {
+        void fetchNextPage();
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   return {
     view,
-    setView: (item: IssueListView) => void setView(item),
+    status: view === 'all' ? filters.status : null,
+    selectStatus,
+    chipCounts,
+    search,
     issues,
     cooldown,
     refresh,
     addToProject,
-    refreshBlocked,
     pull,
     items,
     total,
     canWrite,
     filtered,
     onRefreshClick,
+    sentinel,
   };
 }

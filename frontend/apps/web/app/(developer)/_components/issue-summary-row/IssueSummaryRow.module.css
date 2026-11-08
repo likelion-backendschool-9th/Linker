@@ -1,0 +1,96 @@
+/* Figma 7 (123:1966) and 11 (197:66) issue row: 70px with the 22px lines */
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-row-block) var(--space-row-inline);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-row-inline);
+  flex: 1;
+  min-width: 0;
+}
+
+.titleLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.title {
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The whole row is the tap target for 12 */
+.link::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.statusDot {
+  flex-shrink: 0;
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--radius-full);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-width: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+}
+
+.metaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.separator {
+  flex-shrink: 0;
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: currentcolor;
+  border-radius: var(--radius-full);
+}
+
+.due,
+.overdue {
+  flex-shrink: 0;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+}
+
+.overdue {
+  color: var(--color-status-overdue);
+}
+
+/* Above the row-wide link so its own control stays reachable */
+.action {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}

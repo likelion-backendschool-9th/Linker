@@ -514,6 +514,16 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
       }
     }
     where += filters(query, params);
+    if (query.q() != null) {
+      // Title contains the search text; '!' escapes LIKE wildcards typed by the user.
+      where += " and lower(i.title) like :q escape '!'";
+      params.put(
+          "q",
+          "%"
+              + query.q().toLowerCase(java.util.Locale.ROOT)
+                  .replace("!", "!!").replace("%", "!%").replace("_", "!_")
+              + "%");
+    }
     String scope = scope(teamId, query, unscheduled);
     Cursor after = decode(query.cursor(), scope);
     long total = bind(entityManager.createQuery("select count(i)" + where, Long.class), params)
@@ -1159,7 +1169,9 @@ public class IssueRepositoryImpl implements IssueRepositoryCustom {
             + "|"
             + scopeField(q.label())
             + "|"
-            + q.open();
+            + q.open()
+            + "|"
+            + scopeField(q.q());
     try {
       return HexFormat.of()
           .formatHex(

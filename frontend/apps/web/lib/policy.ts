@@ -100,6 +100,10 @@ export const ISSUE = {
   assigneesMax: 10,
   /** Pull to refresh: that screen's issues, once a minute */
   refreshIntervalSeconds: 60,
+  /** Progress card trend: last 14 days (POL-T-7) */
+  progressDays: 14,
+  /** 11 title search: longest search text (POL-I-6); the server rejects longer text */
+  searchMaxLength: 100,
 } as const;
 
 /** 04 ch. 8 */

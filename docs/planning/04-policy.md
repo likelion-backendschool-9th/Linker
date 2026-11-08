@@ -400,6 +400,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | POL-I-4 Overdue | Issues past due and not done are shown in red. Team timezone is KST |
 | POL-I-4 Status board | Change via drag or the "상태 바꾸기" (change status) menu. If writing to GitHub fails, move the card back to its original column and notify |
 | POL-I-5 My issues (07) | Not a cross-team list. The user selects one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at` desc; prefer non-archived). Selection kept in the URL (`teamId`). Invalid / non-member `teamId` falls back to the default team. Sort by due urgency: overdue first (oldest due first), then soonest due, then no due date. `/workspace` shows a short UI-limited preview (not a fixed count); “내 이슈 전체 보기” opens `/workspace/issues` for the full selected-team list. Team-wide (all members’) issues are on page 11, not here |
+| POL-I-6 Issue search (11) | Search box on page 11 only. Case-insensitive match on part of the issue title; leading/trailing spaces ignored, blank = no search. Max 100 characters (longer is rejected). Combined with the other filters and kept in the URL (`q`). The "일정 없음" view has no search: searching returns to all issues |
 
 ### Preparing GitHub Projects
 
