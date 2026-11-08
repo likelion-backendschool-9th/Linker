@@ -1836,6 +1836,13 @@ export interface SubscriptionItemResponse {
      * @nullable
      */
   nextAmount: number | null;
+  /** Price of the current period (KRW): Pro by billing cycle, Flex for the paid seats, Scout monthly */
+  amount: number;
+  /**
+     * FLEX: name of the member who pays (billing manager); null for Pro/Scout or a withdrawn payer
+     * @nullable
+     */
+  payerName: string | null;
 }
 
 export interface PaymentItemResponse {

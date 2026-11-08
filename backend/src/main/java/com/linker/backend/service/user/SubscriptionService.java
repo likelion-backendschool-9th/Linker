@@ -38,6 +38,7 @@ import com.linker.backend.dto.subscription.response.SubscriptionItemResponse;
 import com.linker.backend.dto.subscription.response.SubscriptionsResponse;
 import com.linker.backend.dto.subscription.response.TeamCandidateResponse;
 import com.linker.backend.dto.subscription.response.TeamCandidatesResponse;
+import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.subscription.Payment;
 import com.linker.backend.entity.subscription.Subscription;
@@ -57,6 +58,7 @@ import com.linker.backend.integration.payment.PaymentConfirmResult;
 import com.linker.backend.integration.payment.PaymentGateway;
 import com.linker.backend.integration.payment.PaymentGatewayException;
 import com.linker.backend.integration.payment.UnconfiguredPaymentGateway;
+import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.subscription.PaymentRepository;
 import com.linker.backend.repository.subscription.SubscriptionRepository;
 import com.linker.backend.repository.subscription.SubscriptionRepositoryCustom.FlexTeam;
@@ -118,6 +120,7 @@ public class SubscriptionService {
 	private final SubscriptionRepository subscriptions;
 	private final PaymentRepository payments;
 	private final TeamRepository teams;
+	private final UserRepository users;
 	private final PaymentGateway gateway;
 	private final Clock clock;
 	private final ObjectMapper objectMapper;
@@ -128,6 +131,7 @@ public class SubscriptionService {
 			SubscriptionRepository subscriptions,
 			PaymentRepository payments,
 			TeamRepository teams,
+			UserRepository users,
 			PaymentGateway gateway,
 			Clock clock,
 			ObjectMapper objectMapper,
@@ -136,6 +140,7 @@ public class SubscriptionService {
 		this.subscriptions = subscriptions;
 		this.payments = payments;
 		this.teams = teams;
+		this.users = users;
 		this.gateway = gateway;
 		this.clock = clock;
 		this.objectMapper = objectMapper;
@@ -371,11 +376,18 @@ public class SubscriptionService {
 				.collect(Collectors.toMap(Team::getId, Team::getName));
 		Map<Long, FlexTeam> payable = teamIds.isEmpty() ? Map.of() : subscriptions.flexTeams(user.userId(), null).stream()
 				.collect(Collectors.toMap(FlexTeam::teamId, Function.identity()));
+		// Page 29 shows who pays for each Flex team (the billing manager row).
+		List<Long> payerIds = rows.stream().filter(row -> row.getTeamId() != null)
+				.map(Subscription::getPayerUserId).filter(Objects::nonNull).distinct().toList();
+		Map<Long, String> payers = payerIds.isEmpty() ? Map.of() : users.findAllById(payerIds).stream()
+				.filter(payer -> payer.getDeletedAt() == null)
+				.collect(Collectors.toMap(User::getId, SubscriptionService::payerName));
 		// Own Pro/Scout rows have no team id; immutable maps reject get(null).
 		return new SubscriptionsResponse(rows.stream()
 				.map(row -> row.getTeamId() == null
-						? item(row, null, null)
-						: item(row, names.get(row.getTeamId()), payable.get(row.getTeamId())))
+						? item(row, null, null, null)
+						: item(row, names.get(row.getTeamId()), payable.get(row.getTeamId()),
+								row.getPayerUserId() == null ? null : payers.get(row.getPayerUserId())))
 				.toList());
 	}
 
@@ -394,7 +406,10 @@ public class SubscriptionService {
 				: flexTeam(user.userId(), subscription.getTeamId()).orElse(null);
 		String teamName = subscription.getTeamId() == null ? null
 				: teams.findById(subscription.getTeamId()).map(Team::getName).orElse(null);
-		return item(subscription, teamName, team);
+		String payer = subscription.getTeamId() == null || subscription.getPayerUserId() == null ? null
+				: users.findById(subscription.getPayerUserId()).filter(row -> row.getDeletedAt() == null)
+						.map(SubscriptionService::payerName).orElse(null);
+		return item(subscription, teamName, team, payer);
 	}
 
 	@Transactional(readOnly = true)
@@ -596,14 +611,31 @@ public class SubscriptionService {
 				Map.of("providerCode", safeCode(failure.code())));
 	}
 
-	private static SubscriptionItemResponse item(Subscription subscription, String teamName, FlexTeam payable) {
+	private static SubscriptionItemResponse item(Subscription subscription, String teamName, FlexTeam payable,
+			String payerName) {
 		boolean flex = subscription.getPlan() == SubscriptionPlan.FLEX;
 		Integer nextSeats = flex && payable != null ? seats(payable) : null;
 		return new SubscriptionItemResponse(subscription.getId(), subscription.getPlan().name(),
 				subscription.getStatus().name(), subscription.getBillingCycle().name(), subscription.getTeamId(),
 				teamName, subscription.getCurrentPeriodEnd().atZone(PlanLimits.APP_ZONE).toLocalDate(), null,
 				subscription.isCancelAtPeriodEnd(), subscription.getSeats(), nextSeats,
-				nextSeats == null ? null : PlanLimits.flexMonthlyAmount(nextSeats));
+				nextSeats == null ? null : PlanLimits.flexMonthlyAmount(nextSeats), periodAmount(subscription),
+				flex ? payerName : null);
+	}
+
+	/** Price of the period being used now, from the plan, cycle and (Flex) paid seats. */
+	private static int periodAmount(Subscription subscription) {
+		return switch (subscription.getPlan()) {
+			case PRO -> subscription.getBillingCycle() == BillingCycle.YEARLY
+					? PlanLimits.PRO_YEARLY_KRW : PlanLimits.PRO_MONTHLY_KRW;
+			case FLEX -> PlanLimits.flexMonthlyAmount(subscription.getSeats() == null ? 1 : subscription.getSeats());
+			case SCOUT -> PlanLimits.SCOUT_MONTHLY_KRW;
+		};
+	}
+
+	private static String payerName(User payer) {
+		return payer.getDisplayName() != null && !payer.getDisplayName().isBlank()
+				? payer.getDisplayName() : payer.getUsername();
 	}
 
 	/** A payment that is not refundable now and needs no reason (already refunded or just refunded). */

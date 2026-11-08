@@ -197,4 +197,15 @@
   --control-height-plan-toggle: 52px; /* 월간/연간 toggle (each side is the hit area) */
   --radius-plan-card: 14px;
   --icon-size-plan-check: 18px; /* benefit check */
+
+  /* Figma 29 subscription (294:306, 295:459, 364:1694) */
+  --space-manage-block: 15px; /* header to plan card, plan card to info box, info box to payment history */
+  --space-manage-card: 13px; /* plan card padding */
+  --space-manage-name: 7px; /* plan name to its description */
+  --space-manage-row: 17px; /* info box side padding */
+  --row-height-manage-info: 35px; /* info box row (tappable rows keep --touch-target-min) */
+  --radius-manage-card: 6px;
+  --radius-manage-dialog: 10px; /* 해지 confirm modal */
+  --dialog-width-manage: 320px; /* 해지 confirm modal */
+  --icon-size-manage-chevron: 20px; /* "요금제 해지" and "전체 보기" chevron */
 }
