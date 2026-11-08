@@ -8,6 +8,7 @@ import { NotificationBell } from '@/features/notifications/notification-bell/Not
 import type { Role } from '@/lib/auth/route-access';
 
 import { HeaderLoginButton } from '../header-login-button';
+import { HeaderLogoOrb } from '../header-logo-orb';
 import { HeaderScrollFrame } from '../header-scroll-frame';
 import { HeaderSearch } from '../header-search';
 import styles from '../header.module.css';
@@ -35,8 +36,8 @@ export function TabHeader({ role, login = null, hasUnread = false }: TabHeaderPr
     <MobileSearchProvider>
       <HeaderScrollFrame>
         <Link href="/feed" className={styles.logo}>
-          <Image src="/logo.svg" alt="" width={46} height={46} priority />
-          <Image src="/textlogo.svg" alt="Linker" width={118} height={36} priority />
+          <HeaderLogoOrb />
+          <Image src="/textlogo.svg" alt="Linker" width={85} height={26} priority />
           <span className="sr-only"> 홈</span>
         </Link>
         <HeaderSearch />
