@@ -9,8 +9,11 @@ import { daysUntil } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
-import { cancelApplication } from '../../../_lib/recruit-list-queries';
-import { recruitDetailOptions, type RecruitDetail as Detail } from '../../_lib/detail-queries';
+import {
+  cancelApplication,
+  recruitDetailOptions,
+  type RecruitDetail as Detail,
+} from '../../_lib/detail-queries';
 
 const TABS = ['post', 'applicants'] as const;
 
