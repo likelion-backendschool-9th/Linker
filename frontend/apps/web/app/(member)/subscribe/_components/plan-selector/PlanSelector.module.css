@@ -1,1 +1,203 @@
-/* Styles for PlanSelector */
+/* Figma 28 (288:471, 293:218) */
+.page {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-lg);
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+}
+
+.headline {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+
+.subtitle {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-muted-cool);
+}
+
+/* Entry reason from a limit prompt (Page TODO 28); not in the frame */
+.reason {
+  margin-top: var(--space-row-block);
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-plan-accent);
+}
+
+/* 월간/연간 toggle (291:94): grey track, black selected pill */
+.toggle {
+  display: flex;
+  height: var(--control-height-plan-toggle);
+  margin-top: var(--space-plan-intro);
+  padding: var(--space-xxs);
+  border-radius: var(--radius-full);
+  background: var(--color-plan-toggle);
+}
+
+.toggleButton {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-plan-toggle-off);
+  cursor: pointer;
+}
+
+.toggleButton[aria-pressed='true'] {
+  background: var(--color-plan-ink);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+}
+
+.toggleButton:disabled {
+  cursor: default;
+}
+
+.plans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-plan-card);
+  margin-top: var(--space-plan-toggle);
+}
+
+/* Card (291:100) */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-plan-card);
+  padding: var(--space-plan-card);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-plan-card);
+  background: var(--color-plan-card);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row-block);
+}
+
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row-inline);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-plan-ink);
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.name {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Current plan: not in the frame, a small label beside the name */
+.current {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-plan-accent);
+}
+
+.tagline {
+  font-size: var(--font-size-micro);
+}
+
+.priceBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-icon-text-compact);
+  line-height: var(--line-height-card-desc);
+}
+
+.price {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-plan-ink);
+}
+
+.billing {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-slate);
+}
+
+/* "구독하기" (292:111): Figma 42px, raised to the 44px touch minimum */
+.cta {
+  min-height: var(--touch-target-min);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-plan-ink);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+}
+
+.cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Divider (292:113) as the list's top border */
+.benefits {
+  padding-top: var(--space-plan-card);
+  border-top: 1px solid var(--color-hairline-cool);
+}
+
+.empty {
+  margin-top: var(--space-plan-toggle);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
+  text-align: center;
+}
+
+/* Terms links (293:217) and the trial note (292:212) */
+.legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-row-block);
+  margin-top: var(--space-row-block);
+}
+
+.legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-muted-cool);
+  text-decoration: none;
+}
+
+.trial {
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-plan-accent);
+  text-align: center;
+}
+
+.toggleButton:focus-visible,
+.cta:focus-visible,
+.legal a:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

@@ -268,7 +268,7 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(jsonPath("$.status").value("ACTIVE"))
 				.andExpect(jsonPath("$.expiresOn").value("2026-12-05"))
 				.andExpect(jsonPath("$.amount").value(2_900))
-				.andExpect(jsonPath("$.benefits[2]").value("사진 10장"));
+				.andExpect(jsonPath("$.benefits[2]").value("피드 저장소 사진 10장으로 확장"));
 		assertThat(GATEWAY.calls).singleElement().satisfies(call -> {
 			assertThat(call.amount()).isEqualTo(2_900);
 			assertThat(call.idempotencyKey()).isEqualTo("confirm:" + orderId);
@@ -407,7 +407,7 @@ class SubscriptionPaymentIntegrationTest {
 		mockMvc.perform(confirm(owner, orderId, "pay_" + orderId, 7_900))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.planKey").value("FLEX"))
-				.andExpect(jsonPath("$.benefits[0]").value("팀원 수 제한 없음"));
+				.andExpect(jsonPath("$.benefits[0]").value("팀 인원 무제한"));
 		assertThat(issues.flexActive(team, NOW)).isTrue();
 		assertThat(jdbc.queryForMap("select user_id, seats, payer_user_id from subscriptions where team_id = ?", team))
 				.containsEntry("user_id", null).containsEntry("seats", 2).containsEntry("payer_user_id", owner.getId());

@@ -10,7 +10,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 
 import { PlanSelector } from './_components/plan-selector/PlanSelector';
 
-export const metadata = buildMetadata({ title: '요금제', path: '/subscribe' });
+export const metadata = buildMetadata({ title: '구독 요금제', path: '/subscribe' });
 
 export default async function SubscribePage({ searchParams }: PageProps<'/subscribe'>) {
   const [session, params] = await Promise.all([getSession(), searchParams]);
@@ -26,7 +26,7 @@ export default async function SubscribePage({ searchParams }: PageProps<'/subscr
       : []),
   ]);
   return (
-    <PageFrame title="요금제" variant="stack" backHref={backHref}>
+    <PageFrame title="구독 요금제" variant="stack" backHref={backHref}>
       <HydrationBoundary state={dehydrate(client)}>
         <PlanSelector
           key={session?.login ?? 'guest'}
