@@ -18,9 +18,6 @@ import { AiSummaryFab } from '../ai-summary-fab';
 import styles from './ChatRoom.module.css';
 import { CONNECTION, useChatRoom } from './hook';
 
-/** Space under the newest message so it scrolls clear of the "AI 채팅 요약" FAB: label + pointer + 40px circle. */
-const AI_FAB_CLEARANCE = 88;
-
 export function ChatRoom({ roomId }: { roomId: number }) {
   const {
     viewer,
@@ -109,7 +106,6 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
           onMenu={(id) => messageMenu.open(String(id))}
           onRead={markMessageRead}
-          endSpace={room.team ? AI_FAB_CLEARANCE : 0}
           onReachTop={() => {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}

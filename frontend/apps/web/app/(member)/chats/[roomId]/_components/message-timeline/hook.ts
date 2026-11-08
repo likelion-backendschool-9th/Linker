@@ -9,12 +9,11 @@ import type { RoomMessage } from '../../_lib/room-api';
 
 type Props = {
   messages: RoomMessage[];
-  endSpace?: number;
   onRead: (id: number) => void;
   readPosition?: { id: number } | null;
 };
 
-export function useMessageTimeline({ messages, onRead, readPosition, endSpace = 0 }: Props) {
+export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
   'use no memo'; // TanStack Virtual exposes a mutable virtualizer.
   const root = useRef<HTMLDivElement>(null);
   const restoredPosition = useRef<Props['readPosition']>(null);
@@ -35,7 +34,6 @@ export function useMessageTimeline({ messages, onRead, readPosition, endSpace = 
     getScrollElement: () => root.current,
     estimateSize: () => 120,
     overscan: 5,
-    paddingEnd: endSpace,
     getItemKey: (index) => messages[index]?.id ?? index,
   });
   const rows = virtualizer.getVirtualItems();

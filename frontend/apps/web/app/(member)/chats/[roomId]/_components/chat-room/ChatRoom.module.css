@@ -28,6 +28,12 @@
   overscroll-behavior: contain;
   overflow-anchor: none;
   outline: none;
+  /* Figma shows no scrollbar; scrolling still works by touch, wheel and keyboard */
+  scrollbar-width: none;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .viewport:focus-visible {

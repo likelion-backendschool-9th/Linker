@@ -19,8 +19,6 @@ type Props = {
   readPosition?: { id: number } | null;
   /** Called when the reader scrolls near the top; loads the previous page (replaces "이전 대화 불러오기") */
   onReachTop?: () => void;
-  /** Extra scroll space under the newest message, e.g. for a floating button (px) */
-  endSpace?: number;
 };
 
 export function MessageTimeline({
@@ -33,11 +31,9 @@ export function MessageTimeline({
   onMenu,
   onPhoto,
   onReachTop,
-  endSpace = 0,
 }: Props) {
   const { root, setAtBottom, virtualizer, rows } = useMessageTimeline({
     messages,
-    endSpace,
     onRead,
     readPosition,
   });
