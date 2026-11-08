@@ -6,8 +6,11 @@ import { parseAsInteger, useQueryState } from 'nuqs';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import type { ApplicationStatus } from '../../../_lib/recruit-list-queries';
-import { applicantsOptions, type RecruitDetail } from '../../_lib/detail-queries';
+import {
+  applicantsOptions,
+  type ApplicationStatus,
+  type RecruitDetail,
+} from '../../_lib/detail-queries';
 
 /** What the author sees per status; pending also shows days left until the 14-day expiry */
 export const APPLICANT_STATUS_LABELS: Record<ApplicationStatus, string> = {

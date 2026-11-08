@@ -81,6 +81,16 @@
   --color-sheet-cta: #121212; /* 07 sheet CTA fill */
   --color-on-sheet-cta: #f8f9f6;
 
+  /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
+  --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */
+  --color-chip-goal-bg: rgb(35 193 4 / 0.15); /* 공모전/해커톤/출시/학습 */
+
+  /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
+  --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
+  --color-fab-bg: #2e2e2e; /* write-recruit-post FAB fill */
+  --color-search-panel-bg: #f7f7f7; /* scroll-revealed search panel, area B (Figma 253:2122) */
+  --color-text-placeholder-search: #a3a3a8; /* 19 search placeholder on white. Low contrast: 2.52:1 */
+
   /* Figma 11 values (team issue list). Low contrast ones are kept by design decision, like 07 */
   --color-text-title-cool: #111827; /* 11 section titles, current team tab, search text */
   --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6 */
@@ -91,5 +101,7 @@
   --color-hairline-tab: #ebebeb; /* 11 other team tabs underline */
   --color-chart-grid: #e5e7eb; /* 11 trend chart dashed day lines */
   --color-fab: #2e2e2e; /* 11 team chat shortcut fill */
+
+  /* Shared by 11 team-chat FAB and 19 write-recruit FAB (same hex, different fill tokens above) */
   --color-fab-border: #383838;
 }

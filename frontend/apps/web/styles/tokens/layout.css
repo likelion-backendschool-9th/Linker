@@ -25,6 +25,17 @@
   --space-sheet-block: 15px; /* 07 sheet top and bottom padding */
   --space-sheet-action: 30px; /* 07 sheet list to its CTA */
   --space-icon-text-compact: 2px; /* 07 compact link, text to icon */
+  /* Figma 19 values off the 4px grid */
+  --space-card-row: 22px; /* 19 recruit card: gap between the author, info and meta blocks */
+  --space-card-info: 25px; /* 19 recruit card: chip/deadline row to title/description gap */
+  --space-card-meta: 13px; /* 19 recruit card: role chips row to "자세히 보기" gap */
+  --space-chip-block: 3px; /* 11 filter chip and 19 role-count / search-panel filter chip vertical padding */
+  --space-detail-block: 14px; /* 19 recruit card "자세히 보기" detail panel top/bottom padding (Figma) */
+  /* Figma 11 values off the 4px grid */
+  --space-section-inset: 25px; /* 11 progress section top padding */
+  --space-card-gap: 15px; /* 11 progress card rows, section title to its content */
+  --space-search-icon: 14px; /* 11 search field: inset and icon-to-text gap */
+  --space-fab-bottom: 34px; /* 11 team chat shortcut from the screen bottom (Figma, incl. home indicator) */
 
   /* Radius */
   --radius-none: 0;
@@ -36,6 +47,8 @@
   --radius-lg: 20px; /* frosted pills when Figma uses them */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
+  --radius-control-lg: 12px; /* 19 recruit search field */
+  --radius-card-compact: 12px; /* 11 progress cards and search field */
 
   /* Size */
   --touch-target-min: 44px; /* CTA, list rows, tabs, form controls */
@@ -44,29 +57,28 @@
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
   --control-height-sheet: 53px; /* 07 sheet CTA */
   --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
+  --control-height-chip: 30px; /* 19 recruit filter chip */
+  --control-height-chip-sm: 28px; /* 11 filter chips; hit area stays --touch-target-min */
+  --control-height-search: 42px; /* 11 search field */
+  --control-height-tab: 48px; /* 11 team tabs */
+  --tabs-row-height: 48px; /* 19 recruit list segmented tabs row */
+  /* 19 area B open height (Figma 253:2122): 44 search + 15 gap + 30 chips + 15 + 15 padding */
+  --recruit-search-panel-height: 119px;
   --icon-size-add: 20px; /* 07 add-issue icon */
   --icon-size-team-entry: 20px; /* 07 team-card › / ∨ icon (Figma 5×12); hit area stays --touch-target-min */
+  --icon-size-progress-sm: 20px; /* 11 "진행" card icon (Figma frame) */
+  --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
   --avatar-size-team: 50px; /* 07 selected-team image */
   --radio-size: 20px;
   --radio-dot-size: 12.5px;
   --separator-dot-size: 2px; /* dot between meta items */
-  --space-section-inset: 25px; /* 11 progress section top padding */
-  --space-card-gap: 15px; /* 11 progress card rows, section title to its content */
-  --space-search-icon: 14px; /* 11 search field: inset and icon-to-text gap */
-  --space-chip-block: 3px; /* 11 filter chip vertical padding */
-  --space-fab-bottom: 34px; /* 11 team chat shortcut from the screen bottom (Figma, incl. home indicator) */
-  --radius-card-compact: 12px; /* 11 progress cards and search field */
-  --control-height-search: 42px; /* 11 search field */
-  --control-height-chip: 28px; /* 11 filter chips; hit area stays --touch-target-min */
-  --control-height-tab: 48px; /* 11 team tabs */
-  --icon-size-progress-sm: 20px; /* 11 "진행" card icon (Figma frame) */
-  --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
   --card-height-progress: 85px; /* 11 status cards */
-  --fab-size: 40px; /* 11 team chat shortcut; hit area stays --touch-target-min */
+  --fab-size: 40px; /* 11 team chat shortcut and 19 write-recruit FAB; hit area stays --touch-target-min */
   --chart-height: 223px; /* 11 trend chart plot area */
   --chart-point-size: 10px; /* 11 trend chart today marker */
   --legend-dot-size: 5px; /* 11 trend chart legend dot */
   --divider-section: 6px; /* 11 band between the trend chart and the issue list */
+  --detail-label-width: 80px; /* 19 recruit card detail panel label column (Figma 361:981) */
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
@@ -94,6 +106,7 @@
 
   /* Motion (off under prefers-reduced-motion via globals.css) */
   --duration-overlay: 200ms;
+  --duration-chrome-collapse: 320ms; /* 19 recruit list scroll-driven header/tabs/search-panel reveal */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --blur-chrome: blur(20px); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
   --blur-header-open: blur(4px); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
@@ -103,5 +116,6 @@
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
   /* Exception: 07 compact link, Figma value by the front-end owner's decision (Figma first) */
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
-  --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25); /* 11 team chat shortcut (Figma exception) */
+  /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
+  --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
 }

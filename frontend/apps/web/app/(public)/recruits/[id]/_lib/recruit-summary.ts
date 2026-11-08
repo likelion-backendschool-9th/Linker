@@ -1,6 +1,6 @@
 import { daysUntil } from '@/lib/format/time';
 
-import type { RecruitSummary } from '../../_lib/recruit-list-queries';
+import type { RecruitSummary } from './detail-queries';
 
 /**
  * "백엔드 1명 · 디자이너 1명 남음 · D-5": remaining slots per role and the deadline, for the

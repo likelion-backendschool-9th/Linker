@@ -1,0 +1,136 @@
+/* Collapsed by default; revealed under the sticky tabs while scroll-collapsed (RecruitList.module.css) */
+.panel {
+  max-height: 0;
+  overflow: hidden;
+  background-color: var(--color-search-panel-bg);
+  border-bottom: 1px solid var(--color-tab-divider);
+  transition: max-height var(--duration-chrome-collapse) var(--ease-standard);
+}
+
+:global(html.recruit-header-collapsed) .panel {
+  max-height: var(--recruit-search-panel-height);
+}
+
+/* Content fades/slides in on its own, slightly behind the panel's own height easing, so it reads
+   as one continuous "스르륵" slide rather than a flat height clip */
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sheet-block);
+  padding: var(--space-sheet-block) var(--space-md);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--duration-chrome-collapse) var(--ease-standard),
+    transform var(--duration-chrome-collapse) var(--ease-standard);
+}
+
+:global(html.recruit-header-collapsed) .inner {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/*
+ * An inset box-shadow draws the border instead of the `border` property: `border` always takes
+ * space out of the content box, so 1px → 2px on focus (scenario 3) would nudge the icon/input/clear
+ * button inward by a pixel even with box-sizing: border-box (that only keeps the *outer* box fixed).
+ * box-shadow paints outside the layout box entirely, so neither the outer size nor the inner
+ * content ever moves when the width changes.
+ */
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--touch-target-min);
+  padding: 0 var(--space-sm);
+  background-color: var(--color-canvas);
+  border: none;
+  border-radius: var(--radius-control-lg);
+  box-shadow: inset 0 0 0 1px var(--color-hairline-cool);
+}
+
+/* Figma 346:360: the one input that swaps its own border color/width instead of the global
+   --color-focus-ring outline (design guide §3-4) */
+.searchField:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-focus-ring-search);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-slate);
+  background: none;
+  border: none;
+}
+
+/* Figma placeholder is SemiBold, unlike the typed value (Regular) */
+.searchInput::placeholder {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-placeholder-search);
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.clearButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-body);
+  background-color: var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.clearIcon {
+  --icon-box-size: var(--icon-size-sm);
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  min-height: var(--control-height-chip);
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-full);
+}
+
+/* Figma-exact 30px visual, 44px hit area (design guide §3-3) */
+.chip::after {
+  position: absolute;
+  inset: calc((var(--control-height-chip) - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+
+.chipIcon {
+  --icon-box-size: 18px;
+  --icon-stroke-width: 1.5;
+}

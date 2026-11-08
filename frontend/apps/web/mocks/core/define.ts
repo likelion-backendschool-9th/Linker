@@ -93,7 +93,11 @@ export function fail(
 export function paginate<T>(items: T[], query: URLSearchParams, size = 20) {
   const start = Number(query.get('cursor') ?? 0) || 0;
   const next = start + size;
-  return { items: items.slice(start, next), nextCursor: next < items.length ? String(next) : null };
+  return {
+    items: items.slice(start, next),
+    nextCursor: next < items.length ? String(next) : null,
+    totalCount: items.length,
+  };
 }
 
 const HOUR = 60 * 60 * 1000;
