@@ -170,3 +170,14 @@ it('preserves the selected team on the handoff to C', async () => {
     '/workspace/issues?teamId=42',
   );
 });
+
+it('team cards use h3 headings under the my-teams h2 without skipping a level', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (url: string) =>
+    url === '/api/v1/user/me/teams'
+      ? { items: [team(1, 'ACTIVE')], teamLimit: 10, teamCount: 1 }
+      : { teamId: 1, items: [] },
+  );
+  renderWithProviders(<WorkspaceView />);
+  expect(await screen.findByRole('heading', { name: '프로젝트 1', level: 3 })).toBeVisible();
+  expect(screen.queryByRole('heading', { level: 4 })).not.toBeInTheDocument();
+});

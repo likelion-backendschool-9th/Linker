@@ -15,6 +15,17 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+  /** Public sitemap projection only: no body, private account fields or collection loading. */
+  @Query("""
+      select new com.linker.backend.dto.sitemap.SitemapItem(
+          p.id, concat('/posts/', cast(p.id as String)), p.updatedAt)
+      from Post p where p.deletedAt is null and p.visibility='VISIBLE'
+        and p.author.userType='DEVELOPER' and p.author.status='ACTIVE'
+        and p.author.deletedAt is null
+      order by p.id asc
+      """)
+  List<com.linker.backend.dto.sitemap.SitemapItem> findIndexable(org.springframework.data.domain.Pageable page);
+
   /** Own statistics also cover hidden posts; public visibility is enforced on public readers. */
   @Query("select p from Post p where p.author.id=:userId and p.deletedAt is null order by p.createdAt desc,p.id desc")
   List<Post> findOwnStatsPosts(long userId);

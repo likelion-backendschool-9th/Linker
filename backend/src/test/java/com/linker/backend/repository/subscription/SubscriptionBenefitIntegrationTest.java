@@ -68,6 +68,8 @@ class SubscriptionBenefitIntegrationTest {
     boolean oldScout = legacy(scout.getId(), "status in ('ACTIVE','PAST_DUE') and (current_period_end>? or grace_until>?)", true);
     assertThat(subscriptions.hasProBenefit(person.getId(), NOW, true)).isEqualTo(oldPro);
     assertThat(subscriptions.hasFlexBenefit(team, NOW)).isEqualTo(oldFlex);
+    assertThat(subscriptions.findTeamsWithFlexBenefit(java.util.List.of(team, team + 100), NOW))
+        .containsExactlyElementsOf(oldFlex ? java.util.List.of(team) : java.util.List.of());
     assertThat(subscriptions.hasScoutBenefit(recruiter.getId(), NOW, true)).isEqualTo(oldScout);
     assertThat(subscriptions.hasProBenefit(person.getId(), NOW, false)).isEqualTo(
         legacy(pro.getId(), "status in ('TRIALING','ACTIVE','PAST_DUE') and current_period_end>?", false));

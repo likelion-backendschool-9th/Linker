@@ -96,7 +96,11 @@ public interface TeamRepositoryCustom {
 
   void confirmMember(long teamId, long userId, Instant now);
 
-  int removeOrgMember(long teamId, long userId, Instant now);
+  default int removeOrgMember(long teamId, long userId, Instant now) {
+    return removeOrgMember(teamId, userId, now, now);
+  }
+
+  int removeOrgMember(long teamId, long userId, Instant now, Instant observedBefore);
 
   void closeChatMembership(long teamId, long userId, Instant now);
 

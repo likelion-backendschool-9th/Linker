@@ -190,7 +190,14 @@ public class GithubPullRequestService {
             ? java.time.Duration.ofMinutes(com.linker.backend.global.config.PlanLimits.ISSUE_ACTIVE_SYNC_MINUTES)
             : java.time.Duration.ofDays(1);
         String last = redis.opsForValue().get(lastKey(teamId));
-        if (last == null || !Instant.parse(last).plus(interval).isAfter(clock.instant())) syncTeam(teamId);
+        boolean due = true;
+        if (last != null) {
+          try { due = !Instant.parse(last).plus(interval).isAfter(clock.instant()); }
+          catch (java.time.format.DateTimeParseException ignored) {
+            // A damaged checkpoint must not disable the DB-backed cache refresh indefinitely.
+          }
+        }
+        if (due) syncTeam(teamId);
       } catch (RuntimeException exception) {
         // A failed org must not delay the other teams; the next scheduled run retries it.
         log.warn("PR cache refresh failed for team {}: {}", teamId, exception.getClass().getSimpleName());
