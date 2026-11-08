@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 export default function RecruitsLoading() {
   return (
-    <PageFrame title="팀 찾기">
+    <PageFrame title="팀 찾기" hideTitle>
       <div aria-busy="true">
         <p role="status">모집 글을 불러오고 있어요.</p>
         <Skeleton count={3} />
