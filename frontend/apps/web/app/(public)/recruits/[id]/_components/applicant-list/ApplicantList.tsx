@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
-import type { RecruitDetail } from '../../_lib/detail-queries';
+import type { ApplicantRow, RecruitDetail } from '../../_lib/detail-queries';
 import styles from './ApplicantList.module.css';
 import {
   isInviteable,
