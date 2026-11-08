@@ -5,16 +5,24 @@ import type { ReactNode } from 'react';
 
 import { formatDate } from '@/lib/format/time';
 
-import { boardStatusColorVar, ISSUE_STATUS_LABELS, type IssueStatus } from '../../_lib/issue-status';
+import {
+  boardStatusColorVar,
+  ISSUE_STATUS_LABELS,
+  type IssueStatus,
+} from '../../_lib/issue-status';
 import styles from './IssueSummaryRow.module.css';
 
 type IssueSummaryRowProps = {
   teamId: number | string;
-  issue: IssueListItem;
+  issue: Omit<IssueListItem, 'syncStatus' | 'syncedAt'>;
   /** Heading level of the title inside its list section */
   headingLevel?: 'h2' | 'h3';
   /** Extra control at the end of the row, e.g. 11's "프로젝트에 추가" */
   action?: ReactNode;
+  /** 15 day sheet (Figma 368:2753): no due date; assignee names stay for screen readers only */
+  compact?: boolean;
+  /** Replaces the link navigation, e.g. 15 closes its sheet first */
+  onOpen?: (href: Route) => void;
 };
 
 /**
@@ -26,15 +34,29 @@ export function IssueSummaryRow({
   issue,
   headingLevel: Heading = 'h3',
   action,
+  compact = false,
+  onOpen,
 }: IssueSummaryRowProps) {
   const titleId = `issue-row-${issue.id}-title`;
+  const href = `/teams/${teamId}/issues/${issue.id}` as Route;
   const assignees = issue.assignees.map((user) => user.name).join(', ');
   return (
     <article aria-labelledby={titleId} className={styles.row}>
       <div className={styles.body}>
         <div className={styles.titleLine}>
           <Heading id={titleId} className={styles.title}>
-            <Link href={`/teams/${teamId}/issues/${issue.id}` as Route} className={styles.link}>
+            <Link
+              href={href}
+              className={styles.link}
+              onClick={
+                onOpen
+                  ? (event) => {
+                      event.preventDefault();
+                      onOpen(href);
+                    }
+                  : undefined
+              }
+            >
               {issue.title}
             </Link>
           </Heading>
@@ -44,18 +66,19 @@ export function IssueSummaryRow({
           <span>#{issue.number}</span>
           <span className={styles.separator} aria-hidden />
           <span className={styles.metaText}>{issue.repoName}</span>
-          {assignees && (
+          {assignees && !compact && (
             <>
               <span className={styles.separator} aria-hidden />
               <span className={styles.metaText}>{assignees}</span>
             </>
           )}
+          {assignees && compact && <span className="sr-only">{assignees} 담당</span>}
         </p>
         {issue.scheduleSyncFailed && (
           <span className="sr-only">일정이 GitHub에 반영되지 않았어요</span>
         )}
       </div>
-      {issue.dueDate && (
+      {issue.dueDate && !compact && (
         <time dateTime={issue.dueDate} className={issue.overdue ? styles.overdue : styles.due}>
           {formatDate(issue.dueDate)}
         </time>

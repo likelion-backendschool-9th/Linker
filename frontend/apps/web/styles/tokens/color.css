@@ -124,4 +124,8 @@
   --color-chat-send: #2563eb; /* send button fill, white arrow 5.17:1 */
   --color-chat-accent: #2563eb; /* PR card event line, request panel guide, team owner label: 5.17:1 */
   --color-chat-danger: #e00000; /* request panel 거절/차단 text: 4.6:1 on --color-chat-bubble-other */
+
+  /* Figma 15 values (calendar, 234:219 and the 368:2753/368:3024 sheets) */
+  --color-sheet-picker: #f9f9f9; /* 15 date picker sheet fill */
+  --color-text-wheel: #374151; /* 15 date wheel, selected row */
 }

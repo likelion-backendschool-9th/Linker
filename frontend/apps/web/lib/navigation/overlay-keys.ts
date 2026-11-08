@@ -45,6 +45,7 @@ export const OVERLAY_KEYS = [
   'issue-schedule',
   'issue-status',
   'calendar-day',
+  'calendar-date',
   'team-switcher',
   'my-issues-team',
   'team-settings-action',
