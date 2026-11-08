@@ -181,11 +181,13 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 | repository/chat/ChatListQueryRepository | 5 | LATERAL |
 | repository/chat/ChatShareCardQuery | 4 | 없음 |
 | repository/chat/RecruitingOfferQuery | 4 | LATERAL |
-| global/realtime/TeamChatAccess | 3 | 없음 (팀 멤버십 조회, B와 공유 로직) — **배정 필요(D로 추정)** |
+| global/realtime/TeamChatAccess | 3 | 없음 (팀 멤버십 조회, B와 공유 로직) — D 담당으로 결정 |
 
 이름 정리 4개: `ChatListQueryRepository`, `ChatMessageQueryRepository`, `ChatShareCardQuery`, `RecruitingOfferQuery`.
 `ChatRoom`, `ChatMessage` 등 Entity가 이미 있어 선행 작업이 적다.
 `TeamChatAccess`는 `MembershipTeamAccess`(B)와 같은 팀 멤버십 질의를 한다. 한 곳(팀 Repository)으로 합치는지 B와 조율한다.
+
+**D 상태: 완료** — 채팅 레포지토리 4개는 #249. `TeamChatAccess`는 `chore/team-chat-access-jpa`에서 `TeamRepository.findById`·`TeamMemberRepository.findByTeamIdAndUserIdAndLeftAtIsNull`과 JPQL `TeamMemberRepository.findChatMentionCandidates`로 전환. 두 클래스를 합치는 일은 하지 않았다(각자 전환으로 결정, B는 `MembershipTeamAccess`를 따로 전환).
 
 ### B (도균님) — 팀
 | 파일 | 호출 | 네이티브 후보 |
@@ -281,7 +283,7 @@ Optional<Team> findByIdForUpdate(@Param("id") long id);
 | --- | --- | --- |
 | 이슈·팀 스키마를 Flyway로 옮기는 순서와 번호 | B·C가 먼저 합의 | B, C |
 | 테스트의 픽스처용 JdbcTemplate | 유지 | 팀 |
-| `TeamChatAccess`·`MembershipTeamAccess` 통합 | 팀 Repository 한 곳으로 | B, D |
+| `TeamChatAccess`·`MembershipTeamAccess` 통합 | 결정: 통합하지 않고 각자 JPA 전환(2026-11-08, PR #288 댓글). D는 완료 | B, D |
 | 이름 정리와 쿼리 전환을 한 PR로 할지 | 가능하면 분리 | 각 담당자 |
 | 첫 Custom/Impl 패턴 작성자 | E (`BlockInserter`/`ReportCaseOpener`). 단 E의 주 업무는 프론트이므로 먼저 시작하는 사람이 맡아도 된다 | 팀 |
 | 배정 필요 7개 파일(5절) | 추정 담당자 확인 | 팀 |
