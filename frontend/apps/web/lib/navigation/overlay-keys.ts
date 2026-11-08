@@ -37,6 +37,7 @@ export const OVERLAY_KEYS = [
   'chat-message-edit',
   'chat-message-delete',
   'appeal',
+  'subscribe-flex-team',
   'subscription-cancel',
   'payment-refund',
   'issue-filter',

@@ -5,13 +5,9 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useState } from 'react';
 
 import { useViewer } from '@/lib/auth/viewer-context';
+import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import {
-  createCheckout,
-  plansOptions,
-  teamCandidatesOptions,
-  type CheckoutOrder,
-} from './api';
+import { createCheckout, plansOptions, teamCandidatesOptions, type CheckoutOrder } from './api';
 
 /** Keys are the server's PLAN_LIMIT `detail.reason` values plus the links that open 28 directly. */
 export const REASONS: Record<string, string> = {
@@ -36,13 +32,19 @@ export function usePlanSelector(reason: string) {
     'billing',
     parseAsStringLiteral(['MONTHLY', 'YEARLY'] as const).withDefault('MONTHLY'),
   );
-  const [teamId, setTeamId] = useQueryState('teamId', parseAsString.withDefault(''));
+  // Read only: 29 hands a team off with ?teamId=, and the sheet preselects it when permitted.
+  const [teamId] = useQueryState('teamId', parseAsString.withDefault(''));
+  const flexTeam = useOverlay('subscribe-flex-team');
   const [order, setOrder] = useState<CheckoutOrder | null>(null);
-  const checkout = useMutation({ mutationFn: createCheckout, onSuccess: setOrder });
-  const selectedTeam = teams.data?.items.find((team) => String(team.teamId) === teamId);
+  const checkout = useMutation({
+    mutationFn: createCheckout,
+    onSuccess: (next) => {
+      if (flexTeam.isOpen) flexTeam.close();
+      setOrder(next);
+    },
+  });
 
   return {
-    login,
     status,
     recruiter,
     plans,
@@ -50,10 +52,9 @@ export function usePlanSelector(reason: string) {
     billing,
     setBilling,
     teamId,
-    setTeamId,
+    flexTeam,
     order,
     setOrder,
     checkout,
-    selectedTeam,
   };
 }

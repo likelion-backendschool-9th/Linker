@@ -121,4 +121,11 @@
   /* Figma 15 values (calendar, 234:219 and the 368:2753/368:3024 sheets) */
   --color-sheet-picker: #f9f9f9; /* 15 date picker sheet fill */
   --color-text-wheel: #374151; /* 15 date wheel, selected row */
+
+  /* Figma 28 plans (288:471, 293:218) */
+  --color-plan-card: #f0f0f0; /* plan card fill; texts on it keep 4.5:1 or more */
+  --color-plan-toggle: #e7e7e7; /* 월간/연간 toggle track */
+  --color-plan-toggle-off: #a3a3a8; /* unselected toggle label. Low contrast: 2.05:1 on the track */
+  --color-plan-ink: #121212; /* selected toggle and plan CTA fill, plan name and price */
+  --color-plan-accent: #2563eb; /* benefit check, trial note: 5.17:1 on white */
 }

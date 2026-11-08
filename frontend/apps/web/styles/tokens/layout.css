@@ -166,4 +166,12 @@
   --icon-size-calendar: 24px; /* 15 month chevron and help icon */
   --wheel-row-height: 37px; /* 15 date wheel row */
   --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
+
+  /* Figma 28 plans (288:471, 293:218) */
+  --space-plan-card: 20px; /* card padding, card sections, between cards, header to title */
+  --space-plan-intro: 25px; /* subtitle to the 월간/연간 toggle */
+  --space-plan-toggle: 30px; /* toggle to the first card, last card to the footer links */
+  --control-height-plan-toggle: 52px; /* 월간/연간 toggle (each side is the hit area) */
+  --radius-plan-card: 14px;
+  --icon-size-plan-check: 18px; /* benefit check */
 }
