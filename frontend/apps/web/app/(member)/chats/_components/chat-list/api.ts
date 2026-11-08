@@ -6,4 +6,4 @@ export {
   deleteChatRequest,
   unreadSummaryOptions,
 } from '@/features/chat/chat-queries';
-export type { ChatTab } from '@/features/chat/chat-queries';
+export type { ChatTab, UnreadSummary } from '@/features/chat/chat-queries';

@@ -18,16 +18,16 @@ export default async function ChatsPage({ searchParams }: PageProps<'/chats'>) {
       : (CHAT_TABS.find((item) => item === params.tab) ?? 'TEAM');
   const login = session?.login ?? null;
   const client = getQueryClient();
-  await Promise.all([
+  const [, unreadSummary] = await Promise.all([
     client.prefetchInfiniteQuery(chatRoomsOptions(login, tab)),
-    client.prefetchQuery(unreadSummaryOptions(login)),
+    client.ensureQueryData(unreadSummaryOptions(login)),
   ]);
   // Wrap the whole frame: the bottom-tab badge reads the same summary query. If it rendered first,
   // the boundary would hydrate that query only in an effect and the SSR HTML would miss the counts.
   return (
     <HydrationBoundary state={dehydrate(client)}>
       <PageFrame title="채팅">
-        <ChatList />
+        <ChatList initialSummary={unreadSummary} />
       </PageFrame>
     </HydrationBoundary>
   );
