@@ -271,8 +271,8 @@ it('turns the card chevron from › to ∨ while the sheet is open', async () =>
   const { container } = renderWithProviders(<MyIssuesSection />, developer);
   await user.click(await screen.findByRole('button', { name: /^팀 변경, 현재/ }));
   await screen.findByRole('dialog', { name: '팀 변경' });
-  expect(container.querySelector('.lucide-chevron-down')).not.toBeNull();
-  expect(container.querySelector('.lucide-chevron-right')).toBeNull();
+  expect(container.querySelector('.solar-alt-arrow-down-linear')).not.toBeNull();
+  expect(container.querySelector('.solar-alt-arrow-right-linear')).toBeNull();
   vi.restoreAllMocks();
 });
 

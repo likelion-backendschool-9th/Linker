@@ -2,7 +2,8 @@
 
 // client boundary: selected team in the URL and the my-issues query
 import type { IssueListItem } from '@linker/api/openAPIDefinition.schemas';
-import { ArrowUpRight, Plus } from 'lucide-react';
+import { AddBoldIcon } from '@solar-icons/static/bold/add';
+import { ArrowRightUpLinearIcon } from '@solar-icons/static/linear/arrow-right-up';
 import type { Route } from 'next';
 import Link from 'next/link';
 
@@ -33,7 +34,12 @@ export function MyIssuesSection({ previewRows, allIssuesHref }: MyIssuesSectionP
   const allIssuesLink = allIssuesHref && (
     <Link href={allIssuesHref} className={styles.allIssues}>
       내 이슈 전체 보기
-      <ArrowUpRight aria-hidden className={styles.allIssuesIcon} />
+      {/* Figma solar:arrow-left-up-linear, mirrored = arrow-right-up (package SVG string) */}
+      <span
+        aria-hidden
+        className={styles.allIssuesIcon}
+        dangerouslySetInnerHTML={{ __html: ArrowRightUpLinearIcon }}
+      />
     </Link>
   );
 
@@ -57,7 +63,12 @@ export function MyIssuesSection({ previewRows, allIssuesHref }: MyIssuesSectionP
             내 {team.name} 팀의 이슈
           </h2>
           <Link href={`/teams/${team.id}/issues/new` as Route} className={styles.create}>
-            <Plus aria-hidden className={styles.createIcon} />
+            {/* Figma solar:add-bold (package SVG string) */}
+            <span
+              aria-hidden
+              className={styles.createIcon}
+              dangerouslySetInnerHTML={{ __html: AddBoldIcon }}
+            />
             <span className="sr-only">이슈 작성</span>
           </Link>
         </div>

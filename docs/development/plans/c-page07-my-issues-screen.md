@@ -16,7 +16,7 @@
 | 카드 내용 | 이미지, 팀 이름, "멤버 {n}명". 팀 카드는 '멤버 N명' 유지(5/6·기간 미표기, 프론트 담당 결정). 규칙은 디자인 가이드 5장에 있다 |
 | 시트 버튼 | 유지, 문구 "팀 변경". 라디오는 초안이고 버튼을 눌러야 바뀐다 |
 | 아래 링크 | Figma "더 보기" 모양, 문구 "내 이슈 전체 보기", 주소는 B의 `myIssuesHref`. 그림자(반경 4, 12%)와 아이콘 간격 2px도 Figma대로(그림자는 가이드에 예외로 기록) |
-| `+` 아이콘 | Figma대로 20px. 선택한 팀의 13번 `/teams/{teamId}/issues/new`로 가는 링크, 이름은 화면 낭독기 전용 "이슈 작성"(13번 제목) |
+| `+` 아이콘 | Figma대로 20px. 선택한 팀의 13번 `/teams/{teamId}/issues/new`로 가는 링크, 이름은 화면 낭독기 전용 "이슈 작성"(13번 제목). 모든 팀에서 Figma대로 표시한다. **확인 필요:** 읽기 전용·보관 팀에서 숨길지 프론트 담당(준호님)에게 확인 중이며, 답이 오기 전까지 코드는 바꾸지 않는다 |
 | 마감 지남 | 마감 지남 문구 제거(Figma에 없던 요소). `#e62e00` 날짜 한 줄만 표시 |
 | 담당자 | 전원 쉼표로 표시, 길면 말줄임 |
 | 마감일 없음 | 날짜 칸을 비움 |
@@ -28,6 +28,23 @@
 | 대비 낮은 색 | Figma 값 유지(`#e62e00` 4.42:1, `#98a3b4` 2.55:1, `#b0b8c1` 2.01:1) |
 | 07 시트 모양 | 07 시트만 Figma 값 적용(제목 18px, 반경 20, 패딩 15·16, 스크림 `#191f28` 32% + 블러 6). 스타일은 `MyIssuesTeamPicker.module.css`에 있고, 머리글 높이 60은 맞추지 않는다 |
 | 공용 시트 | 공용 시트를 Figma에 맞추는 일은 프론트 담당(준호님) 결정 사항으로 남김. `OverlaySheet`에는 선택 props `classNames`만 추가했고 다른 시트의 모양은 그대로다. 기존 토큰 값은 바꾸지 않았다 |
+
+## Solar 아이콘 교체 (2026-11-08)
+
+디자인 가이드 원칙 11(#279)에 따라 07의 `›`, `∨`, `+`, `↗`를 `lucide-react`에서 `@solar-icons/static`으로 바꿨다. 아이콘 이름은 Figma 7(`123:1966`)과 7-팀 리스트(`368:1070`)의 레이어 이름으로 정했다. 회전·반전된 레이어는 보이는 방향의 Solar 아이콘을 쓴다(프론트 담당 확인, 2026-11-08).
+
+| 화면 | Figma 레이어 | Solar 아이콘 | 크기·색 |
+| --- | --- | --- | --- |
+| 팀 카드 `›` | `solar:alt-arrow-left-linear` 180° 회전 | `linear/alt-arrow-right` | 20px(`--icon-size-team-entry`, 새 토큰), 선 1.5px, `--color-text-slate` |
+| 시트 열림 `∨` | `solar:alt-arrow-left-linear` 90° 회전 | `linear/alt-arrow-down` | 위와 같음 |
+| `+` 이슈 작성 | `solar:add-bold` | `bold/add` | 20px(`--icon-size-add`), `--color-text-slate` |
+| 내 이슈 전체 보기 `↗` | `solar:arrow-left-up-linear` 좌우 반전 | `linear/arrow-right-up` | 16px(`--icon-size-sm`), 선 1px, `--color-text-slate` |
+
+- Figma `›`는 44px 터치 영역 안에 5×12 화살표, 선 1.5px다. Solar 24 격자를 20px로 줄이고 `stroke-width: 1.8`로 지정해서 실제 선이 1.5px가 되게 했다. 터치 영역은 44px 그대로다.
+- `↗`는 Solar 기본 선(24 격자의 1.5)을 16px로 줄이면 Figma의 1px가 되므로 따로 지정하지 않는다.
+- `@solar-icons/static`은 SVG 문자열만 제공한다. 패키지 상수를 `aria-hidden` `span`에 `dangerouslySetInnerHTML`로 넣는다. 사용자 입력은 들어가지 않는다.
+- 새 토큰 `--icon-size-team-entry`(20px)를 `styles/tokens/layout.css`와 디자인 가이드 3-4에 추가했다. 기존 토큰 값과 공용 컴포넌트는 바꾸지 않았다.
+- 이번 범위가 아닌 팀 이미지 대체 아이콘(`Users`, 이미지가 없을 때만 표시)은 `lucide-react`로 남아 있다.
 
 ## 상태 색 점
 
@@ -63,7 +80,12 @@ PR #273 피드백(2026-11-08)으로, 모양과 문구는 Figma를 최우선으�
 
 ## e2e 현황
 
-`e2e/b-*.spec.ts` 17건 중 12건 통과, 5건 실패.
+2026-11-08, `origin/dev`(`4503736`, #294까지) 위로 rebase하고 Solar 교체 후 `pnpm dev:mock` 서버에서 실행했다.
 
-- 4건은 변경 전 코드(`a8fadd9`)에서도 같은 실패다: `b-collaboration:85`, `b-frontend-ui:79`, `b-frontend-ui:96`, `b-frontend-ui:110`.
-- 1건(`b-frontend-ui:120`)은 `/workspace`의 `color-contrast` 위반이다. Figma 저대비 색을 유지한 결과이며, 테스트는 수정하지 않고 대비 검사도 제외하지 않는다.
+`e2e/b-collaboration.spec.ts`·`e2e/b-frontend-ui.spec.ts` 17건 중 11건 통과, 6건 실패.
+
+- 5건은 `origin/dev`(`4503736`)에서도 같은 실패다: `b-collaboration:85`, `b-collaboration:116`, `b-frontend-ui:79`, `b-frontend-ui:96`, `b-frontend-ui:110`. `b-collaboration:116`(D 목업 환불)은 이번 dev 반영 뒤 새로 생긴 기존 실패다.
+- `b-collaboration:60`(팀 설정 → 팀 채팅)은 첫 실행에서 한 번 실패했고, 따로 3회 반복과 다시 실행한 전체 실행에서는 통과했다. 일시적 실패로 보고 숫자에 넣지 않았다.
+- 1건(`b-frontend-ui:120`)은 `/workspace`의 `color-contrast` 위반이다(`#98a3b4` 2.55:1 등). Figma 저대비 색을 유지한 결과이며, 테스트는 수정하지 않고 대비 검사도 제외하지 않는다. 아이콘 교체로 생긴 새 위반은 없다.
+
+dev에서 새로 들어온 `e2e/b-team-switcher.spec.ts`(2건)는 모두 통과했다. `e2e/b-frontend-completeness.spec.ts`는 8건 중 6건 통과다. 실패한 `:147`, `:179`는 운영자 화면 실패로, `origin/dev`에서도 같다.

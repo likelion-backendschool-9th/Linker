@@ -44,6 +44,7 @@
   --control-height-sheet: 53px; /* 07 sheet CTA */
   --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
   --icon-size-add: 20px; /* 07 add-issue icon */
+  --icon-size-team-entry: 20px; /* 07 team-card › / ∨ icon (Figma 5×12); hit area stays --touch-target-min */
   --avatar-size-team: 50px; /* 07 selected-team image */
   --radio-size: 20px;
   --radio-dot-size: 12.5px;

@@ -2,7 +2,9 @@
 
 // overlay: the selected-team card opens the "팀 변경" sheet (Figma 7-팀 리스트)
 import type { TeamItem } from '@linker/api/openAPIDefinition.schemas';
-import { ChevronDown, ChevronRight, Users } from 'lucide-react';
+import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
+import { AltArrowRightLinearIcon } from '@solar-icons/static/linear/alt-arrow-right';
+import { Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -22,7 +24,8 @@ type MyIssuesTeamPickerProps = {
 export function MyIssuesTeamPicker({ teams, selected, onSelect }: MyIssuesTeamPickerProps) {
   const overlay = useMyIssuesTeamOverlay();
   const entryHref = teamEntryHref(selected);
-  const Chevron = overlay.isOpen ? ChevronDown : ChevronRight;
+  // Figma solar:alt-arrow-left-linear turned 180° (›) or 90° (∨ while the sheet is open)
+  const chevron = overlay.isOpen ? AltArrowDownLinearIcon : AltArrowRightLinearIcon;
 
   return (
     <div className={styles.picker}>
@@ -67,7 +70,11 @@ export function MyIssuesTeamPicker({ teams, selected, onSelect }: MyIssuesTeamPi
         </OverlaySheet>
         {entryHref && (
           <Link href={entryHref} className={styles.entry}>
-            <Chevron aria-hidden className={styles.chevron} />
+            <span
+              aria-hidden
+              className={styles.chevron}
+              dangerouslySetInnerHTML={{ __html: chevron }}
+            />
             <span className="sr-only">{selected.name} 팀으로 이동</span>
           </Link>
         )}

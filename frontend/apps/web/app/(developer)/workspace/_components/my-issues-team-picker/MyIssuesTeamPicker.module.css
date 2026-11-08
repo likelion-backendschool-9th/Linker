@@ -81,10 +81,18 @@
   color: var(--color-text-slate);
 }
 
+/* Figma 5×12 chevron with a 1.5px line: 1.8 on Solar's 24 grid at 20px */
 .chevron {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  stroke-width: 1.5;
+  display: block;
+  width: var(--icon-size-team-entry);
+  height: var(--icon-size-team-entry);
+}
+
+.chevron > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.8;
 }
 
 /* Doubled classes: must win over the shared overlay styles whatever the CSS load order */
