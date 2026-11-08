@@ -18,6 +18,8 @@ public record SubscriptionItemResponse(
 		@Schema(requiredMode = REQUIRED, description = "Canceled: benefits continue until expiresOn") boolean cancelAtPeriodEnd,
 		@Schema(requiredMode = REQUIRED, nullable = true, description = "FLEX: headcount the current period was paid for") Integer seats,
 		@Schema(requiredMode = REQUIRED, nullable = true, description = "FLEX: current headcount, used by the next payment") Integer nextSeats,
-		@Schema(requiredMode = REQUIRED, nullable = true, description = "FLEX: next payment amount for nextSeats (KRW)") Integer nextAmount
+		@Schema(requiredMode = REQUIRED, nullable = true, description = "FLEX: next payment amount for nextSeats (KRW)") Integer nextAmount,
+		@Schema(requiredMode = REQUIRED, example = "2900", description = "Price of the current period (KRW): Pro by billing cycle, Flex for the paid seats, Scout monthly") int amount,
+		@Schema(requiredMode = REQUIRED, nullable = true, description = "FLEX: name of the member who pays (billing manager); null for Pro/Scout or a withdrawn payer") String payerName
 ) {
 }

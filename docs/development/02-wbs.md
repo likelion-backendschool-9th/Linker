@@ -513,7 +513,7 @@
 | 28 | D | POST | `/api/v1/user/payments/checkout` | Create order (orderId, amount, customerKey). Checks plan matches member type | user |
 | 28 | D | POST | `/api/v1/user/payments/confirm` | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day) | user |
 | 28 | D | POST | `/api/v1/user/payments/{orderId}/fail` | Record failure return | user |
-| 29 | D | GET | `/api/v1/user/me/subscriptions` | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, next Flex headcount and amount | user |
+| 29 | D | GET | `/api/v1/user/me/subscriptions` | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, current period price (`amount`), next Flex headcount and amount, Flex billing manager name (`payerName`) | user |
 | 29 | D | GET | `/api/v1/user/me/payments` | Payment history | user |
 | 29 | D | POST | `/api/v1/user/me/subscriptions/{subscriptionId}/cancel` | Cancel (kept until period end) | user |
 | 29 | D | POST | `/api/v1/user/me/payments/{paymentId}/refund` | Refund (within 7 days + benefits unused = its paid period has not started; latest payment only) | user |

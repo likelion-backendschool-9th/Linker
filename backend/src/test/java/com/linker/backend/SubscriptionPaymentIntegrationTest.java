@@ -510,12 +510,17 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(jsonPath("$.items[0].cancelAtPeriodEnd").value(false))
 				.andExpect(jsonPath("$.items[0].teamId").value(nullValue()))
 				.andExpect(jsonPath("$.items[0].nextAmount").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].amount").value(2_900))
+				.andExpect(jsonPath("$.items[0].payerName").value(nullValue()))
 				.andExpect(jsonPath("$.items[1].planKey").value("FLEX"))
 				.andExpect(jsonPath("$.items[1].teamId").value(team))
 				.andExpect(jsonPath("$.items[1].teamName").value("Manage Team"))
 				.andExpect(jsonPath("$.items[1].seats").value(2))
 				.andExpect(jsonPath("$.items[1].nextSeats").value(7))
-				.andExpect(jsonPath("$.items[1].nextAmount").value(9_800));
+				.andExpect(jsonPath("$.items[1].nextAmount").value(9_800))
+				// The current period was paid for 2 seats; the billing manager shows by name (29 Figma 295:459).
+				.andExpect(jsonPath("$.items[1].amount").value(7_900))
+				.andExpect(jsonPath("$.items[1].payerName").value(developer.getUsername()));
 		// A team member who does not pay sees neither the owner's Pro nor the team's Flex.
 		mockMvc.perform(get("/api/v1/user/me/subscriptions").cookie(cookie(member)))
 				.andExpect(jsonPath("$.items", hasSize(0)));
