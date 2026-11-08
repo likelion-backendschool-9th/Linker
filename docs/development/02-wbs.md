@@ -310,7 +310,7 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 07 | C | GET | `/api/v1/user/me/issues?teamId=` | `[Included]` Issues assigned to me **in that team only**, by due date (added by C on D9). `teamId` required and must be a team I belong to; otherwise 400. Items reuse 11's `IssueListItem` including `statusColor` from `board_status_mappings` | user · developers only |
-| 11 | C | GET | `/api/v1/user/teams/{teamId}/issues` | Filters: repo, status, assignee, label, open; cursor. Each item includes `status` + `statusColor` (GitHub Status option color enum from the team's board mapping; OTHER/NONE → GRAY). Shared by 07/12/14/15 — no per-page color API | team MEMBER |
+| 11 | C | GET | `/api/v1/user/teams/{teamId}/issues` | Filters: repo, status, assignee, label, open, `q` (title search, 11 only, POL-I-6: case-insensitive part of the title, max 100 chars, else 400); cursor (bound to the filters and `q`). Each item includes `status` + `statusColor` (GitHub Status option color enum from the team's board mapping; OTHER/NONE → GRAY). Shared by 07/12/14/15 — no per-page color API | team MEMBER |
 | 11 | C | GET | `/api/v1/user/teams/{teamId}/issues/unscheduled` | "일정 없음" (Unscheduled) tab (not on board or no due date) | team MEMBER |
 | 11 | C | GET | `/api/v1/user/teams/{teamId}/issue-filters` | Filter sheet options (repos, labels, members) — also used by 14 and 15 | team MEMBER |
 | 11 | C | POST | `/api/v1/user/teams/{teamId}/issues/refresh` | Pull to refresh (once per minute) | team MEMBER |

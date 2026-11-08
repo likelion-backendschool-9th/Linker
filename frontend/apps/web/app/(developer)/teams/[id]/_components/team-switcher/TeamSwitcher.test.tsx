@@ -1,12 +1,20 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
 import { apiFetch } from '@/lib/api/api-fetch';
 import { resetOverlayHistory } from '@/lib/navigation/use-overlay';
 import { renderWithProviders } from '@/test/render-with-providers';
+
 import type { MyTeam } from '../../_lib/team-queries';
 import { TeamSwitcher } from './TeamSwitcher';
 
+const push = vi.fn();
+vi.mock('next/navigation', async (original) => ({
+  ...(await original<typeof import('next/navigation')>()),
+  useRouter: () => ({ push, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+}));
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
+
 const team: MyTeam = {
   id: 1,
   name: '현재 프로젝트',
@@ -20,27 +28,43 @@ const team: MyTeam = {
   unreadCount: 0,
   joinedAt: '2026-11-01T00:00:00Z',
 };
+
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
+  push.mockReset();
   resetOverlayHistory();
 });
 
-it('selecting the current team closes the sheet, retains filters, and restores the trigger focus', async () => {
+it('the header team name opens the Figma "팀 변경" sheet with the current team checked', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({
+    items: [team, { ...team, id: 2, name: '다른 프로젝트' }],
+  });
+  renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
+    searchParams: '?overlay=team-switcher',
+  });
+  expect(await screen.findByRole('dialog', { name: '팀 변경' })).toBeVisible();
+  expect(await screen.findByRole('radio', { name: '현재 프로젝트' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: '다른 프로젝트' })).not.toBeChecked();
+  expect(screen.getByRole('button', { name: '팀 변경' })).toHaveAttribute('type', 'submit');
+});
+
+it('keeping the current team only closes the sheet and retains the filters', async () => {
   vi.mocked(apiFetch).mockResolvedValue({ items: [team] });
   const onUrlUpdate = vi.fn();
   renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
     searchParams: '?status=TODO&overlay=team-switcher',
     onUrlUpdate,
   });
-  await userEvent.click(await screen.findByRole('button', { name: /현재 프로젝트.*현재 팀/ }));
+  await screen.findByRole('radio', { name: '현재 프로젝트' });
+  await userEvent.click(screen.getByRole('button', { name: '팀 변경' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(screen.getByRole('button', { name: '현재 프로젝트 팀 전환' })).toHaveFocus();
   expect(onUrlUpdate).toHaveBeenLastCalledWith(
     expect.objectContaining({ queryString: '?status=TODO' }),
   );
+  expect(push).not.toHaveBeenCalled();
 });
 
-it('archived entries link to chat history and other live teams link to issues', async () => {
+it('another team goes to its entry: issues for live teams, chat history for archived ones', async () => {
   vi.mocked(apiFetch).mockResolvedValue({
     items: [
       team,
@@ -48,56 +72,36 @@ it('archived entries link to chat history and other live teams link to issues', 
       { ...team, id: 3, name: '보관한 프로젝트', status: 'ARCHIVED', chatRoomId: 30 },
     ],
   });
+  const user = userEvent.setup();
   renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
     searchParams: '?overlay=team-switcher',
   });
-  expect(await screen.findByRole('link', { name: /보관한 프로젝트.*보관됨/ })).toHaveAttribute(
-    'href',
-    '/chats/30',
-  );
-  expect(screen.getByRole('link', { name: /다른 프로젝트/ })).toHaveAttribute(
-    'href',
-    '/teams/2/issues',
-  );
+  await user.click(await screen.findByRole('radio', { name: '보관한 프로젝트' }));
+  await user.click(screen.getByRole('button', { name: '팀 변경' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/chats/30'));
 });
 
-it('a failed team query offers retry and a workspace exit instead of a misleading empty list', async () => {
+it('an archived team without a room cannot be chosen and says why', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({
+    items: [
+      team,
+      { ...team, id: 3, name: '연결 전 보관 팀', status: 'ARCHIVED', chatRoomId: null },
+    ],
+  });
+  renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
+    searchParams: '?overlay=team-switcher',
+  });
+  expect(
+    await screen.findByRole('radio', { name: /연결 전 보관 팀.*채팅방을 찾지 못했어요/ }),
+  ).toBeDisabled();
+});
+
+it('a failed team query offers retry instead of a misleading empty list', async () => {
   vi.mocked(apiFetch).mockRejectedValue(new Error('unavailable'));
   renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
     searchParams: '?overlay=team-switcher',
   });
   expect(await screen.findByRole('alert')).toHaveTextContent('불러오지 못했어요');
   expect(screen.getByRole('button', { name: '다시 시도' })).toBeEnabled();
-  expect(screen.getByRole('link', { name: '워크스페이스로 가기' })).toHaveAttribute(
-    'href',
-    '/workspace',
-  );
   expect(screen.queryByText('참여 중인 팀이 없어요.')).not.toBeInTheDocument();
-});
-
-it('keeps an archived team without a room visible without creating a null destination', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({
-    items: [
-      team,
-      {
-        ...team,
-        id: 3,
-        name: '연결 전 보관 팀',
-        status: 'ARCHIVED',
-        orgAvatarUrl: null,
-        chatRoomId: null,
-        unreadCount: null,
-      },
-    ],
-  });
-  renderWithProviders(<TeamSwitcher teamId="1" name={team.name} />, {
-    searchParams: '?overlay=team-switcher',
-  });
-  expect(await screen.findByText('연결 전 보관 팀')).toBeVisible();
-  expect(screen.queryByRole('link', { name: /연결 전 보관 팀/ })).not.toBeInTheDocument();
-  expect(screen.getByText('채팅방을 찾지 못했어요')).toBeVisible();
-  expect(screen.getByRole('link', { name: '워크스페이스로 가기' })).toHaveAttribute(
-    'href',
-    '/workspace',
-  );
 });

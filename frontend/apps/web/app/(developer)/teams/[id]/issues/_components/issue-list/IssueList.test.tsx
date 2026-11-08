@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 
@@ -56,24 +56,38 @@ beforeEach(() => {
   });
 });
 
-it('shows issue rows with overdue text, status and assignees, accessibly', async () => {
+it('shows Figma rows (title + status dot, #number · repo · assignees, date), accessibly', async () => {
   const { container } = renderWithProviders(<IssueList teamId="1" />, {
     viewer: { role: 'developer', login: 'me' },
   });
   const title = await screen.findByRole('link', { name: '피드 카드 컴포넌트' });
   expect(title).toHaveAttribute('href', '/teams/1/issues/1015');
-  expect(screen.getByText(/마감 지남/)).toBeVisible();
-  expect(screen.getByText('작업 중')).toBeVisible();
-  expect(screen.getByText('담당자 장준영, 강지우(팀 밖 사용자)')).toBeInTheDocument();
-  expect(screen.getByText('팀 밖 사용자')).toBeVisible();
+  const row = screen.getByRole('article', { name: '피드 카드 컴포넌트' });
+  // Status is a dot; its name is for screen readers only
+  expect(within(row).getByText('작업 중')).toHaveClass('sr-only');
+  expect(within(row).getByText('#15')).toBeVisible();
+  expect(within(row).getByText('linker-web')).toBeVisible();
+  expect(within(row).getByText('장준영, 강지우')).toBeVisible();
+  expect(within(row).getByText('10월 30일').closest('time')).toHaveAttribute(
+    'dateTime',
+    '2026-10-30',
+  );
+  expect(screen.getByRole('heading', { name: '이슈 목록 1개' })).toBeVisible();
+  expect(await screen.findByRole('button', { name: '전체 1', pressed: true })).toBeVisible();
+  // No "일정 없음" chip (Figma 11); that list is reached only from 15's calendar link
+  expect(screen.queryByRole('button', { name: /일정 없음/ })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: '이슈 작성' })).toHaveAttribute(
     'href',
     '/teams/1/issues/new',
   );
+  expect(screen.getByRole('searchbox', { name: '이슈 제목 검색' })).toHaveAttribute(
+    'placeholder',
+    '검색어를 입력해 주세요',
+  );
   expect(await axe(container)).toHaveNoViolations();
 });
 
-it('passes URL filters to the list API', async () => {
+it('passes URL filters to the list, counts chips without their own status, and refreshes', async () => {
   renderWithProviders(<IssueList teamId="1" />, {
     viewer: { role: 'developer', login: 'me' },
     searchParams: '?status=TODO&open=true',
@@ -81,27 +95,61 @@ it('passes URL filters to the list API', async () => {
   await screen.findByText('피드 카드 컴포넌트');
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/v1/user/teams/1/issues?status=TODO&open=true',
+    expect.objectContaining({ method: 'GET' }),
+  );
+  // "전체" keeps the other filters but drops the status
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1/issues?open=true&size=1',
     expect.anything(),
   );
-  expect(screen.getByRole('button', { name: /필터 2/ })).toBeVisible();
+  expect(await screen.findByRole('button', { name: /작업 전/, pressed: true })).toBeVisible();
   await userEvent.setup().click(screen.getByRole('button', { name: '새로 고침' }));
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/v1/user/teams/1/issues/refresh?status=TODO&open=true&view=all',
-    { method: 'POST' },
+    expect.objectContaining({ method: 'POST' }),
   );
 });
 
-it('switches to the 일정 없음 tab and adds an issue to the project', async () => {
+it('searches titles through ?q= and a status chip sets ?status=', async () => {
   const user = userEvent.setup();
-  renderWithProviders(<IssueList teamId="1" />, { viewer: { role: 'developer', login: 'me' } });
+  const onUrlUpdate = vi.fn();
+  renderWithProviders(<IssueList teamId="1" />, {
+    viewer: { role: 'developer', login: 'me' },
+    onUrlUpdate,
+  });
   await screen.findByText('피드 카드 컴포넌트');
-  await user.click(screen.getByRole('button', { name: '일정 없음' }));
+  await user.type(screen.getByRole('searchbox', { name: '이슈 제목 검색' }), ' 피드 {Enter}');
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/user/teams/1/issues?q=%ED%94%BC%EB%93%9C',
+      expect.anything(),
+    ),
+  );
+  await user.click(await screen.findByRole('button', { name: /^정지/ }));
+  await waitFor(() =>
+    expect(onUrlUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ queryString: expect.stringContaining('status=BLOCKED') }),
+    ),
+  );
+  expect(screen.getByRole('button', { name: /^정지/, pressed: true })).toBeVisible();
+});
+
+it('lists 일정 없음 issues from the 15 calendar link (?view=unscheduled) and adds one to the project', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<IssueList teamId="1" />, {
+    viewer: { role: 'developer', login: 'me' },
+    searchParams: '?view=unscheduled',
+  });
   await screen.findByText('README 영문 번역');
+  expect(screen.queryByText('피드 카드 컴포넌트')).not.toBeInTheDocument();
+  // Same status chips; none is pressed in this list
+  expect(screen.queryByRole('button', { pressed: true })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '프로젝트에 추가: README 영문 번역' }));
   await waitFor(() =>
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/1/issues/1022/project-item', {
-      method: 'POST',
-    }),
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/user/teams/1/issues/1022/project-item',
+      expect.objectContaining({ method: 'POST' }),
+    ),
   );
 });
 
@@ -123,9 +171,10 @@ it('waits a minute between refreshes, also after RATE_LIMITED', async () => {
   await screen.findByText('피드 카드 컴포넌트');
   await user.click(screen.getByRole('button', { name: '새로 고침' }));
   // Only this screen's issues: the tab and filters go along (04 ch. 7 "Sync")
-  expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/1/issues/refresh?view=all', {
-    method: 'POST',
-  });
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1/issues/refresh?view=all',
+    expect.objectContaining({ method: 'POST' }),
+  );
   const waiting = await screen.findByRole('button', { name: /\d+초 후 새로 고침/ });
   // The label counts down in real time, so CI may already show 59.
   const seconds = Number(waiting.textContent?.match(/(\d+)초/)?.[1]);

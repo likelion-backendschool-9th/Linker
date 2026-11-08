@@ -1,75 +1,206 @@
-.toolbar {
+/* Figma 11 (197:66) "이슈 목록": 20 below the divider/band, 15 between blocks, 12 above the rows */
+.section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-card-gap);
+  margin-top: var(--space-group);
+}
+
+.heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-sm);
-  margin-bottom: var(--space-md);
+  min-width: 0;
 }
 
-/* Segmented control (guide ch. 5) */
-.views {
-  display: flex;
-  gap: var(--space-xxs);
-  padding: var(--space-xxs);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
-}
-
-.view {
-  flex: 1;
-  white-space: nowrap;
-  min-height: var(--touch-target-min);
-  padding: var(--space-xs);
-  color: var(--color-text-subtle-on-tint);
-  border-radius: var(--radius-full);
-}
-
-.view[aria-pressed='true'] {
+.title {
+  min-width: 0;
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
-  background-color: var(--color-canvas);
-  box-shadow: var(--shadow-segment-active);
+  line-height: normal;
+  color: var(--color-text-title-cool);
 }
 
-.actions {
+.count {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+}
+
+/* Not in Figma: visually hidden until it gets keyboard focus (like the skip link) */
+.refresh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.refresh:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  min-height: var(--touch-target-min);
+  margin-inline-start: auto;
+  padding-inline: var(--space-sm);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-full);
+  clip-path: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Figma's 20px icon; the transparent layer keeps a 44px hit area */
+.create {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.create::after {
+  position: absolute;
+  inset: calc((var(--icon-size-add) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.createIcon {
+  display: block;
+  width: var(--icon-size-add);
+  height: var(--icon-size-add);
+}
+
+.createIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Search field: 42px, focus = 2px blue line inside (Figma 368:1716) */
+.search {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
+  align-items: center;
+  gap: var(--space-search-icon);
+  min-height: var(--control-height-search);
+  padding-inline: var(--space-search-icon);
+  background-color: var(--color-canvas-cool);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
 }
 
-.note {
-  margin-bottom: var(--space-md);
+.search:focus-within {
+  outline: 2px solid var(--color-selection);
+  outline-offset: -2px;
+}
+
+.searchIcon {
+  display: block;
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-slate);
+}
+
+.searchIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke-width: 2;
+}
+
+/* Figma 14px SemiBold placeholder (below the 16px input rule: recorded in the work log) */
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target-min);
   font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-placeholder-cool);
+}
+
+/* Chips scroll sideways when they don't fit; the padding keeps the 44px hit layer inside */
+.chips {
+  display: flex;
+  gap: var(--space-xs);
+  margin-block: calc((var(--control-height-chip) - var(--touch-target-min)) / 2);
+  padding-block: calc((var(--touch-target-min) - var(--control-height-chip)) / 2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip {
+  position: relative;
+  flex-shrink: 0;
+  height: var(--control-height-chip);
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+  background-color: var(--color-canvas-cool);
+  border: 0;
+  border-radius: var(--radius-full);
+}
+
+.chip::after {
+  position: absolute;
+  inset: calc((var(--control-height-chip) - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+
+.chip[aria-pressed='true'] {
+  color: var(--color-text-inverse);
+  background-color: var(--color-selection);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .content {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-md);
-}
-
-.count {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
+  margin-top: calc(var(--space-sm) - var(--space-card-gap));
 }
 
 .list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-xs);
 }
 
-@media (min-width: 600px) {
-  .toolbar {
-    grid-template-columns: auto 1fr;
-    align-items: center;
-  }
+/* Same look as an off chip; only on the "일정 없음" chip's rows */
+.addToProject {
+  min-height: var(--touch-target-min);
+  padding-inline: var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+  background-color: var(--color-canvas-cool);
+  border: 0;
+  border-radius: var(--radius-full);
+}
 
-  .view {
-    padding-inline: var(--space-md);
-  }
+.addToProject:disabled {
+  color: var(--color-text-muted-cool);
+}
 
-  .actions {
-    justify-content: flex-end;
-  }
+.sentinel {
+  height: 1px;
 }

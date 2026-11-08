@@ -8,10 +8,10 @@ import { Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { teamEntryHref } from '@/features/teams/team-entry';
 
-import { useMyIssuesTeamForm, useMyIssuesTeamOverlay } from './hook';
+import { TeamChangeSheet } from '../../../_components/team-change-sheet';
+import { useMyIssuesTeamOverlay } from './hook';
 import styles from './MyIssuesTeamPicker.module.css';
 
 type MyIssuesTeamPickerProps = {
@@ -31,12 +31,9 @@ export function MyIssuesTeamPicker({ teams, selected, onSelect }: MyIssuesTeamPi
     <div className={styles.picker}>
       <h2 className={styles.label}>팀 목록</h2>
       <div className={styles.card}>
-        <OverlaySheet
+        <TeamChangeSheet
           overlay={overlay}
-          title="팀 변경"
           description="내 이슈를 확인할 팀을 선택해요."
-          describeHidden
-          classNames={{ scrim: styles.sheetScrim, sheet: styles.sheet, title: styles.sheetTitle }}
           trigger={
             <button type="button" className={styles.trigger}>
               <span className="sr-only">팀 변경, 현재 {selected.name}</span>
@@ -60,14 +57,12 @@ export function MyIssuesTeamPicker({ teams, selected, onSelect }: MyIssuesTeamPi
               </span>
             </button>
           }
-        >
-          <TeamChoices
-            overlay={overlay}
-            teams={teams}
-            selectedId={selected.id}
-            onSelect={onSelect}
-          />
-        </OverlaySheet>
+          teams={teams}
+          selectedId={selected.id}
+          name="my-issues-team"
+          // The URL changes after closing: `history.back()` would undo a change made while open
+          onSubmit={(id) => void overlay.closeAnd(() => onSelect(id))}
+        />
         {entryHref && (
           <Link href={entryHref} className={styles.entry}>
             <span
@@ -80,42 +75,5 @@ export function MyIssuesTeamPicker({ teams, selected, onSelect }: MyIssuesTeamPi
         )}
       </div>
     </div>
-  );
-}
-
-function TeamChoices({
-  overlay,
-  teams,
-  selectedId,
-  onSelect,
-}: {
-  overlay: ReturnType<typeof useMyIssuesTeamOverlay>;
-  teams: TeamItem[];
-  selectedId: number;
-  onSelect: (id: number) => unknown;
-}) {
-  const { draftId, setDraftId, submit } = useMyIssuesTeamForm(overlay, selectedId, onSelect);
-  return (
-    <form onSubmit={submit}>
-      <fieldset className={styles.choices}>
-        <legend className="sr-only">팀 변경</legend>
-        {teams.map((team) => (
-          <label key={team.id} className={styles.choice}>
-            <input
-              type="radio"
-              name="my-issues-team"
-              className={styles.radioInput}
-              checked={team.id === draftId}
-              onChange={() => setDraftId(team.id)}
-            />
-            <span className={styles.radio} aria-hidden />
-            <span className={styles.choiceName}>{team.name}</span>
-          </label>
-        ))}
-      </fieldset>
-      <button type="submit" className={styles.submit}>
-        팀 변경
-      </button>
-    </form>
   );
 }

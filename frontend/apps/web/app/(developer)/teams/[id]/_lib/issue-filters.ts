@@ -1,3 +1,4 @@
+import type { ListTeamIssuesParams } from '@linker/api/openAPIDefinition.schemas';
 import { createLoader, parseAsBoolean, parseAsString, parseAsStringLiteral } from 'nuqs/server';
 
 import { ISSUE_STATUSES } from '../../../_lib/issue-status';
@@ -34,6 +35,18 @@ export function issueFilterQuery(filters: IssueFilters): URLSearchParams {
   if (filters.label) query.set('label', filters.label);
   if (filters.open) query.set('open', 'true');
   return query;
+}
+
+/** The same filters as typed params of the generated 11 list call (`repo` is a number there). */
+export function issueFilterParams(filters: IssueFilters): ListTeamIssuesParams {
+  const repo = filters.repo === null ? undefined : Number(filters.repo);
+  return {
+    repo: repo !== undefined && Number.isInteger(repo) && repo > 0 ? repo : undefined,
+    status: filters.status ?? undefined,
+    assignee: filters.assignee ?? undefined,
+    label: filters.label ?? undefined,
+    open: filters.open || undefined,
+  };
 }
 
 /** How many filters are set, for the filter button's label */

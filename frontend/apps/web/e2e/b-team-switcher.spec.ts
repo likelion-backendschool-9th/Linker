@@ -22,13 +22,13 @@ test('PR 29 header trigger opens the shared sheet across C pages and B settings 
     await page.goto(route);
     await page.waitForLoadState('networkidle');
     const trigger = page.getByRole('button', {
-      name: /Linker 해커톤팀.*팀 전환/,
+      name: /Linker 해커톤팀.*팀 변경/,
       includeHidden: true,
     });
     await trigger.focus();
     await expect(trigger).toBeFocused();
     await trigger.press('Enter');
-    await expect(page.getByRole('dialog', { name: '팀 전환' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: '팀 변경' })).toBeVisible();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
@@ -36,7 +36,7 @@ test('PR 29 header trigger opens the shared sheet across C pages and B settings 
   }
   for (const width of [360, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.getByRole('button', { name: /Linker 해커톤팀.*팀 전환/ }).click();
+    await page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ }).click();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(await page.evaluate((w) => document.documentElement.scrollWidth <= w, width)).toBe(true);
     await page.screenshot({
@@ -52,21 +52,18 @@ test('current-team selection retains the board URL while another-team selection 
   page,
 }) => {
   await page.goto('/teams/1/board?status=TODO');
-  const trigger = page.getByRole('button', { name: /Linker 해커톤팀.*팀 전환/ });
+  const trigger = page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ });
   await trigger.click();
-  await page
-    .getByRole('dialog')
-    .getByRole('button', { name: /Linker 해커톤팀.*현재 팀/ })
-    .click();
+  // Figma "팀 변경" sheet: the current team is checked; the button applies the choice
+  await expect(page.getByRole('dialog').getByRole('radio', { name: 'Linker 해커톤팀' })).toBeChecked();
+  await page.getByRole('dialog').getByRole('button', { name: '팀 변경', exact: true }).click();
   await expect(page).toHaveURL('/teams/1/board?status=TODO');
   await expect(trigger).toBeFocused();
   await trigger.click();
-  await page
-    .getByRole('dialog')
-    .getByRole('link', { name: /오픈소스 스터디/ })
-    .click();
+  await page.getByRole('dialog').getByRole('radio', { name: '오픈소스 스터디' }).check();
+  await page.getByRole('dialog').getByRole('button', { name: '팀 변경', exact: true }).click();
   await expect(page).toHaveURL('/teams/2/issues');
-  await expect(page.getByRole('button', { name: /오픈소스 스터디.*팀 전환/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /오픈소스 스터디.*팀 변경/ })).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL('/teams/1/board?status=TODO');
   await expect(page.getByRole('dialog')).toBeHidden();

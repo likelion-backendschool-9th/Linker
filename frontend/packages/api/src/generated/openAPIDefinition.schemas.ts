@@ -1555,6 +1555,10 @@ repo?: number;
 status?: string;
 assignee?: string;
 label?: string;
+/**
+ * 이슈 제목 검색어(대소문자 무시, 최대 100자)
+ */
+q?: string;
 open?: boolean;
 cursor?: string;
 size?: number;
