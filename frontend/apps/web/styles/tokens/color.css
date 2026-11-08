@@ -104,4 +104,13 @@
 
   /* Shared by 11 team-chat FAB and 19 write-recruit FAB (same hex, different fill tokens above) */
   --color-fab-border: #383838;
+
+  /* Figma 14 values (status board, 200:1028 and the 368:3414/3562/3741 menus). Low contrast ones kept by design decision */
+  --color-board-column: #f5f5f5; /* 14 column fill */
+  --color-board-card-border: #ecedf2; /* 14 card outline */
+  --color-board-control: #f2f2f2; /* 14 "필터"/"최신순" buttons and their menus */
+  --color-board-control-active: #2563eb; /* 14 button while its menu is open or a value is set: white text 5.17:1 */
+  --color-board-menu-border: #e4e4e4; /* 14 menu outline and row dividers */
+  --color-board-label-blue: #ebf7ff; /* 14 label fill, odd labels */
+  --color-board-label-purple: #f4ebff; /* 14 label fill, even labels */
 }

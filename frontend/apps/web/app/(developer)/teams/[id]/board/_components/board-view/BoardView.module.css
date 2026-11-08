@@ -1,257 +1,107 @@
+/* Figma 14 (200:1028): toolbar 20px under the team tabs, columns 20px under the toolbar */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--board-column-gap);
+  margin-top: calc(-1 * var(--space-md));
+  padding-top: var(--board-column-gap);
+}
+
 .toolbar {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-board-control-gap);
 }
 
-.hint {
-  font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-secondary);
-}
-
-/* Featured surface (guide ch. 5): tint, no outline */
-.notice {
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-sm);
-}
-
-/* Mobile: one column per screen, swiped sideways (07 TODO 14). Desktop: all side by side. */
+/* Columns side by side; the row scrolls sideways to the screen edges (07 TODO 14) */
 .columns {
-  /* Contains the sr-only (position: absolute) text inside the cards, which would otherwise
-     escape this scroller and widen the whole page */
+  /* Positioned so it also clips the cards' sr-only text; otherwise it widens the mobile page */
   position: relative;
-  display: grid;
-  grid-auto-columns: calc(100% - var(--space-xl));
-  grid-auto-flow: column;
-  gap: var(--space-sm);
-  padding-bottom: var(--space-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--board-column-gap);
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding: 0 var(--page-gutter) var(--space-board-column);
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--page-gutter);
 }
 
-/* While dragging, auto-scroll moves in small steps; snapping would turn each step into a whole column */
-.columns[data-dragging='true'] {
-  scroll-snap-type: none;
-}
-
-@media (min-width: 600px) {
-  .columns {
-    grid-auto-columns: calc(50% - var(--space-xs));
-  }
-}
-
-@media (min-width: 1024px) {
-  .columns {
-    grid-auto-columns: minmax(0, 1fr);
-    overflow-x: visible;
-  }
-}
-
+/* Figma 214:92: 240px, light gray, status-colored 4px top line, soft shadow */
 .column {
-  display: grid;
-  align-content: start;
-  gap: var(--space-sm);
-  min-width: 0;
-  padding: var(--space-sm);
-  background-color: var(--color-canvas-soft);
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
-  scroll-snap-align: start;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-board-column);
+  width: var(--board-column-width);
+  padding: var(--space-board-column);
+  background-color: var(--color-board-column);
+  border-top: var(--board-column-line) solid var(--column-status-color);
+  box-shadow: var(--shadow-board-column);
 }
 
-/* The column under a dragged card: an outline, plus the screen reader announcement */
 .column[data-over='true'] {
-  border-color: var(--color-primary);
+  outline: 2px solid var(--color-board-control-active);
+  outline-offset: -2px;
+}
+
+.columnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+/* "+" of Figma 214:100: 20px solar:add-bold, 44px hit area (same as 07·11) */
+.create {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.create::after {
+  position: absolute;
+  inset: calc((var(--icon-size-add) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.create:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.createIcon {
+  display: block;
+  width: var(--icon-size-add);
+  height: var(--icon-size-add);
+}
+
+.createIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .columnTitle {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  gap: var(--space-board-control-icon);
+  margin: 0;
   font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
 }
 
 .count {
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas);
-  border-radius: var(--radius-full);
-}
-
-.empty {
-  padding: var(--space-md) 0;
-  font-size: var(--font-size-caption);
-  color: var(--color-text-subtle-on-tint);
-  text-align: center;
+  color: var(--color-text-muted-cool);
 }
 
 .cards {
-  display: grid;
-  gap: var(--space-xs);
-}
-
-/* Card (guide ch. 5) */
-.card {
-  display: grid;
-  gap: var(--space-xs);
-  padding: var(--space-sm);
-  background-color: var(--color-canvas);
-  border: 1px solid var(--color-hairline-soft);
-  border-radius: var(--radius-sm);
-}
-
-/* The original stays in place, faded, while its copy follows the pointer */
-.card[data-dragging='true'] {
-  opacity: 0.4;
-}
-
-.card[aria-busy='true'] {
-  opacity: 0.7;
-}
-
-.overlayCard {
-  padding: var(--space-sm);
-  background-color: var(--color-canvas);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-}
-
-.cardTop {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-.repo {
-  font-size: var(--font-size-meta);
-  color: var(--color-text-meta);
-}
-
-/* "중단" mark (POL-I-3) */
-.blocked {
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-status-warning);
-  border: 1px solid currentcolor;
-  border-radius: var(--radius-full);
-}
-
-.cardTitle {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-title);
-  color: var(--color-text-title);
-}
-
-.cardLink {
-  display: block;
-  padding-block: var(--space-xxs);
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-caption);
-}
-
-.due {
-  color: var(--color-text-secondary);
-}
-
-/* Overdue: red and "마감 지남" in text (POL-I-4; never color alone) */
-.overdue {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-status-error);
-}
-
-.assignees {
-  display: inline-flex;
-  align-items: center;
-}
-
-.avatar {
-  margin-left: calc(-1 * var(--space-xxs));
-  border: 2px solid var(--color-canvas);
-  border-radius: var(--radius-full);
-}
-
-.avatar:first-of-type {
-  margin-left: 0;
-}
-
-.more {
-  margin-left: var(--space-xxs);
-  font-size: var(--font-size-meta);
-  color: var(--color-text-meta);
-}
-
-.labels {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xxs);
-}
-
-.label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xxs);
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
-}
-
-.swatch {
-  width: var(--badge-dot-size);
-  height: var(--badge-dot-size);
-  border-radius: var(--radius-full);
-}
-
-.warning {
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-status-warning);
-}
-
-.cardActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-/* Drag handle: a 44px target, the only place a drag starts */
-.handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-  color: var(--color-text-subtle-on-tint);
-  border-radius: var(--radius-sm);
-  touch-action: none;
-  cursor: grab;
-}
-
-.handle:active {
-  cursor: grabbing;
-}
-
-.statusButton {
-  white-space: nowrap;
+  flex-direction: column;
+  gap: var(--space-board-column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
