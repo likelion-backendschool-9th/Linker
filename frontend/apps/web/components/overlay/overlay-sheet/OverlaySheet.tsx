@@ -17,8 +17,14 @@ type OverlaySheetProps = {
   /** Optional in-place trigger; Radix then restores keyboard focus on sheet close. */
   trigger?: ReactElement;
   onOpenAutoFocus?: (event: Event) => void;
+  /** Added after the default classes, for a sheet whose page Figma differs from the shared look */
+  classNames?: { scrim?: string; sheet?: string; title?: string };
   children?: ReactNode;
 };
+
+function withExtra(base: string | undefined, extra: string | undefined) {
+  return extra ? `${base} ${extra}` : base;
+}
 
 /** Bottom sheet wired to `useOverlay()`; feature sheets only supply content (blueprint §7-3). */
 export function OverlaySheet({
@@ -28,16 +34,22 @@ export function OverlaySheet({
   describeHidden = false,
   trigger,
   onOpenAutoFocus,
+  classNames,
   children,
 }: OverlaySheetProps) {
   return (
     <Dialog.Root open={overlay.isOpen} onOpenChange={overlay.onOpenChange}>
       {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
       <Dialog.Portal>
-        <Dialog.Overlay className={styles.scrim} />
-        <Dialog.Content className={styles.sheet} onOpenAutoFocus={onOpenAutoFocus}>
+        <Dialog.Overlay className={withExtra(styles.scrim, classNames?.scrim)} />
+        <Dialog.Content
+          className={withExtra(styles.sheet, classNames?.sheet)}
+          onOpenAutoFocus={onOpenAutoFocus}
+        >
           <div className={styles.header}>
-            <Dialog.Title className={styles.title}>{title}</Dialog.Title>
+            <Dialog.Title className={withExtra(styles.title, classNames?.title)}>
+              {title}
+            </Dialog.Title>
             <Dialog.Close className={styles.close}>
               <X aria-hidden />
               <span className="sr-only">닫기</span>

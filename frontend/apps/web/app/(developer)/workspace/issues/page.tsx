@@ -5,25 +5,27 @@ import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 import { getQueryClient } from '@/lib/api/query-client';
 import { buildMetadata } from '@/lib/seo/metadata';
 
-import { MyIssueList } from './_components/my-issue-list/MyIssueList';
-import { myIssuesOptions } from './_lib/my-issues-queries';
+import { myTeamsOptions } from '../../teams/[id]/_lib/team-queries';
+import { MyIssuesSection } from '../_components/my-issues-section';
+import { prefetchMyIssues } from '../_lib/my-issues-queries';
 
-// 07 workspace home (B); typed once that route exists
 const WORKSPACE_HOME = '/workspace' as Route;
 
 export const metadata = buildMetadata({ title: '내 이슈' });
 
-/**
- * 07's "내 이슈" (07 TODO 07, I-5) as its own page, linked from the workspace home: issues assigned to
- * me across all teams by due date. Team decision 2026-11-01, so 07 doesn't have to exist first.
- */
-export default async function MyIssuesPage() {
+/** 07 "내 이슈" full list: every open issue assigned to me in the selected team (POL-I-5). */
+export default async function MyIssuesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ teamId?: string | string[] }>;
+}) {
   const client = getQueryClient();
-  await client.prefetchQuery(myIssuesOptions());
+  await client.prefetchQuery(myTeamsOptions());
+  await prefetchMyIssues(client, await searchParams);
   return (
     <PageFrame title="내 이슈" variant="stack" backHref={WORKSPACE_HOME}>
       <HydrationBoundary state={dehydrate(client)}>
-        <MyIssueList />
+        <MyIssuesSection />
       </HydrationBoundary>
     </PageFrame>
   );

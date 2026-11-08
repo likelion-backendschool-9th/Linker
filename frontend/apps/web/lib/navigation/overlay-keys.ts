@@ -43,6 +43,7 @@ export const OVERLAY_KEYS = [
   'issue-status',
   'calendar-day',
   'team-switcher',
+  'my-issues-team',
   'team-settings-action',
   'admin-user-detail',
   'admin-user-action',
