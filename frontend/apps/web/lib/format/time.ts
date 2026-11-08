@@ -44,8 +44,9 @@ export function daysUntil(date: string, now: Date = new Date()): number {
   return Math.round((Date.parse(date) - Date.parse(todayKst(now))) / (24 * 60 * 60 * 1000));
 }
 
-/** Fixed chat sent time, e.g. "오후 3:12". Date dividers supply the calendar date. */
+/** Fixed chat sent time, e.g. "오후 3시 12분", "오후 12시" on the hour (Figma 17). Date dividers supply the date. */
 export function formatMessageTime(value: Date | string | number): string {
   const date = toKst(value);
-  return `${date.getHours() < 12 ? '오전' : '오후'} ${format(date, 'h:mm')}`;
+  const time = date.getMinutes() === 0 ? format(date, 'h시') : format(date, 'h시 m분');
+  return `${date.getHours() < 12 ? '오전' : '오후'} ${time}`;
 }

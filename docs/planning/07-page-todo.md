@@ -493,7 +493,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
-- [ ] (sheet) Room info: members, mute, leave (1:1), `[Included]` photo gallery
+- [ ] Room info (full screen from the header ☰, Figma 351:580): team card (photo, name, "멤버 N명" → 11), members with team role (오너/관리자/멤버, owner first), mute, PR list, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
 - [ ] Server: rooms, participants (last read message), messages tables shared by team and 1:1
 - [ ] Server: STOMP auth, new message notifications (bundled per room)
 
@@ -505,6 +505,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
+- [ ] Header search icon and "AI 채팅 요약" FAB (Figma 92:768) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
 **AI chat summary (Flex, after 28)** `[Included]`
@@ -520,7 +521,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **1:1 chat only (with 22–24)**
 
 - [ ] Start rules: direct if mutual follow or same team; otherwise only 1 first message goes to requests
-- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees accept/delete at the top
+- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees a bottom panel in place of the composer (Figma 350:123): "{name}님이 메시지 요청을 보냈어요" / "수락 버튼을 누르시면 대화하실 수 있습니다" + 수락 · 거절 (= delete) · 차단
 - [ ] Delete (reject) isn't disclosed, and blocks new requests from the same person for 30 days
 - [ ] Blocking hides the room from my list and the other's messages aren't delivered to me
 - [ ] `[Included]` First external link preview (OG; 1:1 only when mutual follow)

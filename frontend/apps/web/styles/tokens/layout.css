@@ -105,6 +105,30 @@
   --board-status-dot-size: 8px; /* 14 status dot in the card status field */
   --icon-size-board-chevron: 16px; /* 14 button chevron (Figma frame) */
   --icon-size-board-status-chevron: 12px; /* 14 card status field chevron */
+  /* Figma 17 chat room (92:768 messages, 346:243 request panel, 351:580 room info) */
+  --chat-avatar-size: 46px; /* sender photo beside others' messages */
+  --space-chat-avatar: 9px; /* sender photo to name/bubble column */
+  --space-chat-name: 7px; /* sender name to bubble, bubble to cards below */
+  --space-chat-row: 20px; /* between messages */
+  --space-chat-bubble-inline: 14px; /* bubble side padding; block padding is --space-row-block */
+  --radius-chat-bubble: 14px;
+  --control-height-chat: 42px; /* composer photo button, input and send button */
+  --space-chat-input-inline: 15px; /* composer input text inset */
+  --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
+  --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
+  --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
+  --chat-ai-logo-size: 33px; /* logo inside the "AI 채팅 요약" FAB (--fab-size circle) */
+  --chat-ai-pointer-size: 7px; /* "AI 채팅 요약" label pointer */
+  --radius-chat-ai-label: 2px;
+  --space-chat-card: 14px; /* PR card padding */
+  --chat-request-panel-height: 140px; /* request panel replacing the composer */
+  --space-chat-request-title: 19px; /* request panel top to its title */
+  --space-chat-request-guide: 6px; /* request title to the blue guide line */
+  --space-chat-request-actions: 22px; /* guide line to the 수락/거절/차단 row */
+  --space-chat-request-button: 9px; /* request button vertical padding */
+  --space-room-info-team: 15px; /* room info: header to the team card */
+  --space-room-member: 15px; /* room info: between member rows */
+  --room-member-avatar-size: 44px;
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
@@ -134,8 +158,12 @@
   --duration-overlay: 200ms;
   --duration-chrome-collapse: 320ms; /* 19 recruit list scroll-driven header/tabs/search-panel reveal */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --blur-chrome: blur(20px); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
-  --blur-header-open: blur(4px); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
+  --blur-chrome: blur(
+    20px
+  ); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
+  --blur-header-open: blur(
+    4px
+  ); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
   --blur-scrim: blur(6px); /* 07 sheet scrim */
 
   /* The only shadow: the active segment of a segmented control */
@@ -146,4 +174,5 @@
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
+  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */
 }

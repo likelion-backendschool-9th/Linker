@@ -46,29 +46,31 @@ it('accepts the request in place', async () => {
   renderWithProviders(<RequestRoomBar room={room} login="me" disabled={false} />);
   await user.click(screen.getByRole('button', { name: '최민재 요청 수락' }));
   await waitFor(() =>
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/chat-requests/21/accept', { method: 'POST' }),
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/chat-requests/21/accept', {
+      method: 'POST',
+    }),
   );
   expect(push).not.toHaveBeenCalled();
 });
 
-it('deletes only after confirmation and returns to the request list', async () => {
+it('rejects only after confirmation and returns to the request list', async () => {
   fetchMock.mockResolvedValue(undefined);
   const user = userEvent.setup();
   renderWithProviders(<RequestRoomBar room={room} login="me" disabled={false} />);
-  await user.click(screen.getByRole('button', { name: '최민재 요청 삭제' }));
+  await user.click(screen.getByRole('button', { name: '최민재 요청 거절' }));
   expect(fetchMock).not.toHaveBeenCalled();
-  expect(await screen.findByRole('heading', { name: '메시지 요청을 삭제할까요?' })).toBeVisible();
-  await user.click(screen.getByRole('button', { name: '삭제' }));
+  expect(await screen.findByRole('heading', { name: '메시지 요청을 거절할까요?' })).toBeVisible();
+  await user.click(screen.getByRole('button', { name: '거절' }));
   await waitFor(() => expect(push).toHaveBeenCalledWith('/chats?tab=REQUEST'));
   expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/chat-requests/21', { method: 'DELETE' });
 });
 
-it('keeps the confirmation open when deletion fails', async () => {
+it('keeps the confirmation open when rejecting fails', async () => {
   fetchMock.mockRejectedValue(new Error('offline'));
   const user = userEvent.setup();
   renderWithProviders(<RequestRoomBar room={room} login="me" disabled={false} />);
-  await user.click(screen.getByRole('button', { name: '최민재 요청 삭제' }));
-  await user.click(await screen.findByRole('button', { name: '삭제' }));
+  await user.click(screen.getByRole('button', { name: '최민재 요청 거절' }));
+  await user.click(await screen.findByRole('button', { name: '거절' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('요청을 처리하지 못했어요');
   expect(push).not.toHaveBeenCalled();
 });

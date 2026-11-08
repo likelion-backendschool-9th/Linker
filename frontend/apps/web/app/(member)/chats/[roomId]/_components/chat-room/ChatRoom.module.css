@@ -1,79 +1,38 @@
+/* Figma 17 (92:768): white room, 12px side gutter, messages fill the space between header and composer */
 .room {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  height: calc(100dvh - var(--header-height) - var(--space-md) - var(--space-xxl) - env(safe-area-inset-bottom));
+  height: calc(100dvh - var(--header-height) - env(safe-area-inset-top));
   min-height: calc(var(--control-height) * 7);
-}
-
-.toolbar,
-.actions,
-.composeActions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.menuTrigger {
-  flex-shrink: 0;
-  min-width: var(--touch-target-min);
-  padding-inline: var(--space-xs);
-}
-
-.menuPanel {
-  z-index: var(--z-overlay);
-  display: grid;
-  min-width: calc(var(--control-height) * 4);
-  padding: var(--space-xxs);
+  margin: calc(-1 * var(--space-md)) calc(var(--space-sm) - var(--page-gutter))
+    calc(-1 * (var(--space-xxl) + env(safe-area-inset-bottom)));
   background: var(--color-canvas);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-  outline: none;
 }
 
-.menuItem {
+/* Timeline + the floating "AI 채팅 요약" button */
+.timelineArea {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-sm);
-  font-size: var(--font-size-body);
-  color: var(--color-text-heading);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  outline: none;
-  user-select: none;
-}
-
-.menuItem[data-highlighted] {
-  background: var(--color-canvas-soft);
-}
-
-.menuItem:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: -2px;
-}
-
-.menuItemDanger {
-  color: var(--color-status-error);
-}
-
-.toolbar,
-.composer {
-  flex-shrink: 0;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .viewport {
+  position: relative;
   flex: 1;
   min-height: calc(var(--control-height) * 2);
+  padding-top: var(--space-sm);
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
   overflow-anchor: none;
-  border-bottom: 2px solid var(--color-hairline);
-  background: var(--color-canvas-soft);
+  outline: none;
+}
+
+.viewport:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }
 
 .virtualSpace {
@@ -86,14 +45,15 @@
   top: 0;
   left: 0;
   width: 100%;
-  padding-bottom: var(--space-md);
+  padding-bottom: var(--space-chat-row);
 }
 
+/* Date divider (Page TODO 17, not in the Figma frame): kept in the time-label style */
 .date {
+  margin-bottom: var(--space-chat-row);
   text-align: center;
-  margin-block: var(--space-sm);
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-slate);
 }
 
 .message {
@@ -111,10 +71,11 @@
   align-items: center;
 }
 
+/* Others: 46px photo, then name / bubble / cards in one column */
 .incoming {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-xs);
+  gap: var(--space-chat-avatar);
   max-width: 100%;
   min-width: 0;
 }
@@ -123,22 +84,23 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-xxs);
+  gap: var(--space-chat-name);
   min-width: 0;
   flex: 1;
+  padding-top: var(--space-xxs);
 }
 
 .avatar {
   position: relative;
   display: grid;
   place-items: center;
-  flex: 0 0 calc(var(--control-height) * 0.75);
-  width: calc(var(--control-height) * 0.75);
-  height: calc(var(--control-height) * 0.75);
+  flex: 0 0 var(--chat-avatar-size);
+  width: var(--chat-avatar-size);
+  height: var(--chat-avatar-size);
   overflow: hidden;
   border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-subtle-on-tint);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-slate);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
 }
@@ -152,30 +114,46 @@
 }
 
 .author {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-title);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+}
+
+/* Bubble + time side by side, bottoms aligned; mine mirrors with the time on the left */
+.messageRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xxs);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.mine .messageRow {
+  flex-direction: row-reverse;
+  /* Figma 93:62: my bubble + time take at most three quarters of the row */
+  max-width: 75%;
 }
 
 .bubble {
-  max-width: 85%;
+  flex: 0 1 auto;
   min-width: 0;
-  padding: var(--space-sm) var(--space-md);
-  border: 2px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-  background: var(--color-canvas);
-  color: var(--color-text-body);
+  max-width: 100%;
+  padding: var(--space-row-block) var(--space-chat-bubble-inline);
+  border-radius: var(--radius-chat-bubble);
+  background: var(--color-chat-bubble-other);
+  color: var(--color-text-black);
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-chat);
 }
 
 .mine .bubble {
-  background: var(--color-accent);
-  color: var(--color-on-primary);
-  border-color: transparent;
+  background: var(--color-chat-bubble-mine);
+  color: var(--color-text-inverse);
 }
 
 .mine .card {
   border-color: rgb(255 255 255 / 0.35);
-  color: var(--color-on-primary);
+  color: var(--color-text-inverse);
 }
 
 .text {
@@ -183,9 +161,82 @@
   overflow-wrap: anywhere;
 }
 
+/* SYSTEM notices sit centred in the time-label style */
+.system .bubble {
+  padding: 0;
+  background: none;
+  color: var(--color-text-slate);
+  font-size: var(--font-size-chat-time);
+  text-align: center;
+}
+
+/* Time, "수정됨" and the read count beside the bubble */
+.messageMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 0 0 auto;
+}
+
+.mine .messageMeta {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.system .messageRow {
+  flex-direction: column;
+  align-items: center;
+}
+
+.system .messageMeta {
+  align-items: center;
+}
+
 .meta {
-  font-size: var(--font-size-meta);
-  color: var(--color-text-meta);
+  font-size: var(--font-size-chat-time);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+}
+
+/* Team read count: a number in the time style; the tap target grows invisibly */
+.unreadCount {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--font-size-chat-time);
+  line-height: var(--line-height-caption);
+  color: var(--color-chat-accent);
+  cursor: pointer;
+}
+
+.unreadCount::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  transform: translate(-50%, -50%);
+}
+
+.unreadCount:focus-visible,
+.menuBubble:focus-visible,
+.imageButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .menuBubble {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+}
+
+/* Cards that follow a message (PR event, issue cards) start at the bubble column */
+.eventRow {
+  margin-left: calc(var(--chat-avatar-size) + var(--space-chat-avatar));
 }
 
 .pending {
@@ -202,67 +253,10 @@
   margin-bottom: var(--space-xs);
 }
 
-.composer {
-  display: grid;
-  gap: var(--space-xs);
-  padding-top: var(--space-xs);
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--color-canvas);
-}
-
-.label {
-  font-weight: var(--font-weight-semibold);
-}
-
-.input {
-  resize: vertical;
-  width: 100%;
-  min-height: var(--control-height);
-  max-height: calc(var(--control-height) * 3);
-  padding: var(--space-sm);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--color-field);
-  font-size: var(--font-size-body);
-}
-
-.error {
-  font-size: var(--font-size-caption);
-  color: var(--color-status-error);
-}
-
-.notice {
-  padding: var(--space-xs);
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
-}
-
-.requestBar {
+.actions {
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
   gap: var(--space-xs);
-  padding: var(--space-xs);
-  border-bottom: 2px solid var(--color-hairline);
-}
-
-.requestActions {
-  display: flex;
-  gap: var(--space-xs);
-}
-
-.requestActions > * {
-  flex: 1;
-}
-
-.sectionTitle {
-  font-size: var(--font-size-section-title);
-  font-weight: var(--font-weight-semibold);
-  margin-block: var(--space-md);
-}
-
-.member {
-  padding-block: var(--space-sm);
-  border-bottom: 1px solid var(--color-hairline);
 }
 
 .images {
@@ -280,22 +274,7 @@
 
 .image img {
   object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.card {
-  padding: var(--space-xs);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-}
-
-.attachments {
-  min-width: 0;
-  max-height: calc(var(--control-height) * 5);
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  border-radius: var(--radius-card-compact);
 }
 
 .imageButton {
@@ -305,24 +284,10 @@
   cursor: pointer;
 }
 
-.imageButton:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-.referenceTools {
-  display: grid;
-  gap: var(--space-xs);
-  max-height: calc(var(--control-height) * 4);
-  overflow-y: auto;
-  padding: var(--space-xs);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-}
-
-.referenceTools ul {
-  display: grid;
-  gap: var(--space-xxs);
+.card {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
 }
 
 .issueCards {
@@ -337,105 +302,95 @@
   min-height: var(--touch-target-min);
 }
 
-.unreadCount {
-  min-width: var(--touch-target-min);
-  position: relative;
-  min-height: 0;
-  padding: 0;
-  text-align: inherit;
-  line-height: var(--line-height-caption);
-  border: 0;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-meta);
-  cursor: pointer;
-}
-
-.unreadCount:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-/* The number and timestamp sit beside the bottom edge of the bubble. */
-.messageRow {
-  display: flex;
-  align-items: flex-end;
+/* Composer (Figma 248:1235): photo icon, pill input, round blue send button */
+.composer {
+  display: grid;
+  /* Without this the column grows to the textarea's intrinsic width and pushes "보내기" off screen */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-xs);
-  max-width: 100%;
-  min-width: 0;
-}
-
-.messageRow .bubble {
-  flex: 0 1 auto;
-  max-width: none;
-}
-
-.messageMeta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  flex: 0 0 auto;
-  min-width: var(--touch-target-min);
-  max-width: 35%;
-  text-align: left;
-}
-
-.mine .messageRow {
-  flex-direction: row-reverse;
-}
-
-.mine .messageMeta {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.system .messageRow {
-  flex-direction: column;
-  align-items: center;
-}
-
-.system .messageMeta {
-  align-items: center;
-  max-width: none;
-}
-
-/* Enlarge the hit area without adding space between the number and time. */
-.unreadCount::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  height: var(--touch-target-min);
-  transform: translateY(-50%);
-}
-
-.menuBubble:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-@media (pointer: coarse) {
-  .menuBubble {
-    -webkit-touch-callout: none;
-    user-select: none;
-  }
+  flex-shrink: 0;
+  padding: var(--space-xs) 0 calc(var(--space-sm) + env(safe-area-inset-bottom));
+  background: var(--color-canvas);
 }
 
 .composerBar {
   display: flex;
   align-items: flex-end;
-  gap: var(--space-xs);
+  gap: var(--space-row-block);
 }
 
-.composerBar .input {
-  flex: 1;
-  min-width: 0;
+.attachmentToggle,
+.send {
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--control-height-chat);
+  width: var(--control-height-chat);
+  height: var(--control-height-chat);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
 }
 
 .attachmentToggle {
-  flex-shrink: 0;
-  min-width: var(--touch-target-min);
-  padding-inline: var(--space-xs);
+  background: none;
+  color: var(--color-text-black);
+  --icon-box-size: var(--icon-size-chat-attach);
+  --icon-stroke-width: 1.5; /* Solar linear default, as drawn in Figma */
+}
+
+.send {
+  background: var(--color-chat-send);
+  color: var(--color-text-inverse);
+}
+
+.send:disabled,
+.attachmentToggle:disabled {
+  cursor: default;
+}
+
+.send:disabled {
+  opacity: 0.6;
+}
+
+.attachmentToggle:focus-visible,
+.send:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Input text stays 16px so iOS never zooms; only the placeholder takes the Figma 12px */
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--control-height-chat);
+  max-height: calc(var(--control-height-chat) * 3);
+  padding: calc(
+      (var(--control-height-chat) - var(--font-size-body) * var(--line-height-caption)) / 2
+    )
+    var(--space-chat-input-inline);
+  border: 0;
+  border-radius: calc(var(--control-height-chat) / 2);
+  background: var(--color-chat-bubble-other);
+  color: var(--color-text-black);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-caption);
+  resize: none;
+}
+
+.input::placeholder {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-placeholder-cool);
+}
+
+.attachments {
+  min-width: 0;
+  max-height: calc(var(--control-height) * 5);
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .attachmentSummary {
@@ -444,7 +399,9 @@
   gap: var(--space-xs);
   min-height: var(--touch-target-min);
   padding: 0 var(--space-xs);
-  color: var(--color-text-secondary);
+  border: 0;
+  background: none;
+  color: var(--color-text-slate);
   font-size: var(--font-size-caption);
   text-align: left;
 }
@@ -454,6 +411,34 @@
   outline-offset: 2px;
 }
 
-.viewport .meta {
-  color: var(--color-text-subtle-on-tint);
+.referenceTools {
+  display: grid;
+  gap: var(--space-xs);
+  max-height: calc(var(--control-height) * 4);
+  overflow-y: auto;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+}
+
+.referenceTools ul {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  color: var(--color-status-error);
+}
+
+.notice {
+  padding: var(--space-xs);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
+}
+
+/* Unread-members sheet rows */
+.member {
+  padding-block: var(--space-sm);
+  border-bottom: 1px solid var(--color-hairline-cool);
 }

@@ -9,11 +9,12 @@ import type { RoomMessage } from '../../_lib/room-api';
 
 type Props = {
   messages: RoomMessage[];
+  endSpace?: number;
   onRead: (id: number) => void;
   readPosition?: { id: number } | null;
 };
 
-export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
+export function useMessageTimeline({ messages, onRead, readPosition, endSpace = 0 }: Props) {
   'use no memo'; // TanStack Virtual exposes a mutable virtualizer.
   const root = useRef<HTMLDivElement>(null);
   const restoredPosition = useRef<Props['readPosition']>(null);
@@ -34,6 +35,7 @@ export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
     getScrollElement: () => root.current,
     estimateSize: () => 120,
     overscan: 5,
+    paddingEnd: endSpace,
     getItemKey: (index) => messages[index]?.id ?? index,
   });
   const rows = virtualizer.getVirtualItems();
@@ -61,7 +63,17 @@ export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
       virtualizer.scrollToOffset(offset);
     }
     prior.current = { first, last, size: totalSize };
-  }, [first, last, totalSize, renderedCount, messages.length, atBottom, virtualizer, messages, readPosition]);
+  }, [
+    first,
+    last,
+    totalSize,
+    renderedCount,
+    messages.length,
+    atBottom,
+    virtualizer,
+    messages,
+    readPosition,
+  ]);
 
   // Only rows intersecting the message viewport while the document is visible count as read.
   useEffect(() => {

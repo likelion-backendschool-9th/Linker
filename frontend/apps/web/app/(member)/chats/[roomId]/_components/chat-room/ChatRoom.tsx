@@ -11,12 +11,15 @@ import { PendingBubble } from '../pending-bubble';
 import { MessageActions } from '../message-actions';
 import { UnreadMembersSheet } from '../unread-members-sheet';
 import { MessageTimeline } from '../message-timeline';
-import { ChatRoomMenu } from '../chat-room-menu';
 import { RequestRoomBar } from '../request-room-bar';
 import { RoomInfoSheet } from '../room-info-sheet';
 import { PullRequestSheet } from '../pull-request-sheet';
+import { AiSummaryFab } from '../ai-summary-fab';
 import styles from './ChatRoom.module.css';
 import { CONNECTION, useChatRoom } from './hook';
+
+/** Space under the newest message so it scrolls clear of the "AI 채팅 요약" FAB: label + pointer + 40px circle. */
+const AI_FAB_CLEARANCE = 88;
 
 export function ChatRoom({ roomId }: { roomId: number }) {
   const {
@@ -68,22 +71,12 @@ export function ChatRoom({ roomId }: { roomId: number }) {
 
   return (
     <div className={styles.room}>
-      <div className={styles.toolbar}>
-        <p className={styles.meta} role="status">
-          {CONNECTION[connection]}
-        </p>
-        <ChatRoomMenu room={room} login={viewer.login} disabled={suspended} />
-        <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
-        {room.team && <PullRequestSheet roomId={roomId} login={viewer.login} />}
-      </div>
-      {room.kind === 'REQUEST' && room.requestDirection === 'RECEIVED' && (
-        <RequestRoomBar room={room} login={viewer.login} disabled={suspended} />
-      )}
-      {room.historyLimitDays !== null && (
-        <p className={styles.notice}>
-          무료 팀은 최근 {room.historyLimitDays}일 대화만 볼 수 있어요
-        </p>
-      )}
+      {/* Figma has no connection line; screen readers still hear it */}
+      <p className="sr-only" role="status">
+        {CONNECTION[connection]}
+      </p>
+      <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
+      {room.team && <PullRequestSheet roomId={roomId} login={viewer.login} />}
       {largeGap && <p role="status">안 읽은 메시지 {CHAT.catchUpMax}개+</p>}
       {catchUpError && (
         <ErrorState
@@ -101,27 +94,28 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           }}
         />
       )}
-      {history.hasNextPage && (
-        <Button
-          variant="soft"
-          disabled={history.isFetchingNextPage}
-          onClick={() => {
-            void history.fetchNextPage();
-          }}
-        >
-          {history.isFetchingNextPage ? '불러오는 중…' : '이전 대화 불러오기'}
-        </Button>
+      {history.isFetchingNextPage && (
+        <p role="status" className="sr-only">
+          이전 대화를 불러오는 중이에요.
+        </p>
       )}
-      <MessageTimeline
-        kind={room.kind}
-        onUnread={(id) => unreadMembers.open(String(id))}
-        messages={messages}
-        login={viewer.login}
-        readPosition={readPosition}
-        onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
-        onMenu={(id) => messageMenu.open(String(id))}
-        onRead={markMessageRead}
-      />
+      <div className={styles.timelineArea}>
+        <MessageTimeline
+          kind={room.kind}
+          onUnread={(id) => unreadMembers.open(String(id))}
+          messages={messages}
+          login={viewer.login}
+          readPosition={readPosition}
+          onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
+          onMenu={(id) => messageMenu.open(String(id))}
+          onRead={markMessageRead}
+          endSpace={room.team ? AI_FAB_CLEARANCE : 0}
+          onReachTop={() => {
+            if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
+          }}
+        />
+        {room.team && <AiSummaryFab />}
+      </div>
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
       <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />
@@ -148,11 +142,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         </div>
       )}
       {room.kind === 'REQUEST' ? (
-        room.requestDirection !== 'RECEIVED' && (
-          <div className={styles.notice}>
-            <p>상대가 수락하면 대화가 열려요</p>
-          </div>
-        )
+        <RequestRoomBar room={room} login={viewer.login} disabled={suspended} />
       ) : (
         <>
           {readOnly && <p role="status">지금은 대화를 읽을 수만 있어요.</p>}

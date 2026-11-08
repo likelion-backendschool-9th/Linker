@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Route } from 'next';
+import { useRouter } from 'next/navigation';
 
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
@@ -20,6 +21,9 @@ export function useRequestRoomBar({
   disabled: boolean;
 }) {
   const overlay = useOverlay('delete-confirm');
+  const block = useOverlay('block');
+  const router = useRouter();
+  const counterpart = room.members.find((member) => member.login !== login) ?? null;
   const client = useQueryClient();
   const refresh = () => client.invalidateQueries({ queryKey: chatKeys.account(login) });
   const accept = useMutation({
@@ -32,7 +36,7 @@ export function useRequestRoomBar({
   const remove = useMutation({
     mutationFn: () => deleteChatRequest(room.id),
     onSuccess: async () => {
-      toast('메시지 요청을 삭제했어요.');
+      toast('메시지 요청을 거절했어요.');
       await refresh();
       await overlay.closeThen('/chats?tab=REQUEST' as Route);
     },
@@ -42,6 +46,10 @@ export function useRequestRoomBar({
 
   return {
     overlay,
+    block,
+    counterpart,
+    // A blocked request disappears from both lists; go back to the request tab
+    onBlocked: () => router.replace('/chats?tab=REQUEST' as Route),
     accept,
     remove,
     pending,
