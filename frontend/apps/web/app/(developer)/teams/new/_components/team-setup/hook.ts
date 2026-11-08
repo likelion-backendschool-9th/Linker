@@ -5,7 +5,8 @@ import { parseAsInteger, useQueryState } from 'nuqs';
 import { useState } from 'react';
 
 import { useOpenExternal } from '@/features/external-link/use-open-external';
-import { TEAM } from '@/lib/policy';
+import { resolveSetupStep } from '../../_lib/setup-steps';
+export { STEPS } from '../../_lib/setup-steps';
 
 import type { BoardSelection } from '../../../_components/team-board-selection';
 import {
@@ -16,7 +17,6 @@ import {
   setupReposOptions,
 } from './api';
 
-export const STEPS = ['GitHub 연결', '팀 정보', '레포 연결', '보드 연결', '확인'];
 export const STATUSES = [
   '작업 전 · Todo',
   '작업 중 · In Progress',
@@ -26,7 +26,7 @@ export const STATUSES = [
 
 export function useTeamSetup() {
   const [value, setStep] = useQueryState('step', parseAsInteger.withDefault(1));
-  const step = Math.min(STEPS.length, Math.max(1, value));
+  const step = resolveSetupStep(value);
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState('');
@@ -61,9 +61,7 @@ export function useTeamSetup() {
     boardDraft.mode === 'new'
       ? '새 Linker 보드'
       : (boards.data?.items.find((board) => board.id === boardDraft.boardId)?.name ?? '기존 보드');
-  const atLimit =
-    (teams.data?.items.filter((team) => team.status !== 'ARCHIVED').length ?? 0) >=
-    TEAM.maxTeamsPerUser;
+  const atLimit = teams.data ? teams.data.teamCount >= teams.data.teamLimit : false;
   const openExternal = useOpenExternal();
 
   function selectPreviewTeam(teamId: string) {

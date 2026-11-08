@@ -32,12 +32,13 @@ test('workspace filters teams and reuses the team switcher without a navigation 
   await expect(page.getByRole('dialog')).toBeHidden();
 });
 
-test('team setup previews local fields and never offers a live installation or team submission', async ({
+test('team setup keeps the new intro gated and later preview steps cannot submit a team', async ({
   page,
 }) => {
   await page.goto('/teams/new');
-  await expect(page.getByRole('button', { name: 'GitHub에서 설치하기' })).toBeDisabled();
-  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'GitHub로 시작하기' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await page.goto('/teams/new?step=2');
   await expect(page).toHaveURL(/step=2/);
   await page.getByLabel('팀 이름', { exact: true }).fill('프론트 화면 검토팀');
   await page.getByLabel('팀 소개', { exact: true }).fill('팀원과 같은 디자인으로 만들어요.');

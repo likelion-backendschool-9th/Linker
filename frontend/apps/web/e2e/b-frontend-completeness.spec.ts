@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 test('setup preserves repo selection and existing board mapping across steps without creating a team', async ({
   page,
 }) => {
-  await page.goto('/teams/new');
+  await page.goto('/teams/new?step=2');
   await page.getByText('연결된 팀으로 선택 화면 미리보기', { exact: true }).click();
   await page.getByLabel('미리보기에 사용할 팀').selectOption('1');
   await page.getByRole('button', { name: '2 팀 정보' }).click();

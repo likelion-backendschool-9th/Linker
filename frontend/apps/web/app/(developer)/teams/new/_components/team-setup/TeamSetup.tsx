@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  GitBranch,
-  LayoutList,
-  ShieldCheck,
-  Users,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ShieldCheck } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
 
@@ -16,12 +8,12 @@ import { Button } from '@/components/ui/button/Button';
 import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
-import { GitHubMark as Github } from '@/features/github/github-mark/GithubMark';
 import styles from '@/features/teams/team-ui.module.css';
 import { TEAM } from '@/lib/policy';
 import { TeamRepoSelection } from '../../../_components/team-repo-selection';
 import { TeamBoardSelection } from '../../../_components/team-board-selection';
 import { TeamSetupOutcome } from '../team-setup-outcome';
+import { TeamSetupIntro } from '../team-setup-intro/TeamSetupIntro';
 import { STEPS, STATUSES, useTeamSetup } from './hook';
 
 export function TeamSetup() {
@@ -52,6 +44,9 @@ export function TeamSetup() {
     atLimit,
     openExternal,
   } = useTeamSetup();
+
+  if (step === 1)
+    return <TeamSetupIntro teams={teams} atLimit={atLimit} openExternal={openExternal} />;
 
   return (
     <div className={styles.stack}>
@@ -114,53 +109,6 @@ export function TeamSetup() {
         />
       )}
       <section className={`${styles.card} ${styles.stack}`} aria-labelledby="setup-step-title">
-        {step === 1 && (
-          <>
-            <div className={styles.heroIcon}>
-              <Github aria-hidden />
-            </div>
-            <h2 id="setup-step-title" className={styles.title}>
-              GitHub 조직과 팀을 연결해요
-            </h2>
-            <p>GitHub 조직 1개 = 팀 1개</p>
-            <p className={styles.description}>
-              Linker 앱을 설치하고 레포와 프로젝트 보드를 연결하면 팀의 이슈와 PR을 한곳에서 볼 수
-              있어요.
-            </p>
-            <ul className={styles.list}>
-              <li className={styles.row}>
-                <Users aria-hidden />
-                조직 멤버와 함께 협업해요
-              </li>
-              <li className={styles.row}>
-                <GitBranch aria-hidden />
-                선택한 레포의 이슈와 PR을 모아요
-              </li>
-              <li className={styles.row}>
-                <LayoutList aria-hidden />
-                하나의 프로젝트 보드로 일정을 관리해요
-              </li>
-            </ul>
-            <div className={styles.actions}>
-              <Button disabled aria-describedby="install-notice">
-                <Github aria-hidden />
-                GitHub에서 설치하기
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => openExternal('https://github.com/organizations/plan')}
-              >
-                조직이 없어요
-              </Button>
-            </div>
-            <p id="install-notice" className={styles.description}>
-              앱 설치 기능은 준비 중이에요. 다음 단계에서 입력 화면을 미리 볼 수 있어요.
-            </p>
-            <div className={styles.soft}>
-              <p>GitHub 조직 오너만 앱을 설치할 수 있어요. 오너에게 설치를 요청할까요?</p>
-            </div>
-          </>
-        )}
         {step === 2 && (
           <>
             <h2 id="setup-step-title" className={styles.title}>
