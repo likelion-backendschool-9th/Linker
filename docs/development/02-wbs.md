@@ -378,7 +378,7 @@
 
 **신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 user.ModerationService가 활성 운영자별 admin.NotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
 
-페이지 18 목록은 `{items, nextCursor}`다. 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 푸시는 1분마다 도는 작업 하나가 Expo로 보내고 보낸 행에 `pushed_at`을 남긴다. 채팅은 방별로 묶어 바로 보내고, 비채팅은 `deliver_after`가 없거나 지난 행을 보내므로 낮 알림은 다음 회차에, 22~08시 보류분은 08시 뒤 첫 회차에 함께 나간다. `push_enabled`가 꺼져 있거나 토큰이 없으면 보내지 않는다.
+페이지 18 목록은 `{items, nextCursor}`다. `unread=true`면 같은 커서 순서로 미독 행만 준다("읽지 않음" 탭). 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 푸시는 1분마다 도는 작업 하나가 Expo로 보내고 보낸 행에 `pushed_at`을 남긴다. 채팅은 방별로 묶어 바로 보내고, 비채팅은 `deliver_after`가 없거나 지난 행을 보내므로 낮 알림은 다음 회차에, 22~08시 보류분은 08시 뒤 첫 회차에 함께 나간다. `push_enabled`가 꺼져 있거나 토큰이 없으면 보내지 않는다.
 
 
 **시스템 주담당:** D · **REST:** 7개
@@ -390,7 +390,7 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 06 | A | PATCH | `/api/v1/user/me/settings/notifications` | Push on/off (`users.push_enabled`; off stops push only) | user |
-| 18 | D | GET | `/api/v1/user/notifications` | Notification list (with target URL) | user |
+| 18 | D | GET | `/api/v1/user/notifications` | Notification list (with target URL). `unread=true` → unread rows only ("읽지 않음" tab), same cursor | user |
 | 18 | D | GET | `/api/v1/user/notifications/unread-count` | Header bell badge | user |
 | 18 | D | PATCH | `/api/v1/user/notifications/{notificationId}/read` | Mark read | user |
 | 18 | D | POST | `/api/v1/user/notifications/read-all` | Mark all read | user |
