@@ -156,6 +156,21 @@ class GithubTeamClientTest {
   }
 
   @Test
+  void nullOrganizationBasePermissionRemainsUnknownInsteadOfGrantingWrite() {
+    // An App can receive an organization identity while this owner-only value is null.
+    response = request -> request.startsWith("/user/memberships/orgs/org")
+        ? "{\"state\":\"active\",\"organization\":{\"id\":500}}"
+        : "{\"id\":500,\"node_id\":\"ORG_500\",\"login\":\"org\",\"type\":\"Organization\",\"default_repository_permission\":null}";
+
+    var organization = client.organization(7, 500, "org");
+
+    assertThat(organization.id()).isEqualTo(500);
+    assertThat(organization.basePermission()).isEmpty();
+    verify(tokens).tokenFor(7);
+    verifyNoInteractions(app);
+  }
+
+  @Test
   void orgMembersUseASeparatePermissionWithoutBroadeningTheSharedIssueToken() {
     response =
         request -> {

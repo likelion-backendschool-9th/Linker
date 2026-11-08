@@ -338,6 +338,29 @@ class TeamSetupIntegrationTest {
   }
 
   @Test
+  void unknownOrganizationBasePermissionDoesNotPersistAnAssumedPermission() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long team = create(session);
+    when(github.organization(anyLong(), eq(500L), eq("org")))
+        .thenReturn(new Organization(500, "ORG_500", "org", "", ""));
+
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
+    assertThat(jdbc.queryForObject("select org_base_permission from teams where id=?", String.class, team))
+        .isNull();
+
+    when(github.organization(anyLong(), eq(500L), eq("org")))
+        .thenReturn(new Organization(500, "ORG_500", "org", "", "read"));
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.basePermission").value("READ"));
+    assertThat(jdbc.queryForObject("select org_base_permission from teams where id=?", String.class, team))
+        .isEqualTo("read");
+  }
+
+  @Test
   void roleAndRepositoryChecksRejectForeignWritesAndReadOnlyMutations() throws Exception {
     var owner = user("owner", UserType.DEVELOPER);
     var session = cookie(owner);

@@ -56,6 +56,10 @@ class SitemapIntegrationTest {
     r.add("linker.issues.webhook-enabled", () -> "false");
   }
 
+  // Delivery has separate coverage and must not race this fixture's TRUNCATE.
+  @org.springframework.test.context.bean.override.mockito.MockitoBean
+  com.linker.backend.async.notification.NotificationDeliveryService notificationDelivery;
+
   @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
   @Autowired UserRepository users;
