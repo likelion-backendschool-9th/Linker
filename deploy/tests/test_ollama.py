@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def configuration(*files, network=None):
+def configuration(*files, network=None, model=None):
     env = {key: value for key, value in os.environ.items() if not key.startswith("OLLAMA_")}
     for key in ("DB_PASSWORD", "JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY"):
         env.pop(key, None)
@@ -18,6 +18,8 @@ def configuration(*files, network=None):
         env.update(DB_PASSWORD="validation-only", JWT_PRIVATE_KEY="validation-only", JWT_PUBLIC_KEY="validation-only")
     if network is not None:
         env["OLLAMA_DOCKER_NETWORK"] = network
+    if model is not None:
+        env["OLLAMA_MODEL"] = model
     command = ["docker", "compose", "--env-file", "/dev/null"]
     for path in files:
         command.extend(["-f", path])
@@ -53,13 +55,16 @@ class OllamaConfigurationTest(unittest.TestCase):
         self.assertTrue(config["networks"]["default"]["external"])
         self.assertEqual({"ollama"}, set(config["services"]))
 
-    def test_connection_settings_reach_only_backend_without_selecting_a_model(self):
+    def test_connection_settings_reach_only_backend_with_the_demo_model(self):
         result = configuration("compose.yml", "compose.prod.yml")
         self.assertEqual(0, result.returncode, result.stderr)
         services = json.loads(result.stdout)["services"]
         self.assertEqual({"db", "redis", "backend", "web", "proxy"}, set(services))
         self.assertEqual("http://ollama:11434", services["backend"]["environment"]["OLLAMA_BASE_URL"])
-        self.assertEqual("", services["backend"]["environment"]["OLLAMA_MODEL"])
+        self.assertEqual("qwen3:4b", services["backend"]["environment"]["OLLAMA_MODEL"])
+        overridden = configuration("compose.yml", "compose.prod.yml", model="another-approved-model:test")
+        self.assertEqual(0, overridden.returncode, overridden.stderr)
+        self.assertEqual("another-approved-model:test", json.loads(overridden.stdout)["services"]["backend"]["environment"]["OLLAMA_MODEL"])
         for name in ("db", "redis", "web", "proxy"):
             self.assertFalse(any(key.startswith("OLLAMA_") for key in services[name].get("environment", {})))
 
