@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button/Button';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import type { OverlayControl } from '@/lib/navigation/use-overlay';
 
@@ -21,33 +20,75 @@ export function TechTagPicker({
   max: number;
   onToggle: (name: string) => void;
 }) {
+  // The onboarding reference uses a short, compact suggestion set rather than
+  // the full catalog. Keep names canonical to the API; repeated suggestions in
+  // the reference represent the same selectable tag.
+  const suggestions = [
+    ['Java', 'Java'],
+    ['Next.js', 'Next.js'],
+    ['TypeScript', 'TypeScript'],
+    ['Figma', 'Figma'],
+    ['Spring Boot', 'Spring'],
+    ['Next.js', 'Next.js'],
+    ['Node.js', 'node.js'],
+    ['Figma', 'Figma'],
+    ['TypeScript', 'TypeScript'],
+    ['Kubernetes', 'kubernetes'],
+    ['React', 'React'],
+    ['Java', 'Java'],
+    ['Figma', 'Figma'],
+    ['React Native', 'React Native'],
+    ['Kubernetes', 'kubernetes'],
+    ['TypeScript', 'TypeScript'],
+    ['Java', 'Java'],
+    ['Next.js', 'Next.js'],
+    ['Figma', 'Figma'],
+    ['Spring Boot', 'Spring'],
+  ];
+  const tagByName = new Map(tags.map((tag) => [tag.name, tag]));
+  const visibleTags = suggestions.flatMap(([name, label], index) => {
+    const tag = tagByName.get(name);
+    return tag ? [{ ...tag, label, suggestionId: `${tag.id}-${index}` }] : [];
+  });
+
   return (
     <OverlaySheet
       overlay={overlay}
-      title="기술 스택 선택"
+      title="기술 스택"
       description={`최대 ${max}개까지 선택할 수 있어요.`}
+      describeHidden
+      classNames={{
+        scrim: styles.scrim,
+        sheet: styles.sheet,
+        header: styles.header,
+        title: styles.title,
+        close: styles.close,
+        body: styles.body,
+      }}
     >
-      <ul className={styles.list}>
-        {tags.map((tag) => {
-          const checked = selected.includes(tag.name);
-          return (
-            <li key={tag.id}>
-              <label className={styles.option}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={!checked && selected.length >= max}
-                  onChange={() => onToggle(tag.name)}
-                />
-                <span>{tag.name}</span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
-      <Button block onClick={overlay.close}>
-        선택 완료
-      </Button>
+      <div className={styles.content}>
+        <ul className={styles.list} aria-label="기술 스택 목록">
+          {visibleTags.map((tag) => {
+            const checked = selected.includes(tag.name);
+            return (
+              <li key={tag.suggestionId}>
+                <label className={styles.option}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={!checked && selected.length >= max}
+                    onChange={() => onToggle(tag.name)}
+                  />
+                  <span>{tag.label}</span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <button type="button" className={styles.done} onClick={overlay.close}>
+          완료
+        </button>
+      </div>
     </OverlaySheet>
   );
 }

@@ -184,7 +184,7 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 02 | A | GET | `/api/v1/user/onboarding` | Remaining steps + defaults loaded from GitHub | user |
-| 02 | A | POST | `/api/v1/user/onboarding/agreements` | Age 14+, terms, privacy (required), marketing (optional) consent; store terms version | user |
+| 02 | A | POST | `/api/v1/user/onboarding/agreements` | Terms and privacy (required), marketing (optional) consent; store terms version | user |
 | 02 | A | PUT | `/api/v1/user/onboarding/profile` | Save name, bio, blog, tech stack, looking for team, job-seeking status, then finish onboarding | user |
 | 02 | A | PUT | `/api/v1/user/onboarding/email` | `[Included]` Entered only when no email came from GitHub | user |
 | 04 | A | GET | `/api/v1/public/user/{login}` | Header (layout per member type), completion record, new username if changed. If logged in: follow relation, block check; "제안만 받기" (Offers only) shown to recruiters only | public |
@@ -599,7 +599,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 ### P02. 온보딩 `[Required]` · `/onboarding`
 
-**핵심 산출물:** 약관·연령 동의와 프로필 단계, 재개·태그·구직 상태·완료 세션.
+**핵심 산출물:** 약관 동의와 프로필 단계, 재개·태그·구직 상태·완료 세션.
 
 **담당:** A · **일정:** D4 morning (0.5 day) · **선행:** 01 · **근거:** A-1, A-2, A-3, H-4
 
@@ -611,7 +611,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: `GET /api/v1/public/tech-tags`, `GET /api/v1/public/legal-documents/{slug}` (03)
 - Tables: new user_agreements, user_tech_tags · shared users, tech_tags (seed, created in 00)
 - [ ] Server: store GitHub verified email (not shown), tech stack seed
-- [ ] Frontend: stepped (terms → profile), resume where left off, tech stack sheet (max 10), job-seeking status picker component (reused in 05)
+- [ ] Frontend: stepped (terms → profile), resume where left off; blank name and bio fields, tech stack sheet (max 5), job-seeking status picker component (reused in 05)
 
 </details>
 

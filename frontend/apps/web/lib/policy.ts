@@ -36,7 +36,7 @@ export const ACCOUNT = {
 export const PROFILE = {
   displayName: { min: 1, max: 20 },
   bioMax: 160,
-  techStackMax: 10,
+  techStackMax: 5,
   jobCategoriesMax: 3,
   /** POL-A-3. The server turns the badge off after this many days without login. */
   lookingForTeamIdleDays: 30,

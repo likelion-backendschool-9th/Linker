@@ -52,6 +52,7 @@
   --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
   --space-home-indicator: 24px; /* Figma bottom indicator area (인디케이션 영역); real devices use the larger of this and the safe area */
   --sheet-header-height-tech: 60px; /* 20 tech stack sheet title row (Figma 301:1551) */
+  --sheet-header-height-onboarding-status: 54px; /* 02 onboarding job-status sheet */
   --space-recruit-field-block: 17px; /* 20 intro textarea: text top and counter bottom (Figma 600:659) */
 
   /* Radius */
@@ -156,6 +157,7 @@
   --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
   --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
   --textarea-height-intro: 120px; /* 20 프로젝트 소개 textarea (Figma) */
+  --textarea-height-onboarding-bio: 108px; /* 02 basic profile bio field (Figma) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */

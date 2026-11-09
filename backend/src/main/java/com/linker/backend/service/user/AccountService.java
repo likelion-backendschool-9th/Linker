@@ -157,9 +157,6 @@ public class AccountService {
 		if (request.termsVersion() == null || !version.equals(request.termsVersion())) {
 			throw new ApiException(400, "VALIDATION_ERROR", "요청 값을 확인해 주세요");
 		}
-		if (!request.ageConfirmed()) {
-			throw new ApiException(400, "VALIDATION_ERROR", "만 14세 이상인지 확인해 주세요.");
-		}
 		if (!request.termsAccepted()) {
 			throw new ApiException(400, "VALIDATION_ERROR", "이용약관에 동의해 주세요.");
 		}
@@ -168,7 +165,6 @@ public class AccountService {
 		}
 		User user = requireUser(principal);
 		Instant now = Instant.now(clock);
-		record(user, AgreementType.AGE_14, true, version, now);
 		record(user, AgreementType.TERMS, true, version, now);
 		record(user, AgreementType.PRIVACY, true, version, now);
 		record(user, AgreementType.MARKETING, request.marketingAccepted(), version, now);
@@ -291,10 +287,6 @@ public class AccountService {
 
 	private void requireAgreements(Long userId) {
 		if (!agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(
-				userId, AgreementType.AGE_14, legal.termsVersion())) {
-			throw new ApiException(400, "VALIDATION_ERROR", "만 14세 이상인지 확인해 주세요.");
-		}
-		if (!agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(
 				userId, AgreementType.TERMS, legal.termsVersion())) {
 			throw new ApiException(400, "VALIDATION_ERROR", "이용약관에 동의해 주세요.");
 		}
@@ -306,8 +298,7 @@ public class AccountService {
 
 	private boolean requiredAgreements(Long userId) {
 		String version = legal.termsVersion();
-		return agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(userId, AgreementType.AGE_14, version)
-				&& agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(userId, AgreementType.TERMS, version)
+		return agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(userId, AgreementType.TERMS, version)
 				&& agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(userId, AgreementType.PRIVACY, version);
 	}
 
