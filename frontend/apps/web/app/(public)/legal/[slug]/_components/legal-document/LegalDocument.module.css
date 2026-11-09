@@ -8,8 +8,8 @@
   margin-top: calc(var(--space-xs) - var(--space-md));
 }
 
-.termsLayout {
-  /* The terms frame begins at the first clause directly below the stack header. */
+.readerLayout {
+  /* Terms and privacy frames begin at the first clause directly below the stack header. */
   margin-top: calc(0px - var(--space-md));
 }
 
@@ -74,23 +74,23 @@
   overflow-wrap: anywhere;
 }
 
-.termsMarkdown {
+.readerMarkdown {
   font-size: var(--font-size-legal);
   line-height: var(--line-height-legal);
 }
 
-.termsLayout .termsMarkdown h2 {
+.readerLayout .readerMarkdown h2 {
   font-size: inherit;
   line-height: inherit;
   margin-top: var(--space-md);
   margin-bottom: var(--space-md);
 }
 
-.termsLayout .termsMarkdown h2:first-child {
+.readerLayout .readerMarkdown h2:first-child {
   margin-top: 0;
 }
 
-.termsLayout .termsMarkdown ol {
+.readerLayout .readerMarkdown ol {
   padding-left: calc(var(--space-md) + var(--space-xxs));
 }
 

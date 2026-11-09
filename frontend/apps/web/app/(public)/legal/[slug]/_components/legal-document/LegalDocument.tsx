@@ -36,7 +36,7 @@ export function LegalDocument({
   documents: LegalDocumentLink[];
 }) {
   const headings = readHeadings(document.body);
-  const isTerms = document.slug === 'terms';
+  const usesReaderLayout = document.slug === 'terms' || document.slug === 'privacy';
   let headingIndex = 0;
   const components: Components = {
     h1: () => null,
@@ -49,8 +49,8 @@ export function LegalDocument({
   };
 
   return (
-    <div className={`${styles.layout} ${isTerms ? styles.termsLayout : ''}`}>
-      {!isTerms && (
+    <div className={`${styles.layout} ${usesReaderLayout ? styles.readerLayout : ''}`}>
+      {!usesReaderLayout && (
         <nav className={styles.documentNav} aria-label="약관 및 정책 문서">
           <h2>문서</h2>
           <ul>
@@ -69,13 +69,13 @@ export function LegalDocument({
       )}
 
       <article className={styles.article}>
-        {!isTerms && (
+        {!usesReaderLayout && (
           <p className={styles.meta}>
             버전 {document.version} <span aria-hidden="true">·</span> 시행일 {document.effectiveDate}
           </p>
         )}
 
-        {!isTerms && headings.length > 0 && (
+        {!usesReaderLayout && headings.length > 0 && (
           <nav className={styles.toc} aria-label="문서 목차">
             <h2>목차</h2>
             <ol>
@@ -91,7 +91,7 @@ export function LegalDocument({
           </nav>
         )}
 
-        <div className={`${styles.markdown} ${isTerms ? styles.termsMarkdown : ''}`}>
+        <div className={`${styles.markdown} ${usesReaderLayout ? styles.readerMarkdown : ''}`}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]} components={components}>
             {document.body}
           </ReactMarkdown>
