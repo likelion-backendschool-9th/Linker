@@ -1,7 +1,7 @@
 'use client';
 
-// Custom select (Figma 600:733): expands inline below the trigger, pushing the rest of the
-// form down — not a native <select> popup (can't be styled) or a floating/portal panel.
+// Custom select (Figma 629:508): the option box joins the trigger's bottom edge and pushes the
+// rest of the form down — not a native <select> popup (can't be styled) or a floating panel.
 import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
 import { useId, useState } from 'react';
 
@@ -14,6 +14,11 @@ export type DropdownOption = { value: string; label: string };
 type DropdownProps = {
   id?: string;
   'aria-labelledby'?: string;
+  'aria-describedby'?: string;
+  /** Red outline for a validation error; the message itself is reached via aria-describedby */
+  invalid?: boolean;
+  /** No choices to offer (e.g. no team to link): the trigger shows the placeholder and can't open */
+  disabled?: boolean;
   /** '' means no selection */
   value: string;
   placeholder: string;
@@ -26,16 +31,24 @@ type DropdownProps = {
 export function Dropdown({
   id,
   'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
+  invalid = false,
+  disabled = false,
   value,
   placeholder,
   options,
   onChange,
   emptyIsPlaceholder = true,
 }: DropdownProps) {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpen] = useState(false);
+  const open = openState && !disabled;
   const listId = useId();
   const selected = options.find((option) => option.value === value);
   const showsPlaceholder = emptyIsPlaceholder && !value;
+
+  const triggerClass = [styles.trigger, showsPlaceholder && styles.placeholder, open && styles.open, invalid && styles.invalid]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div>
@@ -43,9 +56,11 @@ export function Dropdown({
         type="button"
         id={id}
         aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         aria-expanded={open}
         aria-controls={listId}
-        className={`${styles.trigger} ${showsPlaceholder ? styles.placeholder : ''}`}
+        className={triggerClass}
+        disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
         <span>{selected ? selected.label : placeholder}</span>

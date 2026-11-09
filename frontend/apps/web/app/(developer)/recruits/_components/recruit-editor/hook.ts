@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, type FieldErrors } from 'react-hook-form';
 
 import { useDraft } from '@/features/draft-restore/use-draft';
 import { ApiError } from '@/lib/api/api-error';
@@ -14,7 +14,7 @@ import { todayKst } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { PLAN_LIMITS } from '@/lib/policy';
 import { useAppSignalStore } from '@/stores/app-signal-store';
-import { toast } from '@/stores/toast-store';
+import { dismissToast, toast } from '@/stores/toast-store';
 
 import {
   createRecruit,
@@ -58,6 +58,35 @@ function saveErrorMessage(error: unknown): string {
   return '저장하지 못했어요. 작성한 내용은 저장해 두었어요.';
 }
 
+/** Fields in on-screen order, so the toast names the first problem the user would meet */
+const FIELD_ORDER = ['title', 'intro', 'teamId', 'roles', 'format', 'region', 'deadline'] as const;
+
+/** First validation message for the error toast; role rows carry theirs per row and field */
+function firstErrorMessage(errors: FieldErrors<RecruitFormValues>): string {
+  for (const name of FIELD_ORDER) {
+    const error = errors[name];
+    if (!error) continue;
+    if (name === 'roles') {
+      const roles = errors.roles;
+      const listMessage = roles?.message ?? roles?.root?.message;
+      if (listMessage) return listMessage;
+      const row = Array.isArray(roles) ? roles.find(Boolean) : undefined;
+      const rowMessage = row?.role?.message ?? row?.headcount?.message;
+      if (rowMessage) return rowMessage;
+      continue;
+    }
+    if (error.message) return error.message;
+  }
+  return '입력한 내용을 확인해 주세요.';
+}
+
+/** Errors show as one toast at the top (not under each field); a new one replaces the last */
+const ERROR_TOAST = 'recruit-editor-error';
+
+function showError(message: string, action?: { label: string; onClick: () => void }) {
+  toast(message, { tone: 'alert', placement: 'top', key: ERROR_TOAST, action });
+}
+
 export function useRecruitEditor(props: RecruitEditorProps) {
   const viewer = useViewer();
   const options = useQuery(editorOptions(viewer.login));
@@ -89,7 +118,6 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
   const deadlineSheet = useOverlay('recruit-deadline');
   const [today] = useState(() => todayKst());
   const atLimit = creating && options.openCount >= options.openLimit;
-  const [failure, setFailure] = useState<string | null>(null);
   const done = useRef(false);
 
   const form = useForm<RecruitFormValues, unknown, RecruitFormValues>({
@@ -141,7 +169,7 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
       recruitId === null
         ? createRecruit(toRecruitRequest(values))
         : updateRecruit(recruitId, toRecruitRequest(values)),
-    onMutate: () => setFailure(null),
+    onMutate: () => dismissToast(ERROR_TOAST),
     onSuccess: async ({ id: savedId }) => {
       done.current = true;
       draft.clear();
@@ -154,17 +182,17 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
       draft.save(form.getValues());
       // PLAN_LIMIT already opened the shared limit sheet
       if (!(error instanceof ApiError && error.code === 'PLAN_LIMIT')) {
-        setFailure(saveErrorMessage(error));
+        showError(saveErrorMessage(error), { label: '다시 보내기', onClick: () => void submit() });
       }
     },
   });
 
-  const submit = form.handleSubmit((values) => {
-    if (!save.isPending) save.mutate(values);
-  });
-  const errorId = (name: string) => `${field(name)}-error`;
-  const describe = (...ids: (string | false | undefined)[]) =>
-    ids.filter(Boolean).join(' ') || undefined;
+  const submit = form.handleSubmit(
+    (values) => {
+      if (!save.isPending) save.mutate(values);
+    },
+    (invalid) => showError(firstErrorMessage(invalid)),
+  );
 
   function removeTechTag(tag: string) {
     form.setValue(
@@ -194,12 +222,9 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
 
   return {
     field,
-    errorId,
-    describe,
     creating,
     recruitId,
     atLimit,
-    failure,
     form,
     errors,
     watched,

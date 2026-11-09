@@ -2,9 +2,9 @@
 
 // Client boundary: the 20 form (react-hook-form + zod), device draft, limit notice, save
 import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
-import { CloseLinearIcon } from '@solar-icons/static/linear/close';
+import { CloseBoldIcon } from '@solar-icons/static/bold/close';
+import { useLayoutEffect, useRef } from 'react';
 
-import { Button } from '@/components/ui/button/Button';
 import { CharCounter } from '@/components/ui/char-counter/CharCounter';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Icon } from '@/components/ui/icon';
@@ -20,7 +20,8 @@ import { TechTagSheet } from '@/features/tech-tags/tech-tag-sheet/TechTagSheet';
 import { countChars } from '@/lib/format/text';
 import { RECRUIT } from '@/lib/policy';
 
-import { DeadlineSheet } from './deadline-sheet/DeadlineSheet';
+import { DatePickerSheet } from '../../../_components/date-picker-sheet';
+
 import { Dropdown } from './dropdown/Dropdown';
 import { RecruitStatusSection } from './recruit-status-section';
 import styles from './RecruitEditor.module.css';
@@ -64,11 +65,8 @@ function EditorForm(
 ) {
   const {
     field,
-    errorId,
-    describe,
     creating,
     recruitId,
-    failure,
     form,
     errors,
     watched,
@@ -101,11 +99,22 @@ function EditorForm(
   // Figma 257:2580's disabled look gates on the required fields being filled in, same as the
   // zod schema's own requirements; still clickable while "empty" so handleSubmit's errors show
   // where exactly to fix something, rather than leaving a disabled button with no explanation.
+  // 프로젝트 소개 grows with its text instead of scrolling (CSS keeps the 120px minimum)
+  const introField = form.register('intro');
+  const introRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const element = introRef.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  }, [watched.intro]);
+
   const canSubmit = Boolean(
     watched.title?.trim() &&
       watched.intro?.trim() &&
       (watched.roles?.length ?? 0) > 0 &&
       watched.deadline &&
+      watched.teamId &&
       (watched.format !== 'OFFLINE' || watched.region?.trim()),
   );
 
@@ -125,14 +134,8 @@ function EditorForm(
             className={styles.input}
             placeholder="프로젝트 제목을 작성해 주세요."
             aria-invalid={errors.title ? true : undefined}
-            aria-describedby={errors.title ? errorId('title') : undefined}
             {...form.register('title')}
           />
-          {errors.title && (
-            <p id={errorId('title')} className={styles.error}>
-              {errors.title.message}
-            </p>
-          )}
         </div>
 
         <div className={styles.field}>
@@ -147,10 +150,15 @@ function EditorForm(
             <textarea
               id={field('intro')}
               className={styles.textarea}
+              rows={1}
               placeholder="프로젝트에 관해 간단하게 글을 작성해 주세요"
               aria-invalid={errors.intro ? true : undefined}
-              aria-describedby={describe(field('intro-count'), errors.intro && errorId('intro'))}
-              {...form.register('intro')}
+              aria-describedby={field('intro-count')}
+              {...introField}
+              ref={(element) => {
+                introField.ref(element);
+                introRef.current = element;
+              }}
             />
             <CharCounter
               id={field('intro-count')}
@@ -159,11 +167,36 @@ function EditorForm(
               className={styles.introCounter}
             />
           </div>
-          {errors.intro && (
-            <p id={errorId('intro')} className={styles.error}>
-              {errors.intro.message}
-            </p>
-          )}
+        </div>
+
+        {/* Figma 600:715: a post must link a team I own or admin (POL-R-1) — invites on 21 add
+            people to it — so the notice stays under the field even when a team is chosen */}
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
+            <span id={field('team-select')} className={styles.label}>
+              팀 선택
+            </span>
+            {requiredDot}
+          </div>
+          <Dropdown
+            aria-labelledby={field('team-select')}
+            aria-describedby={field('team-notice')}
+            invalid={Boolean(errors.teamId)}
+            value={watched.teamId ?? ''}
+            placeholder={options.teams.length === 0 ? '연결할 수 있는 팀이 없어요' : '팀을 선택해 주세요'}
+            disabled={options.teams.length === 0}
+            options={options.teams.map((team) => ({ value: String(team.id), label: team.name }))}
+            onChange={(next) =>
+              form.setValue('teamId', next, {
+                shouldDirty: true,
+                shouldValidate: form.formState.isSubmitted,
+              })
+            }
+          />
+          <p id={field('team-notice')} className={styles.notice}>
+            <span aria-hidden className={styles.noticeDot} />
+            팀이 없으면 모집글을 작성할 수 없습니다.
+          </p>
         </div>
 
         <RoleFields
@@ -207,14 +240,8 @@ function EditorForm(
               className={styles.input}
               placeholder="예: 서울 강남"
               aria-invalid={errors.region ? true : undefined}
-              aria-describedby={errors.region ? errorId('region') : undefined}
               {...form.register('region')}
             />
-            {errors.region && (
-              <p id={errorId('region')} className={styles.error}>
-                {errors.region.message}
-              </p>
-            )}
           </div>
         )}
 
@@ -228,8 +255,9 @@ function EditorForm(
           <button
             type="button"
             aria-labelledby={field('deadline')}
-            aria-describedby={errors.deadline ? errorId('deadline') : undefined}
-            className={styles.dropdownTrigger}
+            className={
+              errors.deadline ? `${styles.dropdownTrigger} ${styles.invalid}` : styles.dropdownTrigger
+            }
             onClick={() => deadlineSheet.open()}
           >
             <span className={watched.deadline ? undefined : styles.dropdownPlaceholder}>
@@ -237,13 +265,10 @@ function EditorForm(
             </span>
             <Icon svg={AltArrowDownLinearIcon} className={styles.dropdownChevron} />
           </button>
-          {errors.deadline && (
-            <p id={errorId('deadline')} className={styles.error}>
-              {errors.deadline.message}
-            </p>
-          )}
-          <DeadlineSheet
+          <DatePickerSheet
             overlay={deadlineSheet}
+            title="마감일"
+            description="마감일을 고르고 저장을 누르면 반영돼요."
             value={watched.deadline ?? ''}
             min={today}
             max={options.maxDeadlineDate}
@@ -304,9 +329,8 @@ function EditorForm(
             className={styles.dropdownTrigger}
             onClick={() => tagSheet.open()}
           >
-            <span className={techTags.length === 0 ? styles.dropdownPlaceholder : undefined}>
-              {techTags.length === 0 ? '기술 스택을 선택해 주세요' : techTags.join(', ')}
-            </span>
+            {/* Always the placeholder: what's chosen shows only as the chips below */}
+            <span className={styles.dropdownPlaceholder}>기술 스택을 선택해 주세요</span>
             <Icon svg={AltArrowDownLinearIcon} className={styles.dropdownChevron} />
           </button>
           {techTags.length > 0 && (
@@ -315,7 +339,7 @@ function EditorForm(
                 <li key={tag}>
                   <button type="button" className={styles.tag} onClick={() => removeTechTag(tag)}>
                     <span aria-hidden>{tag}</span>
-                    <Icon svg={CloseLinearIcon} className={styles.chipIcon} />
+                    <Icon svg={CloseBoldIcon} className={styles.tagIcon} />
                     <span className="sr-only">{tag} 빼기</span>
                   </button>
                 </li>
@@ -324,44 +348,17 @@ function EditorForm(
           )}
         </div>
 
-        <div className={styles.field}>
-          <div className={styles.labelRow}>
-            <span id={field('team-select')} className={styles.label}>
-              연결할 팀
-            </span>
-            {optionalHint}
-          </div>
-          <Dropdown
-            aria-labelledby={field('team-select')}
-            value={watched.teamId ?? ''}
-            placeholder="팀 없이 작성"
-            emptyIsPlaceholder={false}
-            options={options.teams.map((team) => ({ value: String(team.id), label: team.name }))}
-            onChange={(next) => form.setValue('teamId', next, { shouldDirty: true })}
-          />
-        </div>
-
-        {failure && (
-          <div className={styles.failure} role="alert">
-            <p>{failure}</p>
-            <Button variant="outline" onClick={() => void submit()}>
-              다시 보내기
-            </Button>
-          </div>
-        )}
-
         <div className={styles.submitBar}>
-          {/* Stays clickable even when "disabled" (Figma 257:2580 look): at the cap, the
+          {/* Stays clickable even when "disabled" (Figma 600:729 look): at the cap, the
               server's PLAN_LIMIT reopens the limit sheet, and while required fields are empty
               submitting still runs validation and points at what's missing. */}
-          <Button
+          <button
             type="submit"
-            block
             className={styles.submitButton}
             aria-disabled={save.isPending || !canSubmit}
           >
-            {save.isPending ? '저장하는 중…' : creating ? '모집 글 올리기' : '수정 완료'}
-          </Button>
+            {save.isPending ? '저장하는 중…' : creating ? '모집 글 작성' : '수정 완료'}
+          </button>
         </div>
       </form>
 

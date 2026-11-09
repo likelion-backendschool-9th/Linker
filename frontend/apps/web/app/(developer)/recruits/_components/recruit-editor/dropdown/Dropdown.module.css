@@ -1,5 +1,5 @@
-/* Figma 600:733: expands inline below the trigger (not a floating popover) — both boxes use
-   the same filled-gray field look as the rest of the page, just stacked with a small gap */
+/* Figma 629:508: a 48px trigger and its option box read as one gray block — the trigger loses
+   its bottom corners while open and the box carries them. 12px text, no dividers. */
 
 .trigger {
   display: flex;
@@ -8,31 +8,49 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-body);
+  padding: var(--space-sm) var(--space-recruit-field-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
   font-family: var(--font-sans);
-  color: var(--color-text-body);
+  color: var(--color-text-title-cool);
   text-align: left;
   background-color: var(--color-canvas-cool);
   border: 0;
   border-radius: var(--radius-control-md);
+  box-shadow: none;
+  outline: none;
   cursor: pointer;
 }
 
+.trigger.open {
+  border-radius: var(--radius-control-md) var(--radius-control-md) 0 0;
+}
+
+/* Same focus line as the text fields (Figma 364:2098), drawn inside */
 .trigger:focus-visible {
   outline: 2px solid var(--color-selection);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .trigger.placeholder {
   color: var(--color-text-placeholder-cool);
 }
 
+.trigger.invalid {
+  outline: 2px solid var(--color-status-error);
+  outline-offset: -2px;
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+}
+
 .chevron,
 .chevronOpen {
   --icon-size: var(--icon-size-sm);
+  --icon-stroke-width: 1.5;
   flex-shrink: 0;
-  color: var(--color-text-unselected);
+  color: var(--color-text-disabled-cool);
   transition: transform var(--duration-overlay) var(--ease-standard);
 }
 
@@ -40,33 +58,32 @@
   transform: rotate(180deg);
 }
 
+/* Option box (600:733): side padding 10, items 10/5 → text lines up with the trigger's 15 */
 .panel {
-  margin-top: var(--space-xxs);
-  overflow: hidden;
+  display: grid;
+  padding: 0 var(--space-row-block);
   background-color: var(--color-canvas-cool);
-  border-radius: var(--radius-control-md);
+  border-radius: 0 0 var(--radius-control-md) var(--radius-control-md);
 }
 
 .item {
   display: block;
   width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-body);
+  padding: var(--space-row-block) var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-placeholder-cool);
   text-align: left;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--color-hairline-cool);
   cursor: pointer;
 }
 
-.item:last-child {
-  border-bottom: 0;
-}
-
+/* Chosen option (600:735): blue, medium */
 .item[aria-selected='true'] {
-  color: var(--color-text-heading);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-selection);
 }
 
 .item:focus-visible {

@@ -40,10 +40,7 @@ export function RoleFields({
   const errors = form.formState.errors.roles;
   const unused = RECRUIT_ROLES.filter((role) => !roles.some((item) => item?.role === role));
   const headingId = `${idPrefix}-heading`;
-  const listErrorId = `${idPrefix}-error`;
   const roleSheet = useOverlay('recruit-role');
-  // Array-level message (e.g. "add at least one") sits on `root` or the array itself
-  const listError = errors?.root?.message ?? errors?.message;
 
   const setHeadcount = (index: number, next: number) =>
     form.setValue(`roles.${index}.headcount`, next, {
@@ -59,11 +56,9 @@ export function RoleFields({
         </h2>
         {requiredDot}
       </div>
-      <p className={styles.hint}>
-        역할마다 {HEADCOUNT_MIN}~{HEADCOUNT_MAX}명까지 모집할 수 있어요.
-      </p>
 
-      <ul className={styles.roles} aria-describedby={listError ? listErrorId : undefined}>
+      {/* Validation messages go to the editor's top toast (hook.ts), not under the rows */}
+      <ul className={styles.roles}>
         {fields.map((item, index) => {
           const current = roles[index];
           const roleId = current?.id ?? null;
@@ -102,14 +97,7 @@ export function RoleFields({
                     aria-label={`${label} 인원`}
                     className={styles.stepValue}
                     aria-invalid={rowErrors?.headcount ? true : undefined}
-                    aria-describedby={
-                      [
-                        accepted > 0 ? countHint : null,
-                        rowErrors?.headcount ? `${countInput}-error` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' ') || undefined
-                    }
+                    aria-describedby={accepted > 0 ? countHint : undefined}
                     {...form.register(`roles.${index}.headcount`, { valueAsNumber: true })}
                   />
                   <button
@@ -142,22 +130,10 @@ export function RoleFields({
                   이미 {accepted}명을 수락해서 그보다 줄일 수 없어요.
                 </p>
               )}
-              {rowErrors?.role && <p className={styles.error}>{rowErrors.role.message}</p>}
-              {rowErrors?.headcount && (
-                <p id={`${countInput}-error`} className={styles.error}>
-                  {rowErrors.headcount.message}
-                </p>
-              )}
             </li>
           );
         })}
       </ul>
-
-      {listError && (
-        <p id={listErrorId} className={styles.error}>
-          {listError}
-        </p>
-      )}
 
       <button
         type="button"

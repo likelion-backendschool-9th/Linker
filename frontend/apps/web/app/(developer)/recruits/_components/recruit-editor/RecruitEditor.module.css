@@ -5,6 +5,12 @@
   gap: var(--space-xl);
   max-width: var(--form-max-width);
   margin-inline: auto;
+  /* Room for the fixed CTA below plus a gap, so the last field (기술 스택 chips) scrolls fully
+     clear of it; same bottom offset as .submitBar, safe area included */
+  padding-bottom: calc(
+    var(--control-height-sheet) + max(var(--space-home-indicator), env(safe-area-inset-bottom)) +
+      var(--space-xl)
+  );
 }
 
 .form {
@@ -25,6 +31,12 @@
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+/* A rendered <legend> sits outside the fieldset's grid, so the gap above never reaches it:
+   give 진행 방식 the same 12 to its buttons as every other label (Figma 600:674) */
+.fieldset > legend.labelRow {
+  margin-bottom: var(--space-sm);
 }
 
 /* Label row: name + optional hint + required dot, all inline (Figma). Also used as a <legend>,
@@ -70,38 +82,47 @@
   border-radius: var(--radius-full);
 }
 
-/* Text input look (Figma: filled gray, 14 radius; "Figma wins" over the ch.5 default recipe) */
+/* Field look (Figma 600:625): filled gray, 14 radius, no border and no shadow at rest */
 .input,
 .textarea,
 .dropdownTrigger {
   width: 100%;
   min-height: var(--control-height);
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-recruit-field-inline);
   /* Never below 16px: smaller input text makes iOS zoom on focus (guide ch. 2) */
   font-size: var(--font-size-body);
   font-family: var(--font-sans);
-  color: var(--color-text-body);
+  color: var(--color-text-title-cool);
   background-color: var(--color-canvas-cool);
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-control-md);
+  box-shadow: none;
+  outline: none;
 }
 
-/* Only the title and intro fields carry a hairline border in Figma; dropdown-style fields don't */
+/* Single-line fields are exactly 48 high (Figma 600:645), whatever the 16px text's line box */
 .input,
-.textarea {
-  border-color: var(--color-hairline-cool);
+.dropdownTrigger {
+  height: var(--control-height);
+  padding-block: 0;
 }
 
-/* The shared global outline (guide ch. 2) stays; this adds the page's own blue focus border
-   on top of it, same technique as the header search field's --color-focus-ring-search */
+/* Focus only (Figma 364:2098): a 2px #2563eb line drawn inside, so nothing in the field moves */
 .input:focus,
 .textarea:focus,
 .dropdownTrigger:focus-visible {
-  border-color: var(--color-selection);
+  outline: 2px solid var(--color-selection);
+  outline-offset: -2px;
 }
 
+/* Grows with its content instead of scrolling (height set from scrollHeight in RecruitEditor);
+   the bottom padding keeps the last line clear of the overlaid "0/500" counter */
 .textarea {
+  display: block;
   min-height: var(--textarea-height-intro);
+  padding: var(--space-recruit-field-block) var(--space-recruit-field-inline)
+    calc(var(--space-recruit-field-block) * 2 + var(--line-height-card-desc));
+  overflow: hidden;
   resize: none;
   line-height: var(--line-height-body);
 }
@@ -114,31 +135,38 @@
    14px/--color-text-meta, this field is 12px/--color-text-muted-cool */
 .introCounter.introCounter {
   position: absolute;
-  right: var(--space-md);
-  bottom: var(--space-sm);
+  right: var(--space-recruit-field-inline);
+  bottom: var(--space-recruit-field-block);
   font-size: var(--font-size-micro);
   color: var(--color-text-muted-cool);
 }
 
 .input::placeholder,
 .textarea::placeholder {
+  font-size: var(--font-size-placeholder);
   color: var(--color-text-placeholder-cool);
 }
 
 .input[aria-invalid='true'],
 .textarea[aria-invalid='true'],
+.dropdownTrigger.invalid {
+  outline: 2px solid var(--color-status-error);
+  outline-offset: -2px;
+}
+
 .stepValue[aria-invalid='true'] {
   border-color: var(--color-status-error);
 }
 
-/* Button-triggered dropdowns (마감일, 기술 스택): no border, trailing chevron.
-   프로젝트 목적 / 연결할 팀 use the ./dropdown/Dropdown component instead (Figma 588:613). */
+/* Sheet-opening selects (마감일, 기술 스택), closed look of Figma 629:508: 12px text, trailing
+   chevron. 프로젝트 목적 / 연결할 팀 use ./dropdown/Dropdown, which opens inline. */
 .dropdownTrigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
   text-align: left;
   cursor: pointer;
 }
@@ -155,8 +183,9 @@
 
 .dropdownChevron {
   --icon-size: var(--icon-size-sm);
+  --icon-stroke-width: 1.5;
   flex-shrink: 0;
-  color: var(--color-text-unselected);
+  color: var(--color-text-disabled-cool);
 }
 
 .fieldFoot {
@@ -176,10 +205,22 @@
   color: var(--color-text-secondary);
 }
 
-.error {
-  font-size: var(--font-size-caption);
+/* Standing field notice (Figma 634:566): 4px muted dot + 12px muted text, 5 apart */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-micro);
   line-height: var(--line-height-caption);
-  color: var(--color-status-error);
+  color: var(--color-text-muted-cool);
+}
+
+.noticeDot {
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  flex-shrink: 0;
+  background-color: currentcolor;
+  border-radius: var(--radius-full);
 }
 
 /* Segmented format buttons (Figma): selected = filled blue, unselected = white + hairline */
@@ -225,35 +266,72 @@
   white-space: nowrap;
 }
 
-.chipIcon {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
-}
-
-/* Chosen tech tags: removable outline pills under the dropdown-look trigger */
+/* Chosen tech tags: removable pills under the trigger, wrapping onto new lines at the edge */
 .tags {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
+.tags > li {
+  max-width: 100%;
+}
+
+/* Tech stack chip (Figma 638:573): #f3f4f6 pill, 3/6 padding, 14px medium blue label, then a
+   14px bold × in slate 5 apart. Visually 23 high; the ::after keeps a 44px tap area. */
 .tag {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xxs);
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-sm) 0 var(--space-md);
+  gap: var(--space-tech-chip-gap);
+  max-width: 100%;
+  padding: var(--space-chip-block) var(--space-tech-chip-inline);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-selection);
+  background-color: var(--color-canvas-cool);
+  border: 0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.tag::after {
+  position: absolute;
+  inset: calc((100% - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+
+.tag:focus-visible {
+  outline: 2px solid var(--color-selection);
+  outline-offset: 2px;
+}
+
+.tagIcon {
+  --icon-size: var(--icon-size-tech-chip);
+  color: var(--color-text-slate);
+}
+
+/* A single tag longer than the row breaks inside its pill instead of overflowing */
+.tag > span[aria-hidden] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 /* Role rows (Figma 361:1112): one compact row per added role — name, inline stepper, delete */
 .roles {
   display: grid;
   gap: var(--space-sm);
+}
+
+/* No roles yet: the empty list must not add a second gap above "역할 추가" */
+.roles:empty {
+  display: none;
 }
 
 .roleRow {
@@ -385,57 +463,37 @@
   opacity: 0.5;
 }
 
-.failure {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
-  color: var(--color-status-error);
-  border: 1px solid var(--color-status-error);
-  border-radius: var(--radius-control-md);
-}
-
-/* The submit stays reachable at the bottom of the viewport while scrolling a long form */
+/* CTA pinned to the bottom of the app column, floating one indicator area (Figma 인디케이션 영역,
+   24px) above the edge — or the safe area where that is larger. The bar itself is see-through */
 .submitBar {
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  inset: auto 0 0;
   z-index: var(--z-chrome);
-  padding: var(--space-sm) 0 calc(var(--space-sm) + env(safe-area-inset-bottom));
-  background-color: var(--color-canvas);
-  border-top: 1px solid var(--color-hairline-soft);
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: 0 var(--page-gutter) max(var(--space-home-indicator), env(safe-area-inset-bottom));
+  background-color: transparent;
 }
 
-/*
- * Submit button (Figma 600:729): 14 radius (not the ch.5 default pill), blue instead of the
- * default black CTA fill, and a lighter-blue disabled fill instead of 50% opacity —
- * "Figma wins" per guide ch. 5.
- */
-/* Doubled to win over Button.module.css's .primary regardless of CSS bundle load order
-   (same technique as TeamChangeSheet's .scrim.scrim) */
-.submitButton.submitButton {
+/* CTA (Figma 600:729): 53 high, 14 radius, 18px semibold. Figma only draws the disabled look
+   (#f2f4f6 fill, #b0b8c1 label); the enabled fill stays the page's blue */
+.submitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   height: var(--control-height-sheet);
   font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-board-control);
   color: var(--color-on-primary);
   background-color: var(--color-selection);
   border-radius: var(--radius-control-md);
 }
 
-.submitButton.submitButton[aria-disabled='true'] {
-  color: var(--color-on-primary);
-  background-color: var(--color-submit-disabled);
-  opacity: 1;
-}
-
-@media (min-width: 600px) {
-  .submitBar {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .submitBar > * {
-    width: auto;
-  }
+.submitButton[aria-disabled='true'] {
+  color: var(--color-text-unselected);
+  background-color: var(--color-canvas-cool);
 }
 
 .statusSection {
