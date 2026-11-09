@@ -1,0 +1,115 @@
+/* Figma 142:73. The flexible middle preserves the footer at every supported mobile width. */
+.intro {
+  --setup-mark-size: 48px;
+  --setup-benefit-icon: 18px;
+  --setup-benefits-gap: 25px;
+  --setup-connect-gap: 17px;
+  --setup-install-height: 43px;
+  --setup-next-surface: #f2f4f6;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  min-height: calc(
+    100dvh - var(--setup-header-height) - var(--space-xxs) - env(safe-area-inset-top)
+  );
+  padding: var(--space-sheet-action) var(--page-gutter)
+    max(var(--space-lg), env(safe-area-inset-bottom));
+}
+.content {
+  min-width: 0;
+}
+.mark {
+  margin-inline-start: 1px;
+  width: var(--setup-mark-size);
+  height: var(--setup-mark-size);
+}
+.headline {
+  margin-block-start: var(--space-list-action);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+.description {
+  margin-block-start: var(--space-row-block);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-muted-cool);
+}
+.benefits {
+  display: grid;
+  gap: var(--space-row-block);
+  margin-block-start: var(--setup-benefits-gap);
+}
+.benefits li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  min-height: var(--setup-benefit-icon);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-slate);
+}
+.benefits img {
+  flex-shrink: 0;
+  width: var(--setup-benefit-icon);
+  height: var(--setup-benefit-icon);
+}
+.footer {
+  display: grid;
+  gap: var(--space-group);
+  min-width: 0;
+}
+.connectActions {
+  display: grid;
+  justify-items: center;
+  gap: var(--setup-connect-gap);
+}
+.organizationLink {
+  position: relative;
+  max-width: 100%;
+  border-bottom: 1px solid currentcolor;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-selection);
+}
+.organizationLink::after {
+  position: absolute;
+  inset: calc((var(--line-height-card-desc) + 1px - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+.install {
+  position: relative;
+  width: 100%;
+  min-height: var(--setup-install-height);
+  border-radius: var(--radius-xs);
+  background: var(--color-sheet-cta);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  letter-spacing: -0.03em;
+}
+.install::after {
+  position: absolute;
+  inset: calc((var(--setup-install-height) - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+.next {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  border-radius: var(--radius-control-md);
+  background: var(--setup-next-surface);
+  color: var(--color-text-unselected);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+}
+.install:disabled,
+.next:disabled {
+  cursor: not-allowed;
+}
