@@ -33,11 +33,6 @@ export function RecruitStatusSection({ recruitId, status, onDeleted }: RecruitSt
           ? '마감하면 목록에서 빠지고 새 지원을 받지 않아요.'
           : '다시 모집하면 목록에 보이고 새 지원을 받아요.'}
       </p>
-      {(toggle.isError || remove.isError) && (
-        <p className={styles.error} role="alert">
-          처리하지 못했어요. 잠시 후 다시 시도해 주세요.
-        </p>
-      )}
       <div className={styles.statusActions}>
         <Button variant="outline" onClick={() => statusDialog.open()}>
           {open ? '모집 마감하기' : '다시 모집하기'}

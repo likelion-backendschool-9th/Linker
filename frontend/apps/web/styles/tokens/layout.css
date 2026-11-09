@@ -29,7 +29,10 @@
   --space-card-row: 22px; /* 19 recruit card: gap between the author, info and meta blocks */
   --space-card-info: 25px; /* 19 recruit card: chip/deadline row to title/description gap */
   --space-card-meta: 13px; /* 19 recruit card: role chips row to "자세히 보기" gap */
-  --space-chip-block: 3px; /* 11 filter chip and 19 role-count / search-panel filter chip vertical padding */
+  --space-chip-block: 3px; /* 11 filter chip and 19 role-count / search-panel filter chip vertical padding; also 20 tech stack chip */
+  --space-tech-chip-inline: 6px; /* 20 tech stack chip side padding (Figma 638:573) */
+  --space-tech-chip-gap: 5px; /* 20 tech stack chip: label to its × */
+  --icon-size-tech-chip: 14px; /* 20 tech stack chip × (Figma solar:close-bold); hit area stays --touch-target-min */
   --space-detail-block: 14px; /* 19 recruit card "자세히 보기" detail panel top/bottom padding (Figma) */
   /* Figma 11 values off the 4px grid */
   --space-section-inset: 25px; /* 11 progress section top padding */
@@ -45,14 +48,19 @@
   --space-post-search: 25px; /* hint to search field */
   --space-post-repo: 13px; /* gap between repo rows */
   --stepper-height: 4px; /* top progress bar */
+  --space-field-gap: 20px; /* 20 recruit editor: gap between fields (Figma itemSpacing) */
+  --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
+  --space-home-indicator: 24px; /* Figma bottom indicator area (인디케이션 영역); real devices use the larger of this and the safe area */
+  --sheet-header-height-tech: 60px; /* 20 tech stack sheet title row (Figma 301:1551) */
+  --space-recruit-field-block: 17px; /* 20 intro textarea: text top and counter bottom (Figma 600:659) */
 
   /* Radius */
   --radius-none: 0;
   --radius-xxs: 4px; /* offer cards, status chips, and the open-chat button */
   --radius-xs: 8px; /* the floating mobile bottom GNB pill */
   --radius-sm: 16px; /* inputs, FAQ rows, small cards */
-  --radius-control-sm: 10px; /* 07 compact link */
-  --radius-control-md: 14px; /* 07 sheet CTA */
+  --radius-control-sm: 10px; /* 07 compact link; also 20 "역할 추가" button (Figma) */
+  --radius-control-md: 14px; /* 07 sheet CTA; also 20 field inputs, dropdown triggers and submit button (Figma) */
   --radius-lg: 20px; /* frosted pills when Figma uses them */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
@@ -141,6 +149,7 @@
   --header-height-admin: 56px; /* admin top bar */
   --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
   --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
+  --textarea-height-intro: 120px; /* 20 프로젝트 소개 textarea (Figma) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
@@ -200,7 +209,7 @@
   --calendar-bar-height: 18px; /* 15 issue bar and its lane step */
   --radius-calendar-bar: 2px; /* 15 issue bar */
   --icon-size-calendar: 24px; /* 15 month chevron and help icon */
-  --wheel-row-height: 37px; /* 15 date wheel row */
+  --wheel-row-height: 37px; /* 15 date wheel row; also the shared date picker sheet (20 마감일, 22 기간) */
   --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
 
   /* Figma 28 plans (288:471, 293:218) */
