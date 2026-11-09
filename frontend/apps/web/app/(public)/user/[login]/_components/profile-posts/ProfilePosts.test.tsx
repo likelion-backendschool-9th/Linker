@@ -57,5 +57,6 @@ describe('profile work sections', () => {
       '/teams/3/issues',
     );
     await waitFor(() => expect(screen.getByText('활동 중')).toBeInTheDocument());
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/public/user/octocat/teams');
   });
 });
