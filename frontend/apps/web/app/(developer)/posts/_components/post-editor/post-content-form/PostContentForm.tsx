@@ -2,21 +2,24 @@
 
 // Own region: step 2 of 22 (Figma 274:283) — labels/layout follow the frame
 import { AddBoldIcon } from '@solar-icons/static/bold/add';
+import { AlbumBoldIcon } from '@solar-icons/static/bold/album';
+import { CloseBoldIcon } from '@solar-icons/static/bold/close';
 import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
-import { RotateCw, X } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
 
 import { CharCounter } from '@/components/ui/char-counter/CharCounter';
 import { Icon } from '@/components/ui/icon';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
-import { TechTagSheet } from '@/features/tech-tags/tech-tag-sheet/TechTagSheet';
 import { countChars } from '@/lib/format/text';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { POST } from '@/lib/policy';
 
 import { PostPeriodSheet, type PeriodField } from '../post-period-sheet';
+import { PostRoleSheet } from '../post-role-sheet';
+import { RepoChangeSheet } from '../repo-change-sheet';
 import styles from './PostContentForm.module.css';
-import { usePostContentForm, type PostContentFormProps } from './hook';
+import { usePhotoRowFit, usePostContentForm, type PostContentFormProps } from './hook';
 
 function formatPeriodLabel(value: string) {
   const match = /^(\d{4})-(\d{2})$/.exec(value);
@@ -78,12 +81,11 @@ function FieldLabel({
   );
 }
 
-export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps) {
+export function PostContentForm({ repoChange, ...props }: PostContentFormProps) {
   const { repo, photoLimit } = props;
   const {
     field,
     errorId,
-    tagSheet,
     creating,
     failure,
     photoWait,
@@ -93,16 +95,29 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
     links,
     watched,
     tags,
+    registerBody,
+    registerTeamSize,
     save,
     submit,
     describe,
     removeTag,
-    saveTags,
+    tagInput,
+    saveRole,
   } = usePostContentForm(props);
   const periodSheet = useOverlay('post-period');
+  const roleSheet = useOverlay('post-role');
   const { owner, name } = splitRepo(repo.fullName);
   const photoInputId = field('photo-input');
   const { items, max } = uploader;
+  const { rowRef: photoRowRef, fit: photoFit } = usePhotoRowFit();
+  const canAdd = items.length < max;
+  // One row only: past the row width the last visible photo carries the album badge (Figma 660:581)
+  const shownCount =
+    photoFit !== null && items.length + (canAdd ? 1 : 0) > photoFit
+      ? Math.max(1, photoFit - (canAdd ? 1 : 0))
+      : items.length;
+  const shown = items.slice(0, shownCount);
+  const hiddenCount = items.length - shown.length;
 
   function savePeriod(which: PeriodField, value: string) {
     form.setValue(which === 'start' ? 'periodStart' : 'periodEnd', value, {
@@ -131,10 +146,13 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
                 </p>
               </div>
             </div>
-            {onChangeRepo && (
-              <button type="button" className={styles.changeRepo} onClick={onChangeRepo}>
-                변경 하기
-              </button>
+            {repoChange && (
+              <RepoChangeSheet
+                repoId={repo.repoId}
+                teamId={repoChange.teamId}
+                triggerClassName={styles.changeRepo}
+                onChange={repoChange.onChange}
+              />
             )}
           </div>
         </section>
@@ -150,19 +168,34 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
           <span id={field('photos')} className="sr-only">
             프로젝트 사진
           </span>
-          <ul className={styles.photos}>
-            {items.map((item, index) => (
-              <li key={item.key} className={styles.photoCell}>
-                <div className={styles.photo}>
-                  <Image
-                    src={item.previewUrl}
-                    alt={`선택한 사진 ${index + 1}`}
-                    fill
-                    sizes="74px"
-                    unoptimized
-                    className={styles.photoImage}
-                  />
-                  {index === 0 && <span className={styles.coverBadge}>대표 이미지</span>}
+          <ul ref={photoRowRef} className={styles.photos}>
+            {shown.map((item, index) => {
+              const last = hiddenCount > 0 && index === shown.length - 1;
+              return (
+                <li key={item.key} className={styles.photoCell}>
+                  {/* Tapping the photo removes it */}
+                  <button
+                    type="button"
+                    className={styles.photo}
+                    onClick={() => uploader.remove(item.key)}
+                  >
+                    <Image
+                      src={item.previewUrl}
+                      alt=""
+                      fill
+                      sizes="74px"
+                      unoptimized
+                      className={styles.photoImage}
+                    />
+                    {index === 0 && <span className={styles.coverBadge}>대표 이미지</span>}
+                    {last && (
+                      <span className={styles.photoMore}>
+                        <Icon svg={AlbumBoldIcon} className={styles.photoMoreIcon} />
+                        <span className="sr-only">외 사진 {hiddenCount}장</span>
+                      </span>
+                    )}
+                    <span className="sr-only">사진 {index + 1} 빼기</span>
+                  </button>
                   {item.status === 'failed' && (
                     <button
                       type="button"
@@ -173,18 +206,10 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
                       <span className="sr-only">사진 {index + 1} 다시 올리기</span>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className={styles.photoRemove}
-                    onClick={() => uploader.remove(item.key)}
-                  >
-                    <X aria-hidden />
-                    <span className="sr-only">사진 {index + 1} 빼기</span>
-                  </button>
-                </div>
-              </li>
-            ))}
-            {items.length < max && (
+                </li>
+              );
+            })}
+            {canAdd && (
               <li className={styles.photoCell}>
                 <label htmlFor={photoInputId} className={styles.photoAdd}>
                   <Icon svg={AddBoldIcon} className={styles.photoAddIcon} />
@@ -219,12 +244,7 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
 
         {/* 프로젝트 소개 — Figma 274:301 */}
         <div className={styles.block}>
-          <FieldLabel
-            label="프로젝트 소개"
-            hint="최대 60자"
-            required
-            htmlFor={field('intro')}
-          />
+          <FieldLabel label="프로젝트 소개" hint="최대 60자" required htmlFor={field('intro')} />
           <input
             id={field('intro')}
             className={styles.input}
@@ -254,11 +274,11 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
             <textarea
               id={field('body')}
               className={styles.textarea}
-              rows={5}
+              rows={1}
               placeholder="프로젝트에 관해 간단하게 글을 작성해 주세요"
               aria-invalid={errors.body ? true : undefined}
               aria-describedby={describe(field('body-count'), errors.body && errorId('body'))}
-              {...form.register('body')}
+              {...registerBody}
             />
             <CharCounter
               id={field('body-count')}
@@ -275,19 +295,26 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
           )}
         </div>
 
-        {/* 내 역할 — Figma 276:416 (dropdown look) */}
+        {/* 내 역할 — Figma 276:416 (dropdown look); picks in the sheet 666:611 */}
         <div className={styles.block}>
           <FieldLabel label="내 역할" htmlFor={field('role')} />
           <div className={styles.selectField}>
-            <input
+            <button
+              type="button"
               id={field('role')}
-              className={styles.input}
-              placeholder="프로젝트 역할을 선택해 주세요"
-              aria-invalid={errors.myRole ? true : undefined}
+              className={styles.periodTrigger}
+              aria-haspopup="dialog"
               aria-describedby={errors.myRole ? errorId('role') : undefined}
-              {...form.register('myRole')}
-            />
+              onClick={() => roleSheet.open()}
+            >
+              {watched.myRole ? (
+                <span className={styles.triggerValue}>{watched.myRole}</span>
+              ) : (
+                <span className={styles.periodPlaceholder}>프로젝트 역할을 선택해 주세요</span>
+              )}
+            </button>
             <Icon svg={AltArrowDownLinearIcon} className={styles.selectChevron} />
+            <input type="hidden" {...form.register('myRole')} />
           </div>
           {errors.myRole && (
             <p id={errorId('role')} className={styles.error}>
@@ -403,15 +430,15 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
           <FieldLabel label="팀 규모" htmlFor={field('team')} />
           <input
             id={field('team')}
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={POST.teamSize.min}
-            max={POST.teamSize.max}
+            autoComplete="off"
+            maxLength={String(POST.teamSize.max).length}
             className={styles.input}
             placeholder="팀 인원을 작성해 주세요"
             aria-invalid={errors.teamSize ? true : undefined}
             aria-describedby={errors.teamSize ? errorId('team') : undefined}
-            {...form.register('teamSize')}
+            {...registerTeamSize}
           />
           {errors.teamSize && (
             <p id={errorId('team')} className={styles.error}>
@@ -422,26 +449,24 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
 
         {/* 저장소 태그 — Figma 285:139 */}
         <div className={styles.block}>
-          <FieldLabel label="저장소 태그" hint="최대 5개" htmlFor={field('tags')} />
-          <button
-            type="button"
+          <FieldLabel label="저장소 태그" hint={`최대 ${POST.tagsMax}개`} htmlFor={field('tags')} />
+          <input
             id={field('tags')}
-            className={styles.tagField}
-            onClick={() => tagSheet.open()}
-          >
-            {tags.length === 0 ? (
-              <span className={styles.tagPlaceholder}>#을 기준으로 태그를 나눠주세요</span>
-            ) : (
-              <span className={styles.tagValue}>{tags.join(' · ')}</span>
-            )}
-          </button>
+            type="text"
+            className={styles.input}
+            placeholder="#을 기준으로 태그를 나눠주세요"
+            autoComplete="off"
+            enterKeyHint="done"
+            {...tagInput}
+          />
+          {/* Chips — Figma 666:825 */}
           {tags.length > 0 && (
-            <ul className={styles.tags} aria-label="선택한 태그">
+            <ul className={styles.tags} aria-label="저장소 태그">
               {tags.map((tag) => (
                 <li key={tag}>
                   <button type="button" className={styles.tag} onClick={() => removeTag(tag)}>
                     <span aria-hidden>{tag}</span>
-                    <X aria-hidden className={styles.tagIcon} />
+                    <Icon svg={CloseBoldIcon} className={styles.tagIcon} />
                     <span className="sr-only">{tag} 빼기</span>
                   </button>
                 </li>
@@ -466,7 +491,7 @@ export function PostContentForm({ onChangeRepo, ...props }: PostContentFormProps
         </div>
       </form>
 
-      <TechTagSheet value={tags} max={POST.tagsMax} onSave={saveTags} />
+      <PostRoleSheet value={watched.myRole ?? ''} onSave={saveRole} />
       <PostPeriodSheet
         start={watched.periodStart ?? ''}
         end={watched.periodEnd ?? ''}

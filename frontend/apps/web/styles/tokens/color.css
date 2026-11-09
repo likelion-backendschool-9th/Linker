@@ -91,6 +91,8 @@
   --color-radio-border: #eaeaea;
   --color-sheet-cta: #121212; /* 07 sheet CTA fill */
   --color-on-sheet-cta: #f8f9f6;
+  --color-post-photo-more-bg: #222222; /* 22 "more photos" badge on the last visible photo (Figma 660:585) */
+  --color-post-photo-more-icon: #e7e7e7; /* its album glyph: 12.9:1 on the badge */
 
   /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
   --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */

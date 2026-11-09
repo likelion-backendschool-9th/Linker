@@ -67,6 +67,7 @@ export const POST = {
   intro: { min: 1, max: 60 },
   bodyMax: 2000,
   roleMax: 40,
+  rolePickMax: 4, // 22 "내 역할" sheet: up to 4 roles, saved joined into roleMax (Figma 666:611)
   demoLinksMax: 3,
   teamSize: { min: 1, max: 50 },
   tagsMax: 5,

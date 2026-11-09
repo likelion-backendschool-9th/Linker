@@ -53,16 +53,13 @@ export function PostCreate() {
           <Skeleton count={2} />
         </div>
       ) : step === 1 ? (
-        <RepoStep
-          teamId={nav.teamId}
-          repoId={nav.repo}
-          onSelect={selectRepo}
-          onNext={goNext}
-        />
+        <RepoStep teamId={nav.teamId} repoId={nav.repo} onSelect={selectRepo} onNext={goNext} />
       ) : (
         <ContentStep
-          key={`${nav.repo}:${restoreVersion}`}
+          // Not keyed by repo: changing it in the sheet keeps the form; a restored draft remounts
+          key={restoreVersion}
           repoId={nav.repo!}
+          teamId={nav.teamId}
           restored={restored?.repoId === nav.repo ? restored : null}
           onChangeRepo={changeRepo}
           onSaved={onSaved}
@@ -76,12 +73,13 @@ export function PostCreate() {
 
 type ContentStepProps = {
   repoId: number;
+  teamId: string | null;
   restored: PostDraft | null;
-  onChangeRepo: () => void;
+  onChangeRepo: (repoId: number) => void;
   onSaved: (postId: number) => void;
 };
 
-function ContentStep({ repoId, restored, onChangeRepo, onSaved }: ContentStepProps) {
+function ContentStep({ repoId, teamId, restored, onChangeRepo, onSaved }: ContentStepProps) {
   const { summary, emptyValues } = usePostCreateContentStep(repoId);
 
   if (summary.isPending) {
@@ -110,7 +108,7 @@ function ContentStep({ repoId, restored, onChangeRepo, onSaved }: ContentStepPro
       }
       draftKey={POST_DRAFT_NEW}
       onSaved={onSaved}
-      onChangeRepo={onChangeRepo}
+      repoChange={{ teamId, onChange: onChangeRepo }}
     />
   );
 }
