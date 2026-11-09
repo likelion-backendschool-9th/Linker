@@ -1,7 +1,11 @@
 /* Figma 11 (197:66) team tabs: full column width, 48px, underlined (2px current, 1px others) */
 .nav {
   /* Cancels PageFrame's top padding so the tabs sit under the header; 11 pulls its band back up */
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + var(--header-height));
+  z-index: var(--z-chrome);
   margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) var(--space-md);
+  background-color: var(--color-canvas);
 }
 
 .tabs {
