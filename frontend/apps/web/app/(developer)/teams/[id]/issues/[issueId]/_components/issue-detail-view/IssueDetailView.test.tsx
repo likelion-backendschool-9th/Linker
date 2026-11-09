@@ -48,11 +48,12 @@ const issue = {
   movedToIssueId: null,
 };
 
-/** A tiny server: GET returns the current issue, PUT status changes it (like the real API) */
+/** Issue GET returns the current issue. List GETs stay lists. PUT status changes it. */
 function mockDetail(overrides: Partial<typeof issue> = {}) {
   let current = { ...issue, ...overrides };
   fetchMock.mockImplementation(async (url, init) => {
-    if (init?.method === 'PUT' && url.endsWith('/status')) {
+    const method = init?.method ?? 'GET';
+    if (method === 'PUT' && url.endsWith('/status')) {
       current = { ...current, status: 'DONE', statusColor: 'GREEN', state: 'CLOSED' };
       return { status: current.status, statusColor: current.statusColor, state: current.state };
     }
@@ -66,7 +67,14 @@ function mockDetail(overrides: Partial<typeof issue> = {}) {
         ],
       };
     }
-    return current;
+    if (url.endsWith('/assignee-candidates')) {
+      return { max: 10, items: [] };
+    }
+    if (url.endsWith('/label-options')) {
+      return { items: [] };
+    }
+    if (method === 'GET' && /\/issues\/[^/]+$/.test(url)) return current;
+    return { items: [] };
   });
 }
 
