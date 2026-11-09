@@ -5,6 +5,8 @@ import type {
 
 export const verifiedInstallationKey = (login: string | null) =>
   ['team-setup', 'verified-installation', login] as const;
+export const createdSetupTeamKey = (login: string | null) =>
+  ['team-setup', 'created-team', login] as const;
 
 export type InstalledOrganization = VerifyInstallationResponse & {
   result: 'INSTALLED';

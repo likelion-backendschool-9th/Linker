@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import type { InstalledOrganization } from '../../_lib/installation';
 import styles from './TeamSetupInformation.module.css';
+import { ErrorState } from '@/components/ui/error-state/ErrorState';
 
 type Props = {
   installed?: InstalledOrganization;
@@ -12,6 +13,8 @@ type Props = {
   onDescriptionChange: (value: string) => void;
   onNext: () => void;
   openExternal: (url: string) => void;
+  pending?: boolean;
+  error?: Error | null;
 };
 
 /** Figma 8-2 (374:4196). These are screen limits, not changes to the server contract. */
@@ -25,6 +28,8 @@ export function TeamSetupInformation({
   onDescriptionChange,
   onNext,
   openExternal,
+  pending = false,
+  error,
 }: Props) {
   const organizationUrl = installed ? `https://github.com/${installed.org.login}` : undefined;
   const ready =
@@ -38,7 +43,7 @@ export function TeamSetupInformation({
       className={styles.form}
       onSubmit={(event) => {
         event.preventDefault();
-        if (ready) onNext();
+        if (ready && !pending) onNext();
       }}
     >
       <div className={styles.content}>
@@ -117,7 +122,13 @@ export function TeamSetupInformation({
           </div>
         </div>
       </div>
-      <button type="submit" className={styles.next} disabled={!ready}>
+      {error && <ErrorState title={error.message} />}
+      <button
+        type="submit"
+        className={styles.next}
+        disabled={!ready || pending}
+        aria-busy={pending}
+      >
         다음
       </button>
     </form>

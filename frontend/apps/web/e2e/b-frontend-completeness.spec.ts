@@ -11,14 +11,12 @@ test.beforeEach(async ({ page }) => {
   await role(page, 'developer');
 });
 
-test('setup preserves repo selection and existing board mapping across steps without creating a team', async ({
+test('later setup preview preserves existing board mapping without completing a team', async ({
   page,
 }) => {
-  await page.goto('/teams/new?step=3');
+  await page.goto('/teams/new?step=4');
   await page.getByText('연결된 팀으로 선택 화면 미리보기', { exact: true }).click();
   await page.getByLabel('미리보기에 사용할 팀').selectOption('1');
-  await page.getByRole('button', { name: '3 레포 연결' }).click();
-  await page.getByRole('checkbox', { name: 'linker-hack/linker-web', exact: true }).check();
   await page.getByRole('button', { name: '4 보드 연결' }).click();
   await page.getByLabel('기존 보드 쓰기', { exact: true }).check();
   await page.getByRole('combobox', { name: 'Backlog', exact: true }).selectOption('TODO');
@@ -28,10 +26,6 @@ test('setup preserves repo selection and existing board mapping across steps wit
   await page.getByRole('button', { name: '4 보드 연결' }).click();
   await expect(page.getByLabel('기존 보드 쓰기', { exact: true })).toBeChecked();
   await expect(page.getByRole('combobox', { name: 'Backlog', exact: true })).toHaveValue('TODO');
-  await page.getByRole('button', { name: '3 레포 연결' }).click();
-  await expect(
-    page.getByRole('checkbox', { name: 'linker-hack/linker-web', exact: true }),
-  ).toBeChecked();
   await page.getByRole('button', { name: '5 확인' }).click();
   await page.getByRole('button', { name: '생성 완료 화면 미리보기' }).click();
   await expect(page.getByRole('heading', { name: '팀을 만들었어요' })).toBeVisible();

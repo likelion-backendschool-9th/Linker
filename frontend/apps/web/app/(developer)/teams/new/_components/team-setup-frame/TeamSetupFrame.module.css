@@ -1,14 +1,16 @@
-/* Only page 08's progress rail is scoped here; the shared StackHeader owns its appearance. */
+/* Page 08 only: the common PageFrame owns the header and landmarks. */
 .frame {
-  --setup-header-height: var(--header-height);
+  --setup-header-height: var(--header-height-tab);
   min-height: 100dvh;
 }
-.chrome {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-chrome);
+.frame > main {
+  /* The step indicator and step contents supply this page's own padding. */
+  padding: 0;
 }
 .progress {
+  position: sticky;
+  top: calc(var(--setup-header-height) + env(safe-area-inset-top));
+  z-index: var(--z-chrome);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   height: var(--space-xxs);
@@ -17,8 +19,8 @@
 .current {
   background: var(--color-selection);
 }
-.main {
-  outline: none;
+.content {
+  min-width: 0;
 }
 .legacy {
   padding: var(--space-md) var(--page-gutter) calc(var(--space-xxl) + env(safe-area-inset-bottom));

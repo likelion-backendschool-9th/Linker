@@ -5,16 +5,15 @@ import type { Route } from 'next';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button/Button';
-import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import styles from '@/features/teams/team-ui.module.css';
 import { TEAM } from '@/lib/policy';
-import { TeamRepoSelection } from '../../../_components/team-repo-selection';
 import { TeamBoardSelection } from '../../../_components/team-board-selection';
 import { TeamSetupOutcome } from '../team-setup-outcome';
 import { TeamSetupIntro } from '../team-setup-intro/TeamSetupIntro';
 import { TeamSetupInformation } from '../team-setup-information/TeamSetupInformation';
+import { TeamSetupRepositories } from '../team-setup-repositories/TeamSetupRepositories';
 import { STEPS, STATUSES, useTeamSetup } from './hook';
 
 export function TeamSetup() {
@@ -22,6 +21,8 @@ export function TeamSetup() {
     step,
     setStep,
     installed,
+    setupTeamId,
+    create,
     setName,
     setNameTouched,
     description,
@@ -38,7 +39,6 @@ export function TeamSetup() {
     ownedTeams,
     previewSettings,
     previewTeam,
-    repos,
     boards,
     permission,
     displayName,
@@ -61,7 +61,22 @@ export function TeamSetup() {
           setNameTouched(true);
         }}
         onDescriptionChange={setDescription}
-        onNext={() => void setStep(3, { history: 'push' })}
+        onNext={() => {
+          if (!create.isPending) create.mutate();
+        }}
+        pending={create.isPending}
+        error={create.error}
+        openExternal={openExternal}
+      />
+    );
+
+  if (step === 3)
+    return (
+      <TeamSetupRepositories
+        teamId={setupTeamId}
+        selected={selectedRepos}
+        onChange={setSelectedRepos}
+        onNext={() => void setStep(4, { history: 'push' })}
         openExternal={openExternal}
       />
     );
@@ -127,49 +142,6 @@ export function TeamSetup() {
         />
       )}
       <section className={`${styles.card} ${styles.stack}`} aria-labelledby="setup-step-title">
-        {step === 3 && (
-          <>
-            <h2 id="setup-step-title" className={styles.title}>
-              함께 작업할 레포를 선택해요
-            </h2>
-            <p className={styles.description}>
-              Linker 앱이 설치된 레포만 연결할 수 있어요. 연결할 수 있는 레포 수에는 제한이 없어요.
-            </p>
-            {!previewTeam ? (
-              <EmptyState
-                title="GitHub 조직을 먼저 연결해 주세요."
-                description="연결을 마치면 접근이 허용된 레포가 여기에 표시돼요."
-              />
-            ) : repos.isPending ? (
-              <Skeleton />
-            ) : repos.isError ? (
-              <ErrorState onRetry={() => void repos.refetch()} />
-            ) : (
-              <>
-                <TeamRepoSelection
-                  repos={repos.data.items}
-                  selected={selectedRepos}
-                  onChange={setSelectedRepos}
-                />
-                <p className={styles.description}>
-                  선택한 레포 {selectedRepos.length}개 · 접근이 허용되지 않은 레포{' '}
-                  {repos.data.notInstalledCount}개
-                </p>
-              </>
-            )}
-            <Button
-              variant="outline"
-              disabled={!previewTeam}
-              onClick={() =>
-                openExternal(
-                  `https://github.com/organizations/${previewTeam?.orgLogin}/settings/installations`,
-                )
-              }
-            >
-              GitHub에서 접근 허용하기
-            </Button>
-          </>
-        )}
         {step === 4 && (
           <>
             <h2 id="setup-step-title" className={styles.title}>
