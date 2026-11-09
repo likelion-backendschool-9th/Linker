@@ -39,7 +39,8 @@ export function roomInfoOptions(login: string | null, id: number) {
   return queryOptions({
     staleTime: 0,
     queryKey: [...roomKey(login, id), 'info'],
-    queryFn: ({ signal }) => getChatRoom(id, { signal }),
+    // Generated ChatRoomTeamResponse lacks aiSummary* until OpenAPI regen (backend up + pnpm --filter @linker/api generate).
+    queryFn: async ({ signal }) => (await getChatRoom(id, { signal })) as RoomInfo,
   });
 }
 
