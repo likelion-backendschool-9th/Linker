@@ -1,5 +1,6 @@
 'use client';
 
+import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
@@ -15,7 +16,12 @@ export function IssueLabelSheet<Key extends readonly unknown[]>({
 }: IssueLabelSheetProps<Key>) {
   const overlay = useIssueLabelSheet();
   return (
-    <OverlaySheet overlay={overlay} title="라벨" description="레포에 있는 라벨 중에서 골라요.">
+    <OverlaySheet
+      overlay={overlay}
+      title="라벨"
+      description="레포에 있는 라벨 중에서 골라요."
+      classNames={sheetClassNames}
+    >
       {overlay.isOpen && (
         <LabelForm value={value} options={options} onSave={onSave} onDone={overlay.close} />
       )}

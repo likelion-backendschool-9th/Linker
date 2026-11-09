@@ -1,213 +1,251 @@
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-target-min);
-  margin-bottom: var(--space-sm);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
-}
+/* 12 Issue detail, Figma 12 (198:486). Sizes, colors and spaces come from the tokens. */
 
-.back svg {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
-}
-
-.article {
+.page {
   display: grid;
-  gap: var(--space-lg);
+  gap: var(--space-group);
+  padding-top: var(--space-xs);
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: var(--icon-size-team-entry);
+  height: var(--icon-size-team-entry);
+}
+
+.icon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .head {
   display: grid;
-  justify-items: start;
-  gap: var(--space-xs);
-}
-
-.repo {
-  font-size: var(--font-size-meta);
-  color: var(--color-text-meta);
+  gap: var(--space-row-inline);
 }
 
 .title {
-  font-size: var(--font-size-section-title);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-title);
-  color: var(--color-text-heading);
-}
-
-.byline {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-title-cool);
+  overflow-wrap: anywhere;
 }
 
-.avatar {
-  flex-shrink: 0;
+.external {
+  position: relative;
+  flex: none;
+  color: var(--color-text-title-cool);
+}
+
+/* 44px hit area around the 20px icon */
+.external::after {
+  position: absolute;
+  inset: calc((var(--icon-size-team-entry) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.meta,
+.subMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+}
+
+.meta > :not(.separator),
+.subMeta > :not(.separator) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subMeta {
+  font-size: var(--font-size-micro);
+}
+
+.separator {
+  flex: none;
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: currentcolor;
   border-radius: var(--radius-full);
 }
 
-.warning {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-status-warning);
+/* Info card: five lines (35px pitch, 1px dividers), each opens its sheet */
+.card {
+  margin: 0;
+  padding: var(--space-row-inline) var(--space-card-gap);
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-sm);
 }
 
-/* Featured card surface (guide ch. 5): tint, no outline */
-.notice {
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-sm);
+.card > li:not(:last-child) {
+  border-bottom: 1px solid var(--color-hairline-faint);
 }
 
-.section {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.sectionTitle {
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-title);
-  color: var(--color-text-heading);
-}
-
-.fields {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  border: 1px solid var(--color-hairline-soft);
-  border-radius: var(--radius-sm);
-}
-
-/* term | value, and the change button under them on mobile */
-.field {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  gap: var(--space-xs) var(--space-sm);
+.row {
+  display: flex;
   align-items: center;
-  padding: var(--space-md);
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-row-block) var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  text-align: start;
 }
 
-.field + .field {
-  border-top: 1px solid var(--color-hairline-soft);
+.row:focus-visible,
+.external:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .term {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  flex: none;
 }
 
 .value {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-xs);
   min-width: 0;
-  font-size: var(--font-size-body);
-  color: var(--color-text-body);
 }
 
-.action {
-  grid-column: 2;
-}
-
-@media (min-width: 600px) {
-  .fields {
-    grid-template-columns: max-content minmax(0, 1fr) auto;
-  }
-
-  .action {
-    grid-column: auto;
-    justify-self: end;
-  }
-}
-
-/* Neutral badge (guide ch. 5) */
-.status {
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
-}
-
-.meta {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-meta);
-}
-
-/* Overdue: red and "마감 지남" in text (POL-I-4; never color alone) */
-.overdue {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-status-error);
-}
-
-.people,
-.labels {
-  display: flex;
-  flex-wrap: wrap;
+.item {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-xs);
 }
 
-.person {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xxs);
+.value[data-overdue='true'] {
+  color: var(--color-status-overdue);
 }
 
-.label {
+.status {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xxs);
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
+  gap: var(--space-board-control-icon);
+  color: var(--status-color);
 }
 
-.swatch {
+.dot {
+  flex: none;
   width: var(--badge-dot-size);
   height: var(--badge-dot-size);
+  background-color: var(--status-color);
   border-radius: var(--radius-full);
 }
 
-/* Rendered issue Markdown: wide tables and code scroll sideways instead of widening the page */
+.section {
+  display: grid;
+  gap: var(--space-card-gap);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.progress {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted-cool);
+}
+
+/* Body box (Figma 인풋 - 비활성화): 343×120 min, 1px line, 14px radius, text 14 Medium at 15px / 17px */
+.body {
+  min-height: var(--issue-body-min-height);
+  padding: var(--space-issue-body-block) var(--space-card-gap);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.subSection {
+  /* Figma: the list starts 5px under the "하위 이슈" heading */
+  gap: var(--space-row-inline);
+}
+
+.subList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sub {
+  display: grid;
+  gap: var(--space-row-inline);
+  padding: var(--space-row-block) var(--space-row-inline);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.subTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+}
+
+/* Markdown in the Figma body tone: one size, tight line spacing, nothing bigger than the text */
 .markdown {
   min-width: 0;
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-  color: var(--color-text-body);
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
   overflow-wrap: anywhere;
 }
 
 .markdown > * + * {
-  margin-top: var(--space-sm);
+  margin-top: var(--space-row-block);
 }
 
 .markdown :is(h1, h2, h3, h4, h5, h6) {
-  font-size: var(--font-size-body);
+  font-size: inherit;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-heading);
+  line-height: inherit;
+  color: inherit;
 }
 
 .markdown ul,
 .markdown ol {
-  padding-left: var(--space-lg);
+  padding-left: var(--space-md);
   list-style: revert;
 }
 
+.markdown li + li {
+  margin-top: var(--space-row-inline);
+}
+
 .markdown a {
-  color: var(--color-text-heading);
+  color: inherit;
   text-decoration: underline;
 }
 
@@ -219,49 +257,48 @@
 }
 
 .markdown pre {
-  padding: var(--space-sm);
-  font-size: var(--font-size-caption);
+  padding: var(--space-xs);
   background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xxs);
 }
 
 .markdown code {
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-micro);
 }
 
 .markdown th,
 .markdown td {
   padding: var(--space-xxs) var(--space-xs);
-  border: 1px solid var(--color-hairline);
+  border: 1px solid var(--color-hairline-cool);
 }
 
 .markdown img {
   max-width: 100%;
   height: auto;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xxs);
 }
 
 .markdown li:has(> .task) {
+  margin-left: calc(-1 * var(--space-md));
   list-style: none;
-  margin-left: calc(-1 * var(--space-lg));
 }
 
-/* Task list mark: a box drawn with tokens; state is also in sr-only text */
+/* Task list mark: small and light, about the text height; the state is also in sr-only text */
 .task {
   display: inline-grid;
   place-items: center;
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
-  margin-right: var(--space-xs);
-  font-size: var(--font-size-meta);
+  width: var(--task-size-issue-body);
+  height: var(--task-size-issue-body);
+  margin-right: var(--space-row-inline);
+  font-size: var(--font-size-micro);
   line-height: 1;
-  color: var(--color-on-primary);
-  vertical-align: middle;
-  border: 1px solid var(--color-hairline);
+  color: var(--color-text-slate);
+  vertical-align: text-bottom;
+  border: 1px solid var(--color-hairline-cool);
   border-radius: var(--radius-full);
 }
 
 .task[data-checked='true'] {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  background-color: var(--color-canvas-cool);
+  border-color: var(--color-text-muted-cool);
 }

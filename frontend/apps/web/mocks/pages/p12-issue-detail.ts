@@ -1,4 +1,4 @@
-import { fail, get, put, type MockRoute } from '../core/define';
+import { dateOnly, fail, get, put, type MockRoute } from '../core/define';
 import {
   findIssue,
   isOverdue,
@@ -7,6 +7,37 @@ import {
   type IssueStatus,
 } from '../fixtures/issues';
 import { TEAM_MEMBERS } from '../fixtures/teams';
+
+/**
+ * Demo values for the 12 screen only (sub-issue progress and dates, one overdue and not done). They fill what
+ * the shared fixture leaves empty and never touch it, so 07, 11, 14 and 15 see the same issues as before.
+ */
+const DEMO: Record<
+  number,
+  { subIssues: { total: number; done: number }; startDate?: string; dueDate?: string }
+> = {
+  // /teams/1/issues/1022: 작업 전, due date passed → the date shows red
+  1022: { subIssues: { total: 3, done: 1 }, startDate: dateOnly(-4), dueDate: dateOnly(-1) },
+  // /teams/1/issues/1018
+  1018: { subIssues: { total: 3, done: 2 } },
+};
+
+function withDemo<
+  T extends {
+    id: number;
+    subIssues: { total: number; done: number };
+    startDate: string | null;
+    dueDate: string | null;
+  },
+>(issue: T) {
+  const demo = DEMO[issue.id];
+  return {
+    ...issue,
+    subIssues: issue.subIssues.total > 0 ? issue.subIssues : (demo?.subIssues ?? issue.subIssues),
+    startDate: issue.startDate ?? demo?.startDate ?? null,
+    dueDate: issue.dueDate ?? demo?.dueDate ?? null,
+  };
+}
 
 /** 12 Issue detail: `IssueController`. Writes change the in-memory issue, so the board and list follow. */
 
@@ -29,7 +60,7 @@ function requireWrite(teamId: string) {
 
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/issues/:issueId', ({ params }) => {
-    const issue = issueOr404(params.teamId!, params.issueId!);
+    const issue = withDemo(issueOr404(params.teamId!, params.issueId!));
     const members = TEAM_MEMBERS[issue.teamId] ?? [];
     return {
       ...issue,
@@ -110,7 +141,7 @@ export const routes: MockRoute[] = [
     };
   }),
   get('/api/v1/user/teams/:teamId/issues/:issueId/sub-issues', ({ params }) => {
-    const issue = issueOr404(params.teamId!, params.issueId!);
+    const issue = withDemo(issueOr404(params.teamId!, params.issueId!));
     const { total, done } = issue.subIssues;
     return {
       total,
