@@ -1,0 +1,34 @@
+.gate {
+  max-width: var(--form-max-width);
+  margin: var(--space-xl) auto;
+  color: var(--color-text-title-cool);
+}
+.gate h1 {
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+}
+.gate form {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+.gate input {
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+  background: var(--color-canvas);
+  font-size: var(--font-size-body);
+}
+.gate button {
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-xs);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.gate button:disabled {
+  opacity: 0.5;
+}
+.gate p {
+  color: var(--color-status-error);
+}
