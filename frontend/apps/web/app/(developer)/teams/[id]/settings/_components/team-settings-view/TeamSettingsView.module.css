@@ -1,1 +1,370 @@
-/* Styles for TeamSettingsView */
+/* Figma 368:387 "9" settings body — TeamFrame owns header / tabs / chat FAB */
+
+.page {
+  display: grid;
+  gap: 0;
+  padding-bottom: calc(var(--fab-size) + var(--space-fab-bottom) + env(safe-area-inset-bottom));
+}
+
+/* Figma 368:1590 — title @ y127, card @ y158 → 12px stack gap; side inset 18≈gutter */
+.membersSection {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--page-gutter) 0;
+}
+
+.inviteSection {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--page-gutter) 0;
+}
+
+.reposSection {
+  display: grid;
+  gap: 15px;
+  padding: var(--space-md) var(--page-gutter) 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: 19px;
+  color: var(--color-text-title-cool);
+}
+
+.sectionMeta {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-text-disabled-cool);
+}
+
+/* Figma 368:1591 — padding 15, itemSpacing 10, radius 14, stroke #E5E7EB */
+.memberCard {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 15px;
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+/* Figma rows: 51px (last 40), avatar 40, text at +7/+3, chevron 24 bottom-right */
+.memberRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  height: 51px;
+  min-width: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.memberRow:last-child {
+  height: 40px;
+  border-bottom: none;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  background-color: var(--color-radio-border);
+}
+
+.memberText {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 3px;
+  padding-right: 28px;
+}
+
+/* Figma 368:1606 — 24×24 solar alt-arrow at row bottom-right */
+.memberChevron {
+  position: absolute;
+  right: 0;
+  bottom: -5px;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--color-text-slate);
+  --icon-stroke-width: 1.5;
+}
+
+.memberRow:last-child .memberChevron {
+  bottom: -8px;
+}
+
+.chevronIcon {
+  --icon-box-size: 24px;
+}
+
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 14px;
+}
+
+.role {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-text-title-cool);
+}
+
+/* Figma 368:1596 — blue track next to team role (PO / BE / FE) */
+.jobLabel {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-cta-cool);
+}
+
+.memberName {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-text-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inviteActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.inviteButton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--color-on-primary);
+  background-color: var(--color-team-invite-cta);
+  border-radius: var(--radius-xs);
+}
+
+.inviteHints {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inviteHint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: 20px;
+  color: var(--color-text-muted-cool);
+}
+
+.inviteHint::before {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  margin-top: 8px;
+  content: '';
+  background-color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+.band {
+  height: var(--divider-section);
+  margin-top: var(--space-xl);
+  margin-inline: calc(-1 * var(--page-gutter));
+  background-color: var(--color-canvas-cool);
+}
+
+.reposHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.reposTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.githubMark {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: var(--color-github-mark-original);
+}
+
+.reposLabel {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+}
+
+.reposCount {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-cta-cool);
+  white-space: nowrap;
+}
+
+.addRepo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: var(--color-text-slate);
+}
+
+.addIcon {
+  --icon-box-size: 18px;
+}
+
+.repoList {
+  display: grid;
+  gap: var(--space-row-inline);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 29px;
+  padding: var(--space-row-inline) 0;
+}
+
+.repoName {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeRepo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  background-color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+/* Figma 368:1657 owner view — remove control fill #E00000 */
+.removeRepoOwner {
+  background-color: var(--color-chat-danger);
+}
+
+.removeMark {
+  display: block;
+  width: 11px;
+  height: 1px;
+  background-color: var(--color-on-primary);
+}
+
+/* Figma 695:1525 on 9-오너 view 368:1563 — 343×45, radius 12, fill #E000001A */
+.deleteWrap {
+  display: grid;
+  justify-items: stretch;
+  padding: 20px var(--page-gutter) 0;
+}
+
+.delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 45px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-chat-danger);
+  background-color: var(--color-team-delete-fill);
+  border-radius: var(--radius-control-lg);
+}
+
+/* Arbitrary leave CTA — style from Figma 352:743 (page 17), not on frame 9 */
+.leaveWrap {
+  display: grid;
+  justify-items: stretch;
+  padding: var(--space-xl) var(--page-gutter) 0;
+}
+
+.leave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 42px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-sheet-cta);
+  background-color: var(--color-canvas-cool); /* Figma #f2f4f6 */
+  border-radius: var(--radius-control-md);
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-black);
+  background: none;
+  border: 0;
+}
+
+.headerIcon > svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
