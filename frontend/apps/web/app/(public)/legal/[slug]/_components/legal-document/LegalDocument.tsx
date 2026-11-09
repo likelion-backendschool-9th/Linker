@@ -36,6 +36,7 @@ export function LegalDocument({
   documents: LegalDocumentLink[];
 }) {
   const headings = readHeadings(document.body);
+  const isTerms = document.slug === 'terms';
   let headingIndex = 0;
   const components: Components = {
     h1: () => null,
@@ -48,29 +49,33 @@ export function LegalDocument({
   };
 
   return (
-    <div className={styles.layout}>
-      <nav className={styles.documentNav} aria-label="약관 및 정책 문서">
-        <h2>문서</h2>
-        <ul>
-          {documents.map((item) => (
-            <li key={item.slug}>
-              <Link
-                href={`/legal/${item.slug}`}
-                aria-current={item.slug === document.slug ? 'page' : undefined}
-              >
-                {item.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    <div className={`${styles.layout} ${isTerms ? styles.termsLayout : ''}`}>
+      {!isTerms && (
+        <nav className={styles.documentNav} aria-label="약관 및 정책 문서">
+          <h2>문서</h2>
+          <ul>
+            {documents.map((item) => (
+              <li key={item.slug}>
+                <Link
+                  href={`/legal/${item.slug}`}
+                  aria-current={item.slug === document.slug ? 'page' : undefined}
+                >
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       <article className={styles.article}>
-        <p className={styles.meta}>
-          버전 {document.version} <span aria-hidden="true">·</span> 시행일 {document.effectiveDate}
-        </p>
+        {!isTerms && (
+          <p className={styles.meta}>
+            버전 {document.version} <span aria-hidden="true">·</span> 시행일 {document.effectiveDate}
+          </p>
+        )}
 
-        {headings.length > 0 && (
+        {!isTerms && headings.length > 0 && (
           <nav className={styles.toc} aria-label="문서 목차">
             <h2>목차</h2>
             <ol>
@@ -86,7 +91,7 @@ export function LegalDocument({
           </nav>
         )}
 
-        <div className={styles.markdown}>
+        <div className={`${styles.markdown} ${isTerms ? styles.termsMarkdown : ''}`}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]} components={components}>
             {document.body}
           </ReactMarkdown>

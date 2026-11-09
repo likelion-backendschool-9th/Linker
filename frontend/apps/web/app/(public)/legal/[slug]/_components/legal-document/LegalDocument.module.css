@@ -1,8 +1,4 @@
-/*
- * 03 legal reader. Frame "3-약관 및 정책" (375×800): 16px gutter, clause title and
- * body both 16px Medium, separated by text color. The home indicator is safe-area,
- * not a drawn bar. Document list, version and TOC stay because Page TODO / WBS require them.
- */
+/* 03 legal reader. The terms frame starts at the first clause; other documents retain document navigation. */
 
 .layout {
   display: grid;
@@ -10,6 +6,11 @@
   min-width: 0;
   /* PageFrame already insets 16px. The frame starts the body 8px under the header. */
   margin-top: calc(var(--space-xs) - var(--space-md));
+}
+
+.termsLayout {
+  /* The terms frame begins at the first clause directly below the stack header. */
+  margin-top: calc(0px - var(--space-md));
 }
 
 .documentNav h2,
@@ -71,6 +72,26 @@
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-body);
   overflow-wrap: anywhere;
+}
+
+.termsMarkdown {
+  font-size: var(--font-size-legal);
+  line-height: var(--line-height-legal);
+}
+
+.termsLayout .termsMarkdown h2 {
+  font-size: inherit;
+  line-height: inherit;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.termsLayout .termsMarkdown h2:first-child {
+  margin-top: 0;
+}
+
+.termsLayout .termsMarkdown ol {
+  padding-left: calc(var(--space-md) + var(--space-xxs));
 }
 
 .markdown h2,

@@ -4,31 +4,25 @@ import { axe } from 'vitest-axe';
 import { LegalDocument } from './LegalDocument';
 
 describe('LegalDocument', () => {
-  it('shows the document navigation, metadata, and a working table of contents without unsafe HTML', async () => {
+  it('renders terms directly without document chrome and sanitizes unsafe HTML', async () => {
     const { container } = render(
       <LegalDocument
         document={{
           slug: 'terms',
-          title: '이용약관',
+          title: '이용 약관',
           version: '2026-10-01',
           effectiveDate: '2026-10-01',
-          body: '# 이용약관\n\n## 목적\n\n안전한 문서입니다.\n\n문의: [support@linker.example](mailto:support@linker.example)\n\n<script>alert(1)</script>',
+          body: '# 이용 약관\n\n## 제1조 (목적)\n약관 본문입니다.\n\n<script>alert(1)</script>',
         }}
         documents={[
-          { slug: 'terms', title: '이용약관', version: '2026-10-01', effectiveDate: '2026-10-01' },
+          { slug: 'terms', title: '이용 약관', version: '2026-10-01', effectiveDate: '2026-10-01' },
         ]}
       />,
     );
 
-    expect(container.querySelector('nav a')).toHaveAttribute('href', '/legal/terms');
-    expect(container.querySelector('p')?.textContent).toContain('2026-10-01');
-    expect(screen.queryByRole('heading', { name: '이용약관' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: '목적' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '목적' })).toHaveAttribute('href', '#legal-section-0');
-    expect(screen.getByRole('link', { name: 'support@linker.example' })).toHaveAttribute(
-      'href',
-      'mailto:support@linker.example',
-    );
+    expect(container.querySelector('nav')).not.toBeInTheDocument();
+    expect(container.querySelector('.meta')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: '제1조 (목적)' })).toBeInTheDocument();
     expect(container.querySelector('script')).not.toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });

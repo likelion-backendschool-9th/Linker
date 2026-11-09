@@ -159,6 +159,7 @@ Font: Pretendard Variable (loaded in `app/layout.tsx`), token `--font-sans`. **A
 | Body | 16px | 400 | 1.6 | `--font-size-body`, `--font-weight-regular`, `--line-height-body` |
 | Medium | 16px | 500 | 1.6 | `--font-weight-medium` with the body, caption, or meta size |
 | Caption (helper text) | 14px | 400 | 1.5 | `--font-size-caption`, `--line-height-caption` |
+| Legal document body (page 03) | 14px | 500 | 1.3 | `--font-size-legal`, `--line-height-legal` |
 | Meta (time, views) | 13px | 400 | 1.5 | `--font-size-meta`, `--line-height-caption` |
 | Micro (page 07 issue meta) | 12px | 500 | 22px | `--font-size-micro`, `--font-weight-medium`, `--line-height-compact` |
 | Caption, recruit card description (page 19) | 14px | 400 | 20px | `--font-size-caption`, `--font-weight-regular`, `--line-height-card-desc` |
