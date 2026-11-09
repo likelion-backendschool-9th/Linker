@@ -56,6 +56,8 @@ export const OVERLAY_KEYS = [
   'chat-pull-requests',
   'stats-featured',
   'recruit-filter',
+  'recruit-role',
+  'recruit-deadline',
   'application-cancel',
   'recruit-status',
   'recruit-menu',

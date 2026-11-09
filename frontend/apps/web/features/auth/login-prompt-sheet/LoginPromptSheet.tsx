@@ -66,9 +66,7 @@ export function LoginPromptSheet() {
             </Dialog.Close>
           </div>
           <Dialog.Description className={promptStyles.description}>
-            해당 기능은 로그인한 사용자들만 사용할 수 있습니다.
-            <br />
-            로그인 하시겠습니까?
+            해당 기능은 로그인한 사용자들만 사용할 수 있습니다. 로그인 하시겠습니까?
           </Dialog.Description>
           <div className={promptStyles.actions}>
             <button
