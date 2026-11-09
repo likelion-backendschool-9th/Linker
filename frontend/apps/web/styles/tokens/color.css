@@ -124,6 +124,7 @@
   --color-hairline-tab: #ebebeb; /* 11 other team tabs underline */
   --color-chart-grid: #e5e7eb; /* 11 trend chart dashed day lines */
   --color-fab: #2e2e2e; /* 11 team chat shortcut fill */
+  --color-team-invite-cta: #2f2f2f; /* 09 invite trio buttons (Figma 368:579) */
 
   /* Shared by 11 team-chat FAB and 19 write-recruit FAB (same hex, different fill tokens above) */
   --color-fab-border: #383838;
@@ -163,5 +164,6 @@
   --color-photo-count: #121212; /* "1/5" text: 14:1 on the pill over white */
   --color-post-author-divider: #eaeaea; /* author row bottom line */
   --color-github-mark: #121212; /* repo card GitHub mark */
+  --color-github-mark-original: #24292f; /* 09 Social Icons Github Original fill */
   --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */
 }
