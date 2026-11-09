@@ -81,7 +81,7 @@ function issue(teamId: number, repoId: number, repoName: string, seed: Seed): Mo
     teamId,
     repoId,
     repoName,
-    body: `## 배경\n${seed.title}에 대한 작업이에요.\n\n## 할 일\n- [ ] 설계 확인\n- [x] 이슈 등록\n- [ ] 구현\n\n참고: [GitHub 문서](https://docs.github.com)`,
+    body: `## 배경\n${seed.title}에 대한 작업이에요.\n\n## 할 일\n- [ ] 설계 확인\n- [x] 이슈 등록\n- [ ] 구현`,
     state: seed.status === 'DONE' ? 'CLOSED' : 'OPEN',
     assignees: [],
     labels: [],

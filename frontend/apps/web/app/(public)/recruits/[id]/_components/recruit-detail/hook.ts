@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -15,27 +14,20 @@ import {
   type RecruitDetail as Detail,
 } from '../../_lib/detail-queries';
 
-const TABS = ['post', 'applicants'] as const;
-
 export function useRecruitDetail(recruitId: string) {
   const viewer = useViewer();
   const detail = useQuery(recruitDetailOptions(viewer.login, recruitId));
-  const [tab, setTab] = useQueryState('tab', parseAsStringLiteral(TABS).withDefault('post'));
 
   return {
     detail,
     recruit: detail.data,
-    tab,
-    setTab: (next: (typeof TABS)[number]) => void setTab(next),
-    showApplicants: () => void setTab('applicants'),
   };
 }
 
 export function usePostView(recruit: Detail) {
-  const menu = useOverlay('recruit-menu');
   const days = daysUntil(recruit.deadline);
   const closed = recruit.status === 'CLOSED' || days < 0;
-  return { openMenu: () => menu.open(), days, closed };
+  return { days, closed };
 }
 
 export function useActionPanel(recruit: Detail) {
@@ -43,6 +35,7 @@ export function useActionPanel(recruit: Detail) {
   const requireLogin = useRequireLogin();
   const client = useQueryClient();
   const applySheet = useOverlay('recruit-apply');
+  const applicantsSheet = useOverlay('recruit-applicants');
   const confirm = useOverlay('application-cancel');
   const cancel = useMutation({
     mutationFn: cancelApplication,
@@ -65,6 +58,7 @@ export function useActionPanel(recruit: Detail) {
       if (suspended || !requireLogin()) return;
       applySheet.open();
     },
+    openApplicants: () => applicantsSheet.open(),
     openCancel: () => {
       if (mine?.status === 'PENDING') confirm.open(String(mine.id));
     },

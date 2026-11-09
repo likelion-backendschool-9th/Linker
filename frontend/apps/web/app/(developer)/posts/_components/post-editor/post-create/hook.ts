@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -62,12 +62,9 @@ export function usePostCreate() {
     void setNav({ step: 2, repo: repoId }, { history: 'push' });
   }
 
-  function changeRepo() {
-    // Same as the browser back when we pushed step 2; otherwise swap this entry for step 1
-    if (pushedStep.current) {
-      pushedStep.current = false;
-      window.history.back();
-    } else void setNav({ step: 1 }, { history: 'replace' });
+  /** Step 2 "저장소 변경" sheet: swap the repo in place; what's written stays */
+  function changeRepo(repoId: number) {
+    void setNav({ repo: repoId }, { history: 'replace' });
   }
 
   function onSaved(postId: number) {
@@ -109,9 +106,14 @@ export function usePostCreate() {
 
 export function usePostCreateContentStep(repoId: number) {
   const viewer = useViewer();
-  const summary = useQuery(repoSummaryOptions(viewer.login, repoId));
+  // Keep the previous repo's card while the new one loads, so the form isn't unmounted
+  const summary = useQuery({
+    ...repoSummaryOptions(viewer.login, repoId),
+    placeholderData: keepPreviousData,
+  });
   return {
     summary,
-    emptyValues: summary.data ? emptyPostForm(summary.data.description ?? '') : null,
+    // Figma 274:329: empty body so the placeholder shows (not the repo description)
+    emptyValues: summary.data ? emptyPostForm() : null,
   };
 }

@@ -15,7 +15,10 @@ export type FeedPost = {
     /** Only SEEKING shows a badge to everyone (POL-H-4) */
     jobStatus: 'SEEKING' | 'OPEN' | 'OFF';
   };
+  /** One-line title under the media (Figma 92:189) */
   intro: string;
+  /** Body preview under the title; UI appends "더 보기" (Figma 92:212) */
+  excerpt: string | null;
   /** null → the repo card stands in for the cover */
   coverUrl: string | null;
   repoFullName: string;

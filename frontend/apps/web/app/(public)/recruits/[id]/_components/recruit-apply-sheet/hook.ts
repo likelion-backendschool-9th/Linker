@@ -4,9 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useId, useState, type FormEvent } from 'react';
 
 import { ApiError } from '@/lib/api/api-error';
-import { countChars, normalizeLineBreaks } from '@/lib/format/text';
 import { useOverlay, type OverlayControl } from '@/lib/navigation/use-overlay';
-import { RECRUIT } from '@/lib/policy';
 import { toast } from '@/stores/toast-store';
 
 import { applyToRecruit, type RecruitDetail } from '../../_lib/detail-queries';
@@ -20,11 +18,7 @@ export function useApplyForm(recruit: RecruitDetail, overlay: OverlayControl) {
   const client = useQueryClient();
   const open = recruit.roles.filter((role) => role.remaining > 0);
   const [roleId, setRoleId] = useState<number | null>(open.length === 1 ? open[0]!.id : null);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState<{ field: 'role' | 'message' | null; text: string } | null>(
-    null,
-  );
-  const count = countChars(message);
+  const [error, setError] = useState<{ field: 'role' | null; text: string } | null>(null);
 
   const apply = useMutation({
     mutationFn: (body: { roleId: number; message: string }) =>
@@ -53,16 +47,8 @@ export function useApplyForm(recruit: RecruitDetail, overlay: OverlayControl) {
       document.getElementById(`${id}-role-${open[0]?.id}`)?.focus();
       return;
     }
-    if (count > RECRUIT.applyMessageMax) {
-      setError({
-        field: 'message',
-        text: `하고 싶은 말은 ${RECRUIT.applyMessageMax}자까지 쓸 수 있어요.`,
-      });
-      document.getElementById(`${id}-message`)?.focus();
-      return;
-    }
     setError(null);
-    apply.mutate({ roleId, message: normalizeLineBreaks(message.trim()) });
+    apply.mutate({ roleId, message: '' });
   };
 
   return {
@@ -70,13 +56,8 @@ export function useApplyForm(recruit: RecruitDetail, overlay: OverlayControl) {
     openRoles: open,
     roleId,
     setRoleId,
-    message,
-    setMessage,
     error,
-    count,
-    messageMax: RECRUIT.applyMessageMax,
     applyPending: apply.isPending,
     submit,
-    close: () => overlay.close(),
   };
 }

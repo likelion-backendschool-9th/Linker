@@ -2,44 +2,34 @@
 
 .editor {
   display: grid;
-  gap: var(--space-lg);
+  gap: var(--space-group); /* Figma 274:283 stepper → content 20 */
   max-width: var(--form-max-width);
-  margin-inline: auto;
+  /* Cancel PageFrame main's top --space-md so the stepper sits under the header */
+  margin: calc(-1 * var(--space-md)) auto 0;
 }
 
-/* Step indicator: ol + aria-current="step" (blueprint §6-2) */
+/* Step indicator: 2-segment progress bar pinned under the sticky header (Figma 265:142 / 274:283) */
 .steps {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + var(--header-height));
+  z-index: var(--z-chrome);
   display: flex;
-  gap: var(--space-xs);
+  width: calc(100% + 2 * var(--page-gutter));
+  margin-inline: calc(-1 * var(--page-gutter));
+  list-style: none;
 }
 
-.stepItem {
-  display: inline-flex;
+.stepItem,
+.stepItemReached {
   flex: 1;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-target-min);
-  padding: var(--space-xs) var(--space-sm);
-  font-size: var(--font-size-caption);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
+  height: var(--stepper-height);
+  min-height: var(--stepper-height);
+  padding: 0;
+  background-color: var(--color-canvas-cool);
 }
 
-.stepItem[aria-current='step'] {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-on-primary);
-  background-color: var(--color-primary);
-}
-
-.stepNumber {
-  display: inline-grid;
-  place-items: center;
-  width: var(--icon-size);
-  height: var(--icon-size);
-  font-size: var(--font-size-meta);
-  border: 1px solid currentcolor;
-  border-radius: var(--radius-full);
+.stepItemReached {
+  background-color: var(--color-cta-cool);
 }
 
 .step,
@@ -156,117 +146,6 @@
   color: var(--color-status-error);
 }
 
-/* Step 1: search field (pill, like the header search) and repo rows */
-.search {
-  position: relative;
-}
-
-.searchIcon {
-  position: absolute;
-  top: 50%;
-  left: var(--space-md);
-  width: var(--icon-size);
-  height: var(--icon-size);
-  color: var(--color-text-subtle-on-tint);
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-.searchInput {
-  width: 100%;
-  min-height: var(--control-height);
-  padding: var(--space-sm) var(--space-md) var(--space-sm)
-    calc(var(--space-md) + var(--icon-size) + var(--space-sm));
-  font-size: var(--font-size-body);
-  color: var(--color-text-body);
-  background-color: var(--color-field);
-  border: 0;
-  border-radius: var(--radius-full);
-}
-
-.repos {
-  display: grid;
-  gap: var(--space-xs);
-}
-
-.repo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-height: var(--touch-target-min);
-  padding: var(--space-md);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.repo:has(input:checked) {
-  background-color: var(--color-canvas-soft);
-  border-color: var(--color-primary);
-}
-
-.repo:has(input:disabled) {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.control {
-  flex-shrink: 0;
-  width: var(--icon-size);
-  height: var(--icon-size);
-  accent-color: var(--color-primary);
-}
-
-.repoText {
-  display: grid;
-  flex: 1;
-  gap: var(--space-xxs);
-  min-width: 0;
-}
-
-.repoName {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-title);
-  overflow-wrap: anywhere;
-}
-
-.repoMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xxs) var(--space-sm);
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-meta);
-}
-
-.stars,
-.fork {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xxs);
-}
-
-.fork {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-}
-
-.metaIcon {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
-}
-
-.posted {
-  flex-shrink: 0;
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-meta);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
-}
-
 /* Step 2 header: the chosen repo + "레포 바꾸기" */
 .chosen {
   display: flex;
@@ -296,6 +175,33 @@
   line-height: var(--line-height-title);
   color: var(--color-text-title);
   overflow-wrap: anywhere;
+}
+
+.repoMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs) var(--space-sm);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-meta);
+}
+
+.stars,
+.fork {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.fork {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.metaIcon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
 }
 
 .repoDescription {

@@ -54,6 +54,7 @@ import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
+import com.linker.backend.repository.team.TeamMemberRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
 import org.springframework.data.domain.PageRequest;
@@ -71,6 +72,7 @@ public class RecruitmentService {
 	private final RecruitCardMapper cards;
 	private final NotificationService notifications;
 	private final ProMembership pro;
+	private final TeamMemberRepository teamMembers;
 	private final Clock clock;
 
 	public RecruitmentService(
@@ -82,6 +84,7 @@ public class RecruitmentService {
 			RecruitCardMapper cards,
 			NotificationService notifications,
 			ProMembership pro,
+			TeamMemberRepository teamMembers,
 			Clock clock
 	) {
 		this.posts = posts;
@@ -92,6 +95,7 @@ public class RecruitmentService {
 		this.cards = cards;
 		this.notifications = notifications;
 		this.pro = pro;
+		this.teamMembers = teamMembers;
 		this.clock = clock;
 	}
 
@@ -147,7 +151,7 @@ public class RecruitmentService {
 				user.userId(), RecruitStatus.OPEN);
 		LocalDate maxDeadline = today().plusDays(PlanLimits.RECRUIT_DEADLINE_WITHIN_DAYS);
 		return new RecruitEditorOptionsResponse(
-				List.of(),
+				teamMembers.findRecruitLinkableTeams(user.userId()),
 				openCount,
 				openCap(user.userId()),
 				maxDeadline.toString()
@@ -158,6 +162,7 @@ public class RecruitmentService {
 	public RecruitIdResponse create(AuthenticatedUser user, RecruitWriteRequest request) {
 		assertOpenSlotAvailable(user.userId());
 		ValidatedWrite validated = validateWrite(request);
+		requireLinkableTeam(user.userId(), validated.teamId(), null);
 		User author = users.findById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
 		Instant now = clock.instant();
@@ -223,6 +228,7 @@ public class RecruitmentService {
 		RecruitPost post = requireOwnedPost(user.userId(), recruitId);
 		post.getTags().size();
 		ValidatedWrite validated = validateWrite(request);
+		requireLinkableTeam(user.userId(), validated.teamId(), post.getTeamId());
 		Set<Long> locked = new HashSet<>(
 				applications.findLockedRoleIds(post.getId(), ApplicationStatus.CANCELED));
 		applyRoleEdits(post, validated.roles(), locked);
@@ -582,6 +588,24 @@ public class RecruitmentService {
 	/** POL-R-1 / Policy ch. 11: Pro 10 open posts. After Pro ends, open posts stay; new opens use 3. */
 	private int openCap(long authorId) {
 		return pro.active(authorId, clock.instant()) ? PlanLimits.OPEN_RECRUIT_POSTS_PRO : PlanLimits.OPEN_RECRUIT_POSTS_FREE;
+	}
+
+	/**
+	 * POL-R-1: every post links a team the author owns or admins, since invites on 21 add people
+	 * to it. On edit the team already linked may stay even if the author has since lost the role.
+	 */
+	private void requireLinkableTeam(long userId, Long teamId, Long currentTeamId) {
+		if (teamId == null) {
+			throw new ApiException(400, "VALIDATION_ERROR", "연결할 팀을 선택해 주세요");
+		}
+		if (teamId.equals(currentTeamId)) {
+			return;
+		}
+		boolean linkable = teamMembers.findRecruitLinkableTeams(userId).stream()
+				.anyMatch(team -> team.id() == teamId);
+		if (!linkable) {
+			throw new ApiException(403, "FORBIDDEN", "모집 글에 연결할 수 없는 팀이에요");
+		}
 	}
 
 	private ValidatedWrite validateWrite(RecruitWriteRequest request) {

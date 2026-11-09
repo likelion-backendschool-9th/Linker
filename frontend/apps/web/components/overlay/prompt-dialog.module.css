@@ -1,0 +1,102 @@
+/* Centered prompt modal — same chrome as Figma 577:603 login prompt (320, radius 10, pad 20) */
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--z-overlay);
+  display: grid;
+  width: 320px;
+  max-width: calc(100% - 2 * var(--page-gutter));
+  padding: var(--space-group);
+  background-color: var(--color-canvas);
+  border-radius: var(--radius-control-sm);
+  transform: translate(-50%, -50%);
+  outline: none;
+  animation: fade-in var(--duration-overlay) var(--ease-standard);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.close {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: calc(-1 * var(--space-sm)) calc(-1 * var(--space-sm)) 0 0;
+  color: var(--color-text-title-cool);
+  border-radius: var(--radius-full);
+}
+
+.closeIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.description {
+  margin: var(--space-group) 0 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+  color: var(--color-text-slate);
+}
+
+.error {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-error);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-group);
+  margin-top: 37px;
+}
+
+.confirm,
+.cancel {
+  padding: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  background: transparent;
+}
+
+.confirm {
+  color: var(--color-cta-cool);
+}
+
+.confirmDanger {
+  color: var(--color-status-error);
+}
+
+.confirm[aria-disabled='true'],
+.confirmDanger[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.cancel {
+  color: var(--color-text-muted-cool);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,14 +1,11 @@
 'use client';
 
+import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 
 import styles from '../issue-sheets.module.css';
-import {
-  useIssueScheduleForm,
-  useIssueScheduleSheet,
-  type IssueScheduleSheetProps,
-} from './hook';
+import { useIssueScheduleForm, useIssueScheduleSheet, type IssueScheduleSheetProps } from './hook';
 
 export function IssueScheduleSheet({ value, onSave }: IssueScheduleSheetProps) {
   const overlay = useIssueScheduleSheet();
@@ -16,6 +13,7 @@ export function IssueScheduleSheet({ value, onSave }: IssueScheduleSheetProps) {
     <OverlaySheet
       overlay={overlay}
       title="시작일·마감일"
+      classNames={sheetClassNames}
       description="마감일이 없으면 캘린더 대신 '일정 없음' 목록에 보여요."
     >
       {overlay.isOpen && <ScheduleForm value={value} onSave={onSave} onDone={overlay.close} />}

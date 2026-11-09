@@ -29,7 +29,8 @@ export const emptyPostForm = (body = ''): PostFormValues => ({
   intro: '',
   body,
   myRole: '',
-  demoLinks: [],
+  // Figma 22-2 always shows three link rows
+  demoLinks: Array.from({ length: POST.demoLinksMax }, () => ({ url: '' })),
   periodStart: '',
   periodEnd: '',
   teamSize: '',

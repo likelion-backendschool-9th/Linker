@@ -47,7 +47,7 @@ Every Linker user has one of four roles. Owner/admin/member permissions within a
 | Role | How | Login method | Bottom tabs | Detailed policy |
 | --- | --- | --- | --- | --- |
 | Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat (Workspace and Chat show login prompt; profile is in the header) | Ch. 3 "Guests" (POL-A-9) |
-| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
+| Developer | Signs up with GitHub | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
 | Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat (profile is in the header) | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
 | Operator | Operator permission granted to a developer account via DB | GitHub + back-office OTP | Same as developer + `/admin` | Ch. 10 |
 
@@ -145,12 +145,12 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 
 | Policy | Details |
 | --- | --- |
-| POL-A-1 Sign-up | Developers: 1 GitHub account = 1 Linker account. Age 14+, consent to Terms and Privacy Policy required |
+| POL-A-1 Sign-up | Developers: 1 GitHub account = 1 Linker account. Consent to Terms and Privacy Policy required |
 | POL-A-1 Session | Login session 30 days, extended on each use. Server auto-refreshes expired GitHub tokens; on failure, request re-login |
 | POL-H-1 Recruiter sign-up | Email + password. Company domain email only (no free email like Gmail, Naver). Age 19+, consent to Terms, Privacy Policy and Business Member Supplementary Terms required. Details in "Recruiter accounts" below |
 | POL-A-2 Name & handle | Handle = GitHub login as-is (not editable; follows GitHub changes). Display name 1–20 chars |
 | POL-A-2 Bio & link | Bio ≤ 160 chars, one blog link (https only) |
-| POL-A-3 Tech stack | Up to 10 from a predefined tag list |
+| POL-A-3 Tech stack | Up to 5 from a predefined tag list |
 | POL-A-3 Looking for team | When on, shown on profile and in Find Team search. Auto-off after 30 days without login |
 | POL-H-4 Job-seeking status | One of Seeking / Open to offers / Off; default Off. Set independently from "looking for team". See "Job-seeking status" table below |
 | POL-A-4 Contribution graph | Public contributions only. Private contributions shown as counts only if the user enabled that on GitHub. Refreshed once a day. Help text next to the graph: "커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 잔디에 잡혀요" (commit email must be registered to your GitHub account to count) |
@@ -303,16 +303,16 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 
 | Policy | Details |
 | --- | --- |
-| POL-R-1 Who can write | Any logged-in user (developer). Can write without a team; guided to create a team (POL-T-1) at the first acceptance |
+| POL-R-1 Who can write | Any logged-in developer who can link an active team they own or admin (POL-T-1); completed, read-only, archived and deleted teams can't be linked. The team is a required field because invites (POL-R-4) add people to it — writing without a team is not allowed. Under the field: "팀이 없으면 모집글을 작성할 수 없습니다." |
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (within 60 days from today) |
 | POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |
-| POL-R-3 Apply | Choose one role, message ≤ 300 chars. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship |
-| POL-R-3 Application | Profile (tech stack, graph, posts, completion record) attached automatically |
-| POL-R-4 Handling | Author accepts/rejects. Auto-expires after 14 days unhandled, with notification to applicant |
-| POL-R-4 After accept | Added as team member, joins team chat. If the author is the team owner and a GitHub org owner, show a GitHub org invite button (not sent automatically) |
+| POL-R-3 Apply | Choose one role. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
+| POL-R-3 Application | Author opens the applicant's public profile to review (tech stack, graph, posts, completion record). No separate in-product application dossier sheet |
+| POL-R-4 Handling | Author invites or rejects from the applicants drawer. Auto-expires after 14 days unhandled, with notification to applicant |
+| POL-R-4 Invite | Invite adds the person as a team member, joins team chat, and when the author is the team owner and a GitHub org owner, sends the GitHub org invite notification to the applicant. If that role's headcount is already filled by invites, further Invite actions on pending applicants for the role are disabled |
 | POL-R-4 Reject | Rejection reason optional. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
 
 ### Application status
@@ -320,21 +320,20 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | Status | Reached when | Applicant sees |
 | --- | --- | --- |
 | Pending | Application submitted | "검토 중" (under review) |
-| Accepted | Author accepts | Shortcut to team chat |
+| Accepted | Author invites | Shortcut to team chat |
 | Rejected | Author rejects | "이번엔 함께하지 못하게 됐어요" |
 | Expired | 14 days unhandled, or recruit post deleted | "모집이 끝났어요" (recruiting ended) |
 | Cancelled | Applicant cancels (only while pending) | Disappears from list |
 
-Pending applications stay when a recruit post closes; the author can still accept/reject after closing.
+Pending applications stay when a recruit post closes; the author can still invite/reject after closing.
 
 ### Exceptions
 
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
-- **Accepting when that role is full** → ask "인원을 늘리고 수락" (increase headcount and accept).
-- **Free team member limit reached** (6) → can't accept; show the reason and a Flex prompt (Flex teams have no member limit).
-- **Author has no team yet when accepting** → must finish team creation (link a GitHub org) before accepting. Applications stay pending meanwhile.
-- **Applicant is already a member of that team** → show "이미 함께하는 팀이에요" (already on this team) instead of the apply button.
+- **Inviting when that role is full** → pending Invite stays disabled until headcount increases. Optional "인원 늘리고 초대" (increase headcount and invite) may raise the role cap by one; no subscription/BM prompt on recruit detail.
+- **Free team member limit reached** (6) → can't invite; show the reason only on recruit detail. Flex upgrade is not required from this page (team/plan surfaces own that BM; Flex teams have no member limit).
+- **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
 - **Accepted applicant doesn't accept the GitHub org invite within 7 days** → stays in the Linker team and can chat, but doesn't appear as assignable for issues. Notify applicant and owner again.
 - **Fake recruitment reported** → follow report/sanction policy. If the author deletes the team within 7 days after accepting, auto-flag for fake-recruitment review.
 

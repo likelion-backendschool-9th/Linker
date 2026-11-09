@@ -20,64 +20,39 @@ const liked = new Set<number>([2]);
 type Comment = {
   id: number;
   postId: number;
-  parentId: number | null;
   author: ReturnType<typeof brief>;
-  text: string | null;
-  deleted: boolean;
+  text: string;
   createdAt: string;
-  editedAt: string | null;
 };
 
 const comments: Comment[] = [
   {
     id: 1,
     postId: 1,
-    parentId: null,
     author: brief(seoyeon!),
     text: '구조가 깔끔해서 참고하고 있어요!',
-    deleted: false,
     createdAt: hoursAgo(30),
-    editedAt: null,
-  },
-  {
-    id: 2,
-    postId: 1,
-    parentId: 1,
-    author: brief(ME),
-    text: '감사합니다 :) 접근성 쪽은 axe로 계속 확인하고 있어요.',
-    deleted: false,
-    createdAt: hoursAgo(28),
-    editedAt: null,
   },
   {
     id: 3,
     postId: 1,
-    parentId: null,
     author: brief(doyun!),
-    text: null,
-    deleted: true,
+    text: '접근성 검사를 CI에 넣은 방법이 궁금했는데, 설정 파일까지 공개돼 있어서 바로 따라 해 볼 수 있었어요. 감사합니다!',
     createdAt: daysAgo(1),
-    editedAt: null,
   },
   {
     id: 4,
     postId: 1,
-    parentId: 3,
     author: brief(hayun!),
-    text: '삭제된 댓글에 달린 답글이에요.',
-    deleted: false,
+    text: '사진 넘기는 화면이 깔끔하네요. 다음 업데이트도 기대할게요.',
     createdAt: hoursAgo(20),
-    editedAt: null,
   },
   {
     id: 5,
     postId: 2,
-    parentId: null,
     author: brief(ME),
     text: '재연결 처리 부분이 인상적이에요.',
-    deleted: false,
     createdAt: daysAgo(3),
-    editedAt: null,
   },
 ];
 
@@ -98,8 +73,7 @@ export const routes: MockRoute[] = [
     return {
       ...item,
       likeCount: item.likeCount + (liked.has(item.id) ? 0 : 0),
-      commentCount:
-        comments.filter((c) => c.postId === item.id && !c.deleted).length || item.commentCount,
+      commentCount: comments.filter((c) => c.postId === item.id).length || item.commentCount,
       isAuthor,
       // Guests and recruiters can read but not react (04 ch. 2)
       likedByMe: viewer.me ? liked.has(item.id) : false,
@@ -111,14 +85,6 @@ export const routes: MockRoute[] = [
             ? 'CHAT_SHARE'
             : 'DIRECT',
       canSendOffer: viewer.role === 'recruiter',
-    };
-  }),
-  get('/api/v1/public/posts/:postId/readme', ({ params }) => {
-    const item = postOr404(params.postId!);
-    return {
-      repo: item.repo.fullName,
-      markdown: `# ${item.repo.fullName.split('/')[1]}\n\n${item.intro}\n\n## 실행 방법\n\`\`\`bash\npnpm install\npnpm dev\n\`\`\`\n\n## 기술 스택\n${item.tags.map((t) => `- ${t}`).join('\n')}`,
-      cachedAt: hoursAgo(0.5),
     };
   }),
   post(
@@ -149,13 +115,7 @@ export const routes: MockRoute[] = [
   })),
 
   get('/api/v1/public/posts/:postId/comments', ({ params }) => ({
-    items: comments
-      .filter((c) => c.postId === Number(params.postId))
-      .map((c) => ({
-        ...c,
-        // "삭제된 댓글입니다" is kept only when it has replies (POL-P-5)
-        text: c.deleted ? '삭제된 댓글입니다' : c.text,
-      })),
+    items: comments.filter((c) => c.postId === Number(params.postId)),
   })),
   post(
     '/api/v1/user/posts/:postId/comments',
@@ -166,12 +126,9 @@ export const routes: MockRoute[] = [
       const comment: Comment = {
         id: newId(),
         postId: Number(params.postId),
-        parentId: (body.parentId as number | null | undefined) ?? null,
         author: brief(viewer.me!),
         text,
-        deleted: false,
         createdAt: new Date().toISOString(),
-        editedAt: null,
       };
       comments.push(comment);
       return comment;
@@ -182,20 +139,11 @@ export const routes: MockRoute[] = [
     const comment = comments.find((c) => c.id === Number(params.commentId));
     if (!comment) fail(404, 'NOT_FOUND', '댓글을 찾지 못했어요');
     comment.text = String(body.text ?? comment.text);
-    comment.editedAt = new Date().toISOString();
     return comment;
   }),
   del('/api/v1/user/posts/:postId/comments/:commentId', ({ params }) => {
     const index = comments.findIndex((c) => c.id === Number(params.commentId));
-    const comment = comments[index];
-    if (!comment) return undefined;
-    const hasReplies = comments.some((c) => c.parentId === comment.id);
-    if (hasReplies) {
-      comment.deleted = true;
-      comment.text = null;
-    } else {
-      comments.splice(index, 1);
-    }
+    if (index >= 0) comments.splice(index, 1);
     return undefined;
   }),
   del('/api/v1/user/posts/:postId', ({ params }) => {

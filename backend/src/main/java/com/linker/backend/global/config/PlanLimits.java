@@ -26,7 +26,7 @@ public final class PlanLimits {
 	/** POL-A-2 bio length. */
 	public static final int PROFILE_BIO_MAX = 160;
 	/** POL-A-3 predefined tech stack tags. */
-	public static final int PROFILE_TECH_STACK_MAX = 10;
+	public static final int PROFILE_TECH_STACK_MAX = 5;
 	/** POL-P-5 follows created per viewer per Seoul day. */
 	public static final int FOLLOWS_PER_DAY = 200;
 	/** POL-A-3. Looking-for-team turns off after this many days without a login. */

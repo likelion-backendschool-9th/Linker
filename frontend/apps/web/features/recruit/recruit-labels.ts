@@ -10,7 +10,7 @@ export type RecruitFormat = (typeof RECRUIT_FORMATS)[number];
 export const RECRUIT_FORMAT_LABELS: Record<RecruitFormat, string> = {
   ONLINE: '온라인',
   OFFLINE: '오프라인',
-  HYBRID: '온·오프라인',
+  HYBRID: '하이브리드',
 };
 
 export const RECRUIT_GOALS = ['CONTEST', 'HACKATHON', 'LAUNCH', 'LEARNING'] as const;

@@ -19,7 +19,6 @@ import {
 } from './api';
 
 export const formSchema = z.object({
-  ageConfirmed: z.boolean().refine(Boolean, '만 14세 이상인지 확인해 주세요.'),
   termsAccepted: z.boolean().refine(Boolean, '이용약관에 동의해 주세요.'),
   privacyAccepted: z.boolean().refine(Boolean, '개인정보 처리방침에 동의해 주세요.'),
   marketingAccepted: z.boolean(),
@@ -40,6 +39,7 @@ export const formSchema = z.object({
   techStack: z.array(z.string()).max(PROFILE.techStackMax),
   lookingForTeam: z.boolean(),
   jobStatus: z.enum(['SEEKING', 'OPEN', 'OFF']),
+  jobStatusChosen: z.boolean().refine(Boolean, '현재 구직 상태를 선택해 주세요.'),
   email: z.string(),
 });
 
@@ -83,19 +83,23 @@ export function useOnboardingForm({
     mode: 'onSubmit',
     shouldFocusError: true,
     defaultValues: {
-      ageConfirmed: false,
+      ...initial.defaults,
       termsAccepted: false,
       privacyAccepted: false,
       marketingAccepted: false,
       email: '',
-      ...initial.defaults,
+      name: '',
+      bio: '',
+      techStack: [],
+      jobStatus: 'OFF',
+      jobStatusChosen: false,
     },
   });
   const selectedTech = useWatch({ control: form.control, name: 'techStack' }) ?? [];
   const bioValue = useWatch({ control: form.control, name: 'bio' }) ?? '';
 
   async function continueToProfile() {
-    const valid = await form.trigger(['ageConfirmed', 'termsAccepted', 'privacyAccepted'], {
+    const valid = await form.trigger(['termsAccepted', 'privacyAccepted'], {
       shouldFocus: true,
     });
     if (!valid) return;
@@ -104,7 +108,6 @@ export function useOnboardingForm({
     setApiError(null);
     try {
       await saveOnboardingAgreements({
-        ageConfirmed: form.getValues('ageConfirmed'),
         termsAccepted: form.getValues('termsAccepted'),
         privacyAccepted: form.getValues('privacyAccepted'),
         marketingAccepted: form.getValues('marketingAccepted'),

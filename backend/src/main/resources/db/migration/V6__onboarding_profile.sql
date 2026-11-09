@@ -1,4 +1,4 @@
--- Page 02 profile step. user_tech_tags is the ERD tech stack (max 10).
+-- Page 02 profile step. user_tech_tags is the ERD tech stack (max 5).
 -- onboarded_at is the screen-routing flag for the session onb claim.
 ALTER TABLE users ADD COLUMN onboarded_at timestamptz;
 

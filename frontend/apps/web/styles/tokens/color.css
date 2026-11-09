@@ -19,6 +19,9 @@
   --color-header-bg: rgb(
     255 255 255 / 0.8
   ); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
+  --color-header-stack-bg: rgb(
+    255 255 255 / 0.9
+  ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
   --color-gnb-bg: rgb(243 243 243 / 0.8); /* bottom GNB pill frosted fill, with --blur-chrome */
   --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
@@ -43,6 +46,7 @@
 
   /* Status text — always paired with a message, never color alone */
   --color-status-error: #b91c1c; /* also delete, leave and other irreversible actions */
+  --color-required-dot: #ed0004; /* required-field mark (4×4 circle beside labels); also 20 recruit editor (Figma 257:2592), sr-only "(필수)" carries the meaning */
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
 
@@ -68,15 +72,18 @@
 
   /* Figma 07 values. The three marked low contrast fall below 4.5:1 on white by design decision */
   --color-text-black: #000000; /* 07 section labels */
-  --color-text-sheet-title: #111827; /* 07 sheet title, selected option */
-  --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1 */
-  --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1 */
-  --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1 */
+  --color-dialog-close: #101010; /* 06 confirm modal close icon */
+  --color-text-sheet-title: #111827; /* 07 sheet title, selected option; also 20 field labels and heading text */
+  --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1; also 20 unselected segmented button and "역할 추가" label */
+  --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1; also 20 "최대 N자" hint */
+  --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1; also 20 disabled submit label */
+  --color-settings-choice-unselected: #98a3b4; /* 06 settings job-status sheet, reference screenshot */
+  --color-settings-block-handle: #98a3b4; /* 06 settings blocked-user handle, reference screenshot */
   --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
-  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card */
+  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
-  --color-canvas-cool: #f3f4f6; /* 07 compact link fill */
-  --color-selection: #2563eb; /* 07 sheet selected radio */
+  --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill, tech stack chip and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
+  --color-selection: #2563eb; /* 07 sheet selected radio; also 20 selected segmented button fill */
   --color-scrim-team-picker: rgb(
     25 31 40 / 0.32
   ); /* 07 sheet scrim: Figma #191f28 32%, with --blur-scrim */
@@ -84,10 +91,27 @@
   --color-radio-border: #eaeaea;
   --color-sheet-cta: #121212; /* 07 sheet CTA fill */
   --color-on-sheet-cta: #f8f9f6;
+  --color-post-photo-more-bg: #222222; /* 22 "more photos" badge on the last visible photo (Figma 660:585) */
+  --color-post-photo-more-icon: #e7e7e7; /* its album glyph: 12.9:1 on the badge */
 
   /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
   --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */
   --color-chip-goal-bg: rgb(35 193 4 / 0.15); /* 공모전/해커톤/출시/학습 */
+
+  /* 21 recruit detail (Figma 92:578): cool CTA and filled-role count */
+  --color-cta-cool: #2563eb; /* apply CTA fill; on-white text uses --color-on-primary */
+  --color-role-filled: #028714; /* filled headcount "1/1" before "마감" */
+
+  /* 22 post editor (Figma 265:142): cool CTA disabled + fork chip + list disabled text */
+  --color-cta-cool-disabled: #92b1f5; /* bottom CTA when nothing selected; white label kept by Figma */
+  --color-chip-fork-bg: rgb(230 46 0 / 0.1); /* Fork chip fill (#E62E00 @ 10%) */
+  --color-text-disabled-cool: #b2b7c3; /* already-posted repo name / unselected check */
+
+  /* 24 home feed (Figma 91:105 / 92:181): card shell + reaction icons */
+  --color-feed-card: #f6f6f6;
+  --color-feed-follow: #e5e5e5; /* follow chip on card — #f3f4f6 blended into the shell */
+  --color-reaction-liked: #ff3040;
+  --color-icon-ink: #3c3c3c;
 
   /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
   --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
@@ -97,7 +121,7 @@
 
   /* Figma 11 values (team issue list). Low contrast ones are kept by design decision, like 07 */
   --color-text-title-cool: #111827; /* 11 section titles, current team tab, search text */
-  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6 */
+  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6; also 20 field placeholder */
   --color-progress-done: #158000; /* 11 "완료" count and trend line: 5.29:1 */
   --color-progress-active: #007be6; /* 11 "진행" count and trend line: 4.37:1, low contrast */
   --color-progress-blocked: #e62e00; /* 11 "정지" count and trend line: 4.42:1, low contrast */
@@ -138,4 +162,11 @@
 
   /* Figma 29 subscription (294:306, 295:459, 364:1694); the card uses --color-canvas-cool */
   --color-manage-divider: #f1f1f1; /* rows inside the subscription info box */
+
+  /* Figma 23 post detail (285:154); text and lines reuse the 07/11 cool values */
+  --color-photo-count-bg: rgb(255 255 255 / 0.7); /* "1/5" pill over the photo */
+  --color-photo-count: #121212; /* "1/5" text: 14:1 on the pill over white */
+  --color-post-author-divider: #eaeaea; /* author row bottom line */
+  --color-github-mark: #121212; /* repo card GitHub mark */
+  --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */
 }

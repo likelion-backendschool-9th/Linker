@@ -535,7 +535,7 @@ class FoundationIntegrationTest {
 	void listsTechTagsAndJobCategories() throws Exception {
 		mockMvc.perform(get("/api/v1/public/tech-tags"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(28))
+				.andExpect(jsonPath("$.length()").value(36))
 				.andExpect(jsonPath("$[0].name").value("TypeScript"));
 		mockMvc.perform(get("/api/v1/public/job-categories"))
 				.andExpect(status().isOk())
@@ -921,7 +921,7 @@ class FoundationIntegrationTest {
 						.cookie(cookie)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"ageConfirmed":true,"termsAccepted":true,"privacyAccepted":true,"marketingAccepted":false,"termsVersion":"2026-10-01"}
+								{"termsAccepted":true,"privacyAccepted":true,"marketingAccepted":false,"termsVersion":"2026-10-01"}
 								"""))
 				.andExpect(status().isNoContent());
 
@@ -1662,7 +1662,7 @@ class FoundationIntegrationTest {
 		expectDeveloperOnly(cookie, delete("/api/v1/user/users/someone/follow"));
 		expectDeveloperOnly(cookie, post("/api/v1/user/onboarding/agreements")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"ageConfirmed\":true,\"termsAccepted\":true,\"privacyAccepted\":true,\"marketingAccepted\":false,\"termsVersion\":\"v\"}"));
+				.content("{\"termsAccepted\":true,\"privacyAccepted\":true,\"marketingAccepted\":false,\"termsVersion\":\"v\"}"));
 		expectDeveloperOnly(cookie, put("/api/v1/user/onboarding/profile")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"이름\",\"lookingForTeam\":false}"));

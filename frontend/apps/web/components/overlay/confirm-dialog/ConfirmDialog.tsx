@@ -1,18 +1,19 @@
 'use client';
 
+import { X } from 'lucide-react';
 import { AlertDialog } from 'radix-ui';
 
-import { Button } from '@/components/ui/button/Button';
 import type { OverlayControl } from '@/lib/navigation/use-overlay';
 
-import styles from '../overlay.module.css';
+import overlayStyles from '../overlay.module.css';
+import styles from '../prompt-dialog.module.css';
 
 type ConfirmDialogProps = {
   overlay: OverlayControl;
   title: string;
   description: string;
   confirmLabel: string;
-  /** Delete, leave, block: error-colored confirm button */
+  /** Delete, leave, block: error-colored confirm text */
   destructive?: boolean;
   pending?: boolean;
   error?: string | null;
@@ -20,8 +21,8 @@ type ConfirmDialogProps = {
 };
 
 /**
- * Confirm modal (blueprint §6-4): Radix AlertDialog, default focus on "취소".
- * The confirm button doesn't close by itself; `onConfirm` closes when the action succeeds.
+ * Centered confirm prompt (same chrome as login 유도 모달). Default focus stays on cancel.
+ * Confirm does not auto-close; `onConfirm` closes when the action succeeds.
  */
 export function ConfirmDialog({
   overlay,
@@ -36,28 +37,33 @@ export function ConfirmDialog({
   return (
     <AlertDialog.Root open={overlay.isOpen} onOpenChange={overlay.onOpenChange}>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className={styles.scrim} />
+        <AlertDialog.Overlay className={overlayStyles.scrim} />
         <AlertDialog.Content className={styles.dialog}>
-          <AlertDialog.Title className={styles.title}>{title}</AlertDialog.Title>
-          <AlertDialog.Description className={styles.description}>
-            {description}
-          </AlertDialog.Description>
+          <div className={styles.header}>
+            <AlertDialog.Title className={styles.title}>{title}</AlertDialog.Title>
+            <AlertDialog.Cancel type="button" className={styles.close}>
+              <X aria-hidden className={styles.closeIcon} strokeWidth={2} />
+              <span className="sr-only">닫기</span>
+            </AlertDialog.Cancel>
+          </div>
+          <AlertDialog.Description className={styles.description}>{description}</AlertDialog.Description>
           {error && (
             <p role="alert" className={styles.error}>
               {error}
             </p>
           )}
           <div className={styles.actions}>
-            <AlertDialog.Cancel asChild>
-              <Button variant="outline">취소</Button>
-            </AlertDialog.Cancel>
-            <Button
-              variant={destructive ? 'danger' : 'primary'}
+            <button
+              type="button"
+              className={destructive ? styles.confirmDanger : styles.confirm}
               aria-disabled={pending}
               onClick={() => !pending && onConfirm()}
             >
               {confirmLabel}
-            </Button>
+            </button>
+            <AlertDialog.Cancel type="button" className={styles.cancel}>
+              취소하기
+            </AlertDialog.Cancel>
           </div>
         </AlertDialog.Content>
       </AlertDialog.Portal>

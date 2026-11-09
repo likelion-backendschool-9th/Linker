@@ -7,14 +7,10 @@ import { apiFetch } from '@/lib/api/api-fetch';
 export type Invite = {
   code: string;
   status: 'VALID' | 'EXPIRED' | 'REVOKED';
+  /** Accept redirect / already-member routing only — not rendered on the slim landing (POL-T-2) */
   team: {
     id: number;
-    name: string;
-    description: string;
-    orgAvatarUrl: string;
-    memberCount: number;
   };
-  invitedBy: string;
   participation: {
     state:
       | 'ELIGIBLE'
@@ -24,11 +20,10 @@ export type Invite = {
       | 'ACCEPTED'
       | 'READ_ONLY'
       | 'ARCHIVED';
-    canManageTeam: boolean;
   };
 };
 
-/** One public preview shared by page and metadata; invitation acceptance is not implemented. */
+/** Public invite status for page 10; UI never renders team detail from this payload. */
 export const getInvite = cache((code: string) =>
   apiFetch<Invite>(`/api/v1/public/invites/${encodeURIComponent(code)}`, { cache: 'no-store' }),
 );

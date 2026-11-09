@@ -16,7 +16,6 @@ export function useRecruitMenuSheet(recruit: RecruitDetail) {
   const router = useRouter();
   const client = useQueryClient();
   const requireLogin = useRequireLogin();
-  const menu = useOverlay('recruit-menu');
   const statusDialog = useOverlay('recruit-status');
   const deleteDialog = useOverlay('delete-confirm');
   const report = useOverlay('report');
@@ -42,9 +41,7 @@ export function useRecruitMenuSheet(recruit: RecruitDetail) {
   });
 
   return {
-    menu,
     statusDialog,
-    deleteDialog,
     open,
     togglePending: toggle.isPending,
     removePending: remove.isPending,

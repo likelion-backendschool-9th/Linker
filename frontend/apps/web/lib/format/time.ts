@@ -39,6 +39,11 @@ export function formatDeadlineDate(date: string): string {
   return `${format(toKst(date), 'yyyy.M.d')} 마감`;
 }
 
+/** "2026.11.16 작성" (23 post detail, Figma 285:247) — plain KST date like `formatDeadlineDate`. */
+export function formatWrittenDate(value: Date | string | number): string {
+  return `${format(toKst(value), 'yyyy.M.d')} 작성`;
+}
+
 /** Today's date in KST as `yyyy-MM-dd`, the format of issue start/due dates (POL-I-4: team timezone is KST). */
 export function todayKst(now: Date = new Date()): string {
   return format(toKst(now), 'yyyy-MM-dd');

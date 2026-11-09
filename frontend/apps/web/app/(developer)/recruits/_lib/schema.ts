@@ -29,14 +29,15 @@ export type RecruitFormValues = {
   /** `yyyy-MM-dd` (KST) */
   deadline: string;
   techTags: string[];
-  /** Team id as a string, `''` = no team yet */
+  /** Team id as a string; `''` only until one is picked — a post can't be saved without a team (POL-R-1) */
   teamId: string;
 };
 
 export const EMPTY_RECRUIT_FORM: RecruitFormValues = {
   title: '',
   intro: '',
-  roles: [{ id: null, role: 'FRONTEND', headcount: RECRUIT.headcountPerRole.min }],
+  // Empty until the user adds one via the "역할 추가" sheet (Figma 257:2512 empty state)
+  roles: [],
   format: 'ONLINE',
   region: '',
   goal: '',
@@ -123,7 +124,7 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
       techTags: z
         .array(z.string())
         .max(RECRUIT.techTagsMax, `기술 스택은 ${RECRUIT.techTagsMax}개까지 고를 수 있어요.`),
-      teamId: z.string(),
+      teamId: z.string().min(1, '연결할 팀을 선택해 주세요.'),
     })
     .superRefine((values, ctx) => {
       if (values.format === 'OFFLINE' && !values.region.trim()) {
@@ -151,6 +152,6 @@ export function toRecruitRequest(values: RecruitFormValues): RecruitRequest {
     duration: values.duration.trim() || null,
     deadline: values.deadline,
     techTags: values.techTags,
-    teamId: values.teamId ? Number(values.teamId) : null,
+    teamId: Number(values.teamId),
   };
 }

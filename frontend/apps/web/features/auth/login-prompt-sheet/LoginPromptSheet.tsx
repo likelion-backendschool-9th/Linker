@@ -1,16 +1,16 @@
 'use client';
 
-import type { Route } from 'next';
+import { X } from 'lucide-react';
+import { Dialog } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
 
-import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
-import { Button } from '@/components/ui/button/Button';
+import overlayStyles from '@/components/overlay/overlay.module.css';
+import promptStyles from '@/components/overlay/prompt-dialog.module.css';
 import { safeReturnTo } from '@/lib/auth/return-to';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 import { toast } from '@/stores/toast-store';
 
-import styles from './LoginPromptSheet.module.css';
 import { startGithubLogin } from '../start-github-login';
 
 const OVERLAY_PARAMS = ['overlay', 'oid', 'returnTo'];
@@ -23,27 +23,26 @@ function currentLocation(): string {
 }
 
 /**
- * Login-prompt sheet (04 POL-A-9). Mounted once in providers; opened by `useRequireLogin()`,
- * a guest hitting a login-only URL (`proxy.ts`) and API 401 LOGIN_REQUIRED.
+ * Login-prompt modal (Figma 577:484 "21-로그인 유도" / 577:603, POL-A-9). Mounted once in
+ * providers; opened by `useRequireLogin()`, a guest hitting a login-only URL, and API 401.
  */
 export function LoginPromptSheet() {
   const overlay = useOverlay('login');
   const [pending, setPending] = useState(false);
   const loginRequestedAt = useAppSignalStore((state) => state.loginRequestedAt);
-  const { open } = overlay;
+  const { open, close } = overlay;
   const handledLoginAt = useRef(0);
 
   useEffect(() => {
     if (!loginRequestedAt || handledLoginAt.current === loginRequestedAt) return;
     handledLoginAt.current = loginRequestedAt;
-    // Keep a returnTo already stored by the proxy or a tab; otherwise come back to this page.
     const existing = new URLSearchParams(window.location.search).get('returnTo');
     open(undefined, { returnTo: safeReturnTo(existing, currentLocation()) });
   }, [loginRequestedAt, open]);
 
   const returnTo = () => safeReturnTo(overlay.returnTo ?? currentLocation());
 
-  async function onGithub() {
+  async function onLogin() {
     setPending(true);
     try {
       await startGithubLogin(returnTo());
@@ -55,27 +54,35 @@ export function LoginPromptSheet() {
   }
 
   return (
-    <OverlaySheet
-      overlay={overlay}
-      title="로그인한 사용자만 쓸 수 있는 기능이에요"
-      description="로그인하면 보고 있던 화면으로 돌아와요."
-    >
-      <div className={styles.actions}>
-        <Button block aria-disabled={pending} onClick={() => !pending && onGithub()}>
-          GitHub로 시작
-        </Button>
-        <button
-          type="button"
-          className={styles.recruiter}
-          onClick={() =>
-            overlay.closeThen(
-              `/recruiter/login?returnTo=${encodeURIComponent(returnTo())}` as Route,
-            )
-          }
-        >
-          채용 담당자 로그인
-        </button>
-      </div>
-    </OverlaySheet>
+    <Dialog.Root open={overlay.isOpen} onOpenChange={overlay.onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={overlayStyles.scrim} />
+        <Dialog.Content className={promptStyles.dialog}>
+          <div className={promptStyles.header}>
+            <Dialog.Title className={promptStyles.title}>로그인 하기</Dialog.Title>
+            <Dialog.Close type="button" className={promptStyles.close}>
+              <X aria-hidden className={promptStyles.closeIcon} strokeWidth={2} />
+              <span className="sr-only">닫기</span>
+            </Dialog.Close>
+          </div>
+          <Dialog.Description className={promptStyles.description}>
+            해당 기능은 로그인한 사용자들만 사용할 수 있습니다. 로그인 하시겠습니까?
+          </Dialog.Description>
+          <div className={promptStyles.actions}>
+            <button
+              type="button"
+              className={promptStyles.confirm}
+              aria-disabled={pending}
+              onClick={() => !pending && void onLogin()}
+            >
+              로그인하기
+            </button>
+            <button type="button" className={promptStyles.cancel} onClick={() => close()}>
+              취소하기
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

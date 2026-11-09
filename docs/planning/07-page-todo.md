@@ -161,17 +161,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 1: Terms consent**
 
-- [ ] Confirm age 14+ (required)
 - [ ] Consent to Terms and Privacy Policy (required), marketing (optional)
 - [ ] "보기" (view) per item → 03 legal documents
 - [ ] Server: store agreed terms version and time
 
 **Step 2: Basic profile**
 
-- [ ] Pre-fill name, avatar, bio, blog from GitHub (editable)
-- [ ] Tech stack picker sheet (predefined tags, max 10) → reused in 05
-- [ ] Toggle "팀 찾는 중" (looking for team)
-- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔), with a one-line description under each ("채용 담당자에게만 보여요" etc.) → reused in 05
+- [ ] Display name (required, 1–20 characters) and bio (optional, up to 160 characters); start with empty fields
+- [ ] Tech stack picker sheet (predefined tags, max 5) → reused in 05
+- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔) in the picker → reused in 05
 - [ ] Done → `/feed` (starts with an empty feed)
 
 **Policy & exceptions**
@@ -238,7 +236,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: A-2, A-3, H-4, H-8 · Needs first: 04
 
 - [ ] Display name (1–20 chars), bio (160), one blog link (https only)
-- [ ] Tech stack (reuse 02's sheet, max 10)
+- [ ] Tech stack (reuse 02's sheet, max 5)
 - [ ] Toggle "팀 찾는 중"
 - [ ] Job-seeking status (reuse 02's picker)
 - [ ] `[Included]` Job categories of interest: job category chips up to 3, empty by default, hint "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." Visible only to the developer (not shown on 04 profile)
@@ -575,7 +573,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (within 60 days from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
-- [ ] Choose a team to link (teams where I'm owner/admin; can write without a team)
+- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay
 - [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
 - [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification)
@@ -584,30 +582,30 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 ### 21. Recruit post detail (apply & manage applicants) `[Required]` · `/recruits/[id]`
 
-> Basis: R-3, R-4, P-7 · Needs first: 20, 08 (teams), 17 (team chat) · Merged: received application list + application detail → author-only tab and sheet
+> Basis: R-3, R-4, P-7 · Needs first: 20, 08 (teams), 17 (team chat) · Merged: received applications → author bottom CTA + applicants drawer
 
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [ ] (sheet) Apply: choose one role + message 300 chars, note that profile is attached automatically
+- [ ] (sheet) Apply: choose one open role only (no "하고 싶은 말")
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
-- [ ] Already a member of that team → "이미 함께하는 팀이에요"
+- [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
 - [ ] Server: application-received notification
 
 **What the author sees**
 
-- [ ] "지원자 N" (applicants N) tab: applicant cards per role, days left until 14-day auto-expiry
-- [ ] (sheet) Application: tech stack, graph, posts, completion record, message, "프로필 전체 보기" (full profile, 04)
-- [ ] Accept: add team member + join team chat + accept notification. If the author is the team owner and a GitHub org owner, a "GitHub 조직 초대" button (not sent automatically)
-- [ ] Accept exceptions: no team → "팀 먼저 만들기" (create a team first) sheet (application stays pending); role full → "인원 늘리고 수락"; free team at member limit (6) → reason + Flex prompt
-- [ ] Reject: (sheet) optional reason; applicant only sees the fixed copy
-- [ ] Accept/reject still possible after closing; edit / close / delete menu
+- [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
+- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant
+- [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
+- [ ] Reject: row "거절" + (sheet) optional reason; applicant only sees the fixed copy
+- [ ] Invite/reject still possible after closing; edit / close / delete menu
 - [ ] `[Included]` Share button → 00 share sheet
 - [ ] `generateMetadata` (title, "remaining slots per role · closes D-n") + `opengraph-image.tsx` (title, remaining roles, D-n). Defaults if deleted or hidden
 - [ ] Server: auto-expire applications unhandled for 14 days + notify
-- [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after acceptance, remind applicant and owner
-- [ ] `[Included]` Server: if the team is deleted within 7 days after acceptance, flag for fake-recruitment review
+- [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after invite, remind applicant and owner
+- [ ] `[Included]` Server: if the team is deleted within 7 days after invite, flag for fake-recruitment review
 
 ---
 

@@ -1,3 +1,8 @@
+/* Cancel PageFrame main top padding so the first card sits under the tab header */
+.feed {
+  margin-top: calc(-1 * var(--space-md));
+}
+
 .toolbar {
   display: flex;
   justify-content: flex-end;
@@ -59,15 +64,49 @@
 .row {
   position: absolute;
   top: 0;
-  padding-bottom: var(--space-md);
+  /* Space between stacked cards (Figma 92:249 → 92:251) */
+  padding-bottom: 40px;
 }
 
-/* Floating "게시물 쓰기" above the bottom GNB, aligned with the content column's right edge */
-.write {
+/* Write FAB (Figma 92:289): 40 visual / 44 hit, above GNB — same pattern as recruit list */
+.fabLayer {
   position: fixed;
-  right: max(var(--page-gutter), calc((100% - var(--content-max-width)) / 2 + var(--page-gutter)));
-  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+  right: 0;
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-xs));
+  left: 0;
   z-index: var(--z-chrome);
+  display: flex;
+  justify-content: flex-end;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  pointer-events: none;
+}
+
+.fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  pointer-events: auto;
+}
+
+.fabVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  background-color: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.fabIcon {
+  --icon-box-size: 22px;
+  color: var(--color-text-inverse);
 }
 
 /* Empty feed: recommended developers */

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 
 import { MOCK_ROLE_LABELS, MOCK_ROLES } from '@/lib/auth/mock-viewer';
 import { USE_MOCKS } from '@/lib/mock-mode';
+import { useActiveOverlay } from '@/lib/navigation/use-overlay';
 
 import styles from './MockRoleSwitcher.module.css';
 
@@ -13,7 +14,8 @@ import styles from './MockRoleSwitcher.module.css';
  */
 export function MockRoleSwitcher() {
   const pathname = usePathname();
-  if (!USE_MOCKS) return null;
+  const { overlay } = useActiveOverlay();
+  if (!USE_MOCKS || overlay) return null;
 
   return (
     <details className={styles.root}>

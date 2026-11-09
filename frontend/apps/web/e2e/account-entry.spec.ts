@@ -16,19 +16,26 @@ test('onboarding validates consent, saves the profile and reaches the feed', asy
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await page.getByRole('button', { name: '다음' }).click();
-  await expect(page.locator('form span[role="alert"]')).toHaveCount(3);
+  await expect(page.locator('form span[role="alert"]')).toHaveCount(2);
 
-  await page.getByLabel(/만 14세 이상입니다/).check();
   await page.getByLabel(/이용약관에 동의합니다/).check();
   await page.getByLabel(/개인정보 처리방침에 동의합니다/).check();
   await page.getByLabel(/마케팅 정보 수신에 동의합니다/).check();
   await page.getByRole('button', { name: '다음' }).click();
-  await expect(page.getByRole('heading', { name: '기본 프로필을 확인해 주세요' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '간단한 프로필을 만들어 주세요' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '완료' })).toBeDisabled();
+  await page.getByLabel('이름').fill('Linker Developer');
 
   await page.getByRole('button', { name: '기술 스택 선택' }).click();
   const picker = page.getByRole('dialog', { name: '기술 스택 선택' });
   await picker.getByRole('checkbox', { name: 'React', exact: true }).check();
   await picker.getByRole('button', { name: '선택 완료' }).click();
+
+  await page.getByRole('button', { name: '구직 상태' }).click();
+  const jobSheet = page.getByRole('dialog', { name: '구직 상태' });
+  await jobSheet.getByLabel('구직 중').check();
+  await jobSheet.getByRole('button', { name: '완료' }).click();
+
   await page.getByRole('button', { name: '완료' }).click();
   await expect(page.getByRole('heading', { name: '프로필 설정이 완료됐어요' })).toBeVisible();
   await page.getByRole('button', { name: '피드로 이동' }).click();
