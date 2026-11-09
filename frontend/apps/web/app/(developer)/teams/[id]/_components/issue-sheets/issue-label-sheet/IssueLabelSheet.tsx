@@ -2,7 +2,6 @@
 
 import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
-import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
@@ -18,8 +17,9 @@ export function IssueLabelSheet<Key extends readonly unknown[]>({
   return (
     <OverlaySheet
       overlay={overlay}
-      title="라벨"
-      description="레포에 있는 라벨 중에서 골라요."
+      title="이슈 라벨"
+      description="이슈 라벨"
+      describeHidden
       classNames={sheetClassNames}
     >
       {overlay.isOpen && (
@@ -68,22 +68,16 @@ function LabelForm<Key extends readonly unknown[]>({
         {query.data.items.length === 0 ? (
           <p className={styles.note}>이 레포에 라벨이 없어요. GitHub에서 만들 수 있어요.</p>
         ) : (
-          <div className={styles.options}>
+          <div className={styles.chips}>
             {query.data.items.map((label) => (
-              <label key={label.name} className={styles.option}>
+              <label key={label.name} className={styles.chip}>
                 <input
                   type="checkbox"
                   className={styles.control}
                   checked={selected.includes(label.name)}
                   onChange={(event) => toggle(label.name, event.target.checked)}
                 />
-                {/* GitHub's label color is data, so it's inline; the name carries the meaning */}
-                <span
-                  className={styles.swatch}
-                  style={{ backgroundColor: `#${label.color.replace(/^#/, '')}` }}
-                  aria-hidden
-                />
-                <span className={styles.optionTitle}>{label.name}</span>
+                <span>{label.name}</span>
               </label>
             ))}
           </div>
@@ -94,11 +88,9 @@ function LabelForm<Key extends readonly unknown[]>({
           {error}
         </p>
       )}
-      <div className={styles.actions}>
-        <Button type="submit" aria-disabled={pending}>
-          {pending ? '저장하는 중…' : '저장'}
-        </Button>
-      </div>
+      <button type="submit" className={styles.save} aria-disabled={pending}>
+        {pending ? '저장하는 중…' : '완료'}
+      </button>
     </form>
   );
 }

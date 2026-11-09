@@ -44,9 +44,20 @@ export type IssueDetail = {
   movedToIssueId: number | null;
 };
 
-/** `GET .../sub-issues` (view-only): number, title and open/closed; `id` is null for repos Linker doesn't link */
+/** `GET .../sub-issues` (view-only). Linked rows carry board status/due/assigneeName from DB. */
+export type SubIssue = {
+  id?: number | null;
+  number: number;
+  title: string;
+  state: 'OPEN' | 'CLOSED';
+  status?: IssueStatus | 'OTHER' | 'NONE' | null;
+  statusColor?: BoardStatusColor | null;
+  dueDate?: string | null;
+  assigneeName?: string | null;
+};
+
 export type SubIssues = {
-  items: { id?: number | null; number: number; title: string; state: 'OPEN' | 'CLOSED' }[];
+  items: SubIssue[];
   total: number;
   done: number;
 };

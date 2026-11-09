@@ -227,6 +227,7 @@ public class IssueDetailService {
         github.subIssues(
             s.repo, s.row.number(), app.installationReadToken(s.context.installationId()));
     recheck(user, s);
+    var colors = issueRepository.statusColors(team);
     // Never expose private repository titles/URLs outside this team's connected repositories.
     var visible =
         result.stream()
@@ -240,14 +241,7 @@ public class IssueDetailService {
                                     .startsWith(
                                         ("https://github.com/" + r.fullName() + "/issues/")
                                             .toLowerCase(java.util.Locale.ROOT))))
-            .map(
-                i ->
-                    new SubIssue(
-                        issueRepository.linkedId(team, i.githubId()),
-                        i.number(),
-                        i.title(),
-                        i.state(),
-                        i.url()))
+            .map(i -> toSubIssue(team, i, colors))
             .toList();
     if (result.stream()
         .anyMatch(
@@ -264,6 +258,47 @@ public class IssueDetailService {
           issueRepository.subIssues(team, issue, summary);
         });
     return summary;
+  }
+
+  /** Linked → DB status/due/first assignee; unlinked → GitHub first assignee name only. */
+  private SubIssue toSubIssue(
+      long team,
+      IssueSource.Issue source,
+      java.util.Map<
+              com.linker.backend.entity.team.type.BoardStatus,
+              com.linker.backend.entity.team.type.BoardStatusColor>
+          colors) {
+    Long linked = issueRepository.linkedId(team, source.githubId());
+    if (linked != null) {
+      Row row = issueRepository.detail(team, linked);
+      var people = issueRepository.assignees(team, linked);
+      return new SubIssue(
+          linked,
+          source.number(),
+          source.title(),
+          source.state(),
+          source.url(),
+          row.status(),
+          com.linker.backend.entity.team.type.BoardStatusColors.forStatus(row.status(), colors)
+              .name(),
+          row.due(),
+          people.isEmpty() ? null : people.getFirst().name());
+    }
+    String assigneeName = null;
+    if (!source.assignees().isEmpty()) {
+      var first = source.assignees().getFirst();
+      assigneeName = issueRepository.author(first.githubId(), first.login()).name();
+    }
+    return new SubIssue(
+        null,
+        source.number(),
+        source.title(),
+        source.state(),
+        source.url(),
+        null,
+        null,
+        null,
+        assigneeName);
   }
 
   public AssigneesResult assignees(AuthenticatedUser user, long team, long issue, List<Long> ids) {

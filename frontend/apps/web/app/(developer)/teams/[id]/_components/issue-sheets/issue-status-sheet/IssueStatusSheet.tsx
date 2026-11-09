@@ -2,12 +2,10 @@
 
 import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
-import { Button } from '@/components/ui/button/Button';
 
 import {
   ISSUE_STATUS_LABELS,
   ISSUE_STATUSES,
-  boardStatusColorVar,
   type BoardStatusColor,
   type IssueStatus,
 } from '../../../../../_lib/issue-status';
@@ -22,6 +20,9 @@ type IssueStatusSheetProps = {
   onSave: (status: IssueStatus) => Promise<unknown>;
 };
 
+/** Figma 368:2186 order. Names stay ISSUE_STATUS_LABELS. */
+const STATUS_ORDER = ['IN_PROGRESS', 'TODO', 'DONE', 'BLOCKED'] as const satisfies readonly IssueStatus[];
+
 const HINTS: Record<(typeof ISSUE_STATUSES)[number], string> = {
   TODO: '아직 시작하지 않은 일',
   IN_PROGRESS: '지금 하고 있는 일',
@@ -29,30 +30,23 @@ const HINTS: Record<(typeof ISSUE_STATUSES)[number], string> = {
   DONE: '끝난 일. GitHub 이슈도 닫혀요',
 };
 
-export function IssueStatusSheet({ value, statusColors, onSave }: IssueStatusSheetProps) {
+export function IssueStatusSheet({ value, onSave }: IssueStatusSheetProps) {
   const overlay = useIssueStatusSheet();
   return (
     <OverlaySheet
       overlay={overlay}
-      title="상태 바꾸기"
+      title="이슈 상태"
+      description="이슈 상태"
+      describeHidden
       classNames={sheetClassNames}
-      description="작업 완료로 옮기면 GitHub 이슈가 닫히고, 완료에서 되돌리면 다시 열려요."
     >
-      {overlay.isOpen && (
-        <StatusForm
-          value={value}
-          statusColors={statusColors}
-          onSave={onSave}
-          onDone={overlay.close}
-        />
-      )}
+      {overlay.isOpen && <StatusForm value={value} onSave={onSave} onDone={overlay.close} />}
     </OverlaySheet>
   );
 }
 
 function StatusForm({
   value,
-  statusColors,
   onSave,
   onDone,
 }: IssueStatusSheetProps & { onDone: () => void }) {
@@ -66,8 +60,8 @@ function StatusForm({
     <form className={styles.form} onSubmit={submit}>
       <fieldset className={styles.fieldset}>
         <legend className="sr-only">상태</legend>
-        <div className={styles.options}>
-          {ISSUE_STATUSES.map((status) => (
+        <div className={styles.rows}>
+          {STATUS_ORDER.map((status) => (
             <label key={status} className={styles.option}>
               <input
                 type="radio"
@@ -77,19 +71,8 @@ function StatusForm({
                 checked={draft === status}
                 onChange={() => setDraft(status)}
               />
-              <span className={styles.optionText}>
-                <span className={styles.optionTitle}>
-                  <span
-                    className={styles.swatch}
-                    style={{
-                      backgroundColor: boardStatusColorVar(statusColors?.[status]),
-                    }}
-                    aria-hidden="true"
-                  />
-                  {ISSUE_STATUS_LABELS[status]}
-                </span>
-                <span className={styles.optionHint}>{HINTS[status]}</span>
-              </span>
+              <span className={styles.statusName}>{ISSUE_STATUS_LABELS[status]}</span>
+              <span className="sr-only">{HINTS[status]}</span>
             </label>
           ))}
         </div>
@@ -104,11 +87,9 @@ function StatusForm({
           {error}
         </p>
       )}
-      <div className={styles.actions}>
-        <Button type="submit" aria-disabled={pending}>
-          {pending ? '저장하는 중…' : '저장'}
-        </Button>
-      </div>
+      <button type="submit" className={styles.save} aria-disabled={pending}>
+        {pending ? '저장하는 중…' : '완료'}
+      </button>
     </form>
   );
 }
