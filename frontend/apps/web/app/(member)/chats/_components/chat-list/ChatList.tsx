@@ -20,7 +20,6 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
     rooms,
     summary,
     overlay,
-    accept,
     remove,
     pending,
     items,
@@ -42,11 +41,9 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
             }}
           >
             {LABELS[item]}
-            {item === 'REQUEST' && summary.data && (
-              <span
-                className={styles.count}
-                aria-label={`받은 요청 ${summary.data.requestCount}건`}
-              >
+            {/* Figma "요청 2": the count in the label's own style */}
+            {item === 'REQUEST' && summary.data && summary.data.requestCount > 0 && (
+              <span aria-label={`받은 요청 ${summary.data.requestCount}건`}>
                 {summary.data.requestCount}
               </span>
             )}
@@ -89,7 +86,6 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
                 <ChatRoomRow
                   room={room}
                   disabled={pending || viewer.status === 'SUSPENDED'}
-                  onAccept={() => accept.mutate(room.id)}
                   onDelete={() => overlay.open(String(room.id))}
                 />
               </li>
