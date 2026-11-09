@@ -21,9 +21,15 @@ export const metadata: Metadata = buildMetadata({
   path: '/settings/profile',
 });
 
-export default async function EditProfilePage() {
+export default async function EditProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ overlay?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect('/feed');
+  const { overlay } = await searchParams;
+  if (overlay === 'profile-edit-job') redirect('/settings?overlay=profile-edit-job');
 
   let avatarUrl: string | null = null;
   try {

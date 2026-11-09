@@ -68,7 +68,7 @@ export const ME = developer(1, 'seojun-han', '한서준', {
   blogUrl: 'https://seojun.example.dev',
   techStack: ['TypeScript', 'React', 'Next.js', 'Node.js'],
   lookingForTeam: true,
-  jobStatus: 'OPEN',
+  jobStatus: 'SEEKING',
   jobCategories: ['FRONTEND', 'FULLSTACK'],
   followerCount: 48,
   followingCount: 31,

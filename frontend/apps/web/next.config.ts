@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
   typedRoutes: true,
+  devIndicators: false,
   // Always defined, so an unset flag is inlined as 'false' and the bundler drops the mock code (blueprint §1-2)
   env: { NEXT_PUBLIC_USE_MOCKS: process.env.NEXT_PUBLIC_USE_MOCKS ?? 'false' },
   transpilePackages: ['@linker/api', '@linker/bridge'],
@@ -23,6 +24,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
       ...(imageHost ? [{ protocol: 'https' as const, hostname: imageHost }] : []),
     ],
     deviceSizes: [360, 414, 600, 1024, 1440],

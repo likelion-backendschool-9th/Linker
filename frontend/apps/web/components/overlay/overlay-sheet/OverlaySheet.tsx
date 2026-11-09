@@ -17,6 +17,8 @@ type OverlaySheetProps = {
   /** Optional in-place trigger; Radix then restores keyboard focus on sheet close. */
   trigger?: ReactElement;
   onOpenAutoFocus?: (event: Event) => void;
+  closeIcon?: ReactNode;
+  closeLabel?: string;
   /** Added after the default classes, for a sheet whose page Figma differs from the shared look */
   classNames?: {
     scrim?: string;
@@ -41,6 +43,8 @@ export function OverlaySheet({
   describeHidden = false,
   trigger,
   onOpenAutoFocus,
+  closeIcon,
+  closeLabel = '닫기',
   classNames,
   children,
 }: OverlaySheetProps) {
@@ -58,8 +62,8 @@ export function OverlaySheet({
               {title}
             </Dialog.Title>
             <Dialog.Close className={withExtra(styles.close, classNames?.close)}>
-              <X aria-hidden />
-              <span className="sr-only">닫기</span>
+              {closeIcon ?? <X aria-hidden />}
+              <span className="sr-only">{closeLabel}</span>
             </Dialog.Close>
           </div>
           <Dialog.Description className={describeHidden ? 'sr-only' : styles.description}>
