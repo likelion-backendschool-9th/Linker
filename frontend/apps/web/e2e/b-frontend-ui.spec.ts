@@ -84,14 +84,16 @@ test('mobile operator detail can switch to the reason form without losing its ov
 }) => {
   await role(page, 'operator');
   await page.goto('/admin/users');
+  await page.getByLabel('인증 코드', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: '인증', exact: true }).click();
   await page.getByRole('button', { name: /한서준/ }).click();
   await expect(page.getByRole('dialog', { name: '회원 상세' })).toBeVisible();
-  await page.getByRole('button', { name: '이메일 전체 보기' }).click();
+  await page.getByRole('button', { name: '사유 입력 후 열람' }).click();
   const sheet = page.getByRole('dialog', { name: '이메일 열람 사유' });
   await expect(sheet).toBeVisible();
-  await sheet.getByLabel('열람 사유 (필수)').fill('화면 입력 확인');
-  await expect(sheet.getByRole('button', { name: '사유 기록 후 열람' })).toBeDisabled();
-  await expect(page.locator('body')).not.toContainText('seojun.han@example.com');
+  await sheet.getByLabel('열람 사유 (필수)').fill('계정 문의 확인');
+  await expect(sheet.getByRole('button', { name: '사유 기록 후 열람' })).toBeEnabled();
+  await expect(page.locator('body')).not.toContainText('seojun-han@example.com');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
 });

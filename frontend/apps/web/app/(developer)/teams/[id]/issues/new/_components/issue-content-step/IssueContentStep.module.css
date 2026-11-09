@@ -1,1 +1,419 @@
-/* Styles for IssueContentStep */
+/* Figma 13 (200:806, 368:2098): title/body fields, markdown toggle, form card, CTA */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-group);
+  box-sizing: border-box;
+  min-height: calc(
+    100dvh - var(--header-height) - var(--space-md) - var(--space-xxl) - env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+  );
+}
+
+.notice {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted-cool);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-row-inline);
+  align-items: center;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-title-cool);
+}
+
+.dot {
+  width: var(--size-required-dot);
+  height: var(--size-required-dot);
+  background-color: var(--color-required-dot);
+  border-radius: var(--radius-full);
+}
+
+.input,
+.textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-recruit-field-inline);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-canvas-cool);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.input {
+  height: var(--control-height);
+  padding-block: 0;
+}
+
+.select {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-recruit-field-inline);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  text-align: start;
+  background-color: var(--color-canvas-cool);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.select > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-title-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select > span[data-empty] {
+  color: var(--color-text-muted-cool);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--color-selection);
+  outline-offset: -2px;
+}
+
+.textarea {
+  min-height: var(--issue-create-body-min-height);
+  padding: var(--space-issue-create-body);
+  padding-bottom: calc(var(--space-issue-create-body) + var(--font-size-caption) + var(--space-xs));
+  resize: none; /* Figma 200:806 has no resize handle */
+}
+
+.bodyWrap {
+  position: relative;
+}
+
+.counter {
+  position: absolute;
+  right: var(--space-issue-create-body);
+  bottom: var(--space-issue-create-body);
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  pointer-events: none;
+}
+
+/* Figma 368:2098: 2px #2563eb focus ring on the field edge */
+.input:focus,
+.textarea:focus {
+  outline: 2px solid var(--color-selection);
+  outline-offset: -2px;
+}
+
+.input[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  outline: 2px solid var(--color-required-dot);
+  outline-offset: -2px;
+}
+
+.preview {
+  box-sizing: border-box;
+  min-height: var(--issue-create-body-min-height);
+  padding: var(--space-issue-create-body);
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.preview > * + * {
+  margin-top: var(--space-row-block);
+}
+
+.preview :is(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: var(--font-weight-semibold);
+  line-height: inherit;
+}
+
+.preview ul,
+.preview ol {
+  padding-left: var(--space-md);
+  list-style: revert;
+}
+
+.preview li + li {
+  margin-top: var(--space-row-inline);
+}
+
+.preview a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.preview pre {
+  padding: var(--space-xs);
+  overflow-x: auto;
+  background-color: var(--color-canvas);
+  border-radius: var(--radius-xxs);
+}
+
+.preview code {
+  font-size: var(--font-size-micro);
+}
+
+.toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: var(--control-height-compact);
+  padding: 0;
+  background-color: var(--color-canvas-cool);
+  border: 0;
+  border-radius: var(--radius-control-lg);
+}
+
+.toggleButton {
+  height: 100%;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control-lg);
+}
+
+.toggleButton[aria-pressed='true'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+}
+
+.toggleButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.bodyBlock {
+  display: grid;
+  gap: var(--space-sm); /* Figma 200:952 itemSpacing 12 */
+}
+
+.bodyBlock > .field {
+  gap: var(--space-row-block); /* label → toggle 10 */
+}
+
+.formFields {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--space-xs);
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.option {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  min-height: var(--touch-target-min);
+}
+
+.control {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: var(--font-size-meta);
+}
+
+.hint {
+  color: var(--color-text-muted-cool);
+}
+
+.error {
+  color: var(--color-required-dot);
+}
+
+.props {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-row-block); /* Figma 200:969 itemSpacing 10, no row hairlines */
+  margin: 0;
+  padding: var(--space-recruit-field-inline);
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-sm);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  text-align: start;
+  background: transparent;
+  border: 0;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.term {
+  flex: none;
+}
+
+.value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.value[data-overdue='true'] {
+  color: var(--color-status-overdue);
+}
+
+.item {
+  display: inline-flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.separator {
+  flex: none;
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: currentcolor;
+  border-radius: var(--radius-full);
+}
+
+.status {
+  display: inline-flex;
+  gap: var(--space-board-control-icon);
+  align-items: center;
+  color: var(--status-color);
+}
+
+.statusDot {
+  flex: none;
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  background-color: var(--status-color);
+  border-radius: var(--radius-full);
+}
+
+.chevron {
+  flex: none;
+  display: block;
+  width: var(--icon-size-issue-form-chevron);
+  height: var(--icon-size-issue-form-chevron);
+  color: var(--color-text-muted-cool);
+}
+
+.chevron > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.failure {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.retry {
+  width: 100%;
+  height: var(--control-height);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.progress {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.progressTitle {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+}
+
+.progressSteps {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted-cool);
+}
+
+.submit {
+  width: 100%;
+  height: var(--control-height-sheet);
+  margin-top: auto;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+  border: 0;
+  border-radius: var(--radius-control-md);
+}
+
+.submit[aria-disabled='true'] {
+  color: var(--color-text-unselected);
+  background-color: var(--color-canvas-cool);
+}
+
+.submit:focus-visible,
+.retry:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

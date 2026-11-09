@@ -19,7 +19,14 @@ import type { BoardStatusColor, IssueStatus } from '../../../_lib/issue-status';
  * generated orval functions. The row types below stay for 12–15, which still read them.
  */
 
-export type IssueUser = { id: number; login: string; name: string; avatarUrl: string };
+export type IssueUser = {
+  id: number;
+  login: string;
+  name: string;
+  avatarUrl: string;
+  /** Figma job label (PO/Fullstack…). Optional — real API has no field; mock may send it. */
+  jobRole?: string;
+};
 export type IssueLabel = { name: string; color: string };
 /** `inTeam: false` = assigned on GitHub but no longer a team member → "팀 밖 사용자" (04 ch. 7 exceptions) */
 export type IssueAssignee = IssueUser & { inTeam: boolean };

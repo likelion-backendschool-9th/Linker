@@ -8,8 +8,12 @@ import { useOverlay } from '@/lib/navigation/use-overlay';
 import type { IssueSchedule } from '../../../_lib/issue-detail-queries';
 import { saveErrorMessage } from '../save-error';
 
+export type SchedulePart = 'start' | 'due';
+
 export type IssueScheduleSheetProps = {
   value: IssueSchedule;
+  /** Which date this opening edits. The other date stays as it was. */
+  part?: SchedulePart;
   onSave: (schedule: IssueSchedule) => Promise<unknown>;
 };
 
@@ -19,22 +23,23 @@ export function useIssueScheduleSheet() {
 
 export function useIssueScheduleForm({
   value,
+  part = 'start',
   onSave,
   onDone,
 }: IssueScheduleSheetProps & { onDone: () => void }) {
-  const [start, setStart] = useState(value.startDate ?? '');
-  const [due, setDue] = useState(value.dueDate ?? '');
+  // Empty field shows "today" on the wheel — keep state in sync (start used to stay '')
+  const [start, setStart] = useState(() =>
+    value.startDate ?? (part === 'start' ? todayKst() : ''),
+  );
+  const [due, setDue] = useState(() => value.dueDate ?? (part === 'due' ? todayKst() : ''));
   const [orderError, setOrderError] = useState(false);
   // "이미 지난 날짜예요" is asked once, then the same submit goes through (04 ch. 7 exceptions)
   const [pastConfirmed, setPastConfirmed] = useState(false);
   const [askPast, setAskPast] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dueRef = useRef<HTMLInputElement>(null);
+  const dueRef = useRef<HTMLElement>(null);
   const id = useId();
-
-  const dueChanged = due !== (value.dueDate ?? '');
-  const duePast = due !== '' && due < todayKst();
 
   function onStartChange(next: string) {
     setStart(next);
@@ -51,12 +56,19 @@ export function useIssueScheduleForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
+    // Match the wheel: empty edited part still displays today
+    const nextStart = start || (part === 'start' ? todayKst() : '');
+    const nextDue = due || (part === 'due' ? todayKst() : '');
+    if (nextStart !== start) setStart(nextStart);
+    if (nextDue !== due) setDue(nextDue);
     // Start ≤ due (POL-I-3)
-    if (start && due && start > due) {
+    if (nextStart && nextDue && nextStart > nextDue) {
       setOrderError(true);
       dueRef.current?.focus();
       return;
     }
+    const dueChanged = nextDue !== (value.dueDate ?? '');
+    const duePast = nextDue !== '' && nextDue < todayKst();
     if (dueChanged && duePast && !pastConfirmed) {
       setAskPast(true);
       setPastConfirmed(true);
@@ -65,7 +77,7 @@ export function useIssueScheduleForm({
     setPending(true);
     setError(null);
     try {
-      await onSave({ startDate: start || null, dueDate: due || null });
+      await onSave({ startDate: nextStart || null, dueDate: nextDue || null });
       onDone();
     } catch (failure) {
       setError(saveErrorMessage(failure));

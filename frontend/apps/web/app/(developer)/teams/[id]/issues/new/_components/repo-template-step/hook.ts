@@ -3,13 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState, type FormEvent } from 'react';
 
-import { createReposOptions, templatesOptions, type TemplateSummary } from './api';
-
-export const SOURCE_HINT: Record<TemplateSummary['source'], string> = {
-  REPO: '레포 템플릿',
-  ORG: '조직 템플릿',
-  DEFAULT: '기본 템플릿',
-};
+import { createReposOptions, templatesOptions } from './api';
 
 export type RepoTemplateStepProps = {
   teamId: string;
