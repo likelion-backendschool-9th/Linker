@@ -4,7 +4,7 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 
 import { issueCountOptions, issueProgressOptions } from './api';
 
-/** The four statuses of the cards, in Figma order (완료, 진행 / 정지, 작업 전) */
+/** The four statuses of the cards, in Figma order (작업 완료, 작업 중 / 작업 중단, 작업 전) */
 export const PROGRESS_STATUSES = ['DONE', 'IN_PROGRESS', 'BLOCKED', 'TODO'] as const;
 export type ProgressStatus = (typeof PROGRESS_STATUSES)[number];
 

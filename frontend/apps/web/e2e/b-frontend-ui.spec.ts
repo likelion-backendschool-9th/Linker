@@ -101,6 +101,8 @@ test('mobile operator detail can switch to the reason form without losing its ov
 test('audit dates validate and statistics expose accessible data tables', async ({ page }) => {
   await role(page, 'operator');
   await page.goto('/admin/audit');
+  await page.getByLabel('인증 코드', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: '인증', exact: true }).click();
   await expect(page.getByRole('table')).toBeVisible();
   await page.getByLabel('시작일 (KST)').fill('2026-11-02');
   await page.getByLabel('종료일 (KST)').fill('2026-11-01');
