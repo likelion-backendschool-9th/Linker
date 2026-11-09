@@ -10,7 +10,7 @@ import { setupBoardsOptions, type Members, type TeamSettings } from './api';
 
 export const TITLES: Record<string, string> = {
   info: '팀 정보 편집',
-  invite: '초대 링크 만들기',
+  invite: '팀 초대',
   member: '멤버 관리',
   revoke: '초대 링크를 폐기할까요?',
   repos: '연결 레포 관리',
@@ -62,6 +62,7 @@ export function useTeamSettingsActionSheet({
   const allowed: Record<string, boolean> = {
     info: p.editInfo,
     invite: p.createInviteLink,
+    github: true, /* markup-first: permission wiring later (owner + GitHub org owner) */
     revoke: p.createInviteLink,
     member: !!canManageMember,
     remove: !!canManageMember,
