@@ -3,7 +3,6 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   TeamCreatedResponse,
-  TeamSetupBoardSaved,
   VerifyInstallationResponse,
 } from '@linker/api/openAPIDefinition.schemas';
 import { parseAsInteger, useQueryStates } from 'nuqs';
@@ -20,15 +19,9 @@ import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { resolveSetupStep } from '../../_lib/setup-steps';
 export { STEPS } from '../../_lib/setup-steps';
 
-import { setupBoardKey } from '../team-setup-boards/hook';
+import { useTeamSetupCompletion } from '../team-setup-completion/hook';
 import type { BoardSelection } from '../../../_components/team-board-selection';
-import {
-  myTeamsOptions,
-  settingsOptions,
-  setupPermissionOptions,
-  createTeam,
-  updateSetupTeamInfo,
-} from './api';
+import { myTeamsOptions, createTeam, updateSetupTeamInfo } from './api';
 
 type CreatedSetupTeam = TeamCreatedResponse & { installationId: string; description: string };
 
@@ -57,34 +50,19 @@ export function useTeamSetup() {
     queryKey: createdSetupTeamKey(viewer.login),
     queryFn: skipToken,
   });
-  const [previewTeamId, setPreviewTeamId] = useState('');
   const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
-  const [completePreview, setCompletePreview] = useState(false);
   const [boardDraft, setBoardDraft] = useState<BoardSelection>({
     mode: 'existing',
     boardId: '',
     statusMapping: {},
   });
   const teams = useQuery(myTeamsOptions());
-  const ownedTeams =
-    teams.data?.items.filter((team) => team.myRole === 'OWNER' && team.status === 'ACTIVE') ?? [];
-  const previewSource = ownedTeams.find((team) => String(team.id) === previewTeamId);
-  const previewSettings = useQuery({ ...settingsOptions(previewTeamId), enabled: !!previewSource });
-  const previewTeam = previewSettings.data;
-  const savedBoard = useQuery<TeamSetupBoardSaved>({
-    queryKey: setupBoardKey(viewer.login, setupTeamId),
-    queryFn: skipToken,
-  });
-  const permission = useQuery({
-    ...setupPermissionOptions(previewTeamId),
-    enabled: !!previewTeam && step === 5,
-  });
+  const finish = useTeamSetupCompletion(setupTeamId, () => void setStep(5, { history: 'push' }));
   const displayName = nameTouched
     ? name
     : isInstalledOrganization(installation.data)
       ? installation.data.org.login
       : '';
-  const boardSummary = savedBoard.data?.name ?? '아직 연결하지 않았어요';
   const atLimit = teams.data ? teams.data.teamCount >= teams.data.teamLimit : false;
   const openExternal = useOpenExternal();
 
@@ -115,38 +93,24 @@ export function useTeamSetup() {
     },
   });
 
-  function selectPreviewTeam(teamId: string) {
-    setPreviewTeamId(teamId);
-    setSelectedRepos([]);
-    setBoardDraft({ mode: 'existing', boardId: '', statusMapping: {} });
-  }
-
   return {
     step,
     setStep,
     setupTeamId,
     create,
+    finish,
     installed: isInstalledOrganization(installation.data) ? installation.data : undefined,
     name,
     setName,
     setNameTouched,
     description,
     setDescription,
-    previewTeamId,
-    selectPreviewTeam,
     selectedRepos,
     setSelectedRepos,
-    completePreview,
-    setCompletePreview,
     boardDraft,
     setBoardDraft,
     teams,
-    ownedTeams,
-    previewSettings,
-    previewTeam,
-    permission,
     displayName,
-    boardSummary,
     atLimit,
     openExternal,
   };

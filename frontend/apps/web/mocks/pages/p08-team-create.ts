@@ -179,7 +179,12 @@ export const routes: MockRoute[] = [
   // The org's default repo permission; "read" shows the write-permission notice (POL-T-1)
   get('/api/v1/user/teams/:teamId/setup/permission-check', ({ params }) => ({
     basePermission: 'READ' as 'READ' | 'WRITE',
-    settingsUrl: `https://github.com/organizations/${findTeam(params.teamId)?.orgLogin ?? 'my-new-org'}/settings/member_privileges`,
+    settingsUrl: `https://github.com/organizations/${setupTeam(params.teamId).orgLogin}/settings/member_privileges`,
   })),
-  post('/api/v1/user/teams/:teamId/setup/complete', () => ({ queued: true })),
+  post('/api/v1/user/teams/:teamId/setup/complete', ({ params }) => {
+    const team = setupTeam(params.teamId);
+    if (!team.repos.length || !savedBoards.has(team.id))
+      fail(400, 'VALIDATION_ERROR', '저장소와 보드를 먼저 연결해 주세요');
+    return { queued: true, state: 'QUEUED' as const, failedStep: null };
+  }),
 ];

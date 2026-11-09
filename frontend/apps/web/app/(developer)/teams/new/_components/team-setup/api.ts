@@ -1,7 +1,5 @@
 /** Query helpers for TeamSetup — thin re-exports from shared `_lib`. */
 export { myTeamsOptions } from '../../../[id]/_lib/team-queries';
-export { setupPermissionOptions } from '../../../_lib/setup-queries';
-export { settingsOptions } from '../../../[id]/settings/_lib/settings-queries';
 export { createTeam } from '@linker/api/p08-team-create/p08-team-create';
 
 import { apiFetch } from '@/lib/api/api-fetch';

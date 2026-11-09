@@ -32,9 +32,18 @@ type Props = {
   value: BoardSelection;
   onChange: (selection: BoardSelection) => void;
   onSaved: (board: TeamSetupBoardSaved) => void;
+  busy?: boolean;
+  completionError?: Error | null;
 };
 
-export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
+export function TeamSetupBoards({
+  teamId,
+  value,
+  onChange,
+  onSaved,
+  busy = false,
+  completionError,
+}: Props) {
   const { boards, selected, mode, ready, save } = useTeamSetupBoards(teamId, value, onSaved);
   return (
     <section className={styles.boards} aria-labelledby="setup-boards-title">
@@ -47,7 +56,7 @@ export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
           <button
             type="button"
             aria-pressed={mode === 'existing'}
-            disabled={save.isPending || (boards.isSuccess && !boards.data.items.length)}
+            disabled={busy || save.isPending || (boards.isSuccess && !boards.data.items.length)}
             onClick={() => {
               save.reset();
               onChange({ ...value, mode: 'existing' });
@@ -58,7 +67,7 @@ export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
           <button
             type="button"
             aria-pressed={mode === 'new'}
-            disabled={save.isPending}
+            disabled={busy || save.isPending}
             onClick={() => {
               save.reset();
               onChange({ ...value, mode: 'new' });
@@ -75,7 +84,7 @@ export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
           <ErrorState onRetry={() => void boards.refetch()} />
         ) : mode === 'existing' ? (
           <>
-            <fieldset className={styles.choices} disabled={save.isPending}>
+            <fieldset className={styles.choices} disabled={busy || save.isPending}>
               <legend className="sr-only">연결할 프로젝트 보드</legend>
               {boards.data.items.map((board) => (
                 <label key={board.id} className={styles.choice}>
@@ -100,7 +109,7 @@ export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
                 <p className={teamStyles.description}>
                   {selected.name} · 카드 {selected.cardCount}개
                 </p>
-                <fieldset className={teamStyles.section} disabled={save.isPending}>
+                <fieldset className={teamStyles.section} disabled={busy || save.isPending}>
                   <legend className={teamStyles.label}>상태 연결</legend>
                   {selected.statusOptions.map((option) => {
                     // OpenAPI's generated option type predates the server's optional color field.
@@ -157,8 +166,11 @@ export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
             <button
               className={styles.default}
               type="button"
-              disabled={save.isPending}
-              onClick={() => onChange({ mode: 'new', boardId: '', statusMapping: {} })}
+              disabled={busy || save.isPending}
+              onClick={() => {
+                save.reset();
+                onChange({ mode: 'new', boardId: '', statusMapping: {} });
+              }}
             >
               기본 값 사용
             </button>
@@ -183,15 +195,20 @@ export function TeamSetupBoards({ teamId, value, onChange, onSaved }: Props) {
             </button>
           </div>
         )}
-        {save.error && <ErrorState title={save.error.message} />}
+        {(save.error || completionError) && (
+          <ErrorState title={(save.error ?? completionError)!.message} />
+        )}
       </div>
       <button
         type="button"
         className={styles.next}
-        disabled={!ready}
-        aria-busy={save.isPending}
+        disabled={busy || !ready}
+        aria-busy={busy || save.isPending}
         onClick={() => {
-          if (ready) save.mutate();
+          if (ready && !busy) {
+            if (save.isSuccess) onSaved(save.data);
+            else save.mutate();
+          }
         }}
       >
         다음

@@ -22,7 +22,3 @@
 .content {
   min-width: 0;
 }
-.legacy {
-  padding: var(--space-md) var(--page-gutter) calc(var(--space-xxl) + env(safe-area-inset-bottom));
-  outline: none;
-}

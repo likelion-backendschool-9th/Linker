@@ -1,42 +1,7 @@
 'use client';
 
-import styles from '@/features/teams/team-ui.module.css';
-import { useSearchParams } from 'next/navigation';
 import { TeamInstallVerification } from '../team-install-verification/TeamInstallVerification';
 
-import { OUTCOME_LABELS, SETUP_OUTCOMES, TeamSetupOutcome } from '../team-setup-outcome';
-import { useTeamCallbackView } from './hook';
-
 export function TeamCallbackView() {
-  const { preview, setPreview } = useTeamCallbackView();
-  const params = useSearchParams();
-  if (['installation_id', 'setup_action', 'state'].some((key) => params.has(key))) {
-    return <TeamInstallVerification />;
-  }
-  return (
-    <div className={styles.stack}>
-      <TeamSetupOutcome state={preview} />
-      <details className={styles.soft}>
-        <summary>상태별 화면 미리보기</summary>
-        <p className={styles.description}>
-          실제 설치 결과가 아니에요. 서버 검증은 실행되지 않아요.
-        </p>
-        <div className={styles.field}>
-          <label htmlFor="setup-result-preview">확인할 화면</label>
-          <select
-            id="setup-result-preview"
-            className={styles.select}
-            value={preview}
-            onChange={(event) => setPreview(event.target.value as typeof preview)}
-          >
-            {SETUP_OUTCOMES.map((value) => (
-              <option key={value} value={value}>
-                {OUTCOME_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </div>
-      </details>
-    </div>
-  );
+  return <TeamInstallVerification />;
 }

@@ -35,7 +35,7 @@ test('workspace filters teams and reuses the team switcher without a navigation 
   await expect(page.getByRole('dialog')).toBeHidden();
 });
 
-test('team setup keeps the new intro gated and later preview steps cannot submit a team', async ({
+test('team setup cannot skip installation or claim completion through step URLs', async ({
   page,
 }) => {
   await page.goto('/teams/new');
@@ -46,8 +46,8 @@ test('team setup keeps the new intro gated and later preview steps cannot submit
   await expect(page.getByRole('heading', { name: '팀 정보를 입력해 주세요' })).toBeVisible();
   await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
   await page.goto('/teams/new?step=5');
-  await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toBeDisabled();
-  await expect(page.getByText('아직 연결하지 않았어요', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await expect(page.getByRole('heading', { name: '팀을 생성 하셨습니다!' })).toHaveCount(0);
 });
 
 test('settings expose preview sheets and keep member permissions separate', async ({ page }) => {

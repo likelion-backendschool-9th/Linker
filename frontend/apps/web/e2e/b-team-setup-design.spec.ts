@@ -30,7 +30,7 @@ test('08 intro keeps the Figma wording, disabled next step and server-issued ins
 test('08 uses the same logo, search, notification and settings header as 07', async ({ page }) => {
   await page.goto('/workspace');
   const headerClass = await page.getByRole('banner').getAttribute('class');
-  for (const step of [1, 2, 3, 4]) {
+  for (const step of [1, 2, 3, 4, 5]) {
     await page.goto(`/teams/new?step=${step}`);
     const header = page.getByRole('banner');
     await expect(header).toHaveAttribute('class', headerClass!);
@@ -234,6 +234,7 @@ test('08-4 connects the selected board by option ID and retains mapping after br
   page,
 }) => {
   await enterBoards(page);
+  await page.setViewportSize({ width: 375, height: 800 });
   const next = page.getByRole('button', { name: '다음', exact: true });
   await expect(next).toBeDisabled();
   await page.getByRole('radio', { name: 'ShowMoa', exact: true }).check();
@@ -248,9 +249,16 @@ test('08-4 connects the selected board by option ID and retains mapping after br
     await page.getByRole('combobox', { name, exact: true }).selectOption(status!);
   }
   await expect(next).toBeEnabled();
+  await page.screenshot({
+    path: test.info().outputPath('team-setup-board-mapping-375.png'),
+    fullPage: true,
+    scale: 'css',
+    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+  });
   await next.click();
+  await acknowledgePermission(page);
   await expect(page).toHaveURL(/step=5&teamId=\d+/);
-  await expect(page.getByText('ShowMoa', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '팀을 생성 하셨습니다!' })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('radio', { name: 'ShowMoa', exact: true })).toBeChecked();
   await expect(page.getByRole('combobox', { name: 'Backlog', exact: true })).toHaveValue('TODO');
@@ -308,6 +316,78 @@ test('08-4 matches both board frames below the shared header at mobile and deskt
     }
   }
   await page.getByRole('button', { name: '다음', exact: true }).click();
+  await acknowledgePermission(page);
   await expect(page).toHaveURL(/step=5&teamId=\d+/);
+  expect(errors).toEqual([]);
+});
+
+async function acknowledgePermission(page: import('@playwright/test').Page) {
+  await page.setViewportSize({ width: 375, height: 800 });
+  const sheet = page.getByRole('dialog', { name: 'GitHub 권한 설정' });
+  await expect(sheet).toBeVisible();
+  await page.screenshot({
+    path: test.info().outputPath('team-setup-permission.png'),
+    fullPage: true,
+    scale: 'css',
+    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+  });
+  await expect(
+    sheet.getByText('팀원이 이슈에 담당자·라벨을 정하려면 쓰기 권한이 필요해요'),
+  ).toBeVisible();
+  await sheet.getByRole('button', { name: '계속하기' }).click();
+  await expect(sheet).toHaveCount(0);
+}
+
+test('08-5 matches the final Figma completion and replaces navigation with the created team', async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await enterBoards(page);
+  const teamId = new URL(page.url()).searchParams.get('teamId');
+  await page.getByRole('button', { name: '새 보드 생성', exact: true }).click();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await acknowledgePermission(page);
+  await expect(page).toHaveURL(/step=5&teamId=\d+/);
+  const title = page.getByRole('heading', { name: '팀을 생성 하셨습니다!' });
+  await expect(title).toBeVisible();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
+  await expect(page.getByText('화면 미리보기예요.', { exact: false })).toHaveCount(0);
+  for (const width of [375, 360, 600, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => document.fonts.ready);
+    const illustration = page.locator('img[src*="high-five"]');
+    await expect(illustration).toBeVisible();
+    await expect
+      .poll(() =>
+        illustration.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
+      )
+      .toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    expect((await page.getByRole('banner').boundingBox())?.width).toBe(Math.min(width, 600));
+    if (width === 375) {
+      const picture = (await illustration.boundingBox())!;
+      expect(picture.y).toBe(241);
+      expect(picture.width).toBe(180);
+      expect(picture.height).toBe(169);
+      expect((await title.boundingBox())?.y).toBe(425);
+      expect((await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y).toBe(
+        723,
+      );
+    }
+    await page.screenshot({
+      path: testInfo.outputPath(`team-setup-completion-${width}.png`),
+      fullPage: true,
+      scale: 'css',
+      style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+    });
+  }
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page).toHaveURL(/\/workspace(?:\?teamId=\d+)?$/);
+  await expect(
+    page.getByRole('link', { name: 'my-new-org 팀으로 이동', exact: true }),
+  ).toHaveAttribute('href', `/teams/${teamId}/issues`);
   expect(errors).toEqual([]);
 });
