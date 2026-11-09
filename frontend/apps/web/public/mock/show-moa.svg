@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="148" height="123" viewBox="0 0 148 123">
+  <rect width="148" height="123" fill="#111111" />
+  <circle cx="7" cy="7" r="3" fill="#f5222d" />
+  <circle cx="74" cy="62" r="40" fill="#fffaf4" />
+  <text x="48" y="60" fill="#111111" font-family="Georgia, serif" font-size="15">SHOW</text>
+  <text x="75" y="73" fill="#f0442e" font-family="Georgia, serif" font-size="15">MOA</text>
+</svg>
