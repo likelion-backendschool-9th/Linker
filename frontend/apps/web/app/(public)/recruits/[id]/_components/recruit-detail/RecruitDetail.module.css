@@ -126,16 +126,16 @@
   border-radius: var(--radius-xxs);
 }
 
-/* 6px cool divider bands between major blocks (Figma Line 1 / section strokes) */
+/* 6px cool divider bands between major blocks (Figma 93:299 top/bottom strokes) */
 .rolesSection,
 .teamSection {
   display: grid;
   gap: var(--space-sm);
-  padding: var(--space-lg) var(--page-gutter) 0;
+  padding: var(--space-lg) var(--page-gutter);
 }
 
 .rolesSection {
-  border-top: var(--divider-section) solid var(--color-canvas-cool);
+  border-block: var(--divider-section) solid var(--color-canvas-cool);
 }
 
 .sectionHead,
