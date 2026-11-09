@@ -72,10 +72,13 @@
 
   /* Figma 07 values. The three marked low contrast fall below 4.5:1 on white by design decision */
   --color-text-black: #000000; /* 07 section labels */
+  --color-dialog-close: #101010; /* 06 confirm modal close icon */
   --color-text-sheet-title: #111827; /* 07 sheet title, selected option; also 20 field labels and heading text */
   --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1; also 20 unselected segmented button and "역할 추가" label */
   --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1; also 20 "최대 N자" hint */
   --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1; also 20 disabled submit label */
+  --color-settings-choice-unselected: #98a3b4; /* 06 settings job-status sheet, reference screenshot */
+  --color-settings-block-handle: #98a3b4; /* 06 settings blocked-user handle, reference screenshot */
   --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
   --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
@@ -88,6 +91,8 @@
   --color-radio-border: #eaeaea;
   --color-sheet-cta: #121212; /* 07 sheet CTA fill */
   --color-on-sheet-cta: #f8f9f6;
+  --color-post-photo-more-bg: #222222; /* 22 "more photos" badge on the last visible photo (Figma 660:585) */
+  --color-post-photo-more-icon: #e7e7e7; /* its album glyph: 12.9:1 on the badge */
 
   /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
   --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */

@@ -2,14 +2,17 @@
 
 .editor {
   display: grid;
-  gap: var(--space-lg);
+  gap: var(--space-group); /* Figma 274:283 stepper → content 20 */
   max-width: var(--form-max-width);
   /* Cancel PageFrame main's top --space-md so the stepper sits under the header */
   margin: calc(-1 * var(--space-md)) auto 0;
 }
 
-/* Step indicator: 2-segment progress bar under the header (Figma 265:142 / 274:283) */
+/* Step indicator: 2-segment progress bar pinned under the sticky header (Figma 265:142 / 274:283) */
 .steps {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + var(--header-height));
+  z-index: var(--z-chrome);
   display: flex;
   width: calc(100% + 2 * var(--page-gutter));
   margin-inline: calc(-1 * var(--page-gutter));

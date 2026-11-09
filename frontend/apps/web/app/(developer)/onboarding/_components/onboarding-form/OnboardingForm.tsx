@@ -52,20 +52,20 @@ export function OnboardingForm({
     goBackFromProfile,
   } = useOnboardingForm({ initial, techStackMax });
   const jobSheet = useOverlay('onboarding-job-status');
-  const [ageConfirmed, termsAccepted, privacyAccepted, marketingAccepted, name, email, jobStatus] =
+  const [termsAccepted, privacyAccepted, marketingAccepted, name, email, jobStatus, jobStatusChosen] =
     useWatch({
       control: form.control,
       name: [
-        'ageConfirmed',
         'termsAccepted',
         'privacyAccepted',
         'marketingAccepted',
         'name',
         'email',
         'jobStatus',
+        'jobStatusChosen',
       ],
     });
-  const consentsReady = Boolean(ageConfirmed && termsAccepted && privacyAccepted);
+  const consentsReady = Boolean(termsAccepted && privacyAccepted);
   const allChecked = consentsReady && Boolean(marketingAccepted);
   const jobLabel = JOB_OPTIONS.find((option) => option.value === jobStatus)?.label ?? '끔';
   const title =
@@ -75,10 +75,9 @@ export function OnboardingForm({
       ? consentsReady
       : step === 'EMAIL'
         ? email.trim().length > 0
-        : name.trim().length > 0;
+        : name.trim().length > 0 && jobStatusChosen;
 
   function toggleAll(checked: boolean) {
-    form.setValue('ageConfirmed', checked);
     form.setValue('termsAccepted', checked);
     form.setValue('privacyAccepted', checked);
     form.setValue('marketingAccepted', checked);
@@ -122,7 +121,9 @@ export function OnboardingForm({
           </div>
         ) : (
           <form className={styles.form} onSubmit={form.handleSubmit(saveProfile)} noValidate>
-            <div className={styles.body}>
+            <div
+              className={`${styles.body} ${step === 'AGREEMENTS' ? styles.agreementsBody : ''} ${step === 'PROFILE' ? styles.profileBody : ''}`}
+            >
               {step === 'AGREEMENTS' ? (
                 <>
                   <div className={styles.intro}>
@@ -141,13 +142,6 @@ export function OnboardingForm({
                       <span>약관 전체 동의</span>
                     </label>
                     <div className={styles.consentList}>
-                      <ConsentRow
-                        label="(필수) 만 14세 이상입니다"
-                        inputProps={form.register('ageConfirmed')}
-                        invalid={!!form.formState.errors.ageConfirmed}
-                        errorId="age-error"
-                        error={form.formState.errors.ageConfirmed?.message}
-                      />
                       <ConsentRow
                         label="(필수) 이용 약관"
                         accessibleName="이용약관에 동의합니다"
@@ -169,6 +163,7 @@ export function OnboardingForm({
                       <ConsentRow
                         label="(선택) 마케팅 수신 동의"
                         accessibleName="마케팅 정보 수신에 동의합니다"
+                        href="/legal/privacy"
                         inputProps={form.register('marketingAccepted')}
                       />
                     </div>
@@ -200,7 +195,7 @@ export function OnboardingForm({
               ) : (
                 <>
                   <div className={styles.intro}>
-                    <h2>기본 프로필을 확인해 주세요</h2>
+                    <h2>간단한 프로필을 만들어 주세요</h2>
                     <p>다른 사용자들이 개발자님을 알 수 있게 소개해 주세요!</p>
                   </div>
                   <fieldset className={styles.fields} disabled={pending}>
@@ -234,31 +229,12 @@ export function OnboardingForm({
                       )}
                     </div>
                     <div className={styles.field}>
-                      <label htmlFor="blog-url">블로그 주소</label>
-                      <input
-                        id="blog-url"
-                        type="url"
-                        inputMode="url"
-                        placeholder="https://"
-                        {...form.register('blogUrl')}
-                        aria-invalid={!!form.formState.errors.blogUrl}
-                        aria-describedby={form.formState.errors.blogUrl ? 'blog-error' : undefined}
-                      />
-                      {form.formState.errors.blogUrl && (
-                        <FieldError id="blog-error">{form.formState.errors.blogUrl.message}</FieldError>
-                      )}
-                    </div>
-                    <label className={styles.teamToggle}>
-                      <input type="checkbox" {...form.register('lookingForTeam')} />
-                      <span>함께할 팀을 찾고 있어요</span>
-                    </label>
-                    <div className={styles.field}>
                       <span className={styles.fieldName}>기술 스택</span>
                       <button type="button" className={styles.select} onClick={() => picker.open()}>
                         <span className={selectedTech.length ? styles.value : styles.placeholder}>
                           {selectedTech.length
                             ? selectedTech.join(', ')
-                            : `최대 ${techStackMax}개를 선택할 수 있어요`}
+                            : `최대 ${techStackMax}개를 선택할 수 있습니다`}
                         </span>
                         <ChevronDown aria-hidden />
                         <span className="sr-only">기술 스택 선택</span>
@@ -272,7 +248,9 @@ export function OnboardingForm({
                         aria-haspopup="dialog"
                         onClick={() => jobSheet.open()}
                       >
-                        <span className={styles.value}>{jobLabel}</span>
+                        <span className={jobStatusChosen ? styles.value : styles.placeholder}>
+                          {jobStatusChosen ? jobLabel : '현재 구직 상태를 알려주세요'}
+                        </span>
                         <ChevronDown aria-hidden />
                         <span className="sr-only">구직 상태</span>
                       </button>
@@ -281,7 +259,9 @@ export function OnboardingForm({
                 </>
               )}
             </div>
-            <div className={styles.footer}>
+            <div
+              className={`${styles.footer} ${step === 'AGREEMENTS' ? styles.agreementsFooter : ''} ${step === 'PROFILE' ? styles.profileFooter : ''}`}
+            >
               {step === 'AGREEMENTS' ? (
                 <button
                   type="button"
@@ -306,7 +286,7 @@ export function OnboardingForm({
                 <button
                   type="submit"
                   className={`${styles.next} ${footerReady ? styles.nextReady : ''}`}
-                  disabled={pending}
+                  disabled={pending || !footerReady}
                   aria-busy={pending}
                 >
                   완료
@@ -330,19 +310,38 @@ export function OnboardingForm({
               title="구직 상태"
               description="현재 구직 상태를 선택해 주세요."
               describeHidden
+              classNames={{
+                scrim: styles.jobStatusScrim,
+                sheet: styles.jobStatusSheet,
+                header: styles.jobStatusHeader,
+                title: styles.jobStatusTitle,
+                close: styles.jobStatusClose,
+                body: styles.jobStatusBody,
+              }}
             >
-              <div className={styles.options}>
+              <div className={styles.jobOptions}>
                 {JOB_OPTIONS.map((option) => (
                   <label key={option.value} className={styles.option}>
-                    <input type="radio" value={option.value} {...form.register('jobStatus')} />
+                    <input
+                      type="radio"
+                      value={option.value}
+                      {...form.register('jobStatus')}
+                      onChange={() => {
+                        form.setValue('jobStatus', option.value, { shouldDirty: true });
+                        form.setValue('jobStatusChosen', true, { shouldValidate: true });
+                      }}
+                    />
                     <span>{option.label}</span>
                   </label>
                 ))}
               </div>
               <button
                 type="button"
-                className={`${styles.next} ${styles.nextReady}`}
-                onClick={() => jobSheet.close()}
+                className={styles.jobDone}
+                onClick={() => {
+                  form.setValue('jobStatusChosen', true, { shouldValidate: true });
+                  jobSheet.close();
+                }}
               >
                 완료
               </button>

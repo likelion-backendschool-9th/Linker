@@ -2,26 +2,33 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Search, X } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { AlertDialog } from 'radix-ui';
+import type { Route } from 'next';
 import { useForm } from 'react-hook-form';
 import type { ReactNode } from 'react';
 import { z } from 'zod';
 
-import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
+import {
+  getGetWithdrawalCheckQueryKey,
+  getWithdrawalCheck,
+  withdrawAccount,
+} from '@linker/api/p06-settings/p06-settings';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 import { clearNativeSession, unregisterNativePushToken } from '@/features/auth/sync-native-session';
 import { chatKeys } from '@/features/chat/chat-queries';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
-import { isInApp, requestNative } from '@/lib/bridge/native';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { disconnect } from '@/lib/realtime/stomp-client';
 import { toast } from '@/stores/toast-store';
 
-import type { SettingsData, WithdrawalCheck } from '../_lib/settings-types';
+import type { SettingsData } from '../_lib/settings-types';
 import styles from './settings-view.module.css';
 
 const emailSchema = z.object({ email: z.string().trim().email('올바른 이메일 주소를 입력해 주세요.') });
@@ -30,22 +37,35 @@ type EmailValues = z.infer<typeof emailSchema>;
 export function SettingsCommon({
   login,
   settings,
+  accountStart,
+  personal,
+  blockCount,
   children,
 }: {
   login: string;
   settings: SettingsData;
-  children: ReactNode;
+  accountStart?: ReactNode;
+  personal?: ReactNode;
+  blockCount?: number;
+  children?: ReactNode;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const logoutOverlay = useOverlay('profile-actions');
   const withdrawalSheet = useOverlay('profile-people');
-  const withdrawalConfirm = useOverlay('delete-confirm');
   const blocksOverlay = useOverlay('settings-blocks');
-  const [ownedTeams, setOwnedTeams] = useState<WithdrawalCheck['ownedTeams']>([]);
-  const [pushEnabled, setPushEnabled] = useState(settings.pushEnabled);
-  const [requestingPush, setRequestingPush] = useState(false);
+  const withdrawalCheck = useQuery({
+    queryKey: [...getGetWithdrawalCheckQueryKey(), login],
+    queryFn: ({ signal }) => getWithdrawalCheck({ signal }),
+    enabled: withdrawalSheet.isOpen,
+  });
+  const ownedTeams = withdrawalCheck.data?.ownedTeams ?? [];
   const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
+  const [showOwnedTeamGuard, setShowOwnedTeamGuard] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState(settings.notificationEmail);
+  const [blockQuery, setBlockQuery] = useState('');
+  const logoutCancelRef = useRef<HTMLButtonElement>(null);
   const form = useForm<EmailValues>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: settings.notificationEmail },
@@ -59,59 +79,15 @@ export function SettingsCommon({
         body: JSON.stringify({ email: values.email.trim() }),
       }),
     onSuccess: (saved, values) => {
-      form.reset({ email: saved.notificationEmail ?? saved.email ?? values.email.trim() });
+      const nextEmail = saved.notificationEmail ?? saved.email ?? values.email.trim();
+      form.reset({ email: nextEmail });
+      setNotificationEmail(nextEmail);
+      setEditingEmail(false);
       toast('알림 이메일을 저장했어요.');
       router.refresh();
     },
     onError: (error) => form.setError('root', { message: errorMessage(error, '알림 이메일을 저장하지 못했어요.') }),
   });
-
-  const pushSave = useMutation({
-    mutationFn: (pushEnabled: boolean) =>
-      apiFetch<{ pushEnabled: boolean }>('/api/v1/user/me/settings/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pushEnabled }),
-      }),
-    onSuccess: (saved) => {
-      setPushEnabled(saved.pushEnabled);
-      toast('푸시 알림 설정을 저장했어요.');
-      router.refresh();
-    },
-    onError: (error) => toast(errorMessage(error, '푸시 알림 설정을 저장하지 못했어요.'), { tone: 'alert' }),
-  });
-
-  async function togglePush() {
-    if (requestingPush || pushSave.isPending) return;
-    setRequestingPush(true);
-    try {
-      const next = !pushEnabled;
-      if (next && isInApp()) {
-        try {
-          const result = await requestNative({ type: 'PUSH_PERMISSION_REQUEST' }, { timeoutMs: 0 });
-          const status =
-            result.ok && result.payload && typeof result.payload === 'object'
-              ? (result.payload as { status?: string }).status
-              : undefined;
-          if (status === 'denied') {
-            toast('푸시 권한을 허용해야 Android 알림을 받을 수 있어요.', {
-              tone: 'alert',
-            });
-            return;
-          }
-        } catch {
-          // Preference can still be saved; the token may arrive on a later grant.
-        }
-      } else if (next && !isInApp()) {
-        toast('푸시는 Android 앱에서만 받을 수 있어요.');
-      }
-      await pushSave.mutateAsync(next);
-    } catch {
-      // pushSave.onError displays the existing settings error.
-    } finally {
-      setRequestingPush(false);
-    }
-  }
 
   const logout = useMutation({
     mutationFn: async () => {
@@ -129,28 +105,21 @@ export function SettingsCommon({
     onError: (error) => toast(errorMessage(error, '로그아웃하지 못했어요. 다시 시도해 주세요.'), { tone: 'alert' }),
   });
 
-  const withdrawalCheck = useMutation({
-    mutationFn: () => apiFetch<WithdrawalCheck>('/api/v1/user/me/withdrawal-check'),
-    onSuccess: (result) => {
-      setOwnedTeams(result.ownedTeams);
-      setWithdrawalError(null);
-      withdrawalSheet.open();
-    },
-    onError: (error) => toast(errorMessage(error, '탈퇴 가능 여부를 확인하지 못했어요.'), { tone: 'alert' }),
-  });
-
   const withdrawal = useMutation({
     mutationFn: async () => {
       await unregisterNativePushToken();
-      return apiFetch<{ deletesOn: string }>('/api/v1/user/me/withdrawal', { method: 'POST' });
+      return withdrawAccount();
     },
     onSuccess: async (result) => {
       clearNativeSession();
       await disconnect();
       await queryClient.clear();
-      withdrawalConfirm.close();
       withdrawalSheet.close();
-      toast(`${result.deletesOn}에 계정이 삭제될 예정이에요. 그전까지 다시 로그인하면 복구할 수 있어요.`);
+      toast(
+        result.deletesOn
+          ? `${result.deletesOn}에 계정이 삭제될 예정이에요. 그전까지 다시 로그인하면 복구할 수 있어요.`
+          : '30일 후 계정이 삭제될 예정이에요. 그전까지 다시 로그인하면 복구할 수 있어요.',
+      );
       router.replace('/');
       router.refresh();
     },
@@ -159,7 +128,10 @@ export function SettingsCommon({
 
   const blocks = useQuery({
     queryKey: ['account-blocks'],
-    queryFn: () => apiFetch<{ user: { id: number; login: string; name: string }; blockedAt: string }[]>('/api/v1/user/me/blocks'),
+    queryFn: () =>
+      apiFetch<{ user: { id: number; login: string; name: string; avatarUrl?: string }; blockedAt: string }[]>(
+        '/api/v1/user/me/blocks',
+      ),
     enabled: blocksOverlay.isOpen,
   });
   const unblock = useMutation({
@@ -173,103 +145,223 @@ export function SettingsCommon({
     onError: (error) => toast(errorMessage(error, '차단을 해제하지 못했어요.'), { tone: 'alert' }),
   });
 
+  const blockRows = Array.isArray(blocks.data) ? blocks.data : [];
+  const visibleBlocks = blockRows.filter(({ user }) => {
+    const query = blockQuery.trim().toLowerCase();
+    return query.length === 0 || user.name.toLowerCase().includes(query) || user.login.toLowerCase().includes(query);
+  });
+
   return (
     <div className={styles.content}>
-      <section className={styles.section} aria-labelledby="account-heading">
-        <h2 id="account-heading">계정</h2>
-        <div className={styles.row}>
-          <div className={styles.rowInfo}><span className={styles.label}>링커 아이디</span><span className={styles.value}>@{login}</span></div>
-        </div>
-        <form className={styles.form} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
-          <div className={styles.field}>
-            <label htmlFor="notification-email">알림 이메일</label>
-            <input id="notification-email" type="email" autoComplete="email" {...form.register('email')} aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} />
-            {form.formState.errors.email && <span id="email-error" className={styles.error}>{form.formState.errors.email.message}</span>}
-          </div>
+      <section className={styles.group} aria-labelledby="account-heading">
+        <h2 id="account-heading" className={styles.groupTitle}>계정 및 연결</h2>
+        <div className={styles.card}>
+          {accountStart}
+          {editingEmail ? (
+            <form noValidate className={styles.emailRow} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
+              <label htmlFor="notification-email">알림 이메일</label>
+              <input id="notification-email" type="email" autoComplete="email" {...form.register('email')} aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} />
+              <button type="submit" className={styles.save} disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '저장'}</button>
+            </form>
+          ) : (
+            <button type="button" className={`${styles.row} ${styles.emailDisplay}`} aria-label={`알림 이메일 ${notificationEmail}`} onClick={() => setEditingEmail(true)}>
+              <span>알림 이메일</span>
+              <span className={styles.emailValue}>{notificationEmail}</span>
+            </button>
+          )}
+          {form.formState.errors.email && <span id="email-error" className={styles.error}>{form.formState.errors.email.message}</span>}
           {form.formState.errors.root && <p className={styles.error} role="alert">{form.formState.errors.root.message}</p>}
-          <Button type="submit" variant="outline" disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '알림 이메일 저장'}</Button>
-        </form>
-      </section>
-
-      <section className={styles.section} aria-labelledby="notification-heading">
-        <h2 id="notification-heading">알림</h2>
-        <div className={styles.row}>
-          <div className={styles.rowInfo}><span className={styles.label}>푸시 알림</span><span className={styles.description}>끄면 푸시만 중단되고 앱 내 알림은 계속 쌓여요. 푸시는 Android 앱에서만 받을 수 있어요.</span></div>
-          <button type="button" className={styles.toggle} aria-label={`푸시 알림 ${pushEnabled ? '켜짐' : '꺼짐'}`} aria-pressed={pushEnabled} disabled={requestingPush || pushSave.isPending} aria-busy={requestingPush || pushSave.isPending} onClick={() => void togglePush()}>{pushSave.isPending ? '…' : pushEnabled ? '켜짐' : '꺼짐'}</button>
+          <AccountPlan settings={settings} />
+          <button type="button" className={styles.row} onClick={() => logoutOverlay.open()}>
+            <span>로그아웃</span>
+          </button>
+          <button
+            type="button"
+            className={styles.row}
+            onClick={() => {
+              setWithdrawalError(null);
+              setShowOwnedTeamGuard(false);
+              withdrawalSheet.open();
+            }}
+          >
+            <span>계정 삭제</span>
+          </button>
         </div>
       </section>
 
       {children}
 
-      <section className={styles.section} aria-labelledby="info-heading">
-        <h2 id="info-heading">도움말 및 정보</h2>
-        <nav className={styles.links} aria-label="약관 및 정책">
-          <Link className={styles.link} href="/legal/terms">이용약관</Link>
-          <Link className={styles.link} href="/legal/privacy">개인정보 처리방침</Link>
-          <Link className={styles.link} href="/legal/community">커뮤니티 정책</Link>
-          <a className={styles.link} href="mailto:support@linker.example">문의하기</a>
+      <section className={styles.group} aria-labelledby="personal-heading">
+        <h2 id="personal-heading" className={styles.groupTitle}>개인 정보</h2>
+        <div className={styles.card}>
+          {personal}
+          <button type="button" className={styles.row} onClick={() => blocksOverlay.open()}>
+            <span>차단 사용자</span>
+            <span className={styles.trailing}><span className={styles.value}>{`${blocks.isSuccess && Array.isArray(blocks.data) ? blocks.data.length : (blockCount ?? 0)}명`}</span><span className={styles.chevron} aria-hidden="true" /></span>
+          </button>
+        </div>
+      </section>
+
+      <section className={styles.group} aria-labelledby="info-heading">
+        <h2 id="info-heading" className={styles.groupTitle}>기타</h2>
+        <nav className={styles.card} aria-label="약관 및 정책">
+          <Link className={styles.row} href="/legal/terms"><span>이용약관</span><span className={styles.trailing}><span className={styles.value}>동의함</span><span className={styles.chevron} aria-hidden="true" /></span></Link>
+          <Link className={styles.row} href="/legal/privacy"><span>개인정보 처리방침</span><span className={styles.trailing}><span className={styles.value}>동의함</span><span className={styles.chevron} aria-hidden="true" /></span></Link>
+          <a className={styles.row} href="mailto:support@linker.example"><span>문의하기</span><span className={styles.chevron} aria-hidden="true" /></a>
         </nav>
       </section>
 
-      <section className={styles.section} aria-labelledby="blocked-heading">
-        <h2 id="blocked-heading">차단 관리</h2>
-        <p className={styles.description}>차단한 사용자를 확인하고 차단을 해제할 수 있어요.</p>
-        <Button variant="outline" onClick={() => blocksOverlay.open()}>차단한 사용자 보기</Button>
-      </section>
-
-      <section className={styles.section} aria-labelledby="account-action-heading">
-        <h2 id="account-action-heading">계정 관리</h2>
-        <Button variant="outline" onClick={() => logoutOverlay.open()}>로그아웃</Button>
-        <Button variant="danger" onClick={() => withdrawalCheck.mutate()} disabled={withdrawalCheck.isPending}>{withdrawalCheck.isPending ? '확인 중…' : '계정 탈퇴'}</Button>
-      </section>
-
-      <ConfirmDialog
-        overlay={logoutOverlay}
-        title="로그아웃할까요?"
-        description="다시 이용하려면 로그인해야 해요."
-        confirmLabel={logout.isPending ? '로그아웃 중…' : '로그아웃'}
-        pending={logout.isPending}
-        onConfirm={() => logout.mutate()}
-      />
-      <OverlaySheet overlay={blocksOverlay} title="차단한 사용자" description="차단을 해제할 사용자를 선택해 주세요.">
-        {blocks.isPending ? <p role="status">차단 목록을 불러오는 중…</p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : blocks.data?.length ? (
-          <ul className={styles.blockList}>{blocks.data.map(({ user }) => <li className={styles.blockItem} key={user.id}><span>{user.name} · @{user.login}</span><Button variant="outline" disabled={unblock.isPending} onClick={() => unblock.mutate(user.id)}>차단 해제</Button></li>)}</ul>
-        ) : <p>차단한 사용자가 없어요.</p>}
+      <AlertDialog.Root open={logoutOverlay.isOpen} onOpenChange={logoutOverlay.onOpenChange}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className={styles.logoutScrim} />
+          <AlertDialog.Content
+            className={styles.logoutDialog}
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+              logoutCancelRef.current?.focus();
+            }}
+          >
+            <div className={styles.logoutHeader}>
+              <AlertDialog.Title className={styles.logoutTitle}>로그아웃</AlertDialog.Title>
+              <AlertDialog.Cancel className={styles.logoutClose}>
+                <X aria-hidden="true" size={16} />
+                <span className="sr-only">닫기</span>
+              </AlertDialog.Cancel>
+            </div>
+            <AlertDialog.Description className={styles.logoutBody}>
+              로그 아웃을 하시면 서비스 이용에 제약이 생깁니다. 로그아웃 하시겠습니까?
+            </AlertDialog.Description>
+            <div className={styles.logoutActions}>
+              <button type="button" className={styles.logoutConfirm} disabled={logout.isPending} onClick={() => logout.mutate()}>
+                {logout.isPending ? '로그아웃 중…' : '로그아웃'}
+              </button>
+              <AlertDialog.Cancel ref={logoutCancelRef} className={styles.logoutCancel}>취소 하기</AlertDialog.Cancel>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+      <OverlaySheet
+        overlay={blocksOverlay}
+        title="차단한 사용자"
+        description="차단을 해제할 사용자를 선택해 주세요."
+        describeHidden
+        closeIcon={<ArrowLeft aria-hidden size={16} />}
+        closeLabel="뒤로가기"
+        classNames={{ sheet: styles.blockSheet, header: styles.blockHeader, body: styles.blockBody, title: styles.blockTitle, close: styles.blockClose }}
+      >
+        <label className={styles.searchField}>
+          <Search aria-hidden="true" size={16} />
+          <span className={styles.searchLabel}>이름 또는 아이디 검색</span>
+          <input id="block-search" value={blockQuery} onChange={(event) => setBlockQuery(event.target.value)} placeholder="이름 또는 아이디 검색" />
+        </label>
+        {blocks.isPending ? <p role="status">차단 목록을 불러오는 중…</p> : blocks.isError ? <div><p role="alert">차단 목록을 불러오지 못했어요.</p><Button variant="outline" onClick={() => void blocks.refetch()}>다시 시도</Button></div> : visibleBlocks.length ? (
+          <ul className={styles.blockList}>{visibleBlocks.map(({ user }) => (
+            <li className={styles.blockItem} key={user.id}>
+              <span className={styles.person}>
+                <span className={styles.avatar}>
+                  {user.avatarUrl ? <Image src={user.avatarUrl} alt="" fill sizes="32px" /> : null}
+                </span>
+                <span className={styles.personText}>
+                  <span className={styles.personName}>{user.name}</span>
+                  <span className={styles.value}>@{user.login}</span>
+                </span>
+              </span>
+              <button type="button" className={styles.unblock} aria-label={`${user.name} 차단 해제`} disabled={unblock.isPending} onClick={() => unblock.mutate(user.id)}>
+                <span className={styles.unblockMark} aria-hidden="true" />
+              </button>
+            </li>
+          ))}</ul>
+        ) : <p>{blockRows.length ? '검색 결과가 없어요.' : '차단한 사용자가 없어요.'}</p>}
       </OverlaySheet>
-      <OverlaySheet overlay={withdrawalSheet} title="계정 탈퇴 안내" description="탈퇴 전에 소유한 팀을 확인해 주세요.">
-        <p>탈퇴하면 바로 서비스 이용이 중단되고, 30일 후 계정이 삭제돼요. 삭제 전 다시 로그인하면 계정을 복구할 수 있어요.</p>
-        {ownedTeams.length > 0 ? <>
-          <p>아래 팀의 소유권을 이전하거나 팀을 삭제한 뒤 탈퇴할 수 있어요.</p>
-          <ul className={styles.teamList}>{ownedTeams.map((team) => <li key={team.id}>{team.name}</li>)}</ul>
-        </> : <p>소유한 팀이 없어 탈퇴를 진행할 수 있어요.</p>}
-        {withdrawalError && <p className={styles.error} role="alert">{withdrawalError}</p>}
-        <div className={styles.form}>
-          {ownedTeams.length === 0 && <Button variant="danger" onClick={() => withdrawalConfirm.open()}>탈퇴 계속하기</Button>}
-          <Button variant="outline" onClick={() => withdrawalSheet.close()}>닫기</Button>
-        </div>
-      </OverlaySheet>
-      <ConfirmDialog
-        overlay={withdrawalConfirm}
-        title="정말 탈퇴할까요?"
-        description="게시물과 댓글은 삭제되고, 팀 채팅에는 탈퇴한 사용자로 표시돼요. 30일 뒤 삭제되며 그전에 로그인하면 복구할 수 있어요."
-        confirmLabel={withdrawal.isPending ? '처리 중…' : '계정 탈퇴'}
-        destructive
-        pending={withdrawal.isPending}
-        onConfirm={() => withdrawal.mutate()}
-      />
+      <AlertDialog.Root open={withdrawalSheet.isOpen} onOpenChange={withdrawalSheet.onOpenChange}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className={styles.logoutScrim} />
+          <AlertDialog.Content className={styles.logoutDialog}>
+            <div className={styles.logoutHeader}>
+              <AlertDialog.Title className={styles.logoutTitle}>계정 삭제</AlertDialog.Title>
+              <AlertDialog.Cancel className={styles.logoutClose}>
+                <X aria-hidden="true" />
+                <span className="sr-only">닫기</span>
+              </AlertDialog.Cancel>
+            </div>
+            <AlertDialog.Description className={styles.logoutBody}>
+              계정을 삭제하시면 기존에 있던 서비스를 사용하실 수 없습니다. 삭제 하시겠습니까?
+            </AlertDialog.Description>
+            {withdrawalError ? <p className={styles.error} role="alert">{withdrawalError}</p> : null}
+            {showOwnedTeamGuard ? (
+              <div className={styles.withdrawalDetails}>
+                <p>아래 팀의 소유권을 이전하거나 팀을 삭제한 뒤 다시 시도해 주세요.</p>
+                <ul className={styles.teamList}>
+                  {ownedTeams.map((team) => {
+                    const teamSettingsHref = `/teams/${team.id}/settings` as Route;
+                    return (
+                      <li key={team.id}>
+                        <Link
+                          className={styles.teamSettingsLink}
+                          href={teamSettingsHref}
+                          aria-label={`${team.name} 팀 설정`}
+                          onClick={(event) => {
+                            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                            event.preventDefault();
+                            void withdrawalSheet.closeThen(teamSettingsHref);
+                          }}
+                        >
+                          <span>{team.name}</span>
+                          <span className={styles.chevron} aria-hidden="true" />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
+            <div className={styles.logoutActions}>
+              <button
+                type="button"
+                className={styles.logoutConfirm}
+                disabled={withdrawal.isPending || withdrawalCheck.isPending || withdrawalCheck.isFetching}
+                onClick={() => {
+                  setWithdrawalError(null);
+                  if (withdrawalCheck.isError) {
+                    setWithdrawalError(errorMessage(withdrawalCheck.error, '계정 탈퇴 정보를 확인하지 못했어요. 다시 시도해 주세요.'));
+                    return;
+                  }
+                  if (ownedTeams.length > 0) {
+                    setShowOwnedTeamGuard(true);
+                    return;
+                  }
+                  withdrawal.mutate();
+                }}
+              >
+                {withdrawal.isPending ? '처리 중…' : '계정 삭제'}
+              </button>
+              <AlertDialog.Cancel className={styles.logoutCancel}>취소 하기</AlertDialog.Cancel>
+            </div>
+            {withdrawalCheck.isError ? (
+              <Button
+                className={styles.withdrawalRetry}
+                variant="outline"
+                onClick={() => {
+                  setWithdrawalError(null);
+                  void withdrawalCheck.refetch();
+                }}
+              >
+                다시 시도
+              </Button>
+            ) : null}
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
     </div>
   );
 }
 
 export function AccountPlan({ settings }: { settings: SettingsData }) {
   return (
-    <section className={styles.section} aria-labelledby="plan-heading">
-      <h2 id="plan-heading">요금제 및 구독</h2>
-      <div className={styles.row}>
-        <div className={styles.rowInfo}><span className={styles.label}>{settings.plan.label}</span><span className={styles.description}>{settings.plan.renewsOn ? `다음 결제일 ${settings.plan.renewsOn}` : settings.plan.kind === 'SCOUT' ? '채용 담당자용 Scout 요금제' : '이용 중인 요금제'}</span></div>
-        <Link className={styles.link} href="/settings/subscription">구독 관리</Link>
-      </div>
-    </section>
+    <Link className={styles.row} href="/settings/subscription" aria-label="구독 관리">
+      <span>구독과 결제</span>
+      <span className={styles.trailing}><span className={styles.value}>{settings.plan.label}</span><span className={styles.chevron} aria-hidden="true" /></span>
+    </Link>
   );
 }
 

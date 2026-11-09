@@ -112,8 +112,6 @@ class AccountServiceTest {
 		User user = developer();
 		when(users.findById(7L)).thenReturn(Optional.of(user));
 		when(legal.termsVersion()).thenReturn(VERSION);
-		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.AGE_14, VERSION))
-				.thenReturn(false);
 		when(selectedTags.findSelected(7L)).thenReturn(List.of());
 
 		var response = service().onboarding(principal());
@@ -131,7 +129,7 @@ class AccountServiceTest {
 		when(legal.termsVersion()).thenReturn(VERSION);
 
 		assertThatThrownBy(() -> service().acceptAgreements(principal(),
-				new OnboardingAgreementsRequest(true, true, true, false, "2020-01-01")))
+				new OnboardingAgreementsRequest(true, true, false, "2020-01-01")))
 				.isInstanceOf(ApiException.class)
 				.hasMessage("요청 값을 확인해 주세요");
 	}
@@ -141,8 +139,6 @@ class AccountServiceTest {
 		User user = developer();
 		when(users.findById(7L)).thenReturn(Optional.of(user));
 		when(legal.termsVersion()).thenReturn(VERSION);
-		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.AGE_14, VERSION))
-				.thenReturn(true);
 		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.TERMS, VERSION))
 				.thenReturn(true);
 		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.PRIVACY, VERSION))
@@ -169,8 +165,6 @@ class AccountServiceTest {
 		User user = developer();
 		when(users.findById(7L)).thenReturn(Optional.of(user));
 		when(legal.termsVersion()).thenReturn(VERSION);
-		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.AGE_14, VERSION))
-				.thenReturn(true);
 		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.TERMS, VERSION))
 				.thenReturn(true);
 		when(agreements.existsByUser_IdAndAgreementTypeAndVersionAndWithdrawnAtIsNull(7L, AgreementType.PRIVACY, VERSION))

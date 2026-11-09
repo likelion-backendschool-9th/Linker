@@ -5,14 +5,19 @@ import type { SitemapItem } from '@/lib/seo/sitemap';
 
 import { del, fail, get, newId, post, type MockRoute } from '../core/define';
 import { JOB_CATEGORIES, TECH_TAGS } from '../fixtures/tech';
-import { brief, DEVELOPERS, findUserById } from '../fixtures/users';
+import { DEVELOPERS, findUserById, type UserBrief } from '../fixtures/users';
 import { POSTS } from '../fixtures/posts';
 import { RECRUITS } from '../fixtures/recruits';
 
 /** 00 foundation mocks: Auth / Catalog / Upload / Moderation (+ Github webhook / Sitemap as added) */
 
-// Blocked user ids for the logged-in user; starts with one so the settings list isn't empty
-const blockedIds = new Set<number>([7]);
+// Page 06 reference: three blocked accounts shown in the settings capture.
+const blockedUsers: UserBrief[] = [
+  { id: 201, login: 'junhorang', name: '이준호', avatarUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
+  { id: 202, login: 'hanyun123', name: '한윤수', avatarUrl: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
+  { id: 203, login: 'mzcc77', name: '김민지', avatarUrl: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
+];
+const blockedIds = new Set<number>(blockedUsers.map(({ id }) => id));
 
 export const isBlocked = (userId: number) => blockedIds.has(userId);
 
@@ -49,13 +54,17 @@ export const routes: MockRoute[] = [
 
   get('/api/v1/user/me/blocks', () =>
     [...blockedIds].flatMap((id) => {
-      const user = findUserById(id);
-      return user ? [{ user: brief(user), blockedAt: new Date().toISOString() }] : [];
+      const user = blockedUsers.find((blocked) => blocked.id === id) ?? findUserById(id);
+      return user ? [{ user, blockedAt: new Date().toISOString() }] : [];
     }),
   ),
   post('/api/v1/user/blocks', ({ body }) => {
     const userId = Number(body.userId);
-    if (!DEVELOPERS.some((user) => user.id === userId) && !findUserById(userId)) {
+    if (
+      !DEVELOPERS.some((user) => user.id === userId) &&
+      !findUserById(userId) &&
+      !blockedUsers.some((user) => user.id === userId)
+    ) {
       fail(404, 'NOT_FOUND', '사용자를 찾을 수 없어요');
     }
     blockedIds.add(userId);

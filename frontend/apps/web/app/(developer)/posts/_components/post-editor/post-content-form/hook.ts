@@ -2,7 +2,17 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CompositionEvent,
+  type FocusEvent,
+  type KeyboardEvent,
+} from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import { useDraft } from '@/features/draft-restore/use-draft';
@@ -10,8 +20,7 @@ import { useOpenExternal } from '@/features/external-link/use-open-external';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { useImageUpload } from '@/features/image-upload/use-image-upload';
 import { ApiError } from '@/lib/api/api-error';
-import { useOverlay } from '@/lib/navigation/use-overlay';
-import { PLAN_LIMITS } from '@/lib/policy';
+import { PLAN_LIMITS, POST } from '@/lib/policy';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 import { toast } from '@/stores/toast-store';
 
@@ -36,8 +45,8 @@ export type PostContentFormProps = {
   draftKey: string;
   /** Leave for the post (23) without the editor left in history (blueprint §7-4) */
   onSaved: (postId: number) => void;
-  /** Create step only: go back to repo selection (Figma "변경 하기") */
-  onChangeRepo?: () => void;
+  /** Create step only: "변경 하기" swaps the repo in a sheet (Figma 676:836), keeping the form */
+  repoChange?: { teamId: string | null; onChange: (repoId: number) => void };
 };
 
 /** Why saving failed, with the 04 ch. 12 copy; the content is kept on the device first */
@@ -49,6 +58,48 @@ function saveErrorMessage(error: unknown): string {
     return `${error.message} 작성한 내용은 저장해 두었어요.`;
   }
   return '게시하지 못했어요. 작성한 내용은 저장해 두었어요.';
+}
+
+/**
+ * How many photo tiles fit on one row (Figma 274:320 stays a single row). Before the first
+ * measurement every tile renders and the row clips, so SSR and the first paint never wrap.
+ */
+export function usePhotoRowFit() {
+  const rowRef = useRef<HTMLUListElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const measure = () => {
+      const style = getComputedStyle(row);
+      const tile = parseFloat(style.getPropertyValue('--size-post-photo')) || 0;
+      const gap = parseFloat(style.columnGap) || 0;
+      if (tile <= 0) return;
+      // +1px: Figma's 4 tiles (344) sit in a 343 column at 375 and still count as one row
+      setFit(Math.max(1, Math.floor((row.clientWidth + gap + 1) / (tile + gap))));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, []);
+
+  return { rowRef, fit };
+}
+
+/** Grows the body textarea with its content instead of scrolling inside it */
+function useAutoGrow(value: string | undefined) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const border = el.offsetHeight - el.clientHeight;
+    el.style.height = `${el.scrollHeight + border}px`;
+  }, [value]);
+  return ref;
 }
 
 export function usePostContentForm({
@@ -65,7 +116,6 @@ export function usePostContentForm({
   const client = useQueryClient();
   const draft = useDraft<PostDraft>(draftKey);
   const openExternal = useOpenExternal();
-  const tagSheet = useOverlay('tech-tags');
   const creating = target.mode === 'create';
   const [failure, setFailure] = useState<string | null>(null);
   const [photoWait, setPhotoWait] = useState(false);
@@ -97,6 +147,25 @@ export function usePostContentForm({
   const watched = useWatch({ control: form.control });
   const tags = (watched.tags ?? []).filter((tag): tag is string => Boolean(tag));
   const photoKeys = uploader.items.map((item) => item.key).join();
+  const bodyRef = useAutoGrow(watched.body);
+  const bodyField = form.register('body');
+  const registerBody = {
+    ...bodyField,
+    ref: (el: HTMLTextAreaElement | null) => {
+      bodyField.ref(el);
+      bodyRef.current = el;
+    },
+  };
+  // Team size is a text field that keeps digits only (typed or pasted)
+  const teamSizeField = form.register('teamSize');
+  const registerTeamSize = {
+    ...teamSizeField,
+    onChange: (event: ChangeEvent<HTMLInputElement>) => {
+      const digits = event.target.value.replace(/\D/g, '');
+      if (digits !== event.target.value) event.target.value = digits;
+      return teamSizeField.onChange(event);
+    },
+  };
 
   // Keep what's written on the device while typing, so leaving doesn't lose it (07 TODO 22)
   const photosRef = useRef(uploader.uploaded);
@@ -169,15 +238,51 @@ export function usePostContentForm({
     );
   }
 
-  function saveTags(names: string[]) {
-    form.setValue('tags', names, { shouldDirty: true });
+  /** Adds typed tags (trimmed, no repeats) up to POST.tagsMax */
+  function addTags(names: string[]) {
+    const next = [...tags];
+    for (const raw of names) {
+      const name = raw.trim();
+      if (name && !next.includes(name) && next.length < POST.tagsMax) next.push(name);
+    }
+    if (next.length !== tags.length) form.setValue('tags', next, { shouldDirty: true });
+  }
+
+  // "#을 기준으로 태그를 나눠주세요" (Figma 285:140): typing stays plain text ("#백엔드#ci/cd");
+  // Enter or blur splits it at "#" into chips under the field, and the field empties.
+  const [tagText, setTagText] = useState('');
+  // Enter pressed mid-composition (Korean IME) commits once the syllable is finished
+  const enterWhileComposing = useRef(false);
+  function commitTagText(text: string) {
+    if (!text.trim()) return;
+    addTags(text.split('#'));
+    setTagText('');
+  }
+  const tagInput = {
+    value: tagText,
+    onChange: (event: ChangeEvent<HTMLInputElement>) => setTagText(event.target.value),
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault(); // never submits the post from here
+      if (event.nativeEvent.isComposing) enterWhileComposing.current = true;
+      else commitTagText(event.currentTarget.value);
+    },
+    onCompositionEnd: (event: CompositionEvent<HTMLInputElement>) => {
+      if (!enterWhileComposing.current) return;
+      enterWhileComposing.current = false;
+      commitTagText(event.currentTarget.value);
+    },
+    onBlur: (event: FocusEvent<HTMLInputElement>) => commitTagText(event.currentTarget.value),
+  };
+
+  function saveRole(value: string) {
+    form.setValue('myRole', value, { shouldDirty: true, shouldValidate: true });
   }
 
   return {
     field,
     errorId,
     openExternal,
-    tagSheet,
     creating,
     failure,
     photoWait,
@@ -187,10 +292,13 @@ export function usePostContentForm({
     links,
     watched,
     tags,
+    registerBody,
+    registerTeamSize,
     save,
     submit,
     describe,
     removeTag,
-    saveTags,
+    tagInput,
+    saveRole,
   };
 }
