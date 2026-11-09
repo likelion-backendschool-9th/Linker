@@ -1,6 +1,6 @@
 /* Page 08 only: the common PageFrame owns the header and landmarks. */
 .frame {
-  --setup-header-height: var(--header-height-tab);
+  --setup-header-height: var(--header-height);
   min-height: 100dvh;
 }
 .frame > main {

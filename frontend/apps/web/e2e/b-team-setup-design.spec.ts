@@ -27,34 +27,27 @@ test('08 intro keeps the Figma wording, disabled next step and server-issued ins
   await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
 });
 
-test('08 uses the same logo, search, notification and settings header as 07', async ({ page }) => {
+test('08 uses the Figma back/title header while 07 keeps its tab header', async ({ page }) => {
   await page.goto('/workspace');
-  const headerClass = await page.getByRole('banner').getAttribute('class');
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Linker 홈' })).toBeVisible();
+  await expect(
+    page.getByRole('banner').getByRole('link', { name: '설정', exact: true }),
+  ).toBeVisible();
   for (const step of [1, 2, 3, 4, 5]) {
     await page.goto(`/teams/new?step=${step}`);
     const header = page.getByRole('banner');
-    await expect(header).toHaveAttribute('class', headerClass!);
-    await expect(header.getByRole('link', { name: '설정', exact: true })).toHaveAttribute(
-      'href',
-      '/settings',
-    );
-    await expect(header.getByRole('link', { name: 'Linker 홈' })).toHaveAttribute('href', '/feed');
-    await expect(header.getByRole('button', { name: '검색', exact: true })).toBeVisible();
-    await expect(header.getByRole('button', { name: '뒤로', exact: true })).toHaveCount(0);
+    await expect(header.getByRole('heading', { level: 1, name: '팀 생성하기' })).toBeVisible();
+    await expect(header.getByRole('button', { name: '뒤로', exact: true })).toBeVisible();
+    await expect(header.getByRole('link')).toHaveCount(0);
+    await expect(header.getByRole('button', { name: '검색', exact: true })).toHaveCount(0);
     await expect(page.getByRole('banner')).toHaveCount(1);
     await expect(page.getByRole('main')).toHaveCount(1);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', String(step));
-    expect((await header.boundingBox())?.height).toBe(56);
+    expect((await header.boundingBox())?.height).toBe(54);
   }
-  await page.waitForLoadState('networkidle');
-  await page.getByRole('banner').getByRole('button', { name: '검색', exact: true }).click();
-  await expect(
-    page.getByRole('searchbox', { name: '검색어를 입력해 주세요', exact: true }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: '검색창 닫기' }).click();
-  await page.getByRole('banner').getByRole('link', { name: 'Linker 홈' }).click();
-  await expect(page).toHaveURL('/feed');
+  await page.getByRole('banner').getByRole('button', { name: '뒤로', exact: true }).click();
+  await expect(page).toHaveURL('/workspace');
 });
 
 test('08 intro matches Figma geometry and stays within the mobile column', async ({
@@ -69,7 +62,7 @@ test('08 intro matches Figma geometry and stays within the mobile column', async
     await page.evaluate(() => document.fonts.ready);
     const header = (await page.getByRole('banner').boundingBox())!;
     expect(header.width).toBe(Math.min(width, 600));
-    expect(header.height).toBe(56);
+    expect(header.height).toBe(54);
     expect((await page.getByRole('progressbar').boundingBox())?.height).toBe(4);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
@@ -120,7 +113,7 @@ test('08-2 matches the selected form and keeps unverified URL fields from enabli
       true,
     );
     if (width === 375) {
-      expect((await name.boundingBox())?.y).toBe(310);
+      expect((await name.boundingBox())?.y).toBe(308);
       expect((await description.locator('..').boundingBox())?.height).toBe(100);
       expect((await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y).toBe(
         723,
@@ -149,6 +142,12 @@ test('08-2 matches the selected form and keeps unverified URL fields from enabli
 test('08 callback rejects forged state and returns to installation', async ({ page }) => {
   await page.goto('/teams/new/callback?installation_id=777&setup_action=install&state=forged');
   await expect(page.getByRole('alert').getByText('GitHub에 연결하지 못했어요.')).toBeVisible();
+  await expect(
+    page.getByRole('banner').getByRole('heading', { name: 'GitHub 연결 확인' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('banner').getByRole('button', { name: '뒤로', exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: '팀 만들기로 돌아가기' }).click();
   await expect(page).toHaveURL('/teams/new');
 });
@@ -183,7 +182,7 @@ test('08-3 filters without clearing selection and saves before the board step', 
   await expect(page.getByRole('checkbox', { name: 'bookstore', exact: true })).toBeChecked();
 });
 
-test('08-3 matches the selected repository frame below the shared header', async ({
+test('08-3 matches the selected repository frame below the Figma back/title header', async ({
   page,
 }, testInfo) => {
   const errors: string[] = [];
@@ -203,10 +202,10 @@ test('08-3 matches the selected repository frame below the shared header', async
         .getByRole('searchbox', { name: '저장소 검색' })
         .locator('..')
         .boundingBox())!;
-      expect(search.y).toBe(159);
+      expect(search.y).toBe(157);
       expect(search.height).toBe(42);
       const row = (await page.getByRole('checkbox').first().locator('..').boundingBox())!;
-      expect(row.y).toBe(221);
+      expect(row.y).toBe(219);
       expect(row.height).toBe(40);
       expect((await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y).toBe(
         723,
@@ -264,7 +263,7 @@ test('08-4 connects the selected board by option ID and retains mapping after br
   await expect(page.getByRole('combobox', { name: 'Backlog', exact: true })).toHaveValue('TODO');
 });
 
-test('08-4 matches both board frames below the shared header at mobile and desktop widths', async ({
+test('08-4 matches both board frames below the Figma back/title header at mobile and desktop widths', async ({
   page,
 }, testInfo) => {
   const errors: string[] = [];
@@ -288,18 +287,18 @@ test('08-4 matches both board frames below the shared header at mobile and deskt
       expect((await page.getByRole('banner').boundingBox())?.width).toBe(Math.min(width, 600));
       if (width === 375) {
         const modes = (await page.getByRole('group', { name: '보드 연결 방식' }).boundingBox())!;
-        expect(modes.y).toBe(159);
+        expect(modes.y).toBe(157);
         expect(modes.height).toBe(48);
         expect(
           (await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y,
         ).toBe(723);
         if (mode === 'existing') {
           const row = (await page.getByRole('radio').first().locator('..').boundingBox())!;
-          expect(row.y).toBe(222);
+          expect(row.y).toBe(220);
           expect(row.height).toBe(40);
         } else {
           expect((await page.getByRole('button', { name: '기본 값 사용' }).boundingBox())?.y).toBe(
-            222,
+            220,
           );
           await expect(page.getByRole('button', { name: '역할 추가' })).toBeDisabled();
           for (const label of ['작업 전', '작업 진행', '작업 완료', '작업 정지'])
@@ -369,10 +368,10 @@ test('08-5 matches the final Figma completion and replaces navigation with the c
     expect((await page.getByRole('banner').boundingBox())?.width).toBe(Math.min(width, 600));
     if (width === 375) {
       const picture = (await illustration.boundingBox())!;
-      expect(picture.y).toBe(241);
+      expect(picture.y).toBe(239);
       expect(picture.width).toBe(180);
       expect(picture.height).toBe(169);
-      expect((await title.boundingBox())?.y).toBe(425);
+      expect((await title.boundingBox())?.y).toBe(423);
       expect((await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y).toBe(
         723,
       );
