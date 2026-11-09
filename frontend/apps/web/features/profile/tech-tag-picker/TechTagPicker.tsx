@@ -20,35 +20,23 @@ export function TechTagPicker({
   max: number;
   onToggle: (name: string) => void;
 }) {
-  // The onboarding reference uses a short, compact suggestion set rather than
-  // the full catalog. Keep names canonical to the API; repeated suggestions in
-  // the reference represent the same selectable tag.
+  // Keep the compact onboarding set in its displayed order and use canonical
+  // API names so selection is submitted correctly.
   const suggestions = [
-    ['Java', 'Java'],
-    ['Next.js', 'Next.js'],
-    ['TypeScript', 'TypeScript'],
-    ['Figma', 'Figma'],
-    ['Spring Boot', 'Spring'],
-    ['Next.js', 'Next.js'],
-    ['Node.js', 'node.js'],
-    ['Figma', 'Figma'],
-    ['TypeScript', 'TypeScript'],
-    ['Kubernetes', 'kubernetes'],
-    ['React', 'React'],
-    ['Java', 'Java'],
-    ['Figma', 'Figma'],
-    ['React Native', 'React Native'],
-    ['Kubernetes', 'kubernetes'],
-    ['TypeScript', 'TypeScript'],
-    ['Java', 'Java'],
-    ['Next.js', 'Next.js'],
-    ['Figma', 'Figma'],
-    ['Spring Boot', 'Spring'],
+    { name: 'Java', label: 'Java' },
+    { name: 'Next.js', label: 'Next.js' },
+    { name: 'TypeScript', label: 'TypeScript' },
+    { name: 'Figma', label: 'Figma' },
+    { name: 'Spring Boot', label: 'Spring' },
+    { name: 'Node.js', label: 'node.js' },
+    { name: 'Kubernetes', label: 'kubernetes' },
+    { name: 'React', label: 'React' },
+    { name: 'React Native', label: 'React Native' },
   ];
   const tagByName = new Map(tags.map((tag) => [tag.name, tag]));
-  const visibleTags = suggestions.flatMap(([name, label], index) => {
+  const visibleTags = suggestions.flatMap(({ name, label }) => {
     const tag = tagByName.get(name);
-    return tag ? [{ ...tag, label, suggestionId: `${tag.id}-${index}` }] : [];
+    return tag ? [{ ...tag, label }] : [];
   });
 
   return (
@@ -71,7 +59,7 @@ export function TechTagPicker({
           {visibleTags.map((tag) => {
             const checked = selected.includes(tag.name);
             return (
-              <li key={tag.suggestionId}>
+              <li key={tag.id}>
                 <label className={styles.option}>
                   <input
                     type="checkbox"
