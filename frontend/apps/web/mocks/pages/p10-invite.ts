@@ -1,10 +1,11 @@
 import { fail, get, post, type MockRoute } from '../core/define';
-import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
+import { TEAMS } from '../fixtures/teams';
 
 /**
  * 10 Accept invite: `TeamController`.
  * Codes to try: `demo-valid` (default), `demo-expired`, `demo-revoked`, `demo-member` (already a member),
  * `demo-full` (member limit), `demo-limit` (10 teams).
+ * GET may include team detail for clients that need ids; page 10 UI does not render a preview (POL-T-2).
  */
 
 const team = TEAMS[1]!;
@@ -15,7 +16,6 @@ function status(code: string) {
   return 'VALID' as const;
 }
 
-// Read-only presentation fixtures; no membership or chat room is created.
 function participation(code: string) {
   const states = {
     'demo-member': 'ALREADY_MEMBER',
@@ -25,21 +25,14 @@ function participation(code: string) {
     'demo-read-only': 'READ_ONLY',
     'demo-archived': 'ARCHIVED',
   } as const;
-  return { state: states[code as keyof typeof states] ?? 'ELIGIBLE', canManageTeam: false };
+  return { state: states[code as keyof typeof states] ?? 'ELIGIBLE' };
 }
 
 export const routes: MockRoute[] = [
   get('/api/v1/public/invites/:code', ({ params }) => ({
     code: params.code,
     status: status(params.code),
-    team: {
-      id: team.id,
-      name: team.name,
-      description: team.description,
-      orgAvatarUrl: team.orgAvatarUrl,
-      memberCount: TEAM_MEMBERS[team.id]?.length ?? 0,
-    },
-    invitedBy: '이도윤',
+    team: { id: team.id },
     participation: participation(params.code),
   })),
   post(

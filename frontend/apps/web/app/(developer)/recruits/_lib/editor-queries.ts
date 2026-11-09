@@ -24,11 +24,14 @@ export type RecruitRequest = {
   duration: string | null;
   deadline: string;
   techTags: string[];
-  teamId: number | null;
+  /** Required (POL-R-1): a team I own or admin */
+  teamId: number;
 };
 
-export type RecruitEditForm = Omit<RecruitRequest, 'roles'> & {
+export type RecruitEditForm = Omit<RecruitRequest, 'roles' | 'teamId'> & {
   id: number;
+  /** null only on posts saved before a team became required; editing them asks for one */
+  teamId: number | null;
   status: 'OPEN' | 'CLOSED';
   roles: { id: number; role: RecruitRoleKey; name: string; headcount: number; filled: number }[];
   /** Roles with applicants can't be removed (04 ch. 5 exceptions) */

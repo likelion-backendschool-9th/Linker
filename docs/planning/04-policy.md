@@ -303,7 +303,7 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 
 | Policy | Details |
 | --- | --- |
-| POL-R-1 Who can write | Any logged-in developer who can link a team they own or admin (POL-T-1). Writing without a team is not allowed |
+| POL-R-1 Who can write | Any logged-in developer who can link an active team they own or admin (POL-T-1); completed, read-only, archived and deleted teams can't be linked. The team is a required field because invites (POL-R-4) add people to it — writing without a team is not allowed. Under the field: "팀이 없으면 모집글을 작성할 수 없습니다." |
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (within 60 days from today) |
 | POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |

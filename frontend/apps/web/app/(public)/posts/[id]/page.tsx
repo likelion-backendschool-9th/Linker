@@ -10,6 +10,7 @@ import { JsonLd } from '@/lib/seo/json-ld';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 import { PostDetail } from './_components/post-detail/PostDetail';
+import { PostMenuButton } from './_components/post-menu-sheet';
 import { postDetailOptions } from './_lib/post-detail-queries';
 
 const DESCRIPTION_LENGTH = 120;
@@ -54,28 +55,34 @@ export default async function PostDetailPage({ params, searchParams }: PageProps
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const post = await loadPost(id, fromParam(query.from));
 
+  // The boundary wraps the frame too: the header "더보기" reads the same cached post
   return (
-    <PageFrame title="게시물" variant="stack" backHref="/feed">
-      {post.visibility === 'VISIBLE' && (
-        <JsonLd
-          data={{
-            '@context': 'https://schema.org',
-            '@type': 'CreativeWork',
-            name: post.intro,
-            datePublished: post.createdAt,
-            image: post.photos[0],
-            codeRepository: `https://github.com/${post.repo.fullName}`,
-            author: {
-              '@type': 'Person',
-              name: post.author.name,
-              url: `/user/${post.author.login}`,
-            },
-          }}
-        />
-      )}
-      <HydrationBoundary state={dehydrate(getQueryClient())}>
+    <HydrationBoundary state={dehydrate(getQueryClient())}>
+      <PageFrame
+        title="게시글 상세"
+        variant="stack"
+        backHref="/feed"
+        actions={<PostMenuButton postId={id} />}
+      >
+        {post.visibility === 'VISIBLE' && (
+          <JsonLd
+            data={{
+              '@context': 'https://schema.org',
+              '@type': 'CreativeWork',
+              name: post.intro,
+              datePublished: post.createdAt,
+              image: post.photos[0],
+              codeRepository: `https://github.com/${post.repo.fullName}`,
+              author: {
+                '@type': 'Person',
+                name: post.author.name,
+                url: `/user/${post.author.login}`,
+              },
+            }}
+          />
+        )}
         <PostDetail postId={id} />
-      </HydrationBoundary>
-    </PageFrame>
+      </PageFrame>
+    </HydrationBoundary>
   );
 }

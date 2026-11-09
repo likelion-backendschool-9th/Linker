@@ -6,14 +6,15 @@ import { ApiError } from '@/lib/api/api-error';
 import { getQueryClient } from '@/lib/api/query-client';
 import { buildMetadata } from '@/lib/seo/metadata';
 
-import { TeamFrame } from '../../_components/team-frame/TeamFrame';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
+
 import { issueDetailOptions } from '../../_lib/issue-detail-queries';
 import { IssueDetailView } from './_components/issue-detail-view/IssueDetailView';
 
 // No issue title in metadata: team pages are private (frontend AGENTS.md "SEO and privacy")
 export const metadata = buildMetadata({ title: '이슈 상세' });
 
-/** 12 Issue detail (07 TODO 12, `IssueController`). `[issueId]` is the Linker issue id. */
+/** 12 Issue detail (07 TODO 12, `IssueController`), Figma 12 (198:486). `[issueId]` is the Linker issue id. */
 export default async function IssueDetailPage({
   params,
 }: PageProps<'/teams/[id]/issues/[issueId]'>) {
@@ -34,10 +35,10 @@ export default async function IssueDetailPage({
   }
 
   return (
-    <TeamFrame teamId={id} title="이슈">
+    <PageFrame title="이슈 상세" variant="stack" backHref={`/teams/${id}/issues` as Route}>
       <HydrationBoundary state={dehydrate(client)}>
         <IssueDetailView teamId={id} issueId={issueId} />
       </HydrationBoundary>
-    </TeamFrame>
+    </PageFrame>
   );
 }

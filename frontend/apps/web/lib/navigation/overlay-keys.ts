@@ -56,6 +56,8 @@ export const OVERLAY_KEYS = [
   'chat-pull-requests',
   'stats-featured',
   'recruit-filter',
+  'recruit-role',
+  'recruit-deadline',
   'application-cancel',
   'recruit-status',
   'recruit-menu',
@@ -66,11 +68,9 @@ export const OVERLAY_KEYS = [
   'recruit-team-required',
   'recruit-role-full',
   'photo-viewer',
-  'post-menu',
   'post-likers',
   'ad-menu',
   'recruiter-ad',
-  'comment-menu',
 ] as const;
 
 export type OverlayKey = (typeof OVERLAY_KEYS)[number];

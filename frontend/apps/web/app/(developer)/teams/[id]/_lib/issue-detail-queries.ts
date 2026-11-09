@@ -44,6 +44,13 @@ export type IssueDetail = {
   movedToIssueId: number | null;
 };
 
+/** `GET .../sub-issues` (view-only): number, title and open/closed; `id` is null for repos Linker doesn't link */
+export type SubIssues = {
+  items: { id?: number | null; number: number; title: string; state: 'OPEN' | 'CLOSED' }[];
+  total: number;
+  done: number;
+};
+
 export type AssigneeCandidates = { items: IssueUser[]; max: number };
 
 export const issueDetailKeys = {
@@ -67,6 +74,13 @@ export function issueDetailOptions(teamId: string, issueId: string) {
   return queryOptions({
     queryKey: issueDetailKeys.detail(teamId, issueId),
     queryFn: ({ signal }) => apiFetch<IssueDetail>(base(teamId, issueId), { signal }),
+  });
+}
+
+export function subIssuesOptions(teamId: string, issueId: string) {
+  return queryOptions({
+    queryKey: [...issueDetailKeys.detail(teamId, issueId), 'sub-issues'] as const,
+    queryFn: ({ signal }) => apiFetch<SubIssues>(`${base(teamId, issueId)}/sub-issues`, { signal }),
   });
 }
 

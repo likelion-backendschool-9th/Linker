@@ -42,6 +42,8 @@ import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
+import com.linker.backend.repository.team.TeamMemberRepository;
+import com.linker.backend.dto.recruit.response.TeamOptionResponse;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +60,7 @@ class RecruitmentServiceTest {
 
 	private static final Instant NOW = Instant.parse("2026-11-05T01:00:00Z");
 	private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
+	private static final TeamOptionResponse LINKABLE_TEAM = new TeamOptionResponse(7L, "Linker");
 
 	@Mock
 	RecruitPostRepository posts;
@@ -73,6 +76,8 @@ class RecruitmentServiceTest {
 	NotificationService notifications;
 	@Mock
 	ProMembership pro;
+	@Mock
+	TeamMemberRepository teamMembers;
 
 	RecruitmentService service;
 	AuthenticatedUser developer;
@@ -80,7 +85,7 @@ class RecruitmentServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new RecruitmentService(
-				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, pro, CLOCK);
+				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, pro, teamMembers, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER,
 				UserStatus.ACTIVE,
@@ -127,12 +132,13 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
-	void editorOptionsUsesFreeOpenLimitAndEmptyTeams() {
+	void editorOptionsUsesFreeOpenLimitAndLinkableTeams() {
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(1L);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
 
 		var options = service.editorOptions(developer);
 
-		assertThat(options.teams()).isEmpty();
+		assertThat(options.teams()).containsExactly(LINKABLE_TEAM);
 		assertThat(options.openCount()).isEqualTo(1);
 		assertThat(options.openLimit()).isEqualTo(PlanLimits.OPEN_RECRUIT_POSTS_FREE);
 		assertThat(options.maxDeadlineDate()).isEqualTo(LocalDate.of(2026, 11, 5).plusDays(60).toString());
@@ -162,6 +168,7 @@ class RecruitmentServiceTest {
 		when(pro.active(10L, NOW)).thenReturn(true);
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN))
 				.thenReturn((long) PlanLimits.OPEN_RECRUIT_POSTS_FREE);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
 		when(users.findById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
@@ -179,6 +186,7 @@ class RecruitmentServiceTest {
 		User author = User.create("dev", UserType.DEVELOPER);
 		ReflectionTestUtils.setField(author, "id", 10L);
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
 		when(users.findById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
@@ -194,6 +202,28 @@ class RecruitmentServiceTest {
 		assertThat(captor.getValue().getStatus()).isEqualTo(RecruitStatus.OPEN);
 		assertThat(captor.getValue().getTitle()).isEqualTo("함께 만들어요");
 		assertThat(captor.getValue().getRoles()).hasSize(1);
+		assertThat(captor.getValue().getTeamId()).isEqualTo(7L);
+	}
+
+	@Test
+	void createRequiresATeam() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null, null)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("VALIDATION_ERROR"));
+		verify(posts, never()).save(any());
+	}
+
+	@Test
+	void createRejectsATeamTheAuthorCannotLink() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null, 99L)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("FORBIDDEN"));
+		verify(posts, never()).save(any());
 	}
 
 	@Test
@@ -261,8 +291,9 @@ class RecruitmentServiceTest {
 				null,
 				LocalDate.of(2026, 11, 12).toString(),
 				List.of(),
-				null
+				7L
 		);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
 
 		assertThatThrownBy(() -> service.update(developer, 3L, request))
 				.isInstanceOf(ApiException.class)
@@ -440,6 +471,10 @@ class RecruitmentServiceTest {
 	}
 
 	private RecruitWriteRequest writeRequest(Long roleId) {
+		return writeRequest(roleId, LINKABLE_TEAM.id());
+	}
+
+	private RecruitWriteRequest writeRequest(Long roleId, Long teamId) {
 		return new RecruitWriteRequest(
 				"함께 만들어요",
 				"소개입니다",
@@ -450,7 +485,7 @@ class RecruitmentServiceTest {
 				"2주",
 				LocalDate.of(2026, 11, 12).toString(),
 				List.of(),
-				null
+				teamId
 		);
 	}
 

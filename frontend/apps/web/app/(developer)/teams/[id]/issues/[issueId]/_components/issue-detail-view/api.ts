@@ -8,6 +8,7 @@ export {
   saveLabels,
   saveSchedule,
   saveStatus,
+  subIssuesOptions,
   type IssueDetail,
 } from '../../../../_lib/issue-detail-queries';
 export { issueKeys } from '../../../../_lib/issue-queries';

@@ -18,7 +18,14 @@ type OverlaySheetProps = {
   trigger?: ReactElement;
   onOpenAutoFocus?: (event: Event) => void;
   /** Added after the default classes, for a sheet whose page Figma differs from the shared look */
-  classNames?: { scrim?: string; sheet?: string; title?: string };
+  classNames?: {
+    scrim?: string;
+    sheet?: string;
+    header?: string;
+    title?: string;
+    close?: string;
+    body?: string;
+  };
   children?: ReactNode;
 };
 
@@ -46,11 +53,11 @@ export function OverlaySheet({
           className={withExtra(styles.sheet, classNames?.sheet)}
           onOpenAutoFocus={onOpenAutoFocus}
         >
-          <div className={styles.header}>
+          <div className={withExtra(styles.header, classNames?.header)}>
             <Dialog.Title className={withExtra(styles.title, classNames?.title)}>
               {title}
             </Dialog.Title>
-            <Dialog.Close className={styles.close}>
+            <Dialog.Close className={withExtra(styles.close, classNames?.close)}>
               <X aria-hidden />
               <span className="sr-only">닫기</span>
             </Dialog.Close>
@@ -58,7 +65,7 @@ export function OverlaySheet({
           <Dialog.Description className={describeHidden ? 'sr-only' : styles.description}>
             {description}
           </Dialog.Description>
-          {children && <div className={styles.body}>{children}</div>}
+          {children && <div className={withExtra(styles.body, classNames?.body)}>{children}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

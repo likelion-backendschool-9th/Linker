@@ -29,7 +29,10 @@
   --space-card-row: 22px; /* 19 recruit card: gap between the author, info and meta blocks */
   --space-card-info: 25px; /* 19 recruit card: chip/deadline row to title/description gap */
   --space-card-meta: 13px; /* 19 recruit card: role chips row to "자세히 보기" gap */
-  --space-chip-block: 3px; /* 11 filter chip and 19 role-count / search-panel filter chip vertical padding */
+  --space-chip-block: 3px; /* 11 filter chip and 19 role-count / search-panel filter chip vertical padding; also 20 tech stack chip */
+  --space-tech-chip-inline: 6px; /* 20 tech stack chip side padding (Figma 638:573) */
+  --space-tech-chip-gap: 5px; /* 20 tech stack chip: label to its × */
+  --icon-size-tech-chip: 14px; /* 20 tech stack chip × (Figma solar:close-bold); hit area stays --touch-target-min */
   --space-detail-block: 14px; /* 19 recruit card "자세히 보기" detail panel top/bottom padding (Figma) */
   /* Figma 11 values off the 4px grid */
   --space-section-inset: 25px; /* 11 progress section top padding */
@@ -45,14 +48,19 @@
   --space-post-search: 25px; /* hint to search field */
   --space-post-repo: 13px; /* gap between repo rows */
   --stepper-height: 4px; /* top progress bar */
+  --space-field-gap: 20px; /* 20 recruit editor: gap between fields (Figma itemSpacing) */
+  --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
+  --space-home-indicator: 24px; /* Figma bottom indicator area (인디케이션 영역); real devices use the larger of this and the safe area */
+  --sheet-header-height-tech: 60px; /* 20 tech stack sheet title row (Figma 301:1551) */
+  --space-recruit-field-block: 17px; /* 20 intro textarea: text top and counter bottom (Figma 600:659) */
 
   /* Radius */
   --radius-none: 0;
   --radius-xxs: 4px; /* offer cards, status chips, and the open-chat button */
   --radius-xs: 8px; /* the floating mobile bottom GNB pill */
   --radius-sm: 16px; /* inputs, FAQ rows, small cards */
-  --radius-control-sm: 10px; /* 07 compact link */
-  --radius-control-md: 14px; /* 07 sheet CTA */
+  --radius-control-sm: 10px; /* 07 compact link; also 20 "역할 추가" button (Figma) */
+  --radius-control-md: 14px; /* 07 sheet CTA; also 20 field inputs, dropdown triggers and submit button (Figma) */
   --radius-lg: 20px; /* frosted pills when Figma uses them */
   --radius-md: 24px; /* content cards, sheets (top corners), footer */
   --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
@@ -65,6 +73,9 @@
   --control-height: 48px; /* pill buttons and inputs */
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
   --control-height-sheet: 53px; /* 07 sheet CTA */
+  --control-height-invite: 52px; /* 10 join CTA (Figma 187:387) */
+  --invite-cta-max-width: 343px; /* 10 join CTA max width (Figma 187:387) */
+  --space-invite-stack: 23px; /* 10 logo block → CTAs (Figma 187:381 itemSpacing) */
   --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
   --control-height-chip: 30px; /* 19 recruit filter chip */
   --control-height-chip-sm: 28px; /* 11 filter chips; hit area stays --touch-target-min */
@@ -136,7 +147,12 @@
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
   --form-max-width: 600px; /* writing forms stay within the app column */
-  --header-height: 56px; /* top bar of tab and stack screens */
+  --header-height: 54px; /* stack screens' top bar: back + title (Figma 364:1884, same on every stack frame) */
+  --header-height-tab: 56px; /* tab screens' logo header (its own Figma pass is separate) */
+  --header-height-admin: 56px; /* admin top bar */
+  --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
+  --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
+  --textarea-height-intro: 120px; /* 20 프로젝트 소개 textarea (Figma) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
@@ -196,7 +212,7 @@
   --calendar-bar-height: 18px; /* 15 issue bar and its lane step */
   --radius-calendar-bar: 2px; /* 15 issue bar */
   --icon-size-calendar: 24px; /* 15 month chevron and help icon */
-  --wheel-row-height: 37px; /* 15 date wheel row */
+  --wheel-row-height: 37px; /* 15 date wheel row; also the shared date picker sheet (20 마감일, 22 기간) */
   --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
 
   /* Figma 28 plans (288:471, 293:218) */
@@ -217,4 +233,30 @@
   --radius-manage-dialog: 10px; /* 해지 confirm modal */
   --dialog-width-manage: 320px; /* 해지 confirm modal */
   --icon-size-manage-chevron: 20px; /* "요금제 해지" and "전체 보기" chevron */
+
+  /* Figma 23 post detail (285:154) */
+  --post-photo-height: 270px; /* full-bleed photo strip under the header */
+  --space-photo-count: 14px; /* "1/5" pill to the photo's bottom edge (side inset is --page-gutter) */
+  --space-post-author: 18px; /* author row top and bottom padding */
+  --space-post-section: 20px; /* author row to content, band to reactions, reactions to comment input */
+  --space-post-block: 26px; /* between title block, body, links, tags and repo card */
+  --space-post-link-inline: 11px; /* "프로젝트 주소" button side padding */
+  --space-post-link-icon: 6px; /* "프로젝트 주소" text to its link icon */
+  --icon-size-post-link: 14px; /* "프로젝트 주소" link icon */
+  --space-post-follow-inline: 6px; /* author row "팔로우" side padding (block is --space-xxs) */
+  --radius-post-link: 3px; /* "프로젝트 주소" button */
+  --space-post-repo: 15px; /* repo card padding inside its 1px line */
+  --icon-size-post-github: 42px; /* repo card GitHub mark */
+  --avatar-size-post: 44px; /* author and commenter photos */
+  --icon-size-reaction: 20px; /* like / comment / share icons */
+  --space-comment-block: 30px; /* comment top and bottom padding; repo card to the band */
+  --control-height-comment: 42px; /* comment input */
+  --border-width-comment: 1px; /* comment input line at rest (transparent, as in Figma 287:317) */
+  --border-width-comment-focus: 2px; /* comment input line on focus (Figma 364:1950), drawn inside */
+  --size-comment-send: 34px; /* send button inside the input (4px inset); hit area extends to the field */
+  --icon-size-comment-send: 24px; /* arrow inside the send button (Figma 14px, enlarged to 24px by the page owner) */
+  /* Figma 12 */
+  --issue-body-min-height: 120px; /* 12 body box */
+  --space-issue-body-block: 17px; /* 12 body box top padding (text starts 17px down, 15px in) */
+  --task-size-issue-body: 14px; /* 12 body task-list mark, about the text height */
 }
