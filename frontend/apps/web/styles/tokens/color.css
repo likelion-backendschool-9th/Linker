@@ -49,7 +49,6 @@
   --color-required-dot: #ed0004; /* required-field mark (4×4 circle beside labels); also 20 recruit editor (Figma 257:2592), sr-only "(필수)" carries the meaning */
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
-  --color-submit-disabled: #92b1f5; /* 20 submit CTA disabled fill (Figma 600:729); enabled uses --color-selection */
 
   /*
    * GitHub Projects Status option colors (enum only; no hex in components).
@@ -80,7 +79,7 @@
   --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
   --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
-  --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
+  --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill, tech stack chip and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
   --color-selection: #2563eb; /* 07 sheet selected radio; also 20 selected segmented button fill */
   --color-scrim-team-picker: rgb(
     25 31 40 / 0.32

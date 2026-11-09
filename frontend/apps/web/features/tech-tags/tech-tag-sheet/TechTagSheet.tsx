@@ -20,19 +20,34 @@ type TechTagSheetProps = {
   /** From `policy.ts` (e.g. `RECRUIT.techTagsMax`) */
   max: number;
   onSave: (names: string[]) => void;
-  /** 'outline' (default, 02/05/22): outline pill + check icon. 'filled' (20, Figma 301:1914):
-   *  solid selection color, no icon — Figma differs per screen for this shared sheet. */
+  /** 'outline' (default, 02/05/22): outline pill + check icon. 'filled' (20, Figma 301:1549):
+   *  gray chips that turn black when picked, a 60px title row and one black "완료" — Figma
+   *  differs per screen for this shared sheet. */
   variant?: 'outline' | 'filled';
 };
 
 /** Open with `useOverlay('tech-tags').open()`; choices apply on "완료", other ways out keep the old value */
 export function TechTagSheet({ value, max, onSave, variant = 'outline' }: TechTagSheetProps) {
   const overlay = useOverlay('tech-tags');
+  const filled = variant === 'filled';
   return (
     <OverlaySheet
       overlay={overlay}
       title="기술 스택"
       description={`최대 ${max}개까지 고를 수 있어요.`}
+      describeHidden={filled}
+      classNames={
+        filled
+          ? {
+              scrim: styles.scrimFilled,
+              sheet: styles.sheetFilled,
+              header: styles.headerFilled,
+              title: styles.titleFilled,
+              close: styles.closeFilled,
+              body: styles.bodyFilled,
+            }
+          : undefined
+      }
     >
       {/* Mounted on open, so the draft starts from `value` each time */}
       {overlay.isOpen && (
@@ -52,6 +67,7 @@ function TagChoices({
   const tags = useQuery(techTagsOptions());
   const [selected, setSelected] = useState(value);
   const full = selected.length >= max;
+  const filled = variant === 'filled';
 
   if (tags.isPending) return <Skeleton count={2} />;
   if (tags.isError) {
@@ -60,7 +76,7 @@ function TagChoices({
 
   return (
     <form
-      className={styles.form}
+      className={filled ? styles.formFilled : styles.form}
       onSubmit={(event) => {
         event.preventDefault();
         onSave(selected);
@@ -69,11 +85,12 @@ function TagChoices({
     >
       <fieldset className={styles.group}>
         <legend className="sr-only">기술 스택 목록</legend>
-        <p className={full ? styles.full : styles.count} aria-live="polite">
+        {/* Figma 301:1549 shows no count; the filled sheet keeps it for screen readers only */}
+        <p className={filled ? 'sr-only' : full ? styles.full : styles.count} aria-live="polite">
           {selected.length}/{max}개 선택
           {full && ' · 더 고르려면 하나를 빼 주세요'}
         </p>
-        <div className={styles.chips}>
+        <div className={filled ? styles.chipsFilled : styles.chips}>
           {tags.data.map((tag) => {
             const checked = selected.includes(tag.name);
             const chipClass = variant === 'filled' ? styles.chipFilled : styles.chip;
@@ -99,12 +116,18 @@ function TagChoices({
           })}
         </div>
       </fieldset>
-      <div className={styles.actions}>
-        <Button variant="outline" onClick={() => setSelected([])}>
-          모두 빼기
-        </Button>
-        <Button type="submit">완료</Button>
-      </div>
+      {filled ? (
+        <button type="submit" className={styles.done}>
+          완료
+        </button>
+      ) : (
+        <div className={styles.actions}>
+          <Button variant="outline" onClick={() => setSelected([])}>
+            모두 빼기
+          </Button>
+          <Button type="submit">완료</Button>
+        </div>
+      )}
     </form>
   );
 }
