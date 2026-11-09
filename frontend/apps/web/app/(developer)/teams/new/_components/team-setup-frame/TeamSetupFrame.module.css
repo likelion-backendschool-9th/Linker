@@ -1,39 +1,12 @@
-/* Figma 142:149 and 142:166. Measurements are scoped to 08; shared chrome is unchanged. */
+/* Only page 08's progress rail is scoped here; the shared StackHeader owns its appearance. */
 .frame {
-  --setup-header-height: 54px;
-  --setup-header-surface: rgb(255 255 255 / 0.9);
+  --setup-header-height: var(--header-height);
   min-height: 100dvh;
 }
 .chrome {
   position: sticky;
   top: 0;
   z-index: var(--z-chrome);
-  background: var(--setup-header-surface);
-  -webkit-backdrop-filter: var(--blur-chrome);
-  backdrop-filter: var(--blur-chrome);
-}
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xxs);
-  min-height: calc(var(--setup-header-height) + env(safe-area-inset-top));
-  padding: calc(var(--space-row-inline) + env(safe-area-inset-top)) var(--page-gutter)
-    var(--space-row-inline);
-}
-.back {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-}
-.title {
-  min-width: 0;
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-semibold);
-  line-height: normal;
-  color: var(--color-text-title-cool);
 }
 .progress {
   display: grid;

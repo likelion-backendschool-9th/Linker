@@ -1,35 +1,25 @@
 'use client';
 
-// Navigation boundary: the existing URL step and app-aware back behavior.
-import Image from 'next/image';
+// URL-step boundary: keep the progress rail sticky with the shared stack header.
 import { parseAsInteger, useQueryState } from 'nuqs';
 import type { ReactNode } from 'react';
 
 import { SkipLink } from '@/components/layout/skip-link';
+import { StackHeader } from '@/components/layout/stack-header';
 import { StatusBanners } from '@/features/status-banner/status-banners/StatusBanners';
-import { useAppBack } from '@/lib/navigation/use-app-back';
 
 import { resolveSetupStep, STEPS } from '../../_lib/setup-steps';
 import styles from './TeamSetupFrame.module.css';
 
-/** Figma 8 (142:73): a 54px stack header and a five-part, 4px progress rail. */
+/** Shared stack header; only the five-part progress rail belongs to page 08. */
 export function TeamSetupFrame({ children }: { children: ReactNode }) {
-  const back = useAppBack('/workspace');
   const [value] = useQueryState('step', parseAsInteger.withDefault(1));
   const step = resolveSetupStep(value);
   return (
     <div className={styles.frame}>
       <SkipLink />
       <div className={styles.chrome}>
-        <header className={styles.header}>
-          <button type="button" className={styles.back} onClick={back}>
-            <Image src="/images/team-setup/back.svg" alt="" width={44} height={44} />
-            <span className="sr-only">뒤로</span>
-          </button>
-          <h1 id="page-title" className={styles.title}>
-            팀 생성하기
-          </h1>
-        </header>
+        <StackHeader title="팀 생성하기" backHref="/workspace" />
         <div
           className={styles.progress}
           role="progressbar"

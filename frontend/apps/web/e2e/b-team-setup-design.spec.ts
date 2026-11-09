@@ -33,6 +33,25 @@ test('08 back uses the existing workspace fallback', async ({ page }) => {
   await expect(page).toHaveURL('/workspace');
 });
 
+test('08 and 08-2 reuse the shared stack header while retaining the step rail', async ({
+  page,
+}) => {
+  await page.goto('/subscribe');
+  const headerClass = await page.getByRole('banner').getAttribute('class');
+  for (const step of [1, 2]) {
+    await page.goto(`/teams/new?step=${step}`);
+    const header = page.getByRole('banner');
+    await expect(header).toHaveAttribute('class', headerClass!);
+    await expect(header.getByRole('heading', { level: 1, name: '팀 생성하기' })).toBeVisible();
+    await expect(header.getByRole('button', { name: '뒤로', exact: true })).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveCount(1);
+    await expect(page.getByRole('main')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', String(step));
+    expect((await header.boundingBox())?.height).toBe(54);
+  }
+});
+
 test('08 intro matches Figma geometry and stays within the mobile column', async ({
   page,
 }, testInfo) => {
