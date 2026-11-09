@@ -54,10 +54,16 @@ function mockDetail(overrides: Partial<typeof issue> = {}) {
   fetchMock.mockImplementation(async (url, init) => {
     if (init?.method === 'PUT' && url.endsWith('/status')) {
       current = { ...current, status: 'DONE', statusColor: 'GREEN', state: 'CLOSED' };
+      return { status: current.status, statusColor: current.statusColor, state: current.state };
+    }
+    if (url.endsWith('/sub-issues')) {
       return {
-        status: current.status,
-        statusColor: current.statusColor,
-        state: current.state,
+        total: 3,
+        done: 1,
+        items: [
+          { id: null, number: 150, title: '하위 작업 1', state: 'CLOSED' },
+          { id: null, number: 151, title: '하위 작업 2', state: 'OPEN' },
+        ],
       };
     }
     return current;
@@ -69,41 +75,48 @@ beforeEach(() => {
   useToastStore.setState({ toasts: [] });
 });
 
-it('shows the issue fields, sync failure, sub-issue progress and safe markdown, accessibly', async () => {
+it('shows the Figma 12 fields, sync failure, sub-issues and safe markdown, accessibly', async () => {
   mockDetail();
   const { container } = renderWithProviders(<IssueDetailView teamId="1" issueId="1015" />, {
     viewer: { role: 'developer', login: 'user-1' },
   });
   expect(
-    await screen.findByRole('heading', { level: 2, name: '피드 카드 컴포넌트' }),
+    await screen.findByRole('heading', { level: 2, name: /^피드 카드 컴포넌트/ }),
   ).toBeVisible();
-  expect(screen.getByText('linker-web #15')).toBeVisible();
-  expect(screen.getByText('작업 중')).toBeVisible();
+  expect(screen.getByText('#15')).toBeVisible();
+  expect(screen.getByText('한서준 작성')).toBeVisible();
+  expect(screen.getByRole('button', { name: '상태 작업 중' })).toBeVisible();
   expect(screen.getByText('팀 밖 사용자')).toBeVisible();
-  expect(screen.getByText(/마감 지남/)).toBeVisible();
-  expect(screen.getByText('일정이 GitHub에 반영되지 않았어요')).toBeVisible();
-  expect(screen.getByText('하위 3개 중 1개 완료')).toBeVisible();
-  expect(screen.getByRole('link', { name: '이슈 목록' })).toHaveAttribute(
-    'href',
-    '/teams/1/issues',
-  );
+  expect(screen.getByText('2026년 10월 28일')).toBeVisible();
+  expect(container.querySelector('[data-overdue="true"]')).not.toBeNull();
+  expect(screen.getByText('일정이 GitHub에 반영되지 않았어요')).toBeInTheDocument();
+  expect(screen.getByText('1/3 완료')).toBeVisible();
+  expect(await screen.findByText('하위 작업 2')).toBeVisible();
+  expect(screen.getByRole('heading', { level: 3, name: '이슈 본문' })).toBeVisible();
   // Task list marks carry their state in text; scripts never render
   expect(screen.getByText('완료:')).toBeInTheDocument();
-  expect(screen.getByText('미완료:')).toBeInTheDocument();
   expect(container.querySelector('script')).toBeNull();
   expect(await axe(container)).toHaveNoViolations();
 });
 
-it('opens the status sheet through the URL when the viewer can write', async () => {
-  mockDetail();
-  const updates: UrlUpdateEvent[] = [];
-  renderWithProviders(<IssueDetailView teamId="1" issueId="1015" />, {
-    viewer: { role: 'developer', login: 'user-1' },
-    onUrlUpdate: (event) => updates.push(event),
-  });
-  await userEvent.click(await screen.findByRole('button', { name: '상태 바꾸기' }));
-  expect(updates.at(-1)?.searchParams.get('overlay')).toBe('issue-status');
-});
+it.each([
+  [/^상태 /, 'issue-status'],
+  [/^라벨 /, 'issue-labels'],
+  [/^담당자 /, 'issue-assignees'],
+  [/^마감일 /, 'issue-schedule'],
+])(
+  'opens the sheet of the line %s through the URL when the viewer can write',
+  async (name, overlay) => {
+    mockDetail();
+    const updates: UrlUpdateEvent[] = [];
+    renderWithProviders(<IssueDetailView teamId="1" issueId="1015" />, {
+      viewer: { role: 'developer', login: 'user-1' },
+      onUrlUpdate: (event) => updates.push(event),
+    });
+    await userEvent.click(await screen.findByRole('button', { name }));
+    expect(updates.at(-1)?.searchParams.get('overlay')).toBe(overlay);
+  },
+);
 
 it('saves a status and shows it right away', async () => {
   mockDetail();
@@ -120,20 +133,22 @@ it('saves a status and shows it right away', async () => {
       body: JSON.stringify({ status: 'DONE' }),
     }),
   );
-  expect(await screen.findByText('닫힌 이슈')).toBeVisible();
+  expect(
+    await screen.findByRole('button', { name: '상태 작업 완료', hidden: true }),
+  ).toBeInTheDocument();
 });
 
-it('keeps all four change buttons focusable but explains why without write permission', async () => {
+it('keeps the info lines focusable but explains why without write permission', async () => {
   mockDetail({ canWrite: false });
   const updates: UrlUpdateEvent[] = [];
   renderWithProviders(<IssueDetailView teamId="2" issueId="2003" />, {
     viewer: { role: 'developer', login: 'user-1' },
     onUrlUpdate: (event) => updates.push(event),
   });
-  for (const name of ['상태 바꾸기', '담당자 변경', '라벨 변경', '일정 변경']) {
+  for (const name of [/^상태 /, /^라벨 /, /^담당자 /, /^시작일 /, /^마감일 /]) {
     expect(await screen.findByRole('button', { name })).toHaveAttribute('aria-disabled', 'true');
   }
-  await userEvent.click(screen.getByRole('button', { name: '담당자 변경' }));
+  await userEvent.click(screen.getByRole('button', { name: /^담당자 / }));
   expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
     '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.',
   );

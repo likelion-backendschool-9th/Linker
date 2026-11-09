@@ -1,9 +1,6 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ComponentProps } from 'react';
-
-import { Button } from '@/components/ui/button/Button';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -18,6 +15,7 @@ import {
   saveLabels,
   saveSchedule,
   saveStatus,
+  subIssuesOptions,
   type IssueDetail,
   issueKeys,
 } from './api';
@@ -38,6 +36,10 @@ export function useIssueDetailView(teamId: string, issueId: string) {
   };
 
   const issue = detail.data;
+  const subIssues = useQuery({
+    ...subIssuesOptions(teamId, issueId),
+    enabled: Boolean(issue && issue.subIssues.total > 0),
+  });
   const canWrite = Boolean(issue?.canWrite && viewer.status !== 'SUSPENDED');
 
   /** After a save: show the saved value now, then refetch the detail and every list of this team */
@@ -62,19 +64,13 @@ export function useIssueDetailView(teamId: string, issueId: string) {
     };
   }
 
-  const editProps = (label: string, open: () => void): ComponentProps<typeof Button> => ({
-    variant: 'outline',
-    'aria-disabled': !canWrite,
-    onClick: edit(open),
-    children: label,
-  });
-
   return {
     issue,
     canWrite,
     openExternal,
     sheets,
-    editProps,
+    edit,
+    subIssues,
     saveStatus: async (status: Parameters<typeof saveStatus>[2]) => {
       const saved = await saveStatus(teamId, issueId, status);
       await applied(saved);
