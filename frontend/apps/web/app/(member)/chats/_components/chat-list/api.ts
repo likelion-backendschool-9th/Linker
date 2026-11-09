@@ -1,5 +1,4 @@
 export {
-  acceptChatRequest,
   CHAT_TABS,
   chatKeys,
   chatRoomsOptions,

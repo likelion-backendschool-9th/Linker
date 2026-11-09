@@ -1,127 +1,51 @@
+/* Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청). Tabs match 18's and bleed to the column edges. */
 .tabs {
   display: flex;
-  gap: var(--space-xxs);
-  padding: var(--space-xxs);
-  margin-block: var(--space-lg);
-  border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
+  height: var(--tabs-row-height);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) 0;
+  background-color: var(--color-canvas);
 }
+
 .tab {
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-target-min);
-  padding: var(--space-xs);
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
+  gap: var(--space-xxs);
+  border: 0;
+  border-bottom: 1px solid var(--color-tab-divider);
+  background: none;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+  cursor: pointer;
 }
+
 .tab[aria-pressed='true'] {
-  background: var(--color-canvas);
-  color: var(--color-text-heading);
+  border-bottom: 2px solid var(--color-text-slate);
   font-weight: var(--font-weight-semibold);
-  box-shadow: var(--shadow-segment-active);
+  color: var(--color-text-title-cool);
 }
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
 .content {
   display: grid;
-  gap: var(--space-md);
-}
-.list {
-  display: grid;
-  gap: var(--space-xs);
-}
-.room {
-  border-bottom: 1px solid var(--color-hairline-soft);
-}
-.roomLink {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-height: var(--touch-target-min);
-  padding-block: var(--space-md);
-  border-radius: var(--radius-sm);
-}
-.avatar {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: 0 0 var(--control-height);
-  width: var(--control-height);
-  height: var(--control-height);
-  overflow: hidden;
-  border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-subtle-on-tint);
-}
-.body {
-  flex: 1;
-  min-width: 0;
-}
-.heading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xxs);
-}
-.title {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-title);
-  overflow-wrap: anywhere;
-}
-.preview {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
-}
-.trailing {
-  display: grid;
-  justify-items: end;
-  gap: var(--space-xs);
-  max-width: 35%;
-}
-.meta {
-  font-size: var(--font-size-meta);
-  color: var(--color-text-meta);
-}
-.offer {
-  font-size: var(--font-size-caption);
-  color: var(--color-accent);
-}
-.count {
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-subtle-on-tint);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-semibold);
-}
-.actions {
-  display: flex;
-  justify-content: end;
-  gap: var(--space-xs);
-  padding-bottom: var(--space-md);
-}
-
-.content,
-.list,
-.room {
-  min-width: 0;
-}
-
-.mutedIcon {
-  width: var(--space-md);
-  height: var(--space-md);
-}
-
-.content,
-.list {
   grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  min-width: 0;
+  padding-top: var(--space-chat-list-top);
 }
 
-.list > li,
-.roomLink {
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.list > li {
   min-width: 0;
 }

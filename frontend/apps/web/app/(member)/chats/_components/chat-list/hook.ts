@@ -1,8 +1,6 @@
 'use client';
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Route } from 'next';
-import { useRouter } from 'next/navigation';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -10,7 +8,6 @@ import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
 import {
-  acceptChatRequest,
   CHAT_TABS,
   chatKeys,
   chatRoomsOptions,
@@ -43,20 +40,10 @@ export function useChatList(initialSummary?: UnreadSummary) {
   const tab = recruiter ? 'DIRECT' : selected;
   const tabs = recruiter ? (['DIRECT'] as const) : CHAT_TABS;
   const client = useQueryClient();
-  const router = useRouter();
   const rooms = useInfiniteQuery(chatRoomsOptions(viewer.login, tab));
   const summary = useQuery({ ...unreadSummaryOptions(viewer.login), initialData: initialSummary });
   const overlay = useOverlay('delete-confirm');
   const refresh = () => client.invalidateQueries({ queryKey: chatKeys.account(viewer.login) });
-  const accept = useMutation({
-    mutationFn: acceptChatRequest,
-    // The conversation opens right away in 17; the list and badge refetch in the background.
-    onSuccess: ({ roomId }) => {
-      toast('메시지 요청을 수락했어요.');
-      void refresh();
-      router.push(`/chats/${roomId}` as Route);
-    },
-  });
   const remove = useMutation({
     mutationFn: deleteChatRequest,
     onSuccess: async () => {
@@ -65,9 +52,10 @@ export function useChatList(initialSummary?: UnreadSummary) {
       await refresh();
     },
   });
-  const pending = accept.isPending || remove.isPending;
+  // Accepting lives in the room's request panel (17); the list only deletes (Figma 16 has no 수락).
+  const pending = remove.isPending;
   const items = rooms.data?.pages.flatMap((page) => page.items) ?? [];
-  const mutationError = accept.error || remove.error;
+  const mutationError = remove.error;
 
   return {
     viewer,
@@ -77,7 +65,6 @@ export function useChatList(initialSummary?: UnreadSummary) {
     rooms,
     summary,
     overlay,
-    accept,
     remove,
     pending,
     items,
