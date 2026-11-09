@@ -202,7 +202,10 @@ export function AdminUserDetailPanel({
             <ul className={styles.history}>
               {user.reportHistory.map((report) => (
                 <li key={report.caseId}>
-                  <Link className={styles.link} href="/admin/reports?tab=reports&status=HANDLED">
+                  <Link
+                    className={styles.link}
+                    href={`/admin/reports?tab=reports&status=${report.result === 'PENDING' ? 'PENDING' : 'HANDLED'}`}
+                  >
                     신고 #{report.caseId}
                   </Link>
                   <p>

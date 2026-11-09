@@ -78,7 +78,11 @@ export function useAdminActionForm({
       return null;
     },
     onSuccess: async () => {
-      if (kind === 'email') return; // Full email exists only in this mounted dialog, never the user query.
+      if (kind === 'email') {
+        // Full email stays in this dialog; only refresh the audit list.
+        void client.invalidateQueries({ queryKey: ['admin-audit'] });
+        return;
+      }
       await Promise.all([
         client.invalidateQueries({ queryKey: ['admin-user', String(user.id)] }),
         client.invalidateQueries({ queryKey: ['admin-users'] }),
