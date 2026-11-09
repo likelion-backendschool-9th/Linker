@@ -4,11 +4,10 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet/DraftRestoreSheet';
 
 import { IssueContentStep } from '../issue-content-step';
-import styles from './IssueCreate.module.css';
-import { STEPS, useIssueCreate } from './hook';
 import { RepoTemplateStep } from '../repo-template-step';
+import { useIssueCreate } from './hook';
 
-/** 13 Create issue: step 1 repo + template, step 2 content (07 TODO 13) */
+/** 13 Create issue: step 1 repo + template, step 2 content (Figma 200:806). */
 export function IssueCreate({ teamId }: { teamId: string }) {
   const {
     nav,
@@ -26,21 +25,6 @@ export function IssueCreate({ teamId }: { teamId: string }) {
 
   return (
     <>
-      <ol className={styles.steps} aria-label="작성 단계">
-        {STEPS.map((label, index) => (
-          <li
-            key={label}
-            className={styles.stepItem}
-            aria-current={step === index + 1 ? 'step' : undefined}
-          >
-            <span className={styles.stepNumber} aria-hidden>
-              {index + 1}
-            </span>
-            {label}
-          </li>
-        ))}
-      </ol>
-
       {leaving ? (
         <div aria-busy="true">
           <p role="status">만든 이슈로 이동하고 있어요.</p>

@@ -8,8 +8,12 @@ import { useOverlay } from '@/lib/navigation/use-overlay';
 import type { IssueSchedule } from '../../../_lib/issue-detail-queries';
 import { saveErrorMessage } from '../save-error';
 
+export type SchedulePart = 'start' | 'due';
+
 export type IssueScheduleSheetProps = {
   value: IssueSchedule;
+  /** Which date this opening edits. The other date stays as it was. */
+  part?: SchedulePart;
   onSave: (schedule: IssueSchedule) => Promise<unknown>;
 };
 
@@ -30,7 +34,7 @@ export function useIssueScheduleForm({
   const [askPast, setAskPast] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dueRef = useRef<HTMLInputElement>(null);
+  const dueRef = useRef<HTMLElement>(null);
   const id = useId();
 
   const dueChanged = due !== (value.dueDate ?? '');

@@ -133,7 +133,7 @@ it('saves a status and shows it right away', async () => {
     searchParams: '?overlay=issue-status',
   });
   await userEvent.click(await screen.findByRole('radio', { name: /작업 완료/ }));
-  await userEvent.click(screen.getByRole('button', { name: '저장' }));
+  await userEvent.click(screen.getByRole('button', { name: '완료' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/1/issues/1015/status', {
       method: 'PUT',

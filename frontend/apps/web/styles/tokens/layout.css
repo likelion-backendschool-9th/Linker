@@ -225,6 +225,7 @@
   --radius-calendar-bar: 2px; /* 15 issue bar */
   --icon-size-calendar: 24px; /* 15 month chevron and help icon */
   --wheel-row-height: 37px; /* 15 date wheel row; also the shared date picker sheet (20 마감일, 22 기간) */
+  --wheel-band-height: 39px; /* 13 date sheet selected band (Figma 368:2615); the row stays 37px */
   --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
 
   /* Figma 28 plans (288:471, 293:218) */
@@ -277,4 +278,9 @@
   --chat-list-avatar-size: 50px; /* room photo */
   --chat-list-badge-size: 18px; /* unread count circle */
   --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
+
+  /* Figma 13 create (200:806) */
+  --issue-create-body-min-height: 163px; /* markdown / preview field */
+  --space-issue-create-body: 11px; /* body field padding */
+  --icon-size-issue-form-chevron: 12px; /* 이슈 양식 row chevron (Figma 12×13) */
 }

@@ -81,6 +81,8 @@ const created = {
   reply: () => ({ jobId: '7', issueId: 1120 }),
 };
 
+const submitName = 'GitHub에 이슈 작성하기';
+
 const renderStep = (onCreated = vi.fn()) =>
   renderWithProviders(
     <IssueContentStep
@@ -102,7 +104,7 @@ beforeEach(() => {
 it('starts from the form template defaults, accessibly', async () => {
   serve();
   const { container } = renderStep();
-  expect(await screen.findByLabelText(/제목/)).toHaveValue('[요청] ');
+  expect(await screen.findByLabelText(/이슈 제목/)).toHaveValue('[요청] ');
   expect(screen.getByText('첨부는 GitHub에서 할 수 있어요.', { exact: false })).toBeVisible();
   expect(await screen.findByText('한서준')).toBeVisible();
   expect(screen.getByText('help wanted')).toBeVisible();
@@ -115,7 +117,7 @@ it('sends the GitHub-format body with the template defaults, then leaves for the
   renderStep(onCreated);
   await userEvent.type(await screen.findByLabelText(/요약/), '다크 모드');
   await screen.findByText('한서준');
-  await userEvent.click(screen.getByRole('button', { name: '이슈 만들기' }));
+  await userEvent.click(screen.getByRole('button', { name: submitName }));
   await waitFor(() => expect(onCreated).toHaveBeenCalledWith('/teams/1/issues/1120'), {
     timeout: 3000,
   });
@@ -146,7 +148,7 @@ it('keeps the content on the device and offers "다시 보내기" when GitHub fa
   const onCreated = vi.fn();
   renderStep(onCreated);
   await userEvent.type(await screen.findByLabelText(/요약/), '다크 모드');
-  await userEvent.click(screen.getByRole('button', { name: '이슈 만들기' }));
+  await userEvent.click(screen.getByRole('button', { name: submitName }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'GitHub에 연결하지 못했어요. 작성한 내용은 저장해 두었어요.',
   );
@@ -160,15 +162,59 @@ it('keeps the content on the device and offers "다시 보내기" when GitHub fa
   await waitFor(() => expect(onCreated).toHaveBeenCalled(), { timeout: 3000 });
 });
 
-it('stops at the first missing required item and focuses it', async () => {
+it('blocks the CTA when the title is empty', async () => {
   serve();
   renderStep();
-  const title = await screen.findByLabelText(/제목/);
+  const title = await screen.findByLabelText(/이슈 제목/);
   await userEvent.clear(title);
-  await userEvent.click(screen.getByRole('button', { name: '이슈 만들기' }));
-  expect(await screen.findByText('제목을 입력해 주세요.')).toBeVisible();
-  expect(screen.getByText('필수 항목이에요.')).toBeVisible();
-  expect(title).toHaveFocus();
-  expect(title).toHaveAttribute('aria-invalid', 'true');
+  const submit = screen.getByRole('button', { name: submitName });
+  expect(submit).toHaveAttribute('aria-disabled', 'true');
+  await userEvent.click(submit);
+  expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+});
+
+it('toggles markdown preview in the same body field (Figma 200:806)', async () => {
+  serve({
+    match: (url) => url.includes('/issue-templates/'),
+    reply: () => ({
+      key: 'repo:bug',
+      source: 'REPO',
+      name: '버그 제보',
+      description: '',
+      kind: 'MARKDOWN',
+      defaultTitle: '',
+      body: '## 현상\n깨짐',
+      defaultLabels: [],
+      defaultAssignees: [],
+      fallback: false,
+      fields: [],
+    }),
+  });
+  renderWithProviders(
+    <IssueContentStep
+      teamId="1"
+      repoId={11}
+      templateKey="repo:bug"
+      initial={null}
+      onChangeTemplate={vi.fn()}
+      onCreated={vi.fn()}
+    />,
+    { viewer: { role: 'developer', login: 'me' } },
+  );
+  expect(await screen.findByRole('textbox', { name: /이슈 본문/ })).toHaveValue('## 현상\n깨짐');
+  await userEvent.click(screen.getByRole('button', { name: '미리보기' }));
+  expect(screen.getByTestId('issue-body-preview')).toHaveTextContent('현상');
+  expect(screen.queryByRole('textbox', { name: /이슈 본문/ })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '마크다운 입력' }));
+  expect(screen.getByRole('textbox', { name: /이슈 본문/ })).toHaveValue('## 현상\n깨짐');
+});
+
+it('stops at the first missing required form item and focuses it', async () => {
+  serve();
+  renderStep();
+  await screen.findByLabelText(/이슈 제목/);
+  await userEvent.click(screen.getByRole('button', { name: submitName }));
+  expect(await screen.findByText('필수 항목이에요.')).toBeVisible();
+  expect(screen.getByLabelText(/요약/)).toHaveFocus();
   expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
 });

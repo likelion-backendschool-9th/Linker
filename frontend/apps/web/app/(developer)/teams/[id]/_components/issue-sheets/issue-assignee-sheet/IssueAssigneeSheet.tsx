@@ -1,13 +1,9 @@
 'use client';
 
-import Image from 'next/image';
-
 import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
-import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
-import { ISSUE } from '@/lib/policy';
 
 import styles from '../issue-sheets.module.css';
 import { useIssueAssigneeForm, useIssueAssigneeSheet, type IssueAssigneeSheetProps } from './hook';
@@ -21,8 +17,9 @@ export function IssueAssigneeSheet<Key extends readonly unknown[]>({
   return (
     <OverlaySheet
       overlay={overlay}
-      title="담당자"
-      description={`이 레포에 접근할 수 있고 GitHub 조직 초대를 수락한 팀원만 고를 수 있어요. 최대 ${ISSUE.assigneesMax}명까지예요.`}
+      title="이슈 담당자"
+      description="이슈 담당자"
+      describeHidden
       classNames={sheetClassNames}
     >
       {overlay.isOpen && (
@@ -73,7 +70,7 @@ function AssigneeForm<Key extends readonly unknown[]>({
         {rows.length === 0 ? (
           <p className={styles.note}>고를 수 있는 팀원이 없어요.</p>
         ) : (
-          <div className={styles.options}>
+          <div className={styles.rows}>
             {rows.map(({ user, hint }) => {
               const checked = selected.includes(user.id);
               return (
@@ -85,25 +82,15 @@ function AssigneeForm<Key extends readonly unknown[]>({
                     disabled={!checked && full}
                     onChange={(event) => toggle(user.id, event.target.checked)}
                   />
-                  <Image
-                    src={user.avatarUrl}
-                    alt=""
-                    width={32}
-                    height={32}
-                    sizes="32px"
-                    className={styles.avatar}
-                  />
-                  <span className={styles.optionText}>
-                    <span className={styles.optionTitle}>{user.name}</span>
-                    <span className={styles.optionHint}>{hint}</span>
-                  </span>
+                  <span className={styles.person}>{user.name}</span>
+                  <span className="sr-only">{hint}</span>
                 </label>
               );
             })}
           </div>
         )}
       </fieldset>
-      <p className={styles.note} aria-live="polite">
+      <p className="sr-only" aria-live="polite">
         {selected.length}/{max}명 선택{full ? ' · 더 고르려면 한 명을 빼 주세요.' : ''}
       </p>
       {error && (
@@ -111,11 +98,9 @@ function AssigneeForm<Key extends readonly unknown[]>({
           {error}
         </p>
       )}
-      <div className={styles.actions}>
-        <Button type="submit" aria-disabled={pending}>
-          {pending ? '저장하는 중…' : '저장'}
-        </Button>
-      </div>
+      <button type="submit" className={styles.save} aria-disabled={pending}>
+        {pending ? '저장하는 중…' : '완료'}
+      </button>
     </form>
   );
 }
