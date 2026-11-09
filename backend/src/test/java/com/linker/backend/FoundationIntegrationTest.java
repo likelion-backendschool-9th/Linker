@@ -535,7 +535,7 @@ class FoundationIntegrationTest {
 	void listsTechTagsAndJobCategories() throws Exception {
 		mockMvc.perform(get("/api/v1/public/tech-tags"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(28))
+				.andExpect(jsonPath("$.length()").value(36))
 				.andExpect(jsonPath("$[0].name").value("TypeScript"));
 		mockMvc.perform(get("/api/v1/public/job-categories"))
 				.andExpect(status().isOk())

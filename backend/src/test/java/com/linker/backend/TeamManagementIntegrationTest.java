@@ -270,7 +270,7 @@ class TeamManagementIntegrationTest {
     assertThat(jdbc.queryForObject("select to_regclass('team_invite_links')", String.class)).isNull();
     new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/09-team-settings.sql"))
         .execute(jdbc.getDataSource());
-    assertThat(jdbc.queryForObject("select max(version::int) from flyway_schema_history", Integer.class)).isEqualTo(25);
+    assertThat(jdbc.queryForObject("select max(version::int) from flyway_schema_history", Integer.class)).isEqualTo(26);
     for (String table : List.of("team_invite_links", "github_org_invitations", "team_ownership_transfers",
         "team_completions", "completion_records"))
       assertThat(jdbc.queryForObject("select to_regclass(?) is not null", Boolean.class, table)).isTrue();
