@@ -950,7 +950,7 @@ class FoundationIntegrationTest {
 		mockMvc.perform(get("/api/v1/public/legal-documents/terms"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
-				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 이용약관")));
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 이용 약관")));
 		mockMvc.perform(get("/api/v1/public/legal-documents/privacy"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
