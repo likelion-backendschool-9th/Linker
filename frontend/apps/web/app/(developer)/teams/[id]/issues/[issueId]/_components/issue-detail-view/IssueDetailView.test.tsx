@@ -62,8 +62,26 @@ function mockDetail(overrides: Partial<typeof issue> = {}) {
         total: 3,
         done: 1,
         items: [
-          { id: null, number: 150, title: '하위 작업 1', state: 'CLOSED' },
-          { id: null, number: 151, title: '하위 작업 2', state: 'OPEN' },
+          {
+            id: 1,
+            number: 150,
+            title: '하위 작업 1',
+            state: 'CLOSED',
+            status: 'DONE',
+            statusColor: 'GREEN',
+            dueDate: '2026-11-11',
+            assigneeName: '이준호',
+          },
+          {
+            id: 2,
+            number: 151,
+            title: '하위 작업 2',
+            state: 'OPEN',
+            status: 'TODO',
+            statusColor: 'RED',
+            dueDate: '2020-11-01',
+            assigneeName: '이준호',
+          },
         ],
       };
     }
@@ -100,6 +118,9 @@ it('shows the Figma 12 fields, sync failure, sub-issues and safe markdown, acces
   expect(screen.getByText('일정이 GitHub에 반영되지 않았어요')).toBeInTheDocument();
   expect(screen.getByText('1/3 완료')).toBeVisible();
   expect(await screen.findByText('하위 작업 2')).toBeVisible();
+  expect(screen.getAllByText('이준호').length).toBeGreaterThan(0);
+  expect(screen.getByText('11월 11일')).toBeVisible();
+  expect(screen.getByText('11월 1일')).toBeVisible();
   expect(screen.getByRole('heading', { level: 3, name: '이슈 본문' })).toBeVisible();
   // Task list marks carry their state in text; scripts never render
   expect(screen.getByText('완료:')).toBeInTheDocument();
@@ -133,7 +154,7 @@ it('saves a status and shows it right away', async () => {
     searchParams: '?overlay=issue-status',
   });
   await userEvent.click(await screen.findByRole('radio', { name: /작업 완료/ }));
-  await userEvent.click(screen.getByRole('button', { name: '저장' }));
+  await userEvent.click(screen.getByRole('button', { name: '완료' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/1/issues/1015/status', {
       method: 'PUT',

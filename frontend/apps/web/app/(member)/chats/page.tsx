@@ -26,7 +26,7 @@ export default async function ChatsPage({ searchParams }: PageProps<'/chats'>) {
   // the boundary would hydrate that query only in an effect and the SSR HTML would miss the counts.
   return (
     <HydrationBoundary state={dehydrate(client)}>
-      <PageFrame title="채팅">
+      <PageFrame title="채팅" hideTitle>
         <ChatList initialSummary={unreadSummary} />
       </PageFrame>
     </HydrationBoundary>
