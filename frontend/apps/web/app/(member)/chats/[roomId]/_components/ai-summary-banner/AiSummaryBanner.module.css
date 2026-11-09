@@ -1,0 +1,34 @@
+/* Minimal banner — Figma 없음, 준호님 확인 */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: var(--space-sm) var(--space-md) 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas-soft);
+}
+
+.text {
+  margin: 0;
+  color: var(--color-text-body);
+  font-size: var(--font-size-caption);
+  line-height: normal;
+}
+
+.close {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-meta);
+  font-size: var(--font-size-caption);
+  line-height: normal;
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

@@ -1,0 +1,30 @@
+/* Figma 351:362 — title in OverlaySheet; body is one prose block + disclaimer */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-bottom: var(--space-lg);
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-text-body);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-meta);
+  font-size: var(--font-size-caption);
+  line-height: normal;
+}
+
+.disclaimer {
+  margin: 0;
+  color: var(--color-text-meta);
+  font-size: var(--font-size-caption);
+  line-height: normal;
+}

@@ -16,6 +16,7 @@ import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
+import com.linker.backend.dto.chat.response.AiChatSummaryResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.global.error.ApiErrorBody;
@@ -23,6 +24,7 @@ import com.linker.backend.global.realtime.StompAuthException;
 import com.linker.backend.global.realtime.StompPrincipal;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.DeveloperOnly;
+import com.linker.backend.service.user.AiSummaryService;
 import com.linker.backend.service.user.ChatService;
 
 import io.swagger.v3.oas.annotations.Hidden;
@@ -62,9 +64,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class ChatController {
 
 	private final ChatService chat;
+	private final AiSummaryService aiSummaries;
 
-	public ChatController(ChatService chat) {
+	public ChatController(ChatService chat, AiSummaryService aiSummaries) {
 		this.chat = chat;
+		this.aiSummaries = aiSummaries;
 	}
 
 	/** A non-numeric room or message id is a bad request, not a server error. */
@@ -284,6 +288,41 @@ public class ChatController {
 	) {
 		chat.leave(user, roomId);
 		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/chat-rooms/{roomId}/ai-summaries")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "createAiChatSummary")
+	@ApiResponse(responseCode = "200", description = "DONE or FAILED summary body")
+	@ApiResponse(responseCode = "202", description = "Still PENDING after 30s; poll GET")
+	@ApiResponse(responseCode = "400", description = "VALIDATION_ERROR (too few messages)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "403", description = "SUSPENDED, FORBIDDEN or PLAN_LIMIT (AI_SUMMARY)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "404", description = "NOT_FOUND", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "429", description = "RATE_LIMITED (10/day)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	public ResponseEntity<AiChatSummaryResponse> createAiSummary(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId
+	) {
+		AiSummaryService.CreateResult result = aiSummaries.create(user, roomId);
+		return ResponseEntity.status(result.accepted() ? 202 : 200)
+				.cacheControl(CacheControl.noStore())
+				.body(result.body());
+	}
+
+	@GetMapping("/chat-rooms/{roomId}/ai-summaries/{summaryId}")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "getAiChatSummary")
+	@ApiResponse(responseCode = "200", description = "Own summary within retention")
+	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "403", description = "SUSPENDED or FORBIDDEN", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "404", description = "NOT_FOUND", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	public ResponseEntity<AiChatSummaryResponse> getAiSummary(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@PathVariable long summaryId
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(aiSummaries.get(user, roomId, summaryId));
 	}
 
 	@PostMapping("/chat-rooms/direct")

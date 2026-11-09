@@ -1,24 +1,18 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, EllipsisVertical, Plus } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
-import { useRequireLogin } from '@/features/auth/use-require-login';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 import { ProfileInteractions } from '@/features/profile/profile-interactions/ProfileInteractions';
-import { ShareButton } from '@/features/share/share-button/ShareButton';
 import { apiFetch } from '@/lib/api/api-fetch';
 import type { Role } from '@/lib/auth/route-access';
 import type { PublicProfile } from '@/features/profile/profile-types';
 import { profileQueryKey } from '@/features/profile/profile-types';
-import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import { ContributionCalendar } from '../_components/contribution-calendar/ContributionCalendar';
-import { ProfileOutreach } from '../_components/profile-outreach/ProfileOutreach';
+import { ProfileChatButton } from '../_components/profile-chat-button/ProfileChatButton';
 import { ProfilePosts } from '../_components/profile-posts/ProfilePosts';
 import { ProfileTeams } from '../_components/profile-teams/ProfileTeams';
 import { useProfileTeams } from '../_components/profile-teams/hook';
@@ -31,9 +25,6 @@ export function DeveloperProfileView({
   profile: PublicProfile;
   viewerRole: Role;
 }) {
-  const router = useRouter();
-  const requireLogin = useRequireLogin();
-  const techSheet = useOverlay('profile-tech');
   const [projectTab, setProjectTab] = useState<'COMPLETED' | 'ACTIVE'>('COMPLETED');
   const { data: profile } = useQuery({
     queryKey: profileQueryKey(initialProfile.login),
@@ -44,16 +35,9 @@ export function DeveloperProfileView({
   const teams = useProfileTeams(profile.login);
   const completedCount = teams.data?.items.filter((team) => team.status === 'COMPLETED').length ?? 0;
   const activeCount = teams.data?.items.filter((team) => team.status === 'ACTIVE').length ?? 0;
-  const showComposer = viewerRole !== 'recruiter';
-
-  function openComposer() {
-    if (!requireLogin('/posts/new')) return;
-    router.push('/posts/new');
-  }
-
   return (
     <ProfileInteractions profile={profile} viewerRole={viewerRole}>
-      {({ openPeople, showFollow, following, followPending, toggleFollow, showMore, openMore, actionError }) => (
+      {({ openPeople, showFollow, following, followPending, toggleFollow, actionError }) => (
         <article className={styles.stage}>
           <div className={styles.intro}>
             <div className={styles.identityRow}>
@@ -81,14 +65,7 @@ export function DeveloperProfileView({
                   <ChevronRight aria-hidden />
                   <span className="sr-only">팔로우 목록</span>
                 </button>
-              ) : (
-                showMore && (
-                  <button type="button" className={styles.chevron} onClick={openMore}>
-                    <EllipsisVertical aria-hidden />
-                    <span className="sr-only">더 보기</span>
-                  </button>
-                )
-              )}
+              ) : null}
             </div>
 
             {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
@@ -103,12 +80,6 @@ export function DeveloperProfileView({
                 {profile.techStack.map((tag) => (
                   <li key={tag}>{tag}</li>
                 ))}
-                <li>
-                  <button type="button" className={styles.stackMore} onClick={() => techSheet.open()}>
-                    <Plus aria-hidden />
-                    <span className="sr-only">기술 스택 전체 보기</span>
-                  </button>
-                </li>
               </ul>
             )}
 
@@ -122,14 +93,6 @@ export function DeveloperProfileView({
               GitHub
             </a>
 
-            <ShareButton
-              target={{
-                targetType: 'PROFILE',
-                targetId: profile.id,
-                path: `/user/${profile.login}`,
-              }}
-            />
-            <ProfileOutreach profile={profile} viewerRole={viewerRole} />
             {showFollow && (
               <button
                 type="button"
@@ -147,8 +110,6 @@ export function DeveloperProfileView({
               </p>
             )}
           </div>
-
-          <ContributionCalendar login={profile.login} compact />
 
           <section className={styles.feed} aria-label="프로젝트">
             <div className={styles.projectTabs} role="tablist">
@@ -171,32 +132,14 @@ export function DeveloperProfileView({
                 진행 프로젝트
               </button>
             </div>
-            <ProfileTeams login={profile.login} status={projectTab} embedded />
-            <ProfilePosts login={profile.login} embedded />
+            {projectTab === 'COMPLETED' ? (
+              <ProfilePosts login={profile.login} embedded />
+            ) : (
+              <ProfileTeams login={profile.login} status="ACTIVE" embedded />
+            )}
           </section>
 
-          {showComposer && (
-            <button type="button" className={styles.fab} onClick={openComposer}>
-              <Plus aria-hidden />
-              <span className="sr-only">작업물 올리기</span>
-            </button>
-          )}
-
-          <OverlaySheet
-            overlay={techSheet}
-            title="기술 스택"
-            description="프로필에 표시된 기술 스택입니다."
-            describeHidden
-          >
-            <ul className={styles.techCloud} aria-label="기술 스택">
-              {profile.techStack.map((tag) => (
-                <li key={tag}>{tag}</li>
-              ))}
-            </ul>
-            <button type="button" className={styles.followButton} onClick={() => techSheet.close()}>
-              완료
-            </button>
-          </OverlaySheet>
+          {!initialProfile.isMe && <ProfileChatButton profile={profile} viewerRole={viewerRole} />}
         </article>
       )}
     </ProfileInteractions>

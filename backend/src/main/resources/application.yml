@@ -114,6 +114,12 @@ linker:
     secret-key: ${TOSS_SECRET_KEY:}
     client-key: ${TOSS_CLIENT_KEY:}
     base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
+  # Ollama (deploy/ollama). Empty base-url disables calls; model default matches server smoke.
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:}
+    model: ${OLLAMA_MODEL:qwen3:4b}
+    connect-timeout: ${OLLAMA_CONNECT_TIMEOUT:5s}
+    read-timeout: ${OLLAMA_READ_TIMEOUT:120s}
   # SMTP only. Leave host empty until a relay is chosen. Dev compose points host at Mailpit.
   mail:
     host: ${MAIL_HOST:}
