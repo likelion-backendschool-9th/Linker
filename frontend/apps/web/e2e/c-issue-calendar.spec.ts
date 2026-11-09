@@ -21,7 +21,7 @@ test('header, tabs, month title, status chips, weekdays and the "?" note', async
     'page',
   );
   await expect(monthButton(page)).toBeVisible();
-  for (const name of ['작업 전', '진행', '완료', '정지']) {
+  for (const name of ['작업 전', '작업 중', '작업 완료', '작업 중단']) {
     await expect(
       page.getByRole('listitem').filter({ hasText: new RegExp(`^${name}$`) }),
     ).toBeVisible();
@@ -92,7 +92,7 @@ for (const width of [360, 375, 600]) {
     const [lastChip, help] = await Promise.all([
       page
         .getByRole('listitem')
-        .filter({ hasText: /^정지$/ })
+        .filter({ hasText: /^작업 중단$/ })
         .boundingBox(),
       page.getByRole('button', { name: '캘린더 안내' }).locator('[aria-hidden]').boundingBox(),
     ]);

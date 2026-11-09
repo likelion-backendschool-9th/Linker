@@ -18,7 +18,7 @@ test('Flex team: header, tabs, status cards, trend, list and chat shortcut', asy
     'page',
   );
   await expect(page.getByRole('heading', { name: /^전체 이슈 \d+개$/ })).toBeVisible();
-  await expect(page.getByText(/^\d+개 완료$/)).toBeVisible();
+  await expect(page.getByText(/^\d+개 작업 완료$/)).toBeVisible();
   await expect(page.getByRole('heading', { name: '최근 추이 근 2주' })).toBeVisible();
   await expect(page.getByRole('heading', { name: /^이슈 목록 \d+개$/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^전체 \d+$/, pressed: true })).toBeVisible();
@@ -27,7 +27,7 @@ test('Flex team: header, tabs, status cards, trend, list and chat shortcut', asy
 
 test('Free team gets the cards but no trend', async ({ page }) => {
   await page.goto('/teams/2/issues');
-  await expect(page.getByText(/^\d+개 완료$/)).toBeVisible();
+  await expect(page.getByText(/^\d+개 작업 완료$/)).toBeVisible();
   await expect(page.getByRole('heading', { name: /^이슈 목록/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /최근 추이/ })).toHaveCount(0);
 });
@@ -43,9 +43,9 @@ test('search and status chips narrow the list through the URL', async ({ page })
   await expect(rows.first().getByRole('heading')).toHaveText(firstTitle);
 
   await page.getByRole('searchbox', { name: '이슈 제목 검색' }).fill('');
-  await page.getByRole('button', { name: /^진행/ }).click();
+  await page.getByRole('button', { name: /^작업 중 \d/ }).click();
   await expect(page).toHaveURL(/status=IN_PROGRESS/);
-  await expect(page.getByRole('button', { name: /^진행/, pressed: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^작업 중 \d/, pressed: true })).toBeVisible();
 
   // No "일정 없음" chip (Figma 11)
   await expect(page.getByRole('button', { name: /일정 없음/ })).toHaveCount(0);

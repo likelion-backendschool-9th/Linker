@@ -24,7 +24,7 @@ import {
   weekdayName,
 } from './hook';
 
-// Chip names of 11 (Figma 11): 작업 전 / 진행 / 정지 / 완료; other status names stay Policy's
+// Chip labels from 11 STATUS_CHIPS (POL-I-3); unmapped statuses use ISSUE_STATUS_LABELS elsewhere
 const CHIP_LABELS = Object.fromEntries(
   STATUS_CHIPS.flatMap((chip) => (chip.status ? [[chip.status, chip.label]] : [])),
 ) as Record<string, string>;
