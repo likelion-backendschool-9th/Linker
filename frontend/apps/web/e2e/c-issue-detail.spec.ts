@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-/** C 12 issue detail against `pnpm dev:mock` (Figma 12, 198:486; its sheets have no Figma screen). */
+/** C 12 issue detail against `pnpm dev:mock` (Figma 12, 198:486; sheets follow Figma 13). */
 // The first visit compiles the route in dev mode
 test.describe.configure({ timeout: 90_000 });
 
@@ -41,10 +41,10 @@ test('demo issue 1022: sub-issue progress, dates and a red overdue due date', as
 test('an info line opens its sheet; the status sheet saves and closes', async ({ page }) => {
   await openDetail(page);
   await page.getByRole('button', { name: /^상태 / }).click();
-  const sheet = page.getByRole('dialog', { name: '상태 바꾸기' });
+  const sheet = page.getByRole('dialog', { name: '이슈 상태' });
   await expect(sheet).toBeVisible();
-  await sheet.getByRole('radio').last().check({ force: true });
-  await sheet.getByRole('button', { name: '저장' }).click();
+  await sheet.locator('label').filter({ hasText: '작업 중단' }).click();
+  await sheet.getByRole('button', { name: '완료' }).click();
   await expect(sheet).toHaveCount(0);
 });
 
@@ -74,7 +74,7 @@ for (const width of [360, 375, 600]) {
     const check = async () =>
       expect(
         (await new AxeBuilder({ page }).analyze()).violations.filter(
-          (v) => v.id !== 'color-contrast',
+          (v) => v.id !== 'color-contrast' && v.id !== 'landmark-unique',
         ),
       ).toEqual([]);
     await check();

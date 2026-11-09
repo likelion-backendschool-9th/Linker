@@ -2,7 +2,7 @@
 
 // client boundary: four sheets through the URL (nuqs), detail and sub-issue queries, markdown body
 import { ArrowRightUpLinearIcon } from '@solar-icons/static/linear/arrow-right-up';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +11,7 @@ import { boardStatusColorVar, ISSUE_STATUS_LABELS } from '../../../../../../_lib
 import { IssueAssigneeSheet } from '../../../../_components/issue-sheets/issue-assignee-sheet';
 import { IssueLabelSheet } from '../../../../_components/issue-sheets/issue-label-sheet';
 import { IssueScheduleSheet } from '../../../../_components/issue-sheets/issue-schedule-sheet';
+import type { SchedulePart } from '../../../../_components/issue-sheets/issue-schedule-sheet/hook';
 import { IssueStatusSheet } from '../../../../_components/issue-sheets/issue-status-sheet';
 import { useIssueDetailView } from './hook';
 import styles from './IssueDetailView.module.css';
@@ -21,10 +22,11 @@ const longDate = (day: string) =>
 
 /**
  * 12 Issue detail (07 TODO 12), Figma 12 (198:486): title with the GitHub link, `#번호 · 레포 · 작성자`,
- * the info card (each line opens its sheet), the body, then the view-only sub-issues. The four sheets have no
- * Figma screen: they use 11's team-change sheet look.
+ * the info card (each line opens its sheet), the body, then the view-only sub-issues. The four sheets use the
+ * Figma 13 sheet frames (shared with 13 and 14).
  */
 export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: string }) {
+  const [schedulePart, setSchedulePart] = useState<SchedulePart>('start');
   const {
     issue,
     canWrite,
@@ -152,7 +154,10 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
             className={styles.row}
             aria-haspopup="dialog"
             aria-disabled={!canWrite}
-            onClick={edit(() => sheets.schedule.open())}
+            onClick={edit(() => {
+              setSchedulePart('start');
+              sheets.schedule.open();
+            })}
           >
             <span className={styles.term}>시작일</span>{' '}
             <span className={styles.value}>
@@ -170,7 +175,10 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
             className={styles.row}
             aria-haspopup="dialog"
             aria-disabled={!canWrite}
-            onClick={edit(() => sheets.schedule.open())}
+            onClick={edit(() => {
+              setSchedulePart('due');
+              sheets.schedule.open();
+            })}
           >
             <span className={styles.term}>마감일</span>{' '}
             <span className={styles.value} data-overdue={overdue}>
@@ -240,6 +248,7 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
       />
       <IssueLabelSheet value={issue.labels} options={labelOptions} onSave={saveLabels} />
       <IssueScheduleSheet
+        part={schedulePart}
         value={{ startDate: issue.startDate, dueDate: issue.dueDate }}
         onSave={saveSchedule}
       />
