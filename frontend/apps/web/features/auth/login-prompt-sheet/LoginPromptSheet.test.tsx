@@ -27,7 +27,7 @@ describe('LoginPromptSheet', () => {
       name: '로그인 하기',
     });
     expect(dialog).toHaveTextContent(
-      '해당 기능은 로그인한 사용자들만 사용할 수 있습니다.로그인 하시겠습니까?',
+      '해당 기능은 로그인한 사용자들만 사용할 수 있습니다. 로그인 하시겠습니까?',
     );
     expect(screen.getByRole('button', { name: '로그인하기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '취소하기' })).toBeInTheDocument();
