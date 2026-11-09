@@ -13,9 +13,9 @@ import { RECRUITS } from '../fixtures/recruits';
 
 // Page 06 reference: three blocked accounts shown in the settings capture.
 const blockedUsers: UserBrief[] = [
-  { id: 2, login: 'junhorang', name: '이준호', avatarUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
-  { id: 3, login: 'hanyun123', name: '한윤수', avatarUrl: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
-  { id: 4, login: 'mzcc77', name: '김민지', avatarUrl: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
+  { id: 201, login: 'junhorang', name: '이준호', avatarUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
+  { id: 202, login: 'hanyun123', name: '한윤수', avatarUrl: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
+  { id: 203, login: 'mzcc77', name: '김민지', avatarUrl: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=96&h=96&q=80', userType: 'DEVELOPER', jobStatus: 'OFF' },
 ];
 const blockedIds = new Set<number>(blockedUsers.map(({ id }) => id));
 
@@ -60,7 +60,11 @@ export const routes: MockRoute[] = [
   ),
   post('/api/v1/user/blocks', ({ body }) => {
     const userId = Number(body.userId);
-    if (!DEVELOPERS.some((user) => user.id === userId) && !findUserById(userId)) {
+    if (
+      !DEVELOPERS.some((user) => user.id === userId) &&
+      !findUserById(userId) &&
+      !blockedUsers.some((user) => user.id === userId)
+    ) {
       fail(404, 'NOT_FOUND', '사용자를 찾을 수 없어요');
     }
     blockedIds.add(userId);

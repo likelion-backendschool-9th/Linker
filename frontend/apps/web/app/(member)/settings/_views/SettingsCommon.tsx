@@ -158,13 +158,13 @@ export function SettingsCommon({
         <div className={styles.card}>
           {accountStart}
           {editingEmail ? (
-            <form className={styles.emailRow} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
+            <form noValidate className={styles.emailRow} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
               <label htmlFor="notification-email">알림 이메일</label>
               <input id="notification-email" type="email" autoComplete="email" {...form.register('email')} aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} />
               <button type="submit" className={styles.save} disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '저장'}</button>
             </form>
           ) : (
-            <button type="button" className={`${styles.row} ${styles.emailDisplay}`} onClick={() => setEditingEmail(true)}>
+            <button type="button" className={`${styles.row} ${styles.emailDisplay}`} aria-label={`알림 이메일 ${notificationEmail}`} onClick={() => setEditingEmail(true)}>
               <span>알림 이메일</span>
               <span className={styles.emailValue}>{notificationEmail}</span>
             </button>
