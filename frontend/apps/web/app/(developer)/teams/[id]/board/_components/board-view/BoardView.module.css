@@ -5,6 +5,9 @@
   gap: var(--board-column-gap);
   margin-top: calc(-1 * var(--space-md));
   padding-top: var(--board-column-gap);
+  /* Keep column swipe scroll; stop wide columns / sr-only from widening the page */
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .toolbar {
@@ -20,6 +23,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--board-column-gap);
+  min-width: 0;
   margin-inline: calc(-1 * var(--page-gutter));
   padding: 0 var(--page-gutter) var(--space-board-column);
   overflow-x: auto;

@@ -87,6 +87,18 @@ def main():
             assert config["services"]["backend"]["environment"][key] == value, key
             for other in ["web", "proxy", "db", "redis"]:
                 assert key not in config["services"][other].get("environment", {}), other
+    # Compose reads .env only for interpolation; Spring sees just the keys listed here.
+    forwarded = [
+        "SESSION_COOKIE_NAME", "SESSION_COOKIE_SECURE", "SESSION_COOKIE_DOMAIN",
+        "CHAT_PUBLIC_ORIGINS", "STORAGE_MODE", "STORAGE_LOCAL_DIR",
+        "MAIL_HOST", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD", "MAIL_FROM",
+        "MAIL_PUBLIC_BASE_URL", "ISSUE_SYNC_ENABLED", "ISSUE_WEBHOOK_ENABLED",
+        "OLLAMA_CONNECT_TIMEOUT", "OLLAMA_READ_TIMEOUT",
+    ]
+    for config in [base, production, images]:
+        environment = config["services"]["backend"]["environment"]
+        missing = [key for key in forwarded if key not in environment]
+        assert not missing, f"backend does not receive {missing}"
     print("PASS: production and image-only deployment keep ports, resources and data volumes")
 
 

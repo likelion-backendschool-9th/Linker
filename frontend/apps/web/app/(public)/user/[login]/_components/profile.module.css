@@ -312,48 +312,11 @@
   }
 }
 
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.editLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch-target-min);
-  color: var(--color-text-body);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-medium);
-  text-decoration: none;
-}
-
 .blog {
   color: var(--color-accent);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   overflow-wrap: anywhere;
-}
-
-.composer {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.composer textarea {
-  width: 100%;
-  min-height: calc(var(--control-height) * 2);
-  padding: var(--space-sm);
-  color: var(--color-text-heading);
-  font-size: var(--font-size-body);
-  background: var(--color-canvas-soft);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-}
-
-.counter {
-  color: var(--color-text-meta);
-  font-size: var(--font-size-caption);
 }
 
 .stage {
@@ -379,7 +342,7 @@
 }
 
 .stage .avatar {
-  width: calc(var(--control-height) + var(--space-sm));
+  width: calc(var(--control-height) - var(--space-xxs));
 }
 
 .stage .identityText {
@@ -448,8 +411,7 @@
   white-space: pre-wrap;
 }
 
-.stackRow,
-.techCloud {
+.stackRow {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
@@ -458,30 +420,18 @@
   list-style: none;
 }
 
-.stackRow li,
-.techCloud li,
-.stackMore {
+.stackRow li {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: auto;
   min-height: calc(var(--space-lg) + var(--space-xxs));
-  padding: 0 var(--space-xs);
-  line-height: 1;
+  padding: 0 var(--space-sm);
   color: var(--color-text-body);
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-medium);
   background: var(--color-canvas-soft);
   border-radius: var(--radius-xxs);
-}
-
-.stackMore {
-  width: calc(var(--space-lg) + var(--space-xxs));
-  padding: 0;
-}
-
-.stackMore svg {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
 }
 
 .githubButton,
@@ -546,8 +496,8 @@
 .feed {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-md);
-  padding: var(--space-md) var(--page-gutter) var(--space-lg);
+  gap: var(--space-sm);
+  padding: 0 var(--space-sm) var(--space-lg);
   background: var(--color-canvas-soft);
 }
 
@@ -555,14 +505,17 @@
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: 1fr 1fr;
-  border-top: 2px solid var(--color-canvas);
+  min-height: calc(var(--control-height) - var(--space-xs));
+  margin-inline: calc(var(--space-sm) * -1);
+  border-top: 1px solid var(--color-hairline-soft);
+  background: var(--color-canvas);
 }
 
 .projectTabs button {
   display: grid;
   justify-items: center;
   gap: var(--space-xxs);
-  min-height: calc(var(--control-height) + var(--space-xs));
+  min-height: calc(var(--control-height) - var(--space-xs));
   color: var(--color-text-meta);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
@@ -604,6 +557,7 @@
   color: var(--color-text-heading);
   text-decoration: none;
   background: var(--color-canvas);
+  border: 1px solid var(--color-hairline-soft);
   border-radius: var(--radius-xs);
 }
 
@@ -628,26 +582,22 @@
   white-space: nowrap;
 }
 
-.techCloud {
-  margin-bottom: var(--space-lg);
-}
-
 .fab {
   position: fixed;
   right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
-  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  bottom: calc(var(--space-xxl) + env(safe-area-inset-bottom));
   z-index: var(--z-chrome);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
+  width: var(--space-xl);
+  height: var(--space-xl);
   color: var(--color-on-primary);
   background: var(--color-primary);
   border-radius: var(--radius-full);
 }
 
 .fab svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: var(--space-md);
+  height: var(--space-md);
 }

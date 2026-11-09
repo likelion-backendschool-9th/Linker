@@ -17,6 +17,12 @@ import { isBlocked } from './p00-common';
 /** 04 Profile: `AccountController` (+ recruiter job ad, `[Included]`) */
 
 const following = new Set<number>([2, 4]);
+const followsByUser = new Map<number, Set<number>>([
+  [ME.id, following],
+  [3, new Set([ME.id])],
+  [5, new Set([ME.id])],
+  [6, new Set([ME.id])],
+]);
 let pinnedPostIds: number[] = [1];
 
 // One recruiter job ad, ACTIVE (04 POL-H-7)
@@ -96,21 +102,29 @@ export function contributionsFor(month: string) {
   });
 }
 
-const peopleList = (excludeId: number) =>
-  ALL_USERS.filter((user) => user.userType === 'DEVELOPER' && user.id !== excludeId)
-    .slice(0, 5)
-    .map((user) => ({ user: brief(user), isFollowing: following.has(user.id) }));
+const peopleList = (targetId: number, followers: boolean, viewerId: number | null) => {
+  const ids = followers
+    ? [...followsByUser.entries()]
+        .filter(([, targets]) => targets.has(targetId))
+        .map(([userId]) => userId)
+    : [...(followsByUser.get(targetId) ?? [])];
+  const viewerFollowing = followsByUser.get(viewerId ?? -1) ?? new Set<number>();
+  return ids
+    .map((id) => ALL_USERS.find((user) => user.id === id))
+    .filter((user): user is MockUser => user?.userType === 'DEVELOPER' && user.id !== targetId)
+    .map((user) => ({ user: brief(user), isFollowing: viewerFollowing.has(user.id) }));
+};
 
 export const routes: MockRoute[] = [
   get('/api/v1/public/user/:login', ({ params, viewer }) =>
     profileOf(userOr404(params.login), viewer.me?.id ?? null, viewer.role),
   ),
-  get('/api/v1/user/user/:login/followers', ({ params }) => ({
-    items: peopleList(userOr404(params.login).id),
+  get('/api/v1/user/user/:login/followers', ({ params, viewer }) => ({
+    items: peopleList(userOr404(params.login).id, true, viewer.me?.id ?? null),
     nextCursor: null,
   })),
-  get('/api/v1/user/user/:login/followings', ({ params }) => ({
-    items: peopleList(userOr404(params.login).id),
+  get('/api/v1/user/user/:login/followings', ({ params, viewer }) => ({
+    items: peopleList(userOr404(params.login).id, false, viewer.me?.id ?? null),
     nextCursor: null,
   })),
   post(
@@ -133,13 +147,10 @@ export const routes: MockRoute[] = [
     { only: 'developer' },
   ),
 
-  ...['/api/v1/public/user/:login/contributions', '/api/v1/public/users/:login/contributions'].map(
-    (path) =>
-      get(path, ({ query }) => {
-        const month = query.get('month') ?? new Date().toISOString().slice(0, 7);
-        return { month, days: contributionsFor(month), asOf: daysAgo(0) };
-      }),
-  ),
+  get('/api/v1/public/user/:login/contributions', ({ query }) => {
+    const month = query.get('month') ?? new Date().toISOString().slice(0, 7);
+    return { month, days: contributionsFor(month), asOf: daysAgo(0) };
+  }),
   get('/api/v1/public/user/:login/posts', ({ params }) => {
     const target = userOr404(params.login);
     const own = POSTS.filter((post) => post.author.id === target.id);

@@ -63,14 +63,15 @@ function developer(
 }
 
 /** The logged-in developer (also the operator when the role is `operator`) */
-export const ME = developer(1, 'seojun-han', '한서준', {
-  bio: '프론트엔드 개발자. 작은 팀에서 끝까지 만드는 걸 좋아해요.',
-  blogUrl: 'https://seojun.example.dev',
-  techStack: ['TypeScript', 'React', 'Next.js', 'Node.js'],
-  lookingForTeam: true,
+export const ME = developer(1, 'seojun-han', 'JUNHORANG', {
+  avatarUrl: '/mock/seojun-han.svg',
+  bio: '안녕하세요. 좋은 개발자가 되고 싶습니다.\n프론트 엔드 중심으로 사용자 경험을 살리는 것을 좋아합니다',
+  blogUrl: null,
+  techStack: ['Java', 'Next.js', 'TypeScript', 'Figma', 'Spring'],
+  lookingForTeam: false,
   jobStatus: 'SEEKING',
   jobCategories: ['FRONTEND', 'FULLSTACK'],
-  followerCount: 48,
+  followerCount: 120,
   followingCount: 31,
   completion: { projectCount: 3, issueCompletionRate: 0.91 },
 });
@@ -94,7 +95,7 @@ export const DEVELOPERS: MockUser[] = [
   developer(4, 'minjae-choi', '최민재', {
     bio: '데이터/AI 엔지니어.',
     techStack: ['Python', 'PyTorch', 'FastAPI'],
-    jobStatus: 'OPEN',
+    jobStatus: 'SEEKING',
     followerCount: 54,
   }),
   developer(5, 'hayun-jung', '정하윤', {

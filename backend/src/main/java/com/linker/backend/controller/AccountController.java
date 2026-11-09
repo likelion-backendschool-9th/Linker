@@ -29,7 +29,7 @@ public class AccountController {
 		this.profiles = profiles;
 	}
 
-	@GetMapping("/users/{login}")
+	@GetMapping("/user/{login}")
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "getPublicProfile")
 	public ResponseEntity<PublicProfileResponse> profile(
@@ -38,7 +38,7 @@ public class AccountController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(profiles.profile(login, viewer));
 	}
 
-	@GetMapping("/users/{login}/teams")
+	@GetMapping("/user/{login}/teams")
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "listPublicTeams")
 	public ResponseEntity<PublicTeamsResponse> teams(
@@ -47,7 +47,7 @@ public class AccountController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(profiles.teams(login, viewer));
 	}
 
-	@GetMapping("/users/{login}/contributions")
+	@GetMapping("/user/{login}/contributions")
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "listPublicContributions")
 	public ResponseEntity<ContributionMonthResponse> contributions(

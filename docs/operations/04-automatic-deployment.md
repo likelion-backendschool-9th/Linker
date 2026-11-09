@@ -50,6 +50,8 @@ GitHub 설정 위치는 **Settings → Secrets and variables → Actions**, 환�
 - 실제 DB 정보: 서버 `.env` 사용. GitHub에 등록하지 않는다.
 - 서버 SSH 호스트 키 변경 시: 서버에서 공개 키를 직접 확인한 뒤 `DEPLOY_HOST_KEY` 갱신.
 - 웹 빌드 값이 필요하면 `NEXT_PUBLIC_IMAGE_HOST`, `NEXT_PUBLIC_TOSS_CLIENT_KEY`를 GitHub Variables에 등록. 서버 `.env`의 공개 값이 이미지 빌드에 자동 전달되지는 않는다.
+- `NEXT_PUBLIC_SITE_URL`은 Variable이 없으면 `https://linker.newlecture.com`으로 빌드한다. 도메인이 바뀔 때만 등록한다.
+- 백엔드는 `compose.yml`의 `backend.environment`에 적힌 변수만 받는다. 서버 `.env`에 새 변수를 넣었다면 이 목록에도 있어야 한다.
 
 ## 실패했을 때
 

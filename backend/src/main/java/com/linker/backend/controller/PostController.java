@@ -41,7 +41,7 @@ public class PostController {
 				.body(posts.feed(cursor, offersOnly));
 	}
 
-	@GetMapping("/users/{login}/posts")
+	@GetMapping("/user/{login}/posts")
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "listPublicPosts")
 	public ResponseEntity<PostCardListResponse> profilePosts(@PathVariable String login) {

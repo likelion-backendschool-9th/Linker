@@ -96,3 +96,15 @@
   background-color: var(--color-sheet-cta);
   border-radius: var(--radius-control-md);
 }
+
+.done:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.inlineError {
+  margin: 0;
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}

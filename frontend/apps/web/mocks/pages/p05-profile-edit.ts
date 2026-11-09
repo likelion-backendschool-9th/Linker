@@ -32,6 +32,7 @@ export const routes: MockRoute[] = [
     '/api/v1/user/me/profile',
     ({ body }) => {
       Object.assign(form, body);
+      Object.assign(ME, form);
       return form;
     },
     { only: 'developer' },
