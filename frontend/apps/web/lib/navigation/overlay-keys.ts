@@ -51,6 +51,7 @@ export const OVERLAY_KEYS = [
   'team-switcher',
   'my-issues-team',
   'team-settings-action',
+  'team-delete',
   'admin-user-detail',
   'admin-user-action',
   'chat-pull-requests',
