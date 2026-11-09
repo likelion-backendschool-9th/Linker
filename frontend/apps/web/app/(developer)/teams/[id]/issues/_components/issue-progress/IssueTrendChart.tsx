@@ -1,14 +1,16 @@
 import type { IssueProgressDay } from '@linker/api/openAPIDefinition.schemas';
 import type { CSSProperties } from 'react';
 
+import { ISSUE_STATUS_LABELS } from '../../../../../_lib/issue-status';
+
 import styles from './IssueTrendChart.module.css';
 import { linePath } from './trend-path';
 
-/** The three lines of the Figma legend (완료 · 진행 · 정지) */
+/** The three lines of the trend legend (POL-I-3 names) */
 const SERIES = [
-  { key: 'done', word: '완료', tone: 'done' },
-  { key: 'inProgress', word: '진행', tone: 'active' },
-  { key: 'blocked', word: '정지', tone: 'blocked' },
+  { key: 'done', word: ISSUE_STATUS_LABELS.DONE, tone: 'done' },
+  { key: 'inProgress', word: ISSUE_STATUS_LABELS.IN_PROGRESS, tone: 'active' },
+  { key: 'blocked', word: ISSUE_STATUS_LABELS.BLOCKED, tone: 'blocked' },
 ] as const;
 type SeriesKey = (typeof SERIES)[number]['key'];
 

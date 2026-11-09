@@ -10,17 +10,34 @@ import { ApiError } from '@/lib/api/api-error';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
+import { ISSUE_STATUS_LABELS } from '../../../../../_lib/issue-status';
+
 import { PROGRESS_STATUSES, useIssueProgress, type ProgressStatus } from './hook';
 import styles from './IssueProgress.module.css';
 import { IssueTrendChart } from './IssueTrendChart';
 
-/** Card copy and icon per status (Figma 11 "이슈 진행 카드"). The status word is always written out. */
+/** Card copy and icon per status (Figma 11). Words are POL-I-3 (ISSUE_STATUS_LABELS). */
 // Icon sizes follow the Figma frames: 24 (check, arrow), 20 (loader), 22 (close)
 const CARDS: Record<ProgressStatus, { word: string; icon: string; tone: string; size: string }> = {
-  DONE: { word: '완료', icon: CheckBrokenIcon, tone: 'done', size: 'iconMd' },
-  IN_PROGRESS: { word: '진행', icon: LoaderBrokenIcon, tone: 'active', size: 'iconSm' },
-  BLOCKED: { word: '정지', icon: CloseBrokenIcon, tone: 'blocked', size: 'iconXm' },
-  TODO: { word: '작업 전', icon: ArrowLeftToLineBrokenIcon, tone: 'todo', size: 'iconMd' },
+  DONE: { word: ISSUE_STATUS_LABELS.DONE, icon: CheckBrokenIcon, tone: 'done', size: 'iconMd' },
+  IN_PROGRESS: {
+    word: ISSUE_STATUS_LABELS.IN_PROGRESS,
+    icon: LoaderBrokenIcon,
+    tone: 'active',
+    size: 'iconSm',
+  },
+  BLOCKED: {
+    word: ISSUE_STATUS_LABELS.BLOCKED,
+    icon: CloseBrokenIcon,
+    tone: 'blocked',
+    size: 'iconXm',
+  },
+  TODO: {
+    word: ISSUE_STATUS_LABELS.TODO,
+    icon: ArrowLeftToLineBrokenIcon,
+    tone: 'todo',
+    size: 'iconMd',
+  },
 };
 
 type IssueProgressProps = {

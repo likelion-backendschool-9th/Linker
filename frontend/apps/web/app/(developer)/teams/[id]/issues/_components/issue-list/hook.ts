@@ -21,6 +21,8 @@ import {
 } from '../../../_lib/issue-filters';
 import { PULL_MAX, usePullToRefresh } from '../../_hooks/use-pull-to-refresh';
 import { ISSUE_SEARCH_MAX_LENGTH, issueSearchParser, issueViewParser } from '../../_lib/issue-view';
+import { ISSUE_STATUS_LABELS } from '../../../../../_lib/issue-status';
+
 import {
   addIssueToProject,
   issueCountOptions,
@@ -32,15 +34,15 @@ import {
 export { PULL_MAX };
 
 /**
- * Status chips of Figma 11. There is no "일정 없음" chip (Figma 11, user decision 2026-11-08): the
- * `?view=unscheduled` list is reached only from 15's calendar link.
+ * Status chips (11·15). Labels follow POL-I-3 via ISSUE_STATUS_LABELS. No "일정 없음" chip
+ * (user decision 2026-11-08): `?view=unscheduled` is reached only from 15's calendar link.
  */
 export const STATUS_CHIPS = [
   { status: null, label: '전체' },
-  { status: 'TODO', label: '작업 전' },
-  { status: 'IN_PROGRESS', label: '진행' },
-  { status: 'BLOCKED', label: '정지' },
-  { status: 'DONE', label: '완료' },
+  { status: 'TODO', label: ISSUE_STATUS_LABELS.TODO },
+  { status: 'IN_PROGRESS', label: ISSUE_STATUS_LABELS.IN_PROGRESS },
+  { status: 'BLOCKED', label: ISSUE_STATUS_LABELS.BLOCKED },
+  { status: 'DONE', label: ISSUE_STATUS_LABELS.DONE },
 ] as const;
 export type ChipStatus = (typeof STATUS_CHIPS)[number]['status'];
 
