@@ -5,10 +5,13 @@ test('settings and recruiter offers branch on the authenticated role', async ({ 
   await page.goto('/api/mock/login/developer?returnTo=%2Fsettings');
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole('heading', { name: 'GitHub 연결' })).toBeVisible();
-  await expect(page.getByText('@seojun-han', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: '푸시 알림' }).click();
-  await expect(page.getByRole('button', { name: '푸시 알림' })).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: '차단한 사용자 보기' }).click();
+  await expect(page.getByText('@seojun-han', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('푸시 알림', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '알림 이메일 sjsk6849@naver.com' })).toBeVisible();
+  await expect(page.getByText('Flex 5/6명', { exact: true })).toBeVisible();
+  await expect(page.getByText('구직 중', { exact: true })).toBeVisible();
+  await expect(page.getByText('6명', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '차단 사용자' }).click();
   await expect(page.getByRole('dialog', { name: '차단한 사용자' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '차단한 사용자' })).toBeVisible();
 
@@ -16,7 +19,7 @@ test('settings and recruiter offers branch on the authenticated role', async ({ 
   await expect(page.getByRole('heading', { name: 'Scout' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '비밀번호 변경' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'GitHub 연결' })).toHaveCount(0);
-  await expect(page.getByText('@r-1001', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '알림 이메일' })).toBeVisible();
 
   await page.goto('/api/mock/login/recruiter?returnTo=%2Frecruiter%2Foffers');
   await expect(page.getByRole('heading', { name: '보낸 제안' })).toBeVisible();
@@ -165,11 +168,12 @@ test('developer and recruiter profile edits validate, save in the current mock s
 
 test('recruiter account settings validate password, update notifications, and logout', async ({ page }) => {
   await page.goto('/api/mock/login/recruiter?returnTo=%2Fsettings');
+  await page.getByRole('button', { name: '알림 이메일' }).click();
   await page.getByLabel('알림 이메일').fill('not-an-email');
-  await page.getByRole('button', { name: '알림 이메일 저장' }).click();
+  await page.getByRole('button', { name: '저장' }).click();
   await expect(page.getByText('올바른 이메일 주소를 입력해 주세요.')).toBeVisible();
   await page.getByLabel('알림 이메일').fill('alerts@nextlab.example');
-  await page.getByRole('button', { name: '알림 이메일 저장' }).click();
+  await page.getByRole('button', { name: '저장' }).click();
   await expect(page.getByRole('status')).toContainText('알림 이메일을 저장했어요');
 
   await page.getByLabel('현재 비밀번호').fill('wrong-password');
@@ -198,12 +202,14 @@ test('recruiter account settings validate password, update notifications, and lo
 });
 
 test('developer logout and owned-team withdrawal guard preserve the account until explicit resolution', async ({ page }) => {
-  await page.goto('/api/mock/login/developer?returnTo=%2Fsettings');
-  await page.getByRole('button', { name: '계정 탈퇴' }).click();
-  const sheet = page.getByRole('dialog', { name: '계정 탈퇴 안내' });
-  await expect(sheet).toBeVisible();
-  await expect(sheet.getByText(/소유권을 이전하거나 팀을 삭제한 뒤 탈퇴할 수 있어요/)).toBeVisible();
-  await expect(sheet.getByRole('button', { name: '탈퇴 계속하기' })).toHaveCount(0);
+  await page.goto('/api/mock/login/developer?returnTo=%2Fsettings%3Foverlay%3Dprofile-people');
+  await expect(page).toHaveURL(/\/settings\?overlay=profile-people$/);
+  const confirmation = page.getByRole('alertdialog', { name: '계정 삭제' });
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation.getByText('계정을 삭제하시면 기존에 있던 서비스를 사용하실 수 없습니다. 삭제 하시겠습니까?')).toBeVisible();
+  await confirmation.getByRole('button', { name: '계정 삭제' }).click();
+  await expect(confirmation.getByText('아래 팀의 소유권을 이전하거나 팀을 삭제한 뒤 다시 시도해 주세요.')).toBeVisible();
+  await expect(confirmation.getByRole('link', { name: /팀 설정/ })).toBeVisible();
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: '로그아웃' }).click();
@@ -213,15 +219,26 @@ test('developer logout and owned-team withdrawal guard preserve the account unti
   await expect(page).toHaveURL(/\/feed\?overlay=login/);
 });
 
-test('recruiter withdrawal uses the two-step confirmation and clears the mock session', async ({ page }) => {
-  await page.goto('/api/mock/login/recruiter?returnTo=%2Fsettings');
-  await page.getByRole('button', { name: '계정 탈퇴' }).click();
-  const sheet = page.getByRole('dialog', { name: '계정 탈퇴 안내' });
-  await expect(sheet.getByText('소유한 팀이 없어 탈퇴를 진행할 수 있어요.')).toBeVisible();
-  await sheet.getByRole('button', { name: '탈퇴 계속하기' }).click();
-  const confirmation = page.getByRole('alertdialog');
-  await expect(confirmation).toBeVisible();
-  await confirmation.getByRole('button', { name: '계정 탈퇴' }).click();
+test('recruiter withdrawal matches the account delete confirmation and clears the mock session', async ({ page }) => {
+  await page.goto('/api/mock/login/recruiter?returnTo=%2Fsettings%3Foverlay%3Dprofile-people');
+  await expect(page).toHaveURL(/\/settings\?overlay=profile-people$/);
+  const confirmation = page.getByRole('alertdialog', { name: '계정 삭제' });
+  await expect(confirmation.getByText('계정을 삭제하시면 기존에 있던 서비스를 사용하실 수 없습니다. 삭제 하시겠습니까?')).toBeVisible();
+  for (const width of [360, 600]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect(confirmation).toBeVisible();
+    const bounds = await confirmation.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.width).toBe(320);
+    expect(bounds!.height).toBe(198);
+    expect(bounds!.x).toBe((width - 320) / 2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+  }
+  await expect(confirmation.getByRole('heading', { name: '계정 삭제' })).toBeVisible();
+  await expect(confirmation.getByText('계정을 삭제하시면 기존에 있던 서비스를 사용하실 수 없습니다. 삭제 하시겠습니까?')).toBeVisible();
+  await expect(confirmation.getByRole('button', { name: '계정 삭제' })).toBeVisible();
+  await expect(confirmation.getByRole('button', { name: '취소 하기' })).toBeVisible();
+  await confirmation.getByRole('button', { name: '계정 삭제' }).click();
   await expect(page).toHaveURL(/\/feed\?overlay=login/);
   await page.goto('/settings');
   await expect(page).toHaveURL(/\/feed\?overlay=login/);
