@@ -1,32 +1,37 @@
 'use client';
 
-import { ArrowLeft, ExternalLink } from 'lucide-react';
-import type { Route } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
+// client boundary: four sheets through the URL (nuqs), detail and sub-issue queries, markdown body
+import { ArrowRightUpLinearIcon } from '@solar-icons/static/linear/arrow-right-up';
+import type { CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
-import { Button } from '@/components/ui/button/Button';
-import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
-import { formatDate } from '@/lib/format/time';
-
+import { boardStatusColorVar, ISSUE_STATUS_LABELS } from '../../../../../../_lib/issue-status';
 import { IssueAssigneeSheet } from '../../../../_components/issue-sheets/issue-assignee-sheet';
 import { IssueLabelSheet } from '../../../../_components/issue-sheets/issue-label-sheet';
 import { IssueScheduleSheet } from '../../../../_components/issue-sheets/issue-schedule-sheet';
 import { IssueStatusSheet } from '../../../../_components/issue-sheets/issue-status-sheet';
-import { IssueStatusBadge } from '../../../../../../_components/issue-status-badge';
 import { useIssueDetailView } from './hook';
 import styles from './IssueDetailView.module.css';
 
-/** 12 Issue detail (07 TODO 12). Data comes from the server-prefetched detail query. */
+/** Figma 12 date lines: "2025년 11월 2일" (the issue's KST calendar date) */
+const longDate = (day: string) =>
+  `${day.slice(0, 4)}년 ${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
+
+/**
+ * 12 Issue detail (07 TODO 12), Figma 12 (198:486): title with the GitHub link, `#번호 · 레포 · 작성자`,
+ * the info card (each line opens its sheet), the body, then the view-only sub-issues. The four sheets have no
+ * Figma screen: they use 11's team-change sheet look.
+ */
 export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: string }) {
   const {
     issue,
+    canWrite,
     openExternal,
     sheets,
-    editProps,
+    edit,
+    subIssues,
     saveStatus,
     saveAssignees,
     saveLabels,
@@ -38,172 +43,194 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
   // The page only renders once the server fetched it, so `data` is there; refetches keep it
   if (!issue) return null;
 
+  const overdue = issue.overdue && issue.status !== 'DONE';
+  const sep = <span className={styles.separator} aria-hidden />;
+  const empty = <span className="sr-only">없음</span>;
+
   return (
-    <>
-      <Link href={`/teams/${teamId}/issues` as Route} className={styles.back}>
-        <ArrowLeft aria-hidden />
-        이슈 목록
-      </Link>
-
-      <article aria-labelledby="issue-title" className={styles.article}>
-        <div className={styles.head}>
-          <p className={styles.repo}>
-            {issue.repoName} #{issue.number}
-          </p>
-          <h2 id="issue-title" className={styles.title}>
-            {issue.title}
-          </h2>
-          <p className={styles.byline}>
-            <Image
-              src={issue.author.avatarUrl}
-              alt=""
-              width={24}
-              height={24}
-              sizes="24px"
-              className={styles.avatar}
+    <div className={styles.page}>
+      <section className={styles.head}>
+        <h2 className={styles.title}>
+          {issue.title}
+          <button
+            type="button"
+            className={styles.external}
+            onClick={() => openExternal(issue.githubUrl)}
+          >
+            <span
+              aria-hidden
+              className={styles.icon}
+              dangerouslySetInnerHTML={{ __html: ArrowRightUpLinearIcon }}
             />
-            <span>
-              {issue.author.name}님이 작성 · <RelativeTime value={issue.createdAt} />
-            </span>
-          </p>
-          <Button variant="soft" onClick={() => openExternal(issue.githubUrl)}>
-            <ExternalLink aria-hidden />
-            GitHub에서 열기
-            <span className="sr-only"> (새 창)</span>
-          </Button>
-        </div>
-
+            <span className="sr-only">GitHub에서 열기 (새 창)</span>
+          </button>
+        </h2>
+        <p className={styles.meta}>
+          <span>#{issue.number}</span>
+          {sep}
+          <span>{issue.repoName}</span>
+          {sep}
+          <span>{issue.author.name} 작성</span>
+        </p>
         {issue.syncFailed && (
-          <p className={styles.warning} role="status">
+          <p role="status" className="sr-only">
             일정이 GitHub에 반영되지 않았어요
           </p>
         )}
-        {!issue.canWrite && (
-          <p className={styles.notice}>
-            이 레포에 쓸 권한이 없어 보기만 할 수 있어요. 레포 관리자에게 권한을 요청해 주세요.
-          </p>
-        )}
+      </section>
 
-        <section aria-labelledby="issue-fields" className={styles.section}>
-          <h3 id="issue-fields" className="sr-only">
-            이슈 정보
+      <ul className={styles.card}>
+        <li>
+          <button
+            type="button"
+            className={styles.row}
+            aria-haspopup="dialog"
+            aria-disabled={!canWrite}
+            onClick={edit(() => sheets.status.open())}
+          >
+            <span className={styles.term}>상태</span>{' '}
+            <span
+              className={styles.status}
+              style={{ '--status-color': boardStatusColorVar(issue.statusColor) } as CSSProperties}
+            >
+              <span className={styles.dot} aria-hidden />
+              {ISSUE_STATUS_LABELS[issue.status]}
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            className={styles.row}
+            aria-haspopup="dialog"
+            aria-disabled={!canWrite}
+            onClick={edit(() => sheets.labels.open())}
+          >
+            <span className={styles.term}>라벨</span>{' '}
+            <span className={styles.value}>
+              {issue.labels.length === 0
+                ? empty
+                : issue.labels.map((label, index) => (
+                    <span key={label.name} className={styles.item}>
+                      {index > 0 && sep}
+                      {label.name}
+                    </span>
+                  ))}
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            className={styles.row}
+            aria-haspopup="dialog"
+            aria-disabled={!canWrite}
+            onClick={edit(() => sheets.assignees.open())}
+          >
+            <span className={styles.term}>담당자</span>{' '}
+            <span className={styles.value}>
+              {issue.assignees.length === 0
+                ? empty
+                : issue.assignees.map((user, index) => (
+                    <span key={user.id} className={styles.item}>
+                      {index > 0 && sep}
+                      {user.name}
+                      {!user.inTeam && (
+                        <>
+                          {sep}
+                          <span>팀 밖 사용자</span>
+                        </>
+                      )}
+                    </span>
+                  ))}
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            className={styles.row}
+            aria-haspopup="dialog"
+            aria-disabled={!canWrite}
+            onClick={edit(() => sheets.schedule.open())}
+          >
+            <span className={styles.term}>시작일</span>{' '}
+            <span className={styles.value}>
+              {issue.startDate ? (
+                <time dateTime={issue.startDate}>{longDate(issue.startDate)}</time>
+              ) : (
+                empty
+              )}
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            className={styles.row}
+            aria-haspopup="dialog"
+            aria-disabled={!canWrite}
+            onClick={edit(() => sheets.schedule.open())}
+          >
+            <span className={styles.term}>마감일</span>{' '}
+            <span className={styles.value} data-overdue={overdue}>
+              {issue.dueDate ? (
+                <time dateTime={issue.dueDate}>{longDate(issue.dueDate)}</time>
+              ) : (
+                empty
+              )}
+            </span>
+          </button>
+        </li>
+      </ul>
+
+      <section aria-labelledby="issue-body" className={styles.section}>
+        <h3 id="issue-body" className={styles.sectionTitle}>
+          이슈 본문
+        </h3>
+        <div className={styles.body}>
+          <IssueMarkdown body={issue.body} onOpenLink={openExternal} />
+        </div>
+      </section>
+
+      {issue.subIssues.total > 0 && (
+        <section aria-labelledby="issue-sub" className={`${styles.section} ${styles.subSection}`}>
+          <h3 id="issue-sub" className={styles.sectionTitle}>
+            하위 이슈
+            <span className={styles.progress}>
+              {issue.subIssues.done}/{issue.subIssues.total} 완료
+            </span>
           </h3>
-          <dl className={styles.fields}>
-            <div className={styles.field}>
-              <dt className={styles.term}>상태</dt>
-              <dd className={styles.value}>
-                <IssueStatusBadge status={issue.status} statusColor={issue.statusColor} />
-                {issue.state === 'CLOSED' && <span className={styles.meta}>닫힌 이슈</span>}
-              </dd>
-              <dd className={styles.action}>
-                <Button {...editProps('상태 바꾸기', () => sheets.status.open())} />
-              </dd>
-            </div>
-
-            <div className={styles.field}>
-              <dt className={styles.term}>담당자</dt>
-              <dd className={styles.value}>
-                {issue.assignees.length === 0 ? (
-                  <span className={styles.meta}>담당자 없음</span>
-                ) : (
-                  <ul className={styles.people}>
-                    {issue.assignees.map((user) => (
-                      <li key={user.id} className={styles.person}>
-                        <Image
-                          src={user.avatarUrl}
-                          alt=""
-                          width={24}
-                          height={24}
-                          sizes="24px"
-                          className={styles.avatar}
-                        />
-                        {user.name}
-                        {!user.inTeam && <span className={styles.meta}>팀 밖 사용자</span>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </dd>
-              <dd className={styles.action}>
-                <Button {...editProps('담당자 변경', () => sheets.assignees.open())} />
-              </dd>
-            </div>
-
-            <div className={styles.field}>
-              <dt className={styles.term}>라벨</dt>
-              <dd className={styles.value}>
-                {issue.labels.length === 0 ? (
-                  <span className={styles.meta}>라벨 없음</span>
-                ) : (
-                  <ul className={styles.labels}>
-                    {issue.labels.map((label) => (
-                      <li key={label.name} className={styles.label}>
-                        {/* GitHub's label color is data, so it's inline; the name carries the meaning */}
-                        <span
-                          className={styles.swatch}
-                          style={{ backgroundColor: `#${label.color.replace(/^#/, '')}` }}
-                          aria-hidden
-                        />
-                        {label.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </dd>
-              <dd className={styles.action}>
-                <Button {...editProps('라벨 변경', () => sheets.labels.open())} />
-              </dd>
-            </div>
-
-            <div className={styles.field}>
-              <dt className={styles.term}>기간</dt>
-              <dd className={styles.value}>
-                {!issue.startDate && !issue.dueDate ? (
-                  <span className={styles.meta}>일정 없음</span>
-                ) : (
-                  <span className={issue.overdue ? styles.overdue : undefined}>
-                    {issue.startDate ? (
-                      <time dateTime={issue.startDate}>{formatDate(issue.startDate)}</time>
-                    ) : (
-                      '시작일 없음'
-                    )}
-                    {' ~ '}
-                    {issue.dueDate ? (
-                      <time dateTime={issue.dueDate}>{formatDate(issue.dueDate)}</time>
-                    ) : (
-                      '마감일 없음'
-                    )}
-                    {issue.overdue && ' · 마감 지남'}
-                  </span>
-                )}
-              </dd>
-              <dd className={styles.action}>
-                <Button {...editProps('일정 변경', () => sheets.schedule.open())} />
-              </dd>
-            </div>
-
-            {issue.subIssues.total > 0 && (
-              <div className={styles.field}>
-                <dt className={styles.term}>하위 이슈</dt>
-                <dd className={styles.value}>
-                  하위 {issue.subIssues.total}개 중 {issue.subIssues.done}개 완료
-                </dd>
-              </div>
-            )}
-          </dl>
+          <ul className={styles.subList}>
+            {subIssues.data?.items.map((sub) => (
+              <li key={sub.number} className={styles.sub}>
+                <article>
+                  <p className={styles.subTitle}>
+                    {sub.title}
+                    <span
+                      className={styles.dot}
+                      style={
+                        {
+                          '--status-color': boardStatusColorVar(
+                            sub.state === 'CLOSED' ? 'GREEN' : 'BLUE',
+                          ),
+                        } as CSSProperties
+                      }
+                      aria-hidden
+                    />
+                    <span className="sr-only">{sub.state === 'CLOSED' ? '완료' : '열림'}</span>
+                  </p>
+                  <p className={styles.subMeta}>
+                    <span>#{sub.number}</span>
+                    {sep}
+                    <span>{issue.repoName}</span>
+                  </p>
+                </article>
+              </li>
+            ))}
+          </ul>
         </section>
-
-        <section aria-labelledby="issue-body" className={styles.section}>
-          <h3 id="issue-body" className={styles.sectionTitle}>
-            내용
-          </h3>
-          {issue.body.trim() ? (
-            <IssueMarkdown body={issue.body} onOpenLink={openExternal} />
-          ) : (
-            <p className={styles.meta}>내용이 없어요.</p>
-          )}
-        </section>
-      </article>
+      )}
 
       <IssueStatusSheet value={issue.status} onSave={saveStatus} />
       <IssueAssigneeSheet
@@ -216,7 +243,7 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
         value={{ startDate: issue.startDate, dueDate: issue.dueDate }}
         onSave={saveSchedule}
       />
-    </>
+    </div>
   );
 }
 
