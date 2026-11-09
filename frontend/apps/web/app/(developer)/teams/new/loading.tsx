@@ -1,10 +1,10 @@
-import { PageFrame } from '@/components/layout/page-frame/PageFrame';
+import { TeamSetupFrame } from './_components/team-setup-frame/TeamSetupFrame';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 export default function Loading() {
   return (
-    <PageFrame title="팀 만들기" variant="stack" backHref="/workspace">
+    <TeamSetupFrame>
       <Skeleton variant="card" />
-    </PageFrame>
+    </TeamSetupFrame>
   );
 }

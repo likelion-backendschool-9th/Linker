@@ -35,19 +35,19 @@ test('workspace filters teams and reuses the team switcher without a navigation 
   await expect(page.getByRole('dialog')).toBeHidden();
 });
 
-test('team setup previews local fields and never offers a live installation or team submission', async ({
+test('team setup cannot skip installation or claim completion through step URLs', async ({
   page,
 }) => {
   await page.goto('/teams/new');
-  await expect(page.getByRole('button', { name: 'GitHub에서 설치하기' })).toBeDisabled();
-  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'GitHub로 시작하기' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await page.goto('/teams/new?step=2');
   await expect(page).toHaveURL(/step=2/);
-  await page.getByLabel('팀 이름', { exact: true }).fill('프론트 화면 검토팀');
-  await page.getByLabel('팀 소개', { exact: true }).fill('팀원과 같은 디자인으로 만들어요.');
-  await page.getByRole('button', { name: '5 확인' }).click();
-  await expect(page.getByText('프론트 화면 검토팀', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toBeDisabled();
-  await expect(page.getByText('아직 연결하지 않았어요', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '팀 정보를 입력해 주세요' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await page.goto('/teams/new?step=5');
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await expect(page.getByRole('heading', { name: '팀을 생성 하셨습니다!' })).toHaveCount(0);
 });
 
 test('settings expose preview sheets and keep member permissions separate', async ({ page }) => {
