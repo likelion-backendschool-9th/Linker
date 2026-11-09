@@ -12,6 +12,7 @@ import { TeamBoardSelection } from '../../../../_components/team-board-selection
 
 import type { Members, TeamSettings } from './api';
 import { TITLES, useTeamSettingsActionSheet } from './hook';
+import inviteStyles from './TeamSettingsActionSheet.module.css';
 
 export function TeamSettingsActionSheet({
   team,
@@ -42,6 +43,85 @@ export function TeamSettingsActionSheet({
         </Button>
       </OverlaySheet>
     );
+
+  /* Figma 368:1397 — team invite by Linker handle */
+  if (kind === 'invite') {
+    return (
+      <OverlaySheet
+        overlay={overlay}
+        title="팀 초대"
+        description="Linker 가입자를 팀으로 초대합니다."
+        describeHidden
+        classNames={{
+          sheet: inviteStyles.inviteSheet,
+          header: inviteStyles.inviteHeader,
+          title: inviteStyles.inviteTitle,
+          close: inviteStyles.inviteClose,
+          body: inviteStyles.inviteBody,
+        }}
+      >
+        <div className={inviteStyles.inviteStack}>
+          <div className={inviteStyles.inviteField}>
+            <label className="sr-only" htmlFor="team-invite-handle">
+              GitHub 로그인
+            </label>
+            <input
+              id="team-invite-handle"
+              className={inviteStyles.inviteInput}
+              type="text"
+              placeholder="@JUNHORANG"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className={inviteStyles.inviteHint}>팀 초대는 Linker 가입자를 팀으로 초대 합니다</p>
+          </div>
+          <button type="button" className={inviteStyles.inviteSubmit}>
+            초대
+          </button>
+        </div>
+      </OverlaySheet>
+    );
+  }
+
+  /* Figma 368:1544 — GitHub org invite (same chrome as team invite; title differs) */
+  if (kind === 'github') {
+    return (
+      <OverlaySheet
+        overlay={overlay}
+        title="GitHub 조직 초대"
+        description="GitHub 조직으로 사용자 초대를 보냅니다."
+        describeHidden
+        classNames={{
+          sheet: inviteStyles.inviteSheet,
+          header: inviteStyles.inviteHeader,
+          title: inviteStyles.inviteTitle,
+          close: inviteStyles.inviteClose,
+          body: inviteStyles.inviteBody,
+        }}
+      >
+        <div className={inviteStyles.inviteStack}>
+          <div className={inviteStyles.inviteField}>
+            <label className="sr-only" htmlFor="github-org-invite-handle">
+              GitHub 로그인
+            </label>
+            <input
+              id="github-org-invite-handle"
+              className={inviteStyles.inviteInput}
+              type="text"
+              placeholder="@JUNHORANG"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className={inviteStyles.inviteHint}>팀 초대는 Linker 가입자를 팀으로 초대 합니다</p>
+          </div>
+          <button type="button" className={inviteStyles.inviteSubmit}>
+            초대
+          </button>
+        </div>
+      </OverlaySheet>
+    );
+  }
+
   return (
     <OverlaySheet
       overlay={overlay}
@@ -64,12 +144,6 @@ export function TeamSettingsActionSheet({
               />
             </div>
           </>
-        )}
-        {kind === 'invite' && (
-          <p>
-            초대 링크는 {TEAM.inviteValidDays}일 동안 사용할 수 있어요. 링크를 받은 개발자는 팀에
-            참여하고 팀 채팅을 이용할 수 있어요.
-          </p>
         )}
         {kind === 'revoke' && (
           <p>이 링크로는 더 이상 팀에 참여할 수 없어요. 이미 참여한 멤버는 팀에 남아 있어요.</p>
@@ -297,9 +371,7 @@ export function TeamSettingsActionSheet({
                             ? '프로젝트 완료'
                             : kind === 'transfer'
                               ? '이전 요청 보내기'
-                              : kind === 'invite'
-                                ? '초대 링크 만들기'
-                                : '저장'}
+                              : '저장'}
             </Button>
           )}
         </div>
