@@ -121,7 +121,7 @@ test('operator refund remains disabled until a reason can be recorded by the ser
   await page.getByRole('tab', { name: '결제 정보' }).click();
   await page.getByRole('button', { name: '환불 · 결제 1' }).click();
   const sheet = page.getByRole('dialog', { name: '결제를 환불할까요?' });
-  await expect(sheet.getByRole('status')).toContainText('환불 사유 기록 계약 확인이 필요해요.');
+  await expect(sheet.getByRole('status')).toContainText('현재 환불을 처리할 수 없어요.');
   await expect(sheet.getByRole('button', { name: '환불 실행' })).toBeDisabled();
 });
 

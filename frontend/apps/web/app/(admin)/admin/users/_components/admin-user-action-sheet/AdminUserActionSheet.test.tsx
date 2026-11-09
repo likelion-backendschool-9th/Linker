@@ -115,7 +115,7 @@ it('rejects lift for a non-lead without a request', async () => {
 it('keeps refunds disabled until the operator reason contract is available', async () => {
   renderAction(user, 'refund:7:10');
   expect(await screen.findByRole('status')).toHaveTextContent(
-    '환불 사유 기록 계약 확인이 필요해요.',
+    '현재 환불을 처리할 수 없어요.',
   );
   expect(screen.getByRole('button', { name: '환불 실행' })).toBeDisabled();
   expect(vi.mocked(apiFetch).mock.calls.every(([, init]) => !init?.method)).toBe(true);

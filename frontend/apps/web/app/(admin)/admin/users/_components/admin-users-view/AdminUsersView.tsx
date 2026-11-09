@@ -69,7 +69,7 @@ export function AdminUsersView() {
               disabled={value === 'REVIEW' && !reviewSupported}
               title={
                 value === 'REVIEW' && !reviewSupported
-                  ? '확인 필요 판정·해제 기준 합의 후 제공됩니다.'
+                  ? '검토 목록은 아직 제공되지 않아요.'
                   : undefined
               }
               onClick={() =>

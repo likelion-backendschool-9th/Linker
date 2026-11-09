@@ -96,7 +96,7 @@ test('26 detail tabs include sanctions, reports and the server subscription/paym
   await page.getByRole('button', { name: '환불 · 결제 1' }).click();
   const refund = page.getByRole('dialog', { name: '결제를 환불할까요?' });
   await expect(refund.getByRole('button', { name: '환불 실행' })).toBeDisabled();
-  await expect(refund.getByRole('status')).toContainText('환불 사유 기록 계약 확인이 필요해요.');
+  await expect(refund.getByRole('status')).toContainText('현재 환불을 처리할 수 없어요.');
 });
 test('26 submits a sanction only after confirmation and refreshes the selected history', async ({
   page,

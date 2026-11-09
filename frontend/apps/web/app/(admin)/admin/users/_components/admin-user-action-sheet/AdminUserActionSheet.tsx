@@ -154,7 +154,7 @@ function AdminActionForm(props: {
             결제 후 {SUBSCRIPTION_RULES.refundWithinDays}일 이내이며 혜택을 사용하지 않은 경우 전액
             환불해요. 최종 환불 가능 여부는 서버에서 확인해요.
           </p>
-          <p role="status">환불 사유 기록 계약 확인이 필요해요.</p>
+          <p role="status">현재 환불을 처리할 수 없어요.</p>
         </>
       )}
       {(kind === 'email' || kind === 'sanction') && (
