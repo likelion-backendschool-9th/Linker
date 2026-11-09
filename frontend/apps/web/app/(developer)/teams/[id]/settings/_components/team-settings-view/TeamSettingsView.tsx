@@ -15,7 +15,7 @@ import styles from './TeamSettingsView.module.css';
 
 /**
  * Team settings body.
- * Base: Figma 368:387. Owner deltas: Figma 368:1563 (member chevrons, red repo remove).
+ * Base: Figma 368:387. Owner deltas: Figma 368:1563 (member chevrons, red repo remove, 팀 삭제).
  * "팀 나가기" is an explicit extra for non-owners (not on frame 9).
  */
 export function TeamSettingsView({ teamId }: { teamId: string }) {
@@ -147,7 +147,13 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
         </ul>
       </section>
 
-      {!isOwnerView && (
+      {isOwnerView ? (
+        <div className={styles.deleteWrap}>
+          <button type="button" className={styles.delete} onClick={() => action.open('delete')}>
+            팀 삭제
+          </button>
+        </div>
+      ) : (
         <div className={styles.leaveWrap}>
           <button type="button" className={styles.leave} onClick={() => action.open('leave')}>
             팀 나가기

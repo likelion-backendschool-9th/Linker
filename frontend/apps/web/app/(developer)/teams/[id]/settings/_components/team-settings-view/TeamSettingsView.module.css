@@ -313,6 +313,26 @@
   background-color: var(--color-on-primary);
 }
 
+/* Figma 695:1525 on 9-오너 view 368:1563 — 343×45, radius 12, fill #E000001A */
+.deleteWrap {
+  display: grid;
+  justify-items: stretch;
+  padding: 20px var(--page-gutter) 0;
+}
+
+.delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 45px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-chat-danger);
+  background-color: var(--color-team-delete-fill);
+  border-radius: var(--radius-control-lg);
+}
+
 /* Arbitrary leave CTA — style from Figma 352:743 (page 17), not on frame 9 */
 .leaveWrap {
   display: grid;
