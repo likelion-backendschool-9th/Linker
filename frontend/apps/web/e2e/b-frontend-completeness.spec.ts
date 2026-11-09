@@ -109,25 +109,20 @@ test('recipient ownership acceptance and finalized completion are separate scree
   ).toBeDisabled();
 });
 
-test('operator refund form validates reasons and never refunds or reveals email', async ({
+test('operator refund remains disabled until a reason can be recorded by the server', async ({
   page,
 }) => {
   await role(page, 'operator');
   await page.goto('/admin/users');
+  await page.getByLabel('인증 코드', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: '인증', exact: true }).click();
   await page.getByRole('button', { name: /한서준/ }).click();
-  await expect(page.getByRole('button', { name: '제재 해제 · 리드 운영자' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '제재 해제', exact: true })).toBeDisabled();
+  await page.getByRole('tab', { name: '결제 정보' }).click();
   await page.getByRole('button', { name: '환불 · 결제 1' }).click();
   const sheet = page.getByRole('dialog', { name: '결제를 환불할까요?' });
-  await expect(sheet).toBeVisible();
-  await sheet.getByRole('button', { name: '입력 내용 확인' }).click();
-  await expect(sheet.getByText('사유를 입력해 주세요', { exact: true })).toBeVisible();
-  await expect(sheet.getByLabel('환불 사유 (필수)')).toBeFocused();
-  await sheet.getByLabel('환불 사유 (필수)').fill('입력 화면 검토');
-  await sheet.getByLabel('대상 결제와 환불 금액을 확인했어요').check();
-  await sheet.getByRole('button', { name: '입력 내용 확인' }).click();
-  await expect(sheet.getByRole('status')).toContainText('조치는 실행되지 않았어요');
+  await expect(sheet.getByRole('status')).toContainText('환불 사유 기록 계약 확인이 필요해요.');
   await expect(sheet.getByRole('button', { name: '환불 실행' })).toBeDisabled();
-  await expect(page.locator('body')).not.toContainText('seojun-han@example.com');
 });
 
 test('stats open a featured selection sheet without changing the profile', async ({ page }) => {
@@ -165,7 +160,10 @@ test('added callback, board and operator refund screens keep the shared responsi
     expect(await page.evaluate((w) => document.documentElement.scrollWidth <= w, width)).toBe(true);
     await role(page, 'operator');
     await page.goto('/admin/users');
+    await page.getByLabel('인증 코드', { exact: true }).fill('123456');
+    await page.getByRole('button', { name: '인증', exact: true }).click();
     await page.getByRole('button', { name: /한서준/ }).click();
+    await page.getByRole('tab', { name: '결제 정보' }).click();
     await page.getByRole('button', { name: '환불 · 결제 1' }).click();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(await page.evaluate((w) => document.documentElement.scrollWidth <= w, width)).toBe(true);
