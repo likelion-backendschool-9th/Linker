@@ -1,6 +1,6 @@
 import { buildMetadata } from '@/lib/seo/metadata';
 
-import { AdminUsersView } from './_components/admin-users-view/AdminUsersView';
+import { AdminUsersAccess } from './_components/admin-users-access/AdminUsersAccess';
 
 export const metadata = {
   ...buildMetadata({ title: '운영 · 회원 관리', path: '/admin/users' }),
@@ -8,5 +8,5 @@ export const metadata = {
 };
 
 export default function AdminUsersPage() {
-  return <AdminUsersView />;
+  return <AdminUsersAccess />;
 }

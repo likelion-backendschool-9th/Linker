@@ -1,1 +1,73 @@
-/* Styles for AdminUserActionSheet */
+.form {
+  display: grid;
+  gap: var(--space-md);
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-body);
+}
+.target {
+  font-weight: var(--font-weight-semibold);
+}
+.field {
+  display: grid;
+  gap: var(--space-xs);
+}
+.field label {
+  font-weight: var(--font-weight-medium);
+}
+.field select,
+.field textarea {
+  width: 100%;
+  padding: var(--space-sm);
+  min-height: var(--touch-target-min);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+  background: var(--color-canvas);
+  font-size: var(--font-size-body);
+}
+.field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.consent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+}
+.consent input {
+  width: var(--radio-size);
+  height: var(--radio-size);
+  accent-color: var(--color-primary);
+}
+.error {
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+}
+.email {
+  padding: var(--space-sm);
+  background: var(--color-canvas-cool);
+  border-radius: var(--radius-xs);
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}
+.outline,
+.primary {
+  min-height: var(--touch-target-min);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+  font-weight: var(--font-weight-semibold);
+}
+.primary {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+.primary:disabled {
+  background: var(--color-canvas-cool);
+  color: var(--color-text-slate);
+  cursor: not-allowed;
+}
