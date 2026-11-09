@@ -2,15 +2,34 @@
 
 import { Toast } from 'radix-ui';
 
-import { useToastStore } from '@/stores/toast-store';
+import { useToastStore, type ToastItem } from '@/stores/toast-store';
 
 import styles from './Toaster.module.css';
 
 const DURATION_MS = 4000;
 
-/** Renders `toast()` calls. Mounted once in providers. */
+/** Renders `toast()` calls. Mounted once in providers: one region per placement, since a Radix
+ *  provider owns a single viewport. */
 export function Toaster() {
   const toasts = useToastStore((state) => state.toasts);
+  const top = toasts.filter((item) => item.placement === 'top');
+  const bottom = toasts.filter((item) => item.placement !== 'top');
+
+  return (
+    <>
+      <ToastRegion toasts={bottom} placement="bottom" />
+      <ToastRegion toasts={top} placement="top" />
+    </>
+  );
+}
+
+function ToastRegion({
+  toasts,
+  placement,
+}: {
+  toasts: ToastItem[];
+  placement: 'top' | 'bottom';
+}) {
   const dismiss = useToastStore((state) => state.dismiss);
 
   return (
@@ -34,7 +53,11 @@ export function Toaster() {
           )}
         </Toast.Root>
       ))}
-      <Toast.Viewport className={styles.viewport} />
+      <Toast.Viewport
+        className={[styles.viewport, placement === 'top' && styles.viewportTop]
+          .filter(Boolean)
+          .join(' ')}
+      />
     </Toast.Provider>
   );
 }

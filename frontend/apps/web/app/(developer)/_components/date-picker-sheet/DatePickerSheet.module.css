@@ -1,4 +1,4 @@
-/* 22 period sheet (Figma 368:3896) — year / month / day wheels + 저장 */
+/* Shared date wheel sheet (Figma 368:3896): year / month / day wheels + 저장. Used by 20 and 22 */
 
 .scrim.scrim {
   background-color: var(--color-scrim-team-picker);
@@ -26,7 +26,7 @@
   width: 100%;
   height: calc(var(--wheel-row-height) * 3);
   /* Figma: title row → wheels 5px; OverlaySheet body already adds --space-lg */
-  margin: calc(5px - var(--space-lg)) 0 var(--space-calendar-date-cta);
+  margin: calc(var(--space-row-inline) - var(--space-lg)) 0 var(--space-calendar-date-cta);
 }
 
 .band {

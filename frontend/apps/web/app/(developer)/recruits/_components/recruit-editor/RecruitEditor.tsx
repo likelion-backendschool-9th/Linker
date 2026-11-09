@@ -1,17 +1,18 @@
 'use client';
 
 // Client boundary: the 20 form (react-hook-form + zod), device draft, limit notice, save
-import { Check, Plus, X } from 'lucide-react';
-import Link from 'next/link';
+import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
+import { CloseBoldIcon } from '@solar-icons/static/bold/close';
+import { useLayoutEffect, useRef } from 'react';
 
-import { Button } from '@/components/ui/button/Button';
 import { CharCounter } from '@/components/ui/char-counter/CharCounter';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
+import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { DraftRestoreSheet } from '@/features/draft-restore/draft-restore-sheet/DraftRestoreSheet';
 import {
-  RECRUIT_FORMAT_LABELS,
   RECRUIT_FORMATS,
+  RECRUIT_FORMAT_LABELS,
   RECRUIT_GOAL_LABELS,
   RECRUIT_GOALS,
 } from '@/features/recruit/recruit-labels';
@@ -19,6 +20,9 @@ import { TechTagSheet } from '@/features/tech-tags/tech-tag-sheet/TechTagSheet';
 import { countChars } from '@/lib/format/text';
 import { RECRUIT } from '@/lib/policy';
 
+import { DatePickerSheet } from '../../../_components/date-picker-sheet';
+
+import { Dropdown } from './dropdown/Dropdown';
 import { RecruitStatusSection } from './recruit-status-section';
 import styles from './RecruitEditor.module.css';
 import { RoleFields } from './role-fields';
@@ -28,7 +32,13 @@ import {
   type RecruitEditorProps,
 } from './hook';
 
-/** 20 Write / edit recruit post (07 TODO 20): one form for `/recruits/new` and `/recruits/[id]/edit` */
+/** "2026년 11월 26일" for the deadline dropdown trigger; `date` is a plain `yyyy-MM-dd` calendar value */
+function formatDeadlineLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${y}년 ${m}월 ${d}일`;
+}
+
+/** 20 Write / edit recruit post (07 TODO 20): one form for `/recruits/new` and `/recruits/[id]/edit`. Figma 257:2512 */
 export function RecruitEditor(props: RecruitEditorProps) {
   const { options, editForm } = useRecruitEditor(props);
 
@@ -55,12 +65,8 @@ function EditorForm(
 ) {
   const {
     field,
-    errorId,
-    describe,
     creating,
     recruitId,
-    atLimit,
-    failure,
     form,
     errors,
     watched,
@@ -68,6 +74,7 @@ function EditorForm(
     techTags,
     today,
     tagSheet,
+    deadlineSheet,
     save,
     submit,
     removeTechTag,
@@ -79,277 +86,279 @@ function EditorForm(
     options,
   } = useRecruitEditorForm(props);
 
-  const required = (
+  // Figma shows a red dot for required fields and no marker at all for optional ones; the
+  // sr-only text keeps both states announced to screen readers without relying on color alone.
+  const requiredDot = (
     <>
-      {' '}
-      <span aria-hidden>*</span>
-      <span className="sr-only">(필수)</span>
+      <span aria-hidden className={styles.requiredDot} />
+      <span className={styles.optional}>(필수)</span>
     </>
+  );
+  const optionalHint = <span className={styles.optional}>(선택 항목)</span>;
+
+  // Figma 257:2580's disabled look gates on the required fields being filled in, same as the
+  // zod schema's own requirements; still clickable while "empty" so handleSubmit's errors show
+  // where exactly to fix something, rather than leaving a disabled button with no explanation.
+  // 프로젝트 소개 grows with its text instead of scrolling (CSS keeps the 120px minimum)
+  const introField = form.register('intro');
+  const introRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const element = introRef.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  }, [watched.intro]);
+
+  const canSubmit = Boolean(
+    watched.title?.trim() &&
+      watched.intro?.trim() &&
+      (watched.roles?.length ?? 0) > 0 &&
+      watched.deadline &&
+      watched.teamId &&
+      (watched.format !== 'OFFLINE' || watched.region?.trim()),
   );
 
   return (
     <div className={styles.editor}>
-      {creating && (
-        <div className={atLimit ? styles.limitFull : styles.limit} role="status">
-          <p>
-            모집 중인 글 {options.openCount}/{options.openLimit}개
-          </p>
-          {atLimit && (
-            <p className={styles.limitText}>
-              지금은 새 글을 올릴 수 없어요. 모집 중인 글을 마감하면 다시 쓸 수 있어요.{' '}
-              <Link href="/recruits?tab=mine" className={styles.inlineLink}>
-                내 모집 글 보기
-              </Link>
-            </p>
-          )}
-        </div>
-      )}
-
       <form className={styles.form} noValidate aria-busy={save.isPending} onSubmit={submit}>
-        <section aria-labelledby={field('basic')} className={styles.section}>
-          <h2 id={field('basic')} className={styles.sectionTitle}>
-            기본 정보
-          </h2>
-          <div className={styles.field}>
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
             <label htmlFor={field('title')} className={styles.label}>
-              제목{required}
+              프로젝트 제목
             </label>
-            <input
-              id={field('title')}
-              className={styles.input}
-              placeholder="예: 해커톤 같이 나갈 백엔드 개발자 모집"
-              aria-invalid={errors.title ? true : undefined}
-              aria-describedby={describe(field('title-count'), errors.title && errorId('title'))}
-              {...form.register('title')}
-            />
-            <div className={styles.fieldFoot}>
-              {errors.title && (
-                <p id={errorId('title')} className={styles.error}>
-                  {errors.title.message}
-                </p>
-              )}
-              <CharCounter
-                id={field('title-count')}
-                count={countChars(watched.title ?? '')}
-                max={RECRUIT.titleMax}
-              />
-            </div>
+            <span className={styles.labelHint}>최대 {RECRUIT.titleMax}자</span>
+            {requiredDot}
           </div>
-          <div className={styles.field}>
+          <input
+            id={field('title')}
+            className={styles.input}
+            placeholder="프로젝트 제목을 작성해 주세요."
+            aria-invalid={errors.title ? true : undefined}
+            {...form.register('title')}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
             <label htmlFor={field('intro')} className={styles.label}>
-              소개{required}
+              프로젝트 소개
             </label>
+            <span className={styles.labelHint}>최대 {RECRUIT.introMax.toLocaleString('ko-KR')}자</span>
+            {requiredDot}
+          </div>
+          <div className={styles.introField}>
             <textarea
               id={field('intro')}
               className={styles.textarea}
-              rows={8}
-              placeholder="어떤 프로젝트인지, 어떻게 진행하는지, 어떤 분과 함께하고 싶은지 적어 주세요."
+              rows={1}
+              placeholder="프로젝트에 관해 간단하게 글을 작성해 주세요"
               aria-invalid={errors.intro ? true : undefined}
-              aria-describedby={describe(field('intro-count'), errors.intro && errorId('intro'))}
-              {...form.register('intro')}
+              aria-describedby={field('intro-count')}
+              {...introField}
+              ref={(element) => {
+                introField.ref(element);
+                introRef.current = element;
+              }}
             />
-            <div className={styles.fieldFoot}>
-              {errors.intro && (
-                <p id={errorId('intro')} className={styles.error}>
-                  {errors.intro.message}
-                </p>
-              )}
-              <CharCounter
-                id={field('intro-count')}
-                count={countChars(watched.intro ?? '')}
-                max={RECRUIT.introMax}
-              />
-            </div>
+            <CharCounter
+              id={field('intro-count')}
+              count={countChars(watched.intro ?? '')}
+              max={RECRUIT.introMax}
+              className={styles.introCounter}
+            />
           </div>
-        </section>
+        </div>
+
+        {/* Figma 600:715: a post must link a team I own or admin (POL-R-1) — invites on 21 add
+            people to it — so the notice stays under the field even when a team is chosen */}
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
+            <span id={field('team-select')} className={styles.label}>
+              팀 선택
+            </span>
+            {requiredDot}
+          </div>
+          <Dropdown
+            aria-labelledby={field('team-select')}
+            aria-describedby={field('team-notice')}
+            invalid={Boolean(errors.teamId)}
+            value={watched.teamId ?? ''}
+            placeholder={options.teams.length === 0 ? '연결할 수 있는 팀이 없어요' : '팀을 선택해 주세요'}
+            disabled={options.teams.length === 0}
+            options={options.teams.map((team) => ({ value: String(team.id), label: team.name }))}
+            onChange={(next) =>
+              form.setValue('teamId', next, {
+                shouldDirty: true,
+                shouldValidate: form.formState.isSubmitted,
+              })
+            }
+          />
+          <p id={field('team-notice')} className={styles.notice}>
+            <span aria-hidden className={styles.noticeDot} />
+            팀이 없으면 모집글을 작성할 수 없습니다.
+          </p>
+        </div>
 
         <RoleFields
           form={form}
           idPrefix={field('roles')}
           lockedRoleIds={editForm?.lockedRoleIds ?? []}
           minHeadcountByRole={editForm?.minHeadcountByRole ?? {}}
+          requiredDot={requiredDot}
         />
 
-        <section aria-labelledby={field('how')} className={styles.section}>
-          <h2 id={field('how')} className={styles.sectionTitle}>
-            진행 방식
-          </h2>
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.label}>방식{required}</legend>
-            <div className={styles.chips}>
-              {RECRUIT_FORMATS.map((item) => (
-                <label key={item} className={styles.chip}>
-                  <input
-                    type="radio"
-                    value={item}
-                    className={styles.radio}
-                    {...form.register('format')}
-                  />
-                  {format === item && <Check aria-hidden className={styles.chipIcon} />}
-                  {RECRUIT_FORMAT_LABELS[item]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+        <fieldset className={styles.fieldset}>
+          <legend className={styles.labelRow}>
+            <span className={styles.label}>진행 방식</span>
+            {requiredDot}
+          </legend>
+          <div className={styles.chips}>
+            {RECRUIT_FORMATS.map((item) => (
+              <label key={item} className={styles.chip}>
+                <input
+                  type="radio"
+                  value={item}
+                  className={styles.radio}
+                  {...form.register('format')}
+                />
+                {RECRUIT_FORMAT_LABELS[item]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
-          {format !== 'ONLINE' && (
-            <div className={styles.field}>
+        {format !== 'ONLINE' && (
+          <div className={styles.field}>
+            <div className={styles.labelRow}>
               <label htmlFor={field('region')} className={styles.label}>
                 지역
-                {format === 'OFFLINE' ? required : <span className={styles.optional}> (선택)</span>}
               </label>
-              <input
-                id={field('region')}
-                className={styles.input}
-                placeholder="예: 서울 강남"
-                aria-invalid={errors.region ? true : undefined}
-                aria-describedby={errors.region ? errorId('region') : undefined}
-                {...form.register('region')}
-              />
-              {errors.region && (
-                <p id={errorId('region')} className={styles.error}>
-                  {errors.region.message}
-                </p>
-              )}
+              {format === 'OFFLINE' ? requiredDot : optionalHint}
             </div>
-          )}
-
-          <div className={styles.field}>
-            <label htmlFor={field('deadline')} className={styles.label}>
-              모집 마감일{required}
-            </label>
             <input
-              id={field('deadline')}
-              type="date"
+              id={field('region')}
               className={styles.input}
-              min={today}
-              max={options.maxDeadlineDate}
-              aria-invalid={errors.deadline ? true : undefined}
-              aria-describedby={describe(
-                field('deadline-hint'),
-                errors.deadline && errorId('deadline'),
-              )}
-              {...form.register('deadline')}
+              placeholder="예: 서울 강남"
+              aria-invalid={errors.region ? true : undefined}
+              {...form.register('region')}
             />
-            <p id={field('deadline-hint')} className={styles.hint}>
-              오늘부터 {RECRUIT.deadlineWithinDays}일 안으로 고를 수 있어요. 마감일이 지나거나
-              인원이 다 차면 자동으로 마감돼요.
-            </p>
-            {errors.deadline && (
-              <p id={errorId('deadline')} className={styles.error}>
-                {errors.deadline.message}
-              </p>
-            )}
           </div>
+        )}
 
-          <div className={styles.field}>
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
+            <span id={field('deadline')} className={styles.label}>
+              공고 마감일
+            </span>
+            {requiredDot}
+          </div>
+          <button
+            type="button"
+            aria-labelledby={field('deadline')}
+            className={
+              errors.deadline ? `${styles.dropdownTrigger} ${styles.invalid}` : styles.dropdownTrigger
+            }
+            onClick={() => deadlineSheet.open()}
+          >
+            <span className={watched.deadline ? undefined : styles.dropdownPlaceholder}>
+              {watched.deadline ? formatDeadlineLabel(watched.deadline) : '마감일을 설정해 주세요'}
+            </span>
+            <Icon svg={AltArrowDownLinearIcon} className={styles.dropdownChevron} />
+          </button>
+          <DatePickerSheet
+            overlay={deadlineSheet}
+            title="마감일"
+            description="마감일을 고르고 저장을 누르면 반영돼요."
+            value={watched.deadline ?? ''}
+            min={today}
+            max={options.maxDeadlineDate}
+            onSave={(iso) =>
+              form.setValue('deadline', iso, {
+                shouldDirty: true,
+                shouldValidate: form.formState.isSubmitted,
+              })
+            }
+          />
+        </div>
+
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
             <label htmlFor={field('duration')} className={styles.label}>
-              예상 기간<span className={styles.optional}> (선택)</span>
+              예상 기간
             </label>
-            <input
-              id={field('duration')}
-              className={styles.input}
-              placeholder="예: 2주, 3개월"
-              {...form.register('duration')}
-            />
+            {optionalHint}
           </div>
+          <input
+            id={field('duration')}
+            className={styles.input}
+            placeholder="예: 2주, 3개월"
+            {...form.register('duration')}
+          />
+        </div>
 
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.label}>
-              목표<span className={styles.optional}> (선택)</span>
-            </legend>
-            <div className={styles.chips}>
-              {(['', ...RECRUIT_GOALS] as const).map((item) => (
-                <label key={item || 'none'} className={styles.chip}>
-                  <input
-                    type="radio"
-                    value={item}
-                    className={styles.radio}
-                    {...form.register('goal')}
-                  />
-                  {(watched.goal ?? '') === item && (
-                    <Check aria-hidden className={styles.chipIcon} />
-                  )}
-                  {item ? RECRUIT_GOAL_LABELS[item] : '정하지 않음'}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </section>
-
-        <section aria-labelledby={field('tags')} className={styles.section}>
-          <div className={styles.sectionHead}>
-            <h2 id={field('tags')} className={styles.sectionTitle}>
-              기술 스택<span className={styles.optional}> (선택)</span>
-            </h2>
-            <Button variant="soft" onClick={() => tagSheet.open()}>
-              <Plus aria-hidden />
-              {techTags.length > 0 ? '바꾸기' : '고르기'}
-            </Button>
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
+            <span id={field('goal')} className={styles.label}>
+              프로젝트 목적
+            </span>
+            {optionalHint}
           </div>
-          {techTags.length === 0 ? (
-            <p className={styles.hint}>
-              최대 {RECRUIT.techTagsMax}개까지 고를 수 있어요. 목록 필터에 쓰여요.
-            </p>
-          ) : (
+          <Dropdown
+            aria-labelledby={field('goal')}
+            value={watched.goal ?? ''}
+            placeholder="프로젝트 목적을 선택해 주세요"
+            options={RECRUIT_GOALS.map((item) => ({ value: item, label: RECRUIT_GOAL_LABELS[item] }))}
+            onChange={(next) =>
+              form.setValue('goal', next as (typeof RECRUIT_GOALS)[number] | '', {
+                shouldDirty: true,
+              })
+            }
+          />
+        </div>
+
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
+            <span id={field('tags')} className={styles.label}>
+              기술 스택
+            </span>
+            {optionalHint}
+          </div>
+          <button
+            type="button"
+            aria-labelledby={field('tags')}
+            className={styles.dropdownTrigger}
+            onClick={() => tagSheet.open()}
+          >
+            {/* Always the placeholder: what's chosen shows only as the chips below */}
+            <span className={styles.dropdownPlaceholder}>기술 스택을 선택해 주세요</span>
+            <Icon svg={AltArrowDownLinearIcon} className={styles.dropdownChevron} />
+          </button>
+          {techTags.length > 0 && (
             <ul className={styles.tags} aria-label="고른 기술 스택">
               {techTags.map((tag) => (
                 <li key={tag}>
                   <button type="button" className={styles.tag} onClick={() => removeTechTag(tag)}>
                     <span aria-hidden>{tag}</span>
-                    <X aria-hidden className={styles.chipIcon} />
+                    <Icon svg={CloseBoldIcon} className={styles.tagIcon} />
                     <span className="sr-only">{tag} 빼기</span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
-        </section>
-
-        <section aria-labelledby={field('team')} className={styles.section}>
-          <h2 id={field('team')} className={styles.sectionTitle}>
-            팀 연결<span className={styles.optional}> (선택)</span>
-          </h2>
-          <div className={styles.field}>
-            <label htmlFor={field('team-select')} className={styles.label}>
-              연결할 팀
-            </label>
-            <select
-              id={field('team-select')}
-              className={styles.input}
-              aria-describedby={field('team-hint')}
-              {...form.register('teamId')}
-            >
-              <option value="">팀 없이 쓰기</option>
-              {options.teams.map((team) => (
-                <option key={team.id} value={String(team.id)}>
-                  {team.name}
-                </option>
-              ))}
-            </select>
-            <p id={field('team-hint')} className={styles.hint}>
-              {options.teams.length === 0
-                ? '연결할 수 있는 팀이 없어요. 오너나 관리자인 팀만 연결할 수 있어요. '
-                : '오너나 관리자인 팀만 연결할 수 있어요. '}
-              팀 없이도 쓸 수 있고, 첫 지원자를 수락할 때 팀을 만들면 돼요.
-            </p>
-          </div>
-        </section>
-
-        {failure && (
-          <div className={styles.failure} role="alert">
-            <p>{failure}</p>
-            <Button variant="outline" onClick={() => void submit()}>
-              다시 보내기
-            </Button>
-          </div>
-        )}
+        </div>
 
         <div className={styles.submitBar}>
-          {/* Stays pressable at the cap: the server's PLAN_LIMIT reopens the limit sheet */}
-          <Button type="submit" block aria-disabled={save.isPending}>
-            {save.isPending ? '저장하는 중…' : creating ? '모집 글 올리기' : '수정 완료'}
-          </Button>
+          {/* Stays clickable even when "disabled" (Figma 600:729 look): at the cap, the
+              server's PLAN_LIMIT reopens the limit sheet, and while required fields are empty
+              submitting still runs validation and points at what's missing. */}
+          <button
+            type="submit"
+            className={styles.submitButton}
+            aria-disabled={save.isPending || !canSubmit}
+          >
+            {save.isPending ? '저장하는 중…' : creating ? '모집 글 작성' : '수정 완료'}
+          </button>
         </div>
       </form>
 
@@ -361,7 +370,12 @@ function EditorForm(
         />
       )}
 
-      <TechTagSheet value={techTags} max={RECRUIT.techTagsMax} onSave={saveTechTags} />
+      <TechTagSheet
+        value={techTags}
+        max={RECRUIT.techTagsMax}
+        onSave={saveTechTags}
+        variant="filled"
+      />
       <DraftRestoreSheet onRestore={restoreDraft} onDiscard={discardDraft} />
     </div>
   );
