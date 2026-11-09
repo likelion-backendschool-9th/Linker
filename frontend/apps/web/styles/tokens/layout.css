@@ -271,4 +271,10 @@
   --issue-body-min-height: 120px; /* 12 body box */
   --space-issue-body-block: 17px; /* 12 body box top padding (text starts 17px down, 15px in) */
   --task-size-issue-body: 14px; /* 12 body task-list mark, about the text height */
+
+  /* Figma 16 chat list (247:1019, 321:2336, 321:2417) */
+  --space-chat-list-top: 15px; /* tabs to the first room */
+  --chat-list-avatar-size: 50px; /* room photo */
+  --chat-list-badge-size: 18px; /* unread count circle */
+  --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
 }
