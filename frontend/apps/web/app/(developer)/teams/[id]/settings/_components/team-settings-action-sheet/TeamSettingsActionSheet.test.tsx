@@ -44,6 +44,7 @@ const team: TeamSettings = {
 const member: Members['items'][number] = {
   user: { id: 2, login: 'other-admin', name: '다른 관리자', avatarUrl: '' },
   role: 'ADMIN',
+  jobLabel: 'BE',
   joinedAt: '2026-10-01',
   inGithubOrg: true,
   githubOrgStatus: 'MEMBER',

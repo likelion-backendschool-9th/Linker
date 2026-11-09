@@ -1,1 +1,96 @@
-/* Styles for TeamSettingsActionSheet */
+/* Figma 368:1397 "9-팀 초대" / 368:1544 "9-github 조직 초대" — shared sheet chrome */
+
+.inviteSheet {
+  padding: 0 var(--page-gutter) calc(15px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+}
+
+.inviteHeader {
+  align-items: center;
+  padding: 15px 10px;
+}
+
+.inviteTitle {
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  color: var(--color-text-sheet-title);
+}
+
+/* Figma close frame is 24×24; Lucide X uses the full viewBox so draw at 24px (12px path was too small) */
+.inviteClose {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: 0;
+  color: var(--color-text-wheel);
+}
+
+.inviteClose > svg {
+  width: 24px;
+  height: 24px;
+}
+
+.inviteBody {
+  margin-top: 5px;
+}
+
+.inviteStack {
+  display: grid;
+  gap: var(--space-sheet-action);
+}
+
+.inviteField {
+  display: grid;
+  gap: 5px;
+}
+
+.inviteInput {
+  width: 100%;
+  height: 48px;
+  padding: 0 15px;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  background-color: var(--color-radio-surface);
+  border: 2px solid var(--color-cta-cool);
+  border-radius: var(--radius-control-md);
+  outline: none;
+}
+
+.inviteInput::placeholder {
+  color: var(--color-text-slate);
+}
+
+.inviteHint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-row-inline);
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: 20px;
+  color: var(--color-text-muted-cool);
+}
+
+.inviteHint::before {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  margin-top: 8px;
+  content: '';
+  background-color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+.inviteSubmit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--control-height-sheet);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+  border-radius: var(--radius-control-md);
+}

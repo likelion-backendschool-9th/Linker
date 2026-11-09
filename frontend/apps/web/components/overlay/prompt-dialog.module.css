@@ -52,6 +52,9 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-body);
   color: var(--color-text-slate);
+  /* Override body keep-all so copy wraps by width like Figma 695:1642 / 577:605, not at each "? " */
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .error {

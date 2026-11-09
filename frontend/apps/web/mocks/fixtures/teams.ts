@@ -25,6 +25,8 @@ export type MockTeam = {
 export type MockMember = {
   user: UserBrief;
   role: TeamRole;
+  /** Figma 09 member row blue label (PO / BE / FE); provisional until members API owns it */
+  jobLabel: string | null;
   joinedAt: string;
   /** Accepted the GitHub org invite; false = not assignable to issues yet (04 ch. 5) */
   inGithubOrg: boolean;
@@ -83,24 +85,108 @@ export const TEAMS: MockTeam[] = [
 const [, doyun, seoyeon, minjae, hayun] = DEVELOPERS;
 
 /** Members per team id */
+/** Figma 368:1598–1623 member avatars (09 owner view) */
+const FIGMA_AVATARS = [
+  '/mocks/team-members/avatar-1.jpg',
+  '/mocks/team-members/avatar-2.jpg',
+  '/mocks/team-members/avatar-3.jpg',
+  '/mocks/team-members/avatar-4.jpg',
+] as const;
+
+function memberUser(user: UserBrief, avatarIndex: number): UserBrief {
+  return { ...user, avatarUrl: FIGMA_AVATARS[avatarIndex % FIGMA_AVATARS.length]! };
+}
+
 export const TEAM_MEMBERS: Record<number, MockMember[]> = {
   1: [
-    { user: brief(ME), role: 'OWNER', joinedAt: daysAgo(30), inGithubOrg: true },
-    { user: brief(doyun!), role: 'ADMIN', joinedAt: daysAgo(29), inGithubOrg: true },
-    { user: brief(seoyeon!), role: 'MEMBER', joinedAt: daysAgo(20), inGithubOrg: true },
-    { user: brief(minjae!), role: 'MEMBER', joinedAt: daysAgo(10), inGithubOrg: true },
-    { user: brief(hayun!), role: 'MEMBER', joinedAt: daysAgo(2), inGithubOrg: false },
+    {
+      user: memberUser(brief(ME), 0),
+      role: 'OWNER',
+      jobLabel: 'PO',
+      joinedAt: daysAgo(30),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(doyun!), 1),
+      role: 'ADMIN',
+      jobLabel: 'BE',
+      joinedAt: daysAgo(29),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(seoyeon!), 2),
+      role: 'MEMBER',
+      jobLabel: 'BE',
+      joinedAt: daysAgo(20),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(minjae!), 3),
+      role: 'MEMBER',
+      jobLabel: 'FE',
+      joinedAt: daysAgo(10),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(hayun!), 1),
+      role: 'MEMBER',
+      jobLabel: 'FE',
+      joinedAt: daysAgo(2),
+      inGithubOrg: false,
+    },
   ],
   2: [
-    { user: brief(doyun!), role: 'OWNER', joinedAt: daysAgo(70), inGithubOrg: true },
-    { user: brief(ME), role: 'MEMBER', joinedAt: daysAgo(60), inGithubOrg: true },
-    { user: brief(hayun!), role: 'MEMBER', joinedAt: daysAgo(40), inGithubOrg: true },
-    { user: brief(minjae!), role: 'MEMBER', joinedAt: daysAgo(35), inGithubOrg: true },
+    {
+      user: memberUser(brief(doyun!), 1),
+      role: 'OWNER',
+      jobLabel: 'PO',
+      joinedAt: daysAgo(70),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(ME), 0),
+      role: 'MEMBER',
+      jobLabel: 'FE',
+      joinedAt: daysAgo(60),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(hayun!), 2),
+      role: 'MEMBER',
+      jobLabel: 'BE',
+      joinedAt: daysAgo(40),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(minjae!), 3),
+      role: 'MEMBER',
+      jobLabel: 'FE',
+      joinedAt: daysAgo(35),
+      inGithubOrg: true,
+    },
   ],
   3: [
-    { user: brief(seoyeon!), role: 'OWNER', joinedAt: daysAgo(150), inGithubOrg: true },
-    { user: brief(ME), role: 'ADMIN', joinedAt: daysAgo(150), inGithubOrg: true },
-    { user: brief(minjae!), role: 'MEMBER', joinedAt: daysAgo(149), inGithubOrg: true },
+    {
+      user: memberUser(brief(seoyeon!), 2),
+      role: 'OWNER',
+      jobLabel: 'PO',
+      joinedAt: daysAgo(150),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(ME), 0),
+      role: 'ADMIN',
+      jobLabel: 'FE',
+      joinedAt: daysAgo(150),
+      inGithubOrg: true,
+    },
+    {
+      user: memberUser(brief(minjae!), 3),
+      role: 'MEMBER',
+      jobLabel: 'BE',
+      joinedAt: daysAgo(149),
+      inGithubOrg: true,
+    },
   ],
 };
 
