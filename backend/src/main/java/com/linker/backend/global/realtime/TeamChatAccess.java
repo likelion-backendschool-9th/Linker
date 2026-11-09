@@ -1,5 +1,6 @@
 package com.linker.backend.global.realtime;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,14 @@ public class TeamChatAccess {
 			return null;
 		}
 		return members.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId)
-				.map(member -> new TeamView(team.getId(), team.getName(), team.getStatus().name(), member.getRole().name(), team.getAvatarUrl()))
+				.map(member -> new TeamView(
+						team.getId(),
+						team.getName(),
+						team.getStatus().name(),
+						member.getRole().name(),
+						team.getAvatarUrl(),
+						team.isAiSummaryEnabled(),
+						team.getCreatedAt()))
 				.orElse(null);
 	}
 
@@ -62,6 +70,14 @@ public class TeamChatAccess {
 		return roles;
 	}
 
-	public record TeamView(long id, String name, String status, String role, String avatarUrl) {
+	public record TeamView(
+			long id,
+			String name,
+			String status,
+			String role,
+			String avatarUrl,
+			boolean aiSummaryEnabled,
+			Instant createdAt
+	) {
 	}
 }

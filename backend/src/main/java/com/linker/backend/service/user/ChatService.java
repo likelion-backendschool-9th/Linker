@@ -306,8 +306,18 @@ public class ChatService {
 					// Figma 17 room info: owner first, then admins, then members (stable within a role)
 					.sorted(Comparator.comparingInt(member -> roleRank(member.role())))
 					.toList();
+			boolean banner = team.aiSummaryEnabled()
+					&& team.createdAt() != null
+					&& team.createdAt().isAfter(clock.instant().minus(java.time.Duration.ofDays(PlanLimits.AI_SUMMARY_RETENTION_DAYS)));
 			return new ChatRoomInfoResponse(room.getId(), "TEAM", team.name(), null, membership.isMuted(), people,
-					new ChatRoomTeamResponse(team.id(), team.name(), team.status(), team.role(), team.avatarUrl()),
+					new ChatRoomTeamResponse(
+							team.id(),
+							team.name(),
+							team.status(),
+							team.role(),
+							team.avatarUrl(),
+							team.aiSummaryEnabled(),
+							banner),
 					PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
 		}
 		String kind;
