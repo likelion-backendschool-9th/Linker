@@ -41,7 +41,9 @@ function renderAction(value: AdminUserDetail, action: string) {
     searchParams: `?overlay=admin-user-action&oid=${action}`,
   });
 }
-beforeEach(() => vi.mocked(apiFetch).mockReset());
+beforeEach(() => {
+  vi.mocked(apiFetch).mockReset();
+});
 it.each([false, true])(
   'permanent suspension uses the server permission flag (%s)',
   async (allowed) => {
