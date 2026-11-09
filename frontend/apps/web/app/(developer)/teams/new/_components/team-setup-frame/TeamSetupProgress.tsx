@@ -24,7 +24,7 @@ export function TeamSetupProgress({ children }: { children: ReactNode }) {
           <span key={label} className={index < step ? styles.current : undefined} />
         ))}
       </div>
-      <div className={step <= 3 ? styles.content : styles.legacy}>{children}</div>
+      <div className={step <= 4 ? styles.content : styles.legacy}>{children}</div>
     </>
   );
 }

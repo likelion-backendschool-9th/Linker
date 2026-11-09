@@ -30,7 +30,7 @@ test('08 intro keeps the Figma wording, disabled next step and server-issued ins
 test('08 uses the same logo, search, notification and settings header as 07', async ({ page }) => {
   await page.goto('/workspace');
   const headerClass = await page.getByRole('banner').getAttribute('class');
-  for (const step of [1, 2, 3]) {
+  for (const step of [1, 2, 3, 4]) {
     await page.goto(`/teams/new?step=${step}`);
     const header = page.getByRole('banner');
     await expect(header).toHaveAttribute('class', headerClass!);
@@ -219,5 +219,95 @@ test('08-3 matches the selected repository frame below the shared header', async
       style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
     });
   }
+  expect(errors).toEqual([]);
+});
+
+async function enterBoards(page: import('@playwright/test').Page) {
+  await enterRepositories(page);
+  await page.getByRole('checkbox', { name: 'backend', exact: true }).check();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page).toHaveURL(/step=4&teamId=\d+/);
+  await expect(page.getByRole('radio', { name: 'ShowMoa', exact: true })).toBeVisible();
+}
+
+test('08-4 connects the selected board by option ID and retains mapping after browser back', async ({
+  page,
+}) => {
+  await enterBoards(page);
+  const next = page.getByRole('button', { name: '다음', exact: true });
+  await expect(next).toBeDisabled();
+  await page.getByRole('radio', { name: 'ShowMoa', exact: true }).check();
+  await expect(page.getByText('ShowMoa · 카드 18개')).toBeVisible();
+  await expect(next).toBeDisabled();
+  for (const [name, status] of [
+    ['Backlog', 'TODO'],
+    ['Doing', 'IN_PROGRESS'],
+    ['Blocked', 'BLOCKED'],
+    ['Done', 'DONE'],
+  ]) {
+    await page.getByRole('combobox', { name, exact: true }).selectOption(status!);
+  }
+  await expect(next).toBeEnabled();
+  await next.click();
+  await expect(page).toHaveURL(/step=5&teamId=\d+/);
+  await expect(page.getByText('ShowMoa', { exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('radio', { name: 'ShowMoa', exact: true })).toBeChecked();
+  await expect(page.getByRole('combobox', { name: 'Backlog', exact: true })).toHaveValue('TODO');
+});
+
+test('08-4 matches both board frames below the shared header at mobile and desktop widths', async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await enterBoards(page);
+  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '4');
+  await expect(page.getByText('화면 미리보기예요.', { exact: false })).toHaveCount(0);
+  for (const mode of ['existing', 'new']) {
+    await page
+      .getByRole('button', {
+        name: mode === 'existing' ? '기존 보드 사용' : '새 보드 생성',
+        exact: true,
+      })
+      .click();
+    for (const width of [375, 360, 600, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.evaluate(() => document.fonts.ready);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      expect((await page.getByRole('banner').boundingBox())?.width).toBe(Math.min(width, 600));
+      if (width === 375) {
+        const modes = (await page.getByRole('group', { name: '보드 연결 방식' }).boundingBox())!;
+        expect(modes.y).toBe(159);
+        expect(modes.height).toBe(48);
+        expect(
+          (await page.getByRole('button', { name: '다음', exact: true }).boundingBox())?.y,
+        ).toBe(723);
+        if (mode === 'existing') {
+          const row = (await page.getByRole('radio').first().locator('..').boundingBox())!;
+          expect(row.y).toBe(222);
+          expect(row.height).toBe(40);
+        } else {
+          expect((await page.getByRole('button', { name: '기본 값 사용' }).boundingBox())?.y).toBe(
+            222,
+          );
+          await expect(page.getByRole('button', { name: '역할 추가' })).toBeDisabled();
+          for (const label of ['작업 전', '작업 진행', '작업 완료', '작업 정지'])
+            await expect(page.getByRole('button', { name: label + ' 삭제' })).toBeDisabled();
+        }
+      }
+      await page.screenshot({
+        path: testInfo.outputPath(`team-setup-boards-${mode}-${width}.png`),
+        fullPage: true,
+        scale: 'css',
+        style:
+          'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+      });
+    }
+  }
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page).toHaveURL(/step=5&teamId=\d+/);
   expect(errors).toEqual([]);
 });

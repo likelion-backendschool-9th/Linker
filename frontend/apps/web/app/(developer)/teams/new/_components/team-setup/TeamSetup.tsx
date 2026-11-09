@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, Check, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
 
@@ -9,12 +9,12 @@ import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import styles from '@/features/teams/team-ui.module.css';
 import { TEAM } from '@/lib/policy';
-import { TeamBoardSelection } from '../../../_components/team-board-selection';
 import { TeamSetupOutcome } from '../team-setup-outcome';
 import { TeamSetupIntro } from '../team-setup-intro/TeamSetupIntro';
 import { TeamSetupInformation } from '../team-setup-information/TeamSetupInformation';
 import { TeamSetupRepositories } from '../team-setup-repositories/TeamSetupRepositories';
-import { STEPS, STATUSES, useTeamSetup } from './hook';
+import { STEPS, useTeamSetup } from './hook';
+import { TeamSetupBoards } from '../team-setup-boards/TeamSetupBoards';
 
 export function TeamSetup() {
   const {
@@ -39,7 +39,6 @@ export function TeamSetup() {
     ownedTeams,
     previewSettings,
     previewTeam,
-    boards,
     permission,
     displayName,
     boardSummary,
@@ -78,6 +77,17 @@ export function TeamSetup() {
         onChange={setSelectedRepos}
         onNext={() => void setStep(4, { history: 'push' })}
         openExternal={openExternal}
+      />
+    );
+
+  if (step === 4)
+    return (
+      <TeamSetupBoards
+        key={setupTeamId}
+        teamId={setupTeamId}
+        value={boardDraft}
+        onChange={setBoardDraft}
+        onSaved={() => void setStep(5, { history: 'push' })}
       />
     );
 
@@ -142,56 +152,6 @@ export function TeamSetup() {
         />
       )}
       <section className={`${styles.card} ${styles.stack}`} aria-labelledby="setup-step-title">
-        {step === 4 && (
-          <>
-            <h2 id="setup-step-title" className={styles.title}>
-              프로젝트 보드를 연결해요
-            </h2>
-            <p className={styles.description}>
-              팀마다 하나의 보드를 사용해요. 나중에 팀 설정에서 바꿀 수 있어요.
-            </p>
-            {previewTeam ? (
-              boards.isPending ? (
-                <Skeleton />
-              ) : boards.isError ? (
-                <ErrorState onRetry={() => void boards.refetch()} />
-              ) : (
-                <TeamBoardSelection
-                  key={previewTeamId}
-                  boards={boards.data.items}
-                  value={boardDraft}
-                  onChange={setBoardDraft}
-                />
-              )
-            ) : (
-              <>
-                <fieldset className={styles.section}>
-                  <legend className={styles.label}>연결 방식</legend>
-                  <label className={styles.choice}>
-                    <input type="radio" name="board-mode" defaultChecked />
-                    새로 만들기
-                  </label>
-                  <label className={styles.choice}>
-                    <input type="radio" name="board-mode" disabled />
-                    기존 보드 쓰기 · GitHub 연결 후 선택
-                  </label>
-                </fieldset>
-                <div className={styles.soft}>
-                  <h3 className={styles.cardTitle}>Linker</h3>
-                  <p className={styles.description}>Status · Start date · Due date</p>
-                  <ul className={styles.list}>
-                    {STATUSES.map((status) => (
-                      <li key={status} className={styles.row}>
-                        <Check size={16} aria-hidden />
-                        {status}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
-          </>
-        )}
         {step === 5 && (
           <>
             <div className={styles.heroIcon}>

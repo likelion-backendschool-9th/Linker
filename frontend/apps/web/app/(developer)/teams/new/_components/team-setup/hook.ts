@@ -3,6 +3,7 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   TeamCreatedResponse,
+  TeamSetupBoardSaved,
   VerifyInstallationResponse,
 } from '@linker/api/openAPIDefinition.schemas';
 import { parseAsInteger, useQueryStates } from 'nuqs';
@@ -19,24 +20,17 @@ import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { resolveSetupStep } from '../../_lib/setup-steps';
 export { STEPS } from '../../_lib/setup-steps';
 
+import { setupBoardKey } from '../team-setup-boards/hook';
 import type { BoardSelection } from '../../../_components/team-board-selection';
 import {
   myTeamsOptions,
   settingsOptions,
-  setupBoardsOptions,
   setupPermissionOptions,
   createTeam,
   updateSetupTeamInfo,
 } from './api';
 
 type CreatedSetupTeam = TeamCreatedResponse & { installationId: string; description: string };
-
-export const STATUSES = [
-  '작업 전 · Todo',
-  '작업 중 · In Progress',
-  '작업 중단 · Blocked',
-  '작업 완료 · Done',
-];
 
 export function useTeamSetup() {
   const [flow, setFlow] = useQueryStates({
@@ -67,7 +61,7 @@ export function useTeamSetup() {
   const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
   const [completePreview, setCompletePreview] = useState(false);
   const [boardDraft, setBoardDraft] = useState<BoardSelection>({
-    mode: 'new',
+    mode: 'existing',
     boardId: '',
     statusMapping: {},
   });
@@ -77,9 +71,9 @@ export function useTeamSetup() {
   const previewSource = ownedTeams.find((team) => String(team.id) === previewTeamId);
   const previewSettings = useQuery({ ...settingsOptions(previewTeamId), enabled: !!previewSource });
   const previewTeam = previewSettings.data;
-  const boards = useQuery({
-    ...setupBoardsOptions(previewTeamId),
-    enabled: !!previewTeam && step === 4,
+  const savedBoard = useQuery<TeamSetupBoardSaved>({
+    queryKey: setupBoardKey(viewer.login, setupTeamId),
+    queryFn: skipToken,
   });
   const permission = useQuery({
     ...setupPermissionOptions(previewTeamId),
@@ -90,10 +84,7 @@ export function useTeamSetup() {
     : isInstalledOrganization(installation.data)
       ? installation.data.org.login
       : '';
-  const boardSummary =
-    boardDraft.mode === 'new'
-      ? '새 Linker 보드'
-      : (boards.data?.items.find((board) => board.id === boardDraft.boardId)?.name ?? '기존 보드');
+  const boardSummary = savedBoard.data?.name ?? '아직 연결하지 않았어요';
   const atLimit = teams.data ? teams.data.teamCount >= teams.data.teamLimit : false;
   const openExternal = useOpenExternal();
 
@@ -127,7 +118,7 @@ export function useTeamSetup() {
   function selectPreviewTeam(teamId: string) {
     setPreviewTeamId(teamId);
     setSelectedRepos([]);
-    setBoardDraft({ mode: 'new', boardId: '', statusMapping: {} });
+    setBoardDraft({ mode: 'existing', boardId: '', statusMapping: {} });
   }
 
   return {
@@ -153,7 +144,6 @@ export function useTeamSetup() {
     ownedTeams,
     previewSettings,
     previewTeam,
-    boards,
     permission,
     displayName,
     boardSummary,

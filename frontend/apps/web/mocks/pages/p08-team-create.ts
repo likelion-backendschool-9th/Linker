@@ -14,6 +14,20 @@ const initialRepos = [
   { id: 903, name: 'bookstore', fullName: 'my-new-org/bookstore', private: true },
 ];
 
+const initialBoards = ['ShowMoa', 'Linker', 'planit'].map((name, index) => ({
+  id: `board-${index + 1}`,
+  name,
+  cardCount: index === 0 ? 18 : 0,
+  statusColumns: ['Backlog', 'Doing', 'Blocked', 'Done'],
+  statusOptions: [
+    { id: 'opt-backlog', name: 'Backlog', color: 'GRAY' },
+    { id: 'opt-doing', name: 'Doing', color: 'BLUE' },
+    { id: 'opt-blocked', name: 'Blocked', color: 'RED' },
+    { id: 'opt-done', name: 'Done', color: 'GREEN' },
+  ],
+}));
+const savedBoards = new Map<number, { board: (typeof initialBoards)[number]; created: boolean }>();
+
 function setupTeam(id: string) {
   const team = findTeam(id);
   if (!team) fail(404, 'NOT_FOUND', '삭제되었거나 볼 수 없는 콘텐츠예요');
@@ -112,27 +126,55 @@ export const routes: MockRoute[] = [
     setupTeam(params.teamId).repos = allowed.filter((repo) => ids.includes(repo.id));
     return undefined;
   }),
-  get('/api/v1/user/teams/:teamId/setup/boards', () => ({
-    items: [
-      {
-        id: 'board-1',
-        name: '로드맵',
-        cardCount: 18,
-        statusColumns: ['Backlog', 'Doing', 'Review', 'Done'],
+  get('/api/v1/user/teams/:teamId/setup/boards', ({ params }) => {
+    const team = setupTeam(params.teamId);
+    const linked = savedBoards.get(team.id);
+    return { items: linked?.created ? [...initialBoards, linked.board] : initialBoards };
+  }),
+  post('/api/v1/user/teams/:teamId/setup/board', ({ params, body }) => {
+    const team = setupTeam(params.teamId);
+    const linked = savedBoards.get(team.id);
+    if (body.mode === 'NEW') {
+      if (linked && !linked.created)
+        fail(409, 'STATE_CONFLICT', '기존에 연결한 보드를 선택해 주세요');
+      if (linked) return { boardId: linked.board.id, name: linked.board.name };
+      const board = {
+        id: `board-new-${team.id}`,
+        name: 'Linker',
+        cardCount: 0,
+        statusColumns: ['Todo', 'In Progress', 'Blocked', 'Done'],
         statusOptions: [
-          { id: 'opt-backlog', name: 'Backlog', color: 'GRAY' },
-          { id: 'opt-doing', name: 'Doing', color: 'BLUE' },
-          { id: 'opt-review', name: 'Review', color: 'YELLOW' },
-          { id: 'opt-done', name: 'Done', color: 'GREEN' },
+          { id: 'new-todo', name: 'Todo', color: 'GRAY' },
+          { id: 'new-progress', name: 'In Progress', color: 'BLUE' },
+          { id: 'new-blocked', name: 'Blocked', color: 'RED' },
+          { id: 'new-done', name: 'Done', color: 'GREEN' },
         ],
-      },
-    ],
-  })),
-  post('/api/v1/user/teams/:teamId/setup/board', ({ body }) => {
-    if (body.mode === 'EXISTING' && !body.statusMapping) {
-      fail(400, 'STATUS_MAPPING_REQUIRED', '상태 매핑이 필요해요');
+      };
+      savedBoards.set(team.id, { board, created: true });
+      return { boardId: board.id, name: board.name };
     }
-    return { boardId: 'board-new', name: 'Linker' };
+    const board = [...initialBoards, ...(linked ? [linked.board] : [])].find(
+      (item) => item.id === body.boardId,
+    );
+    if (body.mode !== 'EXISTING' || !board) fail(400, 'VALIDATION_ERROR', '보드를 선택해 주세요');
+    const mapping = body.statusMapping;
+    if (!mapping || typeof mapping !== 'object' || Array.isArray(mapping))
+      fail(400, 'VALIDATION_ERROR', '상태 매핑이 필요해요');
+    const statuses = ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE'];
+    if (
+      !statuses.every((status) => Object.values(mapping).includes(status)) ||
+      Object.entries(mapping).some(
+        ([id, status]) =>
+          !board.statusOptions.some((option) => option.id === id) ||
+          ![...statuses, 'OTHER'].includes(String(status)),
+      )
+    )
+      fail(400, 'VALIDATION_ERROR', '네 가지 상태를 모두 연결해 주세요');
+    savedBoards.set(team.id, {
+      board,
+      created: (linked?.created && linked.board.id === board.id) || false,
+    });
+    return { boardId: board.id, name: board.name };
   }),
   // The org's default repo permission; "read" shows the write-permission notice (POL-T-1)
   get('/api/v1/user/teams/:teamId/setup/permission-check', ({ params }) => ({
