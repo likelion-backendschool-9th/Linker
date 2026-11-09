@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 
+import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
@@ -9,11 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { ISSUE } from '@/lib/policy';
 
 import styles from '../issue-sheets.module.css';
-import {
-  useIssueAssigneeForm,
-  useIssueAssigneeSheet,
-  type IssueAssigneeSheetProps,
-} from './hook';
+import { useIssueAssigneeForm, useIssueAssigneeSheet, type IssueAssigneeSheetProps } from './hook';
 
 export function IssueAssigneeSheet<Key extends readonly unknown[]>({
   value,
@@ -26,6 +23,7 @@ export function IssueAssigneeSheet<Key extends readonly unknown[]>({
       overlay={overlay}
       title="담당자"
       description={`이 레포에 접근할 수 있고 GitHub 조직 초대를 수락한 팀원만 고를 수 있어요. 최대 ${ISSUE.assigneesMax}명까지예요.`}
+      classNames={sheetClassNames}
     >
       {overlay.isOpen && (
         <AssigneeForm

@@ -252,4 +252,8 @@
   --border-width-comment-focus: 2px; /* comment input line on focus (Figma 364:1950), drawn inside */
   --size-comment-send: 34px; /* send button inside the input (4px inset); hit area extends to the field */
   --icon-size-comment-send: 24px; /* arrow inside the send button (Figma 14px, enlarged to 24px by the page owner) */
+  /* Figma 12 */
+  --issue-body-min-height: 120px; /* 12 body box */
+  --space-issue-body-block: 17px; /* 12 body box top padding (text starts 17px down, 15px in) */
+  --task-size-issue-body: 14px; /* 12 body task-list mark, about the text height */
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { sheetClassNames } from '../sheet-class-names';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
 
@@ -34,6 +35,7 @@ export function IssueStatusSheet({ value, statusColors, onSave }: IssueStatusShe
     <OverlaySheet
       overlay={overlay}
       title="상태 바꾸기"
+      classNames={sheetClassNames}
       description="작업 완료로 옮기면 GitHub 이슈가 닫히고, 완료에서 되돌리면 다시 열려요."
     >
       {overlay.isOpen && (
