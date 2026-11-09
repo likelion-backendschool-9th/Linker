@@ -143,14 +143,52 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/issues/:issueId/sub-issues', ({ params }) => {
     const issue = withDemo(issueOr404(params.teamId!, params.issueId!));
     const { total, done } = issue.subIssues;
+    const members = TEAM_MEMBERS[issue.teamId] ?? [];
+    const firstName = members[0] ? withMockJobRole(members[0].user).name : null;
+    // Figma-like rows for demo 1022: mixed status colors + one overdue due date
+    const demos =
+      issue.id === 1022
+        ? [
+            {
+              title: '이슈 필터 시트 접근성 개선',
+              status: 'DONE' as const,
+              statusColor: 'GREEN' as const,
+              dueDate: dateOnly(2),
+              assigneeName: firstName,
+            },
+            {
+              title: '백엔드 환경 설정',
+              status: 'IN_PROGRESS' as const,
+              statusColor: 'BLUE' as const,
+              dueDate: dateOnly(-6),
+              assigneeName: firstName,
+            },
+            {
+              title: '개발용 기획 MD 파일 병합',
+              status: 'TODO' as const,
+              statusColor: 'RED' as const,
+              dueDate: dateOnly(-8),
+              assigneeName: firstName,
+            },
+          ]
+        : null;
     return {
       total,
       done,
-      items: Array.from({ length: total }, (_, index) => ({
-        number: issue.number * 10 + index,
-        title: `${issue.title} - 하위 작업 ${index + 1}`,
-        state: index < done ? 'CLOSED' : 'OPEN',
-      })),
+      items: Array.from({ length: total }, (_, index) => {
+        const closed = index < done;
+        const demo = demos?.[index];
+        return {
+          id: issue.id * 100 + index,
+          number: issue.number * 10 + index,
+          title: demo?.title ?? `${issue.title} - 하위 작업 ${index + 1}`,
+          state: closed ? ('CLOSED' as const) : ('OPEN' as const),
+          status: demo?.status ?? (closed ? 'DONE' : 'TODO'),
+          statusColor: demo?.statusColor ?? (closed ? 'GREEN' : 'BLUE'),
+          dueDate: demo?.dueDate ?? null,
+          assigneeName: demo?.assigneeName ?? firstName,
+        };
+      }),
     };
   }),
 ];

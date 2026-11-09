@@ -7,18 +7,35 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
+import { todayKst } from '@/lib/format/time';
+
 import { boardStatusColorVar, ISSUE_STATUS_LABELS } from '../../../../../../_lib/issue-status';
 import { IssueAssigneeSheet } from '../../../../_components/issue-sheets/issue-assignee-sheet';
 import { IssueLabelSheet } from '../../../../_components/issue-sheets/issue-label-sheet';
 import { IssueScheduleSheet } from '../../../../_components/issue-sheets/issue-schedule-sheet';
 import type { SchedulePart } from '../../../../_components/issue-sheets/issue-schedule-sheet/hook';
 import { IssueStatusSheet } from '../../../../_components/issue-sheets/issue-status-sheet';
+import type { SubIssue } from '../../../../_lib/issue-detail-queries';
 import { useIssueDetailView } from './hook';
 import styles from './IssueDetailView.module.css';
 
 /** Figma 12 date lines: "2025년 11월 2일" (the issue's KST calendar date) */
 const longDate = (day: string) =>
   `${day.slice(0, 4)}년 ${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
+
+/** Figma 12 sub-issue row: "11월 11일" */
+const shortDate = (day: string) => `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
+
+function subDotColor(sub: SubIssue) {
+  if (sub.statusColor) return sub.statusColor;
+  return sub.state === 'CLOSED' ? 'GREEN' : 'BLUE';
+}
+
+function subOverdue(sub: SubIssue) {
+  if (!sub.dueDate || sub.dueDate >= todayKst()) return false;
+  if (sub.status) return sub.status !== 'DONE';
+  return sub.state !== 'CLOSED';
+}
 
 /**
  * 12 Issue detail (07 TODO 12), Figma 12 (198:486): title with the GitHub link, `#번호 · 레포 · 작성자`,
@@ -210,32 +227,50 @@ export function IssueDetailView({ teamId, issueId }: { teamId: string; issueId: 
             </span>
           </h3>
           <ul className={styles.subList}>
-            {subIssues.data?.items.map((sub) => (
-              <li key={sub.number} className={styles.sub}>
-                <article>
-                  <p className={styles.subTitle}>
-                    {sub.title}
-                    <span
-                      className={styles.dot}
-                      style={
-                        {
-                          '--status-color': boardStatusColorVar(
-                            sub.state === 'CLOSED' ? 'GREEN' : 'BLUE',
-                          ),
-                        } as CSSProperties
-                      }
-                      aria-hidden
-                    />
-                    <span className="sr-only">{sub.state === 'CLOSED' ? '완료' : '열림'}</span>
-                  </p>
-                  <p className={styles.subMeta}>
-                    <span>#{sub.number}</span>
-                    {sep}
-                    <span>{issue.repoName}</span>
-                  </p>
-                </article>
-              </li>
-            ))}
+            {subIssues.data?.items.map((sub) => {
+              const overdue = subOverdue(sub);
+              const statusLabel =
+                sub.status && sub.status in ISSUE_STATUS_LABELS
+                  ? ISSUE_STATUS_LABELS[sub.status as keyof typeof ISSUE_STATUS_LABELS]
+                  : sub.state === 'CLOSED'
+                    ? '완료'
+                    : '열림';
+              return (
+                <li key={sub.number} className={styles.sub}>
+                  <article className={styles.subCard}>
+                    <div className={styles.subMain}>
+                      <p className={styles.subTitle}>
+                        {sub.title}
+                        <span
+                          className={styles.dot}
+                          style={
+                            { '--status-color': boardStatusColorVar(subDotColor(sub)) } as CSSProperties
+                          }
+                          aria-hidden
+                        />
+                        <span className="sr-only">{statusLabel}</span>
+                      </p>
+                      <p className={styles.subMeta}>
+                        <span>#{sub.number}</span>
+                        {sep}
+                        <span>{issue.repoName}</span>
+                        {sub.assigneeName ? (
+                          <>
+                            {sep}
+                            <span>{sub.assigneeName}</span>
+                          </>
+                        ) : null}
+                      </p>
+                    </div>
+                    {sub.dueDate ? (
+                      <p className={styles.subDue} data-overdue={overdue || undefined}>
+                        {shortDate(sub.dueDate)}
+                      </p>
+                    ) : null}
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

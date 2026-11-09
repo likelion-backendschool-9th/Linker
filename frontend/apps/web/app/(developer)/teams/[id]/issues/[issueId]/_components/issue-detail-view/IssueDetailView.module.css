@@ -197,10 +197,23 @@
 }
 
 .sub {
-  display: grid;
-  gap: var(--space-row-inline);
   padding: var(--space-row-block) var(--space-row-inline);
   border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+/* Figma 198:755: title+meta left, due date right */
+.subCard {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.subMain {
+  display: grid;
+  flex: 1;
+  gap: var(--space-row-inline);
+  min-width: 0;
 }
 
 .subTitle {
@@ -212,6 +225,19 @@
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-compact);
   color: var(--color-text-slate);
+}
+
+.subDue {
+  flex: none;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+}
+
+.subDue[data-overdue='true'] {
+  color: var(--color-status-overdue);
 }
 
 /* Markdown in the Figma body tone: one size, tight line spacing, nothing bigger than the text */

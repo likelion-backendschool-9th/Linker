@@ -113,7 +113,33 @@ public record IssueDetailResponse(
       name = "IssueSubIssue",
       requiredProperties = {"id", "number", "title", "state", "githubUrl"})
   public record SubIssue(
-      @Schema(nullable = true) Long id, int number, String title, String state, String githubUrl) {}
+      @Schema(nullable = true) Long id,
+      int number,
+      String title,
+      @Schema(allowableValues = {"OPEN", "CLOSED"}) String state,
+      String githubUrl,
+      /** Board status from Linker cache when linked; otherwise null. */
+      @Schema(
+              nullable = true,
+              allowableValues = {"TODO", "IN_PROGRESS", "BLOCKED", "DONE", "OTHER", "NONE"})
+          String status,
+      /** Same color enum as issue list; OTHER/NONE → GRAY. Null when unlinked. */
+      @Schema(
+              nullable = true,
+              allowableValues = {
+                "BLUE",
+                "GRAY",
+                "GREEN",
+                "ORANGE",
+                "PINK",
+                "PURPLE",
+                "RED",
+                "YELLOW"
+              })
+          String statusColor,
+      @Schema(nullable = true) LocalDate dueDate,
+      /** First assignee display name only (Figma). Null when none. */
+      @Schema(nullable = true) String assigneeName) {}
 
   @Schema(
       name = "IssueAssigneesResult",
