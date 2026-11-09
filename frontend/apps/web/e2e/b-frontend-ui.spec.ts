@@ -117,10 +117,10 @@ test('PR sheet is team-only and the system event offers no editing action', asyn
   // 17 Figma: PR 목록 lives in the room info screen behind the header ☰
   await page.getByRole('button', { name: '채팅방 정보' }).click();
   await page.getByRole('button', { name: 'PR 목록' }).click();
-  const sheet = page.getByRole('dialog', { name: 'Pull requests' });
+  const sheet = page.getByRole('dialog', { name: 'PR 목록' });
   await expect(sheet).toBeVisible();
-  await page.getByRole('button', { name: '병합됨', exact: true }).click();
-  await expect(sheet.getByText('chore: eslint 규칙 정리', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '병합 된 PR', exact: true }).click();
+  await expect(sheet.getByText('#26 chore: eslint 규칙 정리', { exact: true })).toBeVisible();
   await expect(sheet.getByRole('button', { name: /수정|삭제/ })).toHaveCount(0);
 });
 

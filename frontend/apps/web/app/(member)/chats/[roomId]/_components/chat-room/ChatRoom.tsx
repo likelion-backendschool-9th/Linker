@@ -74,7 +74,21 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         {CONNECTION[connection]}
       </p>
       <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
-      {room.team && <PullRequestSheet roomId={roomId} login={viewer.login} />}
+      {room.team && (
+        <PullRequestSheet
+          roomId={roomId}
+          login={viewer.login}
+          disabled={readOnly}
+          onShare={(url) =>
+            outbox.enqueue({
+              clientMessageId: crypto.randomUUID(),
+              text: url,
+              images: [],
+              createdAt: new Date().toISOString(),
+            })
+          }
+        />
+      )}
       {room.team && (
         <AiSummaryBanner teamId={room.team.id} visible={Boolean(room.team.aiSummaryBanner)} />
       )}

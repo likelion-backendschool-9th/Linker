@@ -22,6 +22,7 @@ const row = (state: 'open' | 'merged'): ChatPullRequest => ({
   draft: false,
   author: 'D-Gyun103',
   url: 'https://github.com/linker-test-org/server/pull/42',
+  githubUpdatedAt: '2026-11-09T10:00:00Z',
 });
 
 beforeEach(() => {
@@ -36,13 +37,13 @@ it('uses the generated B API and renders open/merged records with repository, nu
   renderWithProviders(<PullRequestSheet roomId={7} login="me" />, {
     searchParams: '?overlay=chat-pull-requests',
   });
-  expect(await screen.findByText('실제 API 필드의 열린 PR')).toBeVisible();
-  expect(screen.getByText('linker-test-org/server · #42 · D-Gyun103')).toBeVisible();
+  expect(await screen.findByText('#42 실제 API 필드의 열린 PR')).toBeVisible();
+  expect(screen.getByText('담당자 D-Gyun103님이')).toBeVisible();
   expect(vi.mocked(apiFetch).mock.calls[0]![0]).toBe(
     '/api/v1/user/chat-rooms/7/pull-requests?state=open',
   );
-  await userEvent.click(screen.getByRole('button', { name: '병합됨' }));
-  expect(await screen.findByText('실제 API 필드의 병합 PR')).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: '병합 된 PR' }));
+  expect(await screen.findByText('#42 실제 API 필드의 병합 PR')).toBeVisible();
   expect(vi.mocked(apiFetch).mock.calls.at(-1)![0]).toBe(
     '/api/v1/user/chat-rooms/7/pull-requests?state=merged',
   );
@@ -67,7 +68,7 @@ it('does not display another room’s data when access fails', async () => {
     searchParams: '?overlay=chat-pull-requests',
   });
   expect(await screen.findByRole('button', { name: '다시 시도' })).toBeVisible();
-  expect(screen.queryByText('실제 API 필드의 열린 PR')).not.toBeInTheDocument();
+  expect(screen.queryByText('#42 실제 API 필드의 열린 PR')).not.toBeInTheDocument();
 });
 
 it('hands the record’s GitHub URL to the existing external-link sheet', async () => {
@@ -82,4 +83,54 @@ it('hands the record’s GitHub URL to the existing external-link sheet', async 
   const url = changed.mock.calls.at(-1)![0].searchParams as URLSearchParams;
   expect(url.get('overlay')).toBe('external-link');
   expect(url.get('oid')).toBe(row('open').url);
+});
+
+it('shares only the selected PR URL through the provided chat sender', async () => {
+  const send = vi.fn();
+  const first = row('open');
+  const second = {
+    ...first,
+    id: 22,
+    number: 43,
+    title: '선택한 PR',
+    url: 'https://github.com/linker-test-org/server/pull/43',
+  };
+  vi.mocked(apiFetch).mockResolvedValue({ items: [first, second] });
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" onShare={send} />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  await userEvent.click(await screen.findByRole('radio', { name: /#43/ }));
+  await userEvent.click(screen.getByRole('button', { name: '팀에 공유 하기' }));
+  expect(send).toHaveBeenCalledExactlyOnceWith(second.url);
+  expect(
+    vi.mocked(apiFetch).mock.calls.every(([, init]) => !init?.method || init.method === 'GET'),
+  ).toBe(true);
+});
+it('keeps viewing available in a read-only room while sharing is disabled', async () => {
+  const send = vi.fn();
+  vi.mocked(apiFetch).mockResolvedValue({ items: [row('open')] });
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" disabled onShare={send} />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  await screen.findByRole('radio');
+  expect(screen.getByRole('button', { name: '팀에 공유 하기' })).toBeDisabled();
+  await userEvent.click(screen.getByRole('button', { name: '팀에 공유 하기' }));
+  expect(send).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: /GitHub에서 열기/ })).toBeEnabled();
+});
+it('renders the GitHub update timestamp and tolerates an older server during rollout', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({ items: [row('open')] });
+  const current = renderWithProviders(<PullRequestSheet roomId={7} login="me" />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  await screen.findByRole('radio');
+  expect(document.querySelector('time')).toHaveAttribute('dateTime', '2026-11-09T19:00:00+09:00');
+  current.unmount();
+  const legacy = { ...row('open'), githubUpdatedAt: undefined };
+  vi.mocked(apiFetch).mockResolvedValue({ items: [legacy] });
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  expect(await screen.findByRole('radio')).toBeVisible();
+  expect(document.querySelector('time')).not.toBeInTheDocument();
 });
