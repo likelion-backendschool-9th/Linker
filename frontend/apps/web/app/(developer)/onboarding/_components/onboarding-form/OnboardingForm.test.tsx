@@ -1,6 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { resetOverlayHistory } from '@/lib/navigation/use-overlay';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { OnboardingForm } from './OnboardingForm';
@@ -29,6 +30,7 @@ const initial = {
 
 describe('OnboardingForm', () => {
   beforeEach(() => {
+    resetOverlayHistory();
     apiFetch.mockReset();
     replace.mockReset();
     refresh.mockReset();
@@ -66,14 +68,16 @@ describe('OnboardingForm', () => {
     expect(screen.getByRole('button', { name: '완료' })).toBeDisabled();
 
     await user.type(screen.getByLabelText('이름'), 'Linker Developer');
-    await user.click(screen.getByRole('button', { name: '구직 상태' }));
+    await user.click(screen.getByRole('button', { name: /구직 상태/ }));
     const statusSheet = screen.getByRole('dialog', { name: '구직 상태' });
     await user.click(within(statusSheet).getByLabelText('구직 중'));
+    resetOverlayHistory();
     await user.click(within(statusSheet).getByRole('button', { name: '완료' }));
 
-    await user.click(screen.getByRole('button', { name: '기술 스택 선택' }));
+    await user.click(screen.getByRole('button', { name: /기술 스택 선택/ }));
     const techSheet = screen.getByRole('dialog', { name: '기술 스택' });
     await user.click(within(techSheet).getByLabelText('React'));
+    resetOverlayHistory();
     await user.click(within(techSheet).getByRole('button', { name: '완료' }));
 
     await user.click(screen.getByRole('button', { name: '완료' }));
