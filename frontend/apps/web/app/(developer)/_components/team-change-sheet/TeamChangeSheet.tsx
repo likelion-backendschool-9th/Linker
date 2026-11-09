@@ -1,6 +1,7 @@
 'use client';
 
-// overlay: the "팀 변경" sheet of Figma 7-팀 리스트 (368:1070) and 11 팀 변경 (368:1891)
+// overlay: the "팀 변경" sheet of Figma 7-팀 리스트 (368:1070) and 11 팀 변경 (368:1891);
+// 22 reuses the same look as "저장소 변경" (676:836)
 import { useState, type FormEvent, type ReactElement, type ReactNode } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
@@ -17,6 +18,10 @@ export type TeamChoice = {
 
 type TeamChangeSheetProps = {
   overlay: OverlayControl;
+  /** Sheet title and legend; defaults to "팀 변경" */
+  title?: string;
+  /** Button label; defaults to "팀 변경" */
+  submitLabel?: string;
   description: string;
   trigger: ReactElement;
   /** `null` while loading or failed: `status` is shown instead of the choices */
@@ -32,6 +37,8 @@ type TeamChangeSheetProps = {
 /** Radio list + "팀 변경" button. Choosing a radio is only a draft until the button is pressed. */
 export function TeamChangeSheet({
   overlay,
+  title = '팀 변경',
+  submitLabel = '팀 변경',
   description,
   trigger,
   teams,
@@ -43,14 +50,21 @@ export function TeamChangeSheet({
   return (
     <OverlaySheet
       overlay={overlay}
-      title="팀 변경"
+      title={title}
       description={description}
       describeHidden
       classNames={{ scrim: styles.scrim, sheet: styles.sheet, title: styles.title }}
       trigger={trigger}
     >
       {teams ? (
-        <TeamChoices teams={teams} selectedId={selectedId} name={name} onSubmit={onSubmit} />
+        <TeamChoices
+          teams={teams}
+          selectedId={selectedId}
+          name={name}
+          title={title}
+          submitLabel={submitLabel}
+          onSubmit={onSubmit}
+        />
       ) : (
         status
       )}
@@ -62,19 +76,27 @@ function TeamChoices({
   teams,
   selectedId,
   name,
+  title,
+  submitLabel,
   onSubmit,
-}: Pick<TeamChangeSheetProps, 'selectedId' | 'name' | 'onSubmit'> & { teams: TeamChoice[] }) {
+}: Pick<TeamChangeSheetProps, 'selectedId' | 'name' | 'onSubmit'> & {
+  teams: TeamChoice[];
+  title: string;
+  submitLabel: string;
+}) {
   const [draftId, setDraftId] = useState(selectedId);
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    // Radix portals this form, but React still bubbles submit to a page <form> around the trigger
+    event.stopPropagation();
     onSubmit(draftId);
   }
 
   return (
     <form onSubmit={submit}>
       <fieldset className={styles.choices}>
-        <legend className="sr-only">팀 변경</legend>
+        <legend className="sr-only">{title}</legend>
         {teams.map((team) => (
           <label key={team.id} className={styles.choice}>
             <input
@@ -92,7 +114,7 @@ function TeamChoices({
         ))}
       </fieldset>
       <button type="submit" className={styles.submit}>
-        팀 변경
+        {submitLabel}
       </button>
     </form>
   );

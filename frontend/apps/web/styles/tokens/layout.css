@@ -163,6 +163,7 @@
   --size-required-dot: 4px; /* required-field mark beside titles/labels */
   --size-post-photo: 74px; /* 22 photo tile (Figma 274:321) */
   --radius-post-photo: 6px; /* 22 photo tile corner (Figma 274:321) */
+  --radius-post-photo-more: 5px; /* 22 "more photos" badge corner (Figma 660:585) */
   --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
   --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
