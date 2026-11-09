@@ -1,0 +1,5 @@
+# Join the already running backend's network. Never creates/replaces that network.
+networks:
+  default:
+    name: ${OLLAMA_DOCKER_NETWORK:?Set the existing backend Docker network}
+    external: true
