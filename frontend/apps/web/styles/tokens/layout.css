@@ -73,6 +73,9 @@
   --control-height: 48px; /* pill buttons and inputs */
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
   --control-height-sheet: 53px; /* 07 sheet CTA */
+  --control-height-invite: 52px; /* 10 join CTA (Figma 187:387) */
+  --invite-cta-max-width: 343px; /* 10 join CTA max width (Figma 187:387) */
+  --space-invite-stack: 23px; /* 10 logo block → CTAs (Figma 187:381 itemSpacing) */
   --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
   --control-height-settings-choice: 34px; /* 06 settings job-status sheet option row (reference screenshot) */
   --control-height-chip: 30px; /* 19 recruit filter chip */
