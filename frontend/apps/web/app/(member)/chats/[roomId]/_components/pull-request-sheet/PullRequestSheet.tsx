@@ -7,8 +7,13 @@ import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
-import { usePullRequestSheet, type PullRequestSheetProps } from './hook';
+import { usePullRequestLiveUpdates, usePullRequestSheet, type PullRequestSheetProps } from './hook';
 import styles from './PullRequestSheet.module.css';
+
+function PullRequestLiveUpdates(props: Pick<PullRequestSheetProps, 'roomId' | 'login'>) {
+  usePullRequestLiveUpdates(props);
+  return null;
+}
 
 /** Figma 735:2891: full-screen PR picker inside the mobile app column. */
 export function PullRequestSheet(props: PullRequestSheetProps) {
@@ -29,6 +34,7 @@ export function PullRequestSheet(props: PullRequestSheetProps) {
     <Dialog.Root open={overlay.isOpen} onOpenChange={overlay.onOpenChange}>
       <Dialog.Portal>
         <Dialog.Content className={styles.screen} aria-describedby={undefined}>
+          <PullRequestLiveUpdates roomId={props.roomId} login={props.login} />
           <header className={styles.header}>
             <Dialog.Close className={styles.back}>
               <ArrowLeft aria-hidden />

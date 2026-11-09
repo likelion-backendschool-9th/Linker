@@ -1,5 +1,5 @@
 import type { ChatPullRequest } from '@linker/api/openAPIDefinition.schemas';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -10,6 +10,17 @@ import { renderWithProviders } from '@/test/render-with-providers';
 import { PullRequestSheet } from './PullRequestSheet';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
+const { subscribe } = vi.hoisted(() => ({
+  subscribe:
+    vi.fn<
+      (entry: {
+        destination: string;
+        onMessage: (body: unknown) => void;
+        onResubscribe?: () => void;
+      }) => () => void
+    >(),
+}));
+vi.mock('@/lib/realtime/stomp-client', () => ({ subscribe }));
 const row = (state: 'open' | 'merged'): ChatPullRequest => ({
   id: 11,
   repoId: 12,
@@ -27,7 +38,55 @@ const row = (state: 'open' | 'merged'): ChatPullRequest => ({
 
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
+  subscribe.mockReset();
+  subscribe.mockImplementation(() => vi.fn());
   resetOverlayHistory();
+});
+
+it('refreshes the open list on this room’s PR event and reads the current merged list', async () => {
+  let merged = false;
+  vi.mocked(apiFetch).mockImplementation(async (url: string) => ({
+    items: url.includes('state=merged')
+      ? merged
+        ? [row('merged')]
+        : []
+      : merged
+        ? []
+        : [row('open')],
+  }));
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" onShare={vi.fn()} />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  await screen.findByText('#42 실제 API 필드의 열린 PR');
+  const entry = subscribe.mock.calls.at(-1)![0];
+  expect(entry.destination).toBe('/topic/chat-rooms/7');
+  const before = vi.mocked(apiFetch).mock.calls.length;
+  act(() => {
+    entry.onMessage({ event: 'READ', message: { type: 'PR_EVENT', roomId: 7 } });
+    entry.onMessage({ event: 'MESSAGE', message: { type: 'TEXT', roomId: 7 } });
+    entry.onMessage({ event: 'MESSAGE', message: { type: 'PR_EVENT', roomId: 8 } });
+  });
+  expect(apiFetch).toHaveBeenCalledTimes(before);
+  merged = true;
+  act(() => entry.onMessage({ event: 'MESSAGE', message: { type: 'PR_EVENT', roomId: 7 } }));
+  expect(await screen.findByText('열린 PR이 없어요.')).toBeVisible();
+  expect(screen.getByRole('button', { name: '팀에 공유 하기' })).toBeDisabled();
+  await userEvent.click(screen.getByRole('button', { name: '병합 된 PR' }));
+  expect(await screen.findByText('#42 실제 API 필드의 병합 PR')).toBeVisible();
+});
+
+it('reloads after STOMP resubscription and does not subscribe while the screen is closed', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({ items: [row('open')] });
+  const closed = renderWithProviders(<PullRequestSheet roomId={7} login="me" />);
+  expect(subscribe).not.toHaveBeenCalled();
+  closed.unmount();
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  await screen.findByRole('radio');
+  vi.mocked(apiFetch).mockResolvedValue({ items: [] });
+  act(() => subscribe.mock.calls.at(-1)![0].onResubscribe?.());
+  expect(await screen.findByText('열린 PR이 없어요.')).toBeVisible();
 });
 
 it('uses the generated B API and renders open/merged records with repository, number and author', async () => {

@@ -1,10 +1,11 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsInteger, parseAsStringLiteral, useQueryStates } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { useOverlay } from '@/lib/navigation/use-overlay';
+import { useStompSubscription } from '@/lib/realtime/use-stomp';
 import { fetchPullRequests } from './api';
 
 export type PullRequestSheetProps = {
@@ -14,6 +15,38 @@ export type PullRequestSheetProps = {
   /** The parent supplies its existing chat outbox; this screen never owns a second queue. */
   onShare?: (url: string) => void;
 };
+
+const pullRequestKey = (roomId: number, login: string | null) =>
+  ['chat', login, 'room', roomId, 'pull-requests'] as const;
+
+/** Mounted by the open dialog only; reuse the shared socket without touching D's receiver. */
+export function usePullRequestLiveUpdates({
+  roomId,
+  login,
+}: Pick<PullRequestSheetProps, 'roomId' | 'login'>) {
+  const client = useQueryClient();
+  const listKey = pullRequestKey(roomId, login);
+  useStompSubscription<{
+    event?: string;
+    message?: { type?: string; roomId?: number };
+  }>(
+    `/topic/chat-rooms/${roomId}`,
+    (event) => {
+      if (
+        event?.event === 'MESSAGE' &&
+        event.message?.type === 'PR_EVENT' &&
+        event.message.roomId === roomId
+      )
+        void client.invalidateQueries({ queryKey: listKey });
+    },
+    {
+      onResubscribe: () => {
+        void client.invalidateQueries({ queryKey: listKey });
+      },
+    },
+  );
+}
+
 export function usePullRequestSheet({
   roomId,
   login,
@@ -29,7 +62,7 @@ export function usePullRequestSheet({
   const [shareError, setShareError] = useState(false);
   const sharing = useRef(false);
   const query = useQuery({
-    queryKey: ['chat', login, 'room', roomId, 'pull-requests', state],
+    queryKey: [...pullRequestKey(roomId, login), state],
     queryFn: ({ signal }) => fetchPullRequests(roomId, state, signal),
     enabled: overlay.isOpen,
     staleTime: 0,
