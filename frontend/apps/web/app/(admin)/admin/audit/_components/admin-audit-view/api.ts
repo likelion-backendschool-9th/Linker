@@ -1,30 +1,23 @@
 import { apiFetch } from '@/lib/api/api-fetch';
 
+// Keep the page-local transport until p27 is included in the generated client.
 export type AuditLog = {
   id: number;
+  adminId: number;
   admin: string;
   actionType: string;
+  targetType: string;
+  targetId: number | null;
   target: string;
-  reason: string;
+  reason: string | null;
   createdAt: string;
+  sanctionStep: string | null;
 };
-
-export type AuditFilters = {
-  admins: { id: string; name: string }[];
-  actionTypes: string[];
-};
-
-export type AuditFiltersState = {
-  adminId: string;
-  actionType: string;
-  from: string;
-  to: string;
-};
-
+export type AuditFilters = { admins: { id: number; name: string }[]; actionTypes: string[] };
+export type AuditFiltersState = { adminId: string; actionType: string; from: string; to: string };
 export function fetchAuditFilters(signal?: AbortSignal) {
-  return apiFetch<AuditFilters>('/api/v1/admin/audit-logs/filters', { signal });
+  return apiFetch<AuditFilters>('/api/v1/admin/audit-logs/filters', { signal, cache: 'no-store' });
 }
-
 export function fetchAuditLogs(
   filters: AuditFiltersState,
   cursor: string | null,
@@ -39,6 +32,6 @@ export function fetchAuditLogs(
   params.set('size', '20');
   return apiFetch<{ items: AuditLog[]; nextCursor: string | null }>(
     `/api/v1/admin/audit-logs?${params}`,
-    { signal },
+    { signal, cache: 'no-store' },
   );
 }
