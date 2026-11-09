@@ -4,7 +4,7 @@ import { ME, RECRUITER } from '../fixtures/users';
 
 /** 06 Settings: `AccountController / AuthController / NotificationController` */
 
-const settings = { pushEnabled: true, notificationEmail: ME.email };
+const settings = { pushEnabled: true, notificationEmail: 'sjsk6849@naver.com' };
 
 export const routes: MockRoute[] = [
   get('/api/v1/user/me/settings', ({ viewer }) => {
@@ -16,7 +16,7 @@ export const routes: MockRoute[] = [
       pushEnabled: settings.pushEnabled,
       plan: recruiter
         ? { name: 'FREE', label: '무료', kind: 'SCOUT' }
-        : { name: 'PRO', label: 'Pro', kind: 'PRO', renewsOn: '2026-11-28' },
+        : { name: 'FLEX', label: 'Flex 5/6명', kind: 'FLEX' },
     };
   }),
   patch('/api/v1/user/me/settings/notifications', ({ body }) => {

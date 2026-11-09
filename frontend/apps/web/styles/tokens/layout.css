@@ -57,6 +57,7 @@
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
   --control-height-sheet: 53px; /* 07 sheet CTA */
   --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
+  --control-height-settings-choice: 34px; /* 06 settings job-status sheet option row (reference screenshot) */
   --control-height-chip: 30px; /* 19 recruit filter chip */
   --control-height-chip-sm: 28px; /* 11 filter chips; hit area stays --touch-target-min */
   --control-height-search: 42px; /* 11 search field */
@@ -69,6 +70,8 @@
   --icon-size-progress-sm: 20px; /* 11 "진행" card icon (Figma frame) */
   --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
   --avatar-size-team: 50px; /* 07 selected-team image */
+  --avatar-size-block-user: 40px; /* 06 settings blocked-user row */
+  --icon-size-block-remove: 22px; /* 06 settings blocked-user removal control */
   --radio-size: 20px;
   --radio-dot-size: 12.5px;
   --separator-dot-size: 2px; /* dot between meta items */
@@ -110,6 +113,11 @@
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
   --dialog-max-width: 400px; /* centered dialogs and confirm modals */
+  --dialog-confirm-width: 20rem; /* 06 logout / delete modal, 320px (Figma 364:2255, 368:761) */
+  --dialog-confirm-min-height: 12.375rem; /* 198px */
+  --dialog-confirm-close-top: 9px;
+  --dialog-confirm-close-end: 6px;
+  --icon-size-confirm-close: 12px;
   --admin-aside-width: 400px; /* admin detail column from 1024px */
   --icon-size: 24px;
   --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
@@ -142,4 +150,5 @@
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
+  --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
 }
