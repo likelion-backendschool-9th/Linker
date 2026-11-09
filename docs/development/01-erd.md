@@ -358,7 +358,7 @@ erDiagram
 ```mermaid
 erDiagram
   users ||--o{ recruit_posts : "writes"
-  teams |o--o{ recruit_posts : "as team (optional)"
+  teams |o--o{ recruit_posts : "as team (required on write)"
   recruit_posts ||--|{ recruit_roles : "roles needed"
   recruit_posts ||--o{ recruit_post_tags : "stack"
   tech_tags ||--o{ recruit_post_tags : "tag"
@@ -369,7 +369,7 @@ erDiagram
   recruit_posts {
     bigint id PK
     bigint author_id FK
-    bigint team_id FK "nullable, create team before first accept"
+    bigint team_id FK "required on write (POL-R-1); nullable only for older rows"
     varchar title "40 chars"
     text description "1,000 chars"
     varchar work_mode "ONLINE, OFFLINE, HYBRID"
@@ -1084,7 +1084,7 @@ erDiagram
 
 | Column | Notes |
 | --- | --- |
-| team_id | Nullable because a post can be written without a team. Set once team creation is done before the first acceptance |
+| team_id | Required on create/edit since 2026-11-09 (POL-R-1): an active team the author owns or admins. The column stays nullable only for posts saved before that; editing one asks for a team, and accepting on it still returns `TEAM_REQUIRED` |
 | status | OPEN ↔ CLOSED. Becomes CLOSED (batch or transaction) when the deadline passes or every role's `accepted_count` reaches `headcount` |
 | sort_at | Sort key for the newest list. `created_at` on write (bump was dropped in the 2026-10-30 subscription revamp; kept so it can return without a migration) |
 
