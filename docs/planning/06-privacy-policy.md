@@ -157,7 +157,6 @@ Text shown on one screen right after the first GitHub login. Required and option
 **Screen layout** (labels shown in Korean in the app)
 
 - [ ] Agree to all (incl. optional) — 전체 동의 (선택 항목 포함)
-- [ ] (Required) I am 14 or older — (필수) 만 14세 이상입니다
 - [ ] (Required) Agree to Terms of Service — view — (필수) 서비스 이용약관 동의 — 보기
 - [ ] (Required) Agree to collection and use of personal data — view — (필수) 개인정보 수집·이용 동의 — 보기
 - [ ] (Optional) Agree to collection and use of additional profile info — view — (선택) 프로필 추가 정보 수집·이용 동의 — 보기
