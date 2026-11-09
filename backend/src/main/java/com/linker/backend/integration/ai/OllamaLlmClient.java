@@ -26,7 +26,7 @@ public class OllamaLlmClient implements LlmClient {
 	private final String model;
 	private final boolean configured;
 
-	public OllamaLlmClient(OllamaProperties properties, RestClient.Builder builder) {
+	public OllamaLlmClient(OllamaProperties properties) {
 		String base = properties.baseUrl() == null ? "" : properties.baseUrl().trim();
 		this.configured = !base.isBlank();
 		Duration connect = properties.connectTimeout() == null ? Duration.ofSeconds(5) : properties.connectTimeout();
@@ -34,7 +34,7 @@ public class OllamaLlmClient implements LlmClient {
 		SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
 		factory.setConnectTimeout(connect);
 		factory.setReadTimeout(read);
-		this.http = builder
+		this.http = RestClient.builder()
 				.requestFactory(factory)
 				.baseUrl(configured ? trimSlash(base) : "http://127.0.0.1")
 				.build();
