@@ -10,7 +10,7 @@ import styles from '../overlay.module.css';
 
 type OverlaySheetProps = {
   overlay: OverlayControl;
-  title: string;
+  title: ReactNode;
   /** Every overlay has a description; pass `describeHidden` when it would only repeat the title */
   description: string;
   describeHidden?: boolean;
@@ -20,7 +20,14 @@ type OverlaySheetProps = {
   closeIcon?: ReactNode;
   closeLabel?: string;
   /** Added after the default classes, for a sheet whose page Figma differs from the shared look */
-  classNames?: { scrim?: string; sheet?: string; header?: string; body?: string; title?: string; close?: string };
+  classNames?: {
+    scrim?: string;
+    sheet?: string;
+    header?: string;
+    title?: string;
+    close?: string;
+    body?: string;
+  };
   children?: ReactNode;
 };
 

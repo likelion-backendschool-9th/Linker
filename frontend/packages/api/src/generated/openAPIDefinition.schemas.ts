@@ -154,7 +154,8 @@ export interface ChatRoomInfoResponse {
      */
   requestDirection: ChatRoomInfoResponseRequestDirection;
   muted: boolean;
-  members: ChatMemberResponse[];
+  /** TEAM: owner, admins, then members */
+  members: ChatRoomMemberResponse[];
   /** @nullable */
   team: ChatRoomTeamResponse | null;
   /**
@@ -162,6 +163,32 @@ export interface ChatRoomInfoResponse {
      * @nullable
      */
   historyLimitDays: number | null;
+}
+
+export type ChatRoomMemberResponseRole = typeof ChatRoomMemberResponseRole[keyof typeof ChatRoomMemberResponseRole] | null;
+
+export const ChatRoomMemberResponseRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+} as const;
+
+export interface ChatRoomMemberResponse {
+  id: number;
+  /**
+     * null for a withdrawn account
+     * @nullable
+     */
+  login: string | null;
+  /** Display name, or the withdrawn placeholder */
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  /**
+     * Team role; null in a 1:1 room
+     * @nullable
+     */
+  role: ChatRoomMemberResponseRole;
 }
 
 export interface ChatPullRequest {
@@ -316,6 +343,11 @@ export interface ChatRoomTeamResponse {
   name: string;
   status: ChatRoomTeamResponseStatus;
   myRole: ChatRoomTeamResponseMyRole;
+  /**
+     * Team photo
+     * @nullable
+     */
+  avatarUrl: string | null;
 }
 
 export interface CompleteTeamSetupRequest {
@@ -1600,6 +1632,7 @@ repoId: number;
 
 export type ListNotificationsParams = {
 cursor?: string;
+unread?: boolean;
 };
 
 export type ListChatShareTargetsParams = {
@@ -1803,6 +1836,13 @@ export interface SubscriptionItemResponse {
      * @nullable
      */
   nextAmount: number | null;
+  /** Price of the current period (KRW): Pro by billing cycle, Flex for the paid seats, Scout monthly */
+  amount: number;
+  /**
+     * FLEX: name of the member who pays (billing manager); null for Pro/Scout or a withdrawn payer
+     * @nullable
+     */
+  payerName: string | null;
 }
 
 export interface PaymentItemResponse {

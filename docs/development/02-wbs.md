@@ -340,7 +340,7 @@
 - **주요 참조 데이터:** chat_rooms, chat_room_members, chat_messages, chat_message_images, chat_message_mentions, ai_chat_summaries. 전체 연결은 기존 ERD §7-2와 5장.
 - **완료 기준:** 팀/개인 대화·재연결·읽음·차단 기간을 통일한다. AI는 C, 보낸 제안은 A가 구현하고 D가 채팅 계약을 검토한다.
 - 페이지 16 목록 구현은 엔드포인트 4개를 추가하지 않는다. 응답은 `{items,nextCursor}`, 기술적 페이지 크기는 20이며 Policy 한도가 아니다. cursor는 마지막 가시 메시지 시각(없으면 방 생성 시각) 내림차순과 roomId 내림차순의 keyset이다. 토큰에는 버전·사용자·탭·정렬 시각·roomId가 들어가고, 요청 문맥과 다르면 400이다. 인코딩은 인증이나 변조 방지가 아니며 각 조회는 멤버십을 다시 확인한다. 실시간 재정렬의 스냅샷은 보장하지 않는다. 모집자 `TEAM`/`REQUEST`는 403, `DIRECT`는 허용한다. 수락·거절의 최초 전환이 커밋된 뒤에만 처리한 본인 `/user/queue/chat-rooms`로 `{type:"CHAT_ROOMS_CHANGED",roomId}`를 보낸다. `requestKind`는 `GENERAL`/`RECRUITING`이다. 팀 행의 `title`은 `teams.name`, `counterpart.avatarUrl`은 팀 사진(`teams.avatar_url`)이다. 어느 쪽이든 차단 중이면 수락은 404이고 상태를 바꾸지 않는다. 차단·해제가 커밋되면 두 사람 사이에 1:1 방이 있을 때 양쪽 `/user/queue/chat-rooms`로 같은 `CHAT_ROOMS_CHANGED`를 보낸다. 메시지 `payload`·`client_message_id`·`edited_at`과 전송 API는 17이다. 무료 팀 60일 이력 제한은 구독 상태가 없어 목록에 적용하지 않는다. 삭제·숨김 메시지의 미리보기 문구는 Policy를 따르고, 미읽음 집계에서 빼는 규칙은 문서에 없어 ERD의 `id > last_read_message_id`에서 본인 메시지와 1:1 차단 기간만 제외한다. 거절 후 30일 재요청 금지는 방 생성(#98)이며 이 DELETE가 기간을 저장하지 않는다. GET은 EXPIRED를 저장하지 않는다.
-- 페이지 17 텍스트와 DIRECT 이미지 관계 저장은 기존 STOMP SEND와 `GET .../messages`, `POST .../read`를 쓴다. DIRECT·요청·팀 방 정보 GET은 실제 행으로 연다. 팀 방은 `team: {id, name, status, myRole}`을 반환하고, 화면은 `myRole`로 타인 메시지 삭제와 @전체를 판단한다. 나가기(`DELETE .../members/me`)는 1:1 전용이며 팀 방은 403 `FORBIDDEN`이다(팀 탈퇴는 09). 일반 페이지는 30건이고 `after` 복구 상한은 500이다. 500에서 더 있으면 `catchUpLimited`와 `nextAfter`를 반환하며 잘라 버린 뒤 영구 누락으로 처리하지 않는다. 화면은 `nextAfter`를 끝까지 따라가 한 번에 불러온 뒤 500개+ 안내와 마지막 읽은 위치 이동을 한다. 메시지가 없는 방은 `after` 없이 최신 페이지를 다시 읽는다. 항목은 id 오름차순이다. `before`와 `after`를 같이 주면 400이다. 팀 이력은 구독 행이 없어 최근 60일(`FREE_60_DAYS`, `flexSupported: false`)만 반환한다. 1:1에는 그 제한을 씌우지 않는다. 팀 전송은 현재 팀원이고 팀 상태가 ACTIVE·COMPLETED일 때만 허용한다. 전송 한도는 사용자별 `chat.send` 초당 5회이고 공유 버킷과 분리한다. 같은 발신자·같은 clientMessageId의 같은 요청은 한 행이다. 다시 보내면 새 행이나 상대 재방송 없이 기존 `/user/queue/chat-rooms`로 `{type:CHAT_SEND_ACCEPTED}`만 발신자에게 보낸다. 유니크 충돌로 이미 저장된 같은 요청도 같다. 커밋 뒤에만 `/topic/chat-rooms/{roomId}`로 `{event:"MESSAGE", message}`를 보내고, 수신 직전에 멤버십과 차단 기간을 다시 보고, `MESSAGE`·`EDIT`·`DELETE` 본문과 `imageUrls`는 그 시점의 안전한 행으로 바꾼다. 커밋 순서가 소켓 도착 순서는 아니다. 같은 토픽의 `EDIT`·`DELETE`는 자리 표시가 적용된 메시지를, `READ`는 `{event,roomId,messageId}`만 보낸다. 신고 5명 자동 숨김(HIDDEN)과 운영자 숨김·삭제·복구, 자동 숨김 건 기각 뒤 다시 보이기도 커밋 뒤 같은 토픽에 `EDIT`로 보내며, 받는 사람마다 그 시점의 행으로 바꾼다. 그 외 이벤트 이름은 전달하지 않는다. 브로커 receipt는 저장 성공이 아니다. 프로세스가 커밋 직후 죽으면 방송이 빠질 수 있다. `after`는 더 새로운 id만 돌려주므로 예전 메시지의 수정·삭제를 복구하지 않는다. V10은 `edited_at`만 추가한다. V15는 DIRECT 이미지 관계 `chat_message_images`(`message_id`, `file_id`, `sort_order`)를 추가한다. 완료된 본인 `CHAT` 파일만 요청 순서로 연결하고, 텍스트와 이미지는 TEXT, 이미지만은 IMAGE로 저장한다. 조회와 MESSAGE·EDIT·DELETE의 `imageUrls`는 그 순서다. 메시지 응답은 행 버전 `updatedAt`(`updated_at`, 마이크로초)을 포함한다. 편집·삭제·숨김·숨김 해제·복구마다 갱신되며, 화면은 같은 메시지의 프레임 중 `updatedAt`이 더 큰 쪽을 남기고 같으면 화면 값을 유지한다. 본인 TEXT 수정·삭제, 팀 안 읽은 참여자, 본인 음소거는 구현한다. 팀 소유자/운영자는 타인 메시지를 삭제할 수 있다. 목록의 무료 60일 제한도 아직 적용하지 않는다.
+- 페이지 17 텍스트와 DIRECT 이미지 관계 저장은 기존 STOMP SEND와 `GET .../messages`, `POST .../read`를 쓴다. DIRECT·요청·팀 방 정보 GET은 실제 행으로 연다. 팀 방은 `team: {id, name, status, myRole, avatarUrl}`을 반환하고, 화면은 `myRole`로 타인 메시지 삭제와 @전체를 판단한다. 방 정보 `members`는 `role`(팀 방: OWNER·ADMIN·MEMBER, 1:1: null)을 포함하며 팀 방은 오너·관리자·멤버 순이다(17 방 정보 화면). 나가기(`DELETE .../members/me`)는 1:1 전용이며 팀 방은 403 `FORBIDDEN`이다(팀 탈퇴는 09). 일반 페이지는 30건이고 `after` 복구 상한은 500이다. 500에서 더 있으면 `catchUpLimited`와 `nextAfter`를 반환하며 잘라 버린 뒤 영구 누락으로 처리하지 않는다. 화면은 `nextAfter`를 끝까지 따라가 한 번에 불러온 뒤 500개+ 안내와 마지막 읽은 위치 이동을 한다. 메시지가 없는 방은 `after` 없이 최신 페이지를 다시 읽는다. 항목은 id 오름차순이다. `before`와 `after`를 같이 주면 400이다. 팀 이력은 구독 행이 없어 최근 60일(`FREE_60_DAYS`, `flexSupported: false`)만 반환한다. 1:1에는 그 제한을 씌우지 않는다. 팀 전송은 현재 팀원이고 팀 상태가 ACTIVE·COMPLETED일 때만 허용한다. 전송 한도는 사용자별 `chat.send` 초당 5회이고 공유 버킷과 분리한다. 같은 발신자·같은 clientMessageId의 같은 요청은 한 행이다. 다시 보내면 새 행이나 상대 재방송 없이 기존 `/user/queue/chat-rooms`로 `{type:CHAT_SEND_ACCEPTED}`만 발신자에게 보낸다. 유니크 충돌로 이미 저장된 같은 요청도 같다. 커밋 뒤에만 `/topic/chat-rooms/{roomId}`로 `{event:"MESSAGE", message}`를 보내고, 수신 직전에 멤버십과 차단 기간을 다시 보고, `MESSAGE`·`EDIT`·`DELETE` 본문과 `imageUrls`는 그 시점의 안전한 행으로 바꾼다. 커밋 순서가 소켓 도착 순서는 아니다. 같은 토픽의 `EDIT`·`DELETE`는 자리 표시가 적용된 메시지를, `READ`는 `{event,roomId,messageId}`만 보낸다. 신고 5명 자동 숨김(HIDDEN)과 운영자 숨김·삭제·복구, 자동 숨김 건 기각 뒤 다시 보이기도 커밋 뒤 같은 토픽에 `EDIT`로 보내며, 받는 사람마다 그 시점의 행으로 바꾼다. 그 외 이벤트 이름은 전달하지 않는다. 브로커 receipt는 저장 성공이 아니다. 프로세스가 커밋 직후 죽으면 방송이 빠질 수 있다. `after`는 더 새로운 id만 돌려주므로 예전 메시지의 수정·삭제를 복구하지 않는다. V10은 `edited_at`만 추가한다. V15는 DIRECT 이미지 관계 `chat_message_images`(`message_id`, `file_id`, `sort_order`)를 추가한다. 완료된 본인 `CHAT` 파일만 요청 순서로 연결하고, 텍스트와 이미지는 TEXT, 이미지만은 IMAGE로 저장한다. 조회와 MESSAGE·EDIT·DELETE의 `imageUrls`는 그 순서다. 메시지 응답은 행 버전 `updatedAt`(`updated_at`, 마이크로초)을 포함한다. 편집·삭제·숨김·숨김 해제·복구마다 갱신되며, 화면은 같은 메시지의 프레임 중 `updatedAt`이 더 큰 쪽을 남기고 같으면 화면 값을 유지한다. 본인 TEXT 수정·삭제, 팀 안 읽은 참여자, 본인 음소거는 구현한다. 팀 소유자/운영자는 타인 메시지를 삭제할 수 있다. 목록의 무료 60일 제한도 아직 적용하지 않는다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -348,7 +348,7 @@
 | 16 | D | GET | `/api/v1/user/chat-rooms/unread-summary` | Unread count per tab, received request count (bottom tab badge) | user |
 | 16 | D | POST | `/api/v1/user/chat-requests/{roomId}/accept` | Accept message request — also borrowed by the top of 17 | user |
 | 16 | D | DELETE | `/api/v1/user/chat-requests/{roomId}` | Delete request (reject, sender not notified, blocks re-request for 30 days) | user |
-| 17 | D | GET | `/api/v1/user/chat-rooms/{roomId}` | Room info, members, my notification setting, request status | room participant |
+| 17 | D | GET | `/api/v1/user/chat-rooms/{roomId}` | Room info, members (team role), team photo, my notification setting, request status | room participant |
 | 17 | D | GET | `/api/v1/user/chat-rooms/{roomId}/messages?before=&after=` | Infinite load upward, missed messages after reconnect, handles 500+ | room participant |
 | 17 | D | POST | `/api/v1/user/chat-rooms/{roomId}/read` | Last read message | room participant |
 | 17 | D | GET | `/api/v1/user/chat-rooms/{roomId}/messages/{messageId}/unread-members` | Unread-by sheet (team) | room participant |
@@ -378,7 +378,7 @@
 
 **신고 알림 freeze:** 최초 자동숨김(`auto_hidden_at` 최초 설정, 서로 다른 유효 신고자 `PlanLimits.REPORT_AUTO_HIDE_REPORTERS`명) 때만 E의 user.ModerationService가 활성 운영자별 admin.NotificationService.create를 호출한다. type은 `REPORT_AUTO_HIDDEN`, 권장 linkPath는 `/admin/reports`, groupKey는 `report-auto-hidden:{caseId}`다. 피신고자·신고자에게 생성하지 않는다. 중복 생산 방지는 E 담당이며 groupKey 자체는 중복 방지 장치가 아니다. 기존 야간 지연을 유지하고 REST·테이블은 추가하지 않는다.
 
-페이지 18 목록은 `{items, nextCursor}`다. 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 푸시는 1분마다 도는 작업 하나가 Expo로 보내고 보낸 행에 `pushed_at`을 남긴다. 채팅은 방별로 묶어 바로 보내고, 비채팅은 `deliver_after`가 없거나 지난 행을 보내므로 낮 알림은 다음 회차에, 22~08시 보류분은 08시 뒤 첫 회차에 함께 나간다. `push_enabled`가 꺼져 있거나 토큰이 없으면 보내지 않는다.
+페이지 18 목록은 `{items, nextCursor}`다. `unread=true`면 같은 커서 순서로 미독 행만 준다("읽지 않음" 탭). 항목의 title·body는 payload 문자열에서만 오고 컬럼은 없다. 단건 읽음과 모두 읽음은 204다. 모두 읽음은 지금 보이는 미독만 지우고 `deliver_after` 전 행은 남긴다. Android 토큰은 `push_tokens`에 저장하고 iOS는 거절한다. 이의 1회는 `POST /api/v1/user/appeals`다. 푸시는 1분마다 도는 작업 하나가 Expo로 보내고 보낸 행에 `pushed_at`을 남긴다. 채팅은 방별로 묶어 바로 보내고, 비채팅은 `deliver_after`가 없거나 지난 행을 보내므로 낮 알림은 다음 회차에, 22~08시 보류분은 08시 뒤 첫 회차에 함께 나간다. `push_enabled`가 꺼져 있거나 토큰이 없으면 보내지 않는다.
 
 
 **시스템 주담당:** D · **REST:** 7개
@@ -390,7 +390,7 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 06 | A | PATCH | `/api/v1/user/me/settings/notifications` | Push on/off (`users.push_enabled`; off stops push only) | user |
-| 18 | D | GET | `/api/v1/user/notifications` | Notification list (with target URL) | user |
+| 18 | D | GET | `/api/v1/user/notifications` | Notification list (with target URL). `unread=true` → unread rows only ("읽지 않음" tab), same cursor | user |
 | 18 | D | GET | `/api/v1/user/notifications/unread-count` | Header bell badge | user |
 | 18 | D | PATCH | `/api/v1/user/notifications/{notificationId}/read` | Mark read | user |
 | 18 | D | POST | `/api/v1/user/notifications/read-all` | Mark all read | user |
@@ -412,17 +412,17 @@
 | 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
 | 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
-| 20 | E | POST | `/api/v1/user/recruits` | Create (5/day, concurrent 3 / Pro 10) | user · developers only |
+| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day, concurrent 3 / Pro 10) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
 | 20 | E | PUT | `/api/v1/user/recruits/{recruitId}` | Edit | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/close` | Close — also borrowed by 21's menu | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/reopen` | Reopen | author |
 | 20 | E | DELETE | `/api/v1/user/recruits/{recruitId}` | Delete (expire pending applications + notify) | author |
 | 21 | E | GET | `/api/v1/public/recruits/{recruitId}` | Body, remaining headcount per role, author card. If logged in: my application status, whether already a team member, whether I'm the author | public |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role + 300 chars, 20/day, one re-apply) | user · developers only |
-| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants tab (days left until 14-day expiry) | author |
-| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | Application sheet (stack, contribution graph, posts, completion record, message) | author |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Accept → team member + team chat + notification. No team, role full, team limit returned as codes | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role, 20/day, one re-apply; message unused / empty) | user · developers only |
+| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants drawer (days left until 14-day expiry) | author |
+| 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | `[Included]` Application detail (profile is reviewed on 04 instead) | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Invite → team member + team chat + notification; org owner also sends GitHub org invite. Role full / team limit returned as codes | author |
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy) | author |
 
 ### 4-12. 작업물·피드·반응 — `PostController`
@@ -513,7 +513,7 @@
 | 28 | D | POST | `/api/v1/user/payments/checkout` | Create order (orderId, amount, customerKey). Checks plan matches member type | user |
 | 28 | D | POST | `/api/v1/user/payments/confirm` | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day) | user |
 | 28 | D | POST | `/api/v1/user/payments/{orderId}/fail` | Record failure return | user |
-| 29 | D | GET | `/api/v1/user/me/subscriptions` | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, next Flex headcount and amount | user |
+| 29 | D | GET | `/api/v1/user/me/subscriptions` | My subscription and team subscriptions I pay for (Scout for recruiters), next billing / expiry date, current period price (`amount`), next Flex headcount and amount, Flex billing manager name (`payerName`) | user |
 | 29 | D | GET | `/api/v1/user/me/payments` | Payment history | user |
 | 29 | D | POST | `/api/v1/user/me/subscriptions/{subscriptionId}/cancel` | Cancel (kept until period end) | user |
 | 29 | D | POST | `/api/v1/user/me/payments/{paymentId}/refund` | Refund (within 7 days + benefits unused = its paid period has not started; latest payment only) | user |
@@ -961,7 +961,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: GitHub org invite → 09's `members/{userId}/github-invitation`, cancel application → 19, close/delete → 20, report → 00
 - Tables: new applications · shared recruit_posts, recruit_roles, users, user_tech_tags, contribution_days, completion_records, posts (after 22), team_members, chat_room_members, github_org_invitations, notifications, reports
 - [ ] Server: application-received notification, auto-expire after 14 days unhandled, `[Included]` reminder if org invite not accepted 7 days after acceptance, `[Included]` mark as fake recruiting if team deleted within 7 days after acceptance
-- [ ] Frontend: screens for guest / applicant / author (guest "지원하기" (Apply) → login prompt), apply sheet, applicants tab and application sheet, 3 acceptance-exception sheets (team member limit shows a Flex prompt), reject sheet, `[Included]` share button (00 share sheet), `generateMetadata` + `opengraph-image.tsx` (title, remaining roles, D-n, blueprint 8-3)
+- [ ] Frontend: screens for guest / applicant / author (guest "지원하기" (Apply) → login prompt), apply sheet (role only), applicants drawer (radio + row 거절 + bottom 초대하기; 대기 stays / 완료 leaves list), capacity blocks without Flex/BM upsell on this page (reason or optional "인원 늘리고 초대"), reject sheet, `[Included]` share button (00 share sheet), `generateMetadata` + `opengraph-image.tsx` (title, remaining roles, D-n, blueprint 8-3)
 
 </details>
 

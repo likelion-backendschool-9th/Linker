@@ -4,20 +4,20 @@ import { isDay, issuesOnDay, layoutWeek, shiftAnchor, spanOf, visibleWeeks } fro
 const issue = (id: number, startDate: string | null, dueDate: string | null) =>
   ({ id, startDate, dueDate, title: `#${id}` }) as IssueRow;
 
-it('shows whole weeks starting on Sunday', () => {
+it('shows whole weeks starting on Monday', () => {
   const month = visibleWeeks('month', '2026-11-15');
-  expect(month[0]![0]).toBe('2026-11-01'); // Sunday
-  expect(month.at(-1)!.at(-1)).toBe('2026-12-05');
-  expect(month).toHaveLength(5);
+  expect(month[0]![0]).toBe('2026-10-26'); // Monday
+  expect(month.at(-1)!.at(-1)).toBe('2026-12-06');
+  expect(month).toHaveLength(6);
   expect(visibleWeeks('week', '2026-11-04')).toEqual([
     [
-      '2026-11-01',
       '2026-11-02',
       '2026-11-03',
       '2026-11-04',
       '2026-11-05',
       '2026-11-06',
       '2026-11-07',
+      '2026-11-08',
     ],
   ]);
 });
@@ -51,10 +51,10 @@ it('splits bars at week edges and stacks overlapping ones in lanes', () => {
     issue(4, '2026-11-04', '2026-11-04'),
   ]);
   const byId = Object.fromEntries(segments.map((s) => [s.issue.id, s]));
-  expect(byId[1]).toMatchObject({ startCol: 0, span: 3, starts: false, ends: true, lane: 0 });
-  expect(byId[2]).toMatchObject({ startCol: 1, span: 6, starts: true, ends: false, lane: 1 });
-  expect(byId[4]).toMatchObject({ startCol: 3, span: 1, lane: 0 });
-  expect(byId[3]).toMatchObject({ startCol: 4, span: 1, dot: true, lane: 0 });
+  expect(byId[1]).toMatchObject({ startCol: 0, span: 2, starts: false, ends: true, lane: 1 });
+  expect(byId[2]).toMatchObject({ startCol: 0, span: 7, starts: true, ends: false, lane: 0 });
+  expect(byId[4]).toMatchObject({ startCol: 2, span: 1, lane: 1 });
+  expect(byId[3]).toMatchObject({ startCol: 3, span: 1, dot: true, lane: 1 });
   expect(lanes).toBe(2);
 });
 

@@ -31,8 +31,11 @@ export const MarkNotificationReadParams = zod.object({
 
 export const MarkNotificationReadResponse = zod.void()
 
+export const listNotificationsQueryUnreadDefault = false;
+
 export const ListNotificationsQueryParams = zod.object({
-  "cursor": zod.string().optional()
+  "cursor": zod.string().optional(),
+  "unread": zod.boolean().default(listNotificationsQueryUnreadDefault)
 })
 
 export const ListNotificationsResponse = zod.object({

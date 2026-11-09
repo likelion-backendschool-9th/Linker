@@ -192,6 +192,19 @@ export function subscriptionView(row: Row): Subscription {
     seats: row.seats,
     nextSeats,
     nextAmount: nextSeats === null ? null : flexAmount(nextSeats),
+    amount:
+      row.planKey === 'PRO'
+        ? row.billing === 'YEARLY'
+          ? SUBSCRIPTION_PRICE.proYearly
+          : SUBSCRIPTION_PRICE.proMonthly
+        : row.planKey === 'FLEX'
+          ? flexAmount(row.seats ?? 1)
+          : SUBSCRIPTION_PRICE.scoutMonthly,
+    // The mock pays from the team owner's account.
+    payerName:
+      row.teamId === null
+        ? null
+        : (TEAM_MEMBERS[row.teamId]?.find((member) => member.role === 'OWNER')?.user.name ?? null),
   };
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Copy, MessageCircle, Share2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
@@ -10,14 +10,30 @@ import type { ShareTarget } from './api';
 import { useShareButton } from './hook';
 import styles from './ShareButton.module.css';
 
+type ShareButtonProps = {
+  target: ShareTarget;
+  /** Pass `null` when another control opens the sheet via the share overlay URL */
+  trigger?: ReactElement | null;
+};
+
 /** Shared by public posts, recruitment posts and developer profiles (POL-P-7). */
-export function ShareButton({ target }: { target: ShareTarget }) {
+export function ShareButton({ target, trigger }: ShareButtonProps) {
   const state = useShareButton(target);
   const { overlay, picking, rooms, send } = state;
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (picking) searchInput.current?.focus();
   }, [picking]);
+
+  const resolvedTrigger =
+    trigger === null
+      ? undefined
+      : (trigger ?? (
+          <button type="button" className={styles.trigger}>
+            <Share2 aria-hidden />
+            공유
+          </button>
+        ));
 
   return (
     <OverlaySheet
@@ -34,12 +50,7 @@ export function ShareButton({ target }: { target: ShareTarget }) {
           ? '공유할 채팅방을 선택하면 바로 보내요.'
           : '링크를 복사하거나 채팅방에 공유해 보세요.'
       }
-      trigger={
-        <button type="button" className={styles.trigger}>
-          <Share2 aria-hidden />
-          공유
-        </button>
-      }
+      trigger={resolvedTrigger}
     >
       {picking ? (
         <div className={styles.picker}>

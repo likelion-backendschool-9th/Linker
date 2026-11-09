@@ -7,6 +7,7 @@ export {
   updateNotifications,
 } from '@/features/notifications/notification-queries';
 export type {
+  NotificationFilter,
   NotificationItem,
   NotificationPage,
 } from '@/features/notifications/notification-queries';

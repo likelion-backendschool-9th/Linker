@@ -493,7 +493,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
-- [ ] (sheet) Room info: members, mute, leave (1:1), `[Included]` photo gallery
+- [ ] Room info (full screen from the header ☰, Figma 351:580): team card (photo, name, "멤버 N명" → 11), members with team role (오너/관리자/멤버, owner first), mute, PR list, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
 - [ ] Server: rooms, participants (last read message), messages tables shared by team and 1:1
 - [ ] Server: STOMP auth, new message notifications (bundled per room)
 
@@ -505,6 +505,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
+- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; between the input and the send button) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
 **AI chat summary (Flex, after 28)** `[Included]`
@@ -520,7 +521,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **1:1 chat only (with 22–24)**
 
 - [ ] Start rules: direct if mutual follow or same team; otherwise only 1 first message goes to requests
-- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees accept/delete at the top
+- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees a bottom panel in place of the composer (Figma 350:123): "{name}님이 메시지 요청을 보냈어요" / "수락 버튼을 누르시면 대화하실 수 있습니다" + 수락 · 거절 (= delete) · 차단
 - [ ] Delete (reject) isn't disclosed, and blocks new requests from the same person for 30 days
 - [ ] Blocking hides the room from my list and the other's messages aren't delivered to me
 - [ ] `[Included]` First external link preview (OG; 1:1 only when mutual follow)
@@ -544,7 +545,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
 - [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
-- [ ] Tap → navigate to the screen + mark read; "모두 읽음" (mark all read). Team invite → `/invite/[code]` (10)
+- [ ] Tabs: 전체 (all) / 읽지 않음 (unread, server `unread=true`; empty → "읽지 않은 알림이 없어요."), kept in the URL (nuqs). Rows grouped by day ("11월 5일" + "오늘" / "N일 전"); each row is a dot (unread dark, read muted) + the title only (Figma 248:1243)
+- [ ] Tap → navigate to the screen + mark read; "전체 읽기" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
 - [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning
@@ -573,7 +575,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (within 60 days from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
-- [ ] Choose a team to link (teams where I'm owner/admin; can write without a team)
+- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay
 - [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
 - [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification)
@@ -582,30 +584,30 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 ### 21. Recruit post detail (apply & manage applicants) `[Required]` · `/recruits/[id]`
 
-> Basis: R-3, R-4, P-7 · Needs first: 20, 08 (teams), 17 (team chat) · Merged: received application list + application detail → author-only tab and sheet
+> Basis: R-3, R-4, P-7 · Needs first: 20, 08 (teams), 17 (team chat) · Merged: received applications → author bottom CTA + applicants drawer
 
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [ ] (sheet) Apply: choose one role + message 300 chars, note that profile is attached automatically
+- [ ] (sheet) Apply: choose one open role only (no "하고 싶은 말")
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
-- [ ] Already a member of that team → "이미 함께하는 팀이에요"
+- [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
 - [ ] Server: application-received notification
 
 **What the author sees**
 
-- [ ] "지원자 N" (applicants N) tab: applicant cards per role, days left until 14-day auto-expiry
-- [ ] (sheet) Application: tech stack, graph, posts, completion record, message, "프로필 전체 보기" (full profile, 04)
-- [ ] Accept: add team member + join team chat + accept notification. If the author is the team owner and a GitHub org owner, a "GitHub 조직 초대" button (not sent automatically)
-- [ ] Accept exceptions: no team → "팀 먼저 만들기" (create a team first) sheet (application stays pending); role full → "인원 늘리고 수락"; free team at member limit (6) → reason + Flex prompt
-- [ ] Reject: (sheet) optional reason; applicant only sees the fixed copy
-- [ ] Accept/reject still possible after closing; edit / close / delete menu
+- [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
+- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant
+- [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
+- [ ] Reject: row "거절" + (sheet) optional reason; applicant only sees the fixed copy
+- [ ] Invite/reject still possible after closing; edit / close / delete menu
 - [ ] `[Included]` Share button → 00 share sheet
 - [ ] `generateMetadata` (title, "remaining slots per role · closes D-n") + `opengraph-image.tsx` (title, remaining roles, D-n). Defaults if deleted or hidden
 - [ ] Server: auto-expire applications unhandled for 14 days + notify
-- [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after acceptance, remind applicant and owner
-- [ ] `[Included]` Server: if the team is deleted within 7 days after acceptance, flag for fake-recruitment review
+- [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after invite, remind applicant and owner
+- [ ] `[Included]` Server: if the team is deleted within 7 days after invite, flag for fake-recruitment review
 
 ---
 
@@ -727,6 +729,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 > Basis: S-1, S-3, S-7, H-5 · Needs first: screens with benefits (04, 09, 17, 20, 22) · Merged: plan comparison + web checkout + payment complete → one page and two return URLs
 
 - [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Flex is monthly only
+- [ ] Figma 28 (288:471 developer, 293:218 recruiter): title "Linker를 구독하고 / 더 좋은 서비스를 경험해 보세요" + subtitle, "월간 결제 / 연간 결제" toggle, plan cards (name, one-line pitch, price + "월간 청구"/"연간 청구", "{plan} 플랜 구독하기", checked benefits), terms/privacy links, blue note "계정 당 Pro, Flex의 무료 체험은 1회만 제공 됩니다". No card for the free plan; Flex picks its team in a "결제할 팀 선택" sheet opened by its button (user decisions 2026-11-09). **The trial note is Figma copy shown by user decision, but the free trial is `[Included]` and not implemented yet**, so no account actually gets a trial. The recruiter frame's Scout card appears once the server sells Scout (the server's recruiter checkout is still `[Included]`); until then recruiters see "지금 결제할 수 있는 요금제가 없어요."
 - [ ] Server: plans API includes personal trial eligibility. Return `Cache-Control: private, no-store`; frontend uses server `no-store` and account-scoped TanStack queries, with no shared Next cache
 - [ ] Monthly/annual toggle; show the entry reason (`?reason=photo-limit` etc. when coming from a limit prompt sheet)
 - [ ] Flex requires choosing a team (where I'm owner or billing manager) + price from current headcount (₩7,900 up to 6, ₩1,900 per member from the 7th), "인원이 바뀌면 다음 결제일부터 반영돼요" (headcount changes apply from the next billing date)
@@ -741,6 +744,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 > Basis: S-2 · Needs first: 28 · Needed for the MVP launch demo "test payment → benefits → cancel → back to free"
 
+- [ ] Figma 29 (294:306 Pro, 295:459 Flex, 364:1694 cancel modal): grey "현재 사용 중인 요금제" card ("{plan} 요금제", description, "요금제 변경하기" → 28), info box ("다음 결제일" — "이용 만료일"/"혜택 종료일" until auto-renewal exists, "현재 결제 주기", "월 결제 금액 2,900(Pro)", Flex adds "팀 인원 N명", "결제 담당자", "결제 담당자 변경", then "요금제 해지 ›"), "결제 내역" with "전체 보기" (3 rows first; date, "{plan} 월간 결제", "N 원 결제/환불"). Several subscriptions repeat card + info box; no subscription shows a "무료 요금제" card. Refund is a small "환불" button on refundable payment rows, confirmed in the same modal style (user decisions 2026-11-09). **"결제 담당자 변경" is shown but `[Included]` and not built: it toasts "미구현 기능입니다."** Server: subscription items add `amount` (current period price) and `payerName` (Flex billing manager).
 - [ ] Current plan, next billing date (or expiry), payment history
 - [ ] Cancel (confirm sheet): benefits kept until the paid period ends
 - [ ] Refund: within 7 days of payment + benefits unused (its paid period has not started; latest payment only) → full refund via Toss Payments cancel

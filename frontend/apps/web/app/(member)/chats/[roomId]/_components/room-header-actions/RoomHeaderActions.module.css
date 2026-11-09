@@ -1,0 +1,30 @@
+/* Figma 248:1242: 23px search and 24px menu, 10px apart; hit areas stay the dense-header 24px */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-black);
+  cursor: pointer;
+}
+
+.search {
+  --icon-box-size: var(--icon-size-chat-search);
+  --icon-stroke-width: 1.5;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

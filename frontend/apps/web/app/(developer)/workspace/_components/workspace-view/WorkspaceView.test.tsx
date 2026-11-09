@@ -1,8 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { renderWithProviders } from '@/test/render-with-providers';
-import type { MyTeam } from '../../../teams/[id]/_lib/team-queries';
+import type { MyTeam } from './api';
 import { WorkspaceView } from './WorkspaceView';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
@@ -19,165 +19,106 @@ const team = (id: number, status: MyTeam['status']): MyTeam => ({
   unreadCount: 0,
   joinedAt: '2026-11-01T00:00:00Z',
 });
+function stubTeams(
+  items: MyTeam[],
+  teamCount = items.filter((t) => t.status !== 'ARCHIVED').length,
+) {
+  vi.mocked(apiFetch).mockImplementation(async (url: string) =>
+    url === '/api/v1/user/me/teams'
+      ? { items, teamLimit: 10, teamCount, nextCursor: null }
+      : { teamId: 1, items: [] },
+  );
+}
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
 });
-// The home also loads C's my-issues preview; these tests only stub the team list
-function stubTeams(body: Record<string, unknown>) {
-  vi.mocked(apiFetch).mockImplementation(async (url: string) =>
-    url === '/api/v1/user/me/teams' ? body : { teamId: 0, items: [] },
-  );
-}
 
-it('keeps cross-owner entry links available when the team list fails without loading C data', async () => {
-  vi.mocked(apiFetch).mockRejectedValue(new Error('team service unavailable'));
+it('retains the full-list handoff and retry when the team service fails without querying issues', async () => {
+  vi.mocked(apiFetch).mockRejectedValue(new Error('unavailable'));
   renderWithProviders(<WorkspaceView />);
   await screen.findByRole('alert');
-  expect(screen.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
     'href',
     '/workspace/issues',
   );
-  expect(screen.getByRole('link', { name: '내 통계' })).toHaveAttribute('href', '/me/stats');
   expect(vi.mocked(apiFetch).mock.calls.every(([url]) => url === '/api/v1/user/me/teams')).toBe(
     true,
   );
 });
 
-it('empty teams provide both documented navigation choices', async () => {
-  vi.mocked(apiFetch).mockResolvedValue({ items: [], teamLimit: 10, teamCount: 0 });
+it('keeps the documented empty-team destinations without the retired prose or statistics action', async () => {
+  stubTeams([]);
   renderWithProviders(<WorkspaceView />);
   expect(await screen.findByText('아직 함께하는 팀이 없어요.')).toBeVisible();
   expect(screen.getByRole('link', { name: '팀 찾으러 가기' })).toHaveAttribute('href', '/recruits');
-});
-it('the ten-team limit cannot be bypassed from an empty status filter', async () => {
-  stubTeams({
-    items: Array.from({ length: 10 }, (_, index) => team(index + 1, 'ACTIVE')),
-    teamLimit: 10,
-    teamCount: 10,
-  });
-  renderWithProviders(<WorkspaceView />, { searchParams: '?status=COMPLETED' });
-  await screen.findByText('이 상태의 팀이 없어요.');
-  expect(screen.queryByRole('link', { name: '팀 만들기' })).not.toBeInTheDocument();
   expect(
     screen
-      .getAllByRole('button', { name: '팀 만들기' })
-      .every((button) => button.hasAttribute('disabled')),
+      .getAllByRole('link', { name: '팀 만들기' })
+      .every((a) => a.getAttribute('href') === '/teams/new'),
   ).toBe(true);
-});
-it('archived teams do not consume the membership limit and link only to chat history', async () => {
-  stubTeams({
-    items: [
-      ...Array.from({ length: 9 }, (_, index) => team(index + 1, 'ACTIVE')),
-      team(10, 'ARCHIVED'),
-    ],
-    teamLimit: 10,
-    teamCount: 9,
-  });
-  renderWithProviders(<WorkspaceView />);
-  expect(await screen.findByRole('link', { name: /프로젝트 10/ })).toHaveAttribute(
-    'href',
-    '/chats/10',
-  );
-  expect(screen.getByRole('link', { name: '팀 만들기' })).toHaveAttribute('href', '/teams/new');
-});
-it('read-only teams retain the readable team entry and an explicit status', async () => {
-  stubTeams({
-    items: [team(1, 'READ_ONLY')],
-    teamLimit: 10,
-    teamCount: 1,
-  });
-  renderWithProviders(<WorkspaceView />);
-  expect(await screen.findByRole('link', { name: /프로젝트 1.*읽기 전용/ })).toHaveAttribute(
-    'href',
-    '/teams/1/issues',
-  );
+  expect(screen.queryByRole('link', { name: '내 통계' })).not.toBeInTheDocument();
 });
 
-it('shows nullable server data without inventing Free, issue counts, images or chat links', async () => {
-  stubTeams({
-    items: [
-      {
-        ...team(1, 'ARCHIVED'),
-        orgAvatarUrl: null,
-        chatRoomId: null,
-        plan: null,
-        openIssueCount: null,
-        unreadCount: null,
-      },
-    ],
-    teamLimit: 10,
-    teamCount: 0,
-    nextCursor: null,
+it('uses server membership count for the creation limit even when the selected status has no rows', async () => {
+  stubTeams([team(1, 'ACTIVE')], 10);
+  renderWithProviders(<WorkspaceView />);
+  await screen.findByText('이 상태의 팀이 없어요.');
+  expect(screen.queryByRole('link', { name: '팀 만들기' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '팀 만들기' })).toBeDisabled();
+});
+
+it('shows the four design tabs and switches only the rows, leaving the chosen issue team alone', async () => {
+  stubTeams([team(1, 'ACTIVE'), team(2, 'COMPLETED'), team(3, 'READ_ONLY'), team(4, 'ARCHIVED')]);
+  renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=1' });
+  const tabs = await screen.findByRole('group', { name: '팀 상태 필터' });
+  expect(within(tabs).getAllByRole('button')).toHaveLength(4);
+  expect(within(tabs).getByRole('button', { name: '완료 1' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(screen.getByRole('article', { name: '프로젝트 2' })).toBeVisible();
+  fireEvent.click(within(tabs).getByRole('button', { name: '읽기 전용 1' }));
+  expect(await screen.findByRole('article', { name: '프로젝트 3' })).toBeVisible();
+  expect(screen.queryByRole('article', { name: '프로젝트 2' })).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '내 프로젝트 1 팀의 이슈' })).toBeVisible();
+});
+
+it('excludes archived teams from the limit and routes them to chat history', async () => {
+  stubTeams([team(1, 'ARCHIVED')], 0);
+  renderWithProviders(<WorkspaceView />, { searchParams: '?status=ARCHIVED' });
+  const card = await screen.findByRole('article', { name: '프로젝트 1' });
+  expect(within(card).getByRole('link')).toHaveAttribute('href', '/chats/1');
+  expect(screen.getByRole('link', { name: '팀 만들기' })).toHaveAttribute('href', '/teams/new');
+});
+
+it('never invents avatars, Free plan limits, dates or chat links for missing server fields', async () => {
+  stubTeams([{ ...team(1, 'ARCHIVED'), orgAvatarUrl: null, chatRoomId: null, plan: null }]);
+  const { container } = renderWithProviders(<WorkspaceView />, {
+    searchParams: '?status=ARCHIVED',
   });
-  const { container } = renderWithProviders(<WorkspaceView />);
   const card = await screen.findByRole('article', { name: '프로젝트 1' });
   expect(within(card).queryByRole('link')).not.toBeInTheDocument();
   expect(within(card).queryByRole('img')).not.toBeInTheDocument();
-  expect(card).not.toHaveTextContent('Free');
-  expect(card).not.toHaveTextContent('열린 이슈');
-  expect(card).toHaveTextContent('채팅방을 찾지 못했어요');
+  expect(card).toHaveTextContent('멤버 3');
+  expect(card).not.toHaveTextContent('/6');
+  expect(container.textContent).not.toMatch(/년.*월.*까지/);
   expect(await axe(container)).toHaveNoViolations();
 });
 
-it('keeps valid live-team navigation and real zero counts while summaries are partly unknown', async () => {
-  stubTeams({
-    items: [
-      {
-        ...team(1, 'ACTIVE'),
-        orgAvatarUrl: null,
-        chatRoomId: null,
-        plan: null,
-        openIssueCount: 0,
-        unreadCount: 3,
-      },
-    ],
-    teamLimit: 10,
-    teamCount: 1,
-    nextCursor: null,
-  });
+it('shows the policy Free cap without treating Flex as capped', async () => {
+  stubTeams([team(1, 'COMPLETED'), { ...team(2, 'COMPLETED'), plan: 'FLEX' }]);
   renderWithProviders(<WorkspaceView />);
-  const article = await screen.findByRole('article', { name: '프로젝트 1' });
-  const card = within(article).getByRole('link');
-  expect(card).toHaveAttribute('href', '/teams/1/issues');
-  expect(card).toHaveTextContent('열린 이슈 0개');
-  expect(card).toHaveTextContent('안 읽은 메시지 3개');
-  expect(card).not.toHaveTextContent('Free');
+  expect(await screen.findByRole('article', { name: '프로젝트 1' })).toHaveTextContent('멤버 3/6');
+  const flex = screen.getByRole('article', { name: '프로젝트 2' });
+  expect(flex).toHaveTextContent('멤버 3');
+  expect(flex).not.toHaveTextContent('/6');
 });
 
-it('uses the server membership count for the limit instead of the visible subset', async () => {
-  stubTeams({
-    items: [team(1, 'ACTIVE')],
-    teamLimit: 10,
-    teamCount: 10,
-    nextCursor: null,
-  });
-  renderWithProviders(<WorkspaceView />);
-  await screen.findByRole('article', { name: '프로젝트 1' });
-  expect(screen.getByRole('button', { name: '팀 만들기' })).toBeDisabled();
-  expect(screen.getByText('참여 중인 팀 10/10 · 보관된 팀 제외')).toBeVisible();
-});
-
-it('preserves the selected team on the handoff to C', async () => {
-  stubTeams({
-    items: [team(42, 'ACTIVE')],
-    teamLimit: 10,
-    teamCount: 1,
-    nextCursor: null,
-  });
+it('preserves an explicit valid team when handing off to C', async () => {
+  stubTeams([team(42, 'ACTIVE')]);
   renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=42' });
-  expect(await screen.findByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
     'href',
     '/workspace/issues?teamId=42',
   );
-});
-
-it('team cards use h3 headings under the my-teams h2 without skipping a level', async () => {
-  vi.mocked(apiFetch).mockImplementation(async (url: string) =>
-    url === '/api/v1/user/me/teams'
-      ? { items: [team(1, 'ACTIVE')], teamLimit: 10, teamCount: 1 }
-      : { teamId: 1, items: [] },
-  );
-  renderWithProviders(<WorkspaceView />);
-  expect(await screen.findByRole('heading', { name: '프로젝트 1', level: 3 })).toBeVisible();
-  expect(screen.queryByRole('heading', { level: 4 })).not.toBeInTheDocument();
 });

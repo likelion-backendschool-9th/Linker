@@ -1,0 +1,35 @@
+/* Figma 368:2753: the 07 sheet look (scrim 32% + blur), title 18 Medium, 70px issue rows */
+.scrim.scrim {
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+.sheet.sheet {
+  padding: var(--space-section-inset) var(--space-md)
+    calc(var(--space-calendar-sheet-bottom) + env(safe-area-inset-bottom));
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.title.title {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-sheet-title);
+}
+
+.list {
+  /* Figma: list 20px under the title row; the shared sheet body adds a 24px top margin */
+  margin: calc(var(--space-group) - var(--space-lg)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.avatar {
+  position: relative;
+  display: block;
+  width: var(--avatar-size-calendar);
+  height: var(--avatar-size-calendar);
+  overflow: hidden;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-full);
+}

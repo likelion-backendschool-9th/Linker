@@ -24,12 +24,14 @@ export function useAppealSheet(notification: NotificationItem | null) {
   const input = useRef<HTMLTextAreaElement>(null);
   const [invalid, setInvalid] = useState(false);
   function recordSubmitted(sanctionId: number) {
-    client.setQueryData<InfiniteData<NotificationPage>>(notificationKeys.list(login), (data) =>
-      updateNotifications(data, (item) =>
-        item.appeal?.sanctionId === sanctionId
-          ? { ...item, appeal: { ...item.appeal, submitted: true } }
-          : item,
-      ),
+    client.setQueriesData<InfiniteData<NotificationPage>>(
+      { queryKey: notificationKeys.lists(login) },
+      (data) =>
+        updateNotifications(data, (item) =>
+          item.appeal?.sanctionId === sanctionId
+            ? { ...item, appeal: { ...item.appeal, submitted: true } }
+            : item,
+        ),
     );
   }
   const appeal = useMutation({
@@ -38,7 +40,7 @@ export function useAppealSheet(notification: NotificationItem | null) {
     onSuccess: async (_, { sanctionId }) => {
       recordSubmitted(sanctionId);
       toast('이의 제기를 접수했어요.');
-      await client.invalidateQueries({ queryKey: notificationKeys.list(login) });
+      await client.invalidateQueries({ queryKey: notificationKeys.lists(login) });
     },
     onError: (error, { sanctionId }) => {
       if (error instanceof ApiError && error.code === 'ALREADY_APPEALED') {

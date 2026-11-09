@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 
@@ -55,42 +55,24 @@ const base: Detail = {
 const comments: PostComment[] = [
   {
     id: 3,
-    parentId: null,
     author: { id: 4, login: 'doyun', name: '이도윤', avatarUrl: '/mock/avatar.png' },
-    text: '삭제된 댓글입니다',
-    deleted: true,
+    text: '데모가 깔끔해요.',
     createdAt: '2026-10-31T00:00:00Z',
-    editedAt: null,
-  },
-  {
-    id: 4,
-    parentId: 3,
-    author: { id: 1, login: 'linker', name: '김링커', avatarUrl: '/mock/avatar.png' },
-    text: '답글은 남아 있어요.',
-    deleted: false,
-    createdAt: '2026-10-31T01:00:00Z',
-    editedAt: null,
   },
   {
     id: 5,
-    parentId: null,
     author: { id: 7, login: 'taeyang', name: '정태양', avatarUrl: '/mock/avatar.png' },
     text: '구조가 깔끔해요!',
-    deleted: false,
     createdAt: '2026-10-31T02:00:00Z',
-    editedAt: null,
   },
 ];
 
 function serve(detail: Detail, like?: () => unknown) {
   fetchMock.mockImplementation(async (url) => {
     if (url.startsWith('/api/v1/public/posts/1/comments')) return { items: comments };
-    if (url.startsWith('/api/v1/public/posts/1/readme'))
-      return { markdown: '# linker-web\n\n실행 방법' };
-    if (url.startsWith('/api/v1/public/posts/1/same-repo-posts')) return { items: [] };
     if (url.startsWith('/api/v1/public/posts/1')) return detail;
     if (url.endsWith('/likes')) return like?.();
-    if (url.endsWith('/comments')) return comments[2];
+    if (url.endsWith('/comments')) return comments[1];
     return undefined;
   });
 }
@@ -106,19 +88,15 @@ it('shows a guest the whole post and sends reactions to the login prompt', async
   const { container } = renderWithProviders(<PostDetail postId="1" />, { onUrlUpdate });
 
   expect(await screen.findByRole('heading', { name: base.intro })).toBeVisible();
-  expect(screen.getByText('구직 중')).toBeVisible();
-  expect(screen.getByText(/수정됨/)).toBeVisible();
   expect(screen.getByRole('img', { name: 'linker-web 이미지 1' })).toBeVisible();
-  expect(screen.getByText('2026년 10월 ~ 진행 중')).toBeVisible();
+  expect(screen.getByText('프론트엔드 개발')).toBeVisible();
+  expect(screen.getByText('2026.10.30 작성')).toBeVisible();
   expect(screen.getAllByRole('link', { name: /linker\.example\.dev/ }).length).toBeGreaterThan(0);
-  // One level of replies; a deleted comment with replies stays as "삭제된 댓글입니다"
-  expect(await screen.findByText('삭제된 댓글입니다')).toBeVisible();
-  expect(screen.getByRole('list', { name: '이도윤님 댓글의 답글' })).toBeVisible();
-  expect(screen.getByText('작성자')).toBeVisible();
+  expect(await screen.findByRole('article', { name: '정태양' })).toBeVisible();
+  expect(screen.getAllByText('2026년 10월 31일')).toHaveLength(2);
+  expect(screen.queryByRole('button', { name: /답글/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'README' })).not.toBeInTheDocument();
   expect(await axe(container)).toHaveNoViolations();
-
-  await user.click(screen.getByRole('button', { name: 'README' }));
-  expect(await screen.findByRole('heading', { name: 'linker-web' })).toBeVisible();
 
   await user.click(screen.getByRole('button', { name: '좋아요' }));
   await waitFor(() =>
@@ -126,7 +104,7 @@ it('shows a guest the whole post and sends reactions to the login prompt', async
       expect.objectContaining({ queryString: expect.stringContaining('overlay=login') }),
     ),
   );
-  expect(screen.getByRole('button', { name: '로그인하고 댓글 남기기' })).toBeVisible();
+  expect(screen.getByRole('button', { name: /댓글을 작성해 주세요/ })).toBeVisible();
 });
 
 it('applies a like at once and rolls it back when the server fails', async () => {
@@ -152,22 +130,19 @@ it('applies a like at once and rolls it back when the server fails', async () =>
   expect(screen.getByRole('button', { name: /좋아요 42/ })).toBeVisible();
 });
 
-it('replies to a top-level comment', async () => {
+it('writes a comment from the field', async () => {
   serve(base);
   const user = userEvent.setup();
   renderWithProviders(<PostDetail postId="1" />, {
     viewer: { role: 'developer', login: 'developer' },
   });
-  const comment = await screen.findByRole('article', { name: '정태양' });
-  await user.click(within(comment).getByRole('button', { name: /답글 달기/ }));
-  expect(screen.getByText('정태양님에게 답글 남기는 중')).toBeVisible();
-  await user.type(screen.getByLabelText('정태양님에게 답글'), '감사해요');
+  await user.type(await screen.findByLabelText('댓글'), '감사해요');
   await user.click(screen.getByRole('button', { name: '등록' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/posts/1/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: '감사해요', parentId: 5 }),
+      body: JSON.stringify({ text: '감사해요' }),
     }),
   );
 });
@@ -195,5 +170,4 @@ it('hides reactions from recruiters and marks a hidden post for its author', asy
   expect(await screen.findByText('검토 중')).toBeVisible();
   expect(screen.queryByRole('button', { name: '좋아요' })).not.toBeInTheDocument();
   expect(screen.getByText('레포를 볼 수 없음')).toBeVisible();
-  expect(screen.queryByRole('button', { name: 'README' })).not.toBeInTheDocument();
 });

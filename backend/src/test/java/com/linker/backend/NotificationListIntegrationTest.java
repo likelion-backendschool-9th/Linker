@@ -231,6 +231,23 @@ class NotificationListIntegrationTest {
 				mineRows.get(1).getId()
 		)).isEqualTo(readAt);
 		assertThat(count(me)).isEqualTo(20);
+		// "읽지 않음" tab: the same keyset page without read rows; quiet-hours and foreign rows stay out.
+		mockMvc.perform(get("/api/v1/user/notifications").param("unread", "true").cookie(cookie(me)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(20))
+				.andExpect(jsonPath("$.items[0].id").value(mineRows.get(0).getId()))
+				.andExpect(jsonPath("$.items[1].id").value(mineRows.get(2).getId()))
+				.andExpect(jsonPath("$.items[*].read", everyItem(is(false))))
+				.andExpect(jsonPath("$.items[?(@.id == " + hidden.getId() + ")]").isEmpty())
+				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
+		mockMvc.perform(get("/api/v1/user/notifications")
+						.param("unread", "true").param("cursor", cursor).cookie(cookie(me)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].read").value(false));
+		mockMvc.perform(get("/api/v1/user/notifications").param("unread", "maybe").cookie(cookie(me)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 
 		mockMvc.perform(post("/api/v1/user/notifications/read-all").cookie(cookie(me)))
 				.andExpect(status().isNoContent());
@@ -447,7 +464,7 @@ class NotificationListIntegrationTest {
 		mockMvc.perform(get("/v3/api-docs"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath(list + "['200']").exists())
-				.andExpect(jsonPath(list + "['400'].description").value("VALIDATION_ERROR (cursor)"))
+				.andExpect(jsonPath(list + "['400'].description").value("VALIDATION_ERROR (cursor, unread)"))
 				.andExpect(jsonPath(list + "['401'].content.*.schema['$ref']").value(hasItem(errorBody)))
 				.andExpect(jsonPath(list + "['401'].content.*.schema['$ref']").value(everyItem(is(errorBody))))
 				.andExpect(jsonPath(count + "['200']").exists())

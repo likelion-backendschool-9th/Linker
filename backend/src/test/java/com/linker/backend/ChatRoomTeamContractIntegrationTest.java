@@ -125,6 +125,20 @@ class ChatRoomTeamContractIntegrationTest {
 	}
 
 	@Test
+	void roomInfoListsMembersByTeamRoleWithTheTeamPhoto() throws Exception {
+		jdbc.update("update teams set avatar_url = ? where id = ?", "https://cdn.test/team.png", team);
+		mvc.perform(get("/api/v1/user/chat-rooms/" + room).cookie(cookie(member)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.team.avatarUrl").value("https://cdn.test/team.png"))
+				.andExpect(jsonPath("$.members[0].id").value(owner.getId()))
+				.andExpect(jsonPath("$.members[0].role").value("OWNER"))
+				.andExpect(jsonPath("$.members[1].id").value(admin.getId()))
+				.andExpect(jsonPath("$.members[1].role").value("ADMIN"))
+				.andExpect(jsonPath("$.members[2].id").value(member.getId()))
+				.andExpect(jsonPath("$.members[2].role").value("MEMBER"));
+	}
+
+	@Test
 	void adminDeletesAnotherMembersMessageButAMemberCannot() throws Exception {
 		long ownersMessage = message(owner, "소유자 메시지");
 		long membersMessage = message(member, "팀원 메시지");

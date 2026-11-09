@@ -150,6 +150,10 @@ class ChatShareIntegrationTest {
 		ChatRoom left = direct(me, named("나간 상대"), DmStatus.ACCEPTED);
 		jdbc.update("update chat_room_members set left_at=now() where room_id=? and user_id<>?", left.getId(), me.getId());
 		jdbc.update("update chat_rooms set created_at=? where id=?", Timestamp.from(NOW.minusSeconds(50)), dm.getId());
+		// Rows get the real wall-clock created_at; pin the team rooms before NOW so the order does not
+		// depend on the date the suite runs (they tie, so the newer id comes first)
+		jdbc.update("update chat_rooms set created_at=? where id in (?,?)", Timestamp.from(NOW.minusSeconds(100)),
+				active.getId(), completed.getId());
 		ChatMessage newest = messages.saveAndFlush(ChatMessage.text(dm, me.getId(), "최근"));
 		jdbc.update("update chat_messages set created_at=? where id=?", Timestamp.from(NOW.plusSeconds(1)), newest.getId());
 

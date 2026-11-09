@@ -1,13 +1,13 @@
 'use client';
 
-// Overlay: apply with one role + message (POL-R-3); the profile goes along automatically
+// Overlay: pick one open role and apply (POL-R-3); profile goes along automatically
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
-import { CharCounter } from '@/components/ui/char-counter/CharCounter';
 import type { OverlayControl } from '@/lib/navigation/use-overlay';
 
 import type { RecruitDetail } from '../../_lib/detail-queries';
-import styles from '../detail-sheets.module.css';
+import sheetStyles from '../detail-sheets.module.css';
+import styles from './RecruitApplySheet.module.css';
 import { useApplyForm, useRecruitApplySheet } from './hook';
 
 export function RecruitApplySheet({ recruit }: { recruit: RecruitDetail }) {
@@ -15,8 +15,16 @@ export function RecruitApplySheet({ recruit }: { recruit: RecruitDetail }) {
   return (
     <OverlaySheet
       overlay={overlay}
-      title="지원하기"
-      description="지원할 역할을 고르고 하고 싶은 말을 남겨 주세요."
+      title={
+        <>
+          지원하기
+          <span className={styles.requiredDot} aria-hidden />
+          <span className="sr-only">(필수)</span>
+        </>
+      }
+      description="지원할 역할을 골라 주세요."
+      describeHidden
+      classNames={{ sheet: styles.sheet, title: styles.title }}
     >
       {/* Mounted on open, so each attempt starts clean */}
       {overlay.isOpen && <ApplyForm recruit={recruit} overlay={overlay} />}
@@ -25,30 +33,15 @@ export function RecruitApplySheet({ recruit }: { recruit: RecruitDetail }) {
 }
 
 function ApplyForm({ recruit, overlay }: { recruit: RecruitDetail; overlay: OverlayControl }) {
-  const {
-    id,
-    roleId,
-    setRoleId,
-    message,
-    setMessage,
-    error,
-    count,
-    messageMax,
-    applyPending,
-    submit,
-    close,
-  } = useApplyForm(recruit, overlay);
+  const { id, roleId, setRoleId, error, applyPending, submit } = useApplyForm(recruit, overlay);
 
   return (
     <form className={styles.form} noValidate aria-busy={applyPending} onSubmit={submit}>
       <fieldset
         className={styles.fieldset}
+        aria-label="지원할 역할"
         aria-describedby={error?.field === 'role' ? `${id}-error` : undefined}
       >
-        <legend className={styles.label}>
-          지원할 역할 <span aria-hidden>*</span>
-          <span className="sr-only">(필수)</span>
-        </legend>
         <div className={styles.options}>
           {recruit.roles.map((role) => (
             <label key={role.id} className={styles.option}>
@@ -70,43 +63,15 @@ function ApplyForm({ recruit, overlay }: { recruit: RecruitDetail; overlay: Over
         </div>
       </fieldset>
 
-      <div className={styles.field}>
-        <label htmlFor={`${id}-message`} className={styles.label}>
-          하고 싶은 말<span className={styles.optional}> (선택)</span>
-        </label>
-        <textarea
-          id={`${id}-message`}
-          className={styles.textarea}
-          rows={5}
-          value={message}
-          placeholder="참여할 수 있는 시간, 해 보고 싶은 일, 관련 경험을 적어 주세요."
-          aria-invalid={error?.field === 'message' ? true : undefined}
-          aria-describedby={[`${id}-count`, error?.field === 'message' ? `${id}-error` : null]
-            .filter(Boolean)
-            .join(' ')}
-          onChange={(event) => setMessage(event.target.value)}
-        />
-        <CharCounter id={`${id}-count`} count={count} max={messageMax} />
-      </div>
-
-      <p className={styles.notice}>
-        내 프로필(기술 스택, 기여 그래프, 게시물, 완주 기록)이 함께 전달돼요.
-      </p>
-
       {error && (
-        <p id={`${id}-error`} className={styles.error} role="alert">
+        <p id={`${id}-error`} className={sheetStyles.error} role="alert">
           {error.text}
         </p>
       )}
 
-      <div className={styles.actions}>
-        <Button variant="outline" onClick={close}>
-          취소
-        </Button>
-        <Button type="submit" aria-disabled={applyPending}>
-          {applyPending ? '보내는 중…' : '지원하기'}
-        </Button>
-      </div>
+      <Button type="submit" block className={styles.applyCta} aria-disabled={applyPending}>
+        {applyPending ? '보내는 중…' : '지원하기'}
+      </Button>
     </form>
   );
 }

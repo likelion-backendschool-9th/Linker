@@ -2,14 +2,12 @@ import type { MouseEvent } from 'react';
 import type { Route } from 'next';
 import Link from 'next/link';
 
-import { Button } from '@/components/ui/button/Button';
-import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
 import {
   notificationTarget,
   type NotificationItem,
 } from '@/features/notifications/notification-queries';
 
-import styles from '../notification-list/NotificationList.module.css';
+import styles from './NotificationRow.module.css';
 
 type Props = {
   item: NotificationItem;
@@ -18,17 +16,21 @@ type Props = {
   onReadInBackground: (id: number) => void;
 };
 
+/** Figma 248:1387 / 248:1391: dot + one line. Unread uses the dark dot and text, read the muted ones. */
 export function NotificationRow({ item, pending, onOpen, onReadInBackground }: Props) {
   const target = notificationTarget(item.targetUrl);
+  const state = item.read ? 'read' : 'unread';
   const content = (
     <>
-      <span className={styles.heading}>
-        <span className={styles.title}>{item.title}</span>
-        {!item.read && <span className={styles.unread}>읽지 않음</span>}
-      </span>
-      {item.body && <span className={styles.description}>{item.body}</span>}
-      <span className={styles.time}>
-        <RelativeTime value={item.createdAt} />
+      <span className={styles.dot} aria-hidden="true" />
+      <span className={styles.text}>
+        {!item.read && <span className="sr-only">읽지 않음, </span>}
+        {item.title}
+        {item.appeal && (
+          <span className={styles.appeal}>
+            {item.appeal.submitted ? '이의 제기 완료' : '이의 제기하기'}
+          </span>
+        )}
       </span>
     </>
   );
@@ -46,28 +48,41 @@ export function NotificationRow({ item, pending, onOpen, onReadInBackground }: P
     onOpen(item, target, false);
   }
   return (
-    <article className={styles.item} aria-busy={pending}>
+    <article aria-busy={pending}>
       {item.appeal ? (
-        <>
-          <div className={styles.body}>{content}</div>
-          <Button variant="outline" disabled={pending} onClick={() => onOpen(item, null, true)}>
-            {item.appeal.submitted ? '이의 제기 완료' : '이의 제기하기'}
-          </Button>
-        </>
+        <button
+          type="button"
+          className={styles.row}
+          data-state={state}
+          disabled={pending}
+          onClick={() => onOpen(item, null, true)}
+        >
+          {content}
+        </button>
       ) : target ? (
-        <Link href={target as Route} className={styles.body} onClick={open} aria-disabled={pending}>
+        <Link
+          href={target as Route}
+          className={styles.row}
+          data-state={state}
+          onClick={open}
+          aria-disabled={pending}
+        >
           {content}
         </Link>
-      ) : (
-        <div className={styles.body}>
+      ) : item.read ? (
+        <div className={styles.row} data-state={state}>
           {content}
-          <p className={styles.description}>연결할 수 없는 알림이에요.</p>
-          {!item.read && (
-            <Button variant="soft" disabled={pending} onClick={() => onOpen(item, null, false)}>
-              읽음 표시
-            </Button>
-          )}
         </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.row}
+          data-state={state}
+          disabled={pending}
+          onClick={() => onOpen(item, null, false)}
+        >
+          {content}
+        </button>
       )}
     </article>
   );

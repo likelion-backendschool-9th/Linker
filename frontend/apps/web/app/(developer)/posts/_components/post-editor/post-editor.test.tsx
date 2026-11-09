@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { axe } from 'vitest-axe';
@@ -82,15 +82,17 @@ it('lists repos with forks and already-posted ones disabled', async () => {
     );
   }
   const { container } = renderWithProviders(<Harness />, developer);
-  expect(await screen.findByText('포크 · 원본 facebook/react')).toBeVisible();
+  expect(await screen.findByText('저장소를 선택해 주세요')).toBeVisible();
+  expect(screen.getByPlaceholderText('저장소 검색하기')).toBeVisible();
+  expect(await screen.findByText('포크')).toBeVisible();
   expect(screen.getByRole('radio', { name: /linker-web/ })).toBeDisabled();
-  expect(screen.getByText('이미 올린 레포')).toBeVisible();
+  expect(screen.getByText('(이미 피드에 올린 레포)')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
   expect(await axe(container)).toHaveNoViolations();
 
-  await user.click(screen.getByRole('button', { name: '다음' }));
-  expect(await screen.findByText('소개할 레포를 골라 주세요.')).toBeVisible();
   await user.click(screen.getByRole('radio', { name: /react-fork/ }));
   expect(onSelect).toHaveBeenCalledWith(42);
+  expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
   await user.click(screen.getByRole('button', { name: '다음' }));
   expect(onNext).toHaveBeenCalledWith(42);
 });
@@ -98,35 +100,36 @@ it('lists repos with forks and already-posted ones disabled', async () => {
 it('validates the content step and publishes the post body', async () => {
   const user = userEvent.setup();
   const onSaved = vi.fn();
+  const values = { ...emptyPostForm(), periodStart: '2026-09' };
   const { container } = renderWithProviders(
     <PostContentForm
       target={{ mode: 'create', repoId: 12 }}
       repo={summary}
       photoLimit={summary.photoLimit}
-      initial={{ values: emptyPostForm(summary.description ?? ''), photos: [] }}
+      initial={{ values, photos: [] }}
       draftKey="draft:post:test"
       onSaved={onSaved}
     />,
     developer,
   );
-  // Body starts from the repo description; 0 commits shows the email guidance
-  expect(screen.getByLabelText(/^본문/)).toHaveValue('Spring Boot API');
-  expect(
-    screen.getByText('커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 숫자에 잡혀요.'),
-  ).toBeVisible();
+  // Figma 274:329 — empty body shows the placeholder
+  expect(screen.getByLabelText(/프로젝트 본문/)).toHaveValue('');
+  expect(screen.getByPlaceholderText('프로젝트에 관해 간단하게 글을 작성해 주세요')).toBeVisible();
+  expect(screen.getByText('선택한 저장소')).toBeVisible();
+  expect(screen.getByText('프로젝트 소개')).toBeVisible();
+  expect(screen.getByRole('button', { name: '시작일 2026.09' })).toBeVisible();
   expect(await axe(container)).toHaveNoViolations();
 
-  await user.click(screen.getByRole('button', { name: '링크 추가' }));
   await user.type(screen.getByLabelText('데모 링크 1'), 'http://demo.example');
   await user.click(screen.getByRole('button', { name: '게시하기' }));
   expect(await screen.findByText('한 줄 소개를 입력해 주세요.')).toBeVisible();
   expect(screen.getByText('https://로 시작하는 주소만 넣을 수 있어요.')).toBeVisible();
 
-  await user.type(screen.getByLabelText(/^한 줄 소개/), '팀 협업 웹앱');
+  await user.type(screen.getByLabelText(/프로젝트 소개/), '팀 협업 웹앱');
+  await user.type(screen.getByLabelText(/프로젝트 본문/), 'Spring Boot API');
   await user.clear(screen.getByLabelText('데모 링크 1'));
   await user.type(screen.getByLabelText('데모 링크 1'), 'https://demo.example');
-  await user.type(screen.getByLabelText('시작한 달'), '2026-09');
-  await user.type(screen.getByLabelText(/^팀 규모/), '4');
+  await user.type(screen.getByLabelText(/팀 규모/), '4');
   await user.click(screen.getByRole('button', { name: '게시하기' }));
 
   await waitFor(() => expect(onSaved).toHaveBeenCalledWith(77));
@@ -142,6 +145,28 @@ it('validates the content step and publishes the post body', async () => {
     teamSize: 4,
     tags: [],
   });
+});
+
+it('opens the start-date wheel sheet with year, month and day', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(
+    <PostContentForm
+      target={{ mode: 'create', repoId: 12 }}
+      repo={summary}
+      photoLimit={summary.photoLimit}
+      initial={{ values: emptyPostForm(), photos: [] }}
+      draftKey="draft:post:period"
+      onSaved={vi.fn()}
+    />,
+    developer,
+  );
+
+  await user.click(screen.getByRole('button', { name: '시작일' }));
+  const sheet = await screen.findByRole('dialog', { name: '시작일' });
+  expect(within(sheet).getByRole('listbox', { name: '연도' })).toBeVisible();
+  expect(within(sheet).getByRole('listbox', { name: '월' })).toBeVisible();
+  expect(within(sheet).getByRole('listbox', { name: '일' })).toBeVisible();
+  expect(within(sheet).getByRole('button', { name: '저장' })).toBeVisible();
 });
 
 it('fills the edit screen with the saved post and its photos', async () => {
@@ -162,21 +187,11 @@ it('fills the edit screen with the saved post and its photos', async () => {
     photoLimit: 5,
   };
   fetchMock.mockImplementation(async (url) => (url.endsWith('/edit-form') ? editForm : undefined));
-  const user = userEvent.setup();
   renderWithProviders(<PostEdit postId="5" />, developer);
 
   expect(await screen.findByDisplayValue('기존 소개')).toBeVisible();
   expect(screen.getByDisplayValue('https://linker.example')).toBeVisible();
-  expect(screen.getByText('2/5')).toBeVisible();
-  expect(screen.getByText('대표')).toBeVisible();
-  expect(screen.queryByText(/이메일이 GitHub 계정에/)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '사진 1 앞으로' })).toBeDisabled();
-
-  // Moving photo 2 forward makes it the cover
-  const sources = () =>
-    screen.getAllByRole('img', { name: /선택한 사진/ }).map((img) => img.getAttribute('src'));
-  const before = sources();
-  await user.click(screen.getByRole('button', { name: '사진 2 앞으로' }));
-  expect(sources()).toEqual([before[1], before[0]]);
+  expect(screen.getByText('사진 추가').closest('label')).toHaveTextContent('(2/5)');
+  expect(screen.getByText('대표 이미지')).toBeVisible();
   expect(screen.getByRole('button', { name: '수정 완료' })).toBeVisible();
 });

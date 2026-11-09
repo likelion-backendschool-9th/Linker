@@ -14,18 +14,29 @@ import { infiniteQueryOptions, queryOptions, type InfiniteData } from '@tanstack
 /** `appeal` is set by the server for the caller's own sanction; never infer it from the notification id. */
 export type NotificationItem = NotificationItemResponse;
 export type NotificationPage = NotificationPageResponse;
+/** 18 list tab: every visible notification, or only unread ones (server `unread=true`). */
+export type NotificationFilter = 'all' | 'unread';
 export const notificationKeys = {
   account: (login: string | null) => ['notifications', login] as const,
-  list: (login: string | null) => ['notifications', login, 'list'] as const,
+  /** Prefix of both tab lists; use with `setQueriesData` / `invalidateQueries`. */
+  lists: (login: string | null) => ['notifications', login, 'list'] as const,
+  list: (login: string | null, filter: NotificationFilter = 'all') =>
+    ['notifications', login, 'list', filter] as const,
   count: (login: string | null) => ['notifications', login, 'count'] as const,
 };
-export function notificationListOptions(login: string | null) {
+export function notificationListOptions(login: string | null, filter: NotificationFilter = 'all') {
   return infiniteQueryOptions({
-    queryKey: notificationKeys.list(login),
+    queryKey: notificationKeys.list(login, filter),
     refetchOnMount: 'always',
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
-      listNotifications(pageParam === null ? undefined : { cursor: pageParam }, { signal }),
+      listNotifications(
+        {
+          ...(pageParam === null ? {} : { cursor: pageParam }),
+          ...(filter === 'unread' ? { unread: true } : {}),
+        },
+        { signal },
+      ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }

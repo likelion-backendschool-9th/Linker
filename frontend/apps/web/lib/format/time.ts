@@ -29,9 +29,19 @@ export function formatRelativeTime(value: Date | string | number, now: Date = ne
   return formatDate(value, now);
 }
 
+/** "2026년 12월 3일" with the year always shown (29 subscription dates and payment history, Figma 294:306). */
+export function formatFullDate(value: Date | string | number): string {
+  return format(toKst(value), 'yyyy년 M월 d일');
+}
+
 /** "2026.11.16 마감" (19 recruit card, Figma 254:2298) — plain KST date, no leading zero on month/day. */
 export function formatDeadlineDate(date: string): string {
   return `${format(toKst(date), 'yyyy.M.d')} 마감`;
+}
+
+/** "2026.11.16 작성" (23 post detail, Figma 285:247) — plain KST date like `formatDeadlineDate`. */
+export function formatWrittenDate(value: Date | string | number): string {
+  return `${format(toKst(value), 'yyyy.M.d')} 작성`;
 }
 
 /** Today's date in KST as `yyyy-MM-dd`, the format of issue start/due dates (POL-I-4: team timezone is KST). */
@@ -44,8 +54,9 @@ export function daysUntil(date: string, now: Date = new Date()): number {
   return Math.round((Date.parse(date) - Date.parse(todayKst(now))) / (24 * 60 * 60 * 1000));
 }
 
-/** Fixed chat sent time, e.g. "오후 3:12". Date dividers supply the calendar date. */
+/** Fixed chat sent time, e.g. "오후 3시 12분", "오후 12시" on the hour (Figma 17). Date dividers supply the date. */
 export function formatMessageTime(value: Date | string | number): string {
   const date = toKst(value);
-  return `${date.getHours() < 12 ? '오전' : '오후'} ${format(date, 'h:mm')}`;
+  const time = date.getMinutes() === 0 ? format(date, 'h시') : format(date, 'h시 m분');
+  return `${date.getHours() < 12 ? '오전' : '오후'} ${time}`;
 }

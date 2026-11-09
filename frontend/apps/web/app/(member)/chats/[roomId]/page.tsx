@@ -8,6 +8,7 @@ import { getSession } from '@/lib/auth/session';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 import { ChatRoom } from './_components/chat-room/ChatRoom';
+import { RoomHeaderActions } from './_components/room-header-actions';
 import { messagesOptions, roomInfoOptions } from './_lib/room-api';
 
 // A private room's name and messages never enter metadata or social previews.
@@ -32,7 +33,12 @@ export default async function ChatRoomPage({ params }: PageProps<'/chats/[roomId
   }
   await client.prefetchInfiniteQuery(messagesOptions(session?.login ?? null, roomId));
   return (
-    <PageFrame title={room.title} variant="stack" backHref="/chats">
+    <PageFrame
+      title={room.title}
+      variant="stack"
+      backHref="/chats"
+      actions={<RoomHeaderActions roomId={roomId} team={room.kind === 'TEAM'} />}
+    >
       <HydrationBoundary state={dehydrate(client)}>
         <ChatRoom key={roomId} roomId={roomId} />
       </HydrationBoundary>

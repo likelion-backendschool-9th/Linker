@@ -15,12 +15,15 @@ test('workspace filters teams and reuses the team switcher without a navigation 
   page,
 }) => {
   await page.goto('/workspace');
-  await expect(page.getByRole('heading', { name: '내 팀' })).toBeVisible();
-  await page.getByRole('button', { name: '완료 1', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '졸업작품 TF' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Linker 해커톤팀', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: /^전체/ }).click();
-  await expect(page).toHaveURL(/\/workspace$/);
+  await expect(page.getByRole('heading', { name: '팀 목록', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '완료 1', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByRole('article', { name: '졸업작품 TF' })).toBeVisible();
+  await expect(page.getByRole('article', { name: 'Linker 해커톤팀', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '활성 2', exact: true }).click();
+  await expect(page).toHaveURL(/status=ACTIVE/);
   await page.getByRole('article', { name: 'Linker 해커톤팀' }).getByRole('link').click();
   await expect(page).toHaveURL(/\/teams\/1\/issues$/);
   await page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ }).click();
@@ -109,6 +112,8 @@ test('audit dates validate and statistics expose accessible data tables', async 
 
 test('PR sheet is team-only and the system event offers no editing action', async ({ page }) => {
   await page.goto('/chats/1');
+  // 17 Figma: PR 목록 lives in the room info screen behind the header ☰
+  await page.getByRole('button', { name: '채팅방 정보' }).click();
   await page.getByRole('button', { name: 'PR 목록' }).click();
   const sheet = page.getByRole('dialog', { name: 'Pull requests' });
   await expect(sheet).toBeVisible();

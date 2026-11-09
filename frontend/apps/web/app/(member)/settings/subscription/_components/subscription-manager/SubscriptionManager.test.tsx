@@ -3,11 +3,13 @@ import userEvent from '@testing-library/user-event';
 
 import type { Payment, Subscription } from '@/features/subscription/management-api';
 import { apiFetch } from '@/lib/api/api-fetch';
+import { toast } from '@/stores/toast-store';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { SubscriptionManager } from './SubscriptionManager';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
+vi.mock('@/stores/toast-store', () => ({ toast: vi.fn() }));
 const fetchMock = vi.mocked(apiFetch);
 
 const pro: Subscription = {
@@ -23,6 +25,8 @@ const pro: Subscription = {
   seats: null,
   nextSeats: null,
   nextAmount: null,
+  amount: 2900,
+  payerName: null,
 };
 const flex: Subscription = {
   ...pro,
@@ -34,6 +38,8 @@ const flex: Subscription = {
   seats: 7,
   nextSeats: 8,
   nextAmount: 11700,
+  amount: 9800,
+  payerName: '이준호',
 };
 const paid = (overrides: Partial<Payment>): Payment => ({
   paymentId: 1,
@@ -63,41 +69,92 @@ beforeEach(() => {
         paid({ paymentId: 9, refundable: true }),
         paid({ paymentId: 8, refundReason: started }),
         paid({ paymentId: 7, status: 'CANCELED', refundedAmount: 2900 }),
+        paid({ paymentId: 6, approvedAt: '2026-08-03T05:00:00Z' }),
       ],
       nextCursor: null,
     };
   });
 });
 
-it('shows running and canceled subscriptions from the server fields', async () => {
+it('shows each subscription as the Figma plan card and info box', async () => {
   renderWithProviders(<SubscriptionManager />, { viewer: { role: 'developer', login: 'dev' } });
-  const proCard = (await screen.findByRole('heading', { name: 'Pro' })).closest('article')!;
-  expect(within(proCard).getByText('이용 중')).toBeVisible();
-  expect(within(proCard).getByText('이용 기간 만료일')).toBeVisible();
+  const proSection = await screen.findByRole('region', { name: 'Pro 요금제' });
+  expect(within(proSection).getByRole('heading', { name: 'Pro 요금제' })).toBeVisible();
+  expect(within(proSection).getByText('현재 사용 중인 요금제')).toBeVisible();
+  expect(within(proSection).getByText('이용 만료일')).toBeVisible();
+  expect(within(proSection).getByText('2026년 12월 8일')).toBeVisible();
+  expect(within(proSection).getByText('월간 결제')).toBeVisible();
+  expect(within(proSection).getByText('2,900(Pro)')).toBeVisible();
+  expect(within(proSection).getByRole('link', { name: '요금제 변경하기' })).toHaveAttribute(
+    'href',
+    '/subscribe',
+  );
 
-  const flexCard = screen.getByRole('heading', { name: '내 팀 · Flex' }).closest('article')!;
-  expect(within(flexCard).getByText('해지 예약')).toBeVisible();
-  expect(within(flexCard).getByText('혜택 종료일')).toBeVisible();
-  expect(within(flexCard).getByText(/결제 인원 7명/)).toBeVisible();
-  expect(within(flexCard).queryByRole('button', { name: /해지하기/ })).not.toBeInTheDocument();
+  const flexSection = screen.getByRole('region', { name: 'Flex 요금제 · 내 팀' });
+  expect(within(flexSection).getByText('혜택 종료일')).toBeVisible();
+  expect(within(flexSection).getByText('9,800(Flex)')).toBeVisible();
+  expect(within(flexSection).getByText('8명')).toBeVisible();
+  expect(within(flexSection).getByText('이준호')).toBeVisible();
+  expect(within(flexSection).getByText(/해지 예약됨/)).toBeVisible();
+  expect(
+    within(flexSection).queryByRole('button', { name: /요금제 해지/ }),
+  ).not.toBeInTheDocument();
+  expect(within(flexSection).getByRole('link', { name: '요금제 변경하기' })).toHaveAttribute(
+    'href',
+    '/subscribe?teamId=1',
+  );
+  await userEvent.click(within(flexSection).getByRole('button', { name: '결제 담당자 변경' }));
+  expect(toast).toHaveBeenCalledWith('미구현 기능입니다.');
 });
 
-it('shows the Policy refund reason and refund state for each payment', async () => {
+it('shows the free plan card when nothing is paid', async () => {
+  fetchMock.mockImplementation(async () => ({ items: [], nextCursor: null }));
   renderWithProviders(<SubscriptionManager />, { viewer: { role: 'developer', login: 'dev' } });
-  expect(await screen.findByText(started)).toBeVisible();
-  expect(screen.getAllByRole('button', { name: /환불하기/ })).toHaveLength(1);
-  expect(screen.getByText(/환불 완료/)).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '무료 요금제' })).toBeVisible();
+  expect(screen.getByRole('link', { name: '요금제 변경하기' })).toHaveAttribute(
+    'href',
+    '/subscribe',
+  );
+  expect(screen.getByText('결제 내역이 없어요.')).toBeVisible();
 });
 
-it('cancels with the numeric subscription id', async () => {
+it('lists three payments with amounts, a refund button only where allowed, and the rest behind 전체 보기', async () => {
   renderWithProviders(<SubscriptionManager />, { viewer: { role: 'developer', login: 'dev' } });
-  const proCard = (await screen.findByRole('heading', { name: 'Pro' })).closest('article')!;
-  await userEvent.click(within(proCard).getByRole('button', { name: /해지하기/ }));
-  await userEvent.click(await screen.findByRole('button', { name: '해지 예약하기' }));
+  const history = await screen.findByRole('region', { name: '결제 내역' });
+  expect(await within(history).findAllByRole('listitem')).toHaveLength(3);
+  expect(within(history).getAllByText('2,900 원 결제')).toHaveLength(2);
+  expect(within(history).getByText('2,900 원 환불')).toBeVisible();
+  expect(within(history).getAllByRole('button', { name: /^환불/ })).toHaveLength(1);
+  await userEvent.click(within(history).getByRole('button', { name: '전체 보기' }));
+  expect(within(history).getAllByRole('listitem')).toHaveLength(4);
+  expect(within(history).getByText('2026년 8월 3일')).toBeVisible();
+  expect(within(history).queryByRole('button', { name: '전체 보기' })).not.toBeInTheDocument();
+});
+
+it('cancels from the Figma modal with the numeric subscription id', async () => {
+  renderWithProviders(<SubscriptionManager />, { viewer: { role: 'developer', login: 'dev' } });
+  const proSection = await screen.findByRole('region', { name: 'Pro 요금제' });
+  await userEvent.click(within(proSection).getByRole('button', { name: /요금제 해지/ }));
+  const dialog = await screen.findByRole('alertdialog', { name: '요금제 해지' });
+  expect(within(dialog).getByText(/2026년 12월 8일까지만 혜택을 받을 수 있어요/)).toBeVisible();
+  await userEvent.click(within(dialog).getByRole('button', { name: '해지 하기' }));
   expect(
     fetchMock.mock.calls.some(
       ([url, init]) =>
         init?.method === 'POST' && url.endsWith('/api/v1/user/me/subscriptions/41/cancel'),
+    ),
+  ).toBe(true);
+});
+
+it('refunds from the same modal style', async () => {
+  renderWithProviders(<SubscriptionManager />, { viewer: { role: 'developer', login: 'dev' } });
+  const history = await screen.findByRole('region', { name: '결제 내역' });
+  await userEvent.click(await within(history).findByRole('button', { name: /^환불/ }));
+  const dialog = await screen.findByRole('alertdialog', { name: '전액 환불' });
+  await userEvent.click(within(dialog).getByRole('button', { name: '환불 하기' }));
+  expect(
+    fetchMock.mock.calls.some(
+      ([url, init]) => init?.method === 'POST' && url.includes('/payments/9/refund'),
     ),
   ).toBe(true);
 });

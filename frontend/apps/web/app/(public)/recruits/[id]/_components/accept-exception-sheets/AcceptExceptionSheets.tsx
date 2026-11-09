@@ -38,7 +38,7 @@ export function AcceptExceptionSheets({ recruit }: { recruit: RecruitDetail }) {
       <OverlaySheet
         overlay={roleFull}
         title="이 역할은 자리가 다 찼어요"
-        description="인원을 1명 늘리면 바로 수락할 수 있어요."
+        description="인원을 1명 늘리면 바로 초대할 수 있어요."
       >
         {roleFull.isOpen && roleFull.id && (
           <RoleFullBody
@@ -55,7 +55,7 @@ export function AcceptExceptionSheets({ recruit }: { recruit: RecruitDetail }) {
 
 type RoleFullBodyProps = { recruit: RecruitDetail; applicationId: string; overlay: OverlayControl };
 
-/** "인원 늘리고 수락": one call, so headcount and acceptance change together */
+/** "인원 늘리고 초대": one call, so headcount and invite change together */
 function RoleFullBody({ recruit, applicationId, overlay }: RoleFullBodyProps) {
   const { row, role, atMax, accepted, accept, headcountMax, close, acceptWithIncrease } =
     useRoleFullBody({ recruit, applicationId, overlay });
@@ -91,7 +91,7 @@ function RoleFullBody({ recruit, applicationId, overlay }: RoleFullBodyProps) {
         </Button>
         {!atMax && (
           <Button aria-disabled={accept.isPending || !row} onClick={acceptWithIncrease}>
-            {accept.isPending ? '수락하는 중…' : '인원 늘리고 수락'}
+            {accept.isPending ? '초대하는 중…' : '인원 늘리고 초대'}
           </Button>
         )}
       </div>

@@ -2,7 +2,7 @@ import { contributionsFor } from './p04-profile';
 import { fail, get, newId, post, type MockRoute } from '../core/define';
 import { POSTS, postCard } from '../fixtures/posts';
 import { APPLICATIONS, findRecruit, recruitCard, type MockApplication } from '../fixtures/recruits';
-import { TEAMS } from '../fixtures/teams';
+import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 import { brief, ME, findUserById } from '../fixtures/users';
 
 /** 21 Recruit post detail: `RecruitmentController` (apply and manage applicants) */
@@ -35,12 +35,22 @@ export const routes: MockRoute[] = [
         )
       : undefined;
     const team = TEAMS.find((t) => t.id === item.teamId);
+    const members = item.teamId ? (TEAM_MEMBERS[item.teamId] ?? []) : [];
+    const teamMembers = members.length
+      ? members.map((member) => ({
+          ...member.user,
+          teamRole: member.role,
+          isAuthor: member.user.id === item.author.id,
+        }))
+      : [{ ...item.author, teamRole: 'OWNER' as const, isAuthor: true }];
     return {
       ...recruitCard(item),
       intro: item.intro,
       duration: item.duration,
       teamName: team?.name ?? null,
       authorCard: { ...item.author, bio: findUserById(item.author.id)?.bio ?? null },
+      // Figma 21 "팀원 프로필"; author alone when the post has no team yet
+      teamMembers,
       // Logged in: my application, already a member, am I the author
       isAuthor: viewer.me?.id === item.author.id,
       isTeamMember: Boolean(
