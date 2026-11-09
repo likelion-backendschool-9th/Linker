@@ -162,26 +162,26 @@
   justify-content: center;
   width: var(--icon-size);
   height: var(--icon-size);
-  border: 2px solid var(--color-text-meta);
+  border: 2px solid var(--color-text-muted-cool);
   border-radius: var(--radius-full);
-  color: var(--color-on-primary);
+  color: var(--color-text-muted-cool);
 }
 
 .mark svg {
   width: var(--icon-size-sm);
   height: var(--icon-size-sm);
-  color: var(--color-text-unselected);
+  color: currentColor;
   opacity: 1;
 }
 
 .consent input:checked + .mark {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary);
+  border-color: var(--color-selection);
+  background-color: var(--color-canvas);
 }
 
 .consent input:checked + .mark svg {
   opacity: 1;
-  color: var(--color-on-primary);
+  color: var(--color-selection);
 }
 
 .consent input:focus-visible + .mark {

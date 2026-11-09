@@ -64,7 +64,7 @@
 
 .option:has(input:checked) {
   color: var(--color-text-inverse);
-  background-color: var(--color-sheet-cta);
+  background-color: var(--color-selection);
 }
 
 .option:has(input:disabled) {
