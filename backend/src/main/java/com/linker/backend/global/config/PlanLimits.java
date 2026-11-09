@@ -178,6 +178,14 @@ public final class PlanLimits {
 	public static final int AI_SUMMARY_PER_DAY_FLEX = 10;
 	/** Policy ch. 8 / ch. 11 — summary results only; shared cards follow chat retention. */
 	public static final int AI_SUMMARY_RETENTION_DAYS = 7;
+	/** Policy ch. 8 — fewer than this → "직접 읽는 게 더 빨라요". */
+	public static final int AI_SUMMARY_MIN_MESSAGES = 20;
+	/** Policy ch. 8 — summarize the latest N only when more exist. */
+	public static final int AI_SUMMARY_MAX_MESSAGES = 500;
+	/** Policy ch. 8 — sync wait before 202 + background finish. */
+	public static final int AI_SUMMARY_SYNC_SECONDS = 30;
+	/** Background Ollama wait after the client already got 202. */
+	public static final int AI_SUMMARY_ASYNC_SECONDS = 120;
 
 	/** POL-N-1 quiet hours (KST). Non-chat held from start hour until end hour. */
 	public static final int QUIET_HOURS_START_HOUR = 22;

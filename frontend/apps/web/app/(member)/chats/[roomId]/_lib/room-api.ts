@@ -20,7 +20,11 @@ import { CHAT } from '@/lib/policy';
 
 export type ChatMember = ChatMemberResponse;
 /** `team` carries the caller's `myRole`; it drives other-message delete and @all. */
-export type RoomInfo = ChatRoomInfoResponse;
+export type RoomTeam = NonNullable<ChatRoomInfoResponse['team']> & {
+  aiSummaryEnabled?: boolean;
+  aiSummaryBanner?: boolean;
+};
+export type RoomInfo = Omit<ChatRoomInfoResponse, 'team'> & { team: RoomTeam | null };
 /** `updatedAt` is the row version: every edit, delete, hide and restore moves it forward. */
 export type RoomMessage = ChatMessageResponse;
 /** `nextAfter` is set when `after` stopped at the 500 cap; `loadAfter` follows it to the end. */
