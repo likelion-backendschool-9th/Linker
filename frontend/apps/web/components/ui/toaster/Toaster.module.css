@@ -14,6 +14,16 @@
   outline: none;
 }
 
+/* Top placement: just under the stack header (and the notch), dropping down instead of rising */
+.viewportTop {
+  top: calc(env(safe-area-inset-top) + var(--header-height) + var(--space-xs));
+  bottom: auto;
+}
+
+.viewportTop .toast {
+  animation-name: drop;
+}
+
 .toast {
   display: flex;
   align-items: center;
@@ -44,6 +54,13 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-inverse);
   text-decoration: underline;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-xs) * -1));
+  }
 }
 
 @keyframes rise {

@@ -36,6 +36,16 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
       """)
   boolean existsSharedTeam(long firstUserId, long secondUserId);
 
+  /** Teams a recruit post can link (POL-R-1): current owner/admin of an active team, by name. */
+  @Query("""
+      select new com.linker.backend.dto.recruit.response.TeamOptionResponse(t.id, t.name)
+      from TeamMember m, Team t
+      where m.teamId = t.id and m.userId = :userId and m.leftAt is null
+        and m.role in ('OWNER', 'ADMIN') and t.status = 'ACTIVE'
+      order by lower(t.name), t.id
+      """)
+  List<com.linker.backend.dto.recruit.response.TeamOptionResponse> findRecruitLinkableTeams(long userId);
+
   /** Team chat @mention candidates (17): current members whose account is active, by login. */
   @Query("""
       select new com.linker.backend.dto.chat.response.ChatMemberResponse(
