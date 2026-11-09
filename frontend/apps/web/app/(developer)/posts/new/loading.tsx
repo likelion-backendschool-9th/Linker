@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 export default function PostNewLoading() {
   return (
-    <PageFrame title="게시물 쓰기" variant="stack" backHref="/feed">
+    <PageFrame title="피드 작성" variant="stack" backHref="/feed">
       <div aria-busy="true">
         <p role="status">작성 화면을 불러오고 있어요.</p>
         <Skeleton count={3} />

@@ -1,0 +1,95 @@
+/* Figma 666:770: plain text rows (40 high, text 10 in, #f5f5f5 rule), no check glyph —
+   picked rows are darker + medium; list to "완료" 30 */
+
+.choices {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height-choice);
+  padding-inline: var(--space-row-block);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted-cool);
+  border-bottom: 1px solid var(--color-hairline-faint);
+}
+
+.choice:has(:checked) {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+}
+
+.checkInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.checkInput:disabled {
+  cursor: not-allowed;
+}
+
+.checkInput:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+/* "완료" — Figma 666:817: 53 high, r14, #121212, 16 semibold */
+.submit {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  margin-block-start: var(--space-sheet-action);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+  border: 0;
+  border-radius: var(--radius-control-md);
+}
+
+/* Sheet frame — Figma 666:770: #191f28 32% + blur scrim, r20 top, padding 15/16, a 60 title row
+   (18 semibold, 10 in, × 24 flush right), rows straight under it */
+.scrim.scrim {
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+.sheet.sheet {
+  padding: var(--space-sheet-block) var(--space-md)
+    calc(var(--space-sheet-block) + env(safe-area-inset-bottom));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.header.header {
+  align-items: center;
+  height: var(--sheet-header-height-tech);
+  padding-left: var(--space-row-block);
+}
+
+.title.title {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.close.close {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin: 0;
+  color: var(--color-text-title-cool);
+}
+
+.body.body {
+  margin-top: 0;
+}
