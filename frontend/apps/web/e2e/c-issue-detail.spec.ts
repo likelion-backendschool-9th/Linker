@@ -34,8 +34,11 @@ test('demo issue 1022: sub-issue progress, dates and a red overdue due date', as
   await page.goto('/teams/1/issues/1022');
   await expect(page.getByText('1/3 완료')).toBeVisible();
   await expect(page.getByRole('main').getByRole('article')).toHaveCount(3);
+  await expect(page.getByText('이슈 필터 시트 접근성 개선')).toBeVisible();
   await expect(page.getByRole('button', { name: /^시작일 \d{4}년/ })).toBeVisible();
-  await expect(page.locator('[data-overdue="true"]')).toBeVisible();
+  // Parent card + overdue sub-issue rows
+  await expect(page.locator('[data-overdue="true"]').first()).toBeVisible();
+  await expect(page.locator('[class*="subDue"][data-overdue="true"]')).toHaveCount(2);
 });
 
 test('an info line opens its sheet; the status sheet saves and closes', async ({ page }) => {
