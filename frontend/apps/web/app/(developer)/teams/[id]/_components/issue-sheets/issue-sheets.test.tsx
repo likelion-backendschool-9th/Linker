@@ -22,12 +22,21 @@ const user = (id: number, name: string, inTeam = true) => ({
   inTeam,
 });
 
-const candidates = (items: ReturnType<typeof user>[], max = 10) =>
+const candidates = (
+  items: Array<ReturnType<typeof user> & { jobRole?: string }>,
+  max = 10,
+) =>
   queryOptions({
     queryKey: ['test', 'candidates', max],
     // Candidates are plain users (no `inTeam`), like the API
     queryFn: async (): Promise<AssigneeCandidates> => ({
-      items: items.map(({ id, login, name, avatarUrl }) => ({ id, login, name, avatarUrl })),
+      items: items.map(({ id, login, name, avatarUrl, jobRole }) => ({
+        id,
+        login,
+        name,
+        avatarUrl,
+        ...(jobRole ? { jobRole } : {}),
+      })),
       max,
     }),
   });
@@ -38,6 +47,7 @@ describe('IssueStatusSheet', () => {
     const { baseElement } = renderWithProviders(<IssueStatusSheet value="TODO" onSave={onSave} />, {
       searchParams: '?overlay=issue-status',
     });
+    expect(document.querySelector('[class*="radioMark"]')).toBeNull();
     await userEvent.click(screen.getByRole('radio', { name: /작업 완료/ }));
     await userEvent.click(screen.getByRole('button', { name: '완료' }));
     expect(onSave).toHaveBeenCalledWith('DONE');
@@ -101,6 +111,25 @@ describe('IssueScheduleSheet', () => {
     expect(onSave).toHaveBeenCalledWith({ startDate: null, dueDate: '2001-01-05' });
   });
 
+  it('saves the wheel-visible today for start and due when opened empty', async () => {
+    const today = todayKst();
+    const onStart = vi.fn().mockResolvedValue(undefined);
+    renderWithProviders(
+      <IssueScheduleSheet part="start" value={{ startDate: null, dueDate: null }} onSave={onStart} />,
+      { searchParams: '?overlay=issue-schedule' },
+    );
+    await userEvent.click(screen.getByRole('button', { name: '저장' }));
+    expect(onStart).toHaveBeenCalledWith({ startDate: today, dueDate: null });
+
+    const onDue = vi.fn().mockResolvedValue(undefined);
+    renderWithProviders(
+      <IssueScheduleSheet part="due" value={{ startDate: null, dueDate: null }} onSave={onDue} />,
+      { searchParams: '?overlay=issue-schedule' },
+    );
+    await userEvent.click(screen.getByRole('button', { name: '저장' }));
+    expect(onDue).toHaveBeenCalledWith({ startDate: null, dueDate: today });
+  });
+
   it('does not ask again when the past due date was already saved', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const past = '2001-01-05';
@@ -120,6 +149,20 @@ describe('IssueScheduleSheet', () => {
 });
 
 describe('IssueAssigneeSheet', () => {
+  it('shows optional jobRole next to the name (Figma 368:2309) without a left radio', async () => {
+    renderWithProviders(
+      <IssueAssigneeSheet
+        value={[]}
+        candidates={candidates([{ ...user(1, '한서준'), jobRole: 'PO' }])}
+        onSave={vi.fn()}
+      />,
+      { searchParams: '?overlay=issue-assignees' },
+    );
+    expect(await screen.findByRole('checkbox', { name: /한서준/ })).toBeInTheDocument();
+    expect(screen.getByText('PO')).toBeVisible();
+    expect(document.querySelector('[class*="radioMark"]')).toBeNull();
+  });
+
   it('keeps current assignees who are not candidates, so saving never drops them', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     renderWithProviders(

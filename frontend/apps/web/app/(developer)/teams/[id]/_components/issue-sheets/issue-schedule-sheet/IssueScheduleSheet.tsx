@@ -52,7 +52,7 @@ function ScheduleForm({
     onStartChange,
     onDueChange,
     submit,
-  } = useIssueScheduleForm({ value, onSave, onDone });
+  } = useIssueScheduleForm({ value, part, onSave, onDone });
   const current = part === 'due' ? due : start;
   const onChange = part === 'due' ? onDueChange : onStartChange;
 

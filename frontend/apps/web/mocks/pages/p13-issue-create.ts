@@ -1,6 +1,6 @@
 import { fail, get, newId, post, type MockRoute } from '../core/define';
 import { ISSUES, LABELS, type IssueStatus, type MockIssue } from '../fixtures/issues';
-import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
+import { findTeam, TEAM_MEMBERS, withMockJobRole } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
 
 /**
@@ -104,7 +104,7 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/repos/:repoId/assignee-candidates', ({ params }) => ({
     items: (TEAM_MEMBERS[teamOr404(params.teamId).id] ?? [])
       .filter((m) => m.inGithubOrg)
-      .map((m) => m.user),
+      .map((m) => withMockJobRole(m.user)),
     max: 10,
   })),
   get('/api/v1/user/teams/:teamId/repos/:repoId/label-options', () => ({ items: LABELS })),

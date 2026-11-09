@@ -89,8 +89,11 @@ const renderStep = (onCreated = vi.fn()) =>
       teamId="1"
       repoId={11}
       templateKey="form:request"
+      repoLabel="linker-web"
+      templateLabel="요청"
+      onOpenRepo={vi.fn()}
+      onOpenTemplate={vi.fn()}
       initial={null}
-      onChangeTemplate={vi.fn()}
       onCreated={onCreated}
     />,
     { viewer: { role: 'developer', login: 'me' } },
@@ -183,7 +186,7 @@ it('toggles markdown preview in the same body field (Figma 200:806)', async () =
       description: '',
       kind: 'MARKDOWN',
       defaultTitle: '',
-      body: '## 현상\n깨짐',
+      body: '## 현상\n\n- 항목 **굵게**\n\n`code`',
       defaultLabels: [],
       defaultAssignees: [],
       fallback: false,
@@ -195,18 +198,29 @@ it('toggles markdown preview in the same body field (Figma 200:806)', async () =
       teamId="1"
       repoId={11}
       templateKey="repo:bug"
+      repoLabel="linker-web"
+      templateLabel="버그 제보"
+      onOpenRepo={vi.fn()}
+      onOpenTemplate={vi.fn()}
       initial={null}
-      onChangeTemplate={vi.fn()}
       onCreated={vi.fn()}
     />,
     { viewer: { role: 'developer', login: 'me' } },
   );
-  expect(await screen.findByRole('textbox', { name: /이슈 본문/ })).toHaveValue('## 현상\n깨짐');
+  expect(await screen.findByRole('textbox', { name: /이슈 본문/ })).toHaveValue(
+    '## 현상\n\n- 항목 **굵게**\n\n`code`',
+  );
   await userEvent.click(screen.getByRole('button', { name: '미리보기' }));
-  expect(screen.getByTestId('issue-body-preview')).toHaveTextContent('현상');
+  const preview = screen.getByTestId('issue-body-preview');
+  expect(preview.querySelector('h2')).toHaveTextContent('현상');
+  expect(preview.querySelector('li')).toHaveTextContent('항목 굵게');
+  expect(preview.querySelector('strong')).toHaveTextContent('굵게');
+  expect(preview.querySelector('code')).toHaveTextContent('code');
   expect(screen.queryByRole('textbox', { name: /이슈 본문/ })).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '마크다운 입력' }));
-  expect(screen.getByRole('textbox', { name: /이슈 본문/ })).toHaveValue('## 현상\n깨짐');
+  expect(screen.getByRole('textbox', { name: /이슈 본문/ })).toHaveValue(
+    '## 현상\n\n- 항목 **굵게**\n\n`code`',
+  );
 });
 
 it('stops at the first missing required form item and focuses it', async () => {

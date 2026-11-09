@@ -1,5 +1,6 @@
 'use client';
 
+import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
 import { AltArrowRightLinearIcon } from '@solar-icons/static/linear/alt-arrow-right';
 import { useState, type CSSProperties } from 'react';
 import { useWatch, type Path } from 'react-hook-form';
@@ -26,6 +27,7 @@ import { isInputField } from '../../_lib/form-body';
 import type { FormField, ParsedTemplate } from './api';
 import styles from './IssueContentStep.module.css';
 import {
+  EMPTY_TEMPLATE,
   useIssueContentForm,
   useIssueContentTemplate,
   type FormApi,
@@ -33,7 +35,6 @@ import {
   type IssueContentStepProps,
 } from './hook';
 
-/** Default board colors when the create screen has no mapping yet. */
 const STATUS_COLOR: Record<Exclude<IssueStatus, 'OTHER'>, BoardStatusColor> = {
   TODO: 'GRAY',
   IN_PROGRESS: 'BLUE',
@@ -44,11 +45,12 @@ const STATUS_COLOR: Record<Exclude<IssueStatus, 'OTHER'>, BoardStatusColor> = {
 const longDate = (day: string) =>
   `${day.slice(0, 4)}년 ${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
 
-/** 13 create step 2 (Figma 200:806 / 368:2098). Sheets are the shared Figma 13 set. */
+/** 13 create one page (Figma 200:806 / 368:2098). */
 export function IssueContentStep(props: IssueContentStepProps) {
   const { teamId, repoId, templateKey } = props;
-  const template = useIssueContentTemplate(teamId, repoId, templateKey);
-  if (template.isPending) {
+  const templateQuery = useIssueContentTemplate(teamId, repoId, templateKey);
+
+  if (repoId !== null && templateKey && templateQuery.isPending) {
     return (
       <div aria-busy="true">
         <p role="status">템플릿을 불러오고 있어요.</p>
@@ -56,12 +58,17 @@ export function IssueContentStep(props: IssueContentStepProps) {
       </div>
     );
   }
-  if (template.isError) {
+  if (repoId !== null && templateKey && templateQuery.isError) {
     return (
-      <ErrorState title="템플릿을 불러오지 못했어요" onRetry={() => void template.refetch()} />
+      <ErrorState
+        title="템플릿을 불러오지 못했어요"
+        onRetry={() => void templateQuery.refetch()}
+      />
     );
   }
-  return <ContentForm {...props} template={template.data} />;
+
+  const template = templateQuery.data ?? EMPTY_TEMPLATE;
+  return <ContentForm {...props} template={template} />;
 }
 
 function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }) {
@@ -90,12 +97,14 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
     assigneeCandidates,
     labelQueryOptions,
     template,
+    bodyMax,
   } = useIssueContentForm(props);
+  const { repoId, repoLabel, templateLabel, onOpenRepo, onOpenTemplate } = props;
   const [preview, setPreview] = useState(false);
   const [schedulePart, setSchedulePart] = useState<SchedulePart>('start');
   const title = useWatch({ control: form.control, name: 'title' }) ?? '';
   const body = useWatch({ control: form.control, name: 'body' }) ?? '';
-  const canSubmit = title.trim().length > 0 && !busy;
+  const canSubmit = repoId !== null && title.trim().length > 0 && !busy;
   const overdue = Boolean(schedule.dueDate && schedule.dueDate < todayKst() && status !== 'DONE');
   const sep = <span className={styles.separator} aria-hidden />;
   const empty = <span className="sr-only">없음</span>;
@@ -105,6 +114,13 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
       aria-hidden
       className={styles.chevron}
       dangerouslySetInnerHTML={{ __html: AltArrowRightLinearIcon }}
+    />
+  );
+  const down = (
+    <span
+      aria-hidden
+      className={styles.chevron}
+      dangerouslySetInnerHTML={{ __html: AltArrowDownLinearIcon }}
     />
   );
 
@@ -127,6 +143,46 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
         }}
       >
         <div className={styles.field}>
+          <span className={styles.legend} id={`${id}-repo-label`}>
+            저장소 선택
+            <span className={styles.dot} aria-hidden />
+            <span className="sr-only">(필수)</span>
+          </span>
+          <button
+            type="button"
+            className={styles.select}
+            aria-labelledby={`${id}-repo-label ${id}-repo-value`}
+            aria-haspopup="dialog"
+            aria-disabled={busy}
+            onClick={() => !busy && onOpenRepo()}
+          >
+            <span id={`${id}-repo-value`} data-empty={!repoLabel || undefined}>
+              {repoLabel ?? '저장소를 선택해 주세요'}
+            </span>
+            {down}
+          </button>
+        </div>
+
+        <div className={styles.field}>
+          <span className={styles.legend} id={`${id}-template-label`}>
+            이슈 템플릿
+          </span>
+          <button
+            type="button"
+            className={styles.select}
+            aria-labelledby={`${id}-template-label ${id}-template-value`}
+            aria-haspopup="dialog"
+            aria-disabled={busy || repoId === null}
+            onClick={() => !busy && onOpenTemplate()}
+          >
+            <span id={`${id}-template-value`} data-empty={!templateLabel || undefined}>
+              {templateLabel ?? '팀에서 공유하는 이슈 템플릿을 선택해 주세요'}
+            </span>
+            {down}
+          </button>
+        </div>
+
+        <div className={styles.field}>
           <label htmlFor={`${id}-title`} className={styles.legend}>
             이슈 제목
             <span className={styles.dot} aria-hidden />
@@ -135,6 +191,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
           <input
             id={`${id}-title`}
             className={styles.input}
+            placeholder="제목을 작성해 주세요"
             aria-invalid={errors.title ? true : undefined}
             aria-describedby={errors.title ? `${id}-title-error` : undefined}
             {...form.register('title')}
@@ -183,12 +240,20 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
                 </ReactMarkdown>
               </div>
             ) : (
-              <textarea
-                id={`${id}-body`}
-                className={styles.textarea}
-                aria-labelledby={`${id}-body-label`}
-                {...form.register('body')}
-              />
+              <div className={styles.bodyWrap}>
+                <textarea
+                  id={`${id}-body`}
+                  className={styles.textarea}
+                  placeholder="개발자님을 간단하게 소개해 주세요"
+                  maxLength={bodyMax}
+                  aria-labelledby={`${id}-body-label`}
+                  aria-describedby={`${id}-body-count`}
+                  {...form.register('body')}
+                />
+                <p id={`${id}-body-count`} className={styles.counter} aria-live="polite">
+                  {body.length}/{bodyMax}
+                </p>
+              </div>
             )}
           </div>
         ) : (
@@ -214,7 +279,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
                 type="button"
                 className={styles.row}
                 aria-haspopup="dialog"
-                aria-disabled={busy}
+                aria-disabled={busy || repoId === null}
                 onClick={open(sheets.status)}
               >
                 <span className={styles.term}>상태</span>
@@ -235,7 +300,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
                 type="button"
                 className={styles.row}
                 aria-haspopup="dialog"
-                aria-disabled={busy}
+                aria-disabled={busy || repoId === null}
                 onClick={open(sheets.labels)}
               >
                 <span className={styles.term}>라벨</span>
@@ -257,7 +322,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
                 type="button"
                 className={styles.row}
                 aria-haspopup="dialog"
-                aria-disabled={busy}
+                aria-disabled={busy || repoId === null}
                 onClick={open(sheets.assignees)}
               >
                 <span className={styles.term}>담당자</span>
@@ -279,7 +344,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
                 type="button"
                 className={styles.row}
                 aria-haspopup="dialog"
-                aria-disabled={busy}
+                aria-disabled={busy || repoId === null}
                 onClick={() => {
                   setSchedulePart('start');
                   open(sheets.schedule)();
@@ -301,7 +366,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
                 type="button"
                 className={styles.row}
                 aria-haspopup="dialog"
-                aria-disabled={busy}
+                aria-disabled={busy || repoId === null}
                 onClick={() => {
                   setSchedulePart('due');
                   open(sheets.schedule)();
@@ -356,37 +421,41 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
         </button>
       </form>
 
-      <IssueAssigneeSheet
-        value={assignees}
-        candidates={assigneeCandidates}
-        onSave={async (ids) => {
-          setAssigneeIds(ids);
-          setTouched(true);
-        }}
-      />
-      <IssueLabelSheet
-        value={labelObjects}
-        options={labelQueryOptions}
-        onSave={async (names) => {
-          setLabels(names);
-          setTouched(true);
-        }}
-      />
-      <IssueScheduleSheet
-        part={schedulePart}
-        value={schedule}
-        onSave={async (value) => {
-          setSchedule(value);
-          setTouched(true);
-        }}
-      />
-      <IssueStatusSheet
-        value={status}
-        onSave={async (value) => {
-          setStatus(value);
-          setTouched(true);
-        }}
-      />
+      {repoId !== null && (
+        <>
+          <IssueAssigneeSheet
+            value={assignees}
+            candidates={assigneeCandidates}
+            onSave={async (ids) => {
+              setAssigneeIds(ids);
+              setTouched(true);
+            }}
+          />
+          <IssueLabelSheet
+            value={labelObjects}
+            options={labelQueryOptions}
+            onSave={async (names) => {
+              setLabels(names);
+              setTouched(true);
+            }}
+          />
+          <IssueScheduleSheet
+            part={schedulePart}
+            value={schedule}
+            onSave={async (value) => {
+              setSchedule(value);
+              setTouched(true);
+            }}
+          />
+          <IssueStatusSheet
+            value={status}
+            onSave={async (value) => {
+              setStatus(value);
+              setTouched(true);
+            }}
+          />
+        </>
+      )}
     </>
   );
 }

@@ -193,3 +193,21 @@ export const TEAM_MEMBERS: Record<number, MockMember[]> = {
 export function findTeam(id: string | number): MockTeam | undefined {
   return TEAMS.find((team) => team.id === Number(id));
 }
+
+/**
+ * Figma 368:2309 job labels for assignee sheets (mock only).
+ * Real API has no jobRole — never map OWNER/ADMIN/MEMBER here.
+ */
+const MOCK_JOB_ROLES: Record<number, string> = {
+  1: 'PO',
+  2: 'Fullstack',
+  3: 'Fullstack',
+  4: 'QA',
+  5: 'Backend',
+  6: 'Backend',
+};
+
+export function withMockJobRole<T extends { id: number }>(user: T): T & { jobRole?: string } {
+  const jobRole = MOCK_JOB_ROLES[user.id];
+  return jobRole ? { ...user, jobRole } : user;
+}

@@ -6,7 +6,7 @@ import {
   mockStatusColor,
   type IssueStatus,
 } from '../fixtures/issues';
-import { TEAM_MEMBERS } from '../fixtures/teams';
+import { TEAM_MEMBERS, withMockJobRole } from '../fixtures/teams';
 
 /**
  * Demo values for the 12 screen only (sub-issue progress and dates, one overdue and not done). They fill what
@@ -83,7 +83,7 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/issues/:issueId/assignee-candidates', ({ params }) => ({
     items: (TEAM_MEMBERS[Number(params.teamId)] ?? [])
       .filter((m) => m.inGithubOrg)
-      .map((m) => m.user),
+      .map((m) => withMockJobRole(m.user)),
     max: 10,
   })),
   put('/api/v1/user/teams/:teamId/issues/:issueId/assignees', ({ params, body }) => {

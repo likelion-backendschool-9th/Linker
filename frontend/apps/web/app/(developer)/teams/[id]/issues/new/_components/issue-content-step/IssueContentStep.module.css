@@ -57,10 +57,61 @@
   padding-block: 0;
 }
 
+.select {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-recruit-field-inline);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  text-align: start;
+  background-color: var(--color-canvas-cool);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.select > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-title-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select > span[data-empty] {
+  color: var(--color-text-muted-cool);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--color-selection);
+  outline-offset: -2px;
+}
+
 .textarea {
   min-height: var(--issue-create-body-min-height);
   padding: var(--space-issue-create-body);
+  padding-bottom: calc(var(--space-issue-create-body) + var(--font-size-caption) + var(--space-xs));
   resize: none; /* Figma 200:806 has no resize handle */
+}
+
+.bodyWrap {
+  position: relative;
+}
+
+.counter {
+  position: absolute;
+  right: var(--space-issue-create-body);
+  bottom: var(--space-issue-create-body);
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  pointer-events: none;
 }
 
 /* Figma 368:2098: 2px #2563eb focus ring on the field edge */
@@ -88,6 +139,42 @@
   background-color: var(--color-canvas-cool);
   border: 1px solid var(--color-hairline-cool);
   border-radius: var(--radius-control-md);
+}
+
+.preview > * + * {
+  margin-top: var(--space-row-block);
+}
+
+.preview :is(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: var(--font-weight-semibold);
+  line-height: inherit;
+}
+
+.preview ul,
+.preview ol {
+  padding-left: var(--space-md);
+  list-style: revert;
+}
+
+.preview li + li {
+  margin-top: var(--space-row-inline);
+}
+
+.preview a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.preview pre {
+  padding: var(--space-xs);
+  overflow-x: auto;
+  background-color: var(--color-canvas);
+  border-radius: var(--radius-xxs);
+}
+
+.preview code {
+  font-size: var(--font-size-micro);
 }
 
 .toggle {

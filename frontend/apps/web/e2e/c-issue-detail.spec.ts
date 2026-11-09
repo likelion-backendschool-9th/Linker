@@ -43,7 +43,7 @@ test('an info line opens its sheet; the status sheet saves and closes', async ({
   await page.getByRole('button', { name: /^상태 / }).click();
   const sheet = page.getByRole('dialog', { name: '이슈 상태' });
   await expect(sheet).toBeVisible();
-  await sheet.getByRole('radio').last().check({ force: true });
+  await sheet.locator('label').filter({ hasText: '작업 중단' }).click();
   await sheet.getByRole('button', { name: '완료' }).click();
   await expect(sheet).toHaveCount(0);
 });

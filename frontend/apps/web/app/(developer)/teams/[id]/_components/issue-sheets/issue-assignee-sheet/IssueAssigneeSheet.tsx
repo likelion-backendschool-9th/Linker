@@ -83,6 +83,9 @@ function AssigneeForm<Key extends readonly unknown[]>({
                     onChange={(event) => toggle(user.id, event.target.checked)}
                   />
                   <span className={styles.person}>{user.name}</span>
+                  {user.jobRole ? (
+                    <span className={styles.jobRole}>{user.jobRole}</span>
+                  ) : null}
                   <span className="sr-only">{hint}</span>
                 </label>
               );
