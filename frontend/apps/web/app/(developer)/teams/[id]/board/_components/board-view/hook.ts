@@ -28,6 +28,7 @@ import {
   type BoardStatusColor,
   type IssueStatus,
 } from '../../../../../_lib/issue-status';
+import type { Board } from '../../_lib/board-queries';
 import { boardSortParser, BOARD_SORTS, sortCards } from '../../_lib/board-sort';
 import { boardOptions, issueKeys, saveStatus } from './api';
 
@@ -43,6 +44,43 @@ const collision: CollisionDetection = (args) => {
   const hits = pointerWithin(args);
   return hits.length > 0 ? hits : rectIntersection(args);
 };
+
+/** Board-level drag: lock read-only / no-repo-write / suspended; not GH lookup failures. */
+export function boardDragAllowed(
+  board: Pick<Board, 'canWrite' | 'writePermissionReason'> | undefined,
+  viewerStatus: string | null | undefined,
+): boolean {
+  if (viewerStatus === 'SUSPENDED') return false;
+  if (!board) return false;
+  if (board.canWrite) return true;
+  return board.writePermissionReason === 'GITHUB_PERMISSION_UNAVAILABLE';
+}
+
+function isRepoPermissionError(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 403 &&
+    error.code === 'FORBIDDEN' &&
+    error.message === NO_PERMISSION
+  );
+}
+
+/** Keep the card in the destination column after the optimistic move is cleared. */
+function placeCard(board: Board, cardId: number, to: IssueStatus, patch: Partial<IssueRow>): Board {
+  const moved = board.columns.flatMap((column) => column.cards).find((card) => card.id === cardId);
+  if (!moved) return board;
+  const nextCard = { ...moved, ...patch, status: to };
+  return {
+    ...board,
+    columns: board.columns.map((column) => ({
+      ...column,
+      cards:
+        column.status === to
+          ? [...column.cards.filter((card) => card.id !== cardId), nextCard]
+          : column.cards.filter((card) => card.id !== cardId),
+    })),
+  };
+}
 
 export function useBoardView(teamId: string) {
   const viewer = useViewer();
@@ -64,7 +102,7 @@ export function useBoardView(teamId: string) {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
 
-  const canWrite = Boolean(board.data?.canWrite && viewer.status !== 'SUSPENDED');
+  const canWrite = boardDragAllowed(board.data, viewer.status);
   const serverColumns = board.data?.columns ?? [];
   const cards = serverColumns.flatMap((column) => column.cards);
   // The column a card came in (NONE cards sit in 기타 with their own status)
@@ -100,14 +138,19 @@ export function useBoardView(teamId: string) {
     if (statusOf(card) === to || moves[card.id] !== undefined) return;
     setMoves((current) => ({ ...current, [card.id]: to }));
     try {
-      await saveStatus(teamId, String(card.id), to);
+      const result = await saveStatus(teamId, String(card.id), to);
+      client.setQueriesData<Board>({ queryKey: ['issues', teamId, 'board'] }, (current) =>
+        current
+          ? placeCard(current, card.id, to, {
+              statusColor: result.statusColor,
+              state: result.state,
+            })
+          : current,
+      );
       await client.invalidateQueries({ queryKey: issueKeys.team(teamId) });
       setAnnouncement(`${card.title} 카드를 ${labelOf(to)} 칸으로 옮겼어요.`);
     } catch (error) {
-      const reason =
-        error instanceof ApiError && error.code === 'GITHUB_PERMISSION'
-          ? NO_PERMISSION
-          : 'GitHub에 반영하지 못했어요.';
+      const reason = isRepoPermissionError(error) ? NO_PERMISSION : 'GitHub에 반영하지 못했어요.';
       toast(`${reason} 카드를 원래 자리로 돌려놨어요.`, { tone: 'error' });
     } finally {
       setMoves((current) => {
