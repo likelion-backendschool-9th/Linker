@@ -4,11 +4,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLayoutEffect, useRef, useState } from 'react';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
+import { profileQueryKey } from '@/features/profile/profile-types';
+import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { toast } from '@/stores/toast-store';
 
-import { isCardQuery, patchCards } from '../../_lib/feed-cache';
-import type { FeedPost } from '../../_lib/feed-queries';
+import { isCardQuery, patchAuthorCards, patchCards } from '../../_lib/feed-cache';
+import { setFollow, type FeedPost } from '../../_lib/feed-queries';
 import { setLike } from './api';
 
 /**
@@ -48,6 +50,51 @@ export function usePostLike(post: FeedPost) {
     canLike: viewer.role !== 'recruiter',
     toggle: () => {
       if (requireLogin() && !like.isPending) like.mutate(!post.likedByMe);
+    },
+  };
+}
+
+/**
+ * "팔로우" / "팔로잉" chip (Figma 92:214 / 92:259, borrowed from 04): applied at once on every card by
+ * the same author and rolled back on failure. Guests get the login sheet; recruiters can't follow
+ * and nobody follows themselves, so neither gets the chip.
+ */
+export function usePostFollow(post: FeedPost) {
+  const viewer = useViewer();
+  const requireLogin = useRequireLogin();
+  const client = useQueryClient();
+  const following = post.author.isFollowing === true;
+
+  const follow = useMutation({
+    mutationFn: (next: boolean) => setFollow(post.author.login, next),
+    // Its own toast below covers the 200/day limit too
+    meta: { handledCodes: ['RATE_LIMITED'] },
+    onMutate: async (next) => {
+      await client.cancelQueries({ predicate: isCardQuery });
+      const snapshot = client.getQueriesData({ predicate: isCardQuery });
+      patchAuthorCards(client, post.author.id, (author) => ({ ...author, isFollowing: next }));
+      return { snapshot };
+    },
+    onError: (error, _next, context) => {
+      context?.snapshot.forEach(([key, data]) => client.setQueryData(key, data));
+      toast(error instanceof ApiError ? error.message : '팔로우 상태를 바꾸지 못했어요.', {
+        tone: 'error',
+      });
+    },
+    // 23 and the author's profile show the same relation; let them refetch
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['posts', viewer.login, 'detail'] }),
+        client.invalidateQueries({ queryKey: profileQueryKey(post.author.login) }),
+      ]),
+  });
+
+  return {
+    visible: viewer.role !== 'recruiter' && viewer.login !== post.author.login,
+    following,
+    pending: follow.isPending,
+    toggle: () => {
+      if (requireLogin() && !follow.isPending) follow.mutate(!following);
     },
   };
 }

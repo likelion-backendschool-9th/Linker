@@ -295,7 +295,7 @@ Popularity score = likes × 1 + comments × 2 (excluding the author's own), deca
 - **Several teammates post the same repo** → each can post; the detail page groups "이 레포의 다른 게시물" (other posts for this repo).
 - **Only some photos upload** → show retry on failed photos; publishing allowed only after all upload.
 - **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked. The same applies when an operator hides it. A comment hidden by reports is seen only by its author.
-- **Empty "추천"** (no visible posts at all) → the empty feed copy plus 5 developers by my tech stack. A developer with no matching posts still sees every post in random order, so "추천" is never empty while posts exist.
+- **Empty "추천"** (no visible posts at all) → the empty feed copy plus up to 5 active developers who share my tech stack (most shared tags first; people I already follow or have a block with either way are left out; none without a tech stack). A developer with no matching posts still sees every post in random order, so "추천" is never empty while posts exist.
 - **Someone I follow is suspended or deletes their account** → keep the follow, remove their posts from the feed. If deleted, the follow is removed too.
 
 ## 5. Find Team

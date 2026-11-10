@@ -661,12 +661,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: P-4, H-9 · Needs first: 23 (posts must exist to test)
 
 - [ ] "추천" / "팔로잉" tabs under the header (Figma 785:770, tab kept in URL `?tab=following`): same scroll behavior as 19 — leaving the top hides the header and pins the tabs to the top, back at the top both return. "추천": developers and operators get posts matching their tech stack or job categories first, then the rest at random; guests and recruiters get every post at random (POL-P-4). "팔로잉": posts by people I follow, newest first, no ads; guests see "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." + "로그인 하러 가기" (login prompt); empty list "팔로잉한 사용자가 없습니다."
-- [ ] Post card: cover photo (repo card if none), author with job status above the login for all three states (Figma 785:778: "구직 중" blue, "제안 받기" accent, "구직 안 함" gray, POL-H-4), one-line intro, like and comment counts, one-line "why shown" (screen readers only; matched "추천" posts only)
+- [ ] Post card: cover photo (repo card if none), author with job status above the login for all three states, "팔로우"/"팔로잉" chip (04 follow API; every card by that author flips together; none on my own cards or for recruiters, guests get the login prompt) (Figma 785:778: "구직 중" blue, "제안 받기" accent, "구직 안 함" gray, POL-H-4), one-line intro, like and comment counts, one-line "why shown" (screen readers only; matched "추천" posts only)
 - [ ] Infinite scroll + virtualization
 - [ ] Write button → 22
 - [ ] Card comment icon → comment sheet (Figma 374:3944)
 - [ ] Card paper-plane icon → feed share drawer (Figma 780:584, POL-P-7 feed share drawer): centered card, max 600px tall (only the room list scrolls, scrollbar hidden); title "공유하기" + ×, room search (blue border on focus), one room list (photo + name, blue "팀" after team rooms, per-row "공유하기" sends the card), "링크 복사하기" at the bottom. Recruiters: 1:1 rooms only. Guests get the login prompt. Feed only; 23, 21, 04 keep the 00 share sheet
-- [ ] Empty "추천" (no visible posts at all): 5 developers recommended by my tech stack (with follow buttons)
+- [ ] Empty "추천" (no visible posts at all): up to 5 developers recommended by my tech stack, most shared tags first, excluding people I follow or have a block with (with follow buttons)
 - [ ] Guest feed: "추천" in random order with no "why shown", write button shows login prompt, seen posts not recorded
 - [ ] Server "추천" for developers and operators: posts sharing a tag with my tech stack or whose author picked one of my job categories first (by popularity score), then the rest in random order; posts seen on an earlier visit last; max 2 consecutive by the same author
 - [ ] Server "추천" for guests and recruiters: every post in random order, fixed for one visit (cursor carries the visit start, so scrolling never repeats or skips; reshuffled on the next visit)

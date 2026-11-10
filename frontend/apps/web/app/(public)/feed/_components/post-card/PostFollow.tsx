@@ -1,28 +1,26 @@
 'use client';
 
-import { useRequireLogin } from '@/features/auth/use-require-login';
-import { useViewer } from '@/lib/auth/viewer-context';
-
+import type { FeedPost } from '../../_lib/feed-queries';
 import styles from './PostCard.module.css';
+import { usePostFollow } from './hook';
 
 /**
- * "팔로우" (Figma 92:214) / "팔로잉" (92:259). Guests always see "팔로우" and get the login prompt on
- * press (04 ch. 2: actions need login); the follow mutation itself isn't wired on the card yet.
- * Recruiters can't follow (04 ch. 2), so they don't get the chip at all.
+ * "팔로우" (Figma 92:214) / "팔로잉" (92:259). Guests see "팔로우" and get the login prompt on press
+ * (04 ch. 2); recruiters can't follow and nobody follows themselves, so neither gets the chip.
  */
-export function PostFollow({ following }: { following: boolean }) {
-  const requireLogin = useRequireLogin();
-  const { role } = useViewer();
-  if (role === 'recruiter') return null;
+export function PostFollow({ post }: { post: FeedPost }) {
+  const follow = usePostFollow(post);
+  if (!follow.visible) return null;
 
   return (
     <button
       type="button"
-      className={following ? styles.following : styles.follow}
-      aria-pressed={following}
-      onClick={() => requireLogin()}
+      className={follow.following ? styles.following : styles.follow}
+      aria-pressed={follow.following}
+      aria-disabled={follow.pending || undefined}
+      onClick={follow.toggle}
     >
-      {following ? '팔로잉' : '팔로우'}
+      {follow.following ? '팔로잉' : '팔로우'}
     </button>
   );
 }

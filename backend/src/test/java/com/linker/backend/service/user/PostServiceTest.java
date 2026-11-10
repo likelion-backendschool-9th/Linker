@@ -93,6 +93,10 @@ class PostServiceTest {
 	GithubRepoSource github;
 	@Mock
 	PlatformTransactionManager transactions;
+	@Mock
+	com.linker.backend.repository.profile.UserTechTagRepository userTechTags;
+	@Mock
+	com.linker.backend.repository.profile.FollowRepository follows;
 
 	PostService service;
 	AuthenticatedUser developer;
@@ -102,7 +106,7 @@ class PostServiceTest {
 		service = new PostService(
 				repos, posts, users, techTags, uploads,
 				likes, comments, seenPosts, pins, blocks, notifications, authors, pro, teams,
-				github, transactions, CLOCK);
+				github, userTechTags, follows, transactions, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
@@ -568,6 +572,39 @@ class PostServiceTest {
 	@Test
 	void recommendedUsersEmptyWithoutTechTags() {
 		assertThat(service.recommendedUsers(developer).items()).isEmpty();
+		verify(userTechTags, never()).findDevelopersSharingTags(anyLong(), any());
+	}
+
+	@Test
+	void recommendedUsersAreUpToFiveStackMatesIFollowNorBlock() {
+		com.linker.backend.entity.profile.UserTechTag react = org.mockito.Mockito.mock(
+				com.linker.backend.entity.profile.UserTechTag.class);
+		when(react.tagName()).thenReturn("React");
+		when(userTechTags.findSelected(10L)).thenReturn(List.of(react));
+		// 20 already followed, 21 blocked me, 22..27 are free: only the first five of those are kept
+		when(userTechTags.findDevelopersSharingTags(10L, List.of("React")))
+				.thenReturn(List.of(20L, 21L, 22L, 23L, 24L, 25L, 26L, 27L));
+		when(follows.findAllFollowedIds(10L)).thenReturn(List.of(20L));
+		when(blocks.findActiveBlockerIds(10L)).thenReturn(List.of(21L));
+		List<User> people = java.util.stream.LongStream.rangeClosed(22, 26).mapToObj(id -> {
+			User person = User.create("dev" + id, UserType.DEVELOPER);
+			ReflectionTestUtils.setField(person, "id", id);
+			return person;
+		}).toList();
+		when(users.findAllById(List.of(22L, 23L, 24L, 25L, 26L))).thenReturn(people);
+		when(userTechTags.findTagNamesByUserIds(List.of(22L, 23L, 24L, 25L, 26L)))
+				.thenReturn(List.<Object[]>of(new Object[] {22L, "React"}, new Object[] {22L, "Next.js"}));
+		when(authors.toAuthor(any(User.class))).thenAnswer(invocation -> {
+			User person = invocation.getArgument(0);
+			return new com.linker.backend.dto.recruit.response.AuthorBriefResponse(
+					person.getId(), person.getUsername(), person.getUsername(), "", "DEVELOPER", "OFF", false);
+		});
+
+		var items = service.recommendedUsers(developer).items();
+
+		assertThat(items).extracting(item -> item.user().id()).containsExactly(22L, 23L, 24L, 25L, 26L);
+		assertThat(items.getFirst().techStack()).containsExactly("React", "Next.js");
+		assertThat(items.get(1).techStack()).isEmpty();
 	}
 
 	private PostWriteRequest writeRequest(Long repoId, List<PostPhotoRequest> photos) {

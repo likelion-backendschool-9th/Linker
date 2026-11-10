@@ -47,7 +47,6 @@ export function PostCard({
   const Title = titleLevel === 3 ? 'h3' : 'h2';
   const detailHref = `/posts/${post.id}?from=${from}` as Route;
   const jobStatus = JOB_STATUS[post.author.jobStatus];
-  const following = post.author.isFollowing === true;
 
   return (
     <article aria-labelledby={titleId} className={styles.card} data-post-id={post.id}>
@@ -70,7 +69,7 @@ export function PostCard({
               <span className={styles.login}>{post.author.login}</span>
             </span>
           </Link>
-          <PostFollow following={following} />
+          <PostFollow post={post} />
         </div>
 
         <Link href={detailHref} className={styles.cover} tabIndex={-1} aria-hidden>

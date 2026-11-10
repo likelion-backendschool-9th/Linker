@@ -97,6 +97,8 @@ public final class PlanLimits {
 	public static final int FEED_MAX_CONSECUTIVE_SAME_AUTHOR = 2;
 	/** POL-P-4 — likes from accounts younger than this don't count toward popularity. */
 	public static final int FEED_NEW_ACCOUNT_LIKE_EXCLUSION_DAYS = 7;
+	/** Ch. 4 exceptions — empty "추천": developers suggested by my tech stack. */
+	public static final int FEED_RECOMMENDED_USERS = 5;
 	/** POL-P-5 / ch. 2 — comment rate and length. */
 	public static final int POST_COMMENT_MAX = 500;
 	public static final int POST_COMMENTS_PER_MINUTE = 10;
