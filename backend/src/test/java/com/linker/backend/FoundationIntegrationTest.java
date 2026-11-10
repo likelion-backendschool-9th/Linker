@@ -994,15 +994,7 @@ class FoundationIntegrationTest {
 		mockMvc.perform(get("/api/v1/public/users/octocat"))
 				.andExpect(status().isNotFound());
 
-		jdbc.execute("""
-				CREATE TABLE completion_records (
-				    id bigint PRIMARY KEY,
-				    user_id bigint NOT NULL,
-				    result varchar(16) NOT NULL,
-				    assigned_issue_count integer NOT NULL,
-				    done_issue_count integer NOT NULL
-				)
-				""");
+		// V29 owns the real table; fixtures must preserve its foreign keys and schema.
 		try {
 			for (String[] fixture : new String[][] {{"Linker", "ACTIVE"}, {"Done", "COMPLETED"},
 					{"Paused", "READ_ONLY"}, {"Left", "ACTIVE"}}) {
@@ -1014,8 +1006,16 @@ class FoundationIntegrationTest {
 			}
 			jdbc.update("UPDATE teams SET avatar_url='https://avatars.githubusercontent.com/u/1' WHERE name='Linker'");
 			jdbc.update("UPDATE team_members SET left_at=now() WHERE team_id=4");
-			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (1, ?, 'COMPLETED', 4, 2)", user.getId());
-			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (2, ?, 'DROPPED', 2, 0)", user.getId());
+			for (long teamId : new long[] {1, 2}) {
+				long completionId = jdbc.queryForObject("""
+						INSERT INTO team_completions(team_id,completed_by,completed_at,revertible_until,confirmed_at,created_at,updated_at)
+						VALUES (?,?,now()-interval '8 days',now()-interval '1 day',now(),now(),now()) RETURNING id
+						""", Long.class, teamId, user.getId());
+				jdbc.update("""
+						INSERT INTO completion_records(completion_id,user_id,result,assigned_issue_count,done_issue_count,created_at,updated_at)
+						VALUES (?,?,?,?,?,now(),now())
+						""", completionId, user.getId(), teamId == 1 ? "COMPLETED" : "DROPPED", teamId == 1 ? 4 : 2, teamId == 1 ? 2 : 0);
+			}
 
 			mockMvc.perform(get("/api/v1/public/user/octocat"))
 					.andExpect(status().isOk())
@@ -1032,7 +1032,7 @@ class FoundationIntegrationTest {
 					.andExpect(jsonPath("$.nextCursor").value(org.hamcrest.Matchers.nullValue()));
 		}
 		finally {
-			jdbc.execute("DROP TABLE IF EXISTS completion_records");
+			jdbc.update("DELETE FROM completion_records WHERE user_id=?", user.getId());
 		}
 	}
 
