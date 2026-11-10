@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { renderWithProviders } from '@/test/render-with-providers';
@@ -121,4 +121,29 @@ it('preserves an explicit valid team when handing off to C', async () => {
     'href',
     '/workspace/issues?teamId=42',
   );
+});
+
+it('keeps issue creation for an active issue team', async () => {
+  stubTeams([team(1, 'ACTIVE'), team(3, 'READ_ONLY')]);
+  renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=1' });
+  expect(await screen.findByRole('link', { name: '이슈 작성' })).toHaveAttribute(
+    'href',
+    '/teams/1/issues/new',
+  );
+});
+
+it('hides issue creation for a read-only issue team', async () => {
+  stubTeams([team(1, 'ACTIVE'), team(3, 'READ_ONLY')]);
+  cleanup();
+  renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=3' });
+  expect(await screen.findByRole('heading', { name: '내 프로젝트 3 팀의 이슈' })).toBeVisible();
+  expect(screen.queryByRole('link', { name: '이슈 작성' })).not.toBeInTheDocument();
+});
+
+it('hides issue creation for an archived issue team', async () => {
+  stubTeams([team(1, 'ACTIVE'), team(4, 'ARCHIVED')]);
+  cleanup();
+  renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=4' });
+  expect(await screen.findByRole('heading', { name: '내 프로젝트 4 팀의 이슈' })).toBeVisible();
+  expect(screen.queryByRole('link', { name: '이슈 작성' })).not.toBeInTheDocument();
 });

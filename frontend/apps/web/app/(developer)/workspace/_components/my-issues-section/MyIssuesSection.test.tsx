@@ -226,6 +226,7 @@ it('has no › link for an archived team without a chat room', async () => {
   renderWithProviders(<MyIssuesSection />, developer);
   await screen.findByRole('button', { name: '팀 변경, 현재 보관 팀' });
   expect(screen.queryByRole('link', { name: '보관 팀 팀으로 이동' })).toBeNull();
+  expect(screen.queryByRole('link', { name: '이슈 작성' })).toBeNull();
 });
 
 it('changes the team from the sheet only after pressing 팀 변경, then closes it', async () => {

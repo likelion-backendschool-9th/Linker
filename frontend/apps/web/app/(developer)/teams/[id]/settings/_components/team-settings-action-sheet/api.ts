@@ -10,6 +10,7 @@ export {
   deleteTeam,
   leaveTeam,
   archiveTeam,
+  revokeTeamInviteLink,
   removeTeamMember,
   changeTeamMemberRole,
   removeTeamRepository,
