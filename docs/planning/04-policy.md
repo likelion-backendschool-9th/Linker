@@ -115,7 +115,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 
 ### Rate limits
 
-Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시도해 주세요" (please try again later); accounts exceeding 3× a daily limit go on the operator review list.
+Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시도해 주세요" (please try again later); accounts exceeding 3× a daily limit go on the operator review list. Exception: the daily recruit-post limit shows "하루 모집글의 최대 한도는 N번 입니다." (N = the daily limit below, now 5) instead, with no resend button.
 
 | Action | Limit |
 | --- | --- |
@@ -333,6 +333,7 @@ Pending applications stay when a recruit post closes; the author can still invit
 
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
+- **Reopening a closed recruit post** → refused when every role is filled ("모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.") or the deadline has passed ("마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요."); the author edits the post first. Over the open-post cap → subscription prompt (POL-R-1).
 - **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams are sent to the Flex checkout sheet from recruit detail.
 - **Free team member limit reached** (6) → can't invite; recruit detail returns `PLAN_LIMIT` / `TEAM_MEMBERS` and opens the Flex checkout sheet. Flex teams have no member limit.
 - **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
@@ -698,6 +699,7 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Situation | Copy |
 | --- | --- |
 | Rate limit reached | 오늘은 더 할 수 없어요. 내일 다시 시도해 주세요. |
+| Recruit post daily limit (ch. 2) | 하루 모집글의 최대 한도는 N번 입니다. (N = 5) |
 | No GitHub permission | 이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. |
 | GitHub connection failed | GitHub에 연결하지 못했어요. 작성한 내용은 저장해 두었어요. |
 | Not org owner | GitHub 조직 오너만 앱을 설치할 수 있어요. 오너에게 설치를 요청할까요? |

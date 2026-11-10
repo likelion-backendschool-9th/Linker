@@ -343,6 +343,33 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void reopenRejectsWhenAllRolesAreFull() {
+		RecruitPost post = ownedPost();
+		post.close(NOW);
+		RecruitRole role = post.getRoles().get(0);
+		ReflectionTestUtils.setField(role, "acceptedCount", role.getHeadcount());
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+
+		assertThatThrownBy(() -> service.reopen(developer, 3L))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("ROLES_FULL"));
+		assertThat(post.getStatus()).isEqualTo(RecruitStatus.CLOSED);
+	}
+
+	@Test
+	void reopenRejectsWhenDeadlinePassed() {
+		RecruitPost post = ownedPost();
+		post.close(NOW);
+		ReflectionTestUtils.setField(post, "deadline", LocalDate.now(CLOCK).minusDays(1));
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+
+		assertThatThrownBy(() -> service.reopen(developer, 3L))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("DEADLINE_PASSED"));
+		assertThat(post.getStatus()).isEqualTo(RecruitStatus.CLOSED);
+	}
+
+	@Test
 	void deleteExpiresPendingApplicationsAndNotifies() {
 		RecruitPost post = ownedPost();
 		Application pending = pendingApplication(20L, ApplicationStatus.PENDING);

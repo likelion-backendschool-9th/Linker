@@ -4,19 +4,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
-import { ApiError } from '@/lib/api/api-error';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
-import { closeRecruit, deleteRecruit, reopenRecruit } from './api';
+import { closeRecruit, deleteRecruit, recruitStatusErrorMessage, reopenRecruit } from './api';
 
-/** Same top error toast as the editor form above it */
-function showFailure() {
-  toast('처리하지 못했어요. 잠시 후 다시 시도해 주세요.', {
-    tone: 'error',
-    placement: 'top',
-    key: 'recruit-editor-error',
-  });
+/** Same top error toast as the editor form above it, with copy per server code */
+function showFailure(error: unknown) {
+  const message = recruitStatusErrorMessage(error);
+  if (!message) return;
+  toast(message, { tone: 'error', placement: 'top', key: 'recruit-editor-error' });
 }
 
 export function useRecruitStatusSection({
@@ -41,10 +38,10 @@ export function useRecruitStatusSection({
       toast(open ? '모집을 마감했어요.' : '다시 모집을 시작했어요.');
       await client.invalidateQueries({ queryKey: ['recruits'] });
     },
-    // PLAN_LIMIT on reopen opens the shared limit sheet instead of the toast
+    // ROLES_FULL / DEADLINE_PASSED get their own toast; PLAN_LIMIT opens the shared limit sheet
     onError: (error) => {
       statusDialog.close();
-      if (!(error instanceof ApiError && error.code === 'PLAN_LIMIT')) showFailure();
+      showFailure(error);
     },
   });
   const remove = useMutation({

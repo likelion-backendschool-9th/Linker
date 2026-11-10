@@ -1,4 +1,5 @@
 import { RECRUIT_ROLE_LABELS, type RecruitRoleKey } from '@/features/recruit/recruit-labels';
+import { RECRUIT } from '@/lib/policy';
 
 import { dateOnly, del, fail, get, newId, post, put, type MockRoute } from '../core/define';
 import { RECRUITS, type MockRecruit } from '../fixtures/recruits';
@@ -8,6 +9,9 @@ import { brief, ME } from '../fixtures/users';
 /** 20 Write/edit recruit post: `RecruitmentController` */
 
 const OPEN_LIMIT = 3; // Pro 10 (04 POL-R-1)
+
+/** Create attempts since the mock started (stands in for the server's daily window) */
+let createAttempts = 0;
 
 const openCount = () =>
   RECRUITS.filter((item) => item.author.id === ME.id && item.status === 'OPEN').length;
@@ -64,6 +68,13 @@ export const routes: MockRoute[] = [
   post(
     '/api/v1/user/recruits',
     ({ body }) => {
+      // `@RateLimit` runs before anything else and counts every attempt (04 ch. 2: 5/day)
+      createAttempts += 1;
+      if (createAttempts > RECRUIT.createPerDay) {
+        fail(429, 'RATE_LIMITED', '요청이 너무 많아요. 잠시 후 다시 시도해 주세요', {
+          retryAfterSeconds: 86_400,
+        });
+      }
       if (openCount() >= OPEN_LIMIT) {
         fail(
           403,
@@ -113,12 +124,21 @@ export const routes: MockRoute[] = [
     ownRecruit(params.recruitId!).status = 'CLOSED';
     return undefined;
   }),
+  // Same order as the server: author → already open → ROLES_FULL → DEADLINE_PASSED → open cap
   post('/api/v1/user/recruits/:recruitId/reopen', ({ params }) => {
+    const item = ownRecruit(params.recruitId!);
+    if (item.status === 'OPEN') return undefined;
+    if (item.roles.length > 0 && item.roles.every((role) => role.filled >= role.headcount)) {
+      fail(409, 'ROLES_FULL', '모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.');
+    }
+    if (item.deadline < dateOnly(0)) {
+      fail(409, 'DEADLINE_PASSED', '마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요.');
+    }
     if (openCount() >= OPEN_LIMIT)
       fail(403, 'PLAN_LIMIT', '동시에 모집할 수 있는 글은 3개까지예요.', {
         reason: 'RECRUIT_POSTS',
       });
-    ownRecruit(params.recruitId!).status = 'OPEN';
+    item.status = 'OPEN';
     return undefined;
   }),
   del('/api/v1/user/recruits/:recruitId', ({ params }) => {

@@ -6,11 +6,18 @@ import { useRouter } from 'next/navigation';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { closeRecruit, deleteRecruit, reopenRecruit } from '@/features/recruit/recruit-status-api';
+import { recruitStatusErrorMessage } from '@/features/recruit/recruit-status-errors';
 import { reportTargetId } from '@/features/report/report-target';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
 import type { RecruitDetail } from '../../_lib/detail-queries';
+
+/** Copy per server code (shared with 20); PLAN_LIMIT and other shared codes are already handled */
+function showFailure(error: unknown) {
+  const message = recruitStatusErrorMessage(error);
+  if (message) toast(message, { tone: 'error' });
+}
 
 export function useRecruitMenuSheet(recruit: RecruitDetail) {
   const router = useRouter();
@@ -28,8 +35,11 @@ export function useRecruitMenuSheet(recruit: RecruitDetail) {
       toast(open ? '모집을 마감했어요.' : '다시 모집을 시작했어요.');
       await client.invalidateQueries({ queryKey: ['recruits'] });
     },
-    // PLAN_LIMIT on reopen opens the shared limit sheet
-    onError: () => statusDialog.close(),
+    // ROLES_FULL / DEADLINE_PASSED get their own toast; PLAN_LIMIT opens the shared limit sheet
+    onError: (error) => {
+      statusDialog.close();
+      showFailure(error);
+    },
   });
   const remove = useMutation({
     mutationFn: () => deleteRecruit(recruit.id),
@@ -38,6 +48,7 @@ export function useRecruitMenuSheet(recruit: RecruitDetail) {
       await deleteDialog.closeAnd(() => router.replace('/recruits?tab=mine' as Route));
       await client.invalidateQueries({ queryKey: ['recruits'] });
     },
+    onError: showFailure,
   });
 
   return {

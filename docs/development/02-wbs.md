@@ -412,11 +412,11 @@
 | 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
 | 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
-| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day, concurrent 3 / Pro 10) | user · developers only |
+| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
 | 20 | E | PUT | `/api/v1/user/recruits/{recruitId}` | Edit | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/close` | Close — also borrowed by 21's menu | author |
-| 20 | E | POST | `/api/v1/user/recruits/{recruitId}/reopen` | Reopen | author |
+| 20 | E | POST | `/api/v1/user/recruits/{recruitId}/reopen` | Reopen. All roles filled → 409 `ROLES_FULL`; deadline passed → 409 `DEADLINE_PASSED`; open cap → 403 `PLAN_LIMIT` | author |
 | 20 | E | DELETE | `/api/v1/user/recruits/{recruitId}` | Delete (expire pending applications + notify) | author |
 | 21 | E | GET | `/api/v1/public/recruits/{recruitId}` | Body, remaining headcount per role, author card. If logged in: my application status, whether already a team member, whether I'm the author | public |
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role, 20/day, one re-apply; message unused / empty) | user · developers only |

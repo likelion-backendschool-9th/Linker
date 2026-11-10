@@ -12,7 +12,7 @@ import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { todayKst } from '@/lib/format/time';
 import { useOverlay } from '@/lib/navigation/use-overlay';
-import { PLAN_LIMITS } from '@/lib/policy';
+import { PLAN_LIMITS, RECRUIT } from '@/lib/policy';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 import { dismissToast, toast } from '@/stores/toast-store';
 
@@ -47,11 +47,13 @@ function fromEditForm(form: RecruitEditForm): RecruitFormValues {
   };
 }
 
-/** Why saving failed, with the 04 ch. 12 copy; the content is kept on the device first */
+/** 04 ch. 2: the daily recruit-post limit has its own copy, shown instead of the shared toast */
+export const DAILY_LIMIT_MESSAGE = `하루 모집글의 최대 한도는 ${RECRUIT.createPerDay}번 입니다.`;
+
+const isDailyLimit = (error: unknown) => error instanceof ApiError && error.code === 'RATE_LIMITED';
+
+/** Why saving failed; the content is kept on the device first */
 function saveErrorMessage(error: unknown): string {
-  if (error instanceof ApiError && error.code === 'RATE_LIMITED') {
-    return '오늘은 더 할 수 없어요. 내일 다시 시도해 주세요.';
-  }
   if (error instanceof ApiError && error.status < 500) {
     return `${error.message} 작성한 내용은 저장해 두었어요.`;
   }
@@ -169,6 +171,8 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
       recruitId === null
         ? createRecruit(toRecruitRequest(values))
         : updateRecruit(recruitId, toRecruitRequest(values)),
+    // Only creating counts toward the daily limit; its toast below replaces the shared one
+    meta: creating ? { handledCodes: ['RATE_LIMITED'] } : undefined,
     onMutate: () => dismissToast(ERROR_TOAST),
     onSuccess: async ({ id: savedId }) => {
       done.current = true;
@@ -181,9 +185,13 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
     onError: (error) => {
       draft.save(form.getValues());
       // PLAN_LIMIT already opened the shared limit sheet
-      if (!(error instanceof ApiError && error.code === 'PLAN_LIMIT')) {
-        showError(saveErrorMessage(error), { label: '다시 보내기', onClick: () => void submit() });
+      if (error instanceof ApiError && error.code === 'PLAN_LIMIT') return;
+      // Resending today would hit the same limit, so no "다시 보내기"
+      if (creating && isDailyLimit(error)) {
+        showError(DAILY_LIMIT_MESSAGE);
+        return;
       }
+      showError(saveErrorMessage(error), { label: '다시 보내기', onClick: () => void submit() });
     },
   });
 

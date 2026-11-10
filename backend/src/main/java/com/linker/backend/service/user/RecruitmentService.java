@@ -294,10 +294,10 @@ public class RecruitmentService {
 			return;
 		}
 		if (post.allRolesFull()) {
-			throw new ApiException(409, "ROLES_FULL", "모집 인원이 모두 찼어요");
+			throw new ApiException(409, "ROLES_FULL", "모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.");
 		}
 		if (post.getDeadline().isBefore(today())) {
-			throw new ApiException(409, "DEADLINE_PASSED", "마감일이 지나 다시 열 수 없어요");
+			throw new ApiException(409, "DEADLINE_PASSED", "마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요.");
 		}
 		assertOpenSlotAvailable(user.userId());
 		post.reopen();
