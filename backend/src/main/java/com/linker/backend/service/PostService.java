@@ -179,7 +179,9 @@ public class PostService {
 			recordView(post, viewer.userId(), source);
 		}
 
-		boolean canSendOffer = viewer != null && viewer.userType() == UserType.RECRUITER;
+		boolean canSendOffer = viewer != null
+				&& viewer.userType() == UserType.RECRUITER
+				&& post.getAuthor().getJobSeekingStatus() != JobSeekingStatus.OFF;
 		boolean repoAvailable = isRepoAvailable(post);
 		return new PostDetailResponse(
 				post.getId(),
@@ -211,20 +213,10 @@ public class PostService {
 	public CommentListResponse comments(long postId) {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
 		loadReadable(postId, viewer);
-		List<Comment> rows = comments.findByPostIdOrderByIdAsc(postId);
-		Set<Long> parentsWithReplies = new HashSet<>();
-		for (Comment row : rows) {
-			if (row.getParent() != null) {
-				parentsWithReplies.add(row.getParent().getId());
-			}
-		}
-		List<CommentResponse> items = new ArrayList<>();
-		for (Comment row : rows) {
-			if (row.isDeleted() && !parentsWithReplies.contains(row.getId())) {
-				continue;
-			}
-			items.add(toComment(row));
-		}
+		List<CommentResponse> items = comments.findByPostIdOrderByIdAsc(postId).stream()
+				.filter(row -> !row.isDeleted())
+				.map(this::toComment)
+				.toList();
 		return new CommentListResponse(items);
 	}
 
@@ -639,24 +631,42 @@ public class PostService {
 	}
 
 	private PostCardResponse toCard(Post post) {
+		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
 		boolean available = isRepoAvailable(post);
 		String cover = post.getImages().isEmpty()
 				? null
 				: (post.getImages().getFirst().getFile().getUrl());
+		boolean likedByMe = viewer != null && likes.existsByPostIdAndUserId(post.getId(), viewer.userId());
+		boolean following = viewer != null
+				&& follows.existsByFollower_IdAndFollowing_Id(viewer.userId(), post.getAuthor().getId());
+		String excerpt = blankToNull(post.getBody());
+		if (excerpt != null && excerpt.length() > 160) {
+			excerpt = excerpt.substring(0, 160);
+		}
 		return new PostCardResponse(
 				post.getId(),
-				authors.toAuthor(post.getAuthor()),
+				authors.toAuthor(post.getAuthor(), following),
 				post.getSummary(),
+				excerpt,
 				cover,
 				available ? post.getRepo().getFullName() : "",
 				available ? post.getRepo().getPrimaryLanguage() : null,
 				post.getTags().stream().map(PostTag::getTag).map(tag -> tag.getName()).toList(),
 				post.getLikeCount(),
+				likedByMe,
 				post.getCommentCount(),
 				iso(post.getCreatedAt()),
 				post.getEditedAt() == null ? null : iso(post.getEditedAt()),
 				available
 		);
+	}
+
+	private static String blankToNull(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	private CommentResponse toComment(Comment comment) {

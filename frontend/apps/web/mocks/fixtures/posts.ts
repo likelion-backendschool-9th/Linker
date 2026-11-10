@@ -216,7 +216,7 @@ export function postCard(post: MockPost) {
   const excerpt = post.body.replace(/\s+/g, ' ').trim();
   return {
     id: post.id,
-    author: post.author,
+    author: { ...post.author, isFollowing: false },
     intro: post.intro,
     excerpt: excerpt.length > 0 ? excerpt : null,
     coverUrl: post.photos[0] ?? null,
@@ -224,6 +224,7 @@ export function postCard(post: MockPost) {
     language: post.repo.language,
     tags: post.tags,
     likeCount: post.likeCount,
+    likedByMe: false,
     commentCount: post.commentCount,
     createdAt: post.createdAt,
     editedAt: post.editedAt,

@@ -1,36 +1,66 @@
 'use client';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
+import {
+  RECRUIT_FORMAT_LABELS,
+  RECRUIT_FORMATS,
+  RECRUIT_ROLE_LABELS,
+  RECRUIT_ROLES,
+} from '@/features/recruit/recruit-labels';
 import type { OverlayControl } from '@/lib/navigation/use-overlay';
 
+import { RECRUIT_SORT_LABELS, RECRUIT_SORTS } from '../../_lib/list-queries';
 import styles from './RecruitFilterSheet.module.css';
 
 export type FilterField = 'role' | 'tech' | 'format' | 'sort';
+/** Sheet selection stores API values (role/mode/sort enums, tech tag string). */
 export type FilterState = Record<FilterField, string | null>;
 
 export const DEFAULT_FILTER_STATE: FilterState = {
   role: null,
   tech: null,
-  format: '온라인',
-  sort: '최신순',
+  format: null,
+  sort: 'NEWEST',
 };
 
-/** Area B's generic chip label when nothing is picked yet; 온라인/최신순 default to a value instead. */
+/** Area B chip label when nothing is picked yet. */
 export const FILTER_CHIP_LABEL: Record<FilterField, string> = {
   role: '역할',
   tech: '기술 스택',
-  format: '온라인',
+  format: '진행 방식',
   sort: '최신순',
 };
 
-const FIELD_CONFIG: Record<FilterField, { sheetTitle: string; options: string[] }> = {
-  role: { sheetTitle: '역할', options: ['PM', 'Frontend', 'Backend', 'Designer', '풀 스택'] },
+const TECH_OPTIONS = [
+  'React',
+  'Next.js',
+  'TypeScript',
+  'JavaScript',
+  'Node.js',
+  'Java',
+  'Spring',
+  'Python',
+];
+
+type Option = { value: string; label: string };
+
+const FIELD_CONFIG: Record<FilterField, { sheetTitle: string; options: Option[] }> = {
+  role: {
+    sheetTitle: '역할',
+    options: RECRUIT_ROLES.map((value) => ({ value, label: RECRUIT_ROLE_LABELS[value] })),
+  },
   tech: {
     sheetTitle: '기술 스택',
-    options: ['React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Java', 'Spring', 'Python'],
+    options: TECH_OPTIONS.map((value) => ({ value, label: value })),
   },
-  format: { sheetTitle: '진행 방식', options: ['온라인', '오프라인', '하이브리드'] },
-  sort: { sheetTitle: '게시물 정렬', options: ['최신순', '오래 된 순', '마감순'] },
+  format: {
+    sheetTitle: '진행 방식',
+    options: RECRUIT_FORMATS.map((value) => ({ value, label: RECRUIT_FORMAT_LABELS[value] })),
+  },
+  sort: {
+    sheetTitle: '게시물 정렬',
+    options: RECRUIT_SORTS.map((value) => ({ value, label: RECRUIT_SORT_LABELS[value] })),
+  },
 };
 
 /**
@@ -59,18 +89,18 @@ export function RecruitFilterSheet({
     >
       <ul className={styles.list} role="radiogroup" aria-label={config.sheetTitle}>
         {config.options.map((option) => {
-          const isSelected = selected[field] === option;
+          const isSelected = selected[field] === option.value;
           return (
-            <li key={option}>
+            <li key={option.value}>
               <button
                 type="button"
                 role="radio"
                 aria-checked={isSelected}
                 className={styles.option}
                 data-selected={isSelected}
-                onClick={() => onSelect(field, option)}
+                onClick={() => onSelect(field, option.value)}
               >
-                {option}
+                {option.label}
               </button>
             </li>
           );

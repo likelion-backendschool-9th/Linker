@@ -589,7 +589,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [ ] (sheet) Apply: choose one open role only (no "하고 싶은 말")
+- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말")
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
@@ -642,7 +642,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
-- [ ] Comments with one level of replies (500 chars); author can edit/delete, post owner can delete only; deleting a comment with replies shows "삭제된 댓글입니다"
+- [ ] Flat comments only (500 chars, no replies); author can edit/delete, post owner can delete only
 - [ ] (sheet) Post more: edit/delete (own), report (others'). (sheet) Comment more works the same way
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)
@@ -673,10 +673,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Job ads (after the 04 job ad sheet)** `[Included]`
 
+> **User decision 2026-11-10:** Ops-side job-ad handling (25 filter `RECRUITER_AD` + job-ad report detail) is deferred further — Figma for admin ads is not out yet. Admin UI no longer exposes the job-ad target filter; keep feed/recruiter ad APIs as `[Included]` but treat **admin ads after the rest of the ad work**.
+
 - [ ] Ad card: "광고" (Ad) label at top, company, posting title, job category, closing date, "외부 공고 보기" (view external posting), X at top right, more (⋯). Different background from regular posts. Screen readers read "광고" first
 - [ ] Tapping the card → click API → returned URL opens via 00's external link sheet (confirm on first-time domain) → external browser
 - [ ] X close: collapse the card and toast "광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기" (undo cancels the close)
-- [ ] More → (sheet) "이 광고 숨기기" (hide this ad, never shown again, toast "이 광고는 다시 보이지 않아요."), "신고" (00 report sheet, target type job ad)
+- [ ] More → (sheet) "이 광고 숨기기" (hide this ad, never shown again, toast "이 광고는 다시 보이지 않아요."), "신고" (00 report sheet, target type job ad; **admin processing of that report is deferred — see 25**)
 - [ ] No ad slot at all for guests, recruiters, and developers with empty job categories
 - [ ] Server: mix ad items into the feed response (1 per 10 posts, not on the first screen, 3 per person per day and same ad once per day via Redis counters). Eligible = job category matches, showing, not closed within 7 days, not hidden, no block relation. Rotate among multiple matches
 - [ ] Server: collect impressions/clicks in Redis, write `ad_daily_stats` once a day (who saw it is not stored)
@@ -693,8 +695,8 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 - [ ] Entry: only Linker accounts with operator permission; logged out after 30 min of inactivity. `/admin` goes to this page
 - [ ] `[Included]` OTP 2FA on every entry. If the schedule slips, permission check only and OTP right after launch
-- [ ] List filters: pending / handled / appealed; target type (user, post, comment, recruit post, team chat, 1:1 chat, job ad); grouping by target; flag items past the handling target (2 business days)
-- [ ] `[Included]` Job ad report detail: company, posting title, job category, closing date, posting URL (tap → external confirm), advertising recruiter → 26. Action = hide the ad (notify the recruiter with the reason)
+- [ ] List filters: pending / handled / appealed; target type (user, post, comment, recruit post, team chat, 1:1 chat); grouping by target; flag items past the handling target (2 business days). **`job ad` / `RECRUITER_AD` filter deferred** (user decision 2026-11-10 — no admin ad design yet; see 24 Job ads note)
+- [ ] `[Included]` `[deferred after ads]` Job ad report detail: company, posting title, job category, closing date, posting URL (tap → external confirm), advertising recruiter → 26. Action = hide the ad (notify the recruiter with the reason). **Out of admin UI until the ad design ships** (user decision 2026-11-10)
 - [ ] Detail panel: report reasons, reported content; chat reports show only the 10 messages before/after copied at report time
 - [ ] Actions: hide, delete (reason required), dismiss, restore handled content, "이 사용자 제재하기" (sanction this user) → 26
 - [ ] Notify the author with the reason; notify reporters of the result only
@@ -772,7 +774,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 ## 10. Recruiting (minimal)
 
-Recruiters get only three new pages: sign-up (31), login (32) and the sent offers list (33). After entering, they share feed (24), posts (23), profiles (04) and chat (16, 17) with developers; only the buttons on screen change. All three are `[Included]`, so they're deferred first if the schedule slips; job-seeking status (02, 04, 05) remains even then. Feed job ads (the `[Included]` items on 04, 05, 24, 25, 28, 29) are deferred before recruiting offers.
+Recruiters get only three new pages: sign-up (31), login (32) and the sent offers list (33). After entering, they share feed (24), posts (23), profiles (04) and chat (16, 17) with developers; only the buttons on screen change. All three are `[Included]`, so they're deferred first if the schedule slips; job-seeking status (02, 04, 05) remains even then. Feed job ads (the `[Included]` items on 04, 05, 24, 28, 29) are deferred before recruiting offers. **Within ads, admin job-ad handling on 25 is deferred further** (no Figma yet; user decision 2026-11-10).
 
 ### 31. Recruiter sign-up `[Included]` · `/recruiter/signup`
 
