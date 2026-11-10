@@ -246,6 +246,7 @@ public final class PlanLimits {
 	}
 
 	/** Policy ch. 9: account-sanction ladder and inactivity reset. */
+	public static final int ADMIN_REVIEW_LIMIT_MULTIPLIER = 3;
 	public static final int SANCTION_FIRST_DAYS = 7;
 	public static final int SANCTION_SECOND_DAYS = 30;
 	public static final int SANCTION_RESET_YEARS = 1;

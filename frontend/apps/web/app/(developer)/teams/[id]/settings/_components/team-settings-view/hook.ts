@@ -90,11 +90,8 @@ export function useTeamSettingsView(teamId: string) {
 
 export function useTeamSettingsHeaderAction(teamId: string) {
   const { data: team } = useQuery(settingsOptions(teamId));
-  const viewer = useViewer();
   const action = useOverlay('team-settings-action');
-  const canEdit =
-    !!team?.permissions.editInfo &&
-    viewer.status !== 'SUSPENDED' &&
-    !['READ_ONLY', 'ARCHIVED'].includes(team.status);
-  return { action, canEdit };
+  // Settings includes read-only plan information and incoming ownership requests.
+  const canOpen = !!team && !['ARCHIVED'].includes(team.status);
+  return { action, canOpen };
 }

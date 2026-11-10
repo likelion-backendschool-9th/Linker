@@ -713,7 +713,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 > Basis: O-3 · Needs first: 25 · Merged: user list + user detail + accounts needing review + subscription/payment history → filters and detail panel
 
 - [ ] Search (handle, name), status filter (active / suspended / pending deletion / needs review), member type filter (developer / recruiter)
-- [ ] "Needs review": accounts exceeding 3× a daily limit flagged automatically
+- [ ] "Needs review": follow Policy ch. 10; daily-limit rejections > 3× that limit flag the account until the next KST midnight (no automatic sanction)
 - [ ] Detail panel: basic info, sanction history, reports received, subscription status and payment history. For recruiters: company, email domain, job title, offers sent and accepted in the last 30 days
 - [ ] (sheet) Sanction: warning → 7 days → 30 days → permanent (lead operator only), reason required, notify the user
 - [ ] Lift sanction (lead operator, confirm sheet)

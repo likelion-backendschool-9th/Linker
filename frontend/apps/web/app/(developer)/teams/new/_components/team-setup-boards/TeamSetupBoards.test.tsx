@@ -140,7 +140,7 @@ it('creates with the existing NEW contract, keeps four fixed states, and preserv
   fireEvent.click(screen.getByRole('button', { name: '새 보드 생성' }));
   for (const label of ['작업 전', '작업 진행', '작업 완료', '작업 정지'])
     expect(screen.getByRole('button', { name: `${label} 삭제` })).toBeDisabled();
-  expect(screen.getByRole('button', { name: '역할 추가' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '저장소 추가' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: '기존 보드 사용' }));
   expect(screen.getByRole('radio', { name: 'ShowMoa' })).toBeChecked();
   expect(screen.getByRole('combobox', { name: '대기' })).toHaveValue('TODO');

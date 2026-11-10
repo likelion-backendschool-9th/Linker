@@ -621,6 +621,7 @@ People whose copyright, reputation or privacy is infringed (including non-member
 - Permanent suspension and content deletion require a reason.
 - Email addresses are masked in the back office too (e.g. jun\*\*\*@gmail.com); viewing in full requires recording a reason.
 - Operators can't post on behalf of users or join teams.
+- Needs review (26): count daily-limit rejections separately for recruiting offers (Free 10 / Scout 50), AI summaries (10), and chat sharing (100) per account and KST date. Flag when a bucket exceeds 3 times its limit; exclude per-second/minute limits. Clear at the next KST midnight. This flag never sanctions an account automatically (#384).
 
 ## 11. Subscription
 

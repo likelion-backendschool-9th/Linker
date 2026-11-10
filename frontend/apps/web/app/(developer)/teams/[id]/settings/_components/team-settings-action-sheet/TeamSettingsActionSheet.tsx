@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import styles from '@/features/teams/team-ui.module.css';
 import { formatDate } from '@/lib/format/time';
 import { TEAM } from '@/lib/policy';
+import { InviteLinkActions } from '../invite-link-actions/InviteLinkActions';
+import { TeamSettingsMenu } from './TeamSettingsMenu';
 import { TeamRepoSelection } from '../../../../_components/team-repo-selection';
 import { TeamBoardSelection } from '../../../../_components/team-board-selection';
 
@@ -22,6 +24,9 @@ export function TeamSettingsActionSheet({
   members: Members['items'];
 }) {
   const {
+    invites,
+    inviteCreation,
+    createdInvite,
     newOwner,
     setNewOwner,
     aiEnabled,
@@ -57,6 +62,41 @@ export function TeamSettingsActionSheet({
         <Button variant="outline" onClick={overlay.close}>
           닫기
         </Button>
+      </OverlaySheet>
+    );
+
+  if (kind === 'settings') return <TeamSettingsMenu team={team} members={members} overlay={overlay} />;
+  if (kind === 'invites')
+    return (
+      <OverlaySheet overlay={overlay} title="초대 링크 관리" description="초대 링크 관리" describeHidden>
+        <div className={styles.stack}>
+          {invites.isPending ? (
+            <Skeleton />
+          ) : invites.isError ? (
+            <ErrorState onRetry={() => void invites.refetch()} />
+          ) : (
+            <ul className={styles.list}>
+              {invites.data.items.map((link) => (
+                <li key={link.id} className={styles.section}>
+                  <p>{link.createdBy}</p>
+                  <p>만료일: {formatDate(link.expiresAt)}</p>
+                  <Button variant="outline" onClick={() => overlay.open(`revoke:${link.id}`)}>
+                    초대 링크 폐기
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {invites.isSuccess && !invites.data.items.length && <p>초대 링크가 없어요.</p>}
+          <Button
+            disabled={inviteCreation.isPending || invites.isPending}
+            onClick={() => inviteCreation.mutate()}
+          >
+            초대 링크 만들기
+          </Button>
+          {inviteCreation.isError && <p role="alert">{inviteCreation.error.message}</p>}
+          {createdInvite && <InviteLinkActions code={createdInvite.code} />}
+        </div>
       </OverlaySheet>
     );
 
