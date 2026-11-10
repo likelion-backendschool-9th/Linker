@@ -141,7 +141,7 @@
   --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
   --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
   --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
-  --chat-ai-logo-size: 33px; /* logo inside the "AI 채팅 요약" button (--control-height-chat circle) */
+  --chat-ai-logo-size: 32px; /* animated orb inside the "AI 채팅 요약" button: ThinkingOrb's 32px size preset (Figma logo 33px) */
   --space-chat-card: 14px; /* PR card padding */
   --chat-request-panel-height: 140px; /* request panel replacing the composer */
   --space-chat-request-title: 19px; /* request panel top to its title */
