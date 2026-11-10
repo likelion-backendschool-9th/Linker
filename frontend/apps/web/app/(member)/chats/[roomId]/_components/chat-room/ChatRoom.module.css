@@ -412,6 +412,12 @@
   font-size: var(--font-size-body);
   line-height: var(--line-height-caption);
   resize: none;
+  /* Still scrolls past three lines, but without a bar inside the pill (user request 2026-11-10) */
+  scrollbar-width: none;
+}
+
+.input::-webkit-scrollbar {
+  display: none;
 }
 
 .input::placeholder {
