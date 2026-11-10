@@ -26,8 +26,6 @@ export function ProfileTeams({
   const teams = useProfileTeams(login);
   const items = teams.data?.items.filter((team) => (status ? team.status === status : true));
 
-  if (embedded && items && items.length === 0) return null;
-
   return (
     <section className={embedded ? styles.embeddedWork : styles.section} aria-labelledby="teams-title">
       <h2 id="teams-title" className={embedded ? 'sr-only' : undefined}>
@@ -43,7 +41,9 @@ export function ProfileTeams({
           </Button>
         </div>
       ) : !items || items.length === 0 ? (
-        <p className={styles.empty}>함께한 팀이 없어요</p>
+        <p className={embedded && status === 'ACTIVE' ? `${styles.empty} ${styles.emptyCentered}` : styles.empty}>
+          {embedded && status === 'ACTIVE' ? '진행중인 프로젝트가 없어요' : '함께한 팀이 없어요'}
+        </p>
       ) : (
         <ul className={embedded ? styles.workGrid : styles.teamList}>
           {items.map((team) => (
