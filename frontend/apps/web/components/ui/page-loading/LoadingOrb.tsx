@@ -3,27 +3,41 @@
 import { ThinkingOrb } from 'thinking-orbs';
 
 import { useLoaderPresence } from './hook';
+import styles from './PageLoading.module.css';
 
 /** Same black ink as the header mark; ThinkingOrb needs a parsed color string, not a CSS var. */
 const ORB_INK = '#000000';
 
+const ORB_COUNT = 3;
+
 /**
- * The loading mark (Figma 301:294, in place of its three black dots): thinking-orbs "working", 64px.
- * Pinned to the light theme because every loading surface is white. `paused` freezes it on the
- * current frame (load timed out).
+ * The loading mark (Figma 301:294): one thinking-orbs "working" orb (64px) on each of its three black
+ * dots, side by side 20 apart like the dots. Pinned to the light theme because every loading surface
+ * is white. `paused` freezes them on the current frame (load timed out).
  */
 export function LoadingOrb({ paused = false }: { paused?: boolean }) {
-  return paused ? <Orb paused /> : <ActiveOrb />;
+  return paused ? <OrbRow paused /> : <ActiveOrbRow />;
 }
 
-/** A running orb counts as "something is loading on screen" */
-function ActiveOrb() {
+/** Running orbs count as "something is loading on screen" */
+function ActiveOrbRow() {
   useLoaderPresence();
-  return <Orb paused={false} />;
+  return <OrbRow paused={false} />;
 }
 
-function Orb({ paused }: { paused: boolean }) {
+function OrbRow({ paused }: { paused: boolean }) {
   return (
-    <ThinkingOrb state="working" size={64} theme="light" color={ORB_INK} paused={paused} aria-hidden />
+    <span className={styles.orbs} aria-hidden>
+      {Array.from({ length: ORB_COUNT }, (_, index) => (
+        <ThinkingOrb
+          key={index}
+          state="working"
+          size={64}
+          theme="light"
+          color={ORB_INK}
+          paused={paused}
+        />
+      ))}
+    </span>
   );
 }
