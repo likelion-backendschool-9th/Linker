@@ -1,44 +1,55 @@
 'use client';
 
-// client boundary: external GitHub link; system events expose no edit/delete actions
+import Image from 'next/image';
 import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
-import { useOpenExternal } from '@/features/external-link/use-open-external';
-import { GitHubMark } from '@/features/github/github-mark/GithubMark';
-
 import type { RoomMessage } from '../../_lib/room-api';
+import { usePrEventCard } from './hook';
 import styles from './PrEventCard.module.css';
 
-/** Event line of the card. OPENED is the Figma copy; the other three follow its wording. */
-const EVENTS = {
-  OPENED: 'PR이 생성 되었습니다',
-  REVIEW_REQUESTED: '리뷰가 요청 되었습니다',
-  MERGED: 'PR이 병합 되었습니다',
-  CLOSED: 'PR이 닫혔습니다',
-} as const;
-
-/** Figma 248:1223: GitHub mark, blue event line, "#10 title", "repo · 2시간 전". Tap opens GitHub. */
-export function PrEventCard({ message }: { message: RoomMessage }) {
-  const openExternal = useOpenExternal();
-  const payload = message.payload;
-  const event =
-    typeof payload?.event === 'string' && payload.event in EVENTS
-      ? EVENTS[payload.event as keyof typeof EVENTS]
-      : 'GitHub PR 알림';
-  const number = typeof payload?.prNumber === 'number' ? `#${payload.prNumber} ` : '';
-  const url = typeof payload?.url === 'string' ? payload.url : null;
+/** Figma 750:3036: organization identity and four immutable PR event cards. */
+export function PrEventCard({
+  message,
+  previousMessage,
+}: {
+  message: RoomMessage;
+  previousMessage?: RoomMessage;
+}) {
+  const {
+    event,
+    label,
+    number,
+    title,
+    organization,
+    repository,
+    repo,
+    url,
+    showOrganization,
+    avatarUrl,
+    onAvatarError,
+    openExternal,
+  } = usePrEventCard(message, previousMessage);
   const content = (
     <>
-      <GitHubMark className={styles.mark} />
+      <Image
+        src="/images/chat-pull-requests/github.svg"
+        className={styles.mark}
+        width={32}
+        height={32}
+        alt=""
+        aria-hidden
+      />
       <span className={styles.body}>
-        <span className={styles.event}>{event}</span>
+        <span className={styles.event} data-event={event}>
+          {label}
+        </span>
         <span className={styles.title}>
-          {number}
-          {message.text}
+          {number !== null && `#${number} `}
+          {title}
         </span>
         <span className={styles.meta}>
-          {typeof payload?.repo === 'string' && (
+          {repository && (
             <>
-              <span>{payload.repo}</span>
+              <span title={repo}>{repository}</span>
               <span className={styles.dot} aria-hidden />
             </>
           )}
@@ -47,12 +58,28 @@ export function PrEventCard({ message }: { message: RoomMessage }) {
       </span>
     </>
   );
-  return url ? (
-    <button type="button" className={styles.card} onClick={() => openExternal(url)}>
-      {content}
-      <span className="sr-only">GitHub에서 열기</span>
-    </button>
-  ) : (
-    <div className={styles.card}>{content}</div>
+  return (
+    <article className={styles.message} aria-label={label}>
+      {showOrganization && organization && (
+        <>
+          <div className={styles.avatar} aria-hidden>
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt="" fill sizes="46px" onError={onAvatarError} />
+            ) : (
+              <span>{organization.slice(0, 1)}</span>
+            )}
+          </div>
+          <p className={styles.organization}>{organization}</p>
+        </>
+      )}
+      {url ? (
+        <button type="button" className={styles.card} onClick={() => openExternal(url)}>
+          {content}
+          <span className="sr-only">GitHub에서 열기</span>
+        </button>
+      ) : (
+        <div className={styles.card}>{content}</div>
+      )}
+    </article>
   );
 }

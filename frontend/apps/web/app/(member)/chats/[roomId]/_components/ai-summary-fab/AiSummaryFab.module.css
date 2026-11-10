@@ -1,16 +1,77 @@
-/* Figma 248:1236 dark logo circle, sized like the composer's send button, just left of it */
+/* Unmapped Figma 750:3125 tooltip values stay local; shared tokens are unchanged. */
+.fab {
+  --summary-tooltip-width: 67px;
+  --summary-tooltip-radius: 2px;
+  --summary-tooltip-tail: 7px;
+  --summary-gradient-middle: #822ad6;
+  --summary-gradient-end: #c600c6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-chat-name);
+  width: var(--summary-tooltip-width);
+}
+
+.tooltip {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-xxs);
+  border-radius: var(--summary-tooltip-radius);
+  background: var(--color-canvas-cool);
+  pointer-events: none;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - var(--summary-tooltip-radius));
+  left: 50%;
+  width: var(--summary-tooltip-tail);
+  height: var(--summary-tooltip-tail);
+  transform: translateX(-50%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: var(--color-canvas-cool);
+}
+
+.label {
+  background: linear-gradient(
+    90deg,
+    var(--color-chat-accent) 0%,
+    var(--summary-gradient-middle) 50.7125%,
+    var(--summary-gradient-end) 100%
+  );
+  background-clip: text;
+  color: transparent;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: 14px;
+  white-space: nowrap;
+}
+
 .button {
+  position: relative;
   display: grid;
   place-items: center;
-  flex: 0 0 var(--control-height-chat);
-  width: var(--control-height-chat);
-  height: var(--control-height-chat);
+  flex: 0 0 var(--fab-size);
+  width: var(--fab-size);
+  height: var(--fab-size);
   padding: 0;
-  overflow: hidden;
   border: 1px solid var(--color-fab-border);
   border-radius: var(--radius-full);
   background: var(--color-fab-bg);
+  box-shadow: 0 0 1.7px rgb(222 222 222 / 0.25);
   cursor: pointer;
+}
+
+.button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  transform: translate(-50%, -50%);
 }
 
 .logo {

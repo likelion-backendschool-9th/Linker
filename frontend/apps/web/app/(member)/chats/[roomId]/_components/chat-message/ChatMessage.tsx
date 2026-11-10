@@ -18,6 +18,7 @@ import { ExternalLinkPreview } from '../external-link-preview';
 
 type Props = {
   message: RoomMessage;
+  previousMessage?: RoomMessage;
   mine: boolean;
   kind: RoomInfo['kind'];
   onUnread?: (id: number) => void;
@@ -38,7 +39,15 @@ function SenderAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string })
   );
 }
 
-export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: Props) {
+export function ChatMessage({
+  message,
+  previousMessage,
+  mine,
+  kind,
+  onUnread,
+  onMenu,
+  onPhoto,
+}: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const payload = messagePayload(message.payload);
   const hidden = message.visibility === 'HIDDEN';
@@ -121,13 +130,9 @@ export function ChatMessage({ message, mine, kind, onUnread, onMenu, onPhoto }: 
     </div>
   );
 
-  // Figma 248:1223: a PR event is a card in the bubble column, without photo, name or bubble
+  // B's PR view owns its organization identity and card; regular D message rendering stays below.
   if (message.type === 'PR_EVENT' && !hidden && !message.deletedAt)
-    return (
-      <article className={`${styles.message} ${styles.eventRow}`}>
-        <PrEventCard message={message} />
-      </article>
-    );
+    return <PrEventCard message={message} previousMessage={previousMessage} />;
 
   return (
     <article
