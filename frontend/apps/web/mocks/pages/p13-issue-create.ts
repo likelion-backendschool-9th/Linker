@@ -38,41 +38,12 @@ const templates: { key: string; source: Source; name: string; description: strin
 
 const bodies: Record<string, string> = {
   'repo:bug': '## 현상\n\n## 재현 방법\n1. \n\n## 기대 결과\n',
+  // QA: request template uses the same markdown UI as bug/feature (FORM UI kept for real YAML)
+  'form:request': '## 요약\n\n## 자세한 내용\n\n## 확인 사항\n- [ ] \n',
   'default:bug': '## 현상\n\n## 재현 방법\n\n## 기대 결과\n',
   'default:feature': '## 배경\n\n## 제안\n\n## 완료 조건\n- [ ] \n',
   'default:task': '## 할 일\n- [ ] \n',
 };
-
-// Issue forms (YAML) arrive as a field list (POL-I-1)
-const formFields = [
-  { id: 'intro', type: 'markdown', value: '요청 전에 **중복 이슈**가 있는지 확인해 주세요.' },
-  {
-    id: 'summary',
-    type: 'input',
-    label: '요약',
-    description: '무엇이 필요한지 한 줄로',
-    required: true,
-    placeholder: '한 줄로 적어 주세요',
-  },
-  { id: 'detail', type: 'textarea', label: '자세한 내용', required: false },
-  {
-    id: 'kind',
-    type: 'dropdown',
-    label: '종류',
-    required: true,
-    options: ['기능', '버그', '문서'],
-  },
-  {
-    id: 'checks',
-    type: 'checkboxes',
-    label: '확인 사항',
-    options: [
-      { label: '중복 이슈를 확인했어요', required: true },
-      { label: '재현 가능해요', required: false },
-    ],
-  },
-  { id: 'screenshot', type: 'upload', label: '스크린샷' },
-];
 
 function teamOr404(teamId: string) {
   const team = findTeam(teamId);
@@ -125,24 +96,25 @@ export const routes: MockRoute[] = [
         fallback: true,
       };
     }
-    return params.templateKey === 'form:request'
-      ? {
-          ...template,
-          kind: 'FORM',
-          fields: formFields,
-          defaultTitle: '[요청] ',
-          defaultLabels: ['help wanted'],
-          defaultAssignees: [ME.login],
-          fallback: false,
-        }
-      : {
-          ...template,
-          kind: 'MARKDOWN',
-          body: bodies[params.templateKey] ?? '',
-          defaultLabels: params.templateKey === 'repo:bug' ? ['bug'] : [],
-          defaultAssignees: [],
-          fallback: false,
-        };
+    if (params.templateKey === 'form:request') {
+      return {
+        ...template,
+        kind: 'MARKDOWN',
+        body: bodies['form:request'],
+        defaultTitle: '[요청] ',
+        defaultLabels: ['help wanted'],
+        defaultAssignees: [ME.login],
+        fallback: false,
+      };
+    }
+    return {
+      ...template,
+      kind: 'MARKDOWN',
+      body: bodies[params.templateKey] ?? '',
+      defaultLabels: params.templateKey === 'repo:bug' ? ['bug'] : [],
+      defaultAssignees: [],
+      fallback: false,
+    };
   }),
   post('/api/v1/user/teams/:teamId/issues', ({ params, body }) => {
     const team = teamOr404(params.teamId);
