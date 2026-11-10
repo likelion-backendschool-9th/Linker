@@ -174,17 +174,30 @@ export const MESSAGES: MockMessage[] = [
     text: '확인했어요. 로그인 시트는 오늘 안에 올릴게요.',
     createdAt: hoursAgo(25),
   }),
-  msg(1, {
-    type: 'PR_EVENT',
-    text: 'PR #31 "feat: 로그인 시트" 가 열렸어요',
-    payload: {
-      prNumber: 31,
-      repo: 'linker-hack/linker-web',
-      event: 'OPENED',
-      url: 'https://github.com/linker-hack/linker-web/pull/31',
-    },
-    createdAt: hoursAgo(24),
-  }),
+  // B's four webhook event fixtures use ChatService.postPullRequestEvent's existing envelope.
+  ...(
+    [
+      ['OPENED', '열렸어요'],
+      ['REVIEW_REQUESTED', '리뷰가 요청됐어요'],
+      ['MERGED', '병합됐어요'],
+      ['CLOSED', '닫혔어요'],
+    ] as const
+  ).map(([event, verb]) =>
+    msg(1, {
+      type: 'PR_EVENT',
+      text: `PR #31 "feat: 로그인 시트" · ${verb}`,
+      payload: {
+        prNumber: 31,
+        repo: 'linker-hack/linker-web',
+        event,
+        url: 'https://github.com/linker-hack/linker-web/pull/31',
+        repoId: 11,
+        githubRepoId: 901,
+        githubPrId: 1031,
+      },
+      createdAt: hoursAgo(24),
+    }),
+  ),
   msg(1, {
     sender: brief(seoyeon!),
     text: '리뷰 남겼어요. @한서준 확인 부탁해요',
