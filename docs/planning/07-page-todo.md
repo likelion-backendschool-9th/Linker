@@ -593,7 +593,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말")
+- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말"). Server rejects a role that filled meanwhile (`ROLE_FULL`) → "해당 역할은 마감됐어요." on the role field
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
@@ -603,15 +603,16 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
 - [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
-- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant — automatically, after both "초대하기" and "인원 늘리고 초대" (the latter shows a "GitHub 조직 초대 다시 보내기" retry if it failed). Failure → toast "초대에 실패했어요." + reason; a failed GitHub org invite alone keeps the team invite ("팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.")
 - [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
-- [ ] Reject: row "거절" + (sheet) optional reason; applicant only sees the fixed copy
+- [ ] Reject: row "거절" → (modal) confirm only, no reason; applicant only sees the fixed copy
 - [ ] Invite/reject still possible after closing; edit / close / delete menu
 - [ ] `[Included]` Share button → 00 share sheet
 - [ ] `generateMetadata` (title, "remaining slots per role · closes D-n") + `opengraph-image.tsx` (title, remaining roles, D-n). Defaults if deleted or hidden
 - [ ] Server: auto-expire applications unhandled for 14 days + notify
 - [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after invite, remind applicant and owner
 - [ ] `[Included]` Server: if the team is deleted within 7 days after invite, flag for fake-recruitment review
+- [ ] `[Included]` Follow-up: the team owner may lose GitHub org owner rights on GitHub after creating the team (owner transfer doesn't exist yet). The invite response's `needsGithubInvite` only checks the Linker team OWNER, so the automatic org invite then fails (team invite stays, failure copy shown). Later: check GitHub org owner when deciding `needsGithubInvite` (with 09's 2nd-pass owner transfer), and show the reason on 09
 
 ---
 
@@ -711,7 +712,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 > Basis: O-3 · Needs first: 25 · Merged: user list + user detail + accounts needing review + subscription/payment history → filters and detail panel
 
 - [ ] Search (handle, name), status filter (active / suspended / pending deletion / needs review), member type filter (developer / recruiter)
-- [ ] "Needs review": accounts exceeding 3× a daily limit flagged automatically
+- [ ] "Needs review": follow Policy ch. 10; daily-limit rejections > 3× that limit flag the account until the next KST midnight (no automatic sanction)
 - [ ] Detail panel: basic info, sanction history, reports received, subscription status and payment history. For recruiters: company, email domain, job title, offers sent and accepted in the last 30 days
 - [ ] (sheet) Sanction: warning → 7 days → 30 days → permanent (lead operator only), reason required, notify the user
 - [ ] Lift sanction (lead operator, confirm sheet)
@@ -814,7 +815,7 @@ Recruiters get only three new pages: sign-up (31), login (32) and the sent offer
 
 - [ ] Email + password login; 5 wrong attempts → 10-min lock ("N분 뒤 다시 시도해 주세요")
 - [ ] Session uses the same cookie and 30-day rule as developers (reuse 00); suspended / pending-deletion handling same as 01 (pending deletion restores on login)
-- [ ] "비밀번호를 잊었어요" (forgot password) → enter email → reset link (30 min, single-use). Same message regardless of whether the email is registered (don't reveal registration)
+- [ ] `/recruiter/reset` password reset flow: enter email → reset link (30 min, single-use). Same message regardless of whether the email is registered (don't reveal registration); the login frame has no visible reset link per the 2026-11-11 UI update
 - [ ] `/recruiter/reset?token=` enter new password → changing it logs out all other devices
 - [ ] Recruiter section in 06 settings: change password, blocked users, terms, delete account (GitHub items hidden; subscription & billing is Scout only → 29)
 

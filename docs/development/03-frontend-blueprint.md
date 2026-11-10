@@ -226,7 +226,7 @@ NEVER split only because a file is long (one region of one screen stays one file
 ### 5-4. `api-fetch.ts` (orval mutator)
 - Works on server and browser; prefixes `url` with the API base (see container note below). Server: forwards the viewer's cookies from `next/headers` (imported only on the server). Browser: `credentials: 'include'`.
 - `!res.ok` → `throw ApiError.from(res)` (`{ code, message, detail }`, WBS §1-4). 204 → `undefined`.
-- Shared error handling in `query-client.ts`: `LOGIN_REQUIRED` → login sheet · `PLAN_LIMIT` → limit sheet → `/subscribe?reason=` from `detail` · `RATE_LIMITED` → "잠시 후 다시 시도해 주세요" + time left · `SUSPENDED` → banner · `GITHUB_UNAVAILABLE` → GitHub banner.
+- Shared error handling in `query-client.ts`: `LOGIN_REQUIRED` → login sheet · `PLAN_LIMIT` → limit sheet → `/subscribe?reason=` from `detail` (a mutation that shows a code itself lists it in `meta.handledCodes` and skips the shared handling, e.g. 21 invite `['PLAN_LIMIT']`, 20 create `['RATE_LIMITED']`) · `RATE_LIMITED` → "잠시 후 다시 시도해 주세요" + time left · `SUSPENDED` → banner · `GITHUB_UNAVAILABLE` → GitHub banner.
 - Cacheable public data uses separate cookie-less server functions (ch. 9).
 - Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [Docker 가이드](../operations/02-docker.md).
 

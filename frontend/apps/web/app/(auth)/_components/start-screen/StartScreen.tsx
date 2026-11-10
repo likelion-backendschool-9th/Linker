@@ -25,7 +25,7 @@ export function StartScreen() {
                 className={styles.logo}
                 src="/textlogo.svg"
                 alt=""
-                width={210}
+                width={185}
                 height={64}
                 priority
               />
@@ -42,8 +42,8 @@ export function StartScreen() {
               disabled={pending}
               aria-busy={pending}
             >
-              <GitHubMark className={styles.githubIcon} width={24} height={24} />
-              GitHub로 시작
+              <GitHubMark className={styles.githubIcon} width={23} height={23} />
+              GitHub로 시작하기
             </button>
             {error && (
               <p className={styles.error} role="alert">
@@ -52,10 +52,10 @@ export function StartScreen() {
             )}
             <p className={styles.or}>또는</p>
             <Link className={styles.secondary} href="/feed">
-              둘러보기
+              둘러 보기
             </Link>
             <Link className={styles.secondary} href="/recruiter/login">
-              채용 담당자이신가요?
+              채용 담당자 이신가요?
             </Link>
           </div>
 

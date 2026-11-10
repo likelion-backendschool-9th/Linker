@@ -238,14 +238,14 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
 
 /** Existing settings header icon opens the existing information editor. */
 export function TeamSettingsHeaderAction({ teamId }: { teamId: string }) {
-  const { action, canEdit } = useTeamSettingsHeaderAction(teamId);
+  const { action, canOpen } = useTeamSettingsHeaderAction(teamId);
   return (
     <button
       type="button"
       className={styles.headerIcon}
-      aria-label="팀 정보 편집"
-      disabled={!canEdit}
-      onClick={() => action.open('info')}
+      aria-label="팀 설정"
+      disabled={!canOpen}
+      onClick={() => action.open('settings')}
     >
       <SlidersHorizontal aria-hidden />
     </button>

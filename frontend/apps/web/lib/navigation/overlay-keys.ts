@@ -72,7 +72,6 @@ export const OVERLAY_KEYS = [
   'recruit-applicants',
   'recruit-application',
   'recruit-reject',
-  'recruit-team-required',
   'recruit-role-full',
   'photo-viewer',
   'post-likers',

@@ -313,11 +313,11 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |
 | POL-R-2 Search (19) | Search box on 19's All tab. Case-insensitive match on part of the recruit post title only (not intro, roles or tech stack); leading/trailing spaces ignored, blank = no search. Max 40 characters, the title limit (longer is rejected). Combined with the filters and sort, kept in the URL (`q`) |
-| POL-R-3 Apply | Choose one role. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
+| POL-R-3 Apply | Choose one role that still has slots; a role filled in the meantime is rejected with "해당 역할은 마감됐어요." Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
 | POL-R-3 Application | Author opens the applicant's public profile to review (tech stack, graph, posts, completion record). No separate in-product application dossier sheet |
 | POL-R-4 Handling | Author invites or rejects from the applicants drawer. Auto-expires after 14 days unhandled, with notification to applicant |
-| POL-R-4 Invite | Invite adds the person as a team member, joins team chat, and when the author is the team owner and a GitHub org owner, sends the GitHub org invite notification to the applicant. If that role's headcount is already filled by invites, further Invite actions on pending applicants for the role are disabled |
-| POL-R-4 Reject | Rejection reason optional. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
+| POL-R-4 Invite | Invite adds the person as a team member, joins team chat, and when the author is the team owner and a GitHub org owner, sends the GitHub org invite notification to the applicant. If that role's headcount is already filled by invites, further Invite actions on pending applicants for the role are disabled. A failed invite shows "초대에 실패했어요." followed by the reason (free-team limits are shown as a reason only, with no Flex/BM upsell on 21). If only the GitHub org invite fails, the team invite stands: "팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요." |
+| POL-R-4 Reject | No rejection reason: the author only confirms in a modal. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
 
 ### Application status
 
@@ -336,10 +336,11 @@ Pending applications stay when a recruit post closes; the author can still invit
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
 - **Reopening a closed recruit post** → refused when every role is filled ("모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.") or the deadline has passed ("마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요."); the author edits the post first. Over the open-post cap → subscription prompt (POL-R-1).
-- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams are sent to the Flex checkout sheet from recruit detail.
+- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams only see the reason ("무료 팀은 역할 인원을 늘릴 수 없어요.") — recruit detail has no Flex/BM upsell.
 - **Free team member limit reached** (6) → can't invite; recruit detail returns `PLAN_LIMIT` / `TEAM_MEMBERS` and opens the Flex checkout sheet. Flex teams have no member limit.
 - **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
 - **Accepted applicant doesn't accept the GitHub org invite within 7 days** → stays in the Linker team and can chat, but doesn't appear as assignable for issues. Notify applicant and owner again.
+- **Team owner is no longer a GitHub org owner** (owner rights removed on GitHub after the team was created; Linker isn't told) → the invite still adds the person to the team and team chat, but the automatic GitHub org invite fails: "팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요." Linker can't prevent this; detecting it is a follow-up (07 TODO 21).
 - **Fake recruitment reported** → follow report/sanction policy. If the author deletes the team within 7 days after accepting, auto-flag for fake-recruitment review.
 
 ## 6. Teams & permissions
@@ -620,6 +621,7 @@ People whose copyright, reputation or privacy is infringed (including non-member
 - Permanent suspension and content deletion require a reason.
 - Email addresses are masked in the back office too (e.g. jun\*\*\*@gmail.com); viewing in full requires recording a reason.
 - Operators can't post on behalf of users or join teams.
+- Needs review (26): count daily-limit rejections separately for recruiting offers (Free 10 / Scout 50), AI summaries (10), and chat sharing (100) per account and KST date. Flag when a bucket exceeds 3 times its limit; exclude per-second/minute limits. Clear at the next KST midnight. This flag never sanctions an account automatically (#384).
 
 ## 11. Subscription
 

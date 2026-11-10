@@ -38,7 +38,7 @@ test('26 requires OTP and renders the supplied list/detail design within the unc
     'aria-selected',
     'true',
   );
-  await expect(page.getByRole('button', { name: '검토', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '검토', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: '제재 해제', exact: true })).toBeDisabled();
   await expect(page.getByRole('navigation', { name: '운영 메뉴' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -142,4 +142,18 @@ test('26 keeps the narrow detail-to-action overlay path usable', async ({ page }
   await expect(page.getByRole('dialog', { name: '이메일 열람 사유' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
+});
+
+test('26 filters accounts marked for daily-limit review', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/admin/users');
+  await unlock(page);
+  await page.getByRole('button', { name: '검토', exact: true }).click();
+  const table = page.getByRole('table', { name: '사용자 목록' });
+  await expect(table.getByRole('row')).toHaveCount(2);
+  await expect(page).toHaveURL(/needsReview=true/);
+  await expect(page.getByRole('tab', {name:'기본정보', exact:true})).toBeVisible();
+  await capture(page, info, 'p26-daily-review');
+  await page.getByRole('button', { name: '전체', exact: true }).click();
+  await expect(table.getByRole('row')).not.toHaveCount(2);
 });

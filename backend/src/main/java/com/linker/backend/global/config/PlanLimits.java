@@ -64,8 +64,6 @@ public final class PlanLimits {
 	public static final int RECRUIT_DEADLINE_WITHIN_MONTHS = 6;
 	/** Not a Policy rule: `recruit_posts.region` column length, checked so long input isn't a DB error. */
 	public static final int RECRUIT_REGION_MAX = 100;
-	/** Reject reason length (author-only). Apply has no free-text message (POL-R-3). */
-	public static final int APPLICATION_MESSAGE_MAX = 300;
 	public static final int APPLICATIONS_PER_DAY = 20;
 	public static final int APPLICATIONS_PER_DAY_WINDOW_SECONDS = 86_400;
 	/** POL-R-3 — one re-apply after cancel (attempt 1 then 2). */
@@ -248,6 +246,7 @@ public final class PlanLimits {
 	}
 
 	/** Policy ch. 9: account-sanction ladder and inactivity reset. */
+	public static final int ADMIN_REVIEW_LIMIT_MULTIPLIER = 3;
 	public static final int SANCTION_FIRST_DAYS = 7;
 	public static final int SANCTION_SECOND_DAYS = 30;
 	public static final int SANCTION_RESET_YEARS = 1;

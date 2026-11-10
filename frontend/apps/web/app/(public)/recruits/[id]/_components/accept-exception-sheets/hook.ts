@@ -8,16 +8,15 @@ import { useOverlay, type OverlayControl } from '@/lib/navigation/use-overlay';
 import { RECRUIT } from '@/lib/policy';
 
 import {
-  acceptApplication,
   applicantsOptions,
-  type AcceptResult,
+  inviteApplicant,
+  type InviteResult,
   type RecruitDetail,
 } from '../../_lib/detail-queries';
 
 export function useAcceptExceptionSheets() {
-  const teamRequired = useOverlay('recruit-team-required');
   const roleFull = useOverlay('recruit-role-full');
-  return { teamRequired, roleFull };
+  return { roleFull };
 }
 
 type UseRoleFullBodyArgs = {
@@ -34,11 +33,16 @@ export function useRoleFullBody({ recruit, applicationId, overlay }: UseRoleFull
   const row = applicants.data?.items.find((item) => item.id === Number(applicationId));
   const role = recruit.roles.find((item) => item.id === row?.roleId);
   const atMax = role !== undefined && role.headcount >= RECRUIT.headcountPerRole.max;
-  const [accepted, setAccepted] = useState<AcceptResult | null>(null);
+  const [accepted, setAccepted] = useState<InviteResult | null>(null);
 
   const accept = useMutation({
-    mutationFn: () =>
-      acceptApplication(recruitId, Number(applicationId), { increaseHeadcount: true }),
+    // PLAN_LIMIT is shown inline as a reason, without the shared Flex sheet (07 TODO 21)
+    meta: { handledCodes: ['PLAN_LIMIT'] },
+    // Same as the drawer's invite: the GitHub org invite goes out automatically (POL-R-4)
+    mutationFn: (applicantId: number) =>
+      inviteApplicant(recruitId, Number(applicationId), applicantId, {
+        increaseHeadcount: true,
+      }),
     onSuccess: async (result) => {
       setAccepted(result);
       await client.invalidateQueries({ queryKey: ['recruits'] });
@@ -54,7 +58,7 @@ export function useRoleFullBody({ recruit, applicationId, overlay }: UseRoleFull
     headcountMax: RECRUIT.headcountPerRole.max,
     close: () => overlay.close(),
     acceptWithIncrease: () => {
-      if (!accept.isPending && row) accept.mutate();
+      if (!accept.isPending && row) accept.mutate(row.applicant.id);
     },
   };
 }

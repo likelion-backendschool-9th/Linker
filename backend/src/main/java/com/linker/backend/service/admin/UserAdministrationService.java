@@ -45,32 +45,43 @@ public class UserAdministrationService {
   private final NotificationService notifications;
   private final Clock clock;
   private final ObjectMapper json;
+  private final DailyLimitReviewRepository review;
+  private final org.springframework.transaction.support.TransactionTemplate read;
 
   public UserAdministrationService(UserRepository users, AdminRepository admins, SanctionRepository sanctions,
       BannedGithubIdRepository bans, AuthIdentityRepository identities, AdminActionRepository actions,
       UserSessionRepository sessions, ReportCaseRepository reports, SubscriptionRepository subscriptions,
       PaymentRepository payments, RecruiterProfileRepository profiles, RecruiterAdRepository ads,
-      ChatRoomRepository rooms, NotificationService notifications, Clock clock, ObjectMapper json) {
+      ChatRoomRepository rooms, NotificationService notifications, Clock clock, ObjectMapper json,DailyLimitReviewRepository review,org.springframework.transaction.PlatformTransactionManager tx) {
+    this.review=review;
+    this.read=new org.springframework.transaction.support.TransactionTemplate(tx);this.read.setReadOnly(true);
     this.users=users; this.admins=admins; this.sanctions=sanctions; this.bans=bans;
     this.identities=identities; this.actions=actions; this.sessions=sessions; this.reports=reports;
     this.subscriptions=subscriptions; this.payments=payments; this.profiles=profiles; this.ads=ads;
     this.rooms=rooms; this.notifications=notifications; this.clock=clock; this.json=json;
   }
 
-  @Transactional(readOnly=true)
+  @Transactional(propagation=org.springframework.transaction.annotation.Propagation.NEVER)
   public AdminUsersResponse list(AuthenticatedUser actor, String q, String status, String type,
       Boolean needsReview, Long cursor, int size) {
+    read.executeWithoutResult(tx -> requireAdmin(actor));
+    Set<Long> flagged=review.flagged(LocalDate.ofInstant(clock.instant(),PlanLimits.APP_ZONE));
+    return read.execute(tx -> listRows(actor,q,status,type,needsReview,cursor,size,flagged));
+  }
+
+  private AdminUsersResponse listRows(AuthenticatedUser actor,String q,String status,String type,
+      Boolean needsReview,Long cursor,int size,Set<Long> flagged) {
     requireAdmin(actor);
-    if (Boolean.TRUE.equals(needsReview))
-      throw new ApiException(503, "SERVICE_UNAVAILABLE", "확인 필요 판정과 해제 기준은 팀 합의 후 제공해요");
     if (size<1 || size>100 || (cursor!=null && cursor<=0) || (q!=null && q.length()>100)) throw invalid();
     String search = q==null ? "" : q.strip().replaceFirst("^@", "").toLowerCase(Locale.ROOT);
     String pattern="%"+search.replace("!","!!").replace("%","!%").replace("_","!_")+"%";
-    var rows=users.findAdministrationPage(pattern, parse(UserStatus.class,status), parse(UserType.class,type),
-        cursor, PageRequest.of(0,size+1));
+    var parsedStatus=parse(UserStatus.class,status);var parsedType=parse(UserType.class,type);
+    var rows=Boolean.TRUE.equals(needsReview)
+        ? (flagged.isEmpty() ? List.<User>of() : users.findAdministrationReviewPage(flagged,pattern,parsedStatus,parsedType,cursor,PageRequest.of(0,size+1)))
+        : users.findAdministrationPage(pattern,parsedStatus,parsedType,cursor,PageRequest.of(0,size+1));
     boolean more=rows.size()>size;
-    var page=rows.stream().limit(size).map(this::item).toList();
-    return new AdminUsersResponse(page, more ? Long.toString(page.getLast().id()) : null, false);
+    var page=rows.stream().limit(size).map(u -> item(u,flagged.contains(u.getId()))).toList();
+    return new AdminUsersResponse(page, more ? Long.toString(page.getLast().id()) : null, true);
   }
 
   @Transactional(readOnly=true)
@@ -212,9 +223,19 @@ public class UserAdministrationService {
     notifications.create(new CreateNotificationCommand(target.getId(),"SANCTION",null,"SANCTION",row.getId(),
         "/notifications",json.writeValueAsString(payload),null));
   }
-  private Item item(User u) {
+  /** Internal quota observations; Redis access must not hold the request's SQL transaction. */
+  @Transactional(propagation=org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+  public void recordDailyLimitRejection(DailyLimitRejected event) {
+    if(event.userId()<=0 || event.limit()<=0 || event.category()==null || event.occurredAt()==null) return;
+    Instant now=clock.instant();LocalDate day=LocalDate.ofInstant(event.occurredAt(),PlanLimits.APP_ZONE);
+    review.record(event.userId(),event.category().name(),day,
+        Math.multiplyExact(event.limit(),PlanLimits.ADMIN_REVIEW_LIMIT_MULTIPLIER),
+        Duration.between(now,day.plusDays(1).atStartOfDay(PlanLimits.APP_ZONE).toInstant()));
+  }
+
+  private Item item(User u,boolean needsReview) {
     return new Item(u.getId(),u.getUsername(),u.visibleName(),u.getAvatarUrl(),u.getUserType().name(),mask(u.getEmail()),
-        u.getStatus().name(),null,u.getCreatedAt());
+        u.getStatus().name(),needsReview,u.getCreatedAt());
   }
   private static SanctionView view(Sanction s,Instant now) {
     return new SanctionView(s.getId(),step(s),s.getReasonDetail(),s.getReasonCode(),s.getStartsAt(),s.getEndsAt(),s.getRevokedAt(),active(s,now));
