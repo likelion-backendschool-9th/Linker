@@ -454,8 +454,8 @@ Flex teams get a "진행 현황" (Progress) card at the top of the issue tab. It
 | POL-C-4 Starting 1:1 chat | Direct conversation if mutual follow or same team. Otherwise only one first message goes to "메시지 요청함" (message requests); the conversation opens only on acceptance. Recruiters have no follows/teams, so always go to requests (see "Recruiting offer messages") |
 | Chat retention | Team chat kept while the team exists. 1:1 chat deleted when both leave |
 | Team chat search & scroll-back | Keyword search in team chat rooms. Free teams can search and scroll back only through the last 60 days (older messages are hidden, not deleted, and reappear with Flex). Flex teams: all history. Deleted/hidden messages not searchable. 1:1 chat search excluded from MVP |
-| POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers), team invite (`TEAM_INVITE` → `/invite/[code]`) |
-| POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one: one push per room, and in the in-app list one unread row per room (the newest message replaces it; once read, the next message starts a new row). A mention keeps its own row. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
+| POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers), team invite (`TEAM_INVITE` → `/invite/[code]`), AI summary done/failed (`AI_SUMMARY_DONE` / `AI_SUMMARY_FAILED`, requester only, POL-C-5) |
+| POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one: one push per room, and in the in-app list one unread row per room (the newest message replaces it; once read, the next message starts a new row). A mention keeps its own row. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Exception: AI summary done/failed goes out at once, since the person just asked for it. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
 | Muting | MVP: mute per chat room and the "푸시 알림" (Push notifications) on/off switch in settings only. Turning push off stops push only; the in-app notification list keeps filling. Per-type settings in phase 2 |
 | Push devices | Only the Android app (development build) receives push. iOS app push needs a paid Apple developer account, so it is out of the MVP; browser web push is phase 2 (N-2) |
 
@@ -504,17 +504,19 @@ In MVP a recruiting offer is not a separate offer form but a 1:1 chat request. I
 | --- | --- |
 | Eligible teams | On a Flex subscription (incl. trial and payment-failure grace) and not turned off by the owner in team settings. 1:1 chats are never summarized |
 | Free teams | Button is visible; tapping shows the "Flex 구독 팀만 쓸 수 있어요" (Flex only) sheet. Owner/billing manager get "Flex 알아보기" (→ plans & checkout; "7일 무료 체험" if no trial yet); other members get "오너에게 Flex를 요청해 보세요" (ask your owner for Flex) |
-| Range | Since my last read position. Optional: today / last 24 hours / since last summary |
-| Min / max | Fewer than 20 messages → "직접 읽는 게 더 빨라요" (faster to read yourself). Max 500; if more, summarize the latest 500 and say so |
-| Count | 10/day per Flex team member (tentative). Resets at 00:00 KST. Failed summaries don't count |
+| Range | The latest messages that fit the input budget (about 1,500 tokens ≈ 50–70 short messages, 2–3 minutes per summary; decision 2026-11-10, demo server is 2 CPUs without GPU). Range choice (since my last read / today / last 24 hours / since last summary) is a later `[Included]` item |
+| Min / max | Fewer than 20 messages → "직접 읽는 게 더 빨라요" (faster to read yourself). At most the latest 200 are read, then trimmed to the input budget; one message counts up to 200 characters. The sheet says how many were summarized ("최근 메시지 N개를 요약했어요") |
+| Count | 10/day per Flex team member (tentative). Resets at 00:00 KST. Failed summaries don't count (the use goes back to the day it was taken). "새로 요약하기" spends one use |
 | Excluded | Deleted/hidden messages, images, messages from people I blocked. PR system messages contribute title and status only |
-| Output | Minutes format: one-line summary, decisions, to-dos (issue drafts), open questions. Tapping an item scrolls to the original message |
-| Visibility | Only the requester sees it. "채팅에 공유" (share to chat) posts it as a minutes card in team chat. Shared cards can be reported / deleted (by self) like normal messages |
+| Output | Minutes format: one-line summary, decisions, to-dos (issue drafts), open questions, at most 3 each. Tapping an item scrolls to the original message when it is loaded in the room |
+| Visibility | Only the requester sees it. "채팅에 공유" (share to chat) posts it as a minutes card in team chat (sharing again returns the same card); tapping the card opens the full minutes for everyone in the room. Shared cards can be reported / deleted (by self) like normal messages |
 | Issue drafts | Never created automatically; created on GitHub only after the user reviews/edits and taps "이슈 만들기" (create issue) (ch. 7 write permissions apply) |
-| Processing | Server generates only on button tap (no automatic summaries). Over 30 seconds → show "요약하는 중이에요" (summarizing) and notify when done. On failure, retry once, then "요약하지 못했어요" (couldn't summarize) |
-| Model | Default: Ollama open model self-hosted on the Linker server (free, conversations stay in-house). If switched to a low-cost LLM API, send only under terms that it's not used for training and not stored after processing, and add the vendor to the Privacy Policy's processor table |
+| Processing | Server generates only on button tap (no automatic summaries). The tap answers at once and one worker summarizes in order (one at a time; up to 16 waiting, more → "잠시 후 다시 시도해 주세요"). A second tap while one is running follows that one. A summary gives up after 5 minutes. Retry once only when the model cannot be reached; a slow model is not retried. Then "요약하지 못했어요" (couldn't summarize) |
+| Model | Ollama `qwen3:4b` self-hosted next to the backend on the demo server, capped at 2 CPUs / 4 GiB (decision 2026-11-10: free, conversations stay in-house, no extra load on the shared server). Thinking off, JSON-schema reply, output capped. If switched to a low-cost LLM API, send only under terms that it's not used for training and not stored after processing, and add the vendor to the Privacy Policy's processor table |
 | Retention | Summary results 7 days. Shared cards live as long as team chat messages (while the team exists) |
 | Label | Always show "AI가 만든 요약이라 틀릴 수 있어요" (AI-generated, may be wrong) |
+| Button and progress | The "AI 채팅 요약" button carries a ring (decision 2026-11-10): a short spinning arc while waiting in line, blue filling clockwise from 12 o'clock while the model reads and writes, a full blue ring once done until the summary is shared or replaced by "새로 요약하기", and red after a failure until the next tap (which summarizes again). Tapping while it runs shows a one-line bubble with a thin gray border: the stage and progress, e.g. "요약 쓰는 중 · 64/100"; the number keeps a three-digit width (user request 2026-11-10). Percentages while reading are estimates and never show 100 before the result |
+| Done notice | In the room: toast "요약이 끝났어요" with "보기". Elsewhere: notification `AI_SUMMARY_DONE` (opens the minutes sheet) or `AI_SUMMARY_FAILED`. Opening a finished summary reads its notification |
 | Team setting | Owner can turn AI summary off per team. No banner in team chat (the "이 팀은 AI 요약을 사용해요" banner was dropped, team decision 2026-11-10) |
 | When subscription ends | Only new summaries blocked. Existing summaries viewable per the 7-day rule; shared cards remain in chat |
 
@@ -718,6 +720,12 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Job ad closed | 광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기 |
 | Job ad hidden | 이 광고는 다시 보이지 않아요. |
 | AI summary used up | 오늘은 AI 요약을 다 썼어요(10/10). 내일 다시 쓸 수 있어요. |
+| AI summary running (bubble) | 순서 기다리는 중 / 앞에 {N}건 기다리는 중 / 대화 읽는 중 · {N}/100 / 요약 쓰는 중 · {N}/100 |
+| AI summary done | 요약이 끝났어요 (toast, "보기") · notification: AI 요약이 끝났어요 / {team} 채팅 요약을 확인해 보세요 |
+| AI summary failed | 요약하지 못했어요 · notification: AI 요약을 만들지 못했어요 / 채팅방에서 다시 요약해 보세요 |
+| AI summary shared | 채팅에 공유했어요 |
+| AI summary renew | 새로 요약할까요? / 사용 횟수가 1회 차감돼요. 지금 요약은 새 요약으로 바뀌어요. |
+| AI summary queue full | 잠시 후 다시 시도해 주세요 |
 | Invite join | 팀에 합류하기 |
 | Invite GitHub start | GitHub로 빠르게 시작하기 |
 | Invite developer-only | 개발자 계정만 팀에 참여할 수 있어요. |
@@ -760,5 +768,5 @@ Structured offers replacing MVP's 1:1 chat recruiting offers (ch. 8). Added in p
 - [ ] Whether to refund remaining subscription on permanent suspension (with Terms review)
 - [ ] Recruiter company verification method (phase 3; MVP is company email only)
 - [ ] Final scope of the free email block list (MVP recruiter sign-up)
-- [ ] AI summary daily count (tentatively 10) and model (Ollama open model / low-cost API)
+- [ ] AI summary daily count (tentatively 10). Model decided 2026-11-10: Ollama `qwen3:4b` at 2 CPUs / 4 GiB; revisit if Korean minutes quality falls short
 - [ ] Final job category list and allowed job sites (tentatively JobKorea, Saramin, Wanted, Work24), Pro/Flex/Scout prices (tentatively Pro ₩2,900/month, Flex ₩7,900/month + ₩1,900 per member from the 7th, Scout ₩14,900/month) and plan names (Flex and Scout are working names)

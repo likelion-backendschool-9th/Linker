@@ -90,8 +90,9 @@ class ChatErrorContractIntegrationTest {
 				JsonNode responses = operation.path("responses");
 				String name = method.getKey() + " " + path.getKey() + " " + responses.propertyNames();
 				assertThat(responses.has("401")).as(name).isTrue();
-				assertThat(responses.has("200") || responses.has("204")).as(name).isTrue();
-				assertThat(responses.has("200") && responses.has("204")).as(name).isFalse();
+				// Exactly one success status. 202 is the AI summary start, which always answers before the model.
+				long successes = List.of("200", "202", "204").stream().filter(responses::has).count();
+				assertThat(successes).as(name).isOne();
 				for (Map.Entry<String, JsonNode> response : responses.properties()) {
 					if (response.getKey().startsWith("4")) {
 						List<String> refs = new ArrayList<>();

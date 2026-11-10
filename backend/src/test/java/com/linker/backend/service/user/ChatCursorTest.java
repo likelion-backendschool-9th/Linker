@@ -65,6 +65,7 @@ class ChatCursorTest {
 				null,
 				null,
 				null,
+				null,
 				"http://localhost:3000"
 		);
 		AuthenticatedUser user = new AuthenticatedUser(

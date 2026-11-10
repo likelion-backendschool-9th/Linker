@@ -97,6 +97,13 @@ public class ChatMessage {
 		return message;
 	}
 
+	/** Page 17 "채팅에 공유": the minutes are copied into the payload so the card outlives the 7-day summary row. */
+	public static ChatMessage aiSummary(ChatRoom room, long senderId, String body, String payload) {
+		ChatMessage message = create(room, senderId, MessageType.AI_SUMMARY, body, MessageVisibility.VISIBLE);
+		message.payload = payload;
+		return message;
+	}
+
 	public static ChatMessage system(ChatRoom room, String body) {
 		return create(room, null, MessageType.SYSTEM, body, MessageVisibility.VISIBLE);
 	}

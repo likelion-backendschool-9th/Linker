@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo, useState } from 'react';
+
 import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
@@ -15,6 +17,7 @@ import { RequestRoomBar } from '../request-room-bar';
 import { RoomInfoSheet } from '../room-info-sheet';
 import { PullRequestSheet } from '../pull-request-sheet';
 import { AiSummaryFab } from '../ai-summary-fab';
+import { SharedAiSummarySheet } from '../ai-summary-card';
 import styles from './ChatRoom.module.css';
 import { CONNECTION, useChatRoom } from './hook';
 
@@ -41,6 +44,8 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     readOnly,
     room,
   } = useChatRoom(roomId);
+  const [jumpTo, setJumpTo] = useState<{ id: number } | null>(null);
+  const loadedIds = useMemo(() => new Set(messages.map((message) => message.id)), [messages]);
 
   if (info.isPending || history.isPending)
     return (
@@ -121,6 +126,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           messages={messages}
           login={viewer.login}
           readPosition={readPosition}
+          jumpTo={jumpTo}
           onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
           onMenu={(id) => messageMenu.open(String(id))}
           onRead={markMessageRead}
@@ -128,8 +134,22 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}
         />
-        {room.team && <AiSummaryFab roomId={roomId} />}
+        {room.team && (
+          <AiSummaryFab
+            roomId={roomId}
+            initial={room.myAiSummary}
+            loadedIds={loadedIds}
+            onJump={(id) => setJumpTo({ id })}
+          />
+        )}
       </div>
+      {room.team && (
+        <SharedAiSummarySheet
+          messages={messages}
+          loadedIds={loadedIds}
+          onJump={(id) => setJumpTo({ id })}
+        />
+      )}
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
       <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />
