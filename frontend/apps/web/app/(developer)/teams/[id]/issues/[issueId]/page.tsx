@@ -28,9 +28,10 @@ export default async function IssueDetailPage({
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  // Deleted on GitHub → unavailable content; transferred → follow to the new location (04 ch. 7 exceptions)
+  // Deleted on GitHub → unavailable content; transferred → follow when the new id is in this team
   if (issue.deletedOrMoved === 'DELETED') notFound();
-  if (issue.deletedOrMoved === 'MOVED' && issue.movedToIssueId !== null) {
+  if (issue.deletedOrMoved === 'MOVED') {
+    if (issue.movedToIssueId == null) notFound();
     redirect(`/teams/${id}/issues/${issue.movedToIssueId}` as Route);
   }
 
