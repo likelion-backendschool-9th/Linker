@@ -1,15 +1,12 @@
 'use client';
 
-import { AltArrowRightLinearIcon } from '@solar-icons/static/linear/alt-arrow-right';
-import { ChevronLeft } from 'lucide-react';
+import { Bell, BellOff, ChevronLeft } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import { Dialog } from 'radix-ui';
 
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
 import { OverlayLink } from '@/components/overlay/overlay-link/OverlayLink';
-import { ErrorState } from '@/components/ui/error-state/ErrorState';
-import { Icon } from '@/components/ui/icon/Icon';
 
 import type { RoomInfo } from './api';
 import styles from './RoomInfoSheet.module.css';
@@ -26,8 +23,9 @@ function Photo({ src, name, className }: { src: string | null; name: string; cla
 }
 
 /**
- * Figma 17 room info (351:580), opened from the header ☰: a full screen with the team card, members
- * with their team role, and "팀 나가기". Mute and the PR list (not in the frame) sit under the members.
+ * Figma 17 room info (351:580), opened from the header ☰, with the user's 2026-11-10 reference: a
+ * full screen with "멤버 N명", the team card ("PR 보러 가기" chip), members with their team role,
+ * and "팀 나가기". Mute (not in the frame) is the bell icon on the right of the header.
  */
 export function RoomInfoSheet({
   room,
@@ -43,7 +41,6 @@ export function RoomInfoSheet({
     pullRequests,
     leaveConfirm,
     direct,
-    mute,
     muteDisabled,
     onToggleMute,
     leave,
@@ -64,23 +61,36 @@ export function RoomInfoSheet({
                 <span className="sr-only">뒤로</span>
               </Dialog.Close>
               <Dialog.Title className={styles.title}>{room.title}</Dialog.Title>
+              <button
+                type="button"
+                className={styles.mute}
+                disabled={muteDisabled}
+                onClick={onToggleMute}
+              >
+                {room.muted ? <BellOff aria-hidden /> : <Bell aria-hidden />}
+                <span className="sr-only">{room.muted ? '알림 켜기' : '알림 끄기'}</span>
+              </button>
             </div>
             <div className={styles.body}>
               {team && (
-                <OverlayLink
-                  overlay={overlay}
-                  href={`/teams/${team.id}/issues` as Route}
-                  className={styles.teamCard}
-                >
-                  <Photo src={team.avatarUrl} name={team.name} className={styles.teamPhoto} />
-                  <span className={styles.teamText}>
-                    <span className={styles.teamName}>{team.name}</span>
-                    <span className={styles.teamMeta}>멤버 {members.length}명</span>
-                  </span>
-                  <span className={styles.chevron}>
-                    <Icon svg={AltArrowRightLinearIcon} />
-                  </span>
-                </OverlayLink>
+                <section className={styles.team} aria-labelledby="room-info-member-count">
+                  <h2 id="room-info-member-count" className={styles.sectionTitle}>
+                    멤버 {members.length}명
+                  </h2>
+                  <div className={styles.teamCard}>
+                    <Photo src={team.avatarUrl} name={team.name} className={styles.teamPhoto} />
+                    <span className={styles.teamText}>
+                      <span className={styles.teamName}>{team.name}</span>
+                      <button
+                        type="button"
+                        className={styles.prChip}
+                        onClick={() => pullRequests.open()}
+                      >
+                        PR 보러 가기
+                      </button>
+                    </span>
+                  </div>
+                </section>
               )}
               <ul className={styles.members} aria-label="참여자">
                 {members.map((member) => {
@@ -121,29 +131,6 @@ export function RoomInfoSheet({
                   );
                 })}
               </ul>
-              <div className={styles.settings}>
-                <button
-                  type="button"
-                  className={styles.settingRow}
-                  aria-pressed={room.muted}
-                  disabled={muteDisabled}
-                  onClick={onToggleMute}
-                >
-                  {room.muted ? '알림 켜기' : '알림 끄기'}
-                </button>
-                {mute.isError && (
-                  <ErrorState title="알림 설정을 바꾸지 못했어요" onRetry={onToggleMute} />
-                )}
-                {team && (
-                  <button
-                    type="button"
-                    className={styles.settingRow}
-                    onClick={() => pullRequests.open()}
-                  >
-                    PR 목록
-                  </button>
-                )}
-              </div>
             </div>
             {team ? (
               <OverlayLink
