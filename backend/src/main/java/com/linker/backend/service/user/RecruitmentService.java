@@ -34,6 +34,8 @@ import com.linker.backend.dto.recruit.response.RecruitEditRoleResponse;
 import com.linker.backend.dto.recruit.response.RecruitEditorOptionsResponse;
 import com.linker.backend.dto.recruit.response.RecruitIdResponse;
 import com.linker.backend.entity.account.User;
+import com.linker.backend.entity.chat.ChatRoom;
+import com.linker.backend.entity.chat.ChatRoomMember;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.entity.profile.TechTag;
 import com.linker.backend.entity.recruit.Application;
@@ -46,15 +48,21 @@ import com.linker.backend.entity.recruit.type.RecruitRoleType;
 import com.linker.backend.entity.recruit.type.RecruitStatus;
 import com.linker.backend.entity.recruit.type.RecruitVisibility;
 import com.linker.backend.entity.recruit.type.WorkMode;
+import com.linker.backend.entity.team.TeamMember;
+import com.linker.backend.entity.team.type.TeamRole;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatRoomMemberRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
+import com.linker.backend.repository.subscription.SubscriptionRepository;
 import com.linker.backend.repository.team.TeamMemberRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
 import org.springframework.data.domain.PageRequest;
@@ -73,6 +81,10 @@ public class RecruitmentService {
 	private final NotificationService notifications;
 	private final ProMembership pro;
 	private final TeamMemberRepository teamMembers;
+	private final TeamRepository teams;
+	private final ChatRoomRepository chatRooms;
+	private final ChatRoomMemberRepository chatMembers;
+	private final SubscriptionRepository subscriptions;
 	private final Clock clock;
 
 	public RecruitmentService(
@@ -85,6 +97,10 @@ public class RecruitmentService {
 			NotificationService notifications,
 			ProMembership pro,
 			TeamMemberRepository teamMembers,
+			TeamRepository teams,
+			ChatRoomRepository chatRooms,
+			ChatRoomMemberRepository chatMembers,
+			SubscriptionRepository subscriptions,
 			Clock clock
 	) {
 		this.posts = posts;
@@ -96,6 +112,10 @@ public class RecruitmentService {
 		this.notifications = notifications;
 		this.pro = pro;
 		this.teamMembers = teamMembers;
+		this.teams = teams;
+		this.chatRooms = chatRooms;
+		this.chatMembers = chatMembers;
+		this.subscriptions = subscriptions;
 		this.clock = clock;
 	}
 
@@ -437,6 +457,7 @@ public class RecruitmentService {
 		if (post.getTeamId() == null) {
 			throw new ApiException(409, "TEAM_REQUIRED", "팀을 먼저 만들어야 수락할 수 있어요");
 		}
+		long teamId = post.getTeamId();
 		RecruitRole role = application.getRecruitRole();
 		boolean increase = request != null && Boolean.TRUE.equals(request.increaseHeadcount());
 		if (role.isFull()) {
@@ -452,9 +473,75 @@ public class RecruitmentService {
 				);
 			}
 		}
-		// teams/chat tables (B/D) are not introduced yet — cannot join membership/chat.
-		// Fail safely with the FE-aligned code so accept does not leave half-applied state.
-		throw new ApiException(409, "TEAM_REQUIRED", "팀을 먼저 만들어야 수락할 수 있어요");
+
+		long applicantId = application.getApplicant().getId();
+		boolean alreadyMember = teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, applicantId).isPresent();
+		if (!alreadyMember) {
+			assertTeamCanAcceptMember(teamId, applicantId);
+			teamMembers.saveAndFlush(TeamMember.member(teamId, applicantId, clock.instant()));
+		}
+
+		ChatRoom room = chatRooms.lockTeamRoom(teamId)
+				.orElseThrow(() -> new ApiException(409, "TEAM_REQUIRED", "팀 채팅방을 찾지 못했어요"));
+		ensureTeamChatMember(room, applicantId);
+
+		User author = users.findById(user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		application.accept(author, clock.instant());
+		role.incrementAccepted();
+		if (post.getStatus() == RecruitStatus.OPEN && post.allRolesFull()) {
+			post.close(clock.instant());
+		}
+
+		notifications.create(new CreateNotificationCommand(
+				applicantId,
+				NotificationTypes.APPLICATION_ACCEPTED,
+				user.userId(),
+				"RECRUIT_POST",
+				recruitId,
+				"/chats/" + room.getId(),
+				null,
+				"application-accepted:" + application.getId()
+		));
+
+		boolean needsGithubInvite = teamMembers
+				.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, user.userId())
+				.map(member -> member.getRole() == TeamRole.OWNER)
+				.orElse(false);
+		return new AcceptApplicationResponse(teamId, room.getId(), needsGithubInvite);
+	}
+
+	/** Free teams stop at 6; Flex has no member cap. Applicant also respects the personal 10-team cap. */
+	private void assertTeamCanAcceptMember(long teamId, long applicantId) {
+		boolean flex = subscriptions.hasFlexBenefit(teamId, clock.instant());
+		int current = teamMembers.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(teamId).size();
+		if (!flex && current >= PlanLimits.TEAM_MEMBERS_FREE) {
+			throw new ApiException(
+					403,
+					"PLAN_LIMIT",
+					"무료 팀은 멤버 " + PlanLimits.TEAM_MEMBERS_FREE + "명까지예요. Flex로 더 초대할 수 있어요.",
+					Map.of("reason", "TEAM_MEMBERS")
+			);
+		}
+		if (teams.countedTeams(applicantId) >= PlanLimits.TEAMS_PER_USER_MAX) {
+			throw new ApiException(
+					403,
+					"PLAN_LIMIT",
+					"팀은 " + PlanLimits.TEAMS_PER_USER_MAX + "개까지 참여할 수 있어요",
+					Map.of("reason", "TEAMS_PER_USER")
+			);
+		}
+	}
+
+	private void ensureTeamChatMember(ChatRoom room, long userId) {
+		ChatRoomMember existing = chatMembers.findAnyInRoom(room.getId(), userId).orElse(null);
+		if (existing == null) {
+			chatMembers.saveAndFlush(ChatRoomMember.join(room, userId));
+			return;
+		}
+		if (existing.getLeftAt() != null || existing.getHiddenAt() != null) {
+			existing.rejoin();
+		}
 	}
 
 	@Transactional

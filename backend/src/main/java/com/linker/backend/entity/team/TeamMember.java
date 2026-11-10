@@ -69,6 +69,17 @@ public class TeamMember {
 		return member;
 	}
 
+	/** Recruit accept (POL-R-4): Linker member first; GitHub org invite is a separate owner action. */
+	public static TeamMember member(long teamId, long userId, Instant joinedAt) {
+		TeamMember member = new TeamMember();
+		member.teamId = teamId;
+		member.userId = userId;
+		member.role = TeamRole.MEMBER;
+		member.githubOrgState = GithubOrgState.NOT_MEMBER;
+		member.joinedAt = joinedAt;
+		return member;
+	}
+
 	public Long getId() {
 		return id;
 	}
