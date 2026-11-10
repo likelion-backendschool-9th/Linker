@@ -702,7 +702,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Tables: new none · shared teams, team_members, issues, issue_assignees
 - [ ] Frontend: team cards, empty state ("팀 만들기" (Create team) + "팀 찾으러 가기" (Find a team)), team switcher sheet (header of 11–15), 10-team limit notice
 - [ ] Frontend `[Included]` (C): my-issues team picker; default = max `joinedAt` (non-archived preferred); URL `teamId` (nuqs); list scoped to the selected team
-- Frontend handoff (PR #35): B's “내 이슈 전체 보기” links to C's `/workspace/issues`; the list's back fallback is `/workspace`. Both URLs belong to page 07; no additional controller or endpoint is introduced.
+- Frontend handoff (PR #35): B's “내 이슈 전체 보기” links to C's `/workspace/issues`; the list's back fallback is `/workspace`. Both URLs belong to page 07; no additional controller or endpoint is introduced. Visible copy is「내 이슈 전체 보기」(c-role-audit #6). Hide create `+` on read-only/archived teams (#7, PR3).
 
 </details>
 
@@ -772,8 +772,8 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Tables: new issues, issue_assignees, issue_labels, 🟡 team_progress_snapshots · shared teams, team_repos, github_repos, board_status_mappings, github_webhook_deliveries, subscriptions (after 28)
 - [ ] Server: first full sync with installation token, `issues` and `projects_v2_item` webhook handlers, sync every 15 min for active teams / daily otherwise, later value wins
 - [ ] Server: daily 00:00 per-team progress snapshot batch (all teams, kept 1 year). Start it on D4 so data accumulates by D10
-- [ ] Frontend: team layout (tabs + team switcher + team chat shortcut, shared by 11–15), issue row, filter sheet (nuqs, reused by 14 and 15), conditions for showing the create-issue button
-- [ ] Frontend `[Included]` (C, D10): progress card (completion ring, 4-column bars, 14-day trend, per assignee; summary sentence + "표로 보기", blueprint ch. 6), Flex prompt for free teams
+- [ ] Frontend: team layout (tabs + team switcher + team chat shortcut, shared by 11–15), issue row, header team-change icon (issue filter sheet removed; c-role-audit #3), create-issue hidden for read-only/archived/no-write
+- [ ] Frontend progress (intentional shrink vs POL-T-7; c-role-audit #2): status cards 4 + Flex 14-day trend only; no ring / assignee / overdue taps / "표로 보기" / Free Flex prompt. Full POL-T-7 deferred
 
 </details>
 
@@ -812,7 +812,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - C13 backend contract: `requestId` is a UUID retained for the same draft; changing the draft requires a new ID. Job progress returns the internal Linker issueId/detailPath after GitHub creation is confirmed.
 - Tables: new none · shared issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens
 - [ ] Server: parse issue form YAML, form answers → GitHub body (`### Question`, empty `_No response_`), retry queue for mid-way failures, never create Linker-only issues
-- [ ] Frontend: stepped (repo & template → content), dynamic form field rendering (react-hook-form + zod), reuse 12's sheets, on failure save draft on device + resend, enter with body prefilled from 17 "이슈로 만들기" (Make an issue)
+- [ ] Frontend: **single page** (not stepped; intentional shrink, `c-page13-create-screen`). Align FE to BE OpenAPI/WBS (requestId UUID, template assignee/label options, FORM `answers`, CreateResponse·poll) — **PR2** (c-role-audit #1). Draft restore + resend; enter with body prefilled from 17 "이슈로 만들기" when that Included ships
 
 </details>
 
@@ -830,7 +830,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: status change → 12's `PUT .../issues/{issueId}/status`, filter options → 11's `issue-filters`
 - Tables: new none · shared issues, board_status_mappings, issue_sync_jobs
 - C14 backend contract: Only issues on the team's Projects board; 5 fixed columns; `NONE` (no Status value) cards go to "기타" with their own status kept; cards ordered by due urgency (past due oldest first, then soonest, then none); `canWrite` uses 11's rule.
-- [ ] Frontend: dnd-kit drag (long-press drag on mobile), optimistic move, revert to original column + notice on failure, horizontally scrolling columns, no drag without write permission
+- [ ] Frontend: dnd-kit drag (long-press on mobile), optimistic move; on failure revert unless `retryScheduled` then poll/invalidate (**PR3**, c-role-audit #5); columns pan with **scrollbar hidden** (`c-page14-board-no-horizontal-scroll`); header team-change; board status-filter menu kept; no drag without write permission
 
 </details>
 
@@ -848,7 +848,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Tables: new none · shared issues, issue_assignees, notifications
 - [ ] Server: 9 AM scheduler notifying assignees the day before the due date
 - C15 backend contract: Inclusive KST dates and overlapping period bars; due-only dots; no due date/off-project items excluded; existing 12 schedule API reused. Reminder production uses the existing user notification service with per-issue/due-date/recipient transaction-safe deduplication. Android push delivery remains D-owned; see the documented current immediate-non-chat delivery gap.
-- [ ] Frontend: month/week views, range bars and dots, tap a date → that day's issues sheet → 12, guide for issues without due dates
+- [ ] Frontend (intentional shrink, `c-page15-calendar-screen`): month only, bars (incl. due-only), tap date → day sheet → 12, `?` → unscheduled; header team-change; overdue red UI deferred
 
 </details>
 
@@ -886,7 +886,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - [ ] Server (B): `pull_request` webhook → system messages (undeletable) only for opened, review requested, merged, closed
 - [ ] Server (C, reviewed by D): `LlmClient` interface + Ollama implementation (JSON-format response, max 500 messages, excluding deleted, hidden, images and blocked users), 7-day retention batch. B runs Ollama in Docker next to the backend server (D9)
 - [ ] Server (D) `[Included]`: share cards and Linker link cards are filled from the original in the message list response (deleted, hidden or blocked → "볼 수 없는 게시물이에요"); post views via a card are logged in 23 with `source = CHAT_SHARE`
-- [ ] Frontend (C): AI summary button and range picker, Flex prompt sheet for free teams, summary sheet (jump to original message, N/10), share to chat, action item → 13 (the "이 팀은 AI 요약을 사용해요" banner was dropped, team decision 2026-11-10)
+- [ ] Frontend (C) **now** (shrink; c-role-audit #8): AI summary → latest 500, one `summary` + N/10 + disclaimer, Free PlanLimitSheet. The "이 팀은 AI 요약을 사용해요" banner was dropped (team decision 2026-11-10, #356). `[Included]` follow-up: range picker, minutes sections, share to chat, to-do → 13. Prompt isolation minimum **PR3** (#9)
 - [ ] Frontend: STOMP reconnect, TanStack Virtual list, sending/failed/retry, photo viewer, message menu sheet, room info sheet, PR sheet, mentions and #issue cards, request status bar (sender and receiver sides), sender card for recruiting offers
 - Share wiring: connects the shared share sheet / room picker on 04, 21 and 23 to 17's share-target list and card send. The list is `{items:[{roomId,kind:TEAM|DIRECT,title,avatarUrl}]}` (`avatarUrl`: team photo for TEAM, the other person's photo for DIRECT, null when none), searched by partial name (case-insensitive; `%` and `_` match literally), ordered by the latest visible message. It excludes read-only, archived and deleted teams, teams or rooms the caller left, pending requests and blocked counterparts. Completed teams are included; recruiters get only open 1:1 rooms. Eligibility is checked again on send. Limits are 10 per minute and 100 per KST day. A retry with the same sender, `clientMessageId`, room and target returns the existing message; reusing the id for other content is 409 `STATE_CONFLICT`.
 - `SHARE_CARD` and the first Linker URL in a message store only the source type and id. A profile URL handle is converted to the user id when saved, and the reference is rebuilt on edit. Both REST and per-subscriber realtime delivery check the source's current visibility and block state. The card response is `{targetType,targetId,title,summary,imageUrl,linkPath,available}`: posts carry repo, intro and author; recruit posts carry remaining roles and deadline; profiles carry handle and tech stack. A private or deleted repo name shows as `레포를 볼 수 없음`; an inaccessible source shows `볼 수 없는 게시물이에요`. Profile paths are `/user/{login}`; post links carry `from=chat_share`.

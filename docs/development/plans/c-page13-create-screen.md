@@ -36,6 +36,11 @@
 - CTA: Figma 「GitHub에 이슈 작성하기」 vs Policy/TODO 「이슈 만들기」
 - 상태명: Policy `ISSUE_STATUS_LABELS` 유지 (통일 PR 나중)
 - 담당자 직군(PO 등): **API 직군 없음** — 목업 `jobRole`만, 실응답은 이름만
+- 한 화면: WBS stepped → 단일 페이지 (의도적 축소; Page TODO/WBS PR1 반영)
+
+## 실연동 계약 (c-role-audit #1 → PR2)
+
+FE를 BE OpenAPI/WBS에 맞춘다: `requestId` UUID, 템플릿 응답의 후보/라벨, FORM `answers`, CreateResponse·poll. **이 PR1에서는 문서만.**
 
 ## Figma에 없어 / 최소 연결
 
