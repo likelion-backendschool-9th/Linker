@@ -3,6 +3,8 @@ export {
   chatKeys,
   chatRoomsOptions,
   deleteChatRequest,
+  leaveChatRoom,
+  markChatRoomRead,
   unreadSummaryOptions,
 } from '@/features/chat/chat-queries';
-export type { ChatTab, UnreadSummary } from '@/features/chat/chat-queries';
+export type { ChatRoom, ChatTab, UnreadSummary } from '@/features/chat/chat-queries';

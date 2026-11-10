@@ -7,19 +7,28 @@ import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
 import type { ChatRoom } from '@/features/chat/chat-queries';
 
 import styles from './ChatRoomRow.module.css';
+import { useRowMenuGesture } from './hook';
 
-type Props = { room: ChatRoom; disabled: boolean; onDelete: () => void };
+type Props = {
+  room: ChatRoom;
+  disabled: boolean;
+  onDelete: () => void;
+  /** Row menu (방 나가기·읽음 처리); omitted for rows without one (sent requests) */
+  onOpenMenu?: () => void;
+};
 
 /**
  * Figma 16 row (247:1035, 321:2417): photo, name (+ "채용 제안"), time, last message, unread count.
  * A received request gets the red "삭제" button; accepting happens in the room's request panel (17).
+ * Right-click, the keyboard menu key or a long press opens the row menu.
  */
-export function ChatRoomRow({ room, disabled, onDelete }: Props) {
+export function ChatRoomRow({ room, disabled, onDelete, onOpenMenu }: Props) {
+  const gesture = useRowMenuGesture(onOpenMenu);
   const request = room.kind === 'REQUEST';
   const received = request && room.requestDirection === 'RECEIVED';
   const sent = request && room.requestDirection === 'SENT';
   return (
-    <article className={styles.room}>
+    <article className={styles.room} {...gesture}>
       <Link
         href={`/chats/${room.id}` as Route}
         className={received || sent ? `${styles.link} ${styles.withAction}` : styles.link}

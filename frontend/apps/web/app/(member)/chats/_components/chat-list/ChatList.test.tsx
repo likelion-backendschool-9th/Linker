@@ -5,7 +5,7 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import { act } from 'react';
@@ -26,13 +26,14 @@ const row = {
   id: 3,
   kind: 'REQUEST',
   title: '김개발',
+  teamId: null,
   counterpart: null,
   requestKind: 'GENERAL',
   requestDirection: 'RECEIVED',
   companyName: null,
   muted: true,
   unreadCount: 1,
-  lastMessage: { text: '함께 이야기해요.', createdAt: '2026-10-30T00:00:00Z' },
+  lastMessage: { id: 31, text: '함께 이야기해요.', createdAt: '2026-10-30T00:00:00Z' },
 };
 
 beforeEach(() => {
@@ -237,4 +238,104 @@ it('shows the server list again after joining and after leaving a team', async (
   await user.click(screen.getByRole('button', { name: '방 목록 변경 알림' }));
   expect(await screen.findByText('아직 팀 채팅이 없어요.')).toBeVisible();
   expect(screen.queryByRole('heading', { name: 'Linker 해커톤팀' })).not.toBeInTheDocument();
+});
+
+describe('row menu (right-click / long press)', () => {
+  const direct = { ...row, id: 5, kind: 'DIRECT', requestDirection: null, title: '이도윤' };
+  const team = {
+    ...row,
+    id: 8,
+    kind: 'TEAM',
+    title: 'ShowMoa',
+    teamId: 4,
+    requestKind: null,
+    requestDirection: null,
+  };
+  const sent = { ...row, id: 9, requestDirection: 'SENT', unreadCount: 0 };
+
+  function serve(byTab: Record<string, unknown[]>) {
+    fetchMock.mockImplementation(async (url) => {
+      if (url.endsWith('unread-summary'))
+        return { TEAM: 0, DIRECT: 1, REQUEST: 0, total: 1, requestCount: 0 };
+      const tab = /tab=(\w+)/.exec(url)?.[1];
+      if (tab) return { items: byTab[tab] ?? [], nextCursor: null };
+      return undefined;
+    });
+  }
+
+  it('opens on right-click, marks read up to the preview and leaves a 1:1 after confirming', async () => {
+    const user = userEvent.setup();
+    serve({ DIRECT: [direct] });
+    renderWithProviders(<ChatList />, {
+      viewer: { role: 'developer', login: 'developer' },
+      searchParams: '?tab=DIRECT',
+    });
+    const article = (await screen.findByRole('heading', { name: '이도윤' })).closest('article')!;
+    fireEvent.contextMenu(article);
+    const sheet = await screen.findByRole('dialog', { name: '이도윤님과의 채팅방' });
+    expect(within(sheet).getByRole('button', { name: '방 나가기' })).toBeEnabled();
+    expect(within(sheet).queryByRole('button', { name: '상단 고정' })).not.toBeInTheDocument();
+    expect(await axe(sheet)).toHaveNoViolations();
+
+    await user.click(within(sheet).getByRole('button', { name: '읽음 처리' }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/v1/user/chat-rooms/5/read',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ lastReadMessageId: 31 }),
+        }),
+      ),
+    );
+
+    fireEvent.contextMenu(article);
+    await user.click(
+      within(await screen.findByRole('dialog', { name: '이도윤님과의 채팅방' })).getByRole(
+        'button',
+        {
+          name: '방 나가기',
+        },
+      ),
+    );
+    const confirm = await screen.findByRole('alertdialog', { name: '대화에서 나갈까요?' });
+    await user.click(within(confirm).getByRole('button', { name: '나가기' }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/v1/user/chat-rooms/5/members/me',
+        expect.objectContaining({ method: 'DELETE' }),
+      ),
+    );
+  });
+
+  it('offers 팀 나가기 on a long press and keeps the lift from opening the room', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      serve({ TEAM: [team] });
+      renderWithProviders(<ChatList />, { viewer: { role: 'developer', login: 'developer' } });
+      const link = await screen.findByRole('link', { name: /ShowMoa/ });
+      fireEvent.pointerDown(link, { pointerType: 'touch' });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      const sheet = await screen.findByRole('dialog', { name: 'ShowMoa의 채팅방' });
+      expect(within(sheet).getByRole('button', { name: '팀 나가기' })).toBeVisible();
+      expect(within(sheet).getByRole('button', { name: '읽음 처리' })).toBeEnabled();
+      fireEvent.pointerUp(link, { pointerType: 'touch' });
+      // The click after the hold is swallowed; a later plain tap still navigates.
+      expect(fireEvent.click(link)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives a sent request no menu and leaves the native context menu alone', async () => {
+    serve({ REQUEST: [sent] });
+    renderWithProviders(<ChatList />, {
+      viewer: { role: 'developer', login: 'developer' },
+      searchParams: '?tab=REQUEST',
+    });
+    const article = (await screen.findByRole('heading', { name: '김개발' })).closest('article')!;
+    expect(fireEvent.contextMenu(article)).toBe(true);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });

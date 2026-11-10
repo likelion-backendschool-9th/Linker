@@ -42,7 +42,7 @@ export const ConfirmPaymentResponse = zod.object({
  */
 export const CreateCheckoutBody = zod.object({
   "planKey": zod.string().optional().describe('PRO or FLEX for developers (SCOUT is [Included] and not open yet)'),
-  "billing": zod.string().optional().describe('MONTHLY or YEARLY. Only PRO allows YEARLY'),
+  "billing": zod.string().optional().describe('MONTHLY or YEARLY. PRO and FLEX allow YEARLY'),
   "teamId": zod.int().nullish().describe('Required for FLEX: a team where the caller is owner or billing owner')
 })
 
@@ -72,8 +72,9 @@ export const ListPlansResponse = zod.object({
   "yearly": zod.int().nullable().describe('KRW per year; null when monthly only'),
   "benefits": zod.array(zod.string()),
   "trialAvailable": zod.boolean().describe('Free trial is [Included] and not offered yet, so always false'),
-  "perExtraMember": zod.int().optional().describe('FLEX only: KRW per member from the 7th')
-})).describe('Developers: FREE, PRO, FLEX. Recruiters: empty until Scout ([Included]) opens'),
+  "perExtraMember": zod.int().optional().describe('FLEX only: KRW per member from the 7th'),
+  "perExtraMemberYearly": zod.int().optional().describe('FLEX only: KRW per member from the 7th, per year')
+})).describe('Developers: FREE, PRO, FLEX. Recruiters: SCOUT for display; its checkout is [Included] and still refused'),
   "currentPlan": zod.string().describe('Caller\'s own plan: FREE, PRO or SCOUT (team Flex is per team)')
 })
 
@@ -86,6 +87,7 @@ export const ListFlexTeamCandidatesResponse = zod.object({
   "name": zod.string(),
   "memberCount": zod.int().describe('Current members; the amount uses this headcount'),
   "amount": zod.int().describe('KRW 7,900 up to 6 members, +1,900 per member from the 7th'),
+  "yearlyAmount": zod.int().describe('Yearly (10% off): KRW 85,320 up to 6 members, +20,520 per member from the 7th'),
   "currentPlan": zod.string().describe('FREE or FLEX')
 }))
 })

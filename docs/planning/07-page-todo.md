@@ -474,6 +474,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge
 - [ ] Requests tab: accept / delete; disappears after 30 days
+- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API)
 - [ ] `[Included]` Recruiting offer requests show a "채용 제안" label + company name (after 31). Recruiters see their sent offers as "대기 중" (pending) in the 1:1 tab
 - [ ] Rooms with blocked people hidden; after unblocking, messages from blocked periods stay invisible. Use retained `user_blocks` intervals for DM history, catch-up, previews and unread counts; team chat is exempt (Policy ch. 9, ERD ch. 4-8)
 - [ ] Empty-state copy
@@ -492,7 +493,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
-- [ ] Room info (full screen from the header ☰, Figma 351:580): team card (photo, name, "멤버 N명" → 11), members with team role (오너/관리자/멤버, owner first), mute, PR list, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
+- [ ] Room info (full screen from the header ☰, Figma 351:580): "멤버 N명" (+ "초대하기" → 09 invite section, team owner/admin only) over the team card (photo, name, "PR 보러 가기" → PR list; user reference 2026-11-10), members with team role (오너/관리자/멤버, owner first), mute as the header bell icon, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
 - [ ] Server: rooms, participants (last read message), messages tables shared by team and 1:1
 - [ ] Server: STOMP auth, new message notifications (bundled per room)
 
@@ -727,8 +728,8 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 > Basis: S-1, S-3, S-7, H-5 · Needs first: screens with benefits (04, 09, 17, 20, 22) · Merged: plan comparison + web checkout + payment complete → one page and two return URLs
 
-- [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Flex is monthly only
-- [ ] Figma 28 (288:471 developer, 293:218 recruiter): title "Linker를 구독하고 / 더 좋은 서비스를 경험해 보세요" + subtitle, "월간 결제 / 연간 결제" toggle, plan cards (name, one-line pitch, price + "월간 청구"/"연간 청구", "{plan} 플랜 구독하기", checked benefits), terms/privacy links, blue note "계정 당 Pro, Flex의 무료 체험은 1회만 제공 됩니다". No card for the free plan; Flex picks its team in a "결제할 팀 선택" sheet opened by its button (user decisions 2026-11-09). **The trial note is Figma copy shown by user decision, but the free trial is `[Included]` and not implemented yet**, so no account actually gets a trial. The recruiter frame's Scout card appears once the server sells Scout (the server's recruiter checkout is still `[Included]`); until then recruiters see "지금 결제할 수 있는 요금제가 없어요."
+- [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Yearly = 12 months 10% off for Pro and Flex (Pro ₩31,320; Flex ₩85,320 up to 6, ₩20,520 per member from the 7th); the toggle reads "연간 결제 10% 할인" (Figma) and yearly cards show the discounted yearly price (user decision 2026-11-10)
+- [ ] Figma 28 (288:471 developer, 293:218 recruiter): title "Linker를 구독하고 / 더 좋은 서비스를 경험해 보세요" + subtitle, "월간 결제 / 연간 결제" toggle, plan cards (name, one-line pitch, price + "월간 청구"/"연간 청구", "{plan} 플랜 구독하기", checked benefits), terms/privacy links, blue note "계정 당 Pro, Flex의 무료 체험은 1회만 제공 됩니다". No card for the free plan; Flex picks its team in a "결제할 팀 선택" sheet opened by its button (user decisions 2026-11-09). **The trial note is Figma copy shown by user decision, but the free trial is `[Included]` and not implemented yet**, so no account actually gets a trial. Recruiters see the Scout card (Figma 293:218) display-only, without the toggle: the button reads "Scout 플랜 준비 중" (disabled) with "결제는 곧 열릴 예정이에요." because the server's recruiter checkout is still `[Included]` (user decision 2026-11-10)
 - [ ] Server: plans API includes personal trial eligibility. Return `Cache-Control: private, no-store`; frontend uses server `no-store` and account-scoped TanStack queries, with no shared Next cache
 - [ ] Monthly/annual toggle; show the entry reason (`?reason=photo-limit` etc. when coming from a limit prompt sheet)
 - [ ] Flex requires choosing a team (where I'm owner or billing manager) + price from current headcount (₩7,900 up to 6, ₩1,900 per member from the 7th), "인원이 바뀌면 다음 결제일부터 반영돼요" (headcount changes apply from the next billing date)

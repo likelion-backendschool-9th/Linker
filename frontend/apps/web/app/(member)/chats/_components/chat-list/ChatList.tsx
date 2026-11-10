@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state/EmptyState';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
+import { ChatRoomMenu, hasRoomMenu } from '../chat-room-menu';
 import { ChatRoomRow } from '../chat-room-row';
 import styles from './ChatList.module.css';
 import { EMPTY, LABELS, useChatList } from './hook';
@@ -24,6 +25,15 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
     pending,
     items,
     mutationError,
+    writeDisabled,
+    menu,
+    menuRoom,
+    leaveConfirm,
+    leave,
+    read,
+    onLeaveFromMenu,
+    onReadFromMenu,
+    onConfirmLeave,
     onConfirmDelete,
   } = useChatList(initialSummary);
 
@@ -87,6 +97,7 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
                   room={room}
                   disabled={pending || viewer.status === 'SUSPENDED'}
                   onDelete={() => overlay.open(String(room.id))}
+                  onOpenMenu={hasRoomMenu(room) ? () => menu.open(String(room.id)) : undefined}
                 />
               </li>
             ))}
@@ -113,6 +124,28 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
           </Button>
         )}
       </section>
+      <ChatRoomMenu
+        overlay={menu}
+        room={menuRoom}
+        writeDisabled={writeDisabled}
+        readPending={read.isPending}
+        onLeave={onLeaveFromMenu}
+        onRead={onReadFromMenu}
+      />
+      <ConfirmDialog
+        overlay={leaveConfirm}
+        title="대화에서 나갈까요?"
+        description="내 채팅 목록에서 이 대화가 사라져요. 상대도 나가면 대화가 삭제돼요."
+        confirmLabel="나가기"
+        destructive
+        pending={leave.isPending}
+        error={
+          leave.isError
+            ? '대화에서 나가지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.'
+            : null
+        }
+        onConfirm={onConfirmLeave}
+      />
       <ConfirmDialog
         overlay={overlay}
         title="메시지 요청을 삭제할까요?"

@@ -15,6 +15,8 @@
   --space-xxl: 48px;
   --space-section: 48px; /* gap between page sections */
   --space-section-lg: 80px; /* gap between major blocks */
+  --space-profile-identity: 10px; /* P04 profile avatar-to-info and name-to-meta gap (Figma 301:572) */
+  --space-profile-block: 20px; /* P04 profile header-to-feed gap (Figma 301:572) */
   --space-tab-icon-gap: 6px; /* bottom GNB: gap between a tab's icon and its label (Figma itemSpacing) */
   /* Figma 07 values off the 4px grid */
   --space-row-inline: 5px; /* compact list row side padding, title to meta */
@@ -83,6 +85,7 @@
   --control-height-chip-sm: 28px; /* 11 filter chips; hit area stays --touch-target-min */
   --control-height-search: 42px; /* 11 search field */
   --control-height-tab: 48px; /* 11 team tabs */
+  --profile-project-tabs-height: 56px; /* 04 completed/active project tabs row (Figma 301:572) */
   --tabs-row-height: 48px; /* 19 recruit list segmented tabs row */
   /* 19 area B open height (Figma 253:2122): 44 search + 15 gap + 30 chips + 15 + 15 padding */
   --recruit-search-panel-height: 119px;
@@ -91,6 +94,8 @@
   --icon-size-progress-sm: 20px; /* 11 "진행" card icon (Figma frame) */
   --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
   --avatar-size-team: 50px; /* 07 selected-team image */
+  --avatar-size-profile: 60px; /* 04 developer profile image (Figma 301:572) */
+  --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --avatar-size-block-user: 40px; /* 06 settings blocked-user row */
   --icon-size-block-remove: 22px; /* 06 settings blocked-user removal control */
   --radio-size: 20px;
@@ -199,13 +204,14 @@
   ); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
   --blur-scrim: blur(6px); /* 07 sheet scrim */
 
-  /* The only shadow: the active segment of a segmented control */
+  /* Default to no shadows; add page-specific tokens only for explicit Figma treatments. */
   --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
   /* Exception: 07 compact link, Figma value by the front-end owner's decision (Figma first) */
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
   /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
+  --shadow-profile-work-card: 0 2px 12px rgb(18 18 18 / 0.10); /* 04 work card, Figma 301:572 drop shadow */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
   --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
   --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */

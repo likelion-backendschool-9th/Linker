@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
 async function openList(page: Page, room = 1) {
   await page.goto(`/chats/${room}`);
   await page.getByRole('button', { name: '채팅방 정보' }).click();
-  await page.getByRole('button', { name: 'PR 목록', exact: true }).click();
+  await page.getByRole('button', { name: 'PR 보러 가기', exact: true }).click();
   return page.getByRole('dialog', { name: 'PR 목록', exact: true });
 }
 test('17 PR list matches the selected full-screen Figma and stays within the app column', async ({
@@ -133,5 +133,5 @@ test('17 GitHub links reuse the external confirmation sheet and back closes the 
 test('17 never exposes PR lists in direct chats', async ({ page }) => {
   await page.goto('/chats/10');
   await page.getByRole('button', { name: '채팅방 정보' }).click();
-  await expect(page.getByRole('button', { name: 'PR 목록', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'PR 보러 가기', exact: true })).toHaveCount(0);
 });

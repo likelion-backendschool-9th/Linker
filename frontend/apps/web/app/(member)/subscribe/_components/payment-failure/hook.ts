@@ -32,8 +32,7 @@ export function usePaymentFailure({
   return {
     failure,
     retry: () => failure.mutate(),
-    goSubscribe: () =>
-      router.replace(withPaymentReturnTo('/subscribe', returnTo) as Route),
+    goSubscribe: () => router.replace(withPaymentReturnTo('/subscribe', returnTo) as Route),
     goHome: () => router.replace('/feed'),
   };
 }

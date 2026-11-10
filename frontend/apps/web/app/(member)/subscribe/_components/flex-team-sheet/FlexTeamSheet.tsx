@@ -19,6 +19,8 @@ type Props = {
   pending: boolean;
   error: string | null;
   disabled: boolean;
+  /** 연간 결제 tab: show each team's yearly amount */
+  yearly: boolean;
   onSubmit: (teamId: number) => void;
 };
 
@@ -29,6 +31,7 @@ export function FlexTeamSheet({
   pending,
   error,
   disabled,
+  yearly,
   onSubmit,
 }: Props) {
   const { selectedId, setDraft, forged, submit } = useFlexTeamSheet({
@@ -77,7 +80,10 @@ export function FlexTeamSheet({
                 <span className={styles.choiceText}>
                   <span className={styles.choiceName}>{team.name}</span>
                   <span className={styles.choiceMeta}>
-                    {team.memberCount}명 · {formatWon(team.amount)} / 월
+                    {team.memberCount}명 ·{' '}
+                    {yearly
+                      ? `${formatWon(team.yearlyAmount)} / 년`
+                      : `${formatWon(team.amount)} / 월`}
                     {team.currentPlan === 'FLEX' && ' · Flex 이용 중'}
                   </span>
                 </span>

@@ -8,6 +8,7 @@ public record ChatRoomItemResponse(
 		@Schema(requiredMode = REQUIRED) long id,
 		@Schema(requiredMode = REQUIRED, allowableValues = {"TEAM", "DIRECT", "REQUEST"}) String kind,
 		@Schema(requiredMode = REQUIRED, nullable = true, description = "TEAM: team name. 1:1: counterpart name") String title,
+		@Schema(requiredMode = REQUIRED, nullable = true, description = "TEAM: team id for the 팀 나가기 link to page 09. 1:1: null") Long teamId,
 		@Schema(requiredMode = REQUIRED, types = {"object", "null"}) ChatCounterpartResponse counterpart,
 		@Schema(requiredMode = REQUIRED, nullable = true, allowableValues = {"GENERAL", "RECRUITING"}) String requestKind,
 		@Schema(requiredMode = REQUIRED, nullable = true, allowableValues = {"SENT", "RECEIVED"}) String requestDirection,
