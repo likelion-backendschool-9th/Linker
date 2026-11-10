@@ -53,6 +53,19 @@ test('pick repo + template → create → leaves the editor with an issue URL', 
   await expect(page).not.toHaveURL(/\/issues\/new/);
 });
 
+test('요청 (이슈 폼) uses markdown body UI like bug templates', async ({ page }) => {
+  await pickRepoAndTemplate(page, '요청 (이슈 폼)');
+  await expect(page.getByLabel(/이슈 제목/)).toHaveValue('[요청] ');
+  await expect(page.getByRole('button', { name: '마크다운 입력' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '미리보기' })).toBeVisible();
+  const body = page.getByRole('textbox', { name: /이슈 본문/ });
+  await expect(body).toBeVisible();
+  await expect(body).toHaveValue(/## 요약[\s\S]*## 자세한 내용[\s\S]*## 확인 사항/);
+  await expect(page.getByText(/0\/2000|\/2000/)).toBeVisible();
+  await expect(page.getByLabel(/^요약/)).toHaveCount(0);
+  await expect(page.getByRole('combobox')).toHaveCount(0);
+});
+
 test('failed create keeps the draft and "다시 보내기" works', async ({ page }) => {
   await pickRepoAndTemplate(page);
   await page.getByLabel(/이슈 제목/).fill('실패 후 재시도');
