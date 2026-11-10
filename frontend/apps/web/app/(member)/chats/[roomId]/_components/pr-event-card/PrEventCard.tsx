@@ -42,18 +42,22 @@ export function PrEventCard({
         <span className={styles.event} data-event={event}>
           {label}
         </span>
-        <span className={styles.title}>
+        <span className={styles.title} title={`${number !== null ? `#${number} ` : ''}${title}`}>
           {number !== null && `#${number} `}
           {title}
         </span>
         <span className={styles.meta}>
           {repository && (
             <>
-              <span title={repo}>{repository}</span>
+              <span className={styles.repository} title={repo}>
+                {repository}
+              </span>
               <span className={styles.dot} aria-hidden />
             </>
           )}
-          <RelativeTime value={message.createdAt} />
+          <span className={styles.time}>
+            <RelativeTime value={message.createdAt} />
+          </span>
         </span>
       </span>
     </>

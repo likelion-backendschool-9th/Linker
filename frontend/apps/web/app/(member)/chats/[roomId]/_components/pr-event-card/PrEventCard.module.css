@@ -3,7 +3,8 @@
   --pr-event-line: 17px;
   --pr-organization-line: 14px;
   --pr-organization-top: 3px;
-  --pr-content-width: 186px;
+  /* Cap the card in the 600px app column; smaller screens use the available grid track. */
+  --pr-card-max-width: 20rem;
   --pr-review-color: #eb6e25;
   --pr-closed-color: #ed0004;
   display: grid;
@@ -35,6 +36,7 @@
 
 .organization {
   grid-column: 2;
+  max-width: var(--pr-card-max-width);
   margin-top: var(--pr-organization-top);
   color: var(--color-text-slate);
   font-size: var(--font-size-micro);
@@ -49,6 +51,8 @@
   align-items: flex-start;
   gap: var(--space-card-gap);
   width: 100%;
+  max-width: var(--pr-card-max-width);
+  min-width: 0;
   padding: var(--space-chat-card);
   border: 1px solid var(--color-hairline-cool);
   border-radius: var(--radius-card-compact);
@@ -76,7 +80,7 @@ button.card:focus-visible {
   flex-direction: column;
   gap: var(--space-row-block);
   min-width: 0;
-  width: var(--pr-content-width);
+  flex: 1;
 }
 
 .event {
@@ -99,6 +103,10 @@ button.card:focus-visible {
 }
 
 .title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   line-height: var(--pr-event-line);
@@ -109,7 +117,7 @@ button.card:focus-visible {
 .meta {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  min-width: 0;
   gap: var(--space-row-block);
   font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
@@ -117,7 +125,20 @@ button.card:focus-visible {
   color: var(--color-text-slate);
 }
 
+.repository {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .dot {
+  flex-shrink: 0;
   width: var(--separator-dot-size);
   height: var(--separator-dot-size);
   border-radius: var(--radius-full);

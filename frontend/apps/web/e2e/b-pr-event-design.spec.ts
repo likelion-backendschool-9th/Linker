@@ -42,6 +42,7 @@ test('17 PR system messages match the four Figma states and organization groupin
       if (label !== labels[0]) expect(await article.locator('p').count()).toBe(0);
       cards.push((await card.boundingBox())!);
     }
+    for (const box of cards) expect(box.width).toBe(Math.min(320, Math.min(width, 600) - 87));
     if (width === 375) {
       for (const box of cards) {
         expect(box.x).toBe(67);
@@ -98,6 +99,58 @@ test('17 PR system messages match the four Figma states and organization groupin
     .withTags(['wcag2a', 'wcag21a'])
     .analyze();
   expect(report.violations).toEqual([]);
+});
+
+test('17 system cards cap wide screens and contain long titles and repository names', async ({
+  page,
+}, info) => {
+  const longTitle =
+    '#31 로그인 실패와 조직 권한 예외를 함께 처리하고 재접속 시 중복 알림과 잘못된 상태 갱신을 방지하는 시스템 메시지 개선';
+  const longRepository = 'repository-without-spaces-'.repeat(12);
+  for (const width of [320, 360, 375, 414, 600, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/chats/1');
+    await page.getByRole('article', { name: labels[0], exact: true }).scrollIntoViewIfNeeded();
+    for (const label of labels) {
+      const card = page
+        .getByRole('article', { name: label, exact: true })
+        .getByRole('button', { name: /GitHub에서 열기/ });
+      // Stress the rendered CSS without changing shared mock fixtures or message contracts.
+      const title = card.getByTitle('#31 feat: 로그인 시트', { exact: true });
+      await title.evaluate(
+        (node, text) => {
+          node.textContent = text;
+        },
+        width === 320 ? `#31 ${'VeryLongUnbrokenPullRequestTitle'.repeat(10)}` : longTitle,
+      );
+      const repository = card.getByTitle('linker-hack/linker-web', { exact: true });
+      await repository.evaluate((node, text) => {
+        node.textContent = text;
+      }, longRepository);
+      const metrics = await title.evaluate((node) => ({
+        height: node.getBoundingClientRect().height,
+        line: Number.parseFloat(getComputedStyle(node).lineHeight),
+        full: node.scrollHeight,
+      }));
+      expect(metrics.height).toBe(metrics.line * 2);
+      expect(metrics.full).toBeGreaterThan(metrics.height);
+      expect(await card.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+      expect(await repository.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+      expect((await card.boundingBox())!.width).toBe(Math.min(320, Math.min(width, 600) - 87));
+      const repoBox = (await repository.boundingBox())!;
+      const timeBox = (await card.locator('time').boundingBox())!;
+      expect(timeBox.x).toBeGreaterThan(repoBox.x + repoBox.width);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({
+      path: info.outputPath(`pr-system-long-${width}.png`),
+      fullPage: true,
+      scale: 'css',
+      style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+    });
+  }
 });
 
 test('17 floating summary keeps the existing result flow and leaves photo attachment available', async ({
