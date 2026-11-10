@@ -21,6 +21,29 @@ export const AddTeamRepositoryBody = zod.object({
 
 export const AddTeamRepositoryResponse = zod.unknown()
 
+export const RequestTeamOwnershipParams = zod.object({
+  "teamId": zod.int()
+})
+
+export const requestTeamOwnershipBodyToUserIdExclusiveMin = 0;
+
+
+
+export const RequestTeamOwnershipBody = zod.object({
+  "toUserId": zod.int().gt(requestTeamOwnershipBodyToUserIdExclusiveMin)
+})
+
+export const RequestTeamOwnershipResponse = zod.object({
+  "transferId": zod.int()
+})
+
+export const AcceptTeamOwnershipParams = zod.object({
+  "teamId": zod.int(),
+  "transferId": zod.int()
+})
+
+export const AcceptTeamOwnershipResponse = zod.unknown()
+
 export const InviteGithubOrganizationMemberParams = zod.object({
   "teamId": zod.int(),
   "userId": zod.int()
@@ -74,6 +97,18 @@ export const NotifyTeamInviteBody = zod.object({
 
 export const NotifyTeamInviteResponse = zod.unknown()
 
+export const CompleteTeamProjectParams = zod.object({
+  "teamId": zod.int()
+})
+
+export const CompleteTeamProjectResponse = zod.unknown()
+
+export const UndoTeamCompletionParams = zod.object({
+  "teamId": zod.int()
+})
+
+export const UndoTeamCompletionResponse = zod.unknown()
+
 export const ArchiveTeamParams = zod.object({
   "teamId": zod.int()
 })
@@ -104,7 +139,8 @@ export const updateTeamInfoBodyNameMax = 255;
 
 export const UpdateTeamInfoBody = zod.object({
   "name": zod.string().min(updateTeamInfoBodyNameMin).max(updateTeamInfoBodyNameMax),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "aiSummaryEnabled": zod.boolean().optional()
 })
 
 export const UpdateTeamInfoResponse = zod.unknown()
@@ -166,7 +202,19 @@ export const GetTeamSettingsResponse = zod.object({
   "nextBillingAt": zod.iso.datetime({"offset":true}).nullable()
 }),
   "githubOrgOwner": zod.boolean(),
-  "githubInvitationBlockedReason": zod.string().nullable()
+  "githubInvitationBlockedReason": zod.string().nullable(),
+  "ownershipTransfer": zod.union([zod.object({
+  "id": zod.int(),
+  "fromName": zod.string(),
+  "toName": zod.string(),
+  "isRecipient": zod.boolean()
+}),zod.null()]),
+  "completedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "completion": zod.union([zod.object({
+  "canUndo": zod.boolean(),
+  "finalized": zod.boolean(),
+  "canRestart": zod.boolean()
+}),zod.null()])
 })
 
 export const GetTeamMembersParams = zod.object({

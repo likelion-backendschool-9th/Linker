@@ -27,9 +27,13 @@ import type {
   TeamInviteLinks,
   TeamSettingsMembers,
   TeamSettingsResponse,
+  TransferCreated,
+  TransferTeamOwnershipRequest,
   UpdateTeamRequest
 } from '../openAPIDefinition.schemas';
 
+
+export const getRequestTeamOwnershipResponseMock = (overrideResponse: Partial<Extract<TransferCreated, object>> = {}): TransferCreated => ({transferId: faker.number.int(), ...overrideResponse})
 
 export const getInviteGithubOrganizationMemberResponseMock = (overrideResponse: Partial<Extract<GithubOrgInvitationResponse, object>> = {}): GithubOrgInvitationResponse => ({sent: faker.datatype.boolean(), status: faker.helpers.arrayElement(['PENDING','MEMBER'] as const), ...overrideResponse})
 
@@ -37,13 +41,35 @@ export const getListTeamInviteLinksResponseMock = (overrideResponse: Partial<Ext
 
 export const getCreateTeamInviteLinkResponseMock = (overrideResponse: Partial<Extract<CreatedTeamInvite, object>> = {}): CreatedTeamInvite => ({id: faker.number.int(), code: faker.string.alpha({length: {min: 10, max: 20}}), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', createdBy: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
-export const getGetTeamSettingsResponseMock = (overrideResponse: Partial<Extract<TeamSettingsResponse, object>> = {}): TeamSettingsResponse => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), orgLogin: faker.string.alpha({length: {min: 10, max: 20}}), orgAvatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(['ACTIVE','COMPLETED','READ_ONLY','ARCHIVED'] as const), plan: faker.helpers.arrayElement(['FREE','FLEX'] as const), myRole: faker.helpers.arrayElement(['OWNER','ADMIN','MEMBER'] as const), permissions: {editInfo: faker.datatype.boolean(), manageRepos: faker.datatype.boolean(), createInviteLink: faker.datatype.boolean(), manageMembers: faker.datatype.boolean(), changeRoles: faker.datatype.boolean(), transferOwnership: faker.datatype.boolean(), completeProject: faker.datatype.boolean(), archive: faker.datatype.boolean(), deleteTeam: faker.datatype.boolean(), leave: faker.datatype.boolean()}, repos: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), githubRepoId: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), fullName: faker.string.alpha({length: {min: 10, max: 20}})})), board: faker.helpers.arrayElement([{id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), url: faker.string.alpha({length: {min: 10, max: 20}})},null,]), aiSummaryEnabled: faker.datatype.boolean(), memberLimit: faker.helpers.arrayElement([faker.number.int(), null]), billing: {managerUserId: faker.helpers.arrayElement([faker.number.int(), null]), managerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), canManage: faker.datatype.boolean(), nextAmount: faker.helpers.arrayElement([faker.number.int(), null]), nextBillingAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, githubOrgOwner: faker.datatype.boolean(), githubInvitationBlockedReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+export const getGetTeamSettingsResponseMock = (overrideResponse: Partial<Extract<TeamSettingsResponse, object>> = {}): TeamSettingsResponse => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), orgLogin: faker.string.alpha({length: {min: 10, max: 20}}), orgAvatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(['ACTIVE','COMPLETED','READ_ONLY','ARCHIVED'] as const), plan: faker.helpers.arrayElement(['FREE','FLEX'] as const), myRole: faker.helpers.arrayElement(['OWNER','ADMIN','MEMBER'] as const), permissions: {editInfo: faker.datatype.boolean(), manageRepos: faker.datatype.boolean(), createInviteLink: faker.datatype.boolean(), manageMembers: faker.datatype.boolean(), changeRoles: faker.datatype.boolean(), transferOwnership: faker.datatype.boolean(), completeProject: faker.datatype.boolean(), archive: faker.datatype.boolean(), deleteTeam: faker.datatype.boolean(), leave: faker.datatype.boolean()}, repos: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), githubRepoId: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), fullName: faker.string.alpha({length: {min: 10, max: 20}})})), board: faker.helpers.arrayElement([{id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), url: faker.string.alpha({length: {min: 10, max: 20}})},null,]), aiSummaryEnabled: faker.datatype.boolean(), memberLimit: faker.helpers.arrayElement([faker.number.int(), null]), billing: {managerUserId: faker.helpers.arrayElement([faker.number.int(), null]), managerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), canManage: faker.datatype.boolean(), nextAmount: faker.helpers.arrayElement([faker.number.int(), null]), nextBillingAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, githubOrgOwner: faker.datatype.boolean(), githubInvitationBlockedReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ownershipTransfer: faker.helpers.arrayElement([{id: faker.number.int(), fromName: faker.string.alpha({length: {min: 10, max: 20}}), toName: faker.string.alpha({length: {min: 10, max: 20}}), isRecipient: faker.datatype.boolean()},null,]), completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), completion: faker.helpers.arrayElement([{canUndo: faker.datatype.boolean(), finalized: faker.datatype.boolean(), canRestart: faker.datatype.boolean()},null,]), ...overrideResponse})
 
 export const getGetTeamMembersResponseMock = (overrideResponse: Partial<Extract<TeamSettingsMembers, object>> = {}): TeamSettingsMembers => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.number.int(), handle: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.string.alpha({length: {min: 10, max: 20}}), avatarUrl: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), role: faker.helpers.arrayElement(['OWNER','ADMIN','MEMBER'] as const), githubOrgStatus: faker.helpers.arrayElement(['MEMBER','INVITED','NOT_MEMBER'] as const), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', githubLogin: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])})), count: faker.number.int(), limit: faker.helpers.arrayElement([faker.number.int(), null]), ...overrideResponse})
 
 
 export const getAddTeamRepositoryMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ teamId: string }, AddTeamRepoRequest>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
   return http.post<{ teamId: string }, AddTeamRepoRequest>('*/api/v1/user/teams/:teamId/repos', async (info: Parameters<HttpResponseResolver<{ teamId: string }, AddTeamRepoRequest>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRequestTeamOwnershipMockHandler = (overrideResponse?: TransferCreated | ((info: Parameters<HttpResponseResolver<{ teamId: string }, TransferTeamOwnershipRequest>>[0]) => Promise<TransferCreated> | TransferCreated), options?: RequestHandlerOptions) => {
+  return http.post<{ teamId: string }, TransferTeamOwnershipRequest>('*/api/v1/user/teams/:teamId/ownership-transfers', async (info: Parameters<HttpResponseResolver<{ teamId: string }, TransferTeamOwnershipRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRequestTeamOwnershipResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getAcceptTeamOwnershipMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ teamId: string; transferId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post<{ teamId: string; transferId: string }>('*/api/v1/user/teams/:teamId/ownership-transfers/:transferId/accept', async (info: Parameters<HttpResponseResolver<{ teamId: string; transferId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -90,6 +116,26 @@ export const getCreateTeamInviteLinkMockHandler = (overrideResponse?: CreatedTea
 
 export const getNotifyTeamInviteMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ teamId: string; linkId: string }, NotifyTeamInviteRequest>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
   return http.post<{ teamId: string; linkId: string }, NotifyTeamInviteRequest>('*/api/v1/user/teams/:teamId/invite-links/:linkId/notify', async (info: Parameters<HttpResponseResolver<{ teamId: string; linkId: string }, NotifyTeamInviteRequest>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCompleteTeamProjectMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ teamId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post<{ teamId: string }>('*/api/v1/user/teams/:teamId/completion', async (info: Parameters<HttpResponseResolver<{ teamId: string }>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUndoTeamCompletionMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ teamId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ teamId: string }>('*/api/v1/user/teams/:teamId/completion', async (info: Parameters<HttpResponseResolver<{ teamId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -203,10 +249,14 @@ export const getRevokeTeamInviteLinkMockHandler = (overrideResponse?: void | ((i
 }
 export const getP09TeamSettingsMock = () => [
   getAddTeamRepositoryMockHandler(),
+  getRequestTeamOwnershipMockHandler(),
+  getAcceptTeamOwnershipMockHandler(),
   getInviteGithubOrganizationMemberMockHandler(),
   getListTeamInviteLinksMockHandler(),
   getCreateTeamInviteLinkMockHandler(),
   getNotifyTeamInviteMockHandler(),
+  getCompleteTeamProjectMockHandler(),
+  getUndoTeamCompletionMockHandler(),
   getArchiveTeamMockHandler(),
   getDeleteTeamMockHandler(),
   getUpdateTeamInfoMockHandler(),

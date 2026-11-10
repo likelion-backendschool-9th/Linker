@@ -86,11 +86,17 @@ it('keeps the selected role and confirmation consistent when member management i
   expect(apiFetch).not.toHaveBeenCalled();
 });
 
-it('shows undo only when the server allows it, with no mutation request', () => {
+it('sends undo only when the server allows it', async () => {
+  vi.mocked(apiFetch).mockResolvedValue(undefined as never);
   renderSheet(team, 'undo-completion');
   expect(screen.getByRole('dialog', { name: '프로젝트 완료를 취소할까요?' })).toBeVisible();
-  expect(screen.getByRole('button', { name: '완료 취소' })).toBeDisabled();
-  expect(apiFetch).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole('button', { name: '완료 취소' }));
+  await waitFor(() =>
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/v1/user/teams/1/completion',
+      expect.objectContaining({ method: 'DELETE' }),
+    ),
+  );
 });
 
 it('blocks a forged undo URL after finalization', () => {
@@ -374,4 +380,44 @@ it('starts a fresh invitation after success so deliberate re-invites are not sup
   const urls = vi.mocked(apiFetch).mock.calls.map(([url]) => url);
   expect(urls).toContain('/api/v1/user/teams/1/invite-links/61/notify');
   expect(urls).toContain('/api/v1/user/teams/1/invite-links/62/notify');
+});
+
+it('requests ownership only after explicitly choosing a current non-owner', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({ transferId: 8 } as never);
+  renderSheet(
+    {
+      ...team,
+      status: 'ACTIVE',
+      myRole: 'OWNER',
+      permissions: { ...team.permissions, transferOwnership: true },
+    },
+    'transfer',
+    [member],
+  );
+  const submit = screen.getByRole('button', { name: '이전 요청 보내기' });
+  expect(submit).toBeDisabled();
+  await userEvent.selectOptions(screen.getByLabelText('새 오너'), '2');
+  await userEvent.click(submit);
+  expect(apiFetch).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1/ownership-transfers',
+    expect.objectContaining({ method: 'POST', body: JSON.stringify({ toUserId: 2 }) }),
+  );
+});
+
+it('persists the owner AI switch using the existing team update endpoint', async () => {
+  vi.mocked(apiFetch).mockResolvedValue(undefined as never);
+  renderSheet({ ...team, status: 'ACTIVE', myRole: 'OWNER', plan: 'FLEX' }, 'ai');
+  await userEvent.click(screen.getByRole('checkbox', { name: 'AI 요약 사용' }));
+  await userEvent.click(screen.getByRole('button', { name: '저장' }));
+  expect(apiFetch).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1',
+    expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: team.name,
+        description: team.description,
+        aiSummaryEnabled: true,
+      }),
+    }),
+  );
 });

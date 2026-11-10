@@ -52,7 +52,7 @@ export type TeamSettings = {
   };
   ownershipTransfer?: { id: number; fromName: string; toName: string; isRecipient: boolean } | null;
   ownershipClaim?: { eligible: boolean; reason: string } | null;
-  completion?: { canUndo: boolean; finalized: boolean; canRestart: boolean };
+  completion?: { canUndo: boolean; finalized: boolean; canRestart: boolean } | null;
 };
 export type Members = {
   items: {
