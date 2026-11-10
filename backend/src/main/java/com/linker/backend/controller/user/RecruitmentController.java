@@ -3,7 +3,6 @@ package com.linker.backend.controller.user;
 import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
 import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
-import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
 import com.linker.backend.dto.recruit.response.AcceptApplicationResponse;
 import com.linker.backend.dto.recruit.response.ApplicantListResponse;
 import com.linker.backend.dto.recruit.response.ApplicationCreateResponse;
@@ -231,10 +230,10 @@ public class RecruitmentController {
 	public ResponseEntity<Void> reject(
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@PathVariable long recruitId,
-			@PathVariable long applicationId,
-			@RequestBody(required = false) RejectApplicationRequest request
+			@PathVariable long applicationId
 	) {
-		recruitment.reject(user, recruitId, applicationId, request);
+		// POL-R-4: no rejection reason; the applicant only sees the fixed copy
+		recruitment.reject(user, recruitId, applicationId);
 		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
 	}
 }

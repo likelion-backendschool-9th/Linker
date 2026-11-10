@@ -22,7 +22,6 @@ import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
 import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitRoleWriteRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
-import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
@@ -534,6 +533,24 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void applyRejectsFullRole() {
+		RecruitPost post = foreignPost();
+		RecruitRole role = post.getRoles().getFirst();
+		ReflectionTestUtils.setField(role, "acceptedCount", role.getHeadcount());
+		when(posts.findDetailedById(8L)).thenReturn(Optional.of(post));
+
+		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getStatus()).isEqualTo(409);
+					assertThat(api.getCode()).isEqualTo("ROLE_FULL");
+					assertThat(api.getMessage()).isEqualTo("해당 역할은 마감됐어요");
+				});
+		verify(applications, never()).save(any());
+	}
+
+	@Test
 	void acceptRequiresTeam() {
 		RecruitPost post = ownedPost();
 		Application application = pendingOn(post, 20L);
@@ -645,7 +662,7 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
-	void rejectMarksRejectedAndNotifiesWithoutExposingReasonToSheet() {
+	void rejectMarksRejectedAndNotifiesApplicant() {
 		RecruitPost post = ownedPost();
 		Application application = pendingOn(post, 20L);
 		User author = post.getAuthor();
@@ -653,10 +670,9 @@ class RecruitmentServiceTest {
 		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
 		when(users.findById(10L)).thenReturn(Optional.of(author));
 
-		service.reject(developer, 3L, 7L, new RejectApplicationRequest("내부 메모"));
+		service.reject(developer, 3L, 7L);
 
 		assertThat(application.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
-		assertThat(application.getRejectReason()).isEqualTo("내부 메모");
 		var sheet = service.applicationSheet(developer, 3L, 7L);
 		assertThat(sheet.status()).isEqualTo("REJECTED");
 		assertThat(sheet.applicant().id()).isEqualTo(20L);

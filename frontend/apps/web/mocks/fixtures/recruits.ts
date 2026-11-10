@@ -137,6 +137,23 @@ export const RECRUITS: MockRecruit[] = [
     roles: [{ id: 51, role: 'ETC', name: '스터디원', headcount: 4, filled: 4 }],
     createdAt: daysAgo(20),
   },
+  {
+    // Team 1 post by its admin (not the logged-in developer): 21 as a non-author team member
+    id: 6,
+    author: brief(doyun!),
+    teamId: 1,
+    title: 'Linker 팀 프론트엔드 1명 추가 모집',
+    intro: '데모데이 전에 화면 작업을 같이 마무리할 분을 찾아요.',
+    format: 'ONLINE',
+    region: null,
+    goal: 'LAUNCH',
+    duration: '2주',
+    deadline: dateOnly(10),
+    status: 'OPEN',
+    techTags: ['Next.js', 'TypeScript'],
+    roles: [{ id: 61, role: 'FRONTEND', name: '프론트엔드', headcount: 1, filled: 0 }],
+    createdAt: hoursAgo(5),
+  },
 ];
 
 /** Applications by recruit; the logged-in developer applied to recruit 2 and 4 */

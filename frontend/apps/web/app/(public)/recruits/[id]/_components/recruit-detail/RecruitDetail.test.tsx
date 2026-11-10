@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { todayKst } from '@/lib/format/time';
+import { useToastStore } from '@/stores/toast-store';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import type { ApplicantRow, RecruitDetail as Detail } from '../../_lib/detail-queries';
@@ -51,18 +52,37 @@ const applicant: ApplicantRow = {
   daysLeft: 12,
 };
 
-function serve(detail: Detail, accept?: () => unknown) {
-  fetchMock.mockImplementation(async (url) => {
+type Handlers = { accept?: () => unknown; apply?: () => unknown; githubInvite?: () => unknown };
+
+function serve(detail: Detail, accept?: () => unknown, more: Omit<Handlers, 'accept'> = {}) {
+  fetchMock.mockImplementation(async (url, init) => {
     if (url === '/api/v1/public/recruits/1') return detail;
+    if (url.endsWith('/applications') && init?.method === 'POST')
+      return more.apply ? more.apply() : { id: 99, status: 'PENDING' };
     if (url.endsWith('/applications')) return { items: [applicant] };
     if (url.endsWith('/accept')) return accept?.();
+    if (url.endsWith('/github-invitation')) return more.githubInvite?.();
     return { id: 99, status: 'PENDING' };
   });
 }
 
+const toastMessages = () => useToastStore.getState().toasts.map((item) => item.message);
+
 beforeEach(() => {
   fetchMock.mockReset();
+  useToastStore.setState({ toasts: [] });
 });
+
+async function openDrawerAndInvite() {
+  const user = userEvent.setup();
+  renderWithProviders(<RecruitDetail recruitId="1" />, {
+    viewer: { role: 'developer', login: 'linker' },
+  });
+  await user.click(await screen.findByRole('button', { name: '지원자 1명 보기' }));
+  const drawer = await screen.findByRole('dialog', { name: '지원자' });
+  await user.click(within(drawer).getByRole('radio', { name: '정태양 선택' }));
+  await user.click(within(drawer).getByRole('button', { name: '초대하기' }));
+}
 
 it('shows the post to guests and sends "지원하기" to the login prompt', async () => {
   serve(base);
@@ -151,6 +171,76 @@ it('lets the author open the applicants drawer and hit ROLE_FULL on accept', asy
   await user.click(within(drawer).getByRole('button', { name: '초대하기' }));
   expect(await screen.findByRole('dialog', { name: '이 역할은 자리가 다 찼어요' })).toBeVisible();
   expect(screen.getByText('백엔드 2명 → 3명')).toBeVisible();
+});
+
+it('shows "해당 역할은 마감됐어요." when the role filled before the apply arrived', async () => {
+  serve(base, undefined, {
+    apply: () => {
+      throw new ApiError(409, { code: 'ROLE_FULL', message: '해당 역할은 마감됐어요' });
+    },
+  });
+  const user = userEvent.setup();
+  renderWithProviders(<RecruitDetail recruitId="1" />, {
+    viewer: { role: 'developer', login: 'developer' },
+  });
+  await user.click(await screen.findByRole('button', { name: '지원하기' }));
+  const dialog = await screen.findByRole('dialog', { name: /지원하기/ });
+  await user.click(within(dialog).getByRole('button', { name: '지원하기' }));
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('해당 역할은 마감됐어요.');
+  expect(within(dialog).getByRole('radio', { name: /백엔드/ })).not.toBeChecked();
+});
+
+it('shows the reason only when the invite hits a free-team limit', async () => {
+  serve({ ...base, isAuthor: true }, () => {
+    throw new ApiError(403, {
+      code: 'PLAN_LIMIT',
+      message: '무료 팀은 멤버 6명까지예요.',
+      detail: { reason: 'TEAM_MEMBERS' },
+    });
+  });
+  await openDrawerAndInvite();
+  await waitFor(() =>
+    expect(toastMessages()).toContain('초대에 실패했어요. 무료 팀은 멤버 6명까지예요.'),
+  );
+});
+
+it('keeps the team invite when only the GitHub org invite fails', async () => {
+  serve(
+    { ...base, isAuthor: true },
+    () => ({ teamId: 3, chatRoomId: 5, needsGithubInvite: true }),
+    {
+      githubInvite: () => {
+        throw new ApiError(403, {
+          code: 'FORBIDDEN',
+          message: 'GitHub 조직 오너만 조직에 초대할 수 있어요',
+        });
+      },
+    },
+  );
+  await openDrawerAndInvite();
+  await waitFor(() =>
+    expect(toastMessages()).toContain('팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.'),
+  );
+});
+
+it('rejects from the row with a confirm only — no reason field', async () => {
+  serve({ ...base, isAuthor: true });
+  const user = userEvent.setup();
+  renderWithProviders(<RecruitDetail recruitId="1" />, {
+    viewer: { role: 'developer', login: 'linker' },
+  });
+  await user.click(await screen.findByRole('button', { name: '지원자 1명 보기' }));
+  const drawer = await screen.findByRole('dialog', { name: '지원자' });
+  await user.click(within(drawer).getByRole('button', { name: '거절' }));
+  const dialog = await screen.findByRole('alertdialog', { name: '지원을 거절할까요?' });
+  expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: '거절하기' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/recruits/1/applications/9/reject', {
+      method: 'POST',
+    }),
+  );
+  await waitFor(() => expect(toastMessages()).toContain('지원을 거절했어요.'));
 });
 
 it('summarizes remaining roles and the deadline', () => {
