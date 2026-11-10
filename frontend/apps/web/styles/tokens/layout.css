@@ -124,6 +124,10 @@
   --size-profile-skeleton-meta-h: 17px;
   --size-profile-skeleton-bio-w: 227px; /* 04 skeleton bio line (Figma 982:485) */
   --size-profile-skeleton-bio-h: 16px;
+  --size-settings-skeleton-github-w: 52px; /* 06 skeleton GitHub status (Figma 982:565) */
+  --size-settings-skeleton-email-w: 119px; /* 06 skeleton email (Figma 982:566) */
+  --size-settings-skeleton-plan-w: 97px; /* 06 skeleton plan (Figma 982:568) */
+  --size-settings-skeleton-value-h: 14px; /* 06 skeleton trailing values (Figma 982:565–568) */
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
