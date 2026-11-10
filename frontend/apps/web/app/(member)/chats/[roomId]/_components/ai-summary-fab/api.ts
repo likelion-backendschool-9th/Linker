@@ -2,9 +2,6 @@ import type { ChatMessageResponse } from '@linker/api/openAPIDefinition.schemas'
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
-/** One minutes line. `messageId` is the source message (null when the model gave none). */
-export type AiSummaryItem = { text: string; messageId: number | null };
-
 /** Hand-written until the client is regenerated (blueprint §2-1); matches `AiChatSummaryResponse`. */
 export type AiChatSummary = {
   summaryId: number;
@@ -14,10 +11,8 @@ export type AiChatSummary = {
   progress: number;
   queueAhead: number;
   remainingSeconds: number | null;
-  oneLine: string | null;
-  decisions: AiSummaryItem[];
-  actionItems: AiSummaryItem[];
-  openQuestions: AiSummaryItem[];
+  /** One paragraph (user decision 2026-11-11); null until DONE */
+  summary: string | null;
   messageCount: number;
   sharedMessageId: number | null;
   usedToday: number;
@@ -25,11 +20,8 @@ export type AiChatSummary = {
   disclaimer: string;
 };
 
-/** Minutes copied into an `AI_SUMMARY` chat card's payload when shared. */
-export type SharedAiSummary = Pick<
-  AiChatSummary,
-  'oneLine' | 'decisions' | 'actionItems' | 'openQuestions' | 'messageCount' | 'disclaimer'
->;
+/** The paragraph copied into an `AI_SUMMARY` chat card's payload when shared. */
+export type SharedAiSummary = { summary: string };
 
 export const aiSummaryKey = (roomId: number, summaryId: number) =>
   ['chat', 'ai-summary', roomId, summaryId] as const;
@@ -53,28 +45,13 @@ export function shareAiSummary(roomId: number, summaryId: number) {
   );
 }
 
-function items(value: unknown): AiSummaryItem[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object') return [];
-    const { text, messageId } = entry as Record<string, unknown>;
-    if (typeof text !== 'string' || !text) return [];
-    return [{ text, messageId: typeof messageId === 'number' ? messageId : null }];
-  });
-}
-
-/** Reads a shared card's payload defensively: it is stored JSON, not a typed response. */
+/**
+ * Reads a shared card's payload defensively: it is stored JSON, not a typed response. Cards shared
+ * before 2026-11-11 carry the old minutes' `oneLine`, which is shown as their paragraph.
+ */
 export function sharedSummary(payload: unknown): SharedAiSummary | null {
   if (!payload || typeof payload !== 'object') return null;
-  const value = payload as Record<string, unknown>;
-  if (typeof value.oneLine !== 'string' || !value.oneLine) return null;
-  return {
-    oneLine: value.oneLine,
-    decisions: items(value.decisions),
-    actionItems: items(value.actionItems),
-    openQuestions: items(value.openQuestions),
-    messageCount: typeof value.messageCount === 'number' ? value.messageCount : 0,
-    disclaimer:
-      typeof value.disclaimer === 'string' ? value.disclaimer : 'AI가 만든 요약이라 틀릴 수 있어요',
-  };
+  const { summary, oneLine } = payload as Record<string, unknown>;
+  const text = typeof summary === 'string' && summary ? summary : oneLine;
+  return typeof text === 'string' && text ? { summary: text } : null;
 }

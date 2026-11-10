@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button/Button';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
@@ -18,6 +18,7 @@ import { RoomInfoSheet } from '../room-info-sheet';
 import { PullRequestSheet } from '../pull-request-sheet';
 import { AiSummaryFab } from '../ai-summary-fab';
 import { SharedAiSummarySheet } from '../ai-summary-card';
+import { ChatSearch } from '../chat-search';
 import styles from './ChatRoom.module.css';
 import { CONNECTION, useChatRoom } from './hook';
 
@@ -45,7 +46,17 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     room,
   } = useChatRoom(roomId);
   const [jumpTo, setJumpTo] = useState<{ id: number } | null>(null);
-  const loadedIds = useMemo(() => new Set(messages.map((message) => message.id)), [messages]);
+  const [searchHit, setSearchHit] = useState<(typeof messages)[number] | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const displayedMessages = useMemo(() => {
+    if (!searchHit || messages.some((message) => message.id === searchHit.id)) return messages;
+    return [...messages, searchHit].sort((left, right) => left.id - right.id);
+  }, [messages, searchHit]);
+  const selectSearchHit = useCallback((message: (typeof messages)[number] | null, keyword = '') => {
+    setSearchHit(message);
+    setSearchKeyword(message ? keyword : '');
+    setJumpTo(message ? { id: message.id } : null);
+  }, []);
 
   if (info.isPending || history.isPending)
     return (
@@ -78,6 +89,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         {CONNECTION[connection]}
       </p>
       <RoomInfoSheet room={room} login={viewer.login} disabled={suspended} />
+      {room.team && <ChatSearch roomId={roomId} onSelect={selectSearchHit} />}
       {room.team && (
         <PullRequestSheet
           roomId={roomId}
@@ -123,10 +135,12 @@ export function ChatRoom({ roomId }: { roomId: number }) {
         <MessageTimeline
           kind={room.kind}
           onUnread={(id) => unreadMembers.open(String(id))}
-          messages={messages}
+          messages={displayedMessages}
           login={viewer.login}
           readPosition={readPosition}
           jumpTo={jumpTo}
+          highlightId={searchHit?.id ?? null}
+          highlightKeyword={searchKeyword}
           onPhoto={(id, index) => photoViewer.open(`${id}:${index}`)}
           onMenu={(id) => messageMenu.open(String(id))}
           onRead={markMessageRead}
@@ -134,22 +148,9 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}
         />
-        {room.team && (
-          <AiSummaryFab
-            roomId={roomId}
-            initial={room.myAiSummary}
-            loadedIds={loadedIds}
-            onJump={(id) => setJumpTo({ id })}
-          />
-        )}
+        {room.team && <AiSummaryFab roomId={roomId} initial={room.myAiSummary} />}
       </div>
-      {room.team && (
-        <SharedAiSummarySheet
-          messages={messages}
-          loadedIds={loadedIds}
-          onJump={(id) => setJumpTo({ id })}
-        />
-      )}
+      {room.team && <SharedAiSummarySheet messages={messages} />}
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
       <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />

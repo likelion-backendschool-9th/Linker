@@ -19,8 +19,8 @@ test('17 PR list matches the selected full-screen Figma and stays within the app
   const dialog = await openList(page);
   await expect(dialog.getByText('열린 PR 3개', { exact: true })).toBeVisible();
   await expect(dialog.getByRole('radio')).toHaveCount(3);
-  await expect(dialog.getByRole('radio').first()).toBeChecked();
-  await expect(dialog.getByRole('button', { name: '팀에 공유 하기' })).toBeEnabled();
+  await expect(dialog.locator('input[type="radio"]:checked')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '팀에 공유 하기' })).toBeDisabled();
   for (const width of [375, 360, 600, 1440]) {
     await page.setViewportSize({ width, height: 800 });
     await page.evaluate(() => document.fonts.ready);
@@ -86,7 +86,8 @@ test('17 changes tabs without retaining the other list selection and shows GitHu
   await expect(page).toHaveURL(/pr=merged/);
   expect(new URL(page.url()).searchParams.has('selectedPr')).toBe(false);
   await expect(dialog.getByRole('radio')).toHaveCount(1);
-  await expect(dialog.getByRole('radio')).toBeChecked();
+  await expect(dialog.getByRole('radio')).not.toBeChecked();
+  await expect(dialog.getByRole('button', { name: '팀에 공유 하기' })).toBeDisabled();
   await expect(dialog.getByText('담당자 이도윤님이')).toBeVisible();
   await expect(dialog.getByText('PR 병합', { exact: true })).toBeVisible();
   await page.screenshot({
@@ -98,9 +99,17 @@ test('17 changes tabs without retaining the other list selection and shows GitHu
 });
 test('17 shares the selected PR link through the existing chat sender and then returns to chat', async ({
   page,
-}) => {
+}, info) => {
   const dialog = await openList(page);
   await dialog.getByText('#29 fix: 피드 스켈레톤 높이', { exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '팀에 공유 하기' })).toBeEnabled();
+  await page.screenshot({
+    path: info.outputPath('pr-list-selected-qa-375.png'),
+    fullPage: true,
+    scale: 'css',
+    animations: 'disabled',
+    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+  });
   await dialog.getByRole('button', { name: '팀에 공유 하기' }).click();
   await expect(dialog).toBeHidden();
   await expect(

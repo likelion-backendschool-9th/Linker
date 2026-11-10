@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useQueryState, useQueryStates } from 'nuqs';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -65,6 +65,23 @@ function isRepoPermissionError(error: unknown): boolean {
   );
 }
 
+function isRetryScheduled(error: unknown): error is ApiError {
+  return (
+    error instanceof ApiError &&
+    error.status >= 500 &&
+    error.detail?.retryScheduled === true
+  );
+}
+
+function retryAfterSeconds(error: ApiError): number {
+  const value = error.detail?.retryAfterSeconds;
+  return typeof value === 'number' && value > 0 ? value : 0;
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => {
+  window.setTimeout(resolve, ms);
+});
+
 /** Keep the card in the destination column after the optimistic move is cleared. */
 function placeCard(board: Board, cardId: number, to: IssueStatus, patch: Partial<IssueRow>): Board {
   const moved = board.columns.flatMap((column) => column.cards).find((card) => card.id === cardId);
@@ -95,6 +112,13 @@ export function useBoardView(teamId: string) {
   const [announcement, setAnnouncement] = useState('');
   // dnd-kit numbers its accessibility ids per page load; a React id keeps server and client equal
   const dndId = useId();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -137,6 +161,7 @@ export function useBoardView(teamId: string) {
   async function move(card: IssueRow, to: IssueStatus) {
     if (statusOf(card) === to || moves[card.id] !== undefined) return;
     setMoves((current) => ({ ...current, [card.id]: to }));
+    let clearOptimistic = true;
     try {
       const result = await saveStatus(teamId, String(card.id), to);
       client.setQueriesData<Board>({ queryKey: ['issues', teamId, 'board'] }, (current) =>
@@ -150,14 +175,36 @@ export function useBoardView(teamId: string) {
       await client.invalidateQueries({ queryKey: issueKeys.team(teamId) });
       setAnnouncement(`${card.title} 카드를 ${labelOf(to)} 칸으로 옮겼어요.`);
     } catch (error) {
-      const reason = isRepoPermissionError(error) ? NO_PERMISSION : 'GitHub에 반영하지 못했어요.';
-      toast(`${reason} 카드를 원래 자리로 돌려놨어요.`, { tone: 'error' });
+      if (isRetryScheduled(error)) {
+        clearOptimistic = false;
+        if (error.message) toast(error.message, { tone: 'error' });
+        const waitMs = retryAfterSeconds(error) * 1000;
+        if (waitMs > 0) {
+          const cardId = card.id;
+          void (async () => {
+            await sleep(waitMs);
+            if (!mounted.current) return;
+            await client.invalidateQueries({ queryKey: issueKeys.team(teamId) });
+            if (!mounted.current) return;
+            setMoves((current) => {
+              const next = { ...current };
+              delete next[cardId];
+              return next;
+            });
+          })();
+        }
+      } else {
+        const reason = isRepoPermissionError(error) ? NO_PERMISSION : 'GitHub에 반영하지 못했어요.';
+        toast(`${reason} 카드를 원래 자리로 돌려놨어요.`, { tone: 'error' });
+      }
     } finally {
-      setMoves((current) => {
-        const next = { ...current };
-        delete next[card.id];
-        return next;
-      });
+      if (clearOptimistic) {
+        setMoves((current) => {
+          const next = { ...current };
+          delete next[card.id];
+          return next;
+        });
+      }
     }
   }
 

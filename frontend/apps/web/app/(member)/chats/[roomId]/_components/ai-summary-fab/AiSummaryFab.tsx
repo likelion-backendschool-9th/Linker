@@ -13,9 +13,6 @@ import { useAiSummaryFab, type AiSummaryRing } from './hook';
 type Props = {
   roomId: number;
   initial: { summaryId: number; status: string } | null | undefined;
-  /** Source messages currently loaded in the timeline; only those items can scroll */
-  loadedIds: ReadonlySet<number>;
-  onJump: (messageId: number) => void;
 };
 
 /**
@@ -23,7 +20,7 @@ type Props = {
  * spinning while queued, blue filling clockwise while the model works, full blue until the result is
  * shared or replaced, red after a failure. Tapping while it runs shows a progress bubble.
  */
-export function AiSummaryFab({ roomId, initial, loadedIds, onJump }: Props) {
+export function AiSummaryFab({ roomId, initial }: Props) {
   const fab = useAiSummaryFab({ roomId, initial });
   const { ring } = fab;
   const bubbleId = useId();
@@ -102,10 +99,6 @@ export function AiSummaryFab({ roomId, initial, loadedIds, onJump }: Props) {
       <AiSummarySheet
         overlay={fab.panel}
         summary={fab.summary}
-        loadedIds={loadedIds}
-        onJump={(messageId) => {
-          void fab.panel.closeAnd(() => onJump(messageId));
-        }}
         actions={{
           sharing: fab.sharing,
           onShare: fab.share,

@@ -11,6 +11,8 @@ import styles from '../overlay.module.css';
 type OverlaySheetProps = {
   overlay: OverlayControl;
   title: ReactNode;
+  /** Optional control right after the title, outside the dialog's accessible name (17 "새로 요약 받기") */
+  titleAside?: ReactNode;
   /** Every overlay has a description; pass `describeHidden` when it would only repeat the title */
   description: string;
   describeHidden?: boolean;
@@ -39,6 +41,7 @@ function withExtra(base: string | undefined, extra: string | undefined) {
 export function OverlaySheet({
   overlay,
   title,
+  titleAside,
   description,
   describeHidden = false,
   trigger,
@@ -58,9 +61,18 @@ export function OverlaySheet({
           onOpenAutoFocus={onOpenAutoFocus}
         >
           <div className={withExtra(styles.header, classNames?.header)}>
-            <Dialog.Title className={withExtra(styles.title, classNames?.title)}>
-              {title}
-            </Dialog.Title>
+            {titleAside ? (
+              <div className={styles.titleRow}>
+                <Dialog.Title className={withExtra(styles.title, classNames?.title)}>
+                  {title}
+                </Dialog.Title>
+                {titleAside}
+              </div>
+            ) : (
+              <Dialog.Title className={withExtra(styles.title, classNames?.title)}>
+                {title}
+              </Dialog.Title>
+            )}
             <Dialog.Close className={withExtra(styles.close, classNames?.close)}>
               {closeIcon ?? <X aria-hidden />}
               <span className="sr-only">{closeLabel}</span>

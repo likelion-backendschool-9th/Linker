@@ -85,12 +85,16 @@ const developer = { viewer: { role: 'developer' as const, login: 'me' } };
 const column = (name: string) => screen.getByRole('region', { name: new RegExp(`^${name} \\d+개$`) });
 const titles = (region: HTMLElement) =>
   within(region)
-    .getAllByRole('heading', { level: 3 })
+    .queryAllByRole('heading', { level: 3 })
     .map((heading) => heading.textContent);
 
 beforeEach(() => {
   fetchMock.mockReset();
   useToastStore.setState({ toasts: [] });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 it('shows Figma 14: toolbar, status columns with counts, cards with assignee, date, repo, labels and status', async () => {
@@ -307,4 +311,75 @@ it('reverts the card and shows the repo permission copy on 403 FORBIDDEN', async
   expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
     '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. 카드를 원래 자리로 돌려놨어요.',
   );
+});
+
+it('keeps a retry-scheduled move until the board is refetched after the wait', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  let applied = false;
+  fetchMock.mockImplementation(async (_url, init) => {
+    if (init?.method === 'PUT') {
+      throw new ApiError(502, {
+        code: 'GITHUB_UNAVAILABLE',
+        message: 'GitHub에 잠시 연결하지 못했어요',
+        detail: { retryScheduled: true, retryAfterSeconds: 60 },
+      });
+    }
+    if (!applied) return board(true);
+    const data = board(true);
+    return {
+      ...data,
+      columns: data.columns.map((column) => ({
+        ...column,
+        cards:
+          column.status === 'IN_PROGRESS'
+            ? [
+                card(1018, '필터 시트 개선', 'IN_PROGRESS', {
+                  assignees: [jun],
+                  dueDate: '2026-11-06',
+                  labels: [
+                    { name: 'frontend', color: '#0075ca' },
+                    { name: 'UI/UX', color: '#a2eeef' },
+                  ],
+                }),
+              ]
+            : column.cards.filter((item) => item.id !== 1018),
+      })),
+    };
+  });
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  await user.click(await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' }));
+  await user.click(screen.getByRole('menuitemradio', { name: '작업 중' }));
+  await waitFor(() => expect(titles(column('작업 중'))).toEqual(['필터 시트 개선']));
+  expect(useToastStore.getState().toasts.at(-1)?.message).toBe('GitHub에 잠시 연결하지 못했어요');
+  expect(titles(column('작업 전'))).not.toContain('필터 시트 개선');
+
+  applied = true;
+  await vi.advanceTimersByTimeAsync(60_000);
+  await waitFor(() => expect(titles(column('작업 중'))).toContain('필터 시트 개선'));
+  expect(titles(column('작업 전'))).not.toContain('필터 시트 개선');
+});
+
+it('drops a retry-scheduled move onto the server column when refetch has not applied it', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  fetchMock.mockImplementation(async (_url, init) => {
+    if (init?.method === 'PUT') {
+      throw new ApiError(503, {
+        code: 'GITHUB_UNAVAILABLE',
+        message: '잠시 후 다시 시도해 주세요',
+        detail: { retryScheduled: true, retryAfterSeconds: 30 },
+      });
+    }
+    return board(true);
+  });
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  await user.click(await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' }));
+  await user.click(screen.getByRole('menuitemradio', { name: '작업 중' }));
+  await waitFor(() => expect(titles(column('작업 중'))).toEqual(['필터 시트 개선']));
+  expect(useToastStore.getState().toasts.at(-1)?.message).toBe('잠시 후 다시 시도해 주세요');
+
+  await vi.advanceTimersByTimeAsync(30_000);
+  await waitFor(() => expect(titles(column('작업 전'))).toContain('필터 시트 개선'));
+  expect(titles(column('작업 중'))).not.toContain('필터 시트 개선');
 });
