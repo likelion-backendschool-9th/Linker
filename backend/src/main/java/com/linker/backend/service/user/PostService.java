@@ -33,6 +33,7 @@ import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
 import com.linker.backend.dto.post.response.PostPeriodResponse;
 import com.linker.backend.dto.post.response.PostPhotoResponse;
+import com.linker.backend.dto.post.response.RecommendedUserItemResponse;
 import com.linker.backend.dto.post.response.RecommendedUsersResponse;
 import com.linker.backend.dto.post.response.RepoSummaryResponse;
 import com.linker.backend.entity.account.User;
@@ -63,7 +64,9 @@ import com.linker.backend.repository.post.FeedSeenPostRepository;
 import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
+import com.linker.backend.repository.profile.FollowRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
@@ -99,6 +102,8 @@ public class PostService {
 	private final TeamRepository teams;
 	/** GitHub HTTP runs outside DB transactions, so the repo list uses explicit templates */
 	private final GithubRepoSource github;
+	private final UserTechTagRepository userTechTags;
+	private final FollowRepository follows;
 	private final TransactionTemplate write;
 	private final TransactionTemplate read;
 	private final Clock clock;
@@ -120,6 +125,8 @@ public class PostService {
 			ProMembership pro,
 			TeamRepository teams,
 			GithubRepoSource github,
+			UserTechTagRepository userTechTags,
+			FollowRepository follows,
 			PlatformTransactionManager transactions,
 			Clock clock
 	) {
@@ -139,6 +146,8 @@ public class PostService {
 		this.pro = pro;
 		this.teams = teams;
 		this.github = github;
+		this.userTechTags = userTechTags;
+		this.follows = follows;
 		this.clock = clock;
 		this.write = new TransactionTemplate(transactions);
 		this.read = new TransactionTemplate(transactions);
@@ -200,12 +209,44 @@ public class PostService {
 	}
 
 	/**
-	 * Empty-feed stack recommendations need {@code user_tech_tags} (A/04). Until that table exists,
-	 * return an empty list rather than inventing ownership.
+	 * Empty "추천" (Policy ch. 4 exceptions): up to 5 active developers who share my tech stack, the most
+	 * shared tags first. People I already follow or have a block with either way are left out. Without
+	 * a tech stack there is nothing to match, so the list is empty and the screen shows only the copy.
 	 */
 	@Transactional(readOnly = true)
 	public RecommendedUsersResponse recommendedUsers(AuthenticatedUser user) {
-		return new RecommendedUsersResponse(List.of());
+		List<String> myTags = userTechTags.findSelected(user.userId()).stream()
+				.map(com.linker.backend.entity.profile.UserTechTag::tagName)
+				.toList();
+		if (myTags.isEmpty()) {
+			return new RecommendedUsersResponse(List.of());
+		}
+		Set<Long> skip = new HashSet<>(follows.findAllFollowedIds(user.userId()));
+		skip.addAll(blocks.findActiveBlockedIds(user.userId()));
+		skip.addAll(blocks.findActiveBlockerIds(user.userId()));
+		List<Long> picked = userTechTags.findDevelopersSharingTags(user.userId(), myTags).stream()
+				.filter(id -> !skip.contains(id))
+				.limit(PlanLimits.FEED_RECOMMENDED_USERS)
+				.toList();
+		if (picked.isEmpty()) {
+			return new RecommendedUsersResponse(List.of());
+		}
+		Map<Long, User> people = new HashMap<>();
+		for (User person : users.findAllById(picked)) {
+			people.put(person.getId(), person);
+		}
+		Map<Long, List<String>> stacks = new HashMap<>();
+		for (Object[] row : userTechTags.findTagNamesByUserIds(picked)) {
+			stacks.computeIfAbsent(((Number) row[0]).longValue(), id -> new ArrayList<>()).add((String) row[1]);
+		}
+		List<RecommendedUserItemResponse> items = picked.stream()
+				.map(people::get)
+				.filter(Objects::nonNull)
+				.map(person -> new RecommendedUserItemResponse(
+						authors.toAuthor(person),
+						List.copyOf(stacks.getOrDefault(person.getId(), List.of()))))
+				.toList();
+		return new RecommendedUsersResponse(items);
 	}
 
 	/**

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 
 import { apiFetch } from '@/lib/api/api-fetch';
+import { ApiError } from '@/lib/api/api-error';
 import { useToastStore } from '@/stores/toast-store';
 import { renderWithProviders } from '@/test/render-with-providers';
 
@@ -353,4 +354,55 @@ it('says nobody is followed when 팔로잉 is empty', async () => {
   expect(await screen.findByText('팔로잉한 사용자가 없습니다.')).toBeVisible();
   // The 추천 empty state's follow suggestions stay on 추천
   expect(screen.queryByText('아직 볼 글이 없어요.')).not.toBeInTheDocument();
+});
+
+it('follows from the card and flips every card by the same author, never on my own', async () => {
+  serve([
+    post(1),
+    post(2),
+    post(3, {
+      author: { ...author, id: 5, login: 'seojun-han', jobStatus: 'OFF', isFollowing: false },
+    }),
+  ]);
+  const user = userEvent.setup();
+  renderWithProviders(<FeedList />, { viewer: { role: 'developer', login: 'seojun-han' } });
+
+  const first = await screen.findByRole('article', { name: '작업물 1' });
+  const second = screen.getByRole('article', { name: '작업물 2' });
+  const mine = screen.getByRole('article', { name: '작업물 3' });
+  expect(within(mine).queryByRole('button', { name: /팔로우|팔로잉/ })).not.toBeInTheDocument();
+
+  await user.click(within(first).getByRole('button', { name: '팔로우' }));
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/user/doyun/follow', { method: 'POST' });
+  expect(within(first).getByRole('button', { name: '팔로잉' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(within(second).getByRole('button', { name: '팔로잉' })).toBeVisible();
+});
+
+it('puts the follow chip back and shows the server copy when following fails', async () => {
+  serve([post(1)]);
+  const user = userEvent.setup();
+  renderWithProviders(<FeedList />, { viewer: { role: 'developer', login: 'seojun-han' } });
+
+  const card = await screen.findByRole('article', { name: '작업물 1' });
+  fetchMock.mockRejectedValueOnce(
+    new ApiError(429, {
+      code: 'RATE_LIMITED',
+      message: '오늘은 더 할 수 없어요. 내일 다시 시도해 주세요.',
+    }),
+  );
+  await user.click(within(card).getByRole('button', { name: '팔로우' }));
+
+  await waitFor(() =>
+    expect(within(card).getByRole('button', { name: '팔로우' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    ),
+  );
+  expect(useToastStore.getState().toasts.map((toast) => toast.message)).toEqual([
+    '오늘은 더 할 수 없어요. 내일 다시 시도해 주세요.',
+  ]);
 });
