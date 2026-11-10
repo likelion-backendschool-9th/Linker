@@ -48,7 +48,7 @@ const collision: CollisionDetection = (args) => {
 /** Board-level drag: lock read-only / no-repo-write / suspended; not GH lookup failures. */
 export function boardDragAllowed(
   board: Pick<Board, 'canWrite' | 'writePermissionReason'> | undefined,
-  viewerStatus: string | undefined,
+  viewerStatus: string | null | undefined,
 ): boolean {
   if (viewerStatus === 'SUSPENDED') return false;
   if (!board) return false;
