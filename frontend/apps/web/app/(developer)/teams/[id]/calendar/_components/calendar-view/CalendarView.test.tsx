@@ -63,7 +63,7 @@ const render = (searchParams = '?date=2026-11-15', onUrlUpdate?: (e: UrlUpdateEv
 it('shows the month, four status chips, Monday-first weekdays and dates with issues as buttons', async () => {
   const { container } = render();
   expect(await screen.findByRole('button', { name: /^2026년 11월/ })).toBeVisible();
-  for (const name of ['작업 전', '진행', '완료', '정지']) {
+  for (const name of ['작업 전', '작업 중', '작업 완료', '작업 중단']) {
     expect(screen.getByText(name)).toBeVisible();
   }
   expect(container.querySelector('ol[aria-hidden]')?.textContent).toBe('월화수목금토일');

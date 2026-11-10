@@ -37,6 +37,11 @@ services:
       DB_USERNAME: linker
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       REDIS_HOST: redis
+      # C's LlmClient consumes these; B runs the optional sidecar with the demo model.
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+      OLLAMA_CONNECT_TIMEOUT: ${OLLAMA_CONNECT_TIMEOUT:-5s}
+      OLLAMA_READ_TIMEOUT: ${OLLAMA_READ_TIMEOUT:-120s}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
       GITHUB_APP_ID: ${GITHUB_APP_ID:-}
       GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
@@ -59,6 +64,8 @@ services:
       TEAM_SETUP_WORKER_ENABLED: ${TEAM_SETUP_WORKER_ENABLED:-false}
       TEAM_SETUP_WEBHOOK_ENABLED: ${TEAM_SETUP_WEBHOOK_ENABLED:-false}
       TEAM_SETUP_POLL_DELAY_MS: ${TEAM_SETUP_POLL_DELAY_MS:-5000}
+      ISSUE_SYNC_ENABLED: ${ISSUE_SYNC_ENABLED:-false}
+      ISSUE_WEBHOOK_ENABLED: ${ISSUE_WEBHOOK_ENABLED:-false}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?JWT_PUBLIC_KEY is required}
       # Toss Payments test mode only. Empty keys keep checkout at 503 PAYMENT_UNAVAILABLE.
@@ -66,6 +73,22 @@ services:
       TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY:-}
       TOSS_API_BASE_URL: ${TOSS_API_BASE_URL:-https://api.tosspayments.com}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      # An empty value would bypass Spring's fallback, so mirror it here.
+      CHAT_PUBLIC_ORIGINS: ${CHAT_PUBLIC_ORIGINS:-${ALLOWED_ORIGINS:-http://localhost:3000}}
+      # Production sets SECURE=true. Backend and web must share the cookie name.
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
+      # "local" writes inside the container unless a volume is mounted at STORAGE_LOCAL_DIR.
+      STORAGE_MODE: ${STORAGE_MODE:-unconfigured}
+      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-}
+      # Empty MAIL_HOST disables sending. compose.dev.yml points it at Mailpit.
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-Linker <noreply@linker.local>}
+      MAIL_PUBLIC_BASE_URL: ${MAIL_PUBLIC_BASE_URL:-http://localhost:3000}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -89,6 +112,7 @@ services:
         NEXT_PUBLIC_API_BASE_URL: ""
         NEXT_PUBLIC_IMAGE_HOST: ${NEXT_PUBLIC_IMAGE_HOST:-}
         NEXT_PUBLIC_TOSS_CLIENT_KEY: ${NEXT_PUBLIC_TOSS_CLIENT_KEY:-}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
         JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
         JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
         SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}

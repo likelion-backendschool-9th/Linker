@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 export default function IssueCreateLoading() {
   return (
-    <PageFrame title="이슈 작성">
+    <PageFrame title="이슈 작성" variant="stack" bottomTabs={false}>
       <div aria-busy="true">
         <p role="status">이슈 작성 화면을 불러오고 있어요.</p>
         <Skeleton count={2} />

@@ -47,7 +47,7 @@ Every Linker user has one of four roles. Owner/admin/member permissions within a
 | Role | How | Login method | Bottom tabs | Detailed policy |
 | --- | --- | --- | --- | --- |
 | Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat (Workspace and Chat show login prompt; profile is in the header) | Ch. 3 "Guests" (POL-A-9) |
-| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
+| Developer | Signs up with GitHub | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
 | Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat (profile is in the header) | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
 | Operator | Operator permission granted to a developer account via DB | GitHub + back-office OTP | Same as developer + `/admin` | Ch. 10 |
 
@@ -145,12 +145,12 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 
 | Policy | Details |
 | --- | --- |
-| POL-A-1 Sign-up | Developers: 1 GitHub account = 1 Linker account. Age 14+, consent to Terms and Privacy Policy required |
+| POL-A-1 Sign-up | Developers: 1 GitHub account = 1 Linker account. Consent to Terms and Privacy Policy required |
 | POL-A-1 Session | Login session 30 days, extended on each use. Server auto-refreshes expired GitHub tokens; on failure, request re-login |
 | POL-H-1 Recruiter sign-up | Email + password. Company domain email only (no free email like Gmail, Naver). Age 19+, consent to Terms, Privacy Policy and Business Member Supplementary Terms required. Details in "Recruiter accounts" below |
 | POL-A-2 Name & handle | Handle = GitHub login as-is (not editable; follows GitHub changes). Display name 1–20 chars |
 | POL-A-2 Bio & link | Bio ≤ 160 chars, one blog link (https only) |
-| POL-A-3 Tech stack | Up to 10 from a predefined tag list |
+| POL-A-3 Tech stack | Up to 5 from a predefined tag list |
 | POL-A-3 Looking for team | When on, shown on profile and in Find Team search. Auto-off after 30 days without login |
 | POL-H-4 Job-seeking status | One of Seeking / Open to offers / Off; default Off. Set independently from "looking for team". See "Job-seeking status" table below |
 | POL-A-4 Contribution graph | Public contributions only. Private contributions shown as counts only if the user enabled that on GitHub. Refreshed once a day. Help text next to the graph: "커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 잔디에 잡혀요" (commit email must be registered to your GitHub account to count) |

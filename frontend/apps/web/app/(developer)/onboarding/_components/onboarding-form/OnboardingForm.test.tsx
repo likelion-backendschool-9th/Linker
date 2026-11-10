@@ -1,6 +1,7 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { resetOverlayHistory } from '@/lib/navigation/use-overlay';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { OnboardingForm } from './OnboardingForm';
@@ -29,13 +30,14 @@ const initial = {
 
 describe('OnboardingForm', () => {
   beforeEach(() => {
+    resetOverlayHistory();
     apiFetch.mockReset();
     replace.mockReset();
     refresh.mockReset();
     apiFetch.mockResolvedValue(undefined);
   });
 
-  it('validates required agreements, keeps profile values, and completes through the mock API', async () => {
+  it('validates required agreements, collects the basic profile, and completes through the mock API', async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <OnboardingForm
@@ -44,14 +46,13 @@ describe('OnboardingForm', () => {
           { id: 1, name: 'React' },
           { id: 2, name: 'TypeScript' },
         ]}
-        techStackMax={10}
+        techStackMax={5}
       />,
     );
 
     await user.click(screen.getByRole('button', { name: '다음' }));
-    expect(screen.getAllByRole('alert')).toHaveLength(3);
+    expect(screen.getAllByRole('alert')).toHaveLength(2);
 
-    await user.click(screen.getByLabelText(/만 14세 이상입니다/));
     await user.click(screen.getByLabelText(/이용약관에 동의합니다/));
     await user.click(screen.getByLabelText(/개인정보 처리방침에 동의합니다/));
     await user.click(screen.getByRole('button', { name: '다음' }));
@@ -61,9 +62,23 @@ describe('OnboardingForm', () => {
       expect.objectContaining({ method: 'POST' }),
     );
     expect(
-      screen.getByRole('heading', { name: '기본 프로필을 확인해 주세요' }),
+      screen.getByRole('heading', { name: '간단한 프로필을 만들어 주세요' }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('이름')).toHaveValue('Linker Developer');
+    expect(screen.getByLabelText('이름')).toHaveValue('');
+    expect(screen.getByRole('button', { name: '완료' })).toBeDisabled();
+
+    await user.type(screen.getByLabelText('이름'), 'Linker Developer');
+    await user.click(screen.getByRole('button', { name: /구직 상태/ }));
+    const statusSheet = screen.getByRole('dialog', { name: '구직 상태' });
+    await user.click(within(statusSheet).getByLabelText('구직 중'));
+    resetOverlayHistory();
+    await user.click(within(statusSheet).getByRole('button', { name: '완료' }));
+
+    await user.click(screen.getByRole('button', { name: /기술 스택 선택/ }));
+    const techSheet = screen.getByRole('dialog', { name: '기술 스택' });
+    await user.click(within(techSheet).getByLabelText('React'));
+    resetOverlayHistory();
+    await user.click(within(techSheet).getByRole('button', { name: '완료' }));
 
     await user.click(screen.getByRole('button', { name: '완료' }));
 
@@ -83,17 +98,16 @@ describe('OnboardingForm', () => {
       <OnboardingForm
         initial={{ ...initial, emailRequired: true }}
         techTags={[]}
-        techStackMax={10}
+        techStackMax={5}
       />,
     );
 
-    await user.click(screen.getByLabelText(/만 14세 이상입니다/));
     await user.click(screen.getByLabelText(/이용약관에 동의합니다/));
     await user.click(screen.getByLabelText(/개인정보 처리방침에 동의합니다/));
     await user.click(screen.getByRole('button', { name: '다음' }));
 
     expect(screen.getByLabelText('알림 이메일')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '기본 프로필을 확인해 주세요' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '간단한 프로필을 만들어 주세요' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '다음' }));
     expect(screen.getByRole('alert')).toHaveTextContent('올바른 이메일 주소를 입력해 주세요.');
@@ -108,6 +122,6 @@ describe('OnboardingForm', () => {
         body: JSON.stringify({ email: 'me@example.com' }),
       }),
     );
-    expect(screen.getByRole('heading', { name: '기본 프로필을 확인해 주세요' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '간단한 프로필을 만들어 주세요' })).toBeInTheDocument();
   });
 });

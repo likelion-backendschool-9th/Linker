@@ -1,1 +1,2 @@
-/** API / query helpers for PrEventCard. Keep view components free of fetch/orval calls. */
+// B's existing team list supplies the GitHub organization photo, not a member/team photo.
+export { myTeamsOptions } from '@/app/(developer)/teams/[id]/_lib/team-queries';

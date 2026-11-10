@@ -1,7 +1,6 @@
 import { apiFetch } from '@/lib/api/api-fetch';
 
 export type OnboardingAgreementsBody = {
-  ageConfirmed: boolean;
   termsAccepted: boolean;
   privacyAccepted: boolean;
   marketingAccepted: boolean;

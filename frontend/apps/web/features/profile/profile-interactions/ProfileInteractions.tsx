@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Search } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -215,14 +216,21 @@ function ProfilePeopleSheet({
     if (!keyword) return true;
     return user.name.toLowerCase().includes(keyword) || user.login.toLowerCase().includes(keyword);
   });
-  const relation = type === 'followers' ? '팔로워' : '팔로잉';
-
   return (
     <OverlaySheet
       overlay={overlay}
       title="팔로우"
       description={`${profile.name}님의 팔로우와 팔로잉 목록`}
       describeHidden
+      closeIcon={<ArrowLeft aria-hidden />}
+      closeLabel="뒤로"
+      classNames={{
+        sheet: styles.peopleSheet,
+        header: styles.peopleHeader,
+        title: styles.peopleTitle,
+        close: styles.peopleBack,
+        body: styles.peopleBody,
+      }}
     >
       <div className={styles.peopleTabs} role="tablist" aria-label="팔로우 목록">
         <button
@@ -247,6 +255,7 @@ function ProfilePeopleSheet({
         </button>
       </div>
       <label className={styles.search}>
+        <Search aria-hidden />
         <span className="sr-only">이름 또는 아이디 검색</span>
         <input
           value={query}
@@ -269,7 +278,7 @@ function ProfilePeopleSheet({
           <p>아직 표시할 사용자가 없어요.</p>
         ) : (
           <ul className={styles.peopleList}>
-            {items.map(({ user }) => (
+            {items.map(({ user, isFollowing }) => (
               <li key={user.id}>
                 <Link className={styles.person} href={profileHref(user.login)} onClick={overlay.close}>
                   <span className={styles.personAvatar}>
@@ -280,7 +289,7 @@ function ProfilePeopleSheet({
                     <span className={styles.personHandle}>@{user.login}</span>
                   </span>
                 </Link>
-                <span className={styles.relation}>{relation}</span>
+                <span className={styles.relation}>{isFollowing ? '팔로잉' : '팔로우'}</span>
               </li>
             ))}
           </ul>

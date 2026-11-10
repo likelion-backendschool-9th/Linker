@@ -535,7 +535,7 @@ class FoundationIntegrationTest {
 	void listsTechTagsAndJobCategories() throws Exception {
 		mockMvc.perform(get("/api/v1/public/tech-tags"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(28))
+				.andExpect(jsonPath("$.length()").value(36))
 				.andExpect(jsonPath("$[0].name").value("TypeScript"));
 		mockMvc.perform(get("/api/v1/public/job-categories"))
 				.andExpect(status().isOk())
@@ -883,15 +883,28 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.paths['/api/v1/admin/otp/verify'].post.tags[0]").value("p25-admin-reports"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/me/profile/github-sync'].post.operationId").value("syncMyProfileFromGithub"))
 				.andExpect(jsonPath("$.paths['/api/v1/user/me/profile/github-sync'].post.tags[0]").value("p05-profile-edit"))
-				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/teams'].get.operationId").value("listPublicTeams"))
-				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/teams'].get.tags[0]").value("p04-profile"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/user/{login}/teams'].get.operationId").value("listPublicTeams"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/user/{login}/teams'].get.tags[0]").value("p04-profile"))
 				.andExpect(jsonPath("$.paths['/api/v1/public/recruiter-signup/email-codes'].post.operationId").value("requestRecruiterEmailCode"))
 				.andExpect(jsonPath("$.paths['/api/v1/public/recruiter-auth/login'].post.operationId").value("loginRecruiter"))
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers'].get.operationId").value("listRecruiterOffers"))
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers/counts'].get.operationId").value("countRecruiterOffers"))
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers/summary'].get.operationId").value("summarizeRecruiterOffers"))
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/offers/{roomId}/first-message'].get.operationId").value("getRecruiterOfferFirstMessage"))
-				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/contributions'].get.operationId").value("listPublicContributions"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/user/{login}/contributions'].get.operationId").value("listPublicContributions"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/user/{login}'].get.operationId").value("getPublicProfile"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/user/{login}/posts'].get.operationId").value("listPublicPosts"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/user/{login}/followers'].get.operationId").value("listFollowers"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/user/{login}/followings'].get.operationId").value("listFollowings"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/user/{login}/follow'].post.operationId").value("followUser"))
+				.andExpect(jsonPath("$.paths['/api/v1/user/user/{login}/follow'].delete.operationId").value("unfollowUser"))
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/posts']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/teams']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/public/users/{login}/contributions']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/user/users/{login}/followers']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/user/users/{login}/followings']").doesNotExist())
+				.andExpect(jsonPath("$.paths['/api/v1/user/users/{login}/follow']").doesNotExist())
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/me/ad'].get.operationId").value("getMyJobAd"))
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/me/ad'].put.operationId").value("saveMyJobAd"))
 				.andExpect(jsonPath("$.paths['/api/v1/recruiter/me/ad/status'].patch.operationId").value("updateMyJobAdStatus"))
@@ -921,7 +934,7 @@ class FoundationIntegrationTest {
 						.cookie(cookie)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"ageConfirmed":true,"termsAccepted":true,"privacyAccepted":true,"marketingAccepted":false,"termsVersion":"2026-10-01"}
+								{"termsAccepted":true,"privacyAccepted":true,"marketingAccepted":false,"termsVersion":"2026-10-01"}
 								"""))
 				.andExpect(status().isNoContent());
 
@@ -950,11 +963,11 @@ class FoundationIntegrationTest {
 		mockMvc.perform(get("/api/v1/public/legal-documents/terms"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
-				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 이용약관")));
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 이용 약관")));
 		mockMvc.perform(get("/api/v1/public/legal-documents/privacy"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
-				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 개인정보처리방침")));
+				.andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("# 개인정보 처리방침")));
 		mockMvc.perform(get("/api/v1/public/legal-documents/community"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.effectiveDate").value("2026-10-01"))
@@ -964,13 +977,15 @@ class FoundationIntegrationTest {
 	@Test
 	void publicProfileReadsTeamsAndCompletionWhenThoseTablesExist() throws Exception {
 		User user = saveUser("octocat", UserType.DEVELOPER);
-		mockMvc.perform(get("/api/v1/public/users/octocat"))
+		mockMvc.perform(get("/api/v1/public/user/octocat"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.completion.projectCount").value(0))
 				.andExpect(jsonPath("$.completion.issueCompletionRate").value(0));
-		mockMvc.perform(get("/api/v1/public/users/octocat/teams"))
+		mockMvc.perform(get("/api/v1/public/user/octocat/teams"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items").isEmpty());
+		mockMvc.perform(get("/api/v1/public/users/octocat"))
+				.andExpect(status().isNotFound());
 
 		jdbc.execute("""
 				CREATE TABLE completion_records (
@@ -995,11 +1010,11 @@ class FoundationIntegrationTest {
 			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (1, ?, 'COMPLETED', 4, 2)", user.getId());
 			jdbc.update("INSERT INTO completion_records (id, user_id, result, assigned_issue_count, done_issue_count) VALUES (2, ?, 'DROPPED', 2, 0)", user.getId());
 
-			mockMvc.perform(get("/api/v1/public/users/octocat"))
+			mockMvc.perform(get("/api/v1/public/user/octocat"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.completion.projectCount").value(1))
 					.andExpect(jsonPath("$.completion.issueCompletionRate").value(org.hamcrest.Matchers.closeTo(2.0 / 6.0, 0.000001)));
-			mockMvc.perform(get("/api/v1/public/users/octocat/teams"))
+			mockMvc.perform(get("/api/v1/public/user/octocat/teams"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.items.length()").value(2))
 					.andExpect(jsonPath("$.items[0].id").value(1))
@@ -1012,6 +1027,31 @@ class FoundationIntegrationTest {
 		finally {
 			jdbc.execute("DROP TABLE IF EXISTS completion_records");
 		}
+	}
+
+	@Test
+	void profileFollowRoutesUseTheWbsContract() throws Exception {
+		User viewer = saveUser("profile-viewer", UserType.DEVELOPER);
+		User target = saveUser("profile-target", UserType.DEVELOPER);
+		Cookie cookie = cookie(sessions.issue(viewer, "JUnit", "127.0.0.1").rawToken());
+		String base = "/api/v1/user/user/" + target.getUsername();
+
+		mockMvc.perform(get(base + "/followers").cookie(cookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isEmpty());
+		mockMvc.perform(get(base + "/followings").cookie(cookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isEmpty());
+		mockMvc.perform(post(base + "/follow").cookie(cookie))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get(base + "/followers").cookie(cookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1));
+		mockMvc.perform(delete(base + "/follow").cookie(cookie))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get(base + "/followers").cookie(cookie))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isEmpty());
 	}
 
 	@Test
@@ -1328,7 +1368,7 @@ class FoundationIntegrationTest {
 				.andExpect(jsonPath("$.jobTitle").value("테크 리크루터"))
 				.andExpect(jsonPath("$.websiteUrl").value(""))
 				.andExpect(jsonPath("$.companyEmail").value("recruiter@nextlab.example"));
-		mockMvc.perform(get("/api/v1/public/users/" + login))
+		mockMvc.perform(get("/api/v1/public/user/" + login))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.name").value("송지현"))
 				.andExpect(jsonPath("$.company").value("새 회사"));
@@ -1467,7 +1507,7 @@ class FoundationIntegrationTest {
 				insert into contribution_days (user_id, day, contribution_count, created_at, updated_at)
 				values (?, ?, 4, now(), now())
 				""", developer.getId(), day);
-		mockMvc.perform(get("/api/v1/public/users/octo/contributions").param("month", day.toString().substring(0, 7)))
+		mockMvc.perform(get("/api/v1/public/user/octo/contributions").param("month", day.toString().substring(0, 7)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.month").value(day.toString().substring(0, 7)))
 				.andExpect(jsonPath("$.days[0].count").value(4));
@@ -1476,7 +1516,7 @@ class FoundationIntegrationTest {
 				insert into username_redirects (old_username, user_id, expires_at, created_at, updated_at)
 				values ('old-octo', ?, now() + interval '90 days', now(), now())
 				""", developer.getId());
-		mockMvc.perform(get("/api/v1/public/users/old-octo"))
+		mockMvc.perform(get("/api/v1/public/user/old-octo"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.login").value("octo"))
 				.andExpect(jsonPath("$.redirectedFrom").value("old-octo"));
@@ -1501,7 +1541,7 @@ class FoundationIntegrationTest {
 				values (?, '넥스트랩', 'nextlab.example', '리쿠르터', null, now(), now(), now())
 				""", recruiter.getId());
 		Cookie recruiterCookie = cookie(sessions.issue(recruiter, "JUnit", "127.0.0.1").rawToken());
-		mockMvc.perform(get("/api/v1/public/users/octo").cookie(recruiterCookie))
+		mockMvc.perform(get("/api/v1/public/user/octo").cookie(recruiterCookie))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.jobStatus").exists());
 		Integer visits = jdbc.queryForObject(
@@ -1510,7 +1550,7 @@ class FoundationIntegrationTest {
 				developer.getId(),
 				recruiter.getId());
 		assertThat(visits).isEqualTo(1);
-		mockMvc.perform(get("/api/v1/public/users/r-ad"))
+		mockMvc.perform(get("/api/v1/public/user/r-ad"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.company").value("넥스트랩"))
 				.andExpect(jsonPath("$.companyEmailDomain").value("nextlab.example"));
@@ -1658,11 +1698,11 @@ class FoundationIntegrationTest {
 
 		expectDeveloperOnly(cookie, patch("/api/v1/user/me/profile").contentType(MediaType.APPLICATION_JSON).content("{}"));
 		expectDeveloperOnly(cookie, post("/api/v1/user/me/profile/github-sync"));
-		expectDeveloperOnly(cookie, post("/api/v1/user/users/someone/follow"));
-		expectDeveloperOnly(cookie, delete("/api/v1/user/users/someone/follow"));
+		expectDeveloperOnly(cookie, post("/api/v1/user/user/someone/follow"));
+		expectDeveloperOnly(cookie, delete("/api/v1/user/user/someone/follow"));
 		expectDeveloperOnly(cookie, post("/api/v1/user/onboarding/agreements")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"ageConfirmed\":true,\"termsAccepted\":true,\"privacyAccepted\":true,\"marketingAccepted\":false,\"termsVersion\":\"v\"}"));
+				.content("{\"termsAccepted\":true,\"privacyAccepted\":true,\"marketingAccepted\":false,\"termsVersion\":\"v\"}"));
 		expectDeveloperOnly(cookie, put("/api/v1/user/onboarding/profile")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"이름\",\"lookingForTeam\":false}"));
@@ -1797,10 +1837,10 @@ class FoundationIntegrationTest {
 							.content(pinBody(posts[0])))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.pinnedPostIds[0]").value(posts[0]));
-			mockMvc.perform(get("/api/v1/public/users/pinner"))
+			mockMvc.perform(get("/api/v1/public/user/pinner"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.pinnedPostIds[0]").value(posts[0]));
-			mockMvc.perform(get("/api/v1/public/users/pinner/posts"))
+			mockMvc.perform(get("/api/v1/public/user/pinner/posts"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.items[0].id").value(posts[0]))
 					.andExpect(jsonPath("$.items[1].id").value(posts[5]));
@@ -1832,7 +1872,7 @@ class FoundationIntegrationTest {
 					.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 
 			jdbc.update("UPDATE posts SET visibility = 'HIDDEN' WHERE id = ?", posts[0]);
-			mockMvc.perform(get("/api/v1/public/users/pinner"))
+			mockMvc.perform(get("/api/v1/public/user/pinner"))
 					.andExpect(jsonPath("$.pinnedPostIds").isEmpty());
 			mockMvc.perform(put("/api/v1/user/me/pinned-posts")
 							.cookie(cookie(token))
@@ -1858,7 +1898,7 @@ class FoundationIntegrationTest {
 							.content(pinBody(posts[1])))
 					.andExpect(status().isForbidden())
 					.andExpect(jsonPath("$.code").value("DEVELOPER_ONLY"));
-			mockMvc.perform(get("/api/v1/public/users/pinrecruiter"))
+			mockMvc.perform(get("/api/v1/public/user/pinrecruiter"))
 					.andExpect(jsonPath("$.pinnedPostIds").isEmpty());
 
 			jdbc.update("""
@@ -1873,7 +1913,7 @@ class FoundationIntegrationTest {
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.pinnedPostIds[0]").value(posts[1]))
 					.andExpect(jsonPath("$.pinnedPostIds[4]").value(posts[2]));
-			mockMvc.perform(get("/api/v1/public/users/pinner/posts"))
+			mockMvc.perform(get("/api/v1/public/user/pinner/posts"))
 					.andExpect(jsonPath("$.items[0].id").value(posts[1]))
 					.andExpect(jsonPath("$.items[1].id").value(posts[3]))
 					.andExpect(jsonPath("$.items[2].id").value(posts[5]))
@@ -1882,7 +1922,7 @@ class FoundationIntegrationTest {
 					.andExpect(jsonPath("$.items[5].id").value(posts[0]));
 
 			jdbc.update("DELETE FROM subscriptions WHERE user_id = ?", developer.getId());
-			mockMvc.perform(get("/api/v1/public/users/pinner"))
+			mockMvc.perform(get("/api/v1/public/user/pinner"))
 					.andExpect(jsonPath("$.pinnedPostIds[0]").value(posts[1]))
 					.andExpect(jsonPath("$.pinnedPostIds[4]").value(posts[2]));
 			mockMvc.perform(put("/api/v1/user/me/pinned-posts")
@@ -1909,9 +1949,9 @@ class FoundationIntegrationTest {
 							.content("{\"postIds\":[]}"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.pinnedPostIds").isEmpty());
-			mockMvc.perform(get("/api/v1/public/users/pinner/posts"))
+			mockMvc.perform(get("/api/v1/public/user/pinner/posts"))
 					.andExpect(jsonPath("$.items[0].id").value(posts[5]));
-			mockMvc.perform(get("/api/v1/public/users/pinner"))
+			mockMvc.perform(get("/api/v1/public/user/pinner"))
 					.andExpect(jsonPath("$.pinnedPostIds").isEmpty());
 		}
 		finally {

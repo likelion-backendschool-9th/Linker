@@ -60,7 +60,7 @@ export const POSTS: MockPost[] = [
   {
     id: 1,
     author: brief(ME),
-    intro: '개발자 팀 찾기부터 협업까지, Linker 웹 클라이언트',
+    intro: 'Show moa',
     body: '2주 해커톤에서 만든 서비스예요.\nNext.js 16과 CSS Modules로 만들었고, 접근성 검사를 CI에 넣었어요.\n\n데모: https://linker.example.dev',
     repo: repoCard('linker-hack/linker-web', {
       description: 'Linker 웹 (Next.js)',
@@ -68,7 +68,7 @@ export const POSTS: MockPost[] = [
       forks: 4,
       handledIssueCount: 34,
     }),
-    photos: ['/mock/cover-1.svg', '/mock/cover-2.svg'],
+    photos: ['/mock/show-moa.svg', '/mock/cover-2.svg'],
     myRole: '프론트엔드 개발',
     demoLinks: ['https://linker.example.dev'],
     period: { start: '2026-10', end: '2026-11' },

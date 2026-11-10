@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 
 import { PageFrame } from '@/components/layout/page-frame/PageFrame';
@@ -13,7 +12,6 @@ import { DeveloperProfileView } from './_views/DeveloperProfileView';
 import { RecruiterMyPageView } from './_views/RecruiterMyPageView';
 import { RecruiterProfileView } from './_views/RecruiterProfileView';
 import { getPublicProfile } from './_lib/get-profile';
-import styles from './_components/profile.module.css';
 
 const HIDDEN_PROFILE = '볼 수 없는 프로필';
 
@@ -81,18 +79,6 @@ export default async function ProfilePage({ params }: ProfileRouteProps) {
       variant="stack"
       backHref="/feed"
       bottomTabs={false}
-      actions={
-        profile.isMe && profile.kind === 'DEVELOPER' ? (
-          <div className={styles.headerActions}>
-            <Link className={styles.editLink} href="/settings">
-              설정
-            </Link>
-            <Link className={styles.editLink} href="/settings/profile">
-              프로필 편집
-            </Link>
-          </div>
-        ) : undefined
-      }
     >
       {profile.kind === 'DEVELOPER' ? (
         <DeveloperProfileView profile={profile} viewerRole={viewerRole} />

@@ -986,9 +986,9 @@ erDiagram
 | auth_identities | 🟢 | Login methods (GitHub for developers, email for recruiters) | PRD 5-1 account structure |
 | github_tokens | 🟢 | GitHub user token for actions in the user's name (create issues, org invites) | PRD ch. 8, non-functional security |
 | user_sessions | 🟢 | Refresh token and 30-day login, operator OTP status | POL-A-1, POL ch. 10 |
-| user_agreements | 🟢 | Consent history: terms, privacy, age 14+, marketing | POL-A-1, Privacy Policy |
+| user_agreements | 🟢 | Consent history: terms, privacy, marketing; legacy age 14+ rows remain supported | POL-A-1, Privacy Policy |
 | tech_tags | 🟢 | Predefined tech stack tag list (seed data) | POL-A-3 |
-| user_tech_tags | 🟢 | My tech stack, max 10, unique (user_id, tag_id) | A-3 |
+| user_tech_tags | 🟢 | My tech stack, max 5, unique (user_id, tag_id) | A-3 |
 | username_redirects | 🟡 | 90-day redirect of old URL after GitHub username change | POL ch. 3 exceptions |
 | contribution_days | 🟡 | Daily GitHub contributions, last 12 months, refreshed daily | A-4 |
 | recruiter_profiles | 🟡 | Recruiter company name, job title, verified email domain (1:1 with users) | H-1, POL ch. 3 recruiter accounts |

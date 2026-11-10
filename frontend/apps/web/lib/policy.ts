@@ -36,7 +36,7 @@ export const ACCOUNT = {
 export const PROFILE = {
   displayName: { min: 1, max: 20 },
   bioMax: 160,
-  techStackMax: 10,
+  techStackMax: 5,
   jobCategoriesMax: 3,
   /** POL-A-3. The server turns the badge off after this many days without login. */
   lookingForTeamIdleDays: 30,
@@ -97,6 +97,8 @@ export const TEAM = {
 /** 04 ch. 2 rate limits, ch. 7 POL-I-2, POL-I-4 and "Sync" */
 export const ISSUE = {
   createPerDay: 100,
+  /** Figma 13 body counter 0/2000 */
+  bodyMax: 2000,
   /** GitHub caps assignees at 10 (POL-I-2) */
   assigneesMax: 10,
   /** Pull to refresh: that screen's issues, once a minute */

@@ -125,13 +125,13 @@ it('searches titles through ?q= and a status chip sets ?status=', async () => {
       expect.anything(),
     ),
   );
-  await user.click(await screen.findByRole('button', { name: /^정지/ }));
+  await user.click(await screen.findByRole('button', { name: /^작업 중단( |$)/ }));
   await waitFor(() =>
     expect(onUrlUpdate).toHaveBeenLastCalledWith(
       expect.objectContaining({ queryString: expect.stringContaining('status=BLOCKED') }),
     ),
   );
-  expect(screen.getByRole('button', { name: /^정지/, pressed: true })).toBeVisible();
+  expect(screen.getByRole('button', { name: /^작업 중단( |$)/, pressed: true })).toBeVisible();
 });
 
 it('lists 일정 없음 issues from the 15 calendar link (?view=unscheduled) and adds one to the project', async () => {

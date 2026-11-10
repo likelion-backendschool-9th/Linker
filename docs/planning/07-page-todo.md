@@ -161,17 +161,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 1: Terms consent**
 
-- [ ] Confirm age 14+ (required)
 - [ ] Consent to Terms and Privacy Policy (required), marketing (optional)
 - [ ] "보기" (view) per item → 03 legal documents
 - [ ] Server: store agreed terms version and time
 
 **Step 2: Basic profile**
 
-- [ ] Pre-fill name, avatar, bio, blog from GitHub (editable)
-- [ ] Tech stack picker sheet (predefined tags, max 10) → reused in 05
-- [ ] Toggle "팀 찾는 중" (looking for team)
-- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔), with a one-line description under each ("채용 담당자에게만 보여요" etc.) → reused in 05
+- [ ] Display name (required, 1–20 characters) and bio (optional, up to 160 characters); start with empty fields
+- [ ] Tech stack picker sheet (predefined tags, max 5) → reused in 05
+- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔) in the picker → reused in 05
 - [ ] Done → `/feed` (starts with an empty feed)
 
 **Policy & exceptions**
@@ -238,7 +236,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: A-2, A-3, H-4, H-8 · Needs first: 04
 
 - [ ] Display name (1–20 chars), bio (160), one blog link (https only)
-- [ ] Tech stack (reuse 02's sheet, max 10)
+- [ ] Tech stack (reuse 02's sheet, max 5)
 - [ ] Toggle "팀 찾는 중"
 - [ ] Job-seeking status (reuse 02's picker)
 - [ ] `[Included]` Job categories of interest: job category chips up to 3, empty by default, hint "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." Visible only to the developer (not shown on 04 profile)
@@ -471,6 +469,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: C-1, C-4 · Needs first: 08 (team chat room data) · Merged: message requests → third tab
 
+- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with a red "삭제" circle and no time. Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
 - [ ] Tabs: 팀 (team) / 개인 (1:1) / 요청 (requests, with count)
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge

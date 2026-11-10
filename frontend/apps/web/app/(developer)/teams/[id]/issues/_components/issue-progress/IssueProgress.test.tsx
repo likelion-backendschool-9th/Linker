@@ -38,10 +38,10 @@ beforeEach(() => {
 
 it('shows the four Figma cards with the status word written out, from list totals', async () => {
   const { container } = renderWithProviders(<IssueProgress teamId="1" flex={false} />);
-  expect(await screen.findByText('7개 완료')).toBeVisible();
+  expect(await screen.findByText('7개 작업 완료')).toBeVisible();
   expect(screen.getByRole('heading', { name: '전체 이슈 12개' })).toBeVisible();
-  expect(screen.getByText('3개 진행')).toBeVisible();
-  expect(screen.getByText('1개 정지')).toBeVisible();
+  expect(screen.getByText('3개 작업 중')).toBeVisible();
+  expect(screen.getByText('1개 작업 중단')).toBeVisible();
   expect(screen.getByText('1개 작업 전')).toBeVisible();
   expect(fetchMock).toHaveBeenCalledWith(
     '/api/v1/user/teams/1/issues?status=DONE&size=1',
@@ -63,6 +63,6 @@ it('draws the 14-day trend for a Flex team with a text summary and a table', asy
   expect(await screen.findByRole('table', { name: '날짜별 이슈 수' })).toBeInTheDocument();
   // A day not collected yet reads as "기록 없음", never as 0
   expect(screen.getAllByText('기록 없음').length).toBeGreaterThan(0);
-  expect(screen.getByText(/완료 기록 없음에서 7/)).toBeInTheDocument();
+  expect(screen.getByText(/작업 완료 기록 없음에서 7/)).toBeInTheDocument();
   expect(await axe(container)).toHaveNoViolations();
 });

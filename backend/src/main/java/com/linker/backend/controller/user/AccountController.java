@@ -109,7 +109,7 @@ public class AccountController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(accounts.syncFromGithub(user));
 	}
 
-	@GetMapping("/users/{login}/followers")
+	@GetMapping("/user/{login}/followers")
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "listFollowers")
 	public ResponseEntity<ProfilePeopleResponse> followers(
@@ -119,7 +119,7 @@ public class AccountController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(accounts.followers(user, login, cursor));
 	}
 
-	@GetMapping("/users/{login}/followings")
+	@GetMapping("/user/{login}/followings")
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "listFollowings")
 	public ResponseEntity<ProfilePeopleResponse> followings(
@@ -129,7 +129,7 @@ public class AccountController {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(accounts.followings(user, login, cursor));
 	}
 
-	@PostMapping("/users/{login}/follow")
+	@PostMapping("/user/{login}/follow")
 	@DeveloperOnly
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "followUser")
@@ -138,7 +138,7 @@ public class AccountController {
 		return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
 	}
 
-	@DeleteMapping("/users/{login}/follow")
+	@DeleteMapping("/user/{login}/follow")
 	@DeveloperOnly
 	@Tag(name = "p04-profile")
 	@Operation(operationId = "unfollowUser")

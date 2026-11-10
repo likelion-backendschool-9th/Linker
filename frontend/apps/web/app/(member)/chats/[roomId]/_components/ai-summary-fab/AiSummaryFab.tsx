@@ -2,20 +2,34 @@
 
 import Image from 'next/image';
 
+import { AiSummarySheet } from '../ai-summary-sheet';
+
 import styles from './AiSummaryFab.module.css';
 import { useAiSummaryFab } from './hook';
 
 /**
- * "AI 채팅 요약" (Figma 248:1236) as a logo button left of the send button. The floating label
- * covered messages, so the name is screen-reader only. AI summary is [Included]: it only says it
- * isn't built yet.
+ * Floating "AI 채팅 요약" (Figma 750:3125). Keeps the existing summary flow.
  */
-export function AiSummaryFab() {
-  const { onClick } = useAiSummaryFab();
+export function AiSummaryFab({ roomId }: { roomId: number }) {
+  const { onClick, pending, panel, result } = useAiSummaryFab(roomId);
   return (
-    <button type="button" className={styles.button} onClick={onClick}>
-      <Image src="/logo.svg" alt="" width={33} height={33} className={styles.logo} />
-      <span className="sr-only">AI 채팅 요약</span>
-    </button>
+    <>
+      <div className={styles.fab}>
+        <span className={styles.tooltip} aria-hidden="true">
+          <span className={styles.label}>AI 채팅 요약</span>
+        </span>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={onClick}
+          disabled={pending}
+          aria-busy={pending}
+        >
+          <Image src="/logo.svg" alt="" width={33} height={33} className={styles.logo} />
+          <span className="sr-only">AI 채팅 요약</span>
+        </button>
+      </div>
+      <AiSummarySheet overlay={panel} result={result} />
+    </>
   );
 }

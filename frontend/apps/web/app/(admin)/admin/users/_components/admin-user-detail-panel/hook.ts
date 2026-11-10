@@ -1,32 +1,66 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-
+import { useState } from 'react';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useOverlay } from '@/lib/navigation/use-overlay';
-
+import type { ActionDraft } from '../admin-user-action-sheet/api';
 import { adminUserOptions } from './api';
+export { SANCTION_LABELS } from '../../_lib/admin-user-queries';
 
-export const SANCTION_LABELS: Record<string, string> = {
-  WARNING: '경고',
-  DAYS_7: '7일 이용 제한',
-  DAYS_30: '30일 이용 제한',
-  PERMANENT: '영구 정지',
-};
-
-export function useAdminUserDetailPanel(userId: string) {
+export function useAdminUserDetailPanel(
+  userId: string,
+  onDraft?: (draft: ActionDraft) => void,
+  draft?: ActionDraft,
+) {
   const query = useQuery(adminUserOptions(userId));
   const action = useOverlay('admin-user-action');
-  const detail = useOverlay('admin-user-detail');
-
+  const [tab, setTab] = useQueryState(
+    'userTab',
+    parseAsStringLiteral(['basic', 'sanctions', 'reports', 'payments'] as const).withDefault(
+      'basic',
+    ),
+  );
+  const [step, setStep] = useState(draft?.userId === userId ? draft.step : '');
+  const [reason, setReason] = useState(draft?.userId === userId ? draft.reason : '');
+  const [reasonError, setReasonError] = useState(false);
   return {
     query,
     action,
-    detail,
+    tab,
+    setTab,
+    step,
+    setStep,
+    reason,
+    setReason,
+    reasonError,
     handlers: {
-      openRefund: (paymentId: number) => action.open(`refund:${userId}:${paymentId}`),
-      openSanction: () => action.open(`sanction:${userId}`),
+      openRefund: (id: number) => action.open(`refund:${userId}:${id}`),
       openEmail: () => action.open(`email:${userId}`),
+      apply() {
+        if (!reason.trim()) {
+          setReasonError(true);
+          return;
+        }
+        if (step) {
+          onDraft?.({ userId, step, reason });
+          action.open(`sanction:${userId}`);
+        }
+      },
       openLift: () => action.open(`lift:${userId}`),
+      onStepChange(value: string) {
+        setStep(value);
+        onDraft?.({ userId, step: value, reason });
+      },
+      onReasonChange(value: string) {
+        setReason(value);
+        onDraft?.({ userId, step, reason: value });
+        setReasonError(false);
+      },
+      clearDraft() {
+        setStep('');
+        setReason('');
+      },
     },
   };
 }

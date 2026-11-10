@@ -29,6 +29,14 @@ export const TECH_TAGS = [
   'AWS',
   'Firebase',
   'Figma',
+  'Expo',
+  'Spring Security',
+  'JPA',
+  'WebSocket',
+  'STOMP',
+  'CSS Modules',
+  'TanStack Query',
+  'Nginx',
 ].map((name, index) => ({ id: index + 1, name }));
 
 export const JOB_CATEGORIES = [

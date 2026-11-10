@@ -5,10 +5,10 @@ import { countChars, normalizeLineBreaks } from '@/lib/format/text';
 import { CHAT, PLAN_LIMITS } from '@/lib/policy';
 import { emit } from '../realtime-bus';
 import {
-  daysAgo,
   del,
   fail,
   get,
+  hoursAgo,
   newId,
   patch,
   post,
@@ -75,9 +75,10 @@ export const routes: MockRoute[] = [
             myRole: team.myRole,
             status: team.status,
             avatarUrl: team.orgAvatarUrl ?? null,
+            aiSummaryEnabled: team.plan === 'FLEX',
+            aiSummaryBanner: team.plan === 'FLEX',
           }
         : null,
-      aiSummaryEnabled: team?.plan === 'FLEX',
       // Free teams only see the last 60 days (04 ch. 8)
       historyLimitDays: team && team.plan === 'FREE' ? 60 : null,
     };
@@ -176,10 +177,30 @@ export const routes: MockRoute[] = [
       (m) => m.imageUrls.map((url) => ({ messageId: m.id, url, createdAt: m.createdAt })),
     ),
   })),
-  get('/api/v1/user/chat-rooms/:roomId/pull-requests', ({ query }) => {
+  // B-owned PR list: same identifiers and GitHub update timestamp as the server DTO.
+  get('/api/v1/user/chat-rooms/:roomId/pull-requests', ({ params, query, viewer }) => {
+    const room = roomOr404(params.roomId);
+    if (
+      !room.teamId ||
+      room.kind !== 'TEAM' ||
+      !(TEAM_MEMBERS[room.teamId] ?? []).some((member) => member.user.id === viewer.me?.id)
+    )
+      fail(404, 'NOT_FOUND', '팀 채팅방을 찾지 못했어요');
     const state = query.get('state') ?? 'open';
+    if (!['open', 'merged'].includes(state))
+      fail(400, 'VALIDATION_ERROR', 'PR 상태를 확인해 주세요');
+    const common = {
+      repoId: 1,
+      githubRepoId: 901,
+      draft: false,
+      repo: 'linker-hack/linker-web',
+      githubUpdatedAt: hoursAgo(2),
+    };
     const all = [
       {
+        ...common,
+        id: 31,
+        githubPrId: 1031,
         number: 31,
         title: 'feat: 로그인 시트',
         state: 'open',
@@ -187,6 +208,9 @@ export const routes: MockRoute[] = [
         url: 'https://github.com/linker-hack/linker-web/pull/31',
       },
       {
+        ...common,
+        id: 29,
+        githubPrId: 1029,
         number: 29,
         title: 'fix: 피드 스켈레톤 높이',
         state: 'open',
@@ -194,6 +218,22 @@ export const routes: MockRoute[] = [
         url: 'https://github.com/linker-hack/linker-web/pull/29',
       },
       {
+        ...common,
+        id: 28,
+        githubPrId: 1028,
+        number: 28,
+        title: '로그인 5회 실패 시 임시 잠금',
+        state: 'open',
+        author: '김주은',
+        url: 'https://github.com/linker-hack/linker-web/pull/28',
+      },
+      {
+        ...common,
+        id: 26,
+        repoId: 2,
+        githubRepoId: 902,
+        githubPrId: 1026,
+        repo: 'linker-hack/linker-api',
         number: 26,
         title: 'chore: eslint 규칙 정리',
         state: 'merged',
@@ -323,11 +363,13 @@ export const routes: MockRoute[] = [
     '/api/v1/user/chat-rooms/direct',
     ({ body }) => {
       const existing = ROOMS.find(
-        (r) => r.kind === 'DIRECT' && r.counterpart?.id === Number(body.userId),
+        (r) =>
+          (r.kind === 'DIRECT' || r.kind === 'REQUEST') &&
+          r.counterpart?.id === Number(body.userId),
       );
       // Mutual follow / same team → room; otherwise a message request (POL-C-4).
       // A request needs `message`; without it nothing is created and roomId is null.
-      if (existing) return { roomId: existing.id, kind: 'DIRECT' };
+      if (existing) return { roomId: existing.id, kind: existing.kind };
       return typeof body.message === 'string' && body.message.trim()
         ? { roomId: 21, kind: 'REQUEST' }
         : { roomId: null, kind: 'REQUEST' };
@@ -335,7 +377,7 @@ export const routes: MockRoute[] = [
     { only: 'developer' },
   ),
 
-  // `[Included]` AI summary (Flex): free teams get the plan prompt
+  // `[Included]` AI summary (Flex): reduced DTO — one `summary` string, no share/minutes
   post('/api/v1/user/chat-rooms/:roomId/ai-summaries', ({ params }) => {
     const room = roomOr404(params.roomId!);
     const team = room.teamId ? findTeam(room.teamId) : undefined;
@@ -344,40 +386,27 @@ export const routes: MockRoute[] = [
         reason: 'AI_SUMMARY',
       });
     }
-    return { summaryId: newId(), usedToday: 3, limit: 10 };
+    return {
+      summaryId: newId(),
+      status: 'DONE',
+      summary:
+        '로그인 시트 구현을 오늘 안에 끝내고 내일 저녁에 회의하기로 했어요. 피드 카드와 웹훅 서명 검증도 이어서 마무리하기로 했습니다.',
+      messageCount: 42,
+      usedToday: 3,
+      limit: 10,
+      disclaimer: 'AI가 만든 요약이라 틀릴 수 있어요',
+    };
   }),
   get('/api/v1/user/chat-rooms/:roomId/ai-summaries/:summaryId', ({ params }) => ({
     summaryId: Number(params.summaryId),
-    createdAt: daysAgo(0),
+    status: 'DONE',
+    summary:
+      '로그인 시트 구현을 오늘 안에 끝내고 내일 저녁에 회의하기로 했어요. 피드 카드와 웹훅 서명 검증도 이어서 마무리하기로 했습니다.',
     messageCount: 42,
-    oneLine: '로그인 시트 구현을 오늘 안에 끝내고 내일 저녁에 회의하기로 했어요.',
-    decisions: ['로그인 시트는 오늘 안에 PR 올리기', '다음 회의는 내일 저녁'],
-    todos: [
-      { title: '피드 카드 컴포넌트 마무리', messageId: 104 },
-      { title: '웹훅 서명 검증 버그 확인', messageId: 106 },
-    ],
-    openQuestions: ['공유 시트 문구를 확정해야 해요'],
+    usedToday: 3,
+    limit: 10,
     disclaimer: 'AI가 만든 요약이라 틀릴 수 있어요',
   })),
-  post('/api/v1/user/chat-rooms/:roomId/ai-summaries/:summaryId/share', ({ params }) => {
-    const message = {
-      id: newId(),
-      roomId: Number(params.roomId),
-      sender: brief(ME),
-      type: 'AI_SUMMARY' as const,
-      text: null,
-      imageUrls: [],
-      payload: {
-        summaryId: Number(params.summaryId),
-        oneLine: '로그인 시트 구현을 오늘 안에 끝내기로 했어요.',
-      },
-      createdAt: new Date().toISOString(),
-      editedAt: null,
-      deletedAt: null,
-    };
-    MESSAGES.push(message);
-    return withReadState(message);
-  }),
 
   // `[Included]` Recruiting offer (recruiter → developer). 1,000 chars, no photos (POL-H-3)
   post('/api/v1/recruiter/chat-requests', ({ body }) => {

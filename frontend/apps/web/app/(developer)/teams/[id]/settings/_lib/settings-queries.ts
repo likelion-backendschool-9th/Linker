@@ -47,6 +47,8 @@ export type Members = {
   items: {
     user: { id: number; login: string; name: string; avatarUrl: string };
     role: TeamSettings['myRole'];
+    /** Short track label next to role (Figma 368:1596 PO/BE/FE); markup field until API lands */
+    jobLabel: string | null;
     joinedAt: string;
     inGithubOrg: boolean;
     githubOrgStatus: 'MEMBER' | 'INVITED' | 'NOT_MEMBER';

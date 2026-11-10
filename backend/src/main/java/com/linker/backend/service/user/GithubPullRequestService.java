@@ -90,7 +90,7 @@ public class GithubPullRequestService {
             var repo = linked.get(pr.getRepoId());
             return new ChatPullRequestsResponse.Item(pr.getId(), repo.repoId(), repo.githubRepoId(),
                 pr.getGithubPrId(), repo.ownerLogin() + "/" + repo.name(), pr.getNumber(), pr.getTitle(),
-                pr.getState().name().toLowerCase(Locale.ROOT), pr.isDraft(), pr.getAuthorLogin(), pr.getHtmlUrl());
+                pr.getState().name().toLowerCase(Locale.ROOT), pr.isDraft(), pr.getAuthorLogin(), pr.getHtmlUrl(), pr.getGithubUpdatedAt());
           }).toList();
       return new ChatPullRequestsResponse(items);
     });

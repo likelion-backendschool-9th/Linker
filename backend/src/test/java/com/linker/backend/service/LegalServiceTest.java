@@ -29,9 +29,9 @@ class LegalServiceTest {
 	void termsBodyIsMarkdownForTheViewer() {
 		var document = legal.document("terms");
 
-		assertThat(document.title()).isEqualTo("이용약관");
-		assertThat(document.body()).startsWith("# 이용약관");
-		assertThat(document.body()).contains("[커뮤니티 정책](/legal/community)");
+		assertThat(document.title()).isEqualTo("이용 약관");
+		assertThat(document.body()).startsWith("# 이용 약관");
+		assertThat(document.body()).contains("## 제1조 (목적)", "## 제5조 (계정 관리)");
 		assertThat(document.body()).doesNotContain("title:");
 	}
 

@@ -1,6 +1,6 @@
 import { fail, get, newId, post, type MockRoute } from '../core/define';
 import { ISSUES, LABELS, type IssueStatus, type MockIssue } from '../fixtures/issues';
-import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
+import { findTeam, TEAM_MEMBERS, withMockJobRole } from '../fixtures/teams';
 import { brief, ME } from '../fixtures/users';
 
 /**
@@ -84,6 +84,8 @@ function teamOr404(teamId: string) {
 const canWrite = (teamId: number) => teamId !== 2;
 
 const jobs = new Map<string, { polls: number; issueId: number; failedStep: string | null }>();
+/** Titles that fail once on create (browser mock state; for e2e "다시 보내기"). */
+const createFailTries = new Map<string, number>();
 
 export const routes: MockRoute[] = [
   // Linked repos with my write permission (07 TODO 13 step 1)
@@ -102,7 +104,7 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/repos/:repoId/assignee-candidates', ({ params }) => ({
     items: (TEAM_MEMBERS[teamOr404(params.teamId).id] ?? [])
       .filter((m) => m.inGithubOrg)
-      .map((m) => m.user),
+      .map((m) => withMockJobRole(m.user)),
     max: 10,
   })),
   get('/api/v1/user/teams/:teamId/repos/:repoId/label-options', () => ({ items: LABELS })),
@@ -151,13 +153,19 @@ export const routes: MockRoute[] = [
         '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.',
       );
     }
+    const title = String(body.title ?? '').trim();
+    // First try fails so e2e can click "다시 보내기" (page.route cannot intercept mockFetch)
+    if (title === '실패 후 재시도') {
+      const tries = createFailTries.get(title) ?? 0;
+      createFailTries.set(title, tries + 1);
+      if (tries < 1) fail(503, 'GITHUB_UNAVAILABLE', 'GitHub 오류');
+    }
     const repo = team.repos.find((r) => r.id === Number(body.repoId)) ?? team.repos[0]!;
     const members = TEAM_MEMBERS[team.id] ?? [];
     const assigneeIds = (body.assigneeIds as number[] | undefined) ?? [];
     const labelNames = (body.labels as string[] | undefined) ?? [];
     const number = 100 + ISSUES.length;
     const now = new Date().toISOString();
-    const title = String(body.title ?? '').trim();
     const issue: MockIssue = {
       id: team.id * 1000 + number,
       teamId: team.id,

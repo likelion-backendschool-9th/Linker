@@ -35,19 +35,19 @@ test('workspace filters teams and reuses the team switcher without a navigation 
   await expect(page.getByRole('dialog')).toBeHidden();
 });
 
-test('team setup previews local fields and never offers a live installation or team submission', async ({
+test('team setup cannot skip installation or claim completion through step URLs', async ({
   page,
 }) => {
   await page.goto('/teams/new');
-  await expect(page.getByRole('button', { name: 'GitHub에서 설치하기' })).toBeDisabled();
-  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'GitHub로 시작하기' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await page.goto('/teams/new?step=2');
   await expect(page).toHaveURL(/step=2/);
-  await page.getByLabel('팀 이름', { exact: true }).fill('프론트 화면 검토팀');
-  await page.getByLabel('팀 소개', { exact: true }).fill('팀원과 같은 디자인으로 만들어요.');
-  await page.getByRole('button', { name: '5 확인' }).click();
-  await expect(page.getByText('프론트 화면 검토팀', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toBeDisabled();
-  await expect(page.getByText('아직 연결하지 않았어요', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '팀 정보를 입력해 주세요' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await page.goto('/teams/new?step=5');
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+  await expect(page.getByRole('heading', { name: '팀을 생성 하셨습니다!' })).toHaveCount(0);
 });
 
 test('settings expose preview sheets and keep member permissions separate', async ({ page }) => {
@@ -84,14 +84,16 @@ test('mobile operator detail can switch to the reason form without losing its ov
 }) => {
   await role(page, 'operator');
   await page.goto('/admin/users');
+  await page.getByLabel('인증 코드', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: '인증', exact: true }).click();
   await page.getByRole('button', { name: /한서준/ }).click();
   await expect(page.getByRole('dialog', { name: '회원 상세' })).toBeVisible();
-  await page.getByRole('button', { name: '이메일 전체 보기' }).click();
+  await page.getByRole('button', { name: '사유 입력 후 열람' }).click();
   const sheet = page.getByRole('dialog', { name: '이메일 열람 사유' });
   await expect(sheet).toBeVisible();
-  await sheet.getByLabel('열람 사유 (필수)').fill('화면 입력 확인');
-  await expect(sheet.getByRole('button', { name: '사유 기록 후 열람' })).toBeDisabled();
-  await expect(page.locator('body')).not.toContainText('seojun.han@example.com');
+  await sheet.getByLabel('열람 사유 (필수)').fill('계정 문의 확인');
+  await expect(sheet.getByRole('button', { name: '사유 기록 후 열람' })).toBeEnabled();
+  await expect(page.locator('body')).not.toContainText('seojun-han@example.com');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
 });
@@ -99,6 +101,8 @@ test('mobile operator detail can switch to the reason form without losing its ov
 test('audit dates validate and statistics expose accessible data tables', async ({ page }) => {
   await role(page, 'operator');
   await page.goto('/admin/audit');
+  await page.getByLabel('인증 코드', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: '인증', exact: true }).click();
   await expect(page.getByRole('table')).toBeVisible();
   await page.getByLabel('시작일 (KST)').fill('2026-11-02');
   await page.getByLabel('종료일 (KST)').fill('2026-11-01');
@@ -115,10 +119,10 @@ test('PR sheet is team-only and the system event offers no editing action', asyn
   // 17 Figma: PR 목록 lives in the room info screen behind the header ☰
   await page.getByRole('button', { name: '채팅방 정보' }).click();
   await page.getByRole('button', { name: 'PR 목록' }).click();
-  const sheet = page.getByRole('dialog', { name: 'Pull requests' });
+  const sheet = page.getByRole('dialog', { name: 'PR 목록' });
   await expect(sheet).toBeVisible();
-  await page.getByRole('button', { name: '병합됨', exact: true }).click();
-  await expect(sheet.getByText('chore: eslint 규칙 정리', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '병합 된 PR', exact: true }).click();
+  await expect(sheet.getByText('#26 chore: eslint 규칙 정리', { exact: true })).toBeVisible();
   await expect(sheet.getByRole('button', { name: /수정|삭제/ })).toHaveCount(0);
 });
 

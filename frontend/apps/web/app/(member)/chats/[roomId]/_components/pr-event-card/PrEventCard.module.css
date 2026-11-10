@@ -1,5 +1,50 @@
-/* Figma 248:1223 PR event card */
+/* Figma 750:3036. Unmapped event colors/line metrics are scoped here, not shared tokens. */
+.message {
+  --pr-event-line: 17px;
+  --pr-organization-line: 14px;
+  --pr-organization-top: 3px;
+  --pr-content-width: 186px;
+  --pr-review-color: #eb6e25;
+  --pr-closed-color: #ed0004;
+  display: grid;
+  grid-template-columns: var(--chat-avatar-size) minmax(0, 1fr);
+  column-gap: var(--space-chat-avatar);
+  row-gap: var(--space-chat-name);
+  width: 100%;
+  padding-inline-end: var(--space-xs);
+}
+
+.avatar {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: var(--chat-avatar-size);
+  height: var(--chat-avatar-size);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+}
+
+.avatar img {
+  object-fit: cover;
+}
+
+.organization {
+  grid-column: 2;
+  margin-top: var(--pr-organization-top);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--pr-organization-line);
+  overflow-wrap: anywhere;
+}
+
 .card {
+  grid-column: 2;
   display: flex;
   align-items: flex-start;
   gap: var(--space-card-gap);
@@ -7,7 +52,7 @@
   padding: var(--space-chat-card);
   border: 1px solid var(--color-hairline-cool);
   border-radius: var(--radius-card-compact);
-  background: var(--color-canvas);
+  background: transparent;
   text-align: left;
 }
 
@@ -24,7 +69,6 @@ button.card:focus-visible {
   flex: 0 0 var(--icon-size-chat-event);
   width: var(--icon-size-chat-event);
   height: var(--icon-size-chat-event);
-  color: var(--color-text-black);
 }
 
 .body {
@@ -32,16 +76,32 @@ button.card:focus-visible {
   flex-direction: column;
   gap: var(--space-row-block);
   min-width: 0;
+  width: var(--pr-content-width);
 }
 
 .event {
   font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--pr-event-line);
   color: var(--color-chat-accent);
+}
+
+.event[data-event='OPENED'] {
+  color: var(--color-progress-done);
+}
+
+.event[data-event='REVIEW_REQUESTED'] {
+  color: var(--pr-review-color);
+}
+
+.event[data-event='CLOSED'] {
+  color: var(--pr-closed-color);
 }
 
 .title {
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
+  line-height: var(--pr-event-line);
   color: var(--color-text-title-cool);
   overflow-wrap: anywhere;
 }
@@ -61,5 +121,5 @@ button.card:focus-visible {
   width: var(--separator-dot-size);
   height: var(--separator-dot-size);
   border-radius: var(--radius-full);
-  background: currentColor;
+  background: var(--color-text-muted-cool);
 }

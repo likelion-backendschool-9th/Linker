@@ -7,18 +7,13 @@ import {
 } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useRouter } from 'next/navigation';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import { act } from 'react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { axe } from 'vitest-axe';
 
-import {
-  chatKeys,
-  chatRoomsOptions,
-  type UnreadSummary,
-} from '@/features/chat/chat-queries';
+import { chatKeys, chatRoomsOptions, type UnreadSummary } from '@/features/chat/chat-queries';
 import { apiFetch } from '@/lib/api/api-fetch';
 import { ViewerProvider } from '@/lib/auth/viewer-context';
 import { renderWithProviders } from '@/test/render-with-providers';
@@ -58,7 +53,12 @@ it('renders the request badge in server HTML and hydrates without a recoverable 
       <HydrationBoundary state={dehydrate(client)}>
         <NuqsTestingAdapter>
           <ViewerProvider
-            viewer={{ role: 'developer', login: 'developer', status: 'ACTIVE', suspendedUntil: null }}
+            viewer={{
+              role: 'developer',
+              login: 'developer',
+              status: 'ACTIVE',
+              suspendedUntil: null,
+            }}
           >
             <ChatList initialSummary={summary} />
           </ViewerProvider>
@@ -95,15 +95,7 @@ it('renders the request badge in server HTML and hydrates without a recoverable 
   }
 });
 
-it('changes tabs through the URL and shows request actions with accessible markup', async () => {
-  const push = vi.fn();
-  vi.mocked(useRouter).mockReturnValue({
-    push,
-    replace: vi.fn(),
-    back: vi.fn(),
-    refresh: vi.fn(),
-    prefetch: vi.fn(),
-  } as never);
+it('changes tabs through the URL and shows the Figma request row with accessible markup', async () => {
   const user = userEvent.setup();
   const { container } = renderWithProviders(<ChatList />, {
     viewer: { role: 'developer', login: 'developer' },
@@ -112,14 +104,12 @@ it('changes tabs through the URL and shows request actions with accessible marku
   await user.click(screen.getByRole('button', { name: /요청/ }));
   expect(await screen.findByRole('heading', { name: '김개발' })).toBeVisible();
   expect(screen.getByRole('img', { name: '알림 꺼짐' })).toBeVisible();
+  expect(screen.getByRole('button', { name: /^요청/ })).toHaveAttribute('aria-pressed', 'true');
   expect(await axe(container)).toHaveNoViolations();
-  await user.click(screen.getByRole('button', { name: '김개발 요청 수락' }));
-  await waitFor(() =>
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/chat-requests/3/accept', {
-      method: 'POST',
-    }),
-  );
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/chats/3'));
+  // Figma 16 has only the red 삭제 on a request; accepting is in the room's request panel (17).
+  expect(screen.getByRole('button', { name: '김개발 요청 삭제' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: /요청 수락/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /김개발/ })).toHaveAttribute('href', '/chats/3');
 });
 
 it('shows recruiters only personal chats, even with a TEAM URL', async () => {

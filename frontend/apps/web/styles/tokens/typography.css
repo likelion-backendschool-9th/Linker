@@ -14,6 +14,7 @@
   --font-size-card-title: 1.125rem; /* 18px */
   --font-size-body: 1rem; /* 16px, also buttons and inputs */
   --font-size-caption: 0.875rem; /* 14px, helper text; minimum for errors and notices */
+  --font-size-legal: 0.875rem; /* 14px, page 03 legal document body */
   --font-size-placeholder: 0.875rem; /* 14px, input placeholders (20); the typed text stays 16px so iOS never zooms */
   --font-size-meta: 0.8125rem; /* 13px, time, view count */
   --font-size-micro: 0.75rem; /* 12px, 07 issue row meta (Figma) */
@@ -31,6 +32,7 @@
   --line-height-title: 1.4; /* section and card titles */
   --line-height-body: 1.6;
   --line-height-caption: 1.5; /* caption and meta */
+  --line-height-legal: 1.3; /* page 03 legal document body */
   --line-height-compact: 22px; /* 07 issue row lines (Figma) */
   --line-height-card-desc: 20px; /* 19 recruit card description (Figma) */
   --line-height-board-control: 1.2; /* 14 buttons, menus, column names (Figma text boxes) */

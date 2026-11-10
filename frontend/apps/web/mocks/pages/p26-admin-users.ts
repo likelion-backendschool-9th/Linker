@@ -10,13 +10,26 @@ type Sanction = {
   reason: string;
   startsAt: string;
   endsAt: string | null;
+  reasonCode: string;
+  revokedAt: string | null;
+  active: boolean;
 };
 
 const sanctions: Record<number, Sanction[]> = {
-  7: [{ id: 1, step: 'WARNING', reason: '홍보성 게시물 반복', startsAt: daysAgo(7), endsAt: null }],
+  7: [
+    {
+      id: 1,
+      step: 'WARNING',
+      reason: '홍보성 게시물 반복',
+      startsAt: daysAgo(7),
+      endsAt: null,
+      reasonCode: 'OTHER',
+      revokedAt: null,
+      active: true,
+    },
+  ],
 };
-const needsReview = new Set<number>([7, 8]);
-// Read-only examples cover the status filters before mutation integration.
+// Page-owned examples use the same response shape and unsupported review flag as Spring.
 const suspended = new Set<number>([7]);
 const withdrawing = new Set<number>([8]);
 const userStatus = (id: number) =>
@@ -30,16 +43,17 @@ export const routes: MockRoute[] = [
     const status = query.get('status');
     const userType = query.get('userType');
     const review = query.get('needsReview');
+    if (review === 'true')
+      fail(503, 'SERVICE_UNAVAILABLE', '확인 필요 판정과 해제 기준은 팀 합의 후 제공해요');
     const items = ALL_USERS.filter((u) => !q || u.login.includes(q) || u.name.includes(q))
       .filter((u) => !userType || u.userType === userType)
       .filter((u) => !status || userStatus(u.id) === status)
-      .filter((u) => review !== 'true' || needsReview.has(u.id))
       .map((u) => ({
         ...brief(u),
         emailMasked: mask(u.email),
         status: userStatus(u.id),
         // 3× a daily limit (POL ch. 2 rate limits)
-        needsReview: needsReview.has(u.id),
+        needsReview: null,
         joinedAt: u.joinedAt,
       }));
     const start = query.get('cursor')
@@ -49,6 +63,7 @@ export const routes: MockRoute[] = [
     const page = items.slice(start, start + size);
     return {
       items: page,
+      reviewFilterSupported: false,
       nextCursor: start + size < items.length ? String(page.at(-1)!.id) : null,
     };
   }),
@@ -63,11 +78,12 @@ export const routes: MockRoute[] = [
       joinedAt: user.joinedAt,
       sanctions: sanctions[user.id] ?? [],
       reportHistory: [{ caseId: 1, targetType: 'POST', result: 'HIDE', at: daysAgo(9) }],
-      subscription:
+      subscriptions: [
         user.userType === 'RECRUITER'
-          ? { plan: 'SCOUT', status: 'ACTIVE' }
-          : { plan: 'PRO', status: 'ACTIVE' },
-      payments: [{ id: 1, amount: 2900, status: 'PAID', paidAt: daysAgo(3) }],
+          ? { id: 2, plan: 'SCOUT', status: 'ACTIVE', teamId: null, periodEnd: daysAgo(-30) }
+          : { id: 1, plan: 'PRO', status: 'ACTIVE', teamId: null, periodEnd: daysAgo(-30) },
+      ],
+      payments: [{ id: 1, amount: 2900, status: 'DONE', paidAt: daysAgo(3), refundedAmount: 0 }],
       // Recruiters: company info and 30-day offer stats
       recruiter:
         user.userType === 'RECRUITER'
@@ -92,7 +108,10 @@ export const routes: MockRoute[] = [
     const sanction: Sanction = {
       id: newId(),
       step,
-      reason: String(body.reason),
+      reason: String(body.reason).trim(),
+      reasonCode: String(body.reasonCode ?? 'OTHER'),
+      revokedAt: null,
+      active: true,
       startsAt: new Date().toISOString(),
       endsAt:
         step === 'WARNING' || step === 'PERMANENT' ? null : daysAgo(step === 'DAYS_7' ? -7 : -30),
@@ -108,8 +127,12 @@ export const routes: MockRoute[] = [
     return sanction;
   }),
   del('/api/v1/admin/users/:userId/sanctions/:sanctionId', ({ params, viewer }) => {
+    if (viewer.me!.name !== '리드 운영자') fail(403, 'LEAD_REQUIRED', '리드 운영자만 할 수 있어요');
     const userId = Number(params.userId);
-    sanctions[userId] = (sanctions[userId] ?? []).filter((s) => s.id !== Number(params.sanctionId));
+    const sanction = (sanctions[userId] ?? []).find((s) => s.id === Number(params.sanctionId));
+    if (!sanction) fail(404, 'NOT_FOUND', '제재를 찾지 못했어요');
+    sanction.active = false;
+    sanction.revokedAt = new Date().toISOString();
     suspended.delete(userId);
     addAuditLog({
       admin: viewer.me!.name,
@@ -128,7 +151,7 @@ export const routes: MockRoute[] = [
       admin: viewer.me!.name,
       actionType: 'EMAIL_REVEAL',
       target: `USER ${user.login}`,
-      reason: String(body.reason),
+      reason: String(body.reason).trim(),
     });
     return { email: user.email };
   }),

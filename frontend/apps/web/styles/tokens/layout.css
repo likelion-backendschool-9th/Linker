@@ -52,6 +52,7 @@
   --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
   --space-home-indicator: 24px; /* Figma bottom indicator area (인디케이션 영역); real devices use the larger of this and the safe area */
   --sheet-header-height-tech: 60px; /* 20 tech stack sheet title row (Figma 301:1551) */
+  --sheet-header-height-onboarding-status: 54px; /* 02 onboarding job-status sheet */
   --space-recruit-field-block: 17px; /* 20 intro textarea: text top and counter bottom (Figma 600:659) */
 
   /* Radius */
@@ -156,6 +157,7 @@
   --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
   --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
   --textarea-height-intro: 120px; /* 20 프로젝트 소개 textarea (Figma) */
+  --textarea-height-onboarding-bio: 108px; /* 02 basic profile bio field (Figma) */
   --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
   --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
   --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
@@ -248,6 +250,7 @@
   --radius-calendar-bar: 2px; /* 15 issue bar */
   --icon-size-calendar: 24px; /* 15 month chevron and help icon */
   --wheel-row-height: 37px; /* 15 date wheel row; also the shared date picker sheet (20 마감일, 22 기간) */
+  --wheel-band-height: 39px; /* 13 date sheet selected band (Figma 368:2615); the row stays 37px */
   --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
 
   /* Figma 28 plans (288:471, 293:218) */
@@ -294,4 +297,15 @@
   --issue-body-min-height: 120px; /* 12 body box */
   --space-issue-body-block: 17px; /* 12 body box top padding (text starts 17px down, 15px in) */
   --task-size-issue-body: 14px; /* 12 body task-list mark, about the text height */
+
+  /* Figma 16 chat list (247:1019, 321:2336, 321:2417) */
+  --space-chat-list-top: 15px; /* tabs to the first room */
+  --chat-list-avatar-size: 50px; /* room photo */
+  --chat-list-badge-size: 18px; /* unread count circle */
+  --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
+
+  /* Figma 13 create (200:806) */
+  --issue-create-body-min-height: 163px; /* markdown / preview field */
+  --space-issue-create-body: 11px; /* body field padding */
+  --icon-size-issue-form-chevron: 12px; /* 이슈 양식 row chevron (Figma 12×13) */
 }

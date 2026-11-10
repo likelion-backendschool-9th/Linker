@@ -4,6 +4,7 @@ import { formatDate, toKstIso } from '@/lib/format/time';
 
 import type { RoomInfo, RoomMessage } from '../../_lib/room-api';
 import { ChatMessage } from '../chat-message';
+import { continuesPrGroup } from '../pr-event-card/model';
 import styles from '../chat-room/ChatRoom.module.css';
 
 import { useMessageTimeline } from './hook';
@@ -67,7 +68,12 @@ export function MessageTimeline({
               data-index={row.index}
               data-message-id={message.id}
               className={styles.virtualRow}
-              style={{ transform: `translateY(${row.start}px)` }}
+              style={{
+                transform: `translateY(${row.start}px)`,
+                paddingBottom: continuesPrGroup(message, messages[row.index + 1])
+                  ? 'var(--space-chat-name)'
+                  : undefined,
+              }}
             >
               {showDate && (
                 <p className={styles.date}>
@@ -78,6 +84,7 @@ export function MessageTimeline({
                 kind={kind}
                 onUnread={onUnread}
                 message={message}
+                previousMessage={previous}
                 mine={message.sender?.login === login}
                 onMenu={onMenu}
                 onPhoto={onPhoto}
