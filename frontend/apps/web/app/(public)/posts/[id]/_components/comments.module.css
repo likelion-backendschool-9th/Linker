@@ -171,3 +171,80 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Date + "더보기" on the right of the head row */
+.meta {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: var(--space-xxs);
+}
+
+.edited {
+  color: var(--color-text-muted-cool);
+}
+
+/* Comment "더보기": same 24×24 hit area and menu values as the header one (Figma 285:227, 622:347) */
+.menuTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+.menuIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.menuPanel {
+  z-index: var(--z-overlay);
+  display: grid;
+  width: var(--board-menu-width);
+  padding: 0 var(--space-board-card-inline);
+  background-color: var(--color-board-control);
+  border: 1px solid var(--color-board-menu-border);
+  border-radius: var(--radius-xxs);
+  box-shadow: var(--shadow-board-menu);
+  outline: none;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-row-block);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.menuItem:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+/* Inline edit: cancel / save as quiet text buttons under the field */
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.editButton {
+  min-height: var(--touch-target-icon);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+}
+
+.editButton[aria-disabled='true'] {
+  opacity: 0.5;
+}

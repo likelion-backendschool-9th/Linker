@@ -129,6 +129,10 @@ export const routes: MockRoute[] = [
       if (POSTS.some((p) => p.repo.repoId === repo.repoId)) {
         fail(409, 'REPO_ALREADY_POSTED', '이미 작업물로 올린 레포예요');
       }
+      // POL-P-2: at least one photo, as the server checks
+      if (!Array.isArray(body.photos) || body.photos.length === 0) {
+        fail(400, 'VALIDATION_ERROR', '사진을 1장 이상 올려 주세요.');
+      }
       const card: MockRepoCard = {
         repoId: repo.repoId,
         fullName: repo.fullName,

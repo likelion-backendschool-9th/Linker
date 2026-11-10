@@ -89,6 +89,7 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
     creating,
     failure,
     photoWait,
+    photoMissing,
     uploader,
     form,
     errors,
@@ -236,6 +237,11 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
               event.target.value = '';
             }}
           />
+          {photoMissing && (
+            <p className={styles.error} role="alert">
+              사진을 1장 이상 올려 주세요.
+            </p>
+          )}
           {photoWait && !uploader.allDone && (
             <p className={styles.error} role="alert">
               사진이 모두 올라가야 게시할 수 있어요. 실패한 사진은 다시 올리거나 빼 주세요.

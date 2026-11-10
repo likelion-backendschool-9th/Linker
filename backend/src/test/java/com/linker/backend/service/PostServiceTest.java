@@ -23,6 +23,7 @@ import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.github.GithubRepo;
+import com.linker.backend.entity.post.Comment;
 import com.linker.backend.entity.post.Post;
 import com.linker.backend.entity.post.PostTag;
 import com.linker.backend.entity.post.PostView;
@@ -88,6 +89,8 @@ class PostServiceTest {
 	UserTechTagRepository techTags;
 	@Mock
 	UserJobCategoryRepository jobCategories;
+	@Mock
+	com.linker.backend.repository.moderation.ReportRepository reports;
 
 	PostService service;
 
@@ -95,7 +98,7 @@ class PostServiceTest {
 	void setUp() {
 		service = new PostService(
 				posts, comments, likes, views, seenPosts, pins, users, blocks, authors,
-				follows, techTags, jobCategories, CLOCK);
+				follows, techTags, jobCategories, reports, CLOCK);
 		SecurityContextHolder.clearContext();
 	}
 
@@ -126,7 +129,7 @@ class PostServiceTest {
 		when(views.findByPostIdAndViewerIdAndViewDate(eq(42L), eq(99L), any(LocalDate.class)))
 				.thenReturn(Optional.empty());
 		when(users.findById(99L)).thenReturn(Optional.of(viewer));
-		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", false));
+		when(authors.toAuthor(any(), anyBoolean())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", false));
 		setViewer(99L, "viewer");
 
 		var response = service.detail(42L, "share");
@@ -144,12 +147,72 @@ class PostServiceTest {
 		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
 		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
 		when(likes.existsByPostIdAndUserId(42L, 10L)).thenReturn(false);
-		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", false));
+		when(authors.toAuthor(any(), anyBoolean())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", false));
 		setViewer(10L, "author");
 
 		service.detail(42L, "feed");
 
 		verify(views, never()).save(any());
+	}
+
+	@Test
+	void detailTellsAViewerWhetherTheyFollowTheAuthor() {
+		Post post = post(10L, PostVisibility.VISIBLE);
+		User viewer = User.create("viewer", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(viewer, "id", 99L);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(views.findByPostIdAndViewerIdAndViewDate(eq(42L), eq(99L), any(LocalDate.class)))
+				.thenReturn(Optional.empty());
+		when(users.findById(99L)).thenReturn(Optional.of(viewer));
+		when(follows.existsByFollower_IdAndFollowing_Id(99L, 10L)).thenReturn(true);
+		when(authors.toAuthor(any(), eq(true))).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", true));
+		setViewer(99L, "viewer");
+
+		assertThat(service.detail(42L, null).author().isFollowing()).isTrue();
+	}
+
+	@Test
+	void aPostIReportedIsGoneForMeButNotForItsAuthor() {
+		Post post = post(10L, PostVisibility.VISIBLE);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(reports.findTargetIdsReportedBy(99L, com.linker.backend.entity.moderation.type.ReportTargetType.POST))
+				.thenReturn(List.of(42L));
+		setViewer(99L, "viewer");
+
+		assertThatThrownBy(() -> service.detail(42L, null))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(404));
+	}
+
+	@Test
+	void commentsUnderReviewOrReportedByMeLeaveMyListButTheirAuthorKeepsThem() {
+		Post post = post(10L, PostVisibility.VISIBLE);
+		User me = User.create("viewer", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(me, "id", 99L);
+		User other = User.create("other", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(other, "id", 50L);
+		Comment mineUnderReview = comment(1L, post, me, PostVisibility.UNDER_REVIEW);
+		Comment othersUnderReview = comment(2L, post, other, PostVisibility.UNDER_REVIEW);
+		Comment reportedByMe = comment(3L, post, other, PostVisibility.VISIBLE);
+		Comment plain = comment(4L, post, other, PostVisibility.VISIBLE);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(comments.findByPostIdOrderByIdAsc(42L))
+				.thenReturn(List.of(mineUnderReview, othersUnderReview, reportedByMe, plain));
+		when(reports.findTargetIdsReportedBy(99L, com.linker.backend.entity.moderation.type.ReportTargetType.POST))
+				.thenReturn(List.of());
+		when(reports.findTargetIdsReportedBy(99L, com.linker.backend.entity.moderation.type.ReportTargetType.COMMENT))
+				.thenReturn(List.of(3L));
+		setViewer(99L, "viewer");
+
+		assertThat(service.comments(42L).items()).extracting(item -> item.id()).containsExactly(1L, 4L);
+	}
+
+	private static Comment comment(long id, Post post, User author, PostVisibility visibility) {
+		Comment comment = Comment.write(post, author, null, "댓글 " + id);
+		ReflectionTestUtils.setField(comment, "id", id);
+		ReflectionTestUtils.setField(comment, "visibility", visibility);
+		ReflectionTestUtils.setField(comment, "createdAt", NOW);
+		return comment;
 	}
 
 	@Test

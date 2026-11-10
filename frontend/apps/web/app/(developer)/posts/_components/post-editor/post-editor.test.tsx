@@ -97,6 +97,28 @@ it('lists repos with forks and already-posted ones disabled', async () => {
   expect(onNext).toHaveBeenCalledWith(42);
 });
 
+const cover = { fileId: 'a', url: '/mock/cover-1.svg' };
+
+it('asks for at least one photo before publishing (POL-P-2)', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(
+    <PostContentForm
+      target={{ mode: 'create', repoId: 12 }}
+      repo={summary}
+      photoLimit={summary.photoLimit}
+      initial={{ values: { ...emptyPostForm(), intro: '팀 협업 웹앱' }, photos: [] }}
+      draftKey="draft:post:no-photo"
+      onSaved={vi.fn()}
+    />,
+    developer,
+  );
+
+  await user.click(screen.getByRole('button', { name: '게시하기' }));
+
+  expect(await screen.findByText('사진을 1장 이상 올려 주세요.')).toBeVisible();
+  expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/user/posts')).toBe(false);
+});
+
 it('validates the content step and publishes the post body', async () => {
   const user = userEvent.setup();
   const onSaved = vi.fn();
@@ -106,7 +128,7 @@ it('validates the content step and publishes the post body', async () => {
       target={{ mode: 'create', repoId: 12 }}
       repo={summary}
       photoLimit={summary.photoLimit}
-      initial={{ values, photos: [] }}
+      initial={{ values, photos: [cover] }}
       draftKey="draft:post:test"
       onSaved={onSaved}
     />,
@@ -138,7 +160,7 @@ it('validates the content step and publishes the post body', async () => {
     repoId: 12,
     intro: '팀 협업 웹앱',
     body: 'Spring Boot API',
-    photos: [],
+    photos: [cover],
     myRole: null,
     demoLinks: ['https://demo.example'],
     period: { start: '2026-09', end: null },

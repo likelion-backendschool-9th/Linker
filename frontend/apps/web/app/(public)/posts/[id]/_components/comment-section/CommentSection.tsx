@@ -1,18 +1,25 @@
 'use client';
 
 // Own region: flat comment list and the composer (Figma 287:328)
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, EllipsisVertical } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { DropdownMenu } from 'radix-ui';
 
+import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { formatFullDate, toKstIso } from '@/lib/format/time';
 
 import type { PostComment, PostDetail } from '../../_lib/post-detail-queries';
 import styles from '../comments.module.css';
-import { useCommentComposer, useCommentSection } from './hook';
+import {
+  useCommentComposer,
+  useCommentDeleteDialog,
+  useCommentItem,
+  useCommentSection,
+} from './hook';
 
 type CommentSectionProps = {
   post: PostDetail;
@@ -44,19 +51,21 @@ export function CommentSection({ post, canWrite }: CommentSectionProps) {
           <ul className={styles.list}>
             {items.map((comment) => (
               <li key={comment.id} className={styles.item}>
-                <CommentItem comment={comment} />
+                <CommentItem post={post} comment={comment} />
               </li>
             ))}
           </ul>
         )
       )}
+      <CommentDeleteDialog post={post} />
     </section>
   );
 }
 
 /** Figma 287:293: photo 44, name / @login, full date on the right, text 20 below */
-function CommentItem({ comment }: { comment: PostComment }) {
+function CommentItem({ post, comment }: { post: PostDetail; comment: PostComment }) {
   const nameId = `comment-${comment.id}-author`;
+  const item = useCommentItem(post, comment);
 
   return (
     <article aria-labelledby={nameId} className={styles.comment}>
@@ -77,12 +86,123 @@ function CommentItem({ comment }: { comment: PostComment }) {
             <span className={styles.login}>@{comment.author.login}</span>
           </span>
         </Link>
-        <time dateTime={toKstIso(comment.createdAt)} className={styles.date}>
-          {formatFullDate(comment.createdAt)}
-        </time>
+        <span className={styles.meta}>
+          <time dateTime={toKstIso(comment.createdAt)} className={styles.date}>
+            {formatFullDate(comment.createdAt)}
+            {comment.editedAt && <span className={styles.edited}> · 수정됨</span>}
+          </time>
+          <CommentMenu item={item} />
+        </span>
       </div>
-      <p className={styles.text}>{comment.text}</p>
+      {item.editing ? (
+        <form className={styles.composer} noValidate onSubmit={item.save}>
+          <div className={styles.field}>
+            <label htmlFor={`${item.id}-edit`} className="sr-only">
+              댓글 수정
+            </label>
+            <textarea
+              id={`${item.id}-edit`}
+              className={styles.input}
+              rows={1}
+              value={item.text}
+              aria-invalid={item.error ? true : undefined}
+              aria-describedby={item.error ? `${item.id}-edit-error` : undefined}
+              onChange={(event) => item.setText(event.target.value)}
+              // The field opened on purpose from the menu, so typing can start at once
+              autoFocus
+            />
+          </div>
+          {item.error && (
+            <p id={`${item.id}-edit-error`} className={styles.error} role="alert">
+              {item.error}
+            </p>
+          )}
+          <div className={styles.editActions}>
+            <button type="button" className={styles.editButton} onClick={item.cancelEdit}>
+              취소
+            </button>
+            <button
+              type="submit"
+              className={styles.editButton}
+              aria-disabled={item.savePending || undefined}
+            >
+              {item.savePending ? '저장 중' : '저장'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className={styles.text}>{comment.text}</p>
+      )}
     </article>
+  );
+}
+
+/** Same dropdown as the header "더보기" (Figma 622:347), per comment */
+function CommentMenu({ item }: { item: ReturnType<typeof useCommentItem> }) {
+  const icon = (
+    <>
+      <EllipsisVertical aria-hidden className={styles.menuIcon} />
+      <span className="sr-only">댓글 더보기</span>
+    </>
+  );
+
+  if (item.isGuest) {
+    return (
+      <button type="button" className={styles.menuTrigger} onClick={item.promptLogin}>
+        {icon}
+      </button>
+    );
+  }
+
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <button type="button" className={styles.menuTrigger}>
+          {icon}
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          className={styles.menuPanel}
+          side="bottom"
+          align="end"
+          sideOffset={4}
+          collisionPadding={16}
+        >
+          {item.canEdit && (
+            <DropdownMenu.Item className={styles.menuItem} onSelect={item.startEdit}>
+              수정하기
+            </DropdownMenu.Item>
+          )}
+          {item.canDelete && (
+            <DropdownMenu.Item className={styles.menuItem} onSelect={item.openDelete}>
+              삭제하기
+            </DropdownMenu.Item>
+          )}
+          {item.canReport && (
+            <DropdownMenu.Item className={styles.menuItem} onSelect={item.openReport}>
+              신고 하기
+            </DropdownMenu.Item>
+          )}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+function CommentDeleteDialog({ post }: { post: PostDetail }) {
+  const { overlay, removePending, error, confirmDelete } = useCommentDeleteDialog(post);
+  return (
+    <ConfirmDialog
+      overlay={overlay}
+      title="댓글을 삭제할까요?"
+      description="삭제한 댓글은 되돌릴 수 없어요."
+      confirmLabel="삭제"
+      destructive
+      pending={removePending}
+      error={error}
+      onConfirm={confirmDelete}
+    />
   );
 }
 

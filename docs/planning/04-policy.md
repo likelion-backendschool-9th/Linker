@@ -120,7 +120,7 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 | Action | Limit |
 | --- | --- |
 | Write post | 10/day (only published posts count; rejected attempts don't) |
-| Write comment | 10/min, 300/day |
+| Write comment | 10/min, 300/day (only written comments count; rejected attempts don't) |
 | Follow | 200/day |
 | Write recruit post | Max 3 open (Pro 10), 5/day (only published recruit posts count; rejected attempts don't) |
 | Apply | 20/day |
@@ -257,9 +257,9 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | --- | --- |
 | POL-P-1 Repo selection | Only **public** repos of the user's account or orgs they belong to. Private repos can't be selected. One post per repo (progress updates are phase 2) |
 | POL-P-1 Repo changes | If the repo becomes private or is deleted, keep the post, show the repo card as "레포를 볼 수 없음" (repo unavailable), hide the README toggle |
-| POL-P-2 Required fields | Repo, one-line intro (1–60 chars) |
+| POL-P-2 Required fields | Repo, one-line intro (1–60 chars), at least 1 photo ("사진을 1장 이상 올려 주세요.") |
 | POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links. The one-line intro and body take no emoji: the input drops emoji as they are typed or pasted, with no error message |
-| POL-P-2 Photos | Free 5 / Pro 10, 10MB each, JPG/PNG/WebP/GIF. Resize long side to 2,048px and strip EXIF on upload. First photo is the cover |
+| POL-P-2 Photos | 1 to Free 5 / Pro 10, 10MB each, JPG/PNG/WebP/GIF. Resize long side to 2,048px and strip EXIF on upload. First photo is the cover and the post's link-preview (OG) image |
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
@@ -291,10 +291,10 @@ Popularity score = likes × 1 + comments × 2 (excluding the author's own), deca
 
 - **Repo renamed or transferred to another account** → tracked by GitHub repo id; card info refreshed once a day. Post author doesn't change.
 - **Forked repo** → can be posted. The 22 repo list shows a "포크" badge; the 23 post shows a "Fork" chip above the title, next to the role chip.
-- **Org repo with none of my commits** → can be posted, but the card shows "내 커밋 0개" (0 of my commits). Shows 0 also when the commit email isn't registered to GitHub, so commit counts are never used as evidence for plagiarism or sanctions.
+- **Org repo with none of my commits** → can be posted, but the card shows "내 커밋 0개" (0 of my commits). Shows 0 also when the commit email isn't registered to GitHub, so commit counts are never used as evidence for plagiarism or sanctions. Collecting and showing the commit and Linker issue counts is follow-up work (not in the MVP screens).
 - **Several teammates post the same repo** → each can post; the detail page groups "이 레포의 다른 게시물" (other posts for this repo).
 - **Only some photos upload** → show retry on failed photos; publishing allowed only after all upload.
-- **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked.
+- **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked. The same applies when an operator hides it. A comment hidden by reports is seen only by its author.
 - **Empty "추천"** (no visible posts at all) → the empty feed copy plus 5 developers by my tech stack. A developer with no matching posts still sees every post in random order, so "추천" is never empty while posts exist.
 - **Someone I follow is suspended or deletes their account** → keep the follow, remove their posts from the feed. If deleted, the follow is removed too.
 

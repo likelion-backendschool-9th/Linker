@@ -118,6 +118,7 @@ export function usePostContentForm({
   const creating = target.mode === 'create';
   const [failure, setFailure] = useState<string | null>(null);
   const [photoWait, setPhotoWait] = useState(false);
+  const [photoMissing, setPhotoMissing] = useState(false);
   const done = useRef(false);
 
   const uploader = useImageUpload(photoLimit, {
@@ -221,15 +222,23 @@ export function usePostContentForm({
     },
   });
 
-  const submit = form.handleSubmit((values) => {
-    // Publish only after every photo is up (04 ch. 4 exceptions)
-    if (!uploader.allDone) {
-      setPhotoWait(true);
-      return;
-    }
-    setPhotoWait(false);
-    if (!save.isPending) save.mutate(values);
-  });
+  // POL-P-2: at least one photo (the first is the cover and the OG image on 23)
+  const noPhotos = uploader.items.length === 0;
+  const submit = form.handleSubmit(
+    (values) => {
+      setPhotoMissing(noPhotos);
+      if (noPhotos) return;
+      // Publish only after every photo is up (04 ch. 4 exceptions)
+      if (!uploader.allDone) {
+        setPhotoWait(true);
+        return;
+      }
+      setPhotoWait(false);
+      if (!save.isPending) save.mutate(values);
+    },
+    // Other fields are wrong too: name the missing photo in the same pass
+    () => setPhotoMissing(noPhotos),
+  );
   const describe = (...ids: (string | false | undefined)[]) =>
     ids.filter(Boolean).join(' ') || undefined;
 
@@ -289,6 +298,7 @@ export function usePostContentForm({
     creating,
     failure,
     photoWait,
+    photoMissing: photoMissing && noPhotos,
     uploader,
     form,
     errors,
