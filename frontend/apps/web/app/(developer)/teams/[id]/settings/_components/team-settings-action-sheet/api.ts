@@ -6,6 +6,10 @@ export {
   inviteGithubMember,
 } from '../../_lib/settings-queries';
 export {
+  requestTeamOwnership,
+  acceptTeamOwnership,
+  completeTeamProject,
+  undoTeamCompletion,
   updateTeamInfo,
   deleteTeam,
   leaveTeam,

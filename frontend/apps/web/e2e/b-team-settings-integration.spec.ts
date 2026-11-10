@@ -158,3 +158,22 @@ test('09 member leave confirmation calls the existing flow and returns to worksp
   await expect(page).toHaveURL('/workspace');
   await expect(dialog).toBeHidden();
 });
+
+
+test('09 ownership and AI sheets submit only explicit input', async ({page}, info) => {
+  await page.goto('/teams/1/settings?overlay=team-settings-action&oid=transfer');
+  await expect(page.getByRole('dialog', {name:'소유권 이전'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'이전 요청 보내기'})).toBeDisabled();
+  await page.getByLabel('새 오너').selectOption({index:1});
+  await page.screenshot({path:info.outputPath('p09-transfer.png'),animations:'disabled'});
+  await page.getByRole('button',{name:'이전 요청 보내기'}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.goto('/teams/1/settings?overlay=team-settings-action&oid=ai');
+  await expect(page.getByRole('checkbox',{name:'AI 요약 사용'})).toBeVisible();
+  await page.getByRole('checkbox',{name:'AI 요약 사용'}).uncheck();
+  await page.screenshot({path:info.outputPath('p09-ai.png'),animations:'disabled'});
+  await page.getByRole('button',{name:'저장',exact:true}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.evaluate(() => window.history.pushState(null, '', '?overlay=team-settings-action&oid=ai'));
+  await expect(page.getByRole('checkbox',{name:'AI 요약 사용'})).not.toBeChecked();
+});

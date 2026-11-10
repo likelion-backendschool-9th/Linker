@@ -111,6 +111,10 @@ public class Team {
 		this.description = description;
 	}
 
+	public void complete() { this.status = TeamStatus.COMPLETED; }
+	public void resume() { this.status = TeamStatus.ACTIVE; }
+	public void changeAiSummary(boolean enabled) { this.aiSummaryEnabled = enabled; }
+
 	public void archive(Instant now) {
 		this.status = TeamStatus.ARCHIVED;
 		this.archivedAt = now;

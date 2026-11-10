@@ -368,7 +368,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | Leaving / removal | Members can leave anytime ("팀 나가기" on 09, confirm "팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"). Admins get no "팀 나가기". Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
 | App uninstall | If the Linker app is removed from the org, the team becomes read-only and the owner is told to reinstall. Archived after 30 days |
 | POL-T-4 Project completion | Owner/admin marks complete. Can be undone within 7 days; after that, completion records are finalized |
-| POL-T-4 Completion calculation | Members in the team at completion who belonged ≥ 14 days during the project get 1 completion. Members who left midway get 1 non-completion (reason not shown). Issue completion rate = share of assigned issues in done status |
+| POL-T-4 Completion calculation | Members in the team at completion whose continuous membership since the last join is ≥ 14 days get 1 completion (prior membership periods are not added; #384). Members who left midway get 1 non-completion (reason not shown). Issue completion rate = share of assigned issues in done status |
 
 ### Team status
 

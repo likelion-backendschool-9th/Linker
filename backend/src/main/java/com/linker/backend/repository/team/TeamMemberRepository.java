@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
+  List<TeamMember> findByUserIdAndLeftAtIsNullOrderByTeamIdAsc(long userId);
+
+  List<TeamMember> findByTeamIdOrderByJoinedAtAscIdAsc(long teamId);
+
   long countByTeamIdAndLeftAtIsNull(long teamId);
 
   @Query("""

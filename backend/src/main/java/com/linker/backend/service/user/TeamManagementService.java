@@ -32,10 +32,14 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** Page 09 use cases on the existing V20 schema. New-table flows wait for migration agreement. */
+/** Page 09 team management; provider calls remain outside write transactions. */
 @Service("userTeamManagementService")
 public class TeamManagementService {
   private final TeamRepository teams;
+  private final TeamOwnershipTransferRepository transfers;
+  private final TeamCompletionRepository completions;
+  private final CompletionRecordRepository records;
+  private final tools.jackson.databind.ObjectMapper json;
   private final TeamMemberRepository members;
   private final TeamRepoRepository repos;
   private final UserRepository users;
@@ -58,7 +62,10 @@ public class TeamManagementService {
       TeamSyncService sync,
       Clock clock,
       PlatformTransactionManager transactions,
-      com.linker.backend.repository.account.AuthIdentityRepository identities) {
+      com.linker.backend.repository.account.AuthIdentityRepository identities,
+      TeamOwnershipTransferRepository transfers, TeamCompletionRepository completions,
+      CompletionRecordRepository records, tools.jackson.databind.ObjectMapper json) {
+    this.transfers=transfers;this.completions=completions;this.records=records;this.json=json;
     this.teams = teams;
     this.members = members;
     this.repos = repos;
@@ -93,6 +100,8 @@ public class TeamManagementService {
     // D currently implements one-time checkout, not automatic renewal. Do not promise a next charge.
     var billing = new Billing(payer, payerName,
         writable && (role == TeamRole.OWNER || Objects.equals(payer, principal.userId())), null, null);
+    var pending = transfers.findByTeamIdAndStatus(teamId, "PENDING").orElse(null);
+    var completed = completions.findByTeamIdAndRevertedAtIsNull(teamId).orElse(null);
     return new TeamSettingsResponse(
         teamId,
         team.getName(),
@@ -102,15 +111,14 @@ public class TeamManagementService {
         team.getStatus().name(),
         flex ? "FLEX" : "FREE",
         role.name(),
-        // Do not advertise flows whose migration/contracts and endpoints are still pending.
         new Permissions(
             admin,
             admin,
             admin,
             admin,
             owner,
-            false,
-            false,
+            role == TeamRole.OWNER && writable,
+            admin,
             owner,
             owner,
             role != TeamRole.OWNER && writable),
@@ -120,7 +128,14 @@ public class TeamManagementService {
         flex ? null : (long) PlanLimits.TEAM_MEMBERS_FREE,
         billing,
         false,
-        "팀 오너이면서 GitHub 조직 오너만 조직에 초대할 수 있어요");
+        "팀 오너이면서 GitHub 조직 오너만 조직에 초대할 수 있어요",
+        pending == null ? null : new OwnershipTransfer(pending.getId(),
+            users.findById(pending.getFromUserId()).map(User::visibleName).orElse("탈퇴한 사용자"),
+            users.findById(pending.getToUserId()).map(User::visibleName).orElse("탈퇴한 사용자"),
+            pending.getToUserId() == principal.userId()),
+        completed == null ? null : completed.getCompletedAt(),
+        completed == null ? null : new Completion(admin && completed.getConfirmedAt() == null
+            && clock.instant().isBefore(completed.getRevertibleUntil()), completed.getConfirmedAt() != null, false));
   }
 
   @Transactional(readOnly = true)
@@ -163,6 +178,12 @@ public class TeamManagementService {
     Team team = locked(principal, teamId, false);
     if (request.name() == null || request.name().isBlank() || request.name().trim().length() > 255)
       throw new ApiException(400, "VALIDATION_ERROR", "팀 이름을 확인해 주세요");
+    if (request.aiSummaryEnabled() != null) {
+      // AI switch belongs to the actual owner, not a temporarily delegated administrator.
+      if (member(teamId,principal.userId()).getRole()!=TeamRole.OWNER)
+        throw new ApiException(403,"TEAM_ROLE_REQUIRED","팀 오너만 변경할 수 있어요");
+      team.changeAiSummary(request.aiSummaryEnabled());
+    }
     team.changeInfo(request.name().trim(), request.description());
   }
 
@@ -179,7 +200,7 @@ public class TeamManagementService {
 
   @Transactional
   public void remove(AuthenticatedUser principal, long teamId, long targetId) {
-    locked(principal, teamId, false);
+    Team team = locked(principal, teamId, false);
     TeamMember actor = member(teamId, principal.userId());
     TeamMember target = member(teamId, targetId);
     if (targetId == principal.userId() || target.getRole() == TeamRole.OWNER
@@ -192,7 +213,9 @@ public class TeamManagementService {
     for (long recipient : recipients) {
       if (teams.canReceiveNotification(recipient))
         notifications.create(new CreateNotificationCommand(recipient, "TEAM_MEMBER_REMOVED",
-            principal.userId(), "TEAM", teamId, "/workspace", null, null));
+            principal.userId(), "TEAM", teamId, "/workspace",
+            recipient == targetId ? notificationText("팀에서 내보내졌어요", team.getName()
+                + " 팀에서 내보내졌어요. 7일 동안 이 팀에 다시 지원할 수 없어요.") : null, null));
     }
   }
 
@@ -227,7 +250,8 @@ public class TeamManagementService {
       teams.closeChatMembership(teamId, m.getUserId(), now);
       if (teams.canReceiveNotification(m.getUserId()))
         notifications.create(new CreateNotificationCommand(m.getUserId(), "TEAM_DELETED",
-            principal.userId(), "TEAM", teamId, "/workspace", null, null));
+            principal.userId(), "TEAM", teamId, "/workspace",
+            notificationText("팀이 삭제됐어요", team.getName()+" 팀이 삭제됐어요."), null));
     }
   }
 
@@ -281,6 +305,106 @@ public class TeamManagementService {
       sync.invalidate(teamId);
       return null;
     });
+  }
+
+  @Transactional
+  public TransferCreated requestOwnership(AuthenticatedUser principal,long teamId,TransferTeamOwnershipRequest request) {
+    locked(principal,teamId,true);
+    if (member(teamId,principal.userId()).getRole()!=TeamRole.OWNER)
+      throw new ApiException(403,"TEAM_ROLE_REQUIRED","팀 오너만 이전을 요청할 수 있어요");
+    if (request.toUserId()==principal.userId()) throw new ApiException(409,"STATE_CONFLICT","다른 멤버를 선택해 주세요");
+    member(teamId,request.toUserId()); teams.requireActive(request.toUserId());
+    transfers.findByTeamIdAndStatus(teamId,"PENDING").ifPresent(t -> t.respond("CANCELED",clock.instant()));
+    transfers.flush();
+    var transfer=transfers.saveAndFlush(com.linker.backend.entity.team.TeamOwnershipTransfer.request(teamId,principal.userId(),request.toUserId()));
+    return new TransferCreated(transfer.getId());
+  }
+
+  @Transactional
+  public void acceptOwnership(AuthenticatedUser principal,long teamId,long transferId) {
+    active(principal);
+    Team team=teams.lockTeamForSetup(teamId).orElseThrow(TeamManagementService::notFound);
+    requireWritable(team);
+    var transfer=transfers.findById(transferId).filter(t -> t.getTeamId()==teamId && t.getToUserId()==principal.userId())
+        .orElseThrow(() -> new ApiException(403,"TEAM_ROLE_REQUIRED","이전 요청의 수신자만 수락할 수 있어요"));
+    if (!"PENDING".equals(transfer.getStatus())) throw new ApiException(409,"STATE_CONFLICT","이미 처리된 요청이에요");
+    var from=member(teamId,transfer.getFromUserId());var to=member(teamId,principal.userId());
+    if (from.getRole()!=TeamRole.OWNER) throw new ApiException(409,"STATE_CONFLICT","팀 오너가 변경됐어요");
+    from.changeRole(TeamRole.ADMIN);members.saveAndFlush(from);
+    to.changeRole(TeamRole.OWNER);members.saveAndFlush(to);
+    transfer.respond("ACCEPTED",clock.instant());
+    // Subscription payer is deliberately unchanged.
+  }
+
+  @Transactional
+  public void complete(AuthenticatedUser principal,long teamId) {
+    Team team=locked(principal,teamId,false);
+    if (team.getStatus()!=TeamStatus.ACTIVE) throw new ApiException(409,"STATE_CONFLICT","활동 중인 팀만 완료할 수 있어요");
+    var now=clock.instant();
+    completions.saveAndFlush(com.linker.backend.entity.team.TeamCompletion.complete(teamId,principal.userId(),now,
+        now.plus(PlanLimits.TEAM_COMPLETION_UNDO_DAYS,ChronoUnit.DAYS)));
+    team.complete();
+    for (var member:members.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(teamId)) {
+      if (teams.canReceiveNotification(member.getUserId()))
+        notifications.create(new CreateNotificationCommand(member.getUserId(),"TEAM_COMPLETED",principal.userId(),
+            "TEAM",teamId,"/posts/new?teamId="+teamId,notificationText("작업물 올리기",team.getName()),null));
+    }
+  }
+
+  @Transactional
+  public void undoCompletion(AuthenticatedUser principal,long teamId) {
+    Team team=locked(principal,teamId,false);
+    var completion=completions.findByTeamIdAndRevertedAtIsNull(teamId).orElseThrow(TeamManagementService::notFound);
+    if (team.getStatus()!=TeamStatus.COMPLETED || completion.getConfirmedAt()!=null
+        || !clock.instant().isBefore(completion.getRevertibleUntil()))
+      throw new ApiException(409,"STATE_CONFLICT","완료 취소 기간이 지났어요");
+    completion.revert(clock.instant());team.resume();
+  }
+
+  @Transactional(propagation=Propagation.NEVER)
+  public void finalizeCompletions() {
+    while (true) {
+      var due=completions.findDue(clock.instant(),org.springframework.data.domain.PageRequest.of(0,100));
+      if(due.isEmpty()) return;
+      for(long id:due) write.executeWithoutResult(tx -> {
+        long teamId=completions.teamId(id);
+        teams.lockTeamForSetup(teamId).orElseThrow();
+        // Refresh after the team lock: a concurrent undo may have committed while we waited.
+        var completion=completions.findByTeamIdAndRevertedAtIsNull(teamId).orElse(null);
+        if(completion==null || completion.getId()!=id || completion.getConfirmedAt()!=null
+            || clock.instant().isBefore(completion.getRevertibleUntil())) return;
+        var at=completion.getCompletedAt();
+        Map<Long,TeamMember> latest=new HashMap<>();
+        for(var membership:members.findByTeamIdOrderByJoinedAtAscIdAsc(completion.getTeamId()))
+          if(!membership.getJoinedAt().isAfter(at)) latest.put(membership.getUserId(),membership);
+        for(var membership:latest.values()) {
+          boolean present=membership.getLeftAt()==null || membership.getLeftAt().isAfter(at);
+          if(present && membership.getJoinedAt().plus(PlanLimits.TEAM_COMPLETION_MEMBERSHIP_DAYS,ChronoUnit.DAYS).isAfter(at)) continue;
+          records.save(com.linker.backend.entity.team.CompletionRecord.record(id,membership.getUserId(),present?"COMPLETED":"DROPPED",
+              records.countAssigned(completion.getTeamId(),membership.getUserId()),records.countDone(completion.getTeamId(),membership.getUserId())));
+        }
+        completion.confirm(clock.instant());
+      });
+    }
+  }
+
+  /** Runs in the account final-deletion transaction; the recovery window retains memberships. */
+  @Transactional(propagation=Propagation.MANDATORY)
+  public void closeDeletedAccountMemberships(User user,java.time.Instant now) {
+    if(user.getStatus()!=UserStatus.DELETED || user.getDeletedAt()==null)
+      throw new IllegalStateException("Account final deletion is required");
+    for(var current:members.findByUserIdAndLeftAtIsNullOrderByTeamIdAsc(user.getId())) {
+      teams.lockTeamForSetup(current.getTeamId()).orElseThrow();
+      // Re-read after the team lock; another team action may have closed the membership.
+      members.findByTeamIdAndUserIdAndLeftAtIsNull(current.getTeamId(),user.getId()).ifPresent(m -> {
+        m.leave(now,TeamLeaveType.LEFT);members.saveAndFlush(m);
+        teams.closeChatMembership(current.getTeamId(),user.getId(),now);
+      });
+    }
+  }
+
+  private String notificationText(String title,String body) {
+    return json.writeValueAsString(Map.of("title",title,"body",body));
   }
 
   private void close(long teamId, TeamMember member, TeamLeaveType reason) {

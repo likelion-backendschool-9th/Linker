@@ -8,6 +8,10 @@ import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
 import {
+  requestTeamOwnership,
+  acceptTeamOwnership,
+  completeTeamProject,
+  undoTeamCompletion,
   updateTeamInfo,
   deleteTeam,
   leaveTeam,
@@ -80,6 +84,8 @@ export function useTeamSettingsActionSheet({
       !['READ_ONLY', 'ARCHIVED'].includes(team.status),
   });
   const [selectedRepos, setSelectedRepos] = useState<number[] | null>(null);
+  const [newOwner, setNewOwner] = useState('');
+  const [aiEnabled, setAiEnabled] = useState(team.aiSummaryEnabled);
   const [name, setName] = useState(team.name);
   const [description, setDescription] = useState(team.description ?? '');
   const [confirmName, setConfirmName] = useState('');
@@ -136,6 +142,11 @@ export function useTeamSettingsActionSheet({
     'repos',
     'remove-repo',
     'revoke',
+    'transfer',
+    'accept-transfer',
+    'complete',
+    'undo-completion',
+    'ai',
   ].includes(kind);
   const connected = team.repos.map((repo) => repo.githubRepoId ?? repo.id);
   const selection = selectedRepos ?? connected;
@@ -157,6 +168,24 @@ export function useTeamSettingsActionSheet({
         if (!targetMember) throw new Error('현재 팀원의 GitHub 로그인을 입력해 주세요.');
         return inviteGithubMember(team.id, targetMember.user.id);
       }
+      if (kind === 'transfer') {
+        if (!members.some((item) => String(item.user.id) === newOwner && item.role !== 'OWNER'))
+          throw new Error('멤버를 선택해 주세요');
+        await requestTeamOwnership(team.id, { toUserId: Number(newOwner) });
+        return;
+      }
+      if (kind === 'accept-transfer' && team.ownershipTransfer?.isRecipient) {
+        await acceptTeamOwnership(team.id, team.ownershipTransfer.id);
+        return;
+      }
+      if (kind === 'complete') return completeTeamProject(team.id);
+      if (kind === 'undo-completion') return undoTeamCompletion(team.id);
+      if (kind === 'ai')
+        return updateTeamInfo(team.id, {
+          name: team.name,
+          description: team.description ?? undefined,
+          aiSummaryEnabled: aiEnabled,
+        });
       if (kind === 'info') return updateTeamInfo(team.id, { name: name.trim(), description });
       if (kind === 'delete') return deleteTeam(team.id, { confirmName });
       if (kind === 'leave') return leaveTeam(team.id);
@@ -248,9 +277,15 @@ export function useTeamSettingsActionSheet({
     (kind !== 'revoke' || (!!target && /^\d+$/.test(target))) &&
     (kind !== 'delete' || confirmName === team.name) &&
     (kind !== 'info' || !!name.trim()) &&
+    (kind !== 'transfer' ||
+      members.some((item) => String(item.user.id) === newOwner && item.role !== 'OWNER')) &&
     (kind !== 'repos' || repoCandidates.isSuccess);
 
   return {
+    newOwner,
+    setNewOwner,
+    aiEnabled,
+    setAiEnabled,
     handle,
     setInviteHandle,
     mutation,

@@ -286,7 +286,7 @@
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/invite-links/{linkId}` | Revoke invite link | team ADMIN |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/repos` | Add linked repo | team ADMIN |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/repos/{repoId}` | Remove linked repo | team ADMIN |
-| 09 | B | PATCH | `/api/v1/user/teams/{teamId}` | 2nd pass: name, description | team ADMIN |
+| 09 | B | PATCH | `/api/v1/user/teams/{teamId}` | 2nd pass: name, description; optional `aiSummaryEnabled` (actual OWNER only) | team ADMIN |
 | 09 | B | PATCH | `/api/v1/user/teams/{teamId}/members/{userId}/role` | 2nd pass: change role | team OWNER |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/members/{userId}` | 2nd pass: remove member (admins can remove members only) | team ADMIN |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/members/me` | 2nd pass: leave team (not owner) | team MEMBER |

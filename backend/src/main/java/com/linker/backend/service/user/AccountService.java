@@ -92,6 +92,7 @@ public class AccountService {
 	private final GithubUserAuthClient githubUsers;
 	private final PlatformTransactionManager transactions;
 	private final Clock clock;
+	private final TeamManagementService teamMemberships;
 
 	public AccountService(
 			UserRepository users,
@@ -110,7 +111,8 @@ public class AccountService {
 			GithubTokenCipher githubCipher,
 			GithubUserAuthClient githubUsers,
 			PlatformTransactionManager transactions,
-			Clock clock) {
+			Clock clock, TeamManagementService teamMemberships) {
+		this.teamMemberships = teamMemberships;
 		this.users = users;
 		this.agreements = agreements;
 		this.techTags = techTags;
@@ -252,6 +254,7 @@ public class AccountService {
 		for (User user : users.findByStatusAndWithdrawRequestedAtLessThanEqual(UserStatus.WITHDRAWING, deadline)) {
 			posts.deleteAuthoredContent(user.getId(), now);
 			user.anonymize(now);
+			teamMemberships.closeDeletedAccountMemberships(user, now);
 			sessions.revokeActive(user.getId(), now);
 		}
 	}
