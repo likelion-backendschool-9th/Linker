@@ -1,0 +1,50 @@
+/* Header "더보기" (Figma 285:227): dense header icon, 24×24 hit area (design guide ch. 3-3) */
+.trigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  color: var(--color-text-black);
+  border-radius: var(--radius-full);
+}
+
+.triggerIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+/* Dropdown (Figma 622:347): 111 wide, side padding 10, #f2f2f2 with a #e4e4e4 line, radius 4 and
+   the 0 2 4 15% shadow — the same menu values as page 14, so it reuses those tokens */
+.panel {
+  z-index: var(--z-overlay);
+  display: grid;
+  width: var(--board-menu-width);
+  padding: 0 var(--space-board-card-inline);
+  background-color: var(--color-board-control);
+  border: 1px solid var(--color-board-menu-border);
+  border-radius: var(--radius-xxs);
+  box-shadow: var(--shadow-board-menu);
+  outline: none;
+}
+
+/* Row (622:350): 10 top/bottom, centered 14px regular slate */
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-row-block);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}

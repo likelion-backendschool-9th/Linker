@@ -1,0 +1,139 @@
+/* Figma 16 room row (247:1035): 75px, 50px photo, name + time, preview + unread count */
+.room {
+  position: relative;
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding-block: var(--space-sm);
+  color: inherit;
+  text-decoration: none;
+  /* A long press opens the row menu: no iOS link callout or text selection on the row */
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Leave room for the sent request's "대기 중", which sits outside the link */
+.withAction {
+  padding-right: var(--touch-target-min);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--chat-list-avatar-size);
+  height: var(--chat-list-avatar-size);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-slate);
+  font-weight: var(--font-weight-semibold);
+}
+
+.avatar img {
+  object-fit: cover;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-row-block);
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-row-inline);
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+
+.title {
+  overflow: hidden;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "채용 제안" label (321:2417) */
+.offer {
+  flex: none;
+  color: var(--color-chat-accent);
+}
+
+/* Muted rooms (Required, not in the frame): a small bell-off after the name */
+.muted {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted-cool);
+}
+
+.muted svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+/* Sent request (not in the frame): "대기 중" at the row's end */
+.pending {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.time,
+.pending {
+  flex: none;
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+}
+
+.preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-caption);
+  line-height: normal;
+  color: var(--color-text-slate);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: var(--chat-list-badge-size);
+  height: var(--chat-list-badge-size);
+  padding-inline: var(--space-xxs);
+  border-radius: var(--radius-full);
+  background: var(--color-chat-unread-fill);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-chat-accent);
+}

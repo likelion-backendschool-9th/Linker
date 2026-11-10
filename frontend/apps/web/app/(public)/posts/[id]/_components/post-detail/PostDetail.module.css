@@ -1,0 +1,348 @@
+/* 23 post detail (Figma 285:154): one mobile column; numbers in the comments are Figma px */
+
+/* Hidden by reports, author only: a warning in text */
+.review {
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-status-warning);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.review strong {
+  margin-right: var(--space-xxs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.post {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Author row (287:329): 18 top/bottom, #eaeaea bottom line */
+.authorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block: var(--space-post-author);
+  border-bottom: 1px solid var(--color-post-author-divider);
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: var(--touch-target-min);
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--avatar-size-post);
+  height: var(--avatar-size-post);
+  background-color: var(--color-radio-border);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.authorText {
+  display: grid;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.authorName {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.login {
+  overflow: hidden;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "팔로우" (287:337): visual only for now */
+.follow {
+  flex-shrink: 0;
+  padding: var(--space-xxs) var(--space-post-follow-inline);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+/* Content (285:235): 20 under the author row, 26 between blocks */
+.content {
+  display: grid;
+  gap: var(--space-post-block);
+  padding-top: var(--space-post-section);
+}
+
+/* Chips → title 10, title block → date 8 (same rhythm as 21) */
+.head {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.titleLead {
+  display: grid;
+  gap: var(--space-row-block);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.roleChip {
+  padding: var(--space-row-inline) var(--space-row-block);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-chip-format-bg);
+  border-radius: var(--radius-full);
+}
+
+.intro {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+  overflow-wrap: anywhere;
+}
+
+.date {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+}
+
+.body {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-text-title-cool);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+/* "프로젝트 주소" buttons (287:442) */
+.demoLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-row-inline);
+}
+
+.demoLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-post-link-icon);
+  padding: var(--space-row-inline) var(--space-post-link-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-post-link);
+}
+
+.demoLinkIcon {
+  --icon-box-size: var(--icon-size-post-link);
+}
+
+/* Tags (285:249): same chip as 21 */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag {
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+/* Repo card (287:399) */
+.repoCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-post-repo);
+  text-align: left;
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+}
+
+.githubMark {
+  flex-shrink: 0;
+  width: var(--icon-size-post-github);
+  height: var(--icon-size-post-github);
+  color: var(--color-github-mark);
+}
+
+.repoText {
+  display: grid;
+  gap: var(--space-icon-text-compact);
+  min-width: 0;
+}
+
+.repoName {
+  overflow: hidden;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoOwner {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+}
+
+/* 6px cool band (285:155), edge to edge, 30 under the repo card */
+.band {
+  height: var(--divider-section);
+  margin: var(--space-comment-block) calc(-1 * var(--page-gutter)) 0;
+  background-color: var(--color-canvas-cool);
+  border: 0;
+}
+
+/* Like / comment / share (287:450): groups 12 apart, icon → count 4, icons 20 at stroke 1.5 */
+.reactions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-top: var(--space-post-section);
+  --icon-stroke-width: 1.5;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+/* 24×24 hit around the 20px icon without moving it (dense icon row, guide ch. 3-3) */
+.statButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  margin: calc((var(--icon-size-reaction) - var(--touch-target-icon)) / 2);
+  border-radius: var(--radius-full);
+}
+
+.heart,
+.statIcon {
+  --icon-box-size: var(--icon-size-reaction);
+  color: var(--color-icon-ink);
+}
+
+.statButton[aria-pressed='true'] .heart {
+  color: var(--color-reaction-liked);
+}
+
+.statCount {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+}
+
+/* Menu sheets: full-width rows with an icon (scenarios 3 and 4 restyle these) */
+.menu {
+  display: grid;
+}
+
+.menuItem,
+.menuItemDanger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-body);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-sm);
+}
+
+.menuItemDanger {
+  color: var(--color-status-error);
+}
+
+/* Likers sheet */
+.people {
+  display: grid;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-xs) 0;
+  text-align: left;
+}
+
+.personAvatar {
+  flex-shrink: 0;
+  width: calc(var(--control-height) - var(--space-xs));
+  height: calc(var(--control-height) - var(--space-xs));
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.personText {
+  display: grid;
+  min-width: 0;
+}
+
+.personName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.personLogin {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+}

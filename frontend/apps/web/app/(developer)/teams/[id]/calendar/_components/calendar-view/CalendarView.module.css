@@ -1,0 +1,203 @@
+/* 15 Calendar, Figma 234:219. Colors, sizes and spaces come from the tokens; new ones are marked "15" there. */
+
+.page {
+  padding-top: 0;
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: var(--icon-size-calendar);
+  height: var(--icon-size-calendar);
+}
+
+.icon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Month title: opens the date sheet (368:3024) */
+.month {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-icon-text-compact);
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-black);
+}
+
+.month:focus-visible,
+.help:focus-visible,
+.popoverLink:focus-visible,
+.dayButton:focus-visible::after {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Status chips + "?" in one row: the "?" follows the last chip 10px away (Figma 234:219, auto layout gap 10) */
+.legend {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-calendar-chip);
+  margin-top: var(--space-group);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-calendar-chip);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-board-control-icon);
+  height: var(--control-height-calendar-chip);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  background-color: color-mix(in srgb, var(--status-color) 15%, transparent);
+  border-radius: var(--radius-full);
+}
+
+.chipDot {
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  background-color: var(--status-color);
+  border-radius: var(--radius-full);
+}
+
+.help {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: calc((var(--control-height-calendar-chip) - var(--touch-target-min)) / 2)
+    calc((var(--icon-size-calendar) - var(--touch-target-min)) / 2) 0;
+  color: var(--color-text-muted-cool);
+}
+
+/* 14's dropdown look (gray, 1px line, small shadow) under the "?" */
+.popover {
+  position: absolute;
+  inset: 100% 0 auto auto;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-xs);
+  width: max-content;
+  max-width: 100%;
+  margin-top: var(--space-board-menu-offset);
+  padding: var(--space-sm) var(--space-board-card-inline);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-slate);
+  background-color: var(--color-board-control);
+  border: 1px solid var(--color-board-menu-border);
+  border-radius: var(--radius-xxs);
+  box-shadow: var(--shadow-board-menu);
+}
+
+.popoverLink {
+  color: var(--color-board-control-active);
+  text-decoration: underline;
+}
+
+/* Month */
+.calendar {
+  margin-top: var(--space-calendar-legend);
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: center;
+  height: var(--calendar-weekday-height);
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+  text-align: center;
+  list-style: none;
+}
+
+.week {
+  position: relative;
+  height: var(--calendar-week-height);
+  border-top: 1px solid var(--color-hairline-cool);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: grid;
+  place-items: center;
+  height: var(--calendar-day-height);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title-cool);
+}
+
+.day[data-muted='true'] {
+  color: var(--color-text-muted-cool);
+}
+
+.day[data-today='true'] {
+  color: var(--color-selection);
+}
+
+/* The whole date column of the week is the tap target (the bars let presses through) */
+.dayButton {
+  font: inherit;
+  color: inherit;
+}
+
+.dayButton::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--col) * 100% / 7);
+  width: calc(100% / 7);
+  content: '';
+}
+
+/* Bars: three lanes under the date numbers, one grid column per day */
+.bars {
+  position: absolute;
+  inset: var(--calendar-day-height) 0 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: var(--calendar-bar-height);
+  pointer-events: none;
+}
+
+.bar {
+  min-width: 0;
+  margin-inline: 1px;
+  padding: 0 var(--space-xxs);
+  overflow: hidden;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--calendar-bar-height);
+  color: var(--color-text-title-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-color: color-mix(in srgb, var(--status-color) 15%, transparent);
+  border-radius: var(--radius-calendar-bar);
+}

@@ -1,0 +1,203 @@
+.root,
+.buttons,
+.sheetActions {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.counts,
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.counts button {
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-body);
+  font: inherit;
+  cursor: pointer;
+}
+
+.counts strong {
+  color: var(--color-text-heading);
+}
+
+.error,
+.offerForm p {
+  color: var(--color-status-error);
+}
+
+.peopleList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0 var(--space-md);
+  list-style: none;
+}
+
+.peopleTabs {
+  display: flex;
+  gap: 0;
+  margin: 0;
+  padding: 0 var(--space-md);
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.peopleTabs button {
+  flex: 1;
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.peopleTabs button[aria-selected='true'] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-text-heading);
+  font-weight: var(--font-weight-semibold);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  margin: var(--space-sm) var(--space-md) var(--space-md);
+  padding: 0 var(--space-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-xs);
+}
+
+.search svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  flex: 0 0 auto;
+}
+
+.search:focus-within {
+  border-color: var(--color-primary);
+}
+
+.search input {
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--touch-target-min) - 2px);
+  padding: 0;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+.peopleList li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+}
+
+.person {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  color: var(--color-text-heading);
+  text-decoration: none;
+}
+
+.personText {
+  display: grid;
+  min-width: 0;
+}
+
+.relation {
+  flex: none;
+  padding: var(--space-xxs) var(--space-xs);
+  color: var(--color-text-body);
+  font-size: var(--font-size-meta);
+  background: var(--color-canvas-soft);
+  border-radius: var(--radius-xxs);
+}
+
+.personAvatar {
+  position: relative;
+  width: var(--space-xl);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-soft);
+}
+
+.personAvatar img {
+  object-fit: cover;
+}
+
+.personHandle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.personName {
+  color: var(--color-text-heading);
+}
+
+.peopleSheet {
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: var(--content-max-width);
+  max-height: 100dvh;
+  margin: auto;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  border-radius: 0;
+  animation: none;
+}
+
+.peopleScrim.peopleScrim {
+  background-color: var(--color-text-black);
+}
+
+.peopleHeader {
+  align-items: center;
+  gap: 0;
+  min-height: var(--header-height);
+  padding-inline: var(--space-xs);
+}
+
+.peopleTitle {
+  order: 1;
+  flex: 1;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.peopleBack {
+  order: 0;
+  justify-content: flex-start;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: 0;
+}
+
+.peopleBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 0;
+  overflow-y: auto;
+}

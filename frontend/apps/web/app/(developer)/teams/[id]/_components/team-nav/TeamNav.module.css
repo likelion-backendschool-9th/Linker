@@ -1,0 +1,40 @@
+/* Figma 11 (197:66) team tabs: full column width, 48px, underlined (2px current, 1px others) */
+.nav {
+  /* Cancels PageFrame's top padding so the tabs sit under the header; 11 pulls its band back up */
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + var(--header-height));
+  z-index: var(--z-chrome);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) var(--space-md);
+  background-color: var(--color-canvas);
+}
+
+.tabs {
+  display: flex;
+}
+
+.tabItem {
+  flex: 1;
+  min-width: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height-tab);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+  border-bottom: 1px solid var(--color-hairline-tab);
+}
+
+.tab[aria-current='page'] {
+  color: var(--color-text-title-cool);
+  border-bottom: 2px solid var(--color-tab-indicator);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}

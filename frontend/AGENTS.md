@@ -1,6 +1,6 @@
 # Linker frontend — agent guide
 
-Read `../AGENTS.md` and the relevant sections of `../docs/development/03-frontend-blueprint.md`. The blueprint is the full rulebook: MUST/NEVER are mandatory; RECOMMENDED requires judgment. It is not auto-imported; read the sections you need. Look and feel (colors, type, spacing, component styles) is in `../docs/development/04-design-guide.md`; token values are in `apps/web/src/styles/tokens/`.
+Read `../AGENTS.md` and the relevant sections of `../docs/development/03-frontend-blueprint.md`. The blueprint is the full rulebook: MUST/NEVER are mandatory; RECOMMENDED requires judgment. It is not auto-imported; read the sections you need. Look and feel (colors, type, spacing, component styles) is in `../docs/development/04-design-guide.md`; token values are in `apps/web/styles/tokens/`.
 
 ## Before implementing a page
 1. Blueprint ch. 13: route group, directory, controller/orval tag.
@@ -13,25 +13,27 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 
 ## Structure, data, and rendering
 - Next.js 16 App Router, React 19, strict TypeScript. Route groups: `(auth)`, `(public)`, `(member)`, `(developer)`, `(recruiter)`, `(admin)`; role variants of one URL use `_views/`.
-- Colocate page-only code in `_components`, `_hooks`, `_lib`, `_views`; shared by two pages → nearest common folder; across role groups → `src/features/<domain>/`. `src/components/` contains domain-free UI/layout/overlay only.
-- kebab-case filenames; one exported PascalCase component per file; colocate tests as `*.test.tsx`.
-- Centralize route access in `src/lib/auth/route-access.ts`, consumed by `proxy.ts` and group layouts. Backend enforces actual permissions.
+- Colocate page-only code in `_components`, `_hooks`, `_lib`, `_views`; shared by two pages → nearest common folder; across role groups → `features/<domain>/`. `components/` contains domain-free UI/layout/overlay only. `_components` units use kebab folders with PascalCase view + `api.ts` + `hook.ts` + module CSS (blueprint §3-1).
+- Route files stay kebab-case; other components use PascalCase filenames. Colocate tests as `*.test.tsx`.
+- Centralize route access in `lib/auth/route-access.ts`, consumed by `proxy.ts` and group layouts. Backend enforces actual permissions.
 - `page.tsx` and `layout.tsx` are Server Components; never add `'use client'`. Keep interactive client boundaries small; split components for blueprint §5-3 reasons only.
 - Prefetch server data, then use TanStack Query on client. Client props must be serializable (dates as ISO strings).
-- API calls use generated orval hooks/functions in `packages/api`; never hand-edit generated output. No direct `fetch('/api/v1/...')` outside `src/lib/api/`.
+- API calls use generated orval hooks/functions in `packages/api`; never hand-edit generated output. No direct `fetch('/api/v1/...')` outside `lib/api/`.
 - State: TanStack Query for server data, nuqs for URL tabs/filters/overlays, Zustand for other UI state.
 - Next fetch cache is for cookie-less public data only; per-user queries follow blueprint §9-1 `staleTime`.
-- Limits and plan values come from `src/lib/policy.ts`, sourced from Policy; never hard-code them.
+- Limits and plan values come from `lib/policy.ts`, sourced from Policy; never hard-code them.
 
 ## Accessible, mobile-first UI
 - Follow WCAG 2.2 AA / KWCAG 2.2 and blueprint ch. 6. Use `PageFrame` for one header/main/main-menu nav, exactly one h1, ordered headings, and “본문 바로가기”; label additional navs.
 - Actions use buttons; navigation uses Link. Never `div onClick`. Follow §6-2 semantics (`ul > li > article`, `<time>`, etc.).
 - Inputs need visible labels; errors use `aria-invalid` + `aria-describedby`; focus first invalid field after failed submission.
 - Icon buttons need sr-only text; toggles use `aria-pressed`; state cannot rely on color alone.
-- Contrast ≥ 4.5:1 for text, 3:1 for large text/icons; retain focus-visible rings; targets ≥ 44×44px; provide button alternatives to dragging.
+- Contrast ≥ 4.5:1 for text, 3:1 for large text/icons; retain focus-visible rings; provide button alternatives to dragging.
+- Touch: primary CTA / list rows / tabs / inputs ≥ 44×44px; dense header icon clusters ≥ 24×24px hit with Figma visual size (do not enlarge icons to 44).
 - Honor reduced motion with `MotionConfig reducedMotion="user"`; allow zoom; no hover-only interaction.
-- Base layout targets 360px, widening with `@media (min-width: 600px | 1024px)` (tablet, desktop) in CSS Modules (no Tailwind or other utility-class framework). App screens use `max-width: var(--content-max-width)` (1440px, centered) with `var(--page-gutter)`; tablet follows mobile (bottom tab bar on every size). Only admin becomes two-column at 1024px.
-- Use `100dvh`, safe-area padding for bottom tabs/input bars, and input fonts ≥ 16px.
+- App UI = mobile column only (CSS Modules, no utility-class framework). Implement 360–600px; at/above 600px use `max-width: var(--content-max-width)` (600px) centered — header and bottom tabs stay in that column. Do not invent tablet/desktop app layouts. Admin (25–27) is a separate, desktop-only tool with no mobile layout, outside this rule.
+- Visual authority: page Figma → `styles/tokens/` → Design Guide. Mobbin is retired. Prefer page `_components/` over growing a shared kit.
+- Use `100dvh`, `viewportFit: cover`, safe-area on header (top) and tabs/composers/sheets/toasts (bottom), and input fonts ≥ 16px.
 
 ## Navigation and overlays
 - Open sheets/modals/drawers/photo viewers only via `useOverlay()`, never plain `useState` or Intercepting/Parallel Routes.
@@ -43,7 +45,7 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 - Use `next/image` with `alt`/`sizes`; `<img>` only for external images inside user markdown (§10-3). Install `sharp` and include it in `onlyBuiltDependencies`.
 - Photo alt: `"{repo name} 이미지"`, numbered for multiple photos; avatars beside visible names use `alt=""`. Unknown image sizes use `fill` with a fixed-ratio parent.
 - Browser APIs belong in handlers/effects or `typeof window` guards; never unguarded at module scope or during render. Use `safeStorage`, `useIsClient`, `useSyncExternalStore` for browser-dependent rendering.
-- Format dates in KST via `@date-fns/tz` and `src/lib/format/time.ts`; servers run UTC. Use `<RelativeTime>` to avoid hydration mismatches.
+- Format dates in KST via `@date-fns/tz` and `lib/format/time.ts`; servers run UTC. Use `<RelativeTime>` to avoid hydration mismatches.
 - Use `packages/bridge` shared types, `postToNative`, `requestNative`, `NativeBridgeProvider`. JWT never crosses the bridge; native stores only `userId`/`userType`.
 - Every screen is web; native handles GitHub login return, push (Android-only MVP), sharing, back, external links.
 
@@ -52,8 +54,8 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 - Text on tinted surfaces uses `--color-text-subtle-on-tint`; text on dark surfaces uses `--color-text-inverse*`. Accent is never a CTA fill. No shadows except `--shadow-segment-active`.
 
 ## Mock data (blueprint §1-2)
-- Until Spring is live, run `pnpm dev:mock`. Pages call orval/`apiFetch` as usual; `src/mocks/` answers. Pages, components and `_lib` never reference mocks, `USE_MOCKS` or `linker_mock_role`.
-- One mock file per page in `src/mocks/pages/pNN-*.ts` with the WBS path; shared rows in `fixtures/`; register new files in `mocks/routes.ts`. Missing field → add it to the mock, not a fallback in the page.
+- Until Spring is live, run `pnpm dev:mock`. Pages call orval/`apiFetch` as usual; `mocks/` answers. Pages, components and `_lib` never reference mocks, `USE_MOCKS` or `linker_mock_role`.
+- One mock file per page in `mocks/pages/pNN-*.ts` with the WBS path; shared rows in `fixtures/`; register new files in `mocks/routes.ts`. Missing field → add it to the mock, not a fallback in the page.
 - Log in as a role with the "목업 계정" switcher or `/api/mock/login/<role>`. Response shapes are provisional; verify against OpenAPI once it exists.
 - Check mock code stays out of the normal build: `grep -r MOCK_NOT_IMPLEMENTED apps/web/.next` must find nothing.
 
@@ -62,7 +64,7 @@ Read `../AGENTS.md` and the relevant sections of `../docs/development/03-fronten
 
 ## SEO and privacy
 - Every page needs a unique title via `buildMetadata()` in `metadata`/`generateMetadata`. Default `noindex`; only blueprint §8-1 pages use `indexable: true`.
-- Content previews only for post detail (23), recruit detail (21), developer profile (04), invite (10); otherwise root default (Linker + intro + `/og-default.png`).
+- Content previews only for post detail (23), recruit detail (21), developer profile (04); invite (10) and everything else use the root default (Linker + intro + `/og-default.png`).
 - Never put private team names, issue titles, or chat text into login-only metadata/OG. Hidden/deleted/blocked content uses defaults.
 - Canonical and `og:url` exclude query parameters, including overlay/filter/share parameters.
 

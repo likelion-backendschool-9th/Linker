@@ -1,0 +1,181 @@
+/* Figma 374:4196. Page-only form measurements; shared inputs and tokens are unchanged. */
+.form {
+  --setup-next-surface: #f2f4f6;
+  --setup-placeholder: #a3a3a8;
+  --setup-required: #ed0004;
+  --setup-avatar: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  min-height: calc(
+    100dvh - var(--setup-header-height) - var(--space-xxs) - env(safe-area-inset-top)
+  );
+  padding: var(--space-sheet-action) var(--page-gutter)
+    max(var(--space-lg), env(safe-area-inset-bottom));
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-group);
+  min-width: 0;
+}
+.heading h2 {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+.heading p {
+  margin-top: var(--space-row-block);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-muted-cool);
+}
+.organizationGroup {
+  display: grid;
+  gap: var(--space-row-inline);
+}
+.organization {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: 72px;
+  padding: 10px 8px;
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+}
+.avatar {
+  flex: 0 0 var(--setup-avatar);
+  width: var(--setup-avatar);
+  height: var(--setup-avatar);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  background: var(--color-canvas-cool);
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.organizationText {
+  display: grid;
+  gap: var(--space-row-inline);
+  min-width: 0;
+  flex: 1;
+}
+.organizationName {
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+}
+.organizationUrl {
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+}
+.organization > img {
+  flex: 0 0 var(--touch-target-min);
+}
+.organizationCaption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  padding-left: 1px;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-slate);
+}
+.unverified {
+  background: var(--color-canvas-cool);
+}
+.field {
+  display: grid;
+  gap: var(--space-sm);
+}
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-caption);
+  line-height: 17px;
+}
+.labelRow label {
+  color: var(--color-text-title-cool);
+  font-weight: var(--font-weight-medium);
+}
+.labelRow > span:not(.required) {
+  color: var(--color-text-muted-cool);
+  font-weight: var(--font-weight-regular);
+}
+.required {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--setup-required);
+}
+.field input,
+.descriptionField {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+  background: var(--color-canvas-cool);
+  font-size: var(--font-size-micro);
+  line-height: normal;
+}
+.field input {
+  height: var(--control-height);
+  padding: 0 14px;
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--setup-placeholder);
+  opacity: 1;
+}
+.descriptionField {
+  display: flex;
+  flex-direction: column;
+  min-height: 100px;
+  padding: 16px 14px 12px;
+}
+.descriptionField textarea {
+  width: 100%;
+  flex: 1;
+  min-height: 42px;
+  border: 0;
+  padding: 0;
+  resize: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+.count {
+  align-self: flex-end;
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  letter-spacing: 0.05em;
+}
+.next {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  border-radius: var(--radius-control-md);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  background: var(--color-selection);
+  color: var(--color-text-inverse);
+}
+.next:disabled {
+  cursor: not-allowed;
+  background: var(--setup-next-surface);
+  color: var(--color-text-unselected);
+}

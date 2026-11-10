@@ -26,7 +26,7 @@ Rules applied to every feature. Unless a feature policy says otherwise, these va
 | Character count | Counted after trimming leading/trailing whitespace. Korean, English, digits, emoji all count as 1. Keep at most 2 consecutive line breaks |
 | Links | https only. External links open in the browser outside the app; first time per domain, confirm "외부 사이트로 이동합니다" (leaving to an external site) |
 | Banned words | No automatic word filter in MVP; handled via reports. Profanity filter reviewed in phase 2 if reports pile up |
-| Time display | KST. < 1 min "방금", < 1 hour "N분 전", < 24 hours "N시간 전", this year "10월 16일", previous years "2025. 10. 16." |
+| Time display | Chat messages: fixed sent time in KST, e.g. "오후 3:12"; the date divider supplies the date. Other screens: KST. < 1 min "방금", < 1 hour "N분 전", < 24 hours "N시간 전", this year "10월 16일", previous years "2025. 10. 16." |
 | Number display | < 1,000 as-is; ≥ 1,000 "1.2천"; ≥ 10,000 "1.2만" |
 | Images | JPG, PNG, WebP, GIF, 10MB each. On upload, resize long side to 2,048px and strip location data (EXIF). GIFs preview first frame only, play on tap |
 | Default sort | Lists newest first. Exceptions noted per policy |
@@ -47,7 +47,7 @@ Every Linker user has one of four roles. Owner/admin/member permissions within a
 | Role | How | Login method | Bottom tabs | Detailed policy |
 | --- | --- | --- | --- | --- |
 | Guest | Enters without logging in | None | Home / Find Team / Workspace / Chat (Workspace and Chat show login prompt; profile is in the header) | Ch. 3 "Guests" (POL-A-9) |
-| Developer | Signs up with GitHub (age 14+) | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
+| Developer | Signs up with GitHub | GitHub | Home / Find Team / Workspace / Chat (profile is in the header) | Ch. 3–9, 11 |
 | Recruiter | Signs up with company email (age 19+) | Email + password | Home / Chat (profile is in the header) | Ch. 3 "Recruiter accounts" and "Job ads", ch. 8 "Recruiting offer messages", ch. 11 "Scout benefits" |
 | Operator | Operator permission granted to a developer account via DB | GitHub + back-office OTP | Same as developer + `/admin` | Ch. 10 |
 
@@ -66,13 +66,13 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 01 | Start / login | ○ | To feed if logged in | To feed if logged in | Same as developer |
 | 02 | Onboarding | × | ○ once at sign-up | × (31 replaces it) | Same as developer |
 | 03 | Legal documents | ○ | ○ | ○ | ○ |
-| 04 | Profile | View (except follower/following lists) | ○ | View + "Send recruiting offer"; own profile is the recruiter my page (incl. job ad sheet) | Same as developer |
+| 04 | Profile (`/user/[login]`) | View (except follower/following lists) | ○ | View + "Send recruiting offer"; own profile is the recruiter my page (incl. job ad sheet) | Same as developer |
 | 05 | Edit profile | × | ○ incl. job categories of interest | ○ name, company, job title, website (company email can't change) | Same as developer |
 | 06 | Settings | × | ○ | ○ no GitHub items, subscription is Scout only, has change password | Same as developer |
 | 07 | Workspace home / my issues (`/workspace`, `/workspace/issues`) | Prompt | ○ | × | Same as developer |
 | 08 | Create team | Prompt | ○ | × | Same as developer |
 | 09 | Team settings & members | × | Per team role (ch. 6) | × | Same as developer |
-| 10 | Accept invite | View team preview, accept = prompt | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |
+| 10 | Accept invite | View slim landing (logo + join CTAs); accept / GitHub start = login | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |
 | 11–15 | Issue list/detail/create, board, calendar | × | Team members only; writes need repo write permission (ch. 7). The progress card above the issue list is Flex teams only (POL-T-7) | × | Same as developer |
 | 16 | Chat list | Prompt | ○ team / 1:1 / requests | ○ 1:1 tab only | Same as developer |
 | 17 | Chat room | × | ○ team & 1:1 | ○ 1:1 only; conversations start only via request | Same as developer |
@@ -82,7 +82,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 21 | Recruit post detail | View; apply = prompt | ○ apply; author manages applicants | View | Same as developer |
 | 22 | Write/edit project post | Prompt | ○ | × | Same as developer |
 | 23 | Project post detail | View (except list of likers) | ○ | View + "Send recruiting offer" to author | Same as developer |
-| 24 | Home feed | View (popular this week + latest, no job ads) | ○ following + recommended + job-category job ads | View (recommended only, "only developers open to offers" toggle, no job ads) | Same as developer |
+| 24 | Home feed | View ("추천" in random order; "팔로잉" shows the login notice; no job ads) | ○ "추천" by my tech stack and job categories + job-category job ads; "팔로잉" | View ("추천" only, in random order with the "only developers open to offers" toggle; no "팔로잉" tab; no job ads) | Same as developer |
 | 25–27 | Ops: reports, users, action log | × | × | × | ○ (permanent suspension, lifting sanctions, reviewing appeals = lead operator) |
 | 28·29 | Plans & checkout, manage subscription | Prompt | ○ Pro/Flex | ○ Scout only | Same as developer |
 | 30 | My stats | Prompt | ○ free scope; Pro adds traffic sources and recruiter view counts | × | Same as developer |
@@ -140,17 +140,18 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 - Failed chat messages get resend/delete buttons next to the bubble; auto-retry up to 3 times.
 - If GitHub doesn't respond, show screens from the Linker cache with a top banner "GitHub 연결이 불안정해 최신 정보가 아닐 수 있어요" (GitHub connection unstable; info may be outdated).
 - Light actions like likes/follows are applied on screen first; on failure, revert and notify briefly.
+- A request with no response within **10 seconds** fails as a timeout and is not retried automatically. An action (save, send, delete) shows the error toast "네트워크 연결 시간이 초과되었습니다." (network timed out); a screen still loading shows the load-failure screen with a retry button. While a request is in flight its button stays disabled so it can't be sent twice.
 
 ## 3. Account & profile
 
 | Policy | Details |
 | --- | --- |
-| POL-A-1 Sign-up | Developers: 1 GitHub account = 1 Linker account. Age 14+, consent to Terms and Privacy Policy required |
+| POL-A-1 Sign-up | Developers: 1 GitHub account = 1 Linker account. Consent to Terms and Privacy Policy required |
 | POL-A-1 Session | Login session 30 days, extended on each use. Server auto-refreshes expired GitHub tokens; on failure, request re-login |
 | POL-H-1 Recruiter sign-up | Email + password. Company domain email only (no free email like Gmail, Naver). Age 19+, consent to Terms, Privacy Policy and Business Member Supplementary Terms required. Details in "Recruiter accounts" below |
 | POL-A-2 Name & handle | Handle = GitHub login as-is (not editable; follows GitHub changes). Display name 1–20 chars |
 | POL-A-2 Bio & link | Bio ≤ 160 chars, one blog link (https only) |
-| POL-A-3 Tech stack | Up to 10 from a predefined tag list |
+| POL-A-3 Tech stack | Up to 5 from a predefined tag list |
 | POL-A-3 Looking for team | When on, shown on profile and in Find Team search. Auto-off after 30 days without login |
 | POL-H-4 Job-seeking status | One of Seeking / Open to offers / Off; default Off. Set independently from "looking for team". See "Job-seeking status" table below |
 | POL-A-4 Contribution graph | Public contributions only. Private contributions shown as counts only if the user enabled that on GitHub. Refreshed once a day. Help text next to the graph: "커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 잔디에 잡혀요" (commit email must be registered to your GitHub account to count) |
@@ -185,9 +186,9 @@ In MVP, sign-up completes with company email verification alone and the account 
 
 | Value | Who sees it | Recruiter messages |
 | --- | --- | --- |
-| Seeking (구직 중) | Everyone. "구직 중" badge on profile header and next to the author on feed cards | Receives |
-| Open to offers (제안만 받기) | Recruiters only. Not shown among developers | Receives |
-| Off (끔, default) | Not shown | Doesn't receive. No "Send recruiting offer" button on profile |
+| Seeking (구직 중) | Everyone. "구직 중" badge on profile header and above the author's login on feed cards | Receives |
+| Open to offers (제안 받기) | Profile: recruiters only. Feed cards (24, also profile post cards): everyone, above the login | Receives |
+| Off (구직 안 함, default) | Profile: not shown. Feed cards: everyone, above the login in gray | Doesn't receive. No "Send recruiting offer" button on profile |
 
 - Turning job-seeking off blocks only new offers. Already accepted conversations and pending requests stay.
 - After 90 days without login, set to Off and send a "구직 상태를 껐어요" (we turned off your job-seeking status) notification on next login.
@@ -201,14 +202,14 @@ A recruiter with a Scout subscription shows their posting from an external job s
 
 | Policy | Details |
 | --- | --- |
-| POL-H-8 Job categories of interest | Developer picks up to 3 from the list in profile edit. Optional, empty by default. Visible only to the developer; not shown on the profile or to recruiters. Empty = no job ads. UI copy "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." (Pick job categories to see only job ads for them in your feed. Leave empty for no ads.) |
+| POL-H-8 Job categories of interest | Developer picks up to 3 from the list in profile edit. Optional, empty by default. Visible only to the developer; not shown on the profile or to recruiters. Used to pick job ads and to match "추천" feed posts (POL-P-4). Empty = no job ads. UI copy "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." (Pick job categories to see only job ads for them in your feed. Leave empty for no ads.) |
 | POL-H-5 Scout subscription | Paid by recruiters only. Benefits: one job ad and 50 recruiting offers per day (free: 10). No free trial. When it ends, the ad stops showing (content kept) and the offer limit becomes 10/day from the next day |
 | POL-H-7 Fields | One job category, posting title 2–40 chars, posting URL, closing date (within 90 days from today), all required. Company name is attached from the recruiter profile. No images |
 | POL-H-7 Allowed URLs | https only. Only one of: ① allowed job sites jobkorea.co.kr, saramin.co.kr, wanted.co.kr, work24.go.kr (WorkNet merged into Work24) and their subdomains ② the verified company email domain and its subdomains (e.g. signed up with @abc.com → abc.com, careers.abc.com). Short URLs, IP addresses and other domains rejected. Allowed-site list in server config |
 | POL-H-7 Count & status | One ad per recruiter. Status: showing / off (turned off by owner) / ended (closing date passed or subscription ended) / hidden (operator action). Changing the closing date allows turning it on again |
 | POL-H-7 Review | No operator pre-review; showing starts on save. Handled after the fact via reports (ch. 9) |
 | POL-H-9 Audience | Logged-in developers whose job categories include the ad's category. No ads for guests, recruiters or people with empty categories. Not shown to people who blocked the advertising recruiter |
-| POL-H-9 Frequency | One per 10 feed posts (never on the first screen), max 3 per person per day, same ad once per day. Multiple matching ads rotate. Ad spend never affects post ranking |
+| POL-H-9 Frequency | One per 10 "추천" posts (never on the first screen; none in "팔로잉"), max 3 per person per day, same ad once per day. Multiple matching ads rotate. Ad spend never affects post ranking |
 | POL-H-9 Card | "광고" (Ad) label at top, company, posting title, job category, closing date, "외부 공고 보기" (View external posting) button, X at top right, more (⋯) menu. Different background color from regular posts |
 | POL-H-9 On tap | Server records the click and returns the posting URL; opened in an external browser after confirmation per the common external link rule (ch. 2) |
 | POL-H-9 X close | Hides that ad for 7 days. Undo toast "광고를 닫았어요 · 되돌리기" (Ad closed · Undo) |
@@ -227,9 +228,9 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 
 | Category | Details |
 | --- | --- |
-| Can read | Home feed (popular this week and latest; "why shown" only "이번 주 인기" / "새로 올라온 작업물"), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, team preview of invite links |
+| Can read | Home feed ("추천" in random order with no "why shown"; "팔로잉" shows the login notice), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, invite landing (`/invite/[code]`: logo + join CTAs only) |
 | Login required to see | Follower/following lists, list of likers (people lists are easy to scrape), "Open to offers" (recruiters only), applicant list (author only) |
-| Login-prompt sheet | Like, write comment, follow, apply, message/recruiting offer, report, block, write post/recruit post buttons; bottom tabs Workspace, Chat; the header's profile icon (my profile); notifications in the header |
+| Login-prompt sheet | Like, write comment, follow, share to chat room (incl. the 24 feed card's share icon, POL-P-7), apply, message/recruiting offer, report, block, write post/recruit post buttons; bottom tabs Workspace, Chat; the header's profile icon (my profile); notifications in the header |
 | Sheet copy | "로그인한 사용자만 쓸 수 있는 기능이에요" (this feature is for logged-in users) + "GitHub로 시작" (start with GitHub) + small link "채용 담당자 로그인" (recruiter login). After login, returns to the screen being viewed (does not perform the attempted action) |
 | Layout | Still 4 bottom tabs; a "로그인" button in place of the header bell. First visit to `/` shows the intro screen; "둘러보기" (browse) enters the feed. Shared links (posts, recruit posts, profiles) open directly without the intro |
 | Hidden / blocked | Content hidden by reports and suspended accounts are handled the same as for logged-in users. Blocking is a relationship between accounts, so it doesn't apply to guest screens |
@@ -262,27 +263,27 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
-| POL-P-4 Feed composition | 1 recommended post per 4 following posts. Only recommendations if following nobody. At most 2 consecutive posts from the same author. Job ads: 1 per 10 posts (POL-H-9) |
-| POL-P-4 Recommendation pool | Posts from the last 7 days with many likes/comments, posts by mutual follows of mutual follows (2nd-degree). Exclude already seen, own posts, blocked users' posts, hidden posts |
+| POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so they get only "추천" (no "팔로잉" tab, even with `?tab=following`) and no "팔로우" chip on feed cards. The "제안 받는 개발자만" toggle is on "추천" only |
+| POL-P-4 "추천" by role | **Developers and operators**: posts that share a tag with my tech stack, or whose author picked one of my job categories of interest (POL-H-8), come first, ordered by popularity score; after them, every other post in random order. Job ads 1 per 10 posts (POL-H-9). **Guests and recruiters**: every post in random order, no "why shown", no job ads |
+| POL-P-4 "추천" rules | Exclude my own posts, posts by users in a block relation (either direction) and hidden posts. For developers and operators, posts already seen on an earlier visit go to the very end. The random order is fixed for one visit, so infinite scroll never repeats or skips a post; posts written during the visit appear on the next visit, and coming back or refreshing reshuffles. At most 2 consecutive posts from the same author |
 | POL-P-5 Likes | Once per post, can undo. List of who liked is public |
-| POL-P-5 Comments | ≤ 500 chars, one level of replies. Author can edit/delete; post owner can delete only. Deleting a comment with replies shows "삭제된 댓글입니다" (deleted comment) |
+| POL-P-5 Comments | ≤ 500 chars, flat list (no replies). Author can edit/delete; post owner can delete only |
 | POL-P-5 Follow | Follow immediately without approval. 200/day limit (anti-abuse). Mutual follow = following each other |
 | POL-P-7 Share button | Posts, recruit posts and profiles have a share button. It opens a bottom sheet with only two options: "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). Guests can only copy the link; "Share to chat room" shows the login prompt |
 | POL-P-7 Copy link | Copies the page's public URL and shows a "링크를 복사했어요" (link copied) toast. A share marker (`?from=share`) is appended so the visit counts as traffic source "external link" |
 | POL-P-7 Share to chat room | Pick one room from my chat room list (most recent first, search by name); it is sent immediately as a card message with no extra confirmation, and a "○○에 공유했어요 · 채팅방으로 가기" (shared to ○○ · go to chat room) toast appears. The list contains only team chat rooms I belong to and 1:1 rooms whose conversation is open (excludes pending requests, request box, blocked partners, read-only or archived teams) |
+| POL-P-7 Feed share drawer | Only on the 24 feed card: its paper-plane icon opens the "공유하기" (Share) drawer directly instead of the two-option sheet. It is a centered card (at most 600px tall; past that only the room list scrolls, with no visible scrollbar) with a × close, a "검색어를 입력해 주세요" room search (partial name, same rules as above), one list of my chat rooms most recent first, and a "링크 복사하기" (Copy link) button at the bottom. Each row shows the photo (team photo / the other person's photo) and name, with a blue "팀" (team) after team room names, and its own "공유하기" (Share) button that sends the card to that room at once, closes the drawer and shows the same toast as above. "링크 복사하기" works like Copy link above and closes the drawer. No tabs, no radio, no default selection; recruiters see only their 1:1 rooms. Same room list rules as above. Guests get the login prompt. Other share buttons (23, 21, 04) keep the two-option sheet above |
 | POL-P-7 Share card | Post: cover photo, repo name, one-line intro, author. Recruit post: title, remaining roles, closing date. Profile: name, handle, tech stack. The card doesn't copy content at send time; it reads the latest state when shown. If the original was deleted or hidden, or the viewer blocked the author, it shows "볼 수 없는 게시물이에요" (this post is unavailable) |
 | Blocking | Follows ch. 9 "Blocking" |
 
 ### "Why shown" copy
 
-If a post has several reasons, show only the highest one.
+Only matched "추천" posts of developers and operators have a reason; random posts, guests, recruiters and "팔로잉" show none. If a post has several reasons, show only the highest one.
 
 | Priority | Condition | Copy |
 | --- | --- | --- |
-| 1 | Someone I follow liked it | OO님이 좋아해요 (OO likes this) |
-| 2 | Written by a 2nd-degree connection | OO님과 아는 사이 (knows OO) |
-| 3 | Overlaps my tech stack tags | React를 쓰는 사람들의 인기 글 (popular among React users) |
-| 4 | Top likes/comments in the last 7 days | 이번 주 인기 (popular this week) |
+| 1 | Shares a tag with my tech stack (the first in my stack order) | React를 쓰는 사람들의 인기 글 (popular among React users) |
+| 2 | The author picked one of my job categories of interest | 프론트엔드 직군의 인기 글 (popular in Frontend) |
 
 Popularity score = likes × 1 + comments × 2 (excluding the author's own), decaying with post age. Likes from accounts less than 7 days old don't count (prevents like-for-like manipulation).
 
@@ -294,7 +295,7 @@ Popularity score = likes × 1 + comments × 2 (excluding the author's own), deca
 - **Several teammates post the same repo** → each can post; the detail page groups "이 레포의 다른 게시물" (other posts for this repo).
 - **Only some photos upload** → show retry on failed photos; publishing allowed only after all upload.
 - **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked.
-- **Empty feed** (right after sign-up) → recommend 5 developers by my tech stack plus popular posts.
+- **Empty "추천"** (no visible posts at all) → the empty feed copy plus 5 developers by my tech stack. A developer with no matching posts still sees every post in random order, so "추천" is never empty while posts exist.
 - **Someone I follow is suspended or deletes their account** → keep the follow, remove their posts from the feed. If deleted, the follow is removed too.
 
 ## 5. Find Team
@@ -303,16 +304,16 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 
 | Policy | Details |
 | --- | --- |
-| POL-R-1 Who can write | Any logged-in user (developer). Can write without a team; guided to create a team (POL-T-1) at the first acceptance |
+| POL-R-1 Who can write | Any logged-in developer who can link an active team they own or admin (POL-T-1); completed, read-only, archived and deleted teams can't be linked. The team is a required field because invites (POL-R-4) add people to it — writing without a team is not allowed. Under the field: "팀이 없으면 모집글을 작성할 수 없습니다." |
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (within 60 days from today) |
 | POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |
-| POL-R-3 Apply | Choose one role, message ≤ 300 chars. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship |
-| POL-R-3 Application | Profile (tech stack, graph, posts, completion record) attached automatically |
-| POL-R-4 Handling | Author accepts/rejects. Auto-expires after 14 days unhandled, with notification to applicant |
-| POL-R-4 After accept | Added as team member, joins team chat. If the author is an org owner, show a GitHub org invite button (not sent automatically) |
+| POL-R-3 Apply | Choose one role. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
+| POL-R-3 Application | Author opens the applicant's public profile to review (tech stack, graph, posts, completion record). No separate in-product application dossier sheet |
+| POL-R-4 Handling | Author invites or rejects from the applicants drawer. Auto-expires after 14 days unhandled, with notification to applicant |
+| POL-R-4 Invite | Invite adds the person as a team member, joins team chat, and when the author is the team owner and a GitHub org owner, sends the GitHub org invite notification to the applicant. If that role's headcount is already filled by invites, further Invite actions on pending applicants for the role are disabled |
 | POL-R-4 Reject | Rejection reason optional. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
 
 ### Application status
@@ -320,21 +321,20 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | Status | Reached when | Applicant sees |
 | --- | --- | --- |
 | Pending | Application submitted | "검토 중" (under review) |
-| Accepted | Author accepts | Shortcut to team chat |
+| Accepted | Author invites | Shortcut to team chat |
 | Rejected | Author rejects | "이번엔 함께하지 못하게 됐어요" |
 | Expired | 14 days unhandled, or recruit post deleted | "모집이 끝났어요" (recruiting ended) |
 | Cancelled | Applicant cancels (only while pending) | Disappears from list |
 
-Pending applications stay when a recruit post closes; the author can still accept/reject after closing.
+Pending applications stay when a recruit post closes; the author can still invite/reject after closing.
 
 ### Exceptions
 
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
-- **Accepting when that role is full** → ask "인원을 늘리고 수락" (increase headcount and accept).
-- **Free team member limit reached** (6) → can't accept; show the reason and a Flex prompt (Flex teams have no member limit).
-- **Author has no team yet when accepting** → must finish team creation (link a GitHub org) before accepting. Applications stay pending meanwhile.
-- **Applicant is already a member of that team** → show "이미 함께하는 팀이에요" (already on this team) instead of the apply button.
+- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams are sent to the Flex checkout sheet from recruit detail.
+- **Free team member limit reached** (6) → can't invite; recruit detail returns `PLAN_LIMIT` / `TEAM_MEMBERS` and opens the Flex checkout sheet. Flex teams have no member limit.
+- **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
 - **Accepted applicant doesn't accept the GitHub org invite within 7 days** → stays in the Linker team and can chat, but doesn't appear as assignable for issues. Notify applicant and owner again.
 - **Fake recruitment reported** → follow report/sanction policy. If the author deletes the team within 7 days after accepting, auto-flag for fake-recruitment review.
 
@@ -348,7 +348,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | Delete team, transfer ownership | O | X | X |
 | Add/remove linked repos | O | O | X |
 | Create Linker invite link | O | O | X |
-| Send GitHub org invite | Only if GitHub org owner | Only if GitHub org owner | X |
+| Send GitHub org invite | Only if GitHub org owner | X | X |
 | Remove members, change roles | O | Members only | X |
 | Write team recruit posts, handle applications | O | O | X |
 | Create/assign/change status of issues | GitHub permission | GitHub permission | GitHub permission |
@@ -358,9 +358,9 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | Policy | Details |
 | --- | --- |
 | POL-T-1 Create team | 1 GitHub org = 1 Linker team. "Create team" goes to the GitHub App install screen to choose an org and install; back in Linker, the server must re-verify the installation with the user token before creation completes (the installation id in the return URL can be forged, so it's never trusted as-is). If no org, send to GitHub's create-org page and back (orgs can't be created via API). If not the org owner, guide to "request install from owner" (GitHub emails the owner). If the org's default repo permission is read, tell the owner "팀원이 이슈에 담당자·라벨을 정하려면 쓰기 권한이 필요해요" (members need write permission to set assignees/labels) with a GitHub settings link. Team size: Free 6, Flex no limit |
-| POL-T-2 Invites | Linker invite links valid 7 days, revocable by owner/admin. GitHub org invites follow GitHub rules (accepted on GitHub, daily send limit) |
+| POL-T-2 Invites | Linker invite links valid 7 days, revocable by owner/admin. GitHub org invites follow GitHub rules (accepted on GitHub, daily send limit). **Entry**: external open of `/invite/[code]` always shows the slim accept landing (10). **In-app**: when owner/admin notifies a Linker developer of an invite, create a `TEAM_INVITE` notification (18) whose tap opens the same `/invite/[code]`. Accept landing is slim: Linker logo, "팀에 합류하기", "GitHub로 빠르게 시작하기" only — no team detail preview and no dedicated status screens. Expired/revoked, already a member, free-team member limit, and over-10-teams failures use toast or one-line copy from API error codes |
 | Org member sync | People removed from the GitHub org are detected via the organization webhook (member_removed), automatically removed from the Linker team, and they and the owner are notified. Removing someone in Linker does not remove them from the GitHub org; the owner is only informed |
-| Leaving / removal | Members can leave anytime. Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
+| Leaving / removal | Members can leave anytime ("팀 나가기" on 09, confirm "팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"). Admins get no "팀 나가기". Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
 | App uninstall | If the Linker app is removed from the org, the team becomes read-only and the owner is told to reinstall. Archived after 30 days |
 | POL-T-4 Project completion | Owner/admin marks complete. Can be undone within 7 days; after that, completion records are finalized |
 | POL-T-4 Completion calculation | Members in the team at completion who belonged ≥ 14 days during the project get 1 completion. Members who left midway get 1 non-completion (reason not shown). Issue completion rate = share of assigned issues in done status |
@@ -394,15 +394,18 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | POL-I-1 Create failure | If GitHub permission is missing or the request fails, keep the input as a draft and show the reason. Never create Linker-only issues |
 | POL-I-2 Assignees | Only team members with access to that repo (max 10 due to GitHub). Members with read permission can still be assigned. If the person assigning lacks repo write permission, GitHub silently ignores it, so disable assignee/label buttons and show the reason in a toast on tap. After saving, verify from GitHub's response that the assignee was actually set |
 | POL-I-3 Status mapping | 작업 전 = Todo, 작업 중 = In Progress, 작업 중단 = Blocked, 작업 완료 = Done. An issue closed on GitHub → Done; moving to Done closes the issue. Blocked keeps the issue open and shows "중단" (blocked) on the card |
+| POL-I-3 Status color | Issue status color is the GitHub Projects Status **option** color (enum only: BLUE/GRAY/GREEN/ORANGE/PINK/PURPLE/RED/YELLOW), stored once on `board_status_mappings` when the board is linked (08). Shared field `statusColor` on issue list/detail/board/calendar responses; used on 07·11·12·13·14·15 with the status name (never color alone). OTHER and NONE display as GRAY. Linker-created boards keep Todo=GRAY, In Progress=BLUE, Blocked=RED, Done=GREEN. Changing a color only on GitHub after link is out of scope until the board is re-linked |
 | POL-I-3 Dates | Start ≤ due. Issues without a due date don't appear on the calendar; they're listed under "일정 없음" (no schedule) |
 | Concurrent edits | If the same value changes in Linker and GitHub at once, the later arrival wins. The user's screen refreshes to the latest value |
 | POL-I-4 Overdue | Issues past due and not done are shown in red. Team timezone is KST |
 | POL-I-4 Status board | Change via drag or the "상태 바꾸기" (change status) menu. If writing to GitHub fails, move the card back to its original column and notify |
+| POL-I-5 My issues (07) | Not a cross-team list. The user selects one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at` desc; prefer non-archived). Selection kept in the URL (`teamId`). Invalid / non-member `teamId` falls back to the default team. Sort by due urgency: overdue first (oldest due first), then soonest due, then no due date. `/workspace` shows a short UI-limited preview (not a fixed count); “내 이슈 전체 보기” opens `/workspace/issues` for the full selected-team list. Team-wide (all members’) issues are on page 11, not here |
+| POL-I-6 Issue search (11) | Search box on page 11 only. Case-insensitive match on part of the issue title; leading/trailing spaces ignored, blank = no search. Max 100 characters (longer is rejected). Combined with the other filters and kept in the URL (`q`). The "일정 없음" view has no search: searching returns to all issues |
 
 ### Preparing GitHub Projects
 
 - A team links to exactly one GitHub Projects board, chosen once at team creation. If the org has no board, auto-create a "Linker" board with Status (Todo, In Progress, Blocked, Done), Start date and Due date fields. If boards exist, choose "새로 만들기" (create new) or "기존 보드 쓰기" (use existing); for existing boards, preview name, card count and status column names in the picker. No per-screen board switcher; to change it, owner/admin change it in team settings.
-- When choosing an existing board, map its Status values once to Todo / In Progress / Blocked / Done (e.g. Blocked → 작업 중단). Linker adds missing start/due date fields. Unmapped values appear in an "기타" (other) column on the board.
+- When choosing an existing board, map its Status values once to Todo / In Progress / Blocked / Done (e.g. Blocked → 작업 중단). Linker adds missing start/due date fields. Unmapped values appear in an "기타" (other) column on the board. Each Status option's GitHub `color` enum is stored on the mapping at link time and reused as the issue status color SoT (POL-I-3 Status color).
 - Issues created in Linker are added to the project automatically. Issues created on GitHub appear on calendar/board only if they're in the project; others can be added from the "일정 없음" list.
 
 ### Sync
@@ -442,7 +445,7 @@ Flex teams get a "진행 현황" (Progress) card at the top of the issue tab. It
 
 | Policy | Details |
 | --- | --- |
-| Messages | Text 2,000 chars; up to 10 images at once, 10MB each (location data stripped). No file attachments in MVP |
+| Messages | Text 2,000 chars; up to 5 images at once, 10MB each (location data stripped), each sent as its own message; text can't be typed while photos are picked. No file attachments in MVP |
 | Edit/delete | Own messages editable within 24 hours ("수정됨"), deletable anytime ("삭제된 메시지입니다" — deleted message) |
 | Read status | Team chat shows unread count; 1:1 shows read/unread. "Last read position" is the basis for AI summary (POL-C-5) |
 | POL-C-2 Issue cards | Cards show the latest status. Issues from repos without permission show title only |
@@ -450,8 +453,8 @@ Flex teams get a "진행 현황" (Progress) card at the top of the issue tab. It
 | POL-C-4 Starting 1:1 chat | Direct conversation if mutual follow or same team. Otherwise only one first message goes to "메시지 요청함" (message requests); the conversation opens only on acceptance. Recruiters have no follows/teams, so always go to requests (see "Recruiting offer messages") |
 | Chat retention | Team chat kept while the team exists. 1:1 chat deleted when both leave |
 | Team chat search & scroll-back | Keyword search in team chat rooms. Free teams can search and scroll back only through the last 60 days (older messages are hidden, not deleted, and reappear with Flex). Flex teams: all history. Deleted/hidden messages not searchable. 1:1 chat search excluded from MVP |
-| POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers) |
-| POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
+| POL-N-1 Notification types | Chat, issue assignment, 1 day before due (9 AM), application received/accepted/rejected, comments, follows, message requests (incl. recruiting offers), team invite (`TEAM_INVITE` → `/invite/[code]`) |
+| POL-N-1 Bundling & quiet hours | Notifications from the same chat room bundled into one: one push per room, and in the in-app list one unread row per room (the newest message replaces it; once read, the next message starts a new row). A mention keeps its own row. 10 PM–8 AM: no non-chat notifications; sent together in the morning. Marketing notifications (opt-in only) not sent 9 PM–8 AM |
 | Muting | MVP: mute per chat room and the "푸시 알림" (Push notifications) on/off switch in settings only. Turning push off stops push only; the in-app notification list keeps filling. Per-type settings in phase 2 |
 | Push devices | Only the Android app (development build) receives push. iOS app push needs a paid Apple developer account, so it is out of the MVP; browser web push is phase 2 (N-2) |
 
@@ -511,7 +514,7 @@ In MVP a recruiting offer is not a separate offer form but a 1:1 chat request. I
 | Model | Default: Ollama open model self-hosted on the Linker server (free, conversations stay in-house). If switched to a low-cost LLM API, send only under terms that it's not used for training and not stored after processing, and add the vendor to the Privacy Policy's processor table |
 | Retention | Summary results 7 days. Shared cards live as long as team chat messages (while the team exists) |
 | Label | Always show "AI가 만든 요약이라 틀릴 수 있어요" (AI-generated, may be wrong) |
-| Team setting | Owner can turn AI summary off per team. When on, a banner "이 팀은 AI 요약을 사용해요" (this team uses AI summary) shows at the top of team chat (first 7 days) |
+| Team setting | Owner can turn AI summary off per team. No banner in team chat (the "이 팀은 AI 요약을 사용해요" banner was dropped, team decision 2026-11-10) |
 | When subscription ends | Only new summaries blocked. Existing summaries viewable per the 7-day rule; shared cards remain in chat |
 
 ### Exceptions
@@ -622,7 +625,7 @@ Subscription principles, plans and prices are set in [PRD ch. 6](02-prd.md#6-rev
 
 Follow/like/comment, writing and sharing posts, 1:1 chat, team chat, Find Team, and teams/issues/calendar/status board work regardless of subscription. Everything that works on free keeps working on a paid plan; subscriptions only add on top.
 
-### Pro benefits (individual, ₩2,900/month / ₩29,000/year)
+### Pro benefits (individual, ₩2,900/month / ₩31,320/year, 10% off)
 
 | Benefit | Free | Pro |
 | --- | --- | --- |
@@ -636,22 +639,22 @@ Follow/like/comment, writing and sharing posts, 1:1 chat, team chat, Find Team, 
 - Stats are visible only to the user. The recruiter view alert shows **only the count**, never who or which company. The same recruiter viewing several times on one day counts once. Guest, developer and own views are not counted.
 - Recruiters are told at sign-up, via the Business Member Supplementary Terms, that viewing a profile is shown to the developer as a count.
 
-### Flex benefits (team, from ₩7,900/month)
+### Flex benefits (team, from ₩7,900/month / ₩85,320/year)
 
 | Benefit | Free team | Flex |
 | --- | --- | --- |
-| Price | ₩0 | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th (e.g. 7 members ₩9,800) |
+| Price | ₩0 | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th (e.g. 7 members ₩9,800). Yearly = 12 months 10% off, like Pro: ₩85,320/year (up to 6 members), ₩20,520/year per member from the 7th (e.g. 7 members ₩105,840) |
 | Team members | 6 | No limit |
 | Team chat search & scroll-back | Last 60 days | All history |
 | Team chat image originals | 90 days | While the team exists |
 | AI chat summary (minutes) | Only during the 7-day free trial, then Flex prompt | 10/day per person, results kept 7 days |
 | Project progress graph (POL-T-7) | None; Flex prompt in the card's place | Progress card on the issue tab |
 
-- The per-member price uses the **team headcount on the billing date**. Headcount changes during a period apply from the next billing date; no pro-rating. Checkout and the day-before notice show "next payment: N members, amount".
+- The per-member price uses the **team headcount on the billing date**. Headcount changes during a period apply from the next billing date; no pro-rating (on a yearly plan, the next billing date is a year later). Checkout and the day-before notice show "next payment: N members, amount".
 - Free GitHub orgs have a daily org invite limit (50 for new orgs), so even without a member limit, inviting many people at once may spill into the next day.
 - Detailed AI chat summary rules are in [ch. 8 POL-C-5](#ai-chat-summary-pol-c-5).
 
-### Scout benefits (recruiter, ₩14,900/month)
+### Scout benefits (recruiter, ₩14,900/month, monthly only)
 
 | Benefit | Free (recruiter) | Scout |
 | --- | --- | --- |
@@ -679,7 +682,7 @@ Detailed job ad rules are in [ch. 3 "Job ads"](#job-ads-pol-h-5789). The offer l
 | Free trial | Pro once per account, Flex once per team, 7 days (no trial for Scout). During the Flex trial, AI summary, the progress graph and full chat history all work. Notify billing date and amount one day before it ends |
 | Auto-renewal | Monthly/annual auto-renewal. Annual: notice 7 days before renewal. Price increases notified 30 days ahead with consent |
 | Cancellation | Anytime. Benefits continue until the paid period ends; no pro-rated refund |
-| Refund | Full refund within 7 days of payment if benefits unused. Refund flow demonstrated via payment cancellation even in test mode |
+| Refund | Full refund within 7 days of payment if benefits unused. "Unused" means the paid period has not started yet (a payment that extends a running subscription); once a period has started, cancel instead. Only the latest payment of a subscription can be refunded, and its period is taken back. Refund flow demonstrated via payment cancellation even in test mode |
 | Payment failure | Benefits kept for 7 days while retrying; if still failing, switch to free |
 | Switching to free | Existing photos, pinned posts and recruit posts stay; free limits apply when writing or editing from then on. If team members exceed 6, existing members stay and only new members are blocked. No new AI summaries; shared cards remain. The progress graph turns into a Flex prompt; snapshots keep accumulating. Job ads stop showing (content kept); offer limit becomes 10/day |
 | Flex grace period | When Flex ends, full chat history and image originals stay as they are for **30 days**. The whole team is notified 7 days before Flex ends and 7 days before the grace period ends. After 30 days, messages older than 60 days are hidden (not deleted; visible again on resubscribing) and image originals older than 90 days are deleted, leaving previews (not restored on resubscribing). Resubscribing within the grace period changes nothing |
@@ -714,6 +717,18 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Job ad closed | 광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기 |
 | Job ad hidden | 이 광고는 다시 보이지 않아요. |
 | AI summary used up | 오늘은 AI 요약을 다 썼어요(10/10). 내일 다시 쓸 수 있어요. |
+| Invite join | 팀에 합류하기 |
+| Invite GitHub start | GitHub로 빠르게 시작하기 |
+| Invite developer-only | 개발자 계정만 팀에 참여할 수 있어요. |
+| Refund: period already started | 이미 혜택이 시작된 결제는 환불할 수 없어요. 해지하면 남은 기간까지 쓸 수 있어요. |
+| Refund: not the latest payment | 가장 최근 결제부터 환불할 수 있어요. |
+| Refund: past 7 days | 결제 후 7일이 지나 환불할 수 없어요. |
+| Cancel: subscription already ended | 이미 끝난 구독이에요. |
+| Team invite notification | ○○ 팀에 초대됐어요. · 확인하기 |
+| Chat notification | ○○님이 메시지를 보냈어요. Body: the message, whitespace collapsed, first 100 characters + "…"; photo only → 사진을 보냈어요. Team rooms prefix "{team name} · " |
+| Chat mention notification | {team name} · ○○님이 회원님을 언급했어요. Body as above |
+| Message request notification | ○○님이 메시지 요청을 보냈어요. Body: the first message, as above |
+| Notification without text | 새 알림이 도착했어요 |
 
 ## 13. Policies for later-phase features
 

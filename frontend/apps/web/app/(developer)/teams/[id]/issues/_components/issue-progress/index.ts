@@ -1,0 +1,1 @@
+export { IssueProgress } from './IssueProgress';

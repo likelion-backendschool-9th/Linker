@@ -1,0 +1,343 @@
+/*
+ * Spacing, shape and size tokens (design guide ch. 3).
+ * App column: 360–600px; at/above 600px content is centered at --content-max-width (600px).
+ * Admin shell keeps its own 1024px two-column and 1280px grid (not these app gutters).
+ */
+
+:root {
+  /* Spacing: 8px base unit, 4px half-step */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-section: 48px; /* gap between page sections */
+  --space-section-lg: 80px; /* gap between major blocks */
+  --space-profile-identity: 10px; /* P04 profile avatar-to-info and name-to-meta gap (Figma 301:572) */
+  --space-profile-block: 20px; /* P04 profile header-to-feed gap (Figma 301:572) */
+  --space-profile-top: 15px; /* P04 header to the identity row (Figma 116:427) */
+  --space-team-settings-top: 20px; /* 09 tabs to "팀원 프로필" (Figma 368:387) */
+  --control-height-toast: 33px; /* toast (Figma 877:415) */
+  --space-load-timeout-bottom: 24px; /* load timeout "돌아가기" from the screen bottom, on the home indicator (Figma 301:334) */
+  --space-toast-inline: 18px; /* toast side padding (Figma 877:415) */
+  --toast-dot-size: 8px; /* toast kind dot (Figma 877:415) */
+  --radius-toast: 5px; /* toast (Figma 877:415) */
+  --space-team-member-name: 3px; /* 09 member role line to the name (Figma 368:387) */
+  --space-team-invite: 11px; /* 09 between invite buttons, and buttons to the hints (Figma 368:387) */
+  --space-team-settings-band: 30px; /* 09 invite hints to the gray band (Figma 368:387) */
+  --space-team-repos-top: 22px; /* 09 gray band to "GitHub 저장소" (Figma 368:387) */
+  --space-team-cta-bottom: 28px; /* 09 pinned 팀 삭제 / 팀 나가기 from the screen bottom: 4 above the 24 home indicator (Figma 368:1563) */
+  --space-team-cta-gap: 25px; /* 09 last repo row to the pinned CTA (Figma 368:1563) */
+  --control-height-team-delete: 45px; /* 09 "팀 삭제" (Figma 695:1525) */
+  --space-profile-fab-bottom: 24px; /* P04 chat FAB from the screen bottom, incl. home indicator (Figma 365:246) */
+  --space-profile-badge: 6px; /* P04 name to its status badge (Figma 116:427) */
+  --space-profile-badge-block: 2px; /* P04 status badge vertical padding (Figma 116:427) */
+  --space-profile-count: 2px; /* P04 "팔로워" / "팔로잉" label to its count (Figma 116:519) */
+  --space-profile-work: 15px; /* P04 feed: tabs to the first work card and between cards (Figma 116:427) */
+  --space-tab-icon-gap: 6px; /* bottom GNB: gap between a tab's icon and its label (Figma itemSpacing) */
+  /* Figma 07 values off the 4px grid */
+  --space-row-inline: 5px; /* compact list row side padding, title to meta */
+  --space-row-block: 10px; /* compact list row vertical padding, meta gap */
+  --space-list-action: 15px; /* list to the action below it */
+  --space-group: 20px; /* selected team to its issues */
+  --space-block: 28px; /* my issues to the team tabs */
+  --space-sheet-block: 15px; /* 07 sheet top and bottom padding */
+  --space-sheet-action: 30px; /* 07 sheet list to its CTA */
+  --space-icon-text-compact: 2px; /* 07 compact link, text to icon */
+  /* Figma 19 values off the 4px grid */
+  --space-card-row: 22px; /* 19 recruit card: gap between the author, info and meta blocks */
+  --space-card-info: 25px; /* 19 recruit card: chip/deadline row to title/description gap */
+  --space-card-meta: 13px; /* 19 recruit card: role chips row to "자세히 보기" gap */
+  --space-chip-block: 3px; /* 11 filter chip and 19 role-count / search-panel filter chip vertical padding; also 20 tech stack chip */
+  --space-tech-chip-inline: 6px; /* 20 tech stack chip side padding (Figma 638:573) */
+  --space-tech-chip-gap: 5px; /* 20 tech stack chip: label to its × */
+  --icon-size-tech-chip: 14px; /* 20 tech stack chip × (Figma solar:close-bold); hit area stays --touch-target-min */
+  --space-detail-block: 14px; /* 19 recruit card "자세히 보기" detail panel top/bottom padding (Figma) */
+  /* Figma 11 values off the 4px grid */
+  --space-section-inset: 25px; /* 11 progress section top padding */
+  --space-card-gap: 15px; /* 11 progress card rows, section title to its content */
+  --space-search-icon: 14px; /* 11 search field: inset and icon-to-text gap */
+  --space-fab-bottom: 34px; /* 11 team chat shortcut from the screen bottom (Figma, incl. home indicator) */
+  /* Figma 18 notifications (248:1243) */
+  --space-notification-group: 25px; /* tabs to "전체 읽기", to the first day, and between days */
+  --space-notification-dot: 13px; /* unread/read dot to the notification text */
+  --notification-dot-size: 8px;
+  /* Figma 22 post editor (265:142) */
+  --space-post-intro: 10px; /* step-1 title to hint */
+  --space-post-search: 25px; /* hint to search field */
+  --stepper-height: 4px; /* top progress bar */
+  --space-field-gap: 20px; /* 20 recruit editor: gap between fields (Figma itemSpacing) */
+  --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
+  --space-home-indicator: 24px; /* Figma bottom indicator area (인디케이션 영역); real devices use the larger of this and the safe area */
+  --sheet-header-height-tech: 60px; /* 20 tech stack sheet title row (Figma 301:1551) */
+  --sheet-header-height-onboarding-status: 54px; /* 02 onboarding job-status sheet */
+  --space-recruit-field-block: 17px; /* 20 intro textarea: text top and counter bottom (Figma 600:659) */
+
+  /* Radius */
+  --radius-none: 0;
+  --radius-xxs: 4px; /* offer cards, status chips, and the open-chat button */
+  --radius-xs: 8px; /* the floating mobile bottom GNB pill */
+  --radius-sm: 16px; /* inputs, FAQ rows, small cards */
+  --radius-control-sm: 10px; /* 07 compact link; also 20 "역할 추가" button (Figma) */
+  --radius-control-md: 14px; /* 07 sheet CTA; also 20 field inputs, dropdown triggers and submit button (Figma) */
+  --radius-lg: 20px; /* frosted pills when Figma uses them */
+  --radius-md: 24px; /* content cards, sheets (top corners), footer */
+  --radius-full: 9999px; /* every pill: buttons, nav, badges, toggles */
+  --radius-control-lg: 12px; /* 19 recruit search field */
+  --radius-card-compact: 12px; /* 11 progress cards and search field */
+
+  /* Size */
+  --touch-target-min: 44px; /* CTA, list rows, tabs, form controls */
+  --touch-target-icon: 24px; /* dense header/toolbar icon-cluster hit area (WCAG 2.2 AA) */
+  --control-height: 48px; /* pill buttons and inputs */
+  --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
+  --control-height-sheet: 53px; /* 07 sheet CTA */
+  --control-height-invite: 52px; /* 10 join CTA (Figma 187:387) */
+  --invite-cta-max-width: 343px; /* 10 join CTA max width (Figma 187:387) */
+  --space-invite-stack: 23px; /* 10 logo block → CTAs (Figma 187:381 itemSpacing) */
+  --control-height-choice: 40px; /* 07 sheet option row (Figma, front-end owner's decision) */
+  --control-height-settings-choice: 34px; /* 06 settings job-status sheet option row (reference screenshot) */
+  --control-height-chip: 30px; /* 19 recruit filter chip */
+  --control-height-chip-sm: 28px; /* 11 filter chips; hit area stays --touch-target-min */
+  --control-height-search: 42px; /* 11 search field */
+  --control-height-tab: 48px; /* 11 team tabs */
+  --profile-project-tabs-height: 56px; /* 04 completed/active project tabs row (Figma 301:572) */
+  --tabs-row-height: 48px; /* 19 recruit list segmented tabs row */
+  /* 19 area B open height (Figma 253:2122): 44 search + 15 gap + 30 chips + 15 + 15 padding */
+  --recruit-search-panel-height: 119px;
+  --icon-size-add: 20px; /* 07 add-issue icon */
+  --icon-size-team-entry: 20px; /* 07 team-card › / ∨ icon (Figma 5×12); hit area stays --touch-target-min */
+  --icon-size-progress-sm: 20px; /* 11 "진행" card icon (Figma frame) */
+  --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
+  --avatar-size-team: 50px; /* 07 selected-team image */
+  --avatar-size-profile: 60px; /* 04 developer profile image (Figma 301:572) */
+  --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
+  --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
+  --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
+  --border-width-profile-tabs: 2px; /* 04 line above the project tabs (Figma 121:1185) */
+  --radius-profile-badge: 2px; /* 04 status badge (Figma 123:1410) */
+  --radius-profile-work-cover: 5px; /* 04 work card cover (Figma 123:1415) */
+  --avatar-size-block-user: 40px; /* 06 settings blocked-user row */
+  --icon-size-block-remove: 22px; /* 06 settings blocked-user removal control */
+  --radio-size: 20px;
+  --radio-dot-size: 12.5px;
+  --separator-dot-size: 2px; /* dot between meta items */
+  --card-height-progress: 85px; /* 11 status cards */
+  --fab-size: 40px; /* 11 team chat shortcut and 19 write-recruit FAB; hit area stays --touch-target-min */
+  --chart-height: 223px; /* 11 trend chart plot area */
+  --chart-point-size: 10px; /* 11 trend chart today marker */
+  --legend-dot-size: 5px; /* 11 trend chart legend dot */
+  --divider-section: 6px; /* 11 band between the trend chart and the issue list */
+  --detail-label-width: 80px; /* 19 recruit card detail panel label column (Figma 361:981) */
+  --board-column-width: 240px; /* 14 status column */
+  --board-column-gap: 20px; /* 14 between columns, toolbar to columns, tabs to toolbar */
+  --board-column-line: 4px; /* 14 status-colored top line of a column */
+  --space-board-column: 15px; /* 14 column padding, header to cards, between cards */
+  --space-board-card-block: 12px; /* 14 card top and bottom padding */
+  --space-board-card-inline: 10px; /* 14 card side padding, menu side padding */
+  --space-board-card-head: 13px; /* 14 assignee/date line to repo line */
+  --space-board-label-gap: 10px; /* 14 between labels */
+  --space-board-control-gap: 9px; /* 14 between "필터" and "최신순" */
+  --space-board-control-block: 6px; /* 14 button vertical padding */
+  --space-board-control-inline: 10px; /* 14 button side padding */
+  --space-board-control-icon: 5px; /* 14 button text to chevron, name to count, repo to number */
+  --space-board-menu-offset: 5px; /* 14 button to its menu */
+  --space-board-status-menu-offset: 3px; /* 14 card status field to its menu */
+  --radius-board-card: 5px; /* 14 card */
+  --control-height-board: 30px; /* 14 "필터"/"최신순" visual height; hit area stays --touch-target-min */
+  --control-height-board-status: 40px; /* 14 card status field */
+  --board-menu-width: 111px; /* 14 "필터"/"최신순" menus */
+  --board-menu-row-height: 38px; /* 14 menu row */
+  --board-status-dot-size: 8px; /* 14 status dot in the card status field */
+  --icon-size-board-chevron: 16px; /* 14 button chevron (Figma frame) */
+  --icon-size-board-status-chevron: 12px; /* 14 card status field chevron */
+  /* Figma 17 chat room (92:768 messages, 346:243 request panel, 351:580 room info) */
+  --chat-avatar-size: 46px; /* sender photo beside others' messages */
+  --space-chat-avatar: 9px; /* sender photo to name/bubble column */
+  --space-chat-name: 7px; /* sender name to bubble, bubble to cards below */
+  --space-chat-row: 20px; /* between messages */
+  --space-chat-bubble-inline: 14px; /* bubble side padding; block padding is --space-row-block */
+  --radius-chat-bubble: 14px;
+  --control-height-chat: 42px; /* composer photo button, input and send button */
+  --space-chat-input-inline: 15px; /* composer input text inset */
+  --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
+  --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
+  --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
+  --chat-photo-tile-size: 100px; /* composer photo panel tile (user design 2026-11-10) */
+  --chat-photo-remove-size: 24px; /* its × circle */
+  --chat-image-max-size: 220px; /* a photo in a message: max width and max height (user request 2026-11-10) */
+  --chat-ai-logo-size: 32px; /* animated orb inside the "AI 채팅 요약" button: ThinkingOrb's 32px size preset (Figma logo 33px) */
+  --space-chat-card: 14px; /* PR card padding */
+  --chat-request-panel-height: 140px; /* request panel replacing the composer */
+  --space-chat-request-title: 19px; /* request panel top to its title */
+  --space-chat-request-guide: 6px; /* request title to the blue guide line */
+  --space-chat-request-actions: 22px; /* guide line to the 수락/거절/차단 row */
+  --space-chat-request-button: 9px; /* request button vertical padding */
+  --space-room-info-team: 15px; /* room info: header to the team card */
+  --space-room-member: 15px; /* room info: between member rows */
+  --room-member-avatar-size: 44px;
+  --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
+  --page-gutter: 16px; /* side gutter inside the app column */
+  --sheet-max-width: 600px; /* bottom sheets capped to the app column */
+  --form-max-width: 600px; /* writing forms stay within the app column */
+  --header-height: 54px; /* stack screens' top bar: back + title (Figma 364:1884, same on every stack frame) */
+  --header-height-tab: 56px; /* tab screens' logo header (its own Figma pass is separate) */
+  --header-height-admin: 56px; /* admin top bar */
+  --space-header-stack-end: 6px; /* stack header right inset: the 24px action box centers 18 from the edge (Figma dots) */
+  --space-header-back-title: 28px; /* stack header: back icon box to the title (title starts at 64) */
+  --textarea-height-intro: 120px; /* 20 프로젝트 소개 textarea (Figma) */
+  --textarea-height-onboarding-bio: 108px; /* 02 basic profile bio field (Figma) */
+  --search-input-height: 52px; /* mobile search field in the dropped-down panel (Figma 51:274) */
+  --tab-bar-height: 96px; /* bottom GNB footprint for content/toast clearance (add safe-area separately) */
+  --sheet-max-height: 85dvh; /* bottom sheets scroll inside beyond this */
+  --dialog-max-width: 400px; /* centered dialogs and confirm modals */
+  --dialog-confirm-width: 20rem; /* 06 logout / delete modal, 320px (Figma 364:2255, 368:761) */
+  --dialog-confirm-min-height: 12.375rem; /* 198px */
+  --dialog-confirm-close-top: 9px;
+  --dialog-confirm-close-end: 6px;
+  --icon-size-confirm-close: 12px;
+  --admin-aside-width: 400px; /* admin detail column from 1024px */
+  --icon-size: 24px;
+  --icon-size-sm: 16px; /* icon inside a small control, e.g. the search clear button */
+  --size-required-dot: 4px; /* required-field mark beside titles/labels */
+  --size-post-photo: 74px; /* 22 photo tile (Figma 274:321) */
+  --radius-post-photo: 6px; /* 22 photo tile corner (Figma 274:321) */
+  --radius-post-photo-more: 5px; /* 22 "more photos" badge corner (Figma 660:585) */
+  /* Figma 24 home feed card (91:105, 92:249) */
+  --size-feed-avatar: 42px; /* author photo (rounded square, --radius-card-compact) */
+  --feed-cover-height: 270px; /* cover photo / repo card height */
+  --space-feed-card: 35px; /* between feed cards (Figma 785:772 → 785:829) */
+  --space-feed-top: 25px; /* "추천 / 팔로잉" tabs to the first card (Figma 785:1211 → 785:772) */
+  --control-height-feed-tab: 51px; /* "추천" / "팔로잉" tab (Figma 785:1211) */
+  --control-height-feed-follow: 29px; /* "팔로우"/"팔로잉" chip, 14px label (Figma 785:780) */
+  --space-feed-status: 2px; /* card job status to the login (Figma 785:777) */
+  --radius-feed-follow: 6px;
+  --icon-size-feed-stat: 20px; /* like / comment / share icons */
+  --icon-size-feed-fab: 22px; /* write FAB pen (Figma 92:290) */
+  --tab-bar-pill-top: 77px; /* bottom GNB pill top above the screen bottom (8 margin + 69 pill); add safe-area */
+  --space-feed-fab: 20px; /* write FAB bottom to the GNB pill top (Figma 92:289) */
+  /* Figma 24 comment sheet (374:4092) */
+  --sheet-comments-top-gap: 100px; /* sheet max-height = 100dvh minus this */
+  --space-comment-sheet: 25px; /* sheet top and bottom padding */
+  /* Figma 24 share drawer (780:584): centered card; search uses --control-height-search */
+  --share-drawer-max-height: 600px; /* card cap; past it only the room list scrolls (no visible bar) */
+  --space-share-drawer-block: 18px; /* card top and bottom padding (sides are --space-md) */
+  --control-height-share-row: 54px; /* room row */
+  --size-share-room-avatar: 30px; /* team / person photo in a room row */
+  --control-height-share-copy: 47px; /* "링크 복사하기" button */
+  --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
+  --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
+  --badge-dot-size: 6px; /* unread dot on the header 알람 button */
+  --chip-size: 18px; /* GNB unread-count chip diameter (Figma 455:350) */
+  --size-gnb-avatar: 27px; /* GNB 프로필 tab avatar (Figma 455:347) */
+  --space-tab-avatar-gap: 5px; /* GNB 프로필 tab: avatar to label, so the label lines up with the icon tabs (Figma 455:346) */
+  --tab-bar-gap-4: 36px; /* gap between bottom GNB tabs: 4 tabs, guest (Figma 453:227) */
+  --tab-bar-gap-5: 20px; /* gap between bottom GNB tabs: 5 tabs, signed-in incl. profile (Figma 453:258/455:316) */
+  --tab-bar-padding-wide: 80px; /* bottom GNB side padding at the 600px upper bound (Figma 476:563/593) */
+
+  /* Layers: page chrome < overlays < toasts */
+  --z-chrome: 10;
+  --z-overlay: 100;
+  --z-toast: 200;
+
+  /* Motion (off under prefers-reduced-motion via globals.css) */
+  --duration-overlay: 200ms;
+  --duration-chrome-collapse: 320ms; /* 19 recruit list scroll-driven header/tabs/search-panel reveal */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --blur-chrome: blur(
+    20px
+  ); /* resting sticky chrome frost: header (Figma 51:185/199/227) and bottom GNB (453:227/258, 455:316) */
+  --blur-header-open: blur(
+    4px
+  ); /* header + search panel merge into one lighter sheet when open (Figma 51:274) */
+  --blur-scrim: blur(6px); /* 07 sheet scrim */
+
+  /* Default to no shadows; add page-specific tokens only for explicit Figma treatments. */
+  --shadow-segment-active: 0 1px 2px rgb(20 20 20 / 0.12);
+  /* Exception: 07 compact link, Figma value by the front-end owner's decision (Figma first) */
+  --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
+  /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
+  --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
+  --shadow-toast: 0 4px 12px rgb(0 0 0 / 0.25); /* toast (Figma 877:415) */
+  --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
+  --shadow-profile-work-card: 0 2px 10px rgb(18 18 18 / 0.10); /* 04 work card, Figma 116:427 / 301:572 drop shadow (blur 10) */
+  --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
+  --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
+  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) and photo panel (user design 2026-11-10) */
+  --shadow-gnb: 0 2px 4px rgb(0 0 0 / 0.2); /* bottom GNB pill (Figma 800:1299, 455:316 exception) */
+
+  /* Figma 15 values (calendar) */
+  --space-calendar-legend: 14px; /* 15 status chips to weekday row */
+  --space-calendar-chip: 10px; /* 15 between status chips */
+  --space-calendar-sheet-bottom: 40px; /* 15 day sheet bottom padding */
+  --space-calendar-date-top: 18px; /* 15 date sheet top padding */
+  --space-calendar-date-cta: 35px; /* 15 date wheels to "저장"; also 22 period sheet */
+  --space-post-period-sheet-bottom: 28px; /* 22 period sheet bottom (Figma 368:3896) */
+  --control-height-calendar-chip: 27px; /* 15 status chip */
+  --calendar-weekday-height: 52px; /* 15 weekday row */
+  --calendar-day-height: 30px; /* 15 date number row */
+  --calendar-week-height: 101px; /* 15 week row: date number + three bar lanes */
+  --calendar-bar-height: 18px; /* 15 issue bar and its lane step */
+  --radius-calendar-bar: 2px; /* 15 issue bar */
+  --icon-size-calendar: 24px; /* 15 month chevron and help icon */
+  --wheel-row-height: 37px; /* 15 date wheel row; also the shared date picker sheet (20 마감일, 22 기간) */
+  --wheel-band-height: 39px; /* 13 date sheet selected band (Figma 368:2615); the row stays 37px */
+  --avatar-size-calendar: 32px; /* 15 day sheet issue row image */
+
+  /* Figma 28 plans (288:471, 293:218) */
+  --space-plan-card: 20px; /* card padding, card sections, between cards, header to title */
+  --space-plan-intro: 25px; /* subtitle to the 월간/연간 toggle */
+  --space-plan-toggle: 30px; /* toggle to the first card, last card to the footer links */
+  --control-height-plan-toggle: 52px; /* 월간/연간 toggle (each side is the hit area) */
+  --radius-plan-card: 14px;
+  --icon-size-plan-check: 18px; /* benefit check */
+
+  /* Figma 29 subscription (294:306, 295:459, 364:1694) */
+  --space-manage-block: 15px; /* header to plan card, plan card to info box, info box to payment history */
+  --space-manage-card: 13px; /* plan card padding */
+  --space-manage-name: 7px; /* plan name to its description */
+  --space-manage-row: 17px; /* info box side padding */
+  --row-height-manage-info: 35px; /* info box row (tappable rows keep --touch-target-min) */
+  --radius-manage-card: 6px;
+  --radius-manage-dialog: 10px; /* 해지 confirm modal */
+  --dialog-width-manage: 320px; /* 해지 confirm modal */
+  --icon-size-manage-chevron: 20px; /* "요금제 해지" and "전체 보기" chevron */
+
+  /* Figma 23 post detail (285:154) */
+  --post-photo-height: 270px; /* full-bleed photo strip under the header */
+  --space-photo-count: 14px; /* "1/5" pill to the photo's bottom edge (side inset is --page-gutter) */
+  --space-post-author: 18px; /* author row top and bottom padding */
+  --space-post-section: 20px; /* author row to content, band to reactions, reactions to comment input */
+  --space-post-block: 26px; /* between title block, body, links, tags and repo card */
+  --space-post-link-inline: 11px; /* "프로젝트 주소" button side padding */
+  --space-post-link-icon: 6px; /* "프로젝트 주소" text to its link icon */
+  --icon-size-post-link: 14px; /* "프로젝트 주소" link icon */
+  --space-post-follow-inline: 6px; /* author row "팔로우" side padding (block is --space-xxs) */
+  --radius-post-link: 3px; /* "프로젝트 주소" button */
+  --space-post-repo: 15px; /* repo card padding inside its 1px line */
+  --icon-size-post-github: 42px; /* repo card GitHub mark */
+  --avatar-size-post: 44px; /* author and commenter photos */
+  --icon-size-reaction: 20px; /* like / comment / share icons */
+  --space-comment-block: 30px; /* comment top and bottom padding; repo card to the band */
+  --control-height-comment: 42px; /* comment input */
+  --border-width-comment: 1px; /* comment input line at rest (transparent, as in Figma 287:317) */
+  --border-width-comment-focus: 2px; /* comment input line on focus (Figma 364:1950), drawn inside */
+  --size-comment-send: 34px; /* send button inside the input (4px inset); hit area extends to the field */
+  --icon-size-comment-send: 24px; /* arrow inside the send button (Figma 14px, enlarged to 24px by the page owner) */
+  /* Figma 12 */
+  --issue-body-min-height: 120px; /* 12 body box */
+  --space-issue-body-block: 17px; /* 12 body box top padding (text starts 17px down, 15px in) */
+  --task-size-issue-body: 14px; /* 12 body task-list mark, about the text height */
+
+  /* Figma 16 chat list (247:1019, 321:2336, 321:2417) */
+  --space-chat-list-top: 15px; /* tabs to the first room */
+  --chat-list-avatar-size: 50px; /* room photo */
+  --chat-list-badge-size: 18px; /* unread count circle */
+
+  /* Figma 13 create (200:806) */
+  --issue-create-body-min-height: 163px; /* markdown / preview field */
+  --space-issue-create-body: 11px; /* body field padding */
+  --icon-size-issue-form-chevron: 12px; /* 이슈 양식 row chevron (Figma 12×13) */
+}

@@ -1,0 +1,671 @@
+.profile {
+  display: grid;
+  gap: var(--space-section);
+  width: min(100%, var(--content-max-width));
+  margin-inline: auto;
+  padding: 0 var(--page-gutter) var(--space-section);
+}
+
+.errorState {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-md);
+  padding: var(--space-xl) var(--page-gutter);
+}
+
+.errorState h1,
+.errorState p {
+  margin: 0;
+}
+
+.header,
+.section {
+  display: grid;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.avatar {
+  position: relative;
+  width: var(--space-section-lg);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-soft);
+}
+
+.avatar img {
+  object-fit: cover;
+}
+
+.identityText {
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-title);
+  overflow-wrap: anywhere;
+}
+
+.handle,
+.meta,
+.description {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.description {
+  color: var(--color-text-body);
+  white-space: pre-wrap;
+}
+
+.links,
+.badges,
+.tags,
+.counts,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a,
+.countButton,
+.actionButton {
+  min-height: var(--touch-target-min);
+}
+
+.links a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-heading);
+  text-decoration: underline;
+  text-underline-offset: var(--space-xxs);
+  overflow-wrap: anywhere;
+}
+
+.badge,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding-inline: var(--space-md);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-soft);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.counts {
+  gap: var(--space-lg);
+}
+
+.countButton,
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-heading);
+  font: inherit;
+  cursor: pointer;
+}
+
+.countButton:hover,
+.actionButton:hover,
+.links a:hover {
+  text-decoration: underline;
+}
+
+.section h2 {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-title);
+}
+
+.section p {
+  margin: 0;
+}
+
+.completion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  color: var(--color-text-body);
+}
+
+.completion strong {
+  display: block;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-card-title);
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.calendarHeader button {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-text-heading);
+  cursor: pointer;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-xxs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day,
+.weekday,
+.emptyDay {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-body);
+  font-size: var(--font-size-caption);
+}
+
+.weekday {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.day[data-level='1'] {
+  background: var(--color-canvas-soft);
+}
+.day[data-level='2'] {
+  border: 1px solid var(--color-hairline);
+}
+.day[data-level='3'] {
+  border: 2px solid var(--color-text-secondary);
+}
+.day[data-level='4'] {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.error,
+.empty {
+  color: var(--color-text-secondary);
+}
+
+.span {
+  grid-column: 1 / -1;
+}
+
+.postList,
+.teamList,
+.offerList {
+  display: grid;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teamLink,
+.offerPerson {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-heading);
+  text-decoration: none;
+}
+
+.teamMark {
+  position: relative;
+  width: var(--control-height);
+  height: var(--control-height);
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-soft);
+}
+
+.teamName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.offerStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  margin: 0;
+  color: var(--color-text-body);
+}
+
+@media (min-width: 600px) {
+  .postList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.companyDetails {
+  display: grid;
+  gap: var(--space-md);
+  margin: 0;
+}
+
+.companyDetails div {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.companyDetails dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.companyDetails dd {
+  margin: 0;
+  color: var(--color-text-body);
+}
+
+@media (min-width: 600px) {
+  .profile {
+    padding-inline: var(--space-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .header {
+    grid-column: 1 / -1;
+  }
+}
+
+.blog {
+  color: var(--color-accent);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: anywhere;
+}
+
+/* Figma 116:427 (my profile) / 301:572 (someone else's): the gray feed runs to the screen bottom */
+.stage {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--header-height));
+  gap: var(--space-profile-block);
+  margin: calc(var(--space-md) * -1) calc(var(--page-gutter) * -1)
+    calc((var(--space-xxl) + env(safe-area-inset-bottom)) * -1);
+}
+
+.intro {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-profile-top) var(--page-gutter) 0;
+}
+
+.identityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-profile-identity);
+  width: min(100%, var(--profile-identity-width));
+  height: var(--avatar-size-profile);
+  min-width: 0;
+}
+
+.identityRowSelf {
+  width: 100%;
+}
+
+.stage .avatar {
+  width: var(--avatar-size-profile);
+}
+
+/* Name line over the follow line, 8 apart, centered on the 60 avatar (Figma 116:515) */
+.stage .identityText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.nameLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-profile-badge);
+}
+
+.displayName {
+  margin: 0;
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+/* Status badge — Figma 123:1410: 12 medium #2563eb on its 10% tint, 2/4 padding, r2 */
+.statusBadge {
+  padding: var(--space-profile-badge-block) var(--space-xxs);
+  color: var(--color-cta-cool);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  background: color-mix(in srgb, var(--color-cta-cool) 10%, transparent);
+  border-radius: var(--radius-profile-badge);
+}
+
+/* "팔로워 120  팔로잉 31" — Figma 116:518: 14 medium #4b5563, groups 8 apart, label to count 2 */
+.followLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0;
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+.followLine button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-profile-count);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Settings — Figma 785:766: Solar settings 24 at stroke 1.5, 4 in from the row's right edge */
+.profileSettings {
+  display: inline-flex;
+  flex: none;
+  margin-right: var(--space-xxs);
+  color: var(--color-profile-settings);
+  --icon-stroke-width: 1.5;
+}
+
+/* Bio — Figma 118:617: 14 medium #4b5563, auto line height */
+.bio {
+  margin: var(--space-xxs) 0 0;
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  white-space: pre-wrap;
+}
+
+/* One line only: chips that don't fit collapse into "+N" (ProfileTechStack) */
+.stackWrap {
+  position: relative;
+  min-width: 0;
+  margin-top: var(--space-xxs);
+}
+
+.stackRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+/* Hidden copy of every chip, only for measuring widths */
+.stackMeasure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Tech stack chip — Figma 121:1189: 28 high, 3/8 padding, r4, 14 regular #4b5563 on #f3f4f6 */
+.stackRow li {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  justify-content: center;
+  width: auto;
+  min-height: var(--control-height-chip-sm);
+  white-space: nowrap;
+  padding: var(--space-chip-block) var(--space-xs);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  background: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+.githubButton,
+.githubButtonQuiet,
+.followButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  border-radius: var(--radius-xxs);
+}
+
+.githubButton,
+.followButton {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+
+/* My "GitHub" — Figma 708:2430: 42 high, #121212 with a 1px #e5e7eb rim, 16 medium white */
+.githubButton {
+  min-height: var(--control-height-profile-github);
+  background: var(--color-github-mark);
+  border: 1px solid var(--color-hairline-cool);
+}
+
+/* Someone else's "GitHub" — Figma 301:629: 42 high, #f2f3f8, 16 medium #111827 */
+.githubButtonQuiet {
+  min-height: var(--control-height-profile-github);
+  color: var(--color-text-title-cool);
+  background: var(--color-profile-github-quiet);
+}
+
+/* "팔로우" / "팔로잉" — Figma 301:1033: 42 high, #121212, r5, 16 semibold white */
+.followButton {
+  min-height: var(--control-height-profile-github);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-sheet-cta);
+  border-radius: var(--radius-profile-follow);
+}
+
+.compactCalendar {
+  display: grid;
+  gap: var(--space-xs);
+  padding: 0 var(--page-gutter);
+}
+
+.compactCalendar .calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.compactCalendar .day,
+.compactCalendar .weekday,
+.compactCalendar .emptyDay {
+  border-radius: var(--radius-xxs);
+  font-size: var(--font-size-meta);
+}
+
+.compactCalendar .day[data-level='1'] {
+  background: color-mix(in srgb, var(--color-status-success) 28%, white);
+}
+
+.compactCalendar .day[data-level='2'],
+.compactCalendar .day[data-level='3'] {
+  background: color-mix(in srgb, var(--color-status-success) 62%, white);
+  border: 0;
+}
+
+.compactCalendar .day[data-level='4'] {
+  background: var(--color-status-success);
+}
+
+/* Feed — Figma 142:72: gray to the screen bottom, cards 15 under the tabs and 15 apart */
+.feed {
+  display: grid;
+  flex: 1 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: var(--space-profile-work);
+  padding: 0 var(--page-gutter) calc(var(--space-lg) + env(safe-area-inset-bottom));
+  background: var(--color-canvas-cool);
+}
+
+.projectTabs {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr;
+  height: var(--profile-project-tabs-height);
+  margin-inline: calc(var(--page-gutter) * -1);
+  border-top: var(--border-width-profile-tabs) solid var(--color-canvas-cool);
+  background: var(--color-canvas);
+}
+
+/* Count over label, 2 apart, both 14 medium (Figma 121:1202): current #4b5563 / #111827, other #b2b7c3 */
+.projectTabs button {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-profile-count);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-disabled-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+.projectTabs button[aria-selected='true'] {
+  color: var(--color-text-title-cool);
+}
+
+.projectTabs button[aria-selected='true'] span {
+  color: var(--color-text-slate);
+}
+
+.embeddedWork,
+.workGrid,
+.workGrid > li {
+  display: contents;
+}
+
+.embeddedWork > h2 {
+  position: absolute;
+}
+
+.embeddedWork > p,
+.embeddedWork > [role='status'] {
+  grid-column: 1 / -1;
+}
+
+/* Work card — Figma 123:1406: 8 padding, r8; cover 148x123 (r5), then the title. Height follows the
+   content (no fixed square), so every side keeps the same 8 padding at any column width */
+.workCard {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-xs);
+  color: var(--color-text-heading);
+  text-decoration: none;
+  background: var(--color-canvas);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-profile-work-card);
+}
+
+.workCover {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  /* Same as the card padding, so the title sits as far below the cover as the card edge */
+  margin-bottom: var(--space-xs);
+  aspect-ratio: 148 / 123;
+  overflow: hidden;
+  background: var(--color-profile-work-cover);
+  border-radius: var(--radius-profile-work-cover);
+}
+
+.workCover img {
+  object-fit: cover;
+}
+
+/* Title — Figma 123:1417: 12 medium black */
+.workTitle {
+  overflow: hidden;
+  color: var(--color-text-black);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chat FAB — Figma 365:246: 40 circle #2e2e2e with a #383838 rim and soft glow, white Solar
+   chat-round-add 24; 16 from the right, on the home-indicator line at the bottom */
+.fab {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: max(var(--space-profile-fab-bottom), env(safe-area-inset-bottom));
+  z-index: var(--z-chrome);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  padding: 0;
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  background: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}

@@ -1,0 +1,63 @@
+/* Figma 286:266: edge to edge under the header, so it cancels the main's top padding and gutter */
+.carousel {
+  position: relative;
+  min-width: 0;
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) 0;
+}
+
+/* Native swipe with scroll snap */
+.track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .track {
+    scroll-behavior: smooth;
+  }
+}
+
+.slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+
+.open {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: var(--post-photo-height);
+  overflow: hidden;
+  background-color: var(--color-canvas-cool);
+}
+
+.open:focus-visible {
+  outline-offset: calc(-1 * var(--space-xxs));
+}
+
+.image {
+  object-fit: cover;
+}
+
+/* "1/5" pill (Figma 286:269): white 70%, 16px from the right, 14px from the bottom */
+.count {
+  position: absolute;
+  right: var(--page-gutter);
+  bottom: var(--space-photo-count);
+  padding: var(--space-xxs) var(--space-row-block);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-title);
+  letter-spacing: 0.1em;
+  color: var(--color-photo-count);
+  background-color: var(--color-photo-count-bg);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}

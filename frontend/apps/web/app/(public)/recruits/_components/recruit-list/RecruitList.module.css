@@ -1,0 +1,175 @@
+/* Cancels PageFrame's .main gutter so the tabs/toolbar backgrounds run edge-to-edge (Figma) */
+.page {
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter))
+    calc(-1 * (var(--tab-bar-height) + var(--space-xxl) + env(safe-area-inset-bottom)));
+  padding-bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+}
+
+/*
+ * Scenario 2 chrome latch (same `tab-chrome-collapsed` class as the header):
+ * - At scrollY === 0 the tabs sit in normal flow under the header.
+ * - As soon as scroll leaves the top, the chrome pins to the viewport top (`position: fixed`)
+ *   and eases up from its pre-pin Y (`--tab-chrome-pin-from`, set by the collapse hook) so
+ *   the latch reads as a soft slide instead of a hard snap.
+ * `.chromeSlot` keeps the in-flow height so the list doesn't jump under the fixed chrome.
+ */
+.chromeSlot {
+  background-color: var(--color-canvas);
+}
+
+:global(html.tab-chrome-collapsed) .chromeSlot {
+  height: calc(
+    env(safe-area-inset-top) + var(--tabs-row-height) + var(--recruit-search-panel-height)
+  );
+}
+
+.chromeSticky {
+  position: relative;
+  z-index: var(--z-chrome);
+  background-color: var(--color-canvas);
+}
+
+:global(html.tab-chrome-collapsed) .chromeSticky {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-chrome);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding-top: env(safe-area-inset-top);
+  animation: tab-chrome-pin var(--duration-chrome-collapse) var(--ease-standard) forwards;
+}
+
+@keyframes tab-chrome-pin {
+  from {
+    transform: translateY(var(--tab-chrome-pin-from, 0px));
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-md);
+  background-color: var(--color-canvas);
+}
+
+.count {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-sheet-title);
+}
+
+.countNumber {
+  color: var(--color-selection);
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-icon-text-compact);
+  min-height: var(--touch-target-min);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  background: none;
+  border: none;
+}
+
+.sortIcon {
+  --icon-box-size: 14px;
+  --icon-stroke-width: 1.5;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fabLayer {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-xs));
+  left: 0;
+  z-index: var(--z-chrome);
+  display: flex;
+  justify-content: flex-end;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  pointer-events: none;
+}
+
+/* 44px hit area (§3-3) around the Figma-exact 40px visual circle */
+.fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  pointer-events: auto;
+}
+
+.fabVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  background-color: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.fabIcon {
+  --icon-box-size: var(--icon-size);
+  color: var(--color-text-inverse);
+}
+
+.empty {
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  margin: 0;
+  padding: var(--space-xxl) var(--space-md);
+  text-align: center;
+  font-size: var(--font-size-body);
+  color: var(--color-text-slate);
+}
+
+.sentinel {
+  height: 1px;
+}
+
+.application {
+  display: grid;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-lg);
+}
+
+.applicationActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+}
+
+.applicationStatus {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
+}

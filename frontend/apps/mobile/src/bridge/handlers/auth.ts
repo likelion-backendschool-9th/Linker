@@ -1,3 +1,4 @@
+import { authCallbackPath } from '@linker/bridge';
 import * as WebBrowser from 'expo-web-browser';
 
 import { AUTH_REDIRECT_URL } from '@/lib/config';
@@ -6,11 +7,15 @@ import { clearSession, saveSession } from '@/lib/secure-store';
 import type { Handler } from '../context';
 import { sendPushTokenIfGranted } from './push';
 
-/** `linker://auth?code&state` → the web callback screen, which exchanges the code itself. */
-export function authCallbackPath(url: string): string | null {
-  if (!url.startsWith(AUTH_REDIRECT_URL)) return null;
-  const query = url.split('?')[1];
-  return query ? `/auth/callback?${query}` : null;
+// Shared across dispatcher instances: WebView rerenders must not reorder SecureStore writes.
+let pendingSessionWrite: Promise<void> = Promise.resolve();
+let sessionRevision = 0;
+
+function updateSession(write: () => Promise<void>) {
+  const revision = ++sessionRevision;
+  const pending = pendingSessionWrite.catch(() => {}).then(write);
+  pendingSessionWrite = pending;
+  return { revision, pending };
 }
 
 /** GitHub login in the system browser, back through the deep link (blueprint §12-3). */
@@ -27,12 +32,23 @@ export const authGithubStart: Handler<'AUTH_GITHUB_START'> = async (msg, ctx) =>
 
 /** Login: keep the ids and hand the push token to the web again so it registers for this member. */
 export const authSessionSave: Handler<'AUTH_SESSION_SAVE'> = async (msg, ctx) => {
-  await saveSession(msg.session);
-  await sendPushTokenIfGranted(ctx);
+  const { revision, pending } = updateSession(() => saveSession(msg.session));
+  await pending;
+  if (revision !== sessionRevision) return;
+  // Permission/token lookup can outlive a logout or account switch. Keep D's web registration
+  // contract, but never deliver an old session's automatic token response to the current web.
+  await sendPushTokenIfGranted({
+    ...ctx,
+    send: (message) => {
+      if (revision === sessionRevision) ctx.send(message);
+    },
+  });
 };
 
-/** Logout: drop the ids and hand the web the token so the server deletes it (DELETE /push-tokens/{token}). */
-export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async (_msg, ctx) => {
-  await clearSession();
-  await sendPushTokenIfGranted(ctx);
+/**
+ * Logout: drop the stored ids. The web deletes the Expo token (DELETE /push-tokens/{token})
+ * before sending CLEAR, so we must not re-register here.
+ */
+export const authSessionClear: Handler<'AUTH_SESSION_CLEAR'> = async () => {
+  await updateSession(clearSession).pending;
 };

@@ -1,0 +1,100 @@
+/* Figma 368:3024: #f9f9f9 sheet, two three-row wheels (selected row gray), black "저장" */
+.scrim.scrim {
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+.sheet.sheet {
+  padding: var(--space-calendar-date-top) var(--space-md)
+    calc(var(--space-block) + env(safe-area-inset-bottom));
+  background-color: var(--color-sheet-picker);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.title.title {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-sheet-title);
+}
+
+.wheels {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: calc(var(--wheel-row-height) * 3);
+  /* Figma: wheels 15px under the title row; the shared sheet body adds a 24px top margin */
+  margin: calc(var(--space-card-gap) - var(--space-lg)) 0 var(--space-calendar-date-cta);
+}
+
+/* Middle row highlight */
+.band {
+  position: absolute;
+  inset: var(--wheel-row-height) 0 auto;
+  height: var(--wheel-row-height);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.line {
+  position: absolute;
+  inset: var(--space-xs) auto var(--space-xs) 50%;
+  width: 1px;
+  background-color: var(--color-hairline-cool);
+}
+
+.wheel {
+  position: relative;
+  margin: 0;
+  padding: var(--wheel-row-height) 0;
+  overflow-y: auto;
+  list-style: none;
+  scroll-padding-block: var(--wheel-row-height);
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.wheel::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--radius-control-md);
+}
+
+.row {
+  height: var(--wheel-row-height);
+  scroll-snap-align: start;
+}
+
+.option {
+  width: 100%;
+  height: 100%;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-slate);
+}
+
+.option[aria-selected='true'] {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-wheel);
+}
+
+.save {
+  width: 100%;
+  height: var(--control-height-sheet);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+  border-radius: var(--radius-control-md);
+}
+
+.save:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

@@ -1,0 +1,222 @@
+/* Sticky frosted plate shared by the header row and the open search panel (HeaderChrome) */
+.chrome {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-chrome);
+  background-color: var(--color-header-bg);
+  -webkit-backdrop-filter: var(--blur-chrome);
+  backdrop-filter: var(--blur-chrome);
+  transition:
+    -webkit-backdrop-filter var(--duration-overlay) var(--ease-standard),
+    backdrop-filter var(--duration-overlay) var(--ease-standard);
+}
+
+.chromeOpen {
+  -webkit-backdrop-filter: var(--blur-header-open);
+  backdrop-filter: var(--blur-header-open);
+  border-bottom: 1px solid var(--color-canvas-soft);
+}
+
+.header {
+  padding-top: env(safe-area-inset-top);
+  max-height: calc(env(safe-area-inset-top) + var(--header-height));
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    max-height var(--duration-chrome-collapse) var(--ease-standard),
+    padding-top var(--duration-chrome-collapse) var(--ease-standard),
+    opacity var(--duration-chrome-collapse) var(--ease-standard);
+}
+
+/*
+ * Opt-in scroll-hide (19 recruit list scenario 2): collapses as soon as scroll leaves the top,
+ * and only slides back open at `scrollY === 0` (see `useTabChromeCollapse`, pages 19 and 24). Shares
+ * `--duration-chrome-collapse` with the tab chrome's pin slide so header and tabs ease together.
+ * Every other tab screen never toggles the class, so its header is unaffected.
+ */
+:global(html.tab-chrome-collapsed) .header {
+  max-height: 0;
+  padding-top: 0;
+  opacity: 0;
+}
+
+/* Width comes from the ancestor .app/.entry column (shell.module.css), not from here */
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  height: var(--header-height);
+  /* Logo and icon buttons carry their own inset, so the visible gutter equals --page-gutter */
+  padding: 0 calc(var(--page-gutter) - var(--space-xs));
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+}
+
+.title {
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Title starts at the gutter when there's no back button */
+.inner > .title:first-child {
+  padding-left: var(--space-xs);
+}
+
+/* Tab screens keep their own (taller) logo header height */
+.headerTab {
+  max-height: calc(env(safe-area-inset-top) + var(--header-height-tab));
+}
+
+.innerTab {
+  height: var(--header-height-tab);
+}
+
+/* Stack header (Figma 364:1884, the same on every stack frame): 54 high, white 90% frost, the
+   arrow's 24px box 12 from the edge, title at 64 in 18 semibold #111827 */
+.chromeStack {
+  background-color: var(--color-header-stack-bg);
+}
+
+.innerStack {
+  gap: var(--space-header-back-title);
+  padding-right: var(--space-header-stack-end);
+  padding-left: var(--space-sm);
+}
+
+.innerStack > .title:first-child {
+  padding-left: calc(var(--page-gutter) - var(--space-sm));
+}
+
+.titleStack {
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.search {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--search-input-height);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  background-color: var(--color-field);
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+}
+
+.search:focus-within {
+  border-color: var(--color-focus-ring-search);
+}
+
+.searchIcon {
+  color: var(--color-text-heading);
+}
+
+/* Solar's magnifier glyph is a 19px lens in a 24px box; shrink it to an 18px lens (handle scales
+   with it) without changing the 24x24 hit area it sits in. */
+.magnifierIcon {
+  transform: scale(calc(18 / 19));
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-body);
+  background: none;
+  border: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-subtle-on-tint);
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+/* The custom .searchClear button replaces the browser's native search-field clear control */
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchClear {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-body);
+  background-color: var(--color-hairline);
+  border-radius: var(--radius-full);
+  /* Scopes the nested Icon down to --icon-size-sm (see Icon.module.css) */
+  --icon-box-size: var(--icon-size-sm);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* Figma-exact 24x24 hit area, not --touch-target-min: dense header icon clusters trade the 44px
+   target for the spacing the design calls for (design guide ch. 3-3). */
+.iconButton {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+/* The search icon's input row, below the header (04 mobile header task 4-6). Slides down into
+   view on open; .chrome behind it already carries the frosted background. */
+@keyframes mobileSearchReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobileSearchPanel {
+  padding: 0 var(--page-gutter) var(--space-sm);
+  animation: mobileSearchReveal var(--duration-overlay) var(--ease-standard);
+}
+
+.searchMobile {
+  display: flex;
+  max-width: none;
+  margin: 0;
+}
+
+/* Back arrow (Figma lucide/arrow-left): black, stroke 2 */
+.backIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-black);
+}

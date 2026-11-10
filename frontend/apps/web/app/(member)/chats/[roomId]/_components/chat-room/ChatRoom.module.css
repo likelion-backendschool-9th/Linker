@@ -1,0 +1,453 @@
+/* Figma 17 (92:768): white room, 12px side gutter, messages fill the space between header and composer */
+.room {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--header-height) - env(safe-area-inset-top));
+  min-height: calc(var(--control-height) * 7);
+  margin: calc(-1 * var(--space-md)) calc(var(--space-sm) - var(--page-gutter))
+    calc(-1 * (var(--space-xxl) + env(safe-area-inset-bottom)));
+  background: var(--color-canvas);
+}
+
+/* Timeline column; fills the space above the composer */
+.timelineArea {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/*
+ * Team rooms float "AI 채팅 요약" over the bottom-right corner. The space below the last row lets the
+ * latest message end at the button's top edge, overlapping it only a little (user request
+ * 2026-11-10): last row's 20px gap + this = the button's 48px (40px + 8px offset) − 8px overlap.
+ */
+.withSummaryFab .viewport {
+  padding-bottom: calc(var(--fab-size) - var(--space-chat-row));
+}
+
+.viewport {
+  position: relative;
+  flex: 1;
+  min-height: calc(var(--control-height) * 2);
+  padding-top: var(--space-sm);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  outline: none;
+  /* Figma shows no scrollbar; scrolling still works by touch, wheel and keyboard */
+  scrollbar-width: none;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.viewport:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.virtualSpace {
+  position: relative;
+  width: 100%;
+}
+
+.virtualRow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: var(--space-chat-row);
+}
+
+/* Date divider (Page TODO 17, not in the Figma frame): kept in the time-label style */
+.date {
+  margin-bottom: var(--space-chat-row);
+  text-align: center;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-slate);
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xxs);
+}
+
+.mine {
+  align-items: flex-end;
+}
+
+.system {
+  align-items: center;
+}
+
+/* Others: 46px photo, then name / bubble / cards in one column */
+.incoming {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-chat-avatar);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.incomingBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-chat-name);
+  min-width: 0;
+  flex: 1;
+  padding-top: var(--space-xxs);
+}
+
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--chat-avatar-size);
+  width: var(--chat-avatar-size);
+  height: var(--chat-avatar-size);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.avatar img {
+  object-fit: cover;
+}
+
+.avatarFallback {
+  line-height: 1;
+}
+
+.author {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+}
+
+/* Bubble + time side by side, bottoms aligned; mine mirrors with the time on the left */
+.messageRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xxs);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.mine .messageRow {
+  flex-direction: row-reverse;
+  /* Figma 93:62: my bubble + time take at most three quarters of the row */
+  max-width: 75%;
+}
+
+.bubble {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-row-block) var(--space-chat-bubble-inline);
+  border-radius: var(--radius-chat-bubble);
+  background: var(--color-chat-bubble-other);
+  color: var(--color-text-black);
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-chat);
+}
+
+.mine .bubble {
+  background: var(--color-chat-bubble-mine);
+  color: var(--color-text-inverse);
+}
+
+.mine .card {
+  border-color: rgb(255 255 255 / 0.35);
+  color: var(--color-text-inverse);
+}
+
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* SYSTEM notices sit centred in the time-label style */
+.system .bubble {
+  padding: 0;
+  background: none;
+  color: var(--color-text-slate);
+  font-size: var(--font-size-chat-time);
+  text-align: center;
+}
+
+/* Time, "수정됨" and the read count beside the bubble */
+.messageMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 0 0 auto;
+}
+
+.mine .messageMeta {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.system .messageRow {
+  flex-direction: column;
+  align-items: center;
+}
+
+.system .messageMeta {
+  align-items: center;
+}
+
+.meta {
+  font-size: var(--font-size-chat-time);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+}
+
+/* Team read count: a number in the time style; the tap target grows invisibly */
+.unreadCount {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--font-size-chat-time);
+  line-height: var(--line-height-caption);
+  color: var(--color-chat-accent);
+  cursor: pointer;
+}
+
+.unreadCount::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  transform: translate(-50%, -50%);
+}
+
+.unreadCount:focus-visible,
+.menuBubble:focus-visible,
+.imageButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .menuBubble {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+}
+
+/* Cards that follow a message (PR event, issue cards) start at the bubble column */
+.eventRow {
+  margin-left: calc(var(--chat-avatar-size) + var(--space-chat-avatar));
+}
+
+.pending {
+  opacity: 0.6;
+}
+
+.pendingArea {
+  max-height: calc(var(--control-height) * 3);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.pendingArea .message {
+  margin-bottom: var(--space-xs);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}
+
+.images {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-xs);
+}
+
+.mine .images {
+  justify-items: end;
+}
+
+/* A photo-only message shows the photo itself, without the bubble around it */
+.bubble:has(> .images:only-child) {
+  padding: 0;
+  background: none;
+}
+
+/* Each photo keeps its own shape within 220 × 220 (user request 2026-11-10) */
+.image {
+  display: block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.image img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, var(--chat-image-max-size));
+  max-height: var(--chat-image-max-size);
+  border-radius: var(--radius-card-compact);
+}
+
+.imageButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.card {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+}
+
+.issueCards {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.issueCards a {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+}
+
+/* Composer (Figma 750:3096): photo icon, pill input, round blue send button */
+.composer {
+  display: grid;
+  /* Without this the column grows to the textarea's intrinsic width and pushes "보내기" off screen */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  /* 4px more above and below than the Figma bar (user request 2026-11-10: it sat too tight) */
+  padding: var(--space-sm) var(--space-xxs)
+    calc(max(var(--space-home-indicator), env(safe-area-inset-bottom)) + var(--space-xxs)) 0;
+  background: var(--color-canvas);
+}
+
+.composerBar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-row-block);
+}
+
+.attachmentToggle,
+.send {
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--control-height-chat);
+  width: var(--control-height-chat);
+  height: var(--control-height-chat);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.attachmentToggle {
+  /* Centered on the bar as the input grows (user request 2026-11-10) */
+  align-self: center;
+  background: none;
+  color: var(--color-text-title-cool);
+  --icon-box-size: var(--icon-size-chat-attach);
+  --icon-stroke-width: 1.5; /* Solar linear default, as drawn in Figma */
+}
+
+.send {
+  background: var(--color-chat-send);
+  color: var(--color-text-inverse);
+}
+
+.send:disabled,
+.attachmentToggle:disabled {
+  cursor: default;
+}
+
+/* "+" while photos are picked (user design 2026-11-10) */
+.addIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  stroke-width: 1.5;
+}
+
+.attachmentToggle:focus-visible,
+.send:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Input text stays 16px so iOS never zooms; only the placeholder takes the Figma 12px */
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--control-height-chat);
+  max-height: calc(var(--control-height-chat) * 3);
+  padding: calc(
+      (var(--control-height-chat) - var(--font-size-body) * var(--line-height-caption)) / 2
+    )
+    var(--space-chat-input-inline);
+  border: 0;
+  border-radius: calc(var(--control-height-chat) / 2);
+  background: var(--color-chat-bubble-other);
+  color: var(--color-text-black);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-caption);
+  resize: none;
+}
+
+.input::placeholder {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-placeholder-cool);
+}
+
+.referenceTools {
+  display: grid;
+  gap: var(--space-xs);
+  max-height: calc(var(--control-height) * 4);
+  overflow-y: auto;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+}
+
+.referenceTools ul {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  color: var(--color-status-error);
+}
+
+.notice {
+  padding: var(--space-xs);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
+}
+
+/* Unread-members sheet rows */
+.member {
+  padding-block: var(--space-sm);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}

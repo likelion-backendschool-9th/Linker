@@ -1,0 +1,51 @@
+/* Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청). Tabs match 18's and bleed to the column edges. */
+.tabs {
+  display: flex;
+  height: var(--tabs-row-height);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) 0;
+  background-color: var(--color-canvas);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  border: 0;
+  border-bottom: 1px solid var(--color-tab-divider);
+  background: none;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+  cursor: pointer;
+}
+
+.tab[aria-pressed='true'] {
+  border-bottom: 2px solid var(--color-text-slate);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  min-width: 0;
+  padding-top: var(--space-chat-list-top);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.list > li {
+  min-width: 0;
+}

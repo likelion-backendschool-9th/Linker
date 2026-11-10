@@ -81,6 +81,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(jsdom@30.1.3)(msw@3.0.3(@types/node@24.19.2)(typescript@6.0.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
 
   apps/web:
     dependencies:
@@ -105,6 +108,9 @@ importers:
       '@linker/bridge':
         specifier: workspace:*
         version: link:../../packages/bridge
+      '@solar-icons/static':
+        specifier: ^2.3.4
+        version: 2.3.4
       '@stomp/stompjs':
         specifier: ^7.5.0
         version: 7.5.0
@@ -168,6 +174,9 @@ importers:
       shiki:
         specifier: ^4.5.0
         version: 4.5.0
+      thinking-orbs:
+        specifier: 0.3.2
+        version: 0.3.2(react@19.3.0)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -2696,6 +2705,10 @@ packages:
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
+
+  '@solar-icons/static@2.3.4':
+    resolution: {integrity: sha512-w1mmsNvjutQvjecrg55k1keTyq/tBillWVlLEbmNkvoC4jS7tG/XGQb4bnpcozmTnjSIcXfu4eCi6oZWVjW8FA==}
+    engines: {node: '>=16'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -6140,6 +6153,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  thinking-orbs@0.3.2:
+    resolution: {integrity: sha512-QZFeBaPEzqhjiZoXy961EvDgaXk2WgXacF3Rbz+Sj5IfzDzBvTC86vdREUHniBffYibJFKSwbfllxLUdI/Xv6g==}
+    peerDependencies:
+      react: '>=18.0.0'
+
   throat@5.0.0:
     resolution: {integrity: sha512-fcwX4mndzpLQKBS1DVYhGAcYaYt7vsHNIvQV+WXMvnow5cgjPphq5CaayLaGsjRdSCKZFNGt7/GYAuXaNOiYCA==}
 
@@ -9246,6 +9264,8 @@ snapshots:
   '@sinclair/typebox@0.27.12': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
+
+  '@solar-icons/static@2.3.4': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -13547,6 +13567,10 @@ snapshots:
       acorn: 8.19.0
       commander: 2.20.3
       source-map-support: 0.5.21
+
+  thinking-orbs@0.3.2(react@19.3.0):
+    dependencies:
+      react: 19.3.0
 
   throat@5.0.0: {}
 

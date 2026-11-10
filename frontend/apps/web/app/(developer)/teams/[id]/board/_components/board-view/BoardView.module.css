@@ -1,0 +1,119 @@
+/* Figma 14 (200:1028): toolbar 20px under the team tabs, columns 20px under the toolbar */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--board-column-gap);
+  margin-top: calc(-1 * var(--space-md));
+  padding-top: var(--board-column-gap);
+  /* Stop wide columns / sr-only from widening the page */
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-board-control-gap);
+}
+
+/* Columns side by side; pan allowed, scrollbar hidden (QA) */
+.columns {
+  /* Positioned so it also clips the cards' sr-only text; otherwise it widens the mobile page */
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--board-column-gap);
+  min-width: 0;
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding: 0 var(--page-gutter) var(--space-board-column);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: var(--page-gutter);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.columns::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Figma 214:92: 240px, light gray, status-colored 4px top line, soft shadow */
+.column {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-board-column);
+  width: var(--board-column-width);
+  padding: var(--space-board-column);
+  background-color: var(--color-board-column);
+  border-top: var(--board-column-line) solid var(--column-status-color);
+  box-shadow: var(--shadow-board-column);
+}
+
+.column[data-over='true'] {
+  outline: 2px solid var(--color-board-control-active);
+  outline-offset: -2px;
+}
+
+.columnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+/* "+" of Figma 214:100: 20px solar:add-bold, 44px hit area (same as 07·11) */
+.create {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.create::after {
+  position: absolute;
+  inset: calc((var(--icon-size-add) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.create:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.createIcon {
+  display: block;
+  width: var(--icon-size-add);
+  height: var(--icon-size-add);
+}
+
+.createIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.columnTitle {
+  display: flex;
+  gap: var(--space-board-control-icon);
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.count {
+  color: var(--color-text-muted-cool);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-board-column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

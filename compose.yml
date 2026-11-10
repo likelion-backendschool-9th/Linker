@@ -37,6 +37,60 @@ services:
       DB_USERNAME: linker
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       REDIS_HOST: redis
+      # C's LlmClient consumes these; B runs the optional sidecar with the demo model.
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+      OLLAMA_CONNECT_TIMEOUT: ${OLLAMA_CONNECT_TIMEOUT:-5s}
+      OLLAMA_READ_TIMEOUT: ${OLLAMA_READ_TIMEOUT:-120s}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET:-}
+      GITHUB_USER_CALLBACK_URL: ${GITHUB_USER_CALLBACK_URL:-}
+      GITHUB_WEB_BASE_URL: ${GITHUB_WEB_BASE_URL:-https://github.com}
+      GITHUB_TOKEN_ENCRYPTION_KEY: ${GITHUB_TOKEN_ENCRYPTION_KEY:-}
+      GITHUB_API_BASE_URL: ${GITHUB_API_BASE_URL:-https://api.github.com}
+      GITHUB_API_VERSION: ${GITHUB_API_VERSION:-2026-03-10}
+      GITHUB_HTTP_TIMEOUT: ${GITHUB_HTTP_TIMEOUT:-10s}
+      GITHUB_INSTALL_STATE_TTL: ${GITHUB_INSTALL_STATE_TTL:-10m}
+      GITHUB_WEBHOOK_MAX_ATTEMPTS: ${GITHUB_WEBHOOK_MAX_ATTEMPTS:-5}
+      GITHUB_WEBHOOK_RETRY_DELAY: ${GITHUB_WEBHOOK_RETRY_DELAY:-30s}
+      GITHUB_WEBHOOK_RECEIVED_TIMEOUT: ${GITHUB_WEBHOOK_RECEIVED_TIMEOUT:-60s}
+      GITHUB_WEBHOOK_RECOVERY_BATCH_SIZE: ${GITHUB_WEBHOOK_RECOVERY_BATCH_SIZE:-100}
+      GITHUB_WEBHOOK_RECOVERY_DELAY_MS: ${GITHUB_WEBHOOK_RECOVERY_DELAY_MS:-60000}
+      LINKER_WEBHOOK_CONSUMER_ENABLED: ${LINKER_WEBHOOK_CONSUMER_ENABLED:-true}
+      TEAM_SETUP_WORKER_ENABLED: ${TEAM_SETUP_WORKER_ENABLED:-false}
+      TEAM_SETUP_WEBHOOK_ENABLED: ${TEAM_SETUP_WEBHOOK_ENABLED:-false}
+      TEAM_SETUP_POLL_DELAY_MS: ${TEAM_SETUP_POLL_DELAY_MS:-5000}
+      ISSUE_SYNC_ENABLED: ${ISSUE_SYNC_ENABLED:-false}
+      ISSUE_WEBHOOK_ENABLED: ${ISSUE_WEBHOOK_ENABLED:-false}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?JWT_PUBLIC_KEY is required}
+      # Toss Payments test mode only. Empty keys keep checkout at 503 PAYMENT_UNAVAILABLE.
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY:-}
+      TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY:-}
+      TOSS_API_BASE_URL: ${TOSS_API_BASE_URL:-https://api.tosspayments.com}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      # An empty value would bypass Spring's fallback, so mirror it here.
+      CHAT_PUBLIC_ORIGINS: ${CHAT_PUBLIC_ORIGINS:-${ALLOWED_ORIGINS:-http://localhost:3000}}
+      # Production sets SECURE=true. Backend and web must share the cookie name.
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
+      # Uploads live on the linker_uploads volume (user decision 2026-11-10) and are served at /files/.
+      STORAGE_MODE: ${STORAGE_MODE:-local}
+      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-/data/uploads}
+      # Empty MAIL_HOST disables sending. compose.dev.yml points it at Mailpit.
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-Linker <noreply@linker.local>}
+      MAIL_PUBLIC_BASE_URL: ${MAIL_PUBLIC_BASE_URL:-http://localhost:3000}
+    volumes:
+      - linker_uploads:/data/uploads
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -60,8 +114,15 @@ services:
         NEXT_PUBLIC_API_BASE_URL: ""
         NEXT_PUBLIC_IMAGE_HOST: ${NEXT_PUBLIC_IMAGE_HOST:-}
         NEXT_PUBLIC_TOSS_CLIENT_KEY: ${NEXT_PUBLIC_TOSS_CLIENT_KEY:-}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+        JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
+        SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
     environment:
       API_INTERNAL_URL: http://backend:8080
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
@@ -95,3 +156,5 @@ services:
 volumes:
   linker_postgres_data:
   linker_redis_data:
+  # Uploaded images; back it up with the database (DEPLOY_CHECKLIST step 5)
+  linker_uploads:

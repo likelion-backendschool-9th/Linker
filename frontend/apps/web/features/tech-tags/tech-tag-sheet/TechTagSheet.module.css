@@ -1,0 +1,183 @@
+.form {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.group {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.count,
+.full {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
+
+.full {
+  color: var(--color-status-warning);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* Outline pill; checked becomes the primary fill with a check icon (not color alone) */
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-body);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.chip:has(.checkbox:checked) {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.chip:has(.checkbox:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chip:has(.checkbox:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.check {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+/* 20 filled variant (Figma 301:1549). Doubled selectors win over the shared overlay styles
+   regardless of CSS load order (same as PostPeriodSheet) */
+.scrimFilled.scrimFilled {
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+.sheetFilled.sheetFilled {
+  padding: var(--space-board-column) var(--page-gutter)
+    calc(var(--space-board-column) + env(safe-area-inset-bottom));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* 60px title row: title 10 in from the sheet padding, 24px close on the right */
+.headerFilled.headerFilled {
+  align-items: center;
+  min-height: var(--sheet-header-height-tech);
+}
+
+.titleFilled.titleFilled {
+  padding-left: var(--space-row-block);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.closeFilled.closeFilled {
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  margin: 0;
+  color: var(--color-text-wheel);
+}
+
+.bodyFilled.bodyFilled {
+  margin-top: 0;
+}
+
+/* Chip list → 완료 is 30 apart */
+.formFilled {
+  display: grid;
+  gap: var(--space-sheet-action);
+}
+
+/* Rows 10 apart, chips 8 apart */
+.chipsFilled {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-row-block) var(--space-xs);
+}
+
+/* Same chip as the 21/23 tags; picked = black fill, white text */
+.chipFilled {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+  cursor: pointer;
+}
+
+.chipFilled:has(.checkbox:checked) {
+  color: var(--color-text-inverse);
+  background-color: var(--color-sheet-cta);
+}
+
+.chipFilled:has(.checkbox:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chipFilled:has(.checkbox:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* "완료" (301:1604): 53 high, 14 radius, #121212 with #f8f9f6 16px semibold */
+.done {
+  width: 100%;
+  height: var(--control-height-sheet);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-board-control);
+  color: var(--color-on-sheet-cta);
+  background-color: var(--color-sheet-cta);
+  border-radius: var(--radius-control-md);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-xs);
+}
+
+@media (min-width: 600px) {
+  .actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}

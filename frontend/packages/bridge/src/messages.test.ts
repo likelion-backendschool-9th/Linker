@@ -31,4 +31,34 @@ describe('bridge envelope', () => {
       decodeNativeToWeb(encodeEnvelope({ type: 'DEEP_LINK', path: 'https://evil.test' })),
     ).toBeNull();
   });
+
+  it('rejects incomplete results and invalid session identifiers', () => {
+    expect(decodeNativeToWeb(encodeEnvelope({ type: 'RESULT', id: 'r', ok: false }))).toBeNull();
+    expect(
+      decodeNativeToWeb(encodeEnvelope({ type: 'RESULT', id: 'r', ok: true, error: 'failed' })),
+    ).toBeNull();
+    expect(
+      decodeWebToNative(
+        encodeEnvelope({
+          type: 'AUTH_SESSION_SAVE',
+          session: { userId: -1, userType: 'DEVELOPER' },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('keeps only userId and userType when a session message carries a token', () => {
+    const raw = JSON.stringify({
+      v: 1,
+      source: 'linker',
+      msg: {
+        type: 'AUTH_SESSION_SAVE',
+        session: { userId: 7, userType: 'RECRUITER', token: 'compact.jwt.value' },
+      },
+    });
+    expect(decodeWebToNative(raw)).toEqual({
+      type: 'AUTH_SESSION_SAVE',
+      session: { userId: 7, userType: 'RECRUITER' },
+    });
+  });
 });

@@ -1,0 +1,111 @@
+/* Figma 11 (197:66) "최근 추이": plot inset 20px from the column edge, labels, centered legend */
+.chart {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.plot {
+  position: relative;
+  height: var(--chart-height);
+  margin-inline: var(--space-group);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--color-chart-grid);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.done {
+  --tone: var(--color-progress-done);
+}
+
+.active {
+  --tone: var(--color-progress-active);
+}
+
+.blocked {
+  --tone: var(--color-progress-blocked);
+}
+
+.line.done,
+.line.active,
+.line.blocked {
+  stroke: var(--tone);
+}
+
+/* Today's value: white dot with the line color */
+.point {
+  position: absolute;
+  top: var(--point-y);
+  left: var(--point-x);
+  width: var(--chart-point-size);
+  height: var(--chart-point-size);
+  background-color: var(--color-canvas);
+  border: 2px solid var(--tone);
+  border-radius: var(--radius-full);
+  transform: translate(-50%, -50%);
+}
+
+.axis {
+  position: relative;
+  height: var(--line-height-compact);
+  margin-inline: var(--space-group);
+}
+
+.tick,
+.today {
+  position: absolute;
+  left: var(--point-x);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.today {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-card-gap);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: normal;
+  color: var(--color-text-slate);
+}
+
+.legendDot {
+  width: var(--legend-dot-size);
+  height: var(--legend-dot-size);
+  background-color: var(--tone);
+  border-radius: var(--radius-full);
+}

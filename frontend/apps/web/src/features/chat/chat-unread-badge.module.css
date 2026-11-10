@@ -1,7 +1,0 @@
-.badge {
-  padding-inline: var(--space-xxs);
-  border-radius: var(--radius-full);
-  background: var(--color-canvas-soft);
-  color: var(--color-text-subtle-on-tint);
-  font-size: var(--font-size-meta);
-}

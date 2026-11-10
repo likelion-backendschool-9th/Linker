@@ -1,0 +1,1 @@
+export { TeamChangeIconButton } from './TeamChangeIconButton';

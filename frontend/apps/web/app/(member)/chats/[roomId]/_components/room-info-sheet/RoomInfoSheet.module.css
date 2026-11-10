@@ -1,0 +1,268 @@
+/* Figma 351:580: a full screen inside the app column, header like the page's stack header */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom));
+  background: var(--color-canvas);
+  outline: none;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  flex-shrink: 0;
+  height: var(--header-height);
+  margin-top: env(safe-area-inset-top);
+  padding: 0 calc(var(--page-gutter) - var(--space-xs));
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-heading);
+  cursor: pointer;
+}
+
+.title {
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  flex: 1;
+  padding: var(--space-room-info-team) var(--page-gutter) var(--space-lg);
+}
+
+/* Mute bell on the right of the header (not in the frame; replaces the old "알림 끄기" row) */
+.mute {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-heading);
+  cursor: pointer;
+}
+
+.mute svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.mute:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* "멤버 N명" over the team card (user reference 2026-11-10) */
+.team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+/* "+ 초대하기": text action on the right of the member count */
+.invite {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-icon);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  text-decoration: none;
+}
+
+.invite svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-black);
+}
+
+/* Team card (Figma 352:685 + reference): photo, name, "PR 보러 가기" chip */
+.teamCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-row-block) var(--space-xs);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+}
+
+.teamPhoto,
+.memberPhoto {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  background: var(--color-canvas-cool);
+  color: var(--color-text-slate);
+  font-weight: var(--font-weight-semibold);
+}
+
+.teamPhoto img,
+.memberPhoto img {
+  object-fit: cover;
+}
+
+.teamPhoto {
+  width: var(--avatar-size-team);
+  height: var(--avatar-size-team);
+  border-radius: var(--radius-xs);
+}
+
+.teamText,
+.memberText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.teamText {
+  gap: var(--space-row-block);
+}
+
+.teamName,
+.memberName {
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-black);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dense in-card action: visual chip, at least the 24px dense hit size */
+.prChip {
+  align-self: flex-start;
+  min-height: var(--touch-target-icon);
+  padding: var(--space-xxs) var(--space-xs);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--color-canvas-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-chat-accent);
+  cursor: pointer;
+}
+
+/* Member rows (Figma 352:715): 44px photo, name over @login, role on the right */
+.members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-room-member);
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding-right: var(--space-row-block);
+  color: inherit;
+  text-decoration: none;
+}
+
+.memberPhoto {
+  width: var(--room-member-avatar-size);
+  height: var(--room-member-avatar-size);
+  border-radius: var(--radius-full);
+}
+
+.memberText {
+  gap: var(--space-row-inline);
+}
+
+.memberLogin {
+  overflow: hidden;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role {
+  flex: none;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+}
+
+.role[data-role='OWNER'] {
+  color: var(--color-chat-accent);
+}
+
+/* "팀 나가기" (Figma 352:743): the 07 sheet CTA look */
+.cta {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  height: var(--control-height-sheet);
+  margin: 0 var(--page-gutter);
+  border: 0;
+  border-radius: var(--radius-control-md);
+  background: var(--color-sheet-cta);
+  color: var(--color-on-sheet-cta);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.back:focus-visible,
+.mute:focus-visible,
+.invite:focus-visible,
+.prChip:focus-visible,
+.member:focus-visible,
+.cta:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

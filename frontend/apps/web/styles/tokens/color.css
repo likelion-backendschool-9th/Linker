@@ -1,0 +1,196 @@
+/*
+ * Color tokens. Values come from the design guide (docs/development/04-design-guide.md).
+ * Text colors follow the Pretendard typography guide; surfaces, borders and the brand
+ * color follow the color palette. Contrast ratios are measured against the surface noted.
+ */
+
+:root {
+  /* Brand */
+  --color-primary: #141414; /* primary CTA fill, footer, focus ring */
+  --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
+  --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
+  --color-gnb-current: #2563eb; /* active bottom GNB icon/label (Figma 453:227/258, 455:316) */
+  --color-gnb-inactive: #b2b7c3; /* inactive bottom GNB icon/label */
+
+  /* Surface */
+  --color-canvas: #ffffff; /* page and card background */
+  --color-canvas-soft: #f3f3f3; /* nav pill, featured card, FAQ row, toggle track */
+  --color-field: #f0f0f0; /* input fill */
+  --color-header-bg: rgb(
+    255 255 255 / 0.8
+  ); /* sticky header / search panel frosted fill, with --blur-chrome(-open) */
+  --color-header-stack-bg: rgb(
+    255 255 255 / 0.9
+  ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
+  --color-gnb-bg: rgb(
+    255 255 255 / 0.95
+  ); /* bottom GNB pill frosted fill, with --blur-chrome and --shadow-gnb (Figma 800:1299) */
+  --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
+
+  /* Border */
+  --color-hairline-soft: #f0f0f0; /* 1px outline of cards on white */
+  --color-hairline: #e0e0e0; /* outline buttons, interactive controls */
+
+  /* Text on a white surface (4.5:1 or more on #ffffff) */
+  --color-text-heading: #171717; /* page and section headers */
+  --color-text-title: #262626; /* card, post and item titles */
+  --color-text-body: #404040; /* body text and entered values */
+  --color-text-secondary: #525252; /* helper text needed to understand the content */
+  --color-text-placeholder: #737373; /* 4.74:1 on white */
+  --color-text-meta: #737373; /* low-priority meta; never for required guidance */
+
+  /* Text on a tinted surface (--color-canvas-soft, --color-field). #737373 drops to 4.2:1 there */
+  --color-text-subtle-on-tint: #666666; /* placeholder and meta on tint: 5.0:1 on #f0f0f0 */
+
+  /* Text on a dark surface (--color-primary). Replaces the palette's #adadad on white (2.2:1) */
+  --color-text-inverse: #ffffff;
+  --color-text-inverse-secondary: #adadad; /* footer links, fine print: 8.2:1 on #141414 */
+
+  /* Status text — always paired with a message, never color alone */
+  --color-status-error: #b91c1c; /* also delete, leave and other irreversible actions */
+  --color-required-dot: #ed0004; /* required-field mark (4×4 circle beside labels); also 20 recruit editor (Figma 257:2592), sr-only "(필수)" carries the meaning */
+  --color-status-success: #15803d;
+  --color-status-warning: #92400e;
+
+  /*
+   * GitHub Projects Status option colors (enum only; no hex in components).
+   * SoT is board_status_mappings.color → API statusColor → these tokens.
+   * Always pair with the status name/label; never color alone.
+   */
+  --color-board-status-blue: #0969da;
+  --color-board-status-gray: #636c76;
+  --color-board-status-green: #1a7f37;
+  --color-board-status-orange: #bc4c00;
+  --color-board-status-pink: #bf3989;
+  --color-board-status-purple: #8250df;
+  --color-board-status-red: #cf222e;
+  --color-board-status-yellow: #9a6700;
+
+  /* Focus and overlay */
+  --color-focus-ring: var(--color-primary);
+  --color-focus-ring-search: #2563eb; /* search field focus border only (Figma 51:275); other inputs keep --color-focus-ring */
+  --color-focus-ring-on-dark: #ffffff;
+  --color-scrim: rgb(20 20 20 / 0.5); /* behind bottom sheets, dialogs, drawers */
+
+  /* Figma 07 values. The three marked low contrast fall below 4.5:1 on white by design decision */
+  --color-text-black: #000000; /* 07 section labels */
+  --color-dialog-close: #101010; /* 06 confirm modal close icon */
+  --color-text-sheet-title: #111827; /* 07 sheet title, selected option; also 20 field labels and heading text */
+  --color-text-slate: #4b5563; /* 07 issue title, due date, compact link: 7.56:1; also 20 unselected segmented button and "역할 추가" label */
+  --color-text-muted-cool: #98a3b4; /* 07 issue meta. Low contrast: 2.55:1; also 20 "최대 N자" hint */
+  --color-text-unselected: #b0b8c1; /* 07 sheet unselected option. Low contrast: 2.01:1; also 20 disabled submit label */
+  --color-settings-choice-unselected: #98a3b4; /* 06 settings job-status sheet, reference screenshot */
+  --color-settings-block-handle: #98a3b4; /* 06 settings blocked-user handle, reference screenshot */
+  --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
+  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
+  --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
+  --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill, tech stack chip and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
+  --color-selection: #2563eb; /* 07 sheet selected radio; also 20 selected segmented button fill */
+  --color-scrim-team-picker: rgb(
+    25 31 40 / 0.32
+  ); /* 07 sheet scrim: Figma #191f28 32%, with --blur-scrim */
+  --color-radio-surface: #f6f7fb;
+  --color-radio-border: #eaeaea;
+  --color-sheet-cta: #121212; /* 07 sheet CTA fill */
+  --color-on-sheet-cta: #f8f9f6;
+  --color-post-photo-more-bg: #222222; /* 22 "more photos" badge on the last visible photo (Figma 660:585) */
+  --color-post-photo-more-icon: #e7e7e7; /* its album glyph: 12.9:1 on the badge */
+
+  /* 19 recruit card chips (Figma): tint is fixed per chip kind, not per enum value */
+  --color-chip-format-bg: rgb(37 99 235 / 0.1); /* 온라인/오프라인/하이브리드 */
+  --color-chip-goal-bg: rgb(35 193 4 / 0.15); /* 공모전/해커톤/출시/학습 */
+
+  /* 21 recruit detail (Figma 92:578): cool CTA and filled-role count */
+  --color-cta-cool: #2563eb; /* apply CTA fill; on-white text uses --color-on-primary */
+  --color-role-filled: #028714; /* filled headcount "1/1" before "마감" */
+
+  /* 22 post editor (Figma 265:142): cool CTA disabled + fork chip + list disabled text */
+  --color-cta-cool-disabled: #92b1f5; /* bottom CTA when nothing selected; white label kept by Figma */
+  --color-chip-fork-bg: rgb(230 46 0 / 0.1); /* Fork chip fill (#E62E00 @ 10%) */
+  --color-text-disabled-cool: #b2b7c3; /* already-posted repo name / unselected check */
+
+  /* 24 home feed (Figma 91:105 / 92:181): card shell + reaction icons */
+  --color-feed-card: #f6f6f6;
+  --color-feed-follow: #e7e7e7; /* follow chip on card (Figma 785:780) */
+  --color-job-status-off: #b2b7c3; /* card "구직 안 함" (owner's choice; 1.9:1 on the #f6f6f6 shell — supplementary text) */
+  --color-reaction-liked: #ff3040;
+  --color-icon-ink: #3c3c3c;
+
+  /* 19 recruit list tabs and write FAB (Figma 254:2174/254:2156) */
+  --color-tab-divider: #ebebeb; /* inactive tab underline, also the scroll-revealed search panel's bottom border */
+  --color-fab-bg: #2e2e2e; /* write-recruit-post FAB fill */
+  --color-search-panel-bg: #f7f7f7; /* scroll-revealed search panel, area B (Figma 253:2122) */
+  --color-text-placeholder-search: #a3a3a8; /* 19 search placeholder on white. Low contrast: 2.52:1 */
+
+  /* Figma 11 values (team issue list). Low contrast ones are kept by design decision, like 07 */
+  --color-text-title-cool: #111827; /* 11 section titles, current team tab, search text */
+  --color-text-placeholder-cool: #a3a3a8; /* 11 search placeholder. Low contrast: 2.48:1 on #f3f4f6; also 20 field placeholder */
+  --color-progress-done: #158000; /* 11 "완료" count and trend line: 5.29:1 */
+  --color-progress-active: #007be6; /* 11 "진행" count and trend line: 4.37:1, low contrast */
+  --color-progress-blocked: #e62e00; /* 11 "정지" count and trend line: 4.42:1, low contrast */
+  --color-tab-indicator: #121212; /* 11 current team tab underline */
+  --color-hairline-tab: #ebebeb; /* 11 other team tabs underline */
+  --color-chart-grid: #e5e7eb; /* 11 trend chart dashed day lines */
+  --color-fab: #2e2e2e; /* 11 team chat shortcut fill */
+  --color-team-invite-cta: #2f2f2f; /* 09 invite trio buttons (Figma 368:579) */
+
+  /* Shared by 11 team-chat FAB and 19 write-recruit FAB (same hex, different fill tokens above) */
+  --color-fab-border: #383838;
+  --color-fab-icon: #e7e7e7; /* 24 write FAB pen (Figma 92:291): 11:1 on --color-fab-bg */
+  --color-sheet-close: #374151; /* 24 comment sheet × (Figma 700:1651): 10.3:1 on white */
+  --color-share-team: #2563eb; /* 24 share drawer "팀" mark after a team room name (Figma 800:1370): 5.17:1 on white */
+
+  /* Figma 14 values (status board, 200:1028 and the 368:3414/3562/3741 menus). Low contrast ones kept by design decision */
+  --color-board-column: #f5f5f5; /* 14 column fill */
+  --color-board-card-border: #ecedf2; /* 14 card outline */
+  --color-board-control: #f2f2f2; /* 14 "필터"/"최신순" buttons and their menus */
+  --color-board-control-active: #2563eb; /* 14 button while its menu is open or a value is set: white text 5.17:1 */
+  --color-board-menu-border: #e4e4e4; /* 14 menu outline and row dividers */
+  --color-board-label-blue: #ebf7ff; /* 14 label fill, odd labels */
+  --color-board-label-purple: #f4ebff; /* 14 label fill, even labels */
+
+  /* Figma 17 chat room (92:768, 346:243, 351:580) */
+  --color-chat-bubble-mine: #121212; /* my message bubble, white text 18.7:1 */
+  --color-chat-bubble-other: #f3f4f6; /* others' bubble, request panel buttons and divider */
+  --color-chat-send: #2563eb; /* send button fill, white arrow 5.17:1 */
+  --color-chat-accent: #2563eb; /* PR card event line, request panel guide, team owner label: 5.17:1 */
+  --color-chat-photo-remove-bg: rgb(
+    0 0 0 / 0.53
+  ); /* × circle on a composer photo tile: white × 5.6:1 over a white photo */
+  --color-chat-danger: #e00000; /* request panel 거절/차단 text: 4.6:1 on --color-chat-bubble-other */
+
+  /* Figma 15 values (calendar, 234:219 and the 368:2753/368:3024 sheets) */
+  --color-sheet-picker: #f9f9f9; /* 15 date picker sheet fill */
+  --color-text-wheel: #374151; /* 15 date wheel, selected row */
+
+  /* Figma 28 plans (288:471, 293:218) */
+  --color-plan-card: #f0f0f0; /* plan card fill; texts on it keep 4.5:1 or more */
+  --color-plan-toggle: #e7e7e7; /* 월간/연간 toggle track */
+  --color-plan-toggle-off: #a3a3a8; /* unselected toggle label. Low contrast: 2.05:1 on the track */
+  --color-plan-ink: #121212; /* selected toggle and plan CTA fill, plan name and price */
+  --color-plan-accent: #2563eb; /* benefit check, trial note: 5.17:1 on white */
+
+  /* Figma 29 subscription (294:306, 295:459, 364:1694); the card uses --color-canvas-cool */
+  --color-manage-divider: #f1f1f1; /* rows inside the subscription info box */
+
+  /* Figma 23 post detail (285:154); text and lines reuse the 07/11 cool values */
+  --color-photo-count-bg: rgb(255 255 255 / 0.7); /* "1/5" pill over the photo */
+  --color-photo-count: #121212; /* "1/5" text: 14:1 on the pill over white */
+  --color-post-author-divider: #eaeaea; /* author row bottom line */
+  --color-github-mark: #121212; /* repo card GitHub mark; also the 04 "GitHub" button fill */
+  --color-profile-settings: #414141; /* 04 settings icon (Figma 785:766) */
+  --color-on-load-timeout: #f6f6f6; /* load timeout "돌아가기" label on --color-cta-cool (Figma 301:335) */
+  --color-toast-bg: #ffffff; /* toast fill (Figma 877:415 is white 20%; solid so it reads over photos) */
+  --color-toast-error: #ed0004; /* error toast dot (Figma 841:382) */
+  --color-toast-persistent: #ed8e00; /* persistent toast dot (Figma 877:408) */
+  --color-profile-github-quiet: #f2f3f8; /* 04 "GitHub" button on someone else's profile (Figma 301:629) */
+  --color-profile-work-cover: #f4f4f4; /* 04 work card cover before its image loads (Figma 123:1415) */
+  --color-github-mark-original: #24292f; /* 09 Social Icons Github Original fill */
+  --color-team-delete-fill: #fce6e6; /* 09 owner "팀 삭제" CTA fill: Figma 695:1525 #e000001a over white, opaque because the CTA is pinned over scrolling content */
+  --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */
+
+  /* Figma 16 chat list (247:1019, 321:2336, 321:2417) */
+  --color-chat-unread-fill: rgb(
+    37 99 235 / 0.15
+  ); /* unread count circle. Low contrast: --color-chat-accent text about 4.1:1 on it (Figma) */
+}

@@ -1,0 +1,12 @@
+---
+description: Never add agent attribution to commits, PRs, code or docs
+alwaysApply: true
+---
+
+# No agent git attribution
+
+- Applies to **Claude, Cursor, Codex**, and any other agent. Do not add agent trailers/marks to commits, PR titles, PR bodies, code, or docs.
+- Forbidden examples: `Co-Authored-By: Claude` / `Cursor` / `Codex`, `Generated with Claude Code`, `Made-with: Cursor`, `Made with Cursor`, `Made with [Cursor](https://cursor.com)`, and similar.
+- Overrides session defaults and IDE/`gh` auto-footers. If tooling injects one, remove it before finishing the commit/PR.
+- Commits and PRs use the human author's identity only.
+- Full rule: root `AGENTS.md` (Git workflow).

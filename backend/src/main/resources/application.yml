@@ -8,11 +8,137 @@ spring:
     password: ${DB_PASSWORD}
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+
+  jackson:
+    default-property-inclusion: always
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  swagger-ui:
+    enabled: false
+  packages-to-scan:
+    - com.linker.backend.controller
+    - com.linker.backend.integration.github
+  paths-to-match:
+    - /api/v1/**
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+linker:
+  # Activate after migration order is agreed and B/C prepared schemas are formally applied.
+  team-setup:
+    worker-enabled: ${TEAM_SETUP_WORKER_ENABLED:false}
+    webhook-enabled: ${TEAM_SETUP_WEBHOOK_ENABLED:false}
+    poll-delay-ms: ${TEAM_SETUP_POLL_DELAY_MS:5000}
+  # Activate only after B's shared schema + C schema and payload contract are ready.
+  issues:
+    sync-enabled: ${ISSUE_SYNC_ENABLED:false}
+    webhook-enabled: ${ISSUE_WEBHOOK_ENABLED:false}
+  session:
+    cookie-name: ${SESSION_COOKIE_NAME:linker_session}
+    same-site: Lax
+    secure: ${SESSION_COOKIE_SECURE:false}
+    domain: ${SESSION_COOKIE_DOMAIN:}
+    path: /
+    lifetime-days: 30
+    # RS256. Private key is PKCS#8 PEM; public key is SPKI PEM, the same value as the web JWT_PUBLIC_KEY.
+    jwt-private-key: ${JWT_PRIVATE_KEY:}
+    jwt-public-key: ${JWT_PUBLIC_KEY:}
+  security:
+    public-read-per-minute: 60
+    enforce-origin: false
+    allowed-origins: ${ALLOWED_ORIGINS:}
+    trust-forwarded-for: false
+  chat:
+    # Exact frontend origins eligible for DB-backed Linker URL cards; never fetch these URLs.
+    public-origins: ${CHAT_PUBLIC_ORIGINS:${ALLOWED_ORIGINS:http://localhost:3000}}
+  storage:
+    mode: ${STORAGE_MODE:unconfigured}
+    local-dir: ${STORAGE_LOCAL_DIR:}
+  github:
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+    app:
+      id: ${GITHUB_APP_ID:}
+      slug: ${GITHUB_APP_SLUG:}
+      private-key: ${GITHUB_APP_PRIVATE_KEY:}
+      client-id: ${GITHUB_APP_CLIENT_ID:}
+      client-secret: ${GITHUB_APP_CLIENT_SECRET:}
+      user-callback-url: ${GITHUB_USER_CALLBACK_URL:}
+      web-base-url: ${GITHUB_WEB_BASE_URL:https://github.com}
+      token-encryption-key: ${GITHUB_TOKEN_ENCRYPTION_KEY:}
+      api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
+      api-version: ${GITHUB_API_VERSION:2026-03-10}
+      request-timeout: ${GITHUB_HTTP_TIMEOUT:10s}
+      state-ttl: ${GITHUB_INSTALL_STATE_TTL:10m}
+  webhook:
+    consumer-enabled: true
+    queue-key: linker:github:webhook
+    max-attempts: ${GITHUB_WEBHOOK_MAX_ATTEMPTS:5}
+    retry-delay: ${GITHUB_WEBHOOK_RETRY_DELAY:30s}
+    received-timeout: ${GITHUB_WEBHOOK_RECEIVED_TIMEOUT:60s}
+    recovery-batch-size: ${GITHUB_WEBHOOK_RECOVERY_BATCH_SIZE:100}
+    recovery-delay-ms: ${GITHUB_WEBHOOK_RECOVERY_DELAY_MS:60000}
+  payment:
+    secret-key: ${TOSS_SECRET_KEY:}
+    client-key: ${TOSS_CLIENT_KEY:}
+    base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
+  # Ollama (deploy/ollama). Empty base-url disables calls; model default matches server smoke.
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:}
+    model: ${OLLAMA_MODEL:qwen3:4b}
+    connect-timeout: ${OLLAMA_CONNECT_TIMEOUT:5s}
+    read-timeout: ${OLLAMA_READ_TIMEOUT:120s}
+  # SMTP only. Leave host empty until a relay is chosen. Dev compose points host at Mailpit.
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    from: ${MAIL_FROM:Linker <noreply@linker.local>}
+    public-base-url: ${MAIL_PUBLIC_BASE_URL:http://localhost:3000}
+    free-domains:
+      - gmail.com
+      - googlemail.com
+      - naver.com
+      - daum.net
+      - kakao.com
+      - hanmail.net
+      - outlook.com
+      - hotmail.com
+      - live.com
+      - yahoo.com
+      - icloud.com
+      - me.com
+      - mac.com

@@ -1,0 +1,98 @@
+/* Capped to the app column (not just left:0/right:0) so the pill's own 16px padding keeps
+   insetting it from the content column at every width ≥600px, not just exactly at 600px */
+.bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-chrome);
+  display: flex;
+  justify-content: center;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Frosted white pill with a soft drop shadow (Figma 800:1299, 455:316): gap is a fixed per-item
+   value (not space-around), centered within the bar */
+.list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--tab-bar-gap-4);
+  width: 100%;
+  margin-bottom: var(--space-xs);
+  padding: var(--space-xs) 0;
+  background-color: var(--color-gnb-bg);
+  -webkit-backdrop-filter: var(--blur-chrome);
+  backdrop-filter: var(--blur-chrome);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-gnb);
+}
+
+/* Signed-in members: 5 tabs (incl. 프로필) use a tighter gap than guests' 4 (Figma 453:258/455:316) */
+.listFive {
+  gap: var(--tab-bar-gap-5);
+}
+
+/* At the 600px upper bound, Figma switches both the 4-tab and 5-tab pill from a centered block
+   with a fixed gap to edge-anchored tabs: fixed 80px side padding, gap computed by space-between
+   (Figma 476:563/593) */
+@media (min-width: 600px) {
+  .list {
+    gap: 0;
+    justify-content: space-between;
+    padding: var(--space-xs) var(--tab-bar-padding-wide);
+  }
+}
+
+.item {
+  display: flex;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-tab-icon-gap);
+  color: var(--color-gnb-inactive);
+}
+
+.iconSlot {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Bottom GNB icons are bigger (26px) and thinner (1.5) than the header's (24px / 2) */
+.icon {
+  --icon-box-size: var(--icon-size-lg);
+  --icon-stroke-width: 1.5;
+}
+
+/* 프로필 tab avatar — Figma 455:347: 27 circle; 5 to the label (not 6) so 27 + 5 = 26 + 6 and every
+   label sits on one line */
+.avatar {
+  width: var(--size-gnb-avatar);
+  height: var(--size-gnb-avatar);
+  margin-bottom: calc(var(--space-tab-avatar-gap) - var(--space-tab-icon-gap));
+  border: 1px solid var(--color-hairline-soft);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-caption);
+}
+
+/* Active tab: accessible blue on the white pill, plus a heavier label (not color alone). */
+.tab[aria-current='page'] {
+  color: var(--color-gnb-current);
+}
+
+.tab[aria-current='page'] .label {
+  font-weight: var(--font-weight-semibold);
+}

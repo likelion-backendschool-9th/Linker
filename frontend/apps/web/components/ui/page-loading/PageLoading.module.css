@@ -1,0 +1,37 @@
+/* Figma 301:294 / 301:326 — white screen over the app column (header and tabs included), orb centered */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  background-color: var(--color-canvas);
+}
+
+/* "돌아가기" — Figma 301:334: 53 high, r14, #2563eb, 16 semibold #f6f6f6, on the home-indicator line */
+.back {
+  position: absolute;
+  right: var(--page-gutter);
+  bottom: max(var(--space-load-timeout-bottom), env(safe-area-inset-bottom));
+  left: var(--page-gutter);
+  height: var(--control-height-sheet);
+  padding: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-load-timeout);
+  cursor: pointer;
+  background-color: var(--color-cta-cool);
+  border: 0;
+  border-radius: var(--radius-control-md);
+}
+
+/* Inline variant for section loading (Skeleton): the same orb centered in its own area */
+.inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-xl);
+}

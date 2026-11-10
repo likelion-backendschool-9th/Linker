@@ -1,0 +1,184 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  max-height: var(--sheet-max-height);
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-height: 0;
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-md);
+  min-height: 0;
+  /* Shared OverlaySheet .body top is --space-lg; net title → filters = 15px */
+  margin-top: calc(var(--space-sheet-block) - var(--space-lg));
+  overflow-y: auto;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.filter {
+  min-height: var(--control-height-chip-sm);
+  padding: var(--space-xxs) var(--space-sm);
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+}
+
+.filter[aria-pressed='true'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.note {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-sm);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm) 0;
+}
+
+.select {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+}
+
+/* Same custom radio chrome as apply-sheet role choices */
+.radio {
+  width: var(--radio-size);
+  height: var(--radio-size);
+  margin: 0;
+  appearance: none;
+  background-color: var(--color-canvas);
+  border: 2px solid var(--color-gnb-inactive);
+  border-radius: var(--radius-full);
+}
+
+.radio:checked {
+  border-color: var(--color-selection);
+  background-color: var(--color-selection);
+  box-shadow: inset 0 0 0 calc((var(--radio-size) - var(--radio-dot-size)) / 2) var(--color-canvas);
+}
+
+.radio:disabled {
+  cursor: not-allowed;
+  border-color: var(--color-gnb-inactive);
+  background-color: var(--color-canvas);
+  box-shadow: none;
+  opacity: 0.5;
+}
+
+.profile {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.who {
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-meta);
+}
+
+.inviteCta {
+  min-height: var(--control-height-sheet);
+  color: var(--color-on-primary);
+  background-color: var(--color-selection);
+  border-radius: var(--radius-control-md);
+}
+
+.inviteCta[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Row status / reject pills — short so they don’t dominate the card */
+.statusPill {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  min-height: 42px;
+  padding-inline: var(--space-sm);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+  border-radius: var(--radius-control-md);
+}
+
+/* 대기: soft fill + #111827 (do not use gnb-inactive) */
+.waiting {
+  color: var(--color-text-title-cool);
+  background-color: var(--color-canvas-cool);
+}
+
+/* 거절: same red as label, fill at 10% */
+.reject {
+  cursor: pointer;
+  color: var(--color-required-dot);
+  background-color: color-mix(in srgb, var(--color-required-dot) 10%, transparent);
+}
+
+.footer {
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-hairline-soft);
+}

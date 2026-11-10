@@ -1,0 +1,173 @@
+/* 23 comments (Figma 287:328): input 20 under the reactions, each comment 30 top/bottom */
+.section {
+  display: grid;
+  padding-top: var(--space-post-section);
+}
+
+.state {
+  padding-block: var(--space-comment-block);
+}
+
+.composer {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* Field (287:317): 42 high, radius 14, text inset 12, send button 4 from the edges.
+   Guests get the same field as a button.
+   The line is an inside outline, not a border: outlines take no layout space, so 1px → 2px on
+   focus (364:1950, #2563eb inside stroke) never moves the text or the send button. */
+.field {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: var(--control-height-comment);
+  padding: var(--space-xxs) var(--space-xxs) var(--space-xxs) var(--space-sm);
+  text-align: left;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-control-md);
+  outline: var(--border-width-comment) solid transparent;
+  outline-offset: calc(-1 * var(--border-width-comment));
+}
+
+.field:focus-within {
+  outline: var(--border-width-comment-focus) solid var(--color-focus-ring-search);
+  outline-offset: calc(-1 * var(--border-width-comment-focus));
+}
+
+.field:has([aria-invalid='true']) {
+  outline-color: var(--color-status-error);
+}
+
+/* 16px text so iOS never zooms; vertically centered against the 34px send button */
+.input,
+.guestPlaceholder {
+  flex: 1;
+  min-width: 0;
+  padding: calc((var(--size-comment-send) - var(--line-height-card-desc)) / 2) 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+}
+
+.input {
+  max-height: calc(var(--line-height-card-desc) * 5);
+  color: var(--color-text-title-cool);
+  background: none;
+  border: 0;
+  resize: none;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder,
+.guestPlaceholder {
+  color: var(--color-comment-placeholder);
+}
+
+.send {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--size-comment-send);
+  height: var(--size-comment-send);
+  color: var(--color-text-inverse);
+  background-color: var(--color-cta-cool);
+  border-radius: var(--radius-control-lg);
+}
+
+.send[aria-disabled='true'] {
+  cursor: progress;
+}
+
+.sendIcon {
+  width: var(--icon-size-comment-send);
+  height: var(--icon-size-comment-send);
+  stroke-width: 1.5;
+}
+
+.error {
+  font-size: var(--font-size-caption);
+  color: var(--color-status-error);
+}
+
+.list {
+  display: grid;
+}
+
+/* 287:293: 30 top/bottom with a #e5e7eb bottom line */
+.item {
+  padding-block: var(--space-comment-block);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.comment {
+  display: grid;
+  gap: var(--space-post-section);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--avatar-size-post);
+  height: var(--avatar-size-post);
+  background-color: var(--color-radio-border);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.authorText {
+  display: grid;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-black);
+}
+
+.login {
+  overflow: hidden;
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Date sits level with the name (287:303) */
+.date {
+  flex-shrink: 0;
+  padding-top: var(--space-xxs);
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+}
+
+.text {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-slate);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

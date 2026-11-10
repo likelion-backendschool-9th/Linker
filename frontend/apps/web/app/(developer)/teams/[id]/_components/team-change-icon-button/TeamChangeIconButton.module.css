@@ -1,0 +1,16 @@
+/* Figma 11 header icon: 24px drawing in a 44px frame, 2px black line */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-black);
+  background: none;
+  border: 0;
+}
+
+.icon > svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}

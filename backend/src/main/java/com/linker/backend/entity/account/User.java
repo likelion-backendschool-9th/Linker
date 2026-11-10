@@ -1,0 +1,368 @@
+package com.linker.backend.entity.account;
+
+import java.time.Instant;
+
+import com.linker.backend.entity.account.type.JobSeekingStatus;
+import com.linker.backend.entity.account.type.UserStatus;
+import com.linker.backend.entity.account.type.UserType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+@Entity
+@Table(name = "users")
+public class User {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(nullable = false, unique = true, length = 39)
+	private String username;
+
+	@Column(length = 20)
+	private String displayName;
+
+	@Column(length = 2048)
+	private String avatarUrl;
+
+	@Column(length = 160)
+	private String bio;
+
+	@Column(length = 2048)
+	private String blogUrl;
+
+	@Column(length = 320)
+	private String email;
+
+	private Instant emailVerifiedAt;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private UserType userType;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private UserStatus status;
+
+	private Instant suspendedUntil;
+
+	@Column(nullable = false)
+	private boolean lookingForTeam;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private JobSeekingStatus jobSeekingStatus;
+
+	private Instant jobSeekingUpdatedAt;
+
+	@Column(nullable = false)
+	private boolean pushEnabled;
+
+	private Instant contributionSyncedAt;
+
+	private Instant lastActiveAt;
+
+	/** Set by the inactivity batch when it turns job seeking off. Cleared after the notice is created. */
+	@Column(nullable = false)
+	private boolean jobSeekingOffNotice;
+
+	private Instant withdrawRequestedAt;
+
+	private Instant deletedAt;
+
+	/** Set when the onboarding profile step is saved. Drives the session {@code onb} claim. */
+	private Instant onboardedAt;
+
+	@CreationTimestamp
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private Instant updatedAt;
+
+	protected User() {
+	}
+
+	public static User create(String username, UserType userType) {
+		User user = new User();
+		user.username = username;
+		user.userType = userType;
+		user.status = UserStatus.ACTIVE;
+		user.jobSeekingStatus = JobSeekingStatus.OFF;
+		user.lookingForTeam = false;
+		user.pushEnabled = true;
+		return user;
+	}
+
+	public void changeDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	public void suspendUntil(Instant until) {
+		this.status = UserStatus.SUSPENDED;
+		this.suspendedUntil = until;
+	}
+
+	/** Reconcile current restrictions without cancelling a withdrawal or reviving a deleted account. */
+	public void reconcileSanctions(boolean restricted, Instant until, boolean revokedCurrent, Instant now) {
+		if (status == UserStatus.WITHDRAWING || status == UserStatus.DELETED || deletedAt != null) return;
+		if (restricted) {
+			// A matching revoked restriction may be replaced; retain an unrelated manual restriction.
+			if (status == UserStatus.SUSPENDED && !revokedCurrent && until != null
+					&& (suspendedUntil == null || suspendedUntil.isAfter(until))) return;
+			suspendUntil(until);
+		} else if (status == UserStatus.SUSPENDED && (revokedCurrent
+				|| (suspendedUntil != null && !suspendedUntil.isAfter(now)))) {
+			status = UserStatus.ACTIVE;
+			suspendedUntil = null;
+		}
+	}
+
+	public void markWithdrawing(Instant when) {
+		this.status = UserStatus.WITHDRAWING;
+		this.withdrawRequestedAt = when;
+	}
+
+	public void markDeleted(Instant when) {
+		this.status = UserStatus.DELETED;
+		this.deletedAt = when;
+	}
+
+	/** Clears personal columns after the pending-withdrawal window. Username stays for the unique key. */
+	public void anonymize(Instant when) {
+		markDeleted(when);
+		this.displayName = null;
+		this.avatarUrl = null;
+		this.bio = null;
+		this.blogUrl = null;
+		this.email = null;
+	}
+
+	public void touch(Instant when) {
+		this.lastActiveAt = when;
+	}
+
+	public void markContributionSynced(Instant when) {
+		this.contributionSyncedAt = when;
+	}
+
+	public Instant getContributionSyncedAt() {
+		return contributionSyncedAt;
+	}
+
+	public void clearLookingForTeam() {
+		this.lookingForTeam = false;
+	}
+
+	public void markJobSeekingOffForInactivity(Instant when) {
+		if (this.jobSeekingStatus == JobSeekingStatus.OFF) {
+			return;
+		}
+		this.jobSeekingStatus = JobSeekingStatus.OFF;
+		this.jobSeekingUpdatedAt = when;
+		this.jobSeekingOffNotice = true;
+	}
+
+	public boolean takeJobSeekingOffNotice() {
+		if (!this.jobSeekingOffNotice) {
+			return false;
+		}
+		this.jobSeekingOffNotice = false;
+		return true;
+	}
+
+	public void applyOnboardingProfile(
+			String displayName,
+			String bio,
+			String blogUrl,
+			boolean lookingForTeam,
+			JobSeekingStatus jobStatus,
+			Instant now) {
+		this.displayName = displayName;
+		this.bio = blankToNull(bio);
+		this.blogUrl = blankToNull(blogUrl);
+		this.lookingForTeam = lookingForTeam;
+		if (this.jobSeekingStatus != jobStatus) {
+			this.jobSeekingStatus = jobStatus;
+			this.jobSeekingUpdatedAt = now;
+		}
+	}
+
+	/** Reloads the GitHub fields on the profile form. Tech stack and job status stay. */
+	public void refreshFromGithub(String name, String bio, String blogUrl, String avatarUrl) {
+		useGithubDisplayName(name);
+		this.bio = blankToNull(bio);
+		this.blogUrl = blankToNull(blogUrl);
+		refreshAvatar(avatarUrl);
+	}
+
+	public void keepNotificationEmail(String email) {
+		if (this.email != null && !this.email.isBlank()) {
+			return;
+		}
+		this.email = email;
+	}
+
+	public void keepNotificationEmail(String email, Instant verifiedAt) {
+		if (this.email != null && !this.email.isBlank()) {
+			return;
+		}
+		String value = blankToNull(email);
+		if (value == null) {
+			return;
+		}
+		this.email = value;
+		this.emailVerifiedAt = verifiedAt;
+	}
+
+	public void changeNotificationEmail(String email) {
+		this.email = email;
+	}
+
+	public void setPushEnabled(boolean pushEnabled) {
+		this.pushEnabled = pushEnabled;
+	}
+
+	public void completeOnboarding(Instant when) {
+		if (this.onboardedAt == null) {
+			this.onboardedAt = when;
+		}
+	}
+
+	public boolean isOnboarded() {
+		return onboardedAt != null;
+	}
+
+	public void rename(String username) {
+		this.username = username;
+	}
+
+	public void refreshAvatar(String avatarUrl) {
+		this.avatarUrl = blankToNull(avatarUrl);
+	}
+
+	public void useGithubDisplayName(String name) {
+		String value = blankToNull(name);
+		if (value == null) {
+			return;
+		}
+		this.displayName = value.length() <= 20 ? value : value.substring(0, 20);
+	}
+
+	/**
+	 * @return true when a pending withdrawal inside the restore window becomes active
+	 */
+	public boolean restoreWithdrawal(Instant now, java.time.Duration window) {
+		if (status != UserStatus.WITHDRAWING || withdrawRequestedAt == null) {
+			return false;
+		}
+		if (withdrawRequestedAt.plus(window).isBefore(now)) {
+			return false;
+		}
+		this.status = UserStatus.ACTIVE;
+		this.withdrawRequestedAt = null;
+		return true;
+	}
+
+	public boolean withdrawalExpired(Instant now, java.time.Duration window) {
+		return status == UserStatus.WITHDRAWING
+				&& (withdrawRequestedAt == null || withdrawRequestedAt.plus(window).isBefore(now));
+	}
+
+	private static String blankToNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public String getBio() {
+		return bio;
+	}
+
+	public String getBlogUrl() {
+		return blogUrl;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public boolean isPushEnabled() {
+		return pushEnabled;
+	}
+
+	public boolean isLookingForTeam() {
+		return lookingForTeam;
+	}
+
+	public JobSeekingStatus getJobSeekingStatus() {
+		return jobSeekingStatus;
+	}
+
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+
+	public UserType getUserType() {
+		return userType;
+	}
+
+	public UserStatus getStatus() {
+		return status;
+	}
+
+	public Instant getSuspendedUntil() {
+		return suspendedUntil;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public Instant getWithdrawRequestedAt() {
+		return withdrawRequestedAt;
+	}
+
+	public Instant getLastActiveAt() {
+		return lastActiveAt;
+	}
+
+	public String visibleName() {
+		if (displayName == null || displayName.isBlank()) {
+			return username;
+		}
+		return displayName;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+}

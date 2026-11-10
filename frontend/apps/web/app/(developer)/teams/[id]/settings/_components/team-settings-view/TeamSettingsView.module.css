@@ -1,0 +1,391 @@
+/* Figma 368:387 "9" settings body — TeamFrame owns header / tabs / chat FAB */
+
+/* Room under the last repo for the pinned bottom CTA: same 25 gap as Figma 368:1563 (list → 팀 삭제) */
+.page {
+  display: grid;
+  gap: 0;
+  padding-bottom: calc(
+    var(--space-team-cta-bottom) + var(--control-height-team-delete) + var(--space-team-cta-gap) +
+      env(safe-area-inset-bottom)
+  );
+}
+
+/* Figma 368:387 — title 20 under the tabs (PageFrame main already adds --space-md top and the side
+   gutter, so sections add no side padding of their own), card 12 below it.
+   Owner view (368:1563) shares every size here; it only adds chevrons, the red remove and 팀 삭제 */
+.membersSection {
+  display: grid;
+  gap: var(--space-sm);
+  padding: calc(var(--space-team-settings-top) - var(--space-md)) 0 0;
+}
+
+/* Title 12 → buttons, buttons 11 → hints (Figma 368:387 초대하기 컨텐츠) */
+.inviteSection {
+  display: grid;
+  padding: var(--space-md) 0 0;
+}
+
+.inviteSection > .sectionTitle {
+  margin-bottom: var(--space-sm);
+}
+
+.reposSection {
+  display: grid;
+  gap: 15px;
+  padding: var(--space-team-repos-top) 0 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: 19px;
+  color: var(--color-text-title-cool);
+}
+
+/* "4/6명" — Figma 368:387: 16 medium #b2b7c3, 5 after the title */
+.sectionMeta {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-disabled-cool);
+}
+
+/* Figma 368:1591 — padding 15, itemSpacing 10, radius 14, stroke #E5E7EB */
+.memberCard {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 15px;
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+/* Figma rows: 51px (last 40), avatar 40, text at +7/+3, chevron 24 bottom-right */
+.memberRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  height: 51px;
+  min-width: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.memberRow:last-child {
+  height: 40px;
+  border-bottom: none;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  background-color: var(--color-radio-border);
+}
+
+/* Role line, then the name 3 below it (Figma 368:387) */
+.memberText {
+  display: grid;
+  flex: 1;
+  gap: var(--space-team-member-name);
+  min-width: 0;
+  margin-top: 3px;
+  padding-right: 28px;
+}
+
+/* Figma 368:1606 — 24×24 solar alt-arrow on the row's right edge, centered on the 40 avatar */
+.memberChevron {
+  position: absolute;
+  top: var(--space-xs);
+  right: 0;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--color-text-slate);
+  --icon-stroke-width: 1.5;
+}
+
+.chevronIcon {
+  --icon-box-size: 24px;
+}
+
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 14px;
+}
+
+.role {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-text-title-cool);
+}
+
+/* Figma 368:1596 — blue track next to team role (PO / BE / FE) */
+.jobLabel {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-cta-cool);
+}
+
+/* "이준호 @JUNHORANG" — Figma 368:387: 14 medium #4b5563 */
+.memberName {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Three 36-high buttons, 11 apart (Figma 버튼들: 107 each in 343) */
+.inviteActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-team-invite);
+  width: 100%;
+  margin-bottom: var(--space-team-invite);
+}
+
+.inviteButton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--color-on-primary);
+  background-color: var(--color-team-invite-cta);
+  border-radius: var(--radius-xs);
+}
+
+.inviteHints {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inviteHint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: 20px;
+  color: var(--color-text-muted-cool);
+}
+
+.inviteHint::before {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  margin-top: 8px;
+  content: '';
+  background-color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+/* 6px band 30 under the hints (Figma 구분 선) */
+.band {
+  height: var(--divider-section);
+  margin-top: var(--space-team-settings-band);
+  margin-inline: calc(-1 * var(--page-gutter));
+  background-color: var(--color-canvas-cool);
+}
+
+.reposHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.reposTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.githubMark {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: var(--color-github-mark-original);
+}
+
+/* "GitHub 저장소" — Figma 368:387: 16 medium #111827 */
+.reposLabel {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+
+.reposCount {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-cta-cool);
+  white-space: nowrap;
+}
+
+.addRepo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: var(--color-text-slate);
+}
+
+.addIcon {
+  --icon-box-size: 18px;
+}
+
+.repoList {
+  display: grid;
+  gap: var(--space-row-inline);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 29px;
+  padding: var(--space-row-inline) 0;
+}
+
+/* Row = 19 remove control + 5/5 padding = 29 (Figma 레포 표시); the name keeps auto line height */
+.repoName {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: normal;
+  color: var(--color-text-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeRepo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  background-color: var(--color-text-muted-cool);
+  border-radius: var(--radius-full);
+}
+
+/* Figma 368:1657 owner view — remove control fill #E00000 */
+.removeRepoOwner {
+  background-color: var(--color-chat-danger);
+}
+
+.removeMark {
+  display: block;
+  width: 11px;
+  height: 1px;
+  background-color: var(--color-on-primary);
+}
+
+/* "팀 삭제" (owner) and "팀 나가기" (others) sit pinned in the same spot: Figma 695:1525 on 368:1563 puts
+   it 4 above the 24 home-indicator area. The chat FAB stays on top of it, as in Figma */
+.deleteWrap,
+.leaveWrap {
+  position: fixed;
+  right: 0;
+  bottom: max(var(--space-team-cta-bottom), calc(env(safe-area-inset-bottom) + var(--space-xxs)));
+  left: 0;
+  z-index: calc(var(--z-chrome) - 1);
+  display: grid;
+  justify-items: stretch;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: 0 var(--page-gutter);
+}
+
+/* Figma 695:1525 — 343×45, radius 12, #e00000 at 10% (kept opaque so pinned it hides the content under it) */
+
+.delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--control-height-team-delete);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-chat-danger);
+  background-color: var(--color-team-delete-fill);
+  border-radius: var(--radius-control-lg);
+}
+
+/* Leave CTA — style from Figma 352:743 (page 17), not on frame 9; placed like 팀 삭제 above */
+.leave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 42px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-sheet-cta);
+  background-color: var(--color-canvas-cool); /* Figma #f2f4f6 */
+  border-radius: var(--radius-control-md);
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-black);
+  background: none;
+  border: 0;
+}
+
+.headerIcon > svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}

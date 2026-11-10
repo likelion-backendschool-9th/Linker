@@ -1,0 +1,16 @@
+# Introspection only: this does NOT execute a mutation or require write access.
+# GitHub limits repeated introspection fields; keep this to two inputFields.
+query CProjectsWriteSchemaSpike {
+  updateInput: __type(name: "UpdateProjectV2ItemFieldValueInput") {
+    inputFields {
+      name
+      type { kind name ofType { kind name } }
+    }
+  }
+  fieldValue: __type(name: "ProjectV2FieldValue") {
+    inputFields {
+      name
+      type { kind name ofType { kind name } }
+    }
+  }
+}

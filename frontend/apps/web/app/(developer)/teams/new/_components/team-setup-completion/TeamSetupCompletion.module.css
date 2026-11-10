@@ -1,0 +1,66 @@
+/* Figma 479:629. Dimensions absent from shared tokens stay local to page 08. */
+.completion {
+  --setup-completion-top: 181px;
+  --setup-completion-width: 302px;
+  --setup-completion-image-width: 180px;
+  --setup-completion-image-height: 169px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  min-height: calc(
+    100dvh - var(--setup-header-height) - var(--space-xxs) - env(safe-area-inset-top)
+  );
+  padding-inline: var(--page-gutter);
+  padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom));
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-list-action);
+  width: 100%;
+  max-width: var(--setup-completion-width);
+  margin-inline: auto;
+  padding-top: var(--setup-completion-top);
+}
+.illustration {
+  display: block;
+  width: var(--setup-completion-image-width);
+  height: var(--setup-completion-image-height);
+  object-fit: cover;
+}
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row-block);
+  width: 100%;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.03em;
+  line-height: normal;
+}
+.copy h2 {
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-section-title);
+  font-weight: inherit;
+  text-align: center;
+}
+.copy p {
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-caption);
+}
+.next {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  border-radius: var(--radius-control-md);
+  color: var(--color-text-inverse);
+  background: var(--color-selection);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+}
+.next:disabled {
+  cursor: not-allowed;
+  background: var(--color-canvas-cool);
+  color: var(--color-text-unselected);
+}

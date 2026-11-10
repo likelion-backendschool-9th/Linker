@@ -1,0 +1,195 @@
+/* Values not in shared tokens remain scoped to Figma 735:2891. */
+.screen {
+  --pr-content-top: 25px;
+  --pr-heading-gap: 22px;
+  --pr-card-gap: 15px;
+  --pr-card-inline: 15px;
+  --pr-card-top: 14px;
+  --pr-card-bottom: 15px;
+  --pr-event-gap: 23px;
+  --pr-share-text: #f6f6f6;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background: var(--color-canvas);
+  color: var(--color-text-title-cool);
+  outline: none;
+}
+.header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xxs);
+  height: calc(var(--header-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) var(--space-sm) 0;
+  background: var(--color-canvas);
+  backdrop-filter: var(--blur-chrome);
+}
+.back {
+  display: flex;
+  align-items: center;
+  flex: none;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--color-text-black);
+}
+.back svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+.title {
+  min-width: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+}
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: none;
+}
+.tabs button {
+  min-height: var(--control-height-chat);
+  border-bottom: 1px solid var(--color-tab-divider);
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+}
+.tabs button[aria-pressed='true'] {
+  border-bottom: 2px solid var(--color-text-slate);
+  color: var(--color-text-title-cool);
+  font-weight: var(--font-weight-semibold);
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--pr-content-top) var(--page-gutter) 0;
+}
+.count {
+  margin-bottom: var(--pr-heading-gap);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+}
+.list {
+  display: grid;
+  gap: var(--pr-card-gap);
+}
+.card {
+  --pr-stroke: 1px;
+  min-width: 0;
+  padding: calc(var(--pr-card-top) - var(--pr-stroke))
+    calc(var(--pr-card-inline) - var(--pr-stroke)) calc(var(--pr-card-bottom) - var(--pr-stroke));
+  border: var(--pr-stroke) solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+}
+.card[data-selected='true'] {
+  --pr-stroke: 2px;
+  border-color: var(--color-selection);
+}
+.card:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.choice {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+.choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.cardTitle {
+  display: block;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: 19px;
+  overflow-wrap: anywhere;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-row-block);
+  margin-top: var(--space-row-inline);
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+}
+.meta > span:first-child {
+  overflow-wrap: anywhere;
+}
+.dot {
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.event {
+  display: block;
+  margin-top: var(--pr-event-gap);
+  font-size: var(--font-size-caption);
+  line-height: 17px;
+  overflow-wrap: anywhere;
+  color: var(--color-text-black);
+}
+.event > span {
+  color: var(--color-selection);
+}
+.github {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-row-inline);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  margin-top: var(--pr-card-gap);
+  border-radius: var(--radius-xs);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-black);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: 19px;
+}
+.github img {
+  flex: none;
+}
+.footer {
+  flex: none;
+  padding: var(--space-tab-icon-gap) var(--page-gutter)
+    calc(var(--space-lg) + env(safe-area-inset-bottom));
+  background: var(--color-canvas);
+}
+.share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  border-radius: var(--radius-control-md);
+  background: var(--color-cta-cool);
+  color: var(--pr-share-text);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+.share:disabled {
+  background: var(--color-cta-cool-disabled);
+  cursor: not-allowed;
+}
+.error {
+  margin-top: var(--space-sm);
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+}

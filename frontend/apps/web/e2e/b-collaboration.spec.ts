@@ -9,14 +9,15 @@ test.beforeEach(async ({ page }) => {
   await role(page, 'developer');
 });
 
-test('workspace exposes C issues and B statistics as separate handoffs', async ({ page }) => {
+test('workspace preserves C full-list navigation with the Figma more control', async ({ page }) => {
   await page.goto('/workspace');
-  await expect(page.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
     'href',
     '/workspace/issues',
   );
-  await page.getByRole('link', { name: '내 통계', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '내 통계', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '내 통계', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: /내 이슈 전체 보기/ }).click();
+  await expect(page).toHaveURL('/workspace/issues');
   await page.getByRole('button', { name: '뒤로', exact: true }).click();
   await expect(page).toHaveURL('/workspace');
 });
@@ -53,7 +54,7 @@ test('completed teams hand off to E and member profiles hand off to A with docum
   );
   await expect(page.getByRole('link', { name: '한서준 프로필 보기' })).toHaveAttribute(
     'href',
-    '/u/seojun-han',
+    '/user/seojun-han',
   );
 });
 
@@ -73,10 +74,10 @@ test('profile handoff closes the stats sheet before navigation and back does not
   await page.goto('/me/stats');
   await page.getByRole('button', { name: '대표 작업물로 고정' }).click();
   const link = page.getByRole('link', { name: '내 프로필에서 확인' });
-  await expect(link).toHaveAttribute('href', '/u/seojun-han');
+  await expect(link).toHaveAttribute('href', '/user/seojun-han');
   await link.click();
   // This checks the URL/history handoff; profile page contents are owned by A.
-  await expect(page).toHaveURL('/u/seojun-han');
+  await expect(page).toHaveURL('/user/seojun-han');
   await page.goBack();
   await expect(page).toHaveURL('/me/stats');
   await expect(page.getByRole('dialog')).toBeHidden();
@@ -101,10 +102,10 @@ test('admin reports handoff uses only A supported list filters and closes mobile
 
 test('B workspace and real PR 35 list connect through issue detail and back', async ({ page }) => {
   await page.goto('/workspace');
-  await page.getByRole('link', { name: '내 이슈 전체 보기' }).click();
+  await page.getByRole('link', { name: /내 이슈 전체 보기/ }).click();
   await expect(page).toHaveURL('/workspace/issues');
   await expect(page.getByRole('heading', { level: 1, name: '내 이슈' })).toBeVisible();
-  const issue = page.getByRole('main').locator('a[href^="/teams/"][href*="/issues/"]').first();
+  const issue = page.getByRole('article').locator('a[href^="/teams/"][href*="/issues/"]').first();
   await issue.click();
   await expect(page).toHaveURL(/\/teams\/\d+\/issues\/\d+$/);
   await page.goBack();

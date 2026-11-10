@@ -112,7 +112,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | P-1 | Write a post by choosing my repo | Repo card (name, language, stars, URL) automatic; body pre-filled with repo description | PP-3 | 1 | P0 |
 | P-2 | Body, photos, tags, optional fields | Required: repo and one-line intro. Optional: my role, problem & solution, demo links, period, team size. Multiple photos, first is cover (repo card if none). Auto-shows my commit count in the repo and issues handled in Linker | PP-3 | 1 | P0 |
 | P-3 | View README | Toggle-expand on detail; wide tables/code scroll horizontally | PP-3 | 1 | P1 |
-| P-4 | Home feed (following + recommended) | Mix recommended posts (popular in last 7 days, 2nd-degree, same stack) between following posts with a "why shown" line; infinite scroll | PP-3 | 1 | P0 |
+| P-4 | Home feed (recommended + following tabs) | "추천" tab: logged-in developers see posts matching their tech stack and job categories of interest first with a "why shown" line, then the rest; guests and recruiters see posts in random order. "팔로잉" tab: posts by people I follow, newest first; infinite scroll | PP-3 | 1 | P0 |
 | P-5 | Likes, comments, follows | One level of replies; notify the author | PP-3 | 1 | P0 |
 | P-6 | Explore | Browse posts and people by tech stack, popularity, newness | PP-3 | 2 | P2 |
 | P-7 | Post sharing | The share button opens a bottom sheet with exactly two options: "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). "Share to chat room" lists my chat rooms (team chat rooms and open 1:1 rooms); picking one sends a post card. Recruit posts and profiles use the same button | PP-3 | 1 | P1 |
@@ -134,7 +134,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | ID | Requirement | Completion condition | Problem | Phase | Priority |
 | --- | --- | --- | --- | --- | --- |
 | T-1 | Create team | Choose org on the GitHub App install screen; after install and return, server verifies installation and creates the team. Guide to GitHub's create-org if there's no org | PP-1 | 1 | P0 |
-| T-2 | Invite members | Linker invite link; owner also sends GitHub org invite at the same time | PP-1, PP-2 | 1 | P0 |
+| T-2 | Invite members | Linker invite link for external join (`/invite/[code]`); logged-in developers can also get a team-invite notification that opens the same URL; owner may send GitHub org invite at the same time | PP-1, PP-2 | 1 | P0 |
 | T-3 | Choose repos to link | Choose among repos where the app is installed | PP-1 | 1 | P0 |
 | T-4 | Mark project complete | Reflected in members' completion records; prompt to post the project | PP-2, PP-3 | 1 | P0 |
 | T-5 | Commit activity | See per-member commit/PR activity in team repos on the team screen | PP-1 | 2 | P2 |
@@ -149,7 +149,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | I-2 | Set assignees and labels | Applied to the GitHub issue immediately. If no repo write permission, disable buttons + explain why | PP-1 | 1 | P0 |
 | I-3 | Start date, due date, status | Stored in the team's linked GitHub Projects board fields; values changed on GitHub are reflected | PP-1 | 1 | P0 |
 | I-4 | Calendar & status board | Calendar (month/week, assignee filter, overdue highlight); status board (Todo / In Progress / Blocked / Done) with drag to change status | PP-1 | 1 | P0 |
-| I-5 | My issues list | Issues assigned to me, sorted by due date | PP-1 | 1 | P1 |
+| I-5 | My issues list | Pick one of my teams (default: most recently joined); show issues assigned to me in that team only, sorted by due date. Changing the team updates the list | PP-1 | 1 | P1 |
 | I-6 | Sub-issues | Split work into GitHub sub-issues and see progress | PP-1 | 2 | P2 |
 | I-7 | Drag scheduling | Drag an issue on the calendar to change dates, reflected on GitHub | PP-1 | 2 | P2 |
 | I-8 | Issue form attachments | Attach images/files when creating issues | PP-1 | 2 | P2 |
@@ -162,7 +162,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | C-2 | Share issue cards | Send issues as cards in chat, tap to open detail; turn a message into an issue | PP-1 | 1 | P1 |
 | C-3 | Auto-post PRs | PR opened / review requested / merged posted as system messages in team chat; PR list tab | PP-1 | 1 | P0 |
 | C-4 | 1:1 chat | Start from profile/post; message-request box unless mutual follow or same team; block/report. A recruiter's first message appears in requests as "Recruiting offer" (H-3) | PP-3 | 1 | P0 |
-| N-1 | Push notifications | Chat, assignment, 1 day before due, application/accept, comments/follows. Tap to open the relevant screen. In-app notification list plus Android app push (iOS excluded because it needs a paid Apple developer account). Push on/off in settings | Common | 1 | P0 |
+| N-1 | Push notifications | Chat, assignment, 1 day before due, application/accept, comments/follows, team invite (opens `/invite/[code]`). Tap to open the relevant screen. In-app notification list plus Android app push (iOS excluded because it needs a paid Apple developer account). Push on/off in settings | Common | 1 | P0 |
 | C-5 | AI chat summary (minutes) | **Flex teams only** (including the 7-day free trial). A button in the team chat room summarizes messages since last read into minutes (one-line summary, decisions, to-dos, open questions); "Share to chat" posts to the team; to-dos become issues after review. Free teams see a Flex prompt | PP-1 | 1 | P1 |
 | C-7 | Linker link card | If a chat message contains a Linker post, recruit post or profile URL, show it as a card read from the server DB (same look as cards sent via P-7) instead of an external OG preview. Deletion, hiding, blocks and private state are reflected immediately. Shown without the mutual-follow condition in 1:1 chat | PP-3 | 1 | P1 |
 | N-2 | Detailed notification settings & web push | Per-type settings, browser push | Common | 2 | P2 |
@@ -226,8 +226,8 @@ Metrics such as sign-ups and active teams are not built into the back office; us
 | Plan | For | Price (tentative) | Benefits |
 | --- | --- | --- | --- |
 | Free | All developers | ₩0 | All collaboration and social features |
-| Pro | Individual | ₩2,900/month / ₩29,000/year | Recruiter profile-view alert, post traffic-source stats, higher limits for post photos, featured posts, recruit posts |
-| Flex | Team (owner pays) | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th | No team member limit, full-history team chat search/scroll and image retention, AI chat summary (minutes), project progress graph |
+| Pro | Individual | ₩2,900/month / ₩31,320/year (10% off) | Recruiter profile-view alert, post traffic-source stats, higher limits for post photos, featured posts, recruit posts |
+| Flex | Team (owner pays) | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th / yearly 10% off: ₩85,320 (up to 6), ₩20,520 per member from the 7th | No team member limit, full-history team chat search/scroll and image retention, AI chat summary (minutes), project progress graph |
 | Scout | Recruiters | ₩14,900/month | One feed job ad (job-category matched), recruiting offers 10 → 50 per day. Phase 4 may add talent search filters and ad stats |
 
 Flex and Scout are working names. Free on every plan: follow/like/comment, 1:1 chat, team chat, Find Team, teams/issues/calendar. Exact limits per benefit and payment/cancel/refund rules are in [Policy: Subscription](04-policy.md#11-subscription).

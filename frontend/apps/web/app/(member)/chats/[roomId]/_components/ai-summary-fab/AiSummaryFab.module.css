@@ -1,0 +1,116 @@
+/*
+ * Floats over the timeline's bottom-right corner (user request 2026-11-10), centered on the send
+ * button below: the composer's right padding plus half the size difference.
+ * Unmapped Figma 750:3125 tooltip values stay local; shared tokens are unchanged.
+ */
+.fab {
+  --summary-tooltip-radius: 2px;
+  --summary-tooltip-tail: 7px;
+  --summary-gradient-middle: #822ad6;
+  --summary-gradient-end: #c600c6;
+  position: absolute;
+  right: calc(var(--space-xxs) + (var(--control-height-chat) - var(--fab-size)) / 2);
+  bottom: var(--space-xs);
+  z-index: 1;
+  width: var(--fab-size);
+  height: var(--fab-size);
+}
+
+.button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  padding: 0;
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  background: var(--color-fab-bg);
+  box-shadow: 0 0 1.7px rgb(222 222 222 / 0.25);
+  cursor: pointer;
+}
+
+.button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  transform: translate(-50%, -50%);
+}
+
+.logo {
+  width: var(--chat-ai-logo-size);
+  height: var(--chat-ai-logo-size);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Label bubble above the button, shown only on hover or keyboard focus (user request 2026-11-10) */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + var(--summary-tooltip-tail) + var(--space-xxs));
+  left: 50%;
+  display: flex;
+  width: max-content;
+  padding: var(--space-xxs) var(--space-xs);
+  border-radius: var(--summary-tooltip-radius);
+  background: var(--color-canvas-cool);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  transition:
+    opacity var(--duration-overlay) var(--ease-standard),
+    visibility var(--duration-overlay);
+  pointer-events: none;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - var(--summary-tooltip-radius));
+  left: 50%;
+  width: var(--summary-tooltip-tail);
+  height: var(--summary-tooltip-tail);
+  transform: translateX(-50%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: var(--color-canvas-cool);
+}
+
+/* Touch screens have no hover, so a tap never leaves the bubble stuck open */
+@media (hover: hover) {
+  .button:hover + .tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.button:focus-visible + .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    transition: none;
+  }
+}
+
+.label {
+  background: linear-gradient(
+    90deg,
+    var(--color-chat-accent) 0%,
+    var(--summary-gradient-middle) 50.7125%,
+    var(--summary-gradient-end) 100%
+  );
+  background-clip: text;
+  color: transparent;
+  font-size: var(--font-size-chat-time);
+  font-weight: var(--font-weight-regular);
+  line-height: 14px;
+  white-space: nowrap;
+}

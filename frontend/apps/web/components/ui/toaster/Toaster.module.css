@@ -1,0 +1,101 @@
+/* Sits above the bottom tab bar; toasts hug their text and stack centered (Figma 877:415) */
+.viewport {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-xs));
+  left: 0;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: var(--sheet-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  outline: none;
+}
+
+/* Top placement (the default): just under the header and the notch, at eye level, dropping down.
+   Clears the taller tab header too, so it never sits on the header on any screen */
+.viewportTop {
+  top: calc(
+    env(safe-area-inset-top) + max(var(--header-height), var(--header-height-tab)) + var(--space-xs)
+  );
+  bottom: auto;
+}
+
+.viewportTop .toast {
+  animation-name: drop;
+}
+
+/* Figma 877:415 — 33 high, 18 side padding, r5, white (solid, not Figma's 20%) with a 0 4 12 shadow; dot 8 then the text */
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 100%;
+  min-height: var(--control-height-toast);
+  padding: var(--space-xs) var(--space-toast-inline);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-toast-bg);
+  border-radius: var(--radius-toast);
+  box-shadow: var(--shadow-toast);
+  animation: rise var(--duration-overlay) var(--ease-standard);
+}
+
+/* Success #2563eb · error #ed0004 · persistent #ed8e00; info has none */
+.dot {
+  flex-shrink: 0;
+  width: var(--toast-dot-size);
+  height: var(--toast-dot-size);
+  border-radius: var(--radius-full);
+}
+
+.dotSuccess {
+  background-color: var(--color-cta-cool);
+}
+
+.dotError {
+  background-color: var(--color-toast-error);
+}
+
+.dotPersistent {
+  background-color: var(--color-toast-persistent);
+}
+
+/* 14 medium #111827 */
+.message {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+/* Action toasts (되돌리기, 채팅방으로 가기): no dot, the label in blue after the message; the whole toast is
+   the tap target */
+.actionable {
+  cursor: pointer;
+}
+
+.action {
+  flex-shrink: 0;
+  padding: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-cta-cool);
+  background: none;
+  border: 0;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-xs) * -1));
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-xs));
+  }
+}

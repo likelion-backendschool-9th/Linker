@@ -1,0 +1,164 @@
+import { SUBSCRIPTION_PRICE } from '@/lib/policy';
+import { ownOrder, saveOrder, type Order } from '../fixtures/payment-orders';
+import {
+  applyPayment,
+  flexAmount,
+  kstDate,
+  personalPlan,
+  teamSeats,
+} from '../fixtures/subscriptions';
+import { fail, get, newId, post, type MockRoute } from '../core/define';
+import { TEAMS } from '../fixtures/teams';
+
+/**
+ * 28 Plans & checkout: `SubscriptionController`. Toss test mode only; the mock confirms every order.
+ * Recruiters see only the Scout card; its checkout is [Included] and refused, as on the server.
+ */
+
+const developerPlans = [
+  {
+    key: 'FREE',
+    name: '무료',
+    monthly: 0,
+    yearly: 0,
+    benefits: ['팔로우·좋아요·댓글', '작업물 올리기', '팀·이슈·캘린더·상태 보드'],
+    trialAvailable: false,
+  },
+  {
+    key: 'PRO',
+    name: 'Pro',
+    monthly: SUBSCRIPTION_PRICE.proMonthly,
+    yearly: SUBSCRIPTION_PRICE.proYearly,
+    benefits: [
+      '채용 담당자 프로필 조회 알림',
+      '게시물 통계 확장 : 유입 경로, README 확장',
+      '피드 저장소 사진 10장으로 확장',
+      '대표 작업물 고정 5개로 확장',
+      '팀 모집글 최대 10개로 확장',
+    ],
+    trialAvailable: false,
+  },
+  {
+    key: 'FLEX',
+    name: 'Flex',
+    monthly: SUBSCRIPTION_PRICE.flexMonthly,
+    yearly: SUBSCRIPTION_PRICE.flexYearly,
+    benefits: [
+      '팀 인원 무제한',
+      '팀 채팅 검색 및 스크롤 백 무제한',
+      '팀 채팅 이미지 보관',
+      'AI 채팅 요약 하루 인당 10회',
+      '진행 현황 그래프',
+    ],
+    trialAvailable: false,
+    perExtraMember: SUBSCRIPTION_PRICE.flexExtraMember,
+    perExtraMemberYearly: SUBSCRIPTION_PRICE.flexExtraMemberYearly,
+  },
+];
+
+const recruiterPlans = [
+  {
+    key: 'SCOUT',
+    name: 'Scout',
+    monthly: SUBSCRIPTION_PRICE.scoutMonthly,
+    yearly: null,
+    benefits: ['피드 채용 광고 1건', '채용 제안 일 10회에서 일 50회'],
+    trialAvailable: false,
+  },
+];
+
+function candidates() {
+  return TEAMS.filter((team) => team.myRole === 'OWNER' && team.status === 'ACTIVE').map(
+    (team) => ({
+      teamId: team.id,
+      name: team.name,
+      memberCount: teamSeats(team.id),
+      amount: flexAmount(teamSeats(team.id)),
+      yearlyAmount:
+        (flexAmount(teamSeats(team.id)) * 12 * (100 - SUBSCRIPTION_PRICE.yearlyDiscountPercent)) /
+        100,
+      currentPlan: team.plan,
+    }),
+  );
+}
+
+export const routes: MockRoute[] = [
+  get('/api/v1/user/plans', ({ query, viewer }) => ({
+    reason: query.get('reason'),
+    plans: viewer.role === 'recruiter' ? recruiterPlans : developerPlans,
+    currentPlan: personalPlan(viewer) ?? 'FREE',
+  })),
+  get('/api/v1/user/plans/team-candidates', () => ({ items: candidates() }), { only: 'developer' }),
+  post('/api/v1/user/payments/checkout', ({ body, viewer }) => {
+    const planKey = String(body.planKey);
+    // Same order as the server: plan key, member type, then billing.
+    if (!['PRO', 'FLEX', 'SCOUT'].includes(planKey))
+      fail(400, 'VALIDATION_ERROR', '요금제를 선택해 주세요.');
+    if (viewer.role === 'recruiter' || planKey === 'SCOUT')
+      fail(403, 'PLAN_MISMATCH', '선택할 수 없는 요금제예요.');
+    if (body.billing !== 'MONTHLY' && body.billing !== 'YEARLY')
+      fail(400, 'INVALID_BILLING', '결제 기간을 확인해 주세요.');
+
+    const candidate =
+      planKey === 'FLEX' ? candidates().find((team) => team.teamId === Number(body.teamId)) : null;
+    if (planKey === 'FLEX' && !candidate)
+      fail(403, 'TEAM_PERMISSION', '결제할 팀을 다시 선택해 주세요.');
+    const amount = candidate
+      ? body.billing === 'YEARLY'
+        ? candidate.yearlyAmount
+        : candidate.amount
+      : body.billing === 'YEARLY'
+        ? SUBSCRIPTION_PRICE.proYearly
+        : SUBSCRIPTION_PRICE.proMonthly;
+    const order: Order = {
+      orderId: `lnk_mock_${newId()}`,
+      userId: viewer.me!.id,
+      amount,
+      planKey: planKey as Order['planKey'],
+      billing: body.billing,
+      teamId: candidate?.teamId ?? null,
+      orderName: candidate
+        ? `Flex · ${candidate.name} ${body.billing === 'YEARLY' ? '연간 구독' : '구독'}`
+        : body.billing === 'YEARLY'
+          ? 'Pro 연간 구독'
+          : 'Pro 월간 구독',
+      state: 'PENDING',
+    };
+    saveOrder(order);
+    return {
+      orderId: order.orderId,
+      amount: order.amount,
+      orderName: order.orderName,
+      customerKey: `mock_customer_${viewer.me!.id}`,
+      planKey: order.planKey,
+      billing: order.billing,
+      teamId: order.teamId,
+    };
+  }),
+  post('/api/v1/user/payments/confirm', ({ body, viewer }) => {
+    const order = ownOrder(viewer, String(body.orderId));
+    if (order.state === 'FAILED')
+      fail(409, 'ORDER_FAILED', '완료되지 않은 주문이에요. 새로 결제해 주세요.');
+    if (body.amount !== order.amount) fail(400, 'AMOUNT_MISMATCH', '결제 금액이 달라요.');
+    if (body.paymentKey !== `mock_${order.orderId}`)
+      fail(400, 'INVALID_PAYMENT', '결제 정보를 확인할 수 없어요.');
+    order.state = 'PAID';
+    saveOrder(order);
+    // Replays return the stored result; no second period.
+    const paid = applyPayment(viewer, order);
+    return {
+      planKey: order.planKey,
+      status: 'ACTIVE',
+      expiresOn: kstDate(paid.periodEnd),
+      amount: order.amount,
+      benefits: developerPlans.find((item) => item.key === order.planKey)!.benefits,
+    };
+  }),
+  post('/api/v1/user/payments/:orderId/fail', ({ params, viewer }) => {
+    const order = ownOrder(viewer, params.orderId);
+    if (order.state === 'PAID') fail(409, 'PAYMENT_CONFIRMED', '이미 승인된 결제예요.');
+    order.state = 'FAILED';
+    saveOrder(order);
+    return undefined;
+  }),
+];

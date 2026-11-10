@@ -1,0 +1,46 @@
+/*
+ * Figma 11 (197:66) team chat shortcut: 40px dark circle, 34px above the screen bottom, gutter from
+ * the right edge of the app column. The transparent layer keeps a 44px hit area.
+ */
+.chat {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: max(
+    var(--space-fab-bottom),
+    calc(env(safe-area-inset-bottom) + var(--space-row-block))
+  );
+  z-index: var(--z-chrome);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-text-inverse);
+  background-color: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.chat::after {
+  position: absolute;
+  inset: calc((var(--fab-size) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.chat:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.chatIcon {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.chatIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

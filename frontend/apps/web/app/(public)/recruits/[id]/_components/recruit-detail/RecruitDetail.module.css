@@ -1,0 +1,361 @@
+/* Post body follows Figma 92:578 (no author segmented tabs under the app bar) */
+.layout,
+.layoutNoCta {
+  display: grid;
+  gap: 0;
+  /* Cancel PageFrame main's horizontal --page-gutter so section dividers go edge-to-edge */
+  margin-inline: calc(-1 * var(--page-gutter));
+}
+
+.layout {
+  /* Room for the viewport-fixed action bar */
+  padding-bottom: calc(var(--control-height-sheet) + var(--space-xl) + env(safe-area-inset-bottom));
+}
+
+.layoutNoCta {
+  padding-bottom: var(--space-xl);
+}
+
+.main {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+/* Figma 본문: title block → intro/tags gap ~30 */
+.head {
+  display: grid;
+  gap: var(--space-card-info); /* 25px */
+  padding-inline: var(--page-gutter);
+  padding-bottom: var(--space-lg);
+}
+
+/* Figma 262:105 — title lead → deadline = 8 */
+.titleBlock {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* Figma 262:113 — chips → title = 10 */
+.titleLead {
+  display: grid;
+  gap: var(--space-row-block);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.formatChip,
+.goalChip {
+  padding: var(--space-row-inline) var(--space-row-block);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-title-cool);
+  border-radius: var(--radius-full);
+}
+
+.formatChip {
+  background-color: var(--color-chip-format-bg);
+}
+
+.goalChip {
+  background-color: var(--color-chip-goal-bg);
+}
+
+/* Figma 262:101 — 24px row, icon centered with title */
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--icon-size);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+  overflow-wrap: anywhere;
+}
+
+.titleActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.deadline {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-muted-cool);
+}
+
+.intro {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-slate);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-xxs);
+}
+
+/* 6px cool divider bands between major blocks (Figma 93:299 top/bottom strokes) */
+.rolesSection,
+.teamSection {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--page-gutter);
+}
+
+.rolesSection {
+  border-block: var(--divider-section) solid var(--color-canvas-cool);
+}
+
+.sectionHead,
+.sectionHeadInline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.sectionHeadInline {
+  justify-content: flex-start;
+  gap: var(--space-xxs);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.sectionMeta {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gnb-inactive);
+}
+
+.roles,
+.members {
+  margin: 0;
+  padding: var(--space-md);
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.roles {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.role {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.role:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.roleName {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+}
+
+.roleStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+}
+
+.roleFilled {
+  color: var(--color-role-filled);
+}
+
+.roleOpen {
+  color: var(--color-text-muted-cool);
+}
+
+.roleLabel {
+  color: var(--color-text-slate);
+}
+
+.members {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.memberRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.members > li:last-child .memberRow {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.memberAvatar {
+  width: var(--control-height-choice);
+  height: var(--control-height-choice);
+  object-fit: cover;
+  border-radius: var(--radius-full);
+}
+
+.memberText {
+  display: grid;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.memberBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+  align-items: center;
+}
+
+.memberRole {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+}
+
+.authorBadge {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-cta-cool);
+}
+
+.memberName {
+  overflow: hidden;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberChevron {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-muted-cool);
+}
+
+/* Viewport-fixed bottom CTA (Figma "지원하기"); bar fill is transparent */
+.actionBar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--z-chrome);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: var(--space-sm) var(--page-gutter) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  background-color: transparent;
+}
+
+.actionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.actionMain {
+  flex: 1;
+}
+
+.actionStack {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.actionStatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.pendingBadge {
+  padding: 0 var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-full);
+}
+
+.acceptedText {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-status-success);
+}
+
+.actionNote {
+  display: grid;
+  place-items: center;
+  min-height: var(--control-height);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle-on-tint);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-control-md);
+}
+
+.applyCta {
+  min-height: var(--control-height-sheet);
+  color: var(--color-on-primary);
+  background-color: var(--color-cta-cool);
+  border-radius: var(--radius-control-md);
+}

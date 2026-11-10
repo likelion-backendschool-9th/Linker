@@ -1,0 +1,268 @@
+/* Figma 24-공유하기 바텀시트 (780:584): a centered white card, 16 from the column edges, at most 600 tall */
+.drawer {
+  position: fixed;
+  top: 50%;
+  right: var(--page-gutter);
+  left: var(--page-gutter);
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-group);
+  max-width: calc(var(--content-max-width) - 2 * var(--page-gutter));
+  max-height: min(var(--share-drawer-max-height), calc(100dvh - 2 * var(--page-gutter)));
+  margin: 0 auto;
+  padding: var(--space-share-drawer-block) var(--space-md);
+  background-color: var(--color-canvas);
+  border-radius: var(--radius-card-compact);
+  transform: translateY(-50%);
+  outline: none;
+  animation: drawer-in var(--duration-overlay) var(--ease-standard);
+}
+
+/* 제목 / 리스트 (780:585): header block, 4, list — the list takes what is left and scrolls */
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-height: 0;
+}
+
+/* Title row, 12, search (780:642) */
+.top {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* 제목 / 닫기 (780:586) */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--icon-size);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  color: var(--color-text-title-cool);
+}
+
+/* lucide/x (780:588): 24 box, #374151, stroke 2 */
+.close {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  padding: 0;
+  color: var(--color-sheet-close);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-full);
+}
+
+.closeIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* 검색창 (780:634): 42 tall, #f3f4f6, r12, icon 14 in, 14 to the text; focus draws a blue border */
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-search-icon);
+  height: var(--control-height-search);
+  padding: 0 var(--space-search-icon);
+  background-color: var(--color-canvas-cool);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card-compact);
+}
+
+.search:focus-within {
+  border-color: var(--color-focus-ring-search);
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  font: inherit;
+  /* Typed text stays 16px so iOS never zooms; only the placeholder is Figma's 14 */
+  font-size: var(--font-size-body);
+  color: var(--color-text-title-cool);
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  font-size: var(--font-size-placeholder);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text-placeholder-cool);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* Frame 1104 (780:653): scrolls inside the 600 cap with no visible scrollbar */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+.rooms {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* 리스트 (800:1339): 54 tall, 10 right, 1px #ebebeb under */
+.room {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--control-height-share-row);
+  padding-right: var(--space-row-block);
+  border-bottom: 1px solid var(--color-tab-divider);
+}
+
+/* 프로필 (800:1340): 10 in, photo → name 10 */
+.profile {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-width: 0;
+  padding-left: var(--space-row-block);
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--size-share-room-avatar);
+  height: var(--size-share-room-avatar);
+  object-fit: cover;
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-full);
+}
+
+/* Name, then "팀" 2 after it for team rooms (800:1372) */
+.roomName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-icon-text-compact);
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+.roomTitle {
+  overflow: hidden;
+  color: var(--color-text-slate);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teamLabel {
+  flex-shrink: 0;
+  color: var(--color-share-team);
+}
+
+/* 공유하기 chip (800:1344): 4/6 padding, 25 tall, #f0f0f0, r4, 14 medium #4b5563 */
+.share {
+  flex-shrink: 0;
+  padding: var(--space-xxs) var(--space-tech-chip-inline);
+  margin-left: var(--space-xs);
+  font: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-slate);
+  cursor: pointer;
+  background-color: var(--color-field);
+  border: 0;
+  border-radius: var(--radius-xxs);
+}
+
+.share:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.share:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.empty {
+  padding-block: var(--space-lg);
+  margin: 0;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* 버튼 - 활성화 (780:631): 47 tall, #121212, r14, 16 semibold */
+.copy {
+  flex-shrink: 0;
+  width: 100%;
+  min-height: var(--control-height-share-copy);
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+  color: var(--color-on-sheet-cta);
+  cursor: pointer;
+  background-color: var(--color-sheet-cta);
+  border: 0;
+  border-radius: var(--radius-control-md);
+}
+
+.copy:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    animation: none;
+  }
+}

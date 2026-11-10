@@ -21,7 +21,7 @@ Diagrams show only 🟢 and 🟡 tables. Table count: 🟢 56, 🟡 13, total 69
 | --- | --- | --- |
 | DB | PostgreSQL, Spring Data JPA | Service Plan 7-3 |
 | Primary key | Every table has `id bigint` (identity). When a pair of columns must be unique, use a **unique constraint** instead of a composite PK | Composite keys (`@IdClass`, `@EmbeddedId`) are awkward in JPA |
-| Common columns | Every table has `created_at`, `updated_at` (`timestamptz`). Shown in diagrams and column tables only when meaningful | Handled by one JPA Auditing `BaseTimeEntity` |
+| Common columns | Every table has `created_at`, `updated_at` (`timestamptz`). Shown in diagrams and column tables only when meaningful | Each entity declares the fields, filled by Hibernate `@CreationTimestamp` / `@UpdateTimestamp` (no `BaseTimeEntity`, no JPA Auditing) |
 | States | `varchar` + Java enum (`@Enumerated(STRING)`). No DB enum types | Easy migrations when adding values |
 | Arrays | Separate tables (e.g. `user_tech_tags`) instead of Postgres arrays | Simpler JPA mapping and search |
 | Deletion | User content is soft-deleted with `deleted_at`, physically deleted by batch after retention ends | Reports, appeals, "삭제된 댓글입니다" (Deleted comment) display |
@@ -55,7 +55,7 @@ The four roles of [Policy ch. 2 "Access by role"](../planning/04-policy.md#acces
 | README, issue templates, repo label lists | Redis cache (README 1 hour) | GitHub is the source; used only for display |
 | Chat presence, STOMP sessions | Redis / memory | No need to persist |
 | Drafts in progress (posts, issues) | Device (local storage) | Policy ch. 2 "draft saved on device" |
-| Original images | Object storage | DB holds only key + metadata (`uploaded_files`) |
+| Original images | Server disk (`linker_uploads` volume, served at `/files/{key}`) | DB holds only key + metadata (`uploaded_files`); the key keeps the stored image's extension |
 
 ## 2. Domains at a glance
 
@@ -136,11 +136,13 @@ erDiagram
     boolean looking_for_team "looking for team"
     varchar job_seeking_status "OPEN, OFFERS_ONLY, OFF (default)"
     timestamptz job_seeking_updated_at
+    boolean job_seeking_off_notice "set when the 90-day batch turns job seeking off"
     boolean push_enabled "push on/off (off stops push only)"
     timestamptz contribution_synced_at "last graph refresh"
     timestamptz last_active_at
     timestamptz withdraw_requested_at "withdrawal pending start"
     timestamptz deleted_at "anonymized"
+    timestamptz onboarded_at "profile step finished, session onb"
   }
   auth_identities {
     bigint id PK
@@ -170,12 +172,13 @@ erDiagram
     varchar ip
     timestamptz expires_at "30 days, extended on use"
     timestamptz otp_verified_at "operator 2FA"
+    timestamptz operator_seen_at "last operator request; idle 30 min revokes the session"
     timestamptz revoked_at
   }
   user_agreements {
     bigint id PK
     bigint user_id FK
-    varchar agreement_type "TERMS, PRIVACY, AGE_14, MARKETING"
+    varchar agreement_type "TERMS, PRIVACY, AGE_14, AGE_19, BUSINESS_TERMS, MARKETING"
     varchar version "terms version"
     timestamptz agreed_at
     timestamptz withdrawn_at "marketing withdrawn"
@@ -325,6 +328,8 @@ erDiagram
     bigint user_id FK
     bigint post_id FK "UK with user_id"
     int sort_order
+    timestamptz created_at
+    timestamptz updated_at
   }
   feed_seen_posts {
     bigint id PK
@@ -353,7 +358,7 @@ erDiagram
 ```mermaid
 erDiagram
   users ||--o{ recruit_posts : "writes"
-  teams |o--o{ recruit_posts : "as team (optional)"
+  teams |o--o{ recruit_posts : "as team (required on write)"
   recruit_posts ||--|{ recruit_roles : "roles needed"
   recruit_posts ||--o{ recruit_post_tags : "stack"
   tech_tags ||--o{ recruit_post_tags : "tag"
@@ -364,7 +369,7 @@ erDiagram
   recruit_posts {
     bigint id PK
     bigint author_id FK
-    bigint team_id FK "nullable, create team before first accept"
+    bigint team_id FK "required on write (POL-R-1); nullable only for older rows"
     varchar title "40 chars"
     text description "1,000 chars"
     varchar work_mode "ONLINE, OFFLINE, HYBRID"
@@ -542,6 +547,7 @@ erDiagram
     varchar github_option_id "UK with board_id"
     varchar github_option_name
     varchar linker_status "TODO, IN_PROGRESS, BLOCKED, DONE, OTHER"
+    varchar color "GitHub Status option enum: BLUE/GRAY/GREEN/ORANGE/PINK/PURPLE/RED/YELLOW"
   }
   team_completions {
     bigint id PK
@@ -573,6 +579,7 @@ erDiagram
   users |o--o{ issue_assignees : "linked if Linker user"
   issues ||--o{ issue_labels : "labels"
   issues ||--o{ issue_sync_jobs : "GitHub sync retries"
+  teams ||--o{ issue_sync_jobs : "creation intent"
   teams ||--o{ pull_requests : "PRs"
   github_repos ||--o{ pull_requests : "repo"
   teams ||--o{ team_progress_snapshots : "progress snapshots"
@@ -618,8 +625,11 @@ erDiagram
   }
   issue_sync_jobs {
     bigint id PK
-    bigint issue_id FK
-    varchar step "ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN"
+    bigint issue_id FK "nullable until GitHub creation is confirmed"
+    bigint team_id FK "creation intent scope"
+    uuid request_key "unique with requested_by"
+    timestamptz created_at
+    varchar step "CREATE, ADD_TO_PROJECT, SET_START, SET_DUE, SET_STATUS, CLOSE, REOPEN, SET_ASSIGNEES, SET_LABELS"
     jsonb payload
     varchar status "PENDING, RUNNING, DONE, FAILED"
     int attempts
@@ -747,9 +757,9 @@ erDiagram
   notifications {
     bigint id PK
     bigint user_id FK
-    varchar notification_type "CHAT, ISSUE_ASSIGNED, DUE_SOON, APPLICATION, ..."
+    varchar notification_type "CHAT, ISSUE_ASSIGNED, DUE_SOON, APPLICATION, TEAM_INVITE, ..."
     bigint actor_id FK "nullable"
-    varchar target_type "POST, COMMENT, ISSUE, ROOM, APPLICATION, ..."
+    varchar target_type "POST, COMMENT, ISSUE, ROOM, APPLICATION, INVITE, ..."
     bigint target_id
     varchar link_path "screen to open on tap"
     jsonb payload "display text inputs"
@@ -897,8 +907,12 @@ erDiagram
   }
   payments {
     bigint id PK
-    bigint subscription_id FK
+    bigint subscription_id FK "null until server confirm succeeds"
     bigint payer_user_id FK
+    varchar plan "order snapshot: PRO, FLEX, SCOUT"
+    varchar billing_cycle "order snapshot: MONTHLY, YEARLY"
+    bigint team_id FK "order snapshot, FLEX only"
+    int seats "order snapshot, FLEX headcount at checkout"
     varchar order_id UK "order number made by Linker"
     varchar payment_key UK "Toss paymentKey"
     varchar order_name
@@ -972,9 +986,9 @@ erDiagram
 | auth_identities | 🟢 | Login methods (GitHub for developers, email for recruiters) | PRD 5-1 account structure |
 | github_tokens | 🟢 | GitHub user token for actions in the user's name (create issues, org invites) | PRD ch. 8, non-functional security |
 | user_sessions | 🟢 | Refresh token and 30-day login, operator OTP status | POL-A-1, POL ch. 10 |
-| user_agreements | 🟢 | Consent history: terms, privacy, age 14+, marketing | POL-A-1, Privacy Policy |
+| user_agreements | 🟢 | Consent history: terms, privacy, marketing; legacy age 14+ rows remain supported | POL-A-1, Privacy Policy |
 | tech_tags | 🟢 | Predefined tech stack tag list (seed data) | POL-A-3 |
-| user_tech_tags | 🟢 | My tech stack, max 10 | A-3 |
+| user_tech_tags | 🟢 | My tech stack, max 5, unique (user_id, tag_id) | A-3 |
 | username_redirects | 🟡 | 90-day redirect of old URL after GitHub username change | POL ch. 3 exceptions |
 | contribution_days | 🟡 | Daily GitHub contributions, last 12 months, refreshed daily | A-4 |
 | recruiter_profiles | 🟡 | Recruiter company name, job title, verified email domain (1:1 with users) | H-1, POL ch. 3 recruiter accounts |
@@ -991,7 +1005,9 @@ erDiagram
 | looking_for_team | When on, shown in Find Team search. Batch turns it off after 30 days inactive (based on `last_active_at`) |
 | user_type | DEVELOPER (GitHub sign-up) / RECRUITER (company email sign-up). Set at sign-up, never changes. RECRUITER gets an auto-generated `username` of `r-` + number, and GitHub columns/tables stay empty |
 | job_seeking_status | Job-seeking status (POL-H-4). OPEN = job seeking (badge for everyone), OFFERS_ONLY = offers only (shown to recruiters only), OFF = recruiting offers blocked. DEVELOPER only. Batch sets OFF after 90 days inactive |
+| job_seeking_off_notice | Set when that batch turns job seeking off. Cleared when the next `GET /api/v1/user/me` creates the "구직 상태를 껐어요" notice |
 | deleted_at | 30 days after withdrawal, personal columns (name, avatar, bio, email) are cleared and this is set |
+| onboarded_at | Set when onboarding profile save finishes. Null until then. The session `onb` claim follows this column |
 
 - Indexes: `username` UK, `status`, `looking_for_team` + `last_active_at`, `job_seeking_status` (recruiter feed filter).
 - Recruiters are not split into a separate table; they live in `users`. Chat, reports, blocking, sanctions and notifications all point at `users.id`, so everything is reused as-is.
@@ -1008,7 +1024,7 @@ erDiagram
 
 **github_tokens**: `user_id` UK (1:1). Tokens are stored AES-encrypted and never sent to the app or frontend. When expired, the server refreshes with the refresh token; if that fails, it asks the user to log in again.
 
-**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when the operator passed 2FA to enter the back office.
+**user_sessions**: Only the refresh token hash is stored, and a new one is issued on every use (rotation). `revoked_at` is set on logout, withdrawal and suspension. `otp_verified_at` is when this session passed operator 2FA. `operator_seen_at` is the last authenticated operator request; 30 minutes without one revokes that session. An `admins` row is registration only. `/api/v1/admin/**` also requires this session's `otp_verified_at`, except `POST /api/v1/admin/otp/verify`, which a logged-in registered operator may call before OTP. That call checks the encrypted TOTP secret and then sets `otp_verified_at` on this session only. The JWT `adm` claim stays the registration flag. OTP secret enrollment still has no HTTP route.
 
 **recruiter_profiles**: `user_id` UK (1:1). `company_email_domain` is used for the profile's "회사 메일 인증(@domain)" (Company email verified) label and for operator checks. When operator company verification is added in phase 3, create a `companies` table and add `company_id`.
 
@@ -1027,8 +1043,8 @@ erDiagram
 | post_tags | 🟢 | Post tags, max 5 | POL-P-2 |
 | post_likes | 🟢 | Likes, once per post | P-5 |
 | comments | 🟢 | Comments and one-level replies | P-5 |
-| follows | 🟢 | Follows, mutual follow and 2nd-degree calculation | P-5, P-4 |
-| feed_seen_posts | 🟢 | Record to exclude already-seen posts from recommendations | POL-P-4 |
+| follows | 🟢 | Follows, mutual follow, feed "팔로잉" tab | P-5, P-4 |
+| feed_seen_posts | 🟢 | Record to move already-seen posts to the end of "추천" | POL-P-4 |
 | pinned_posts | 🟡 | Pinned featured posts, free 1 / Pro 5 | A-6 |
 | profile_visits | 🟡 | Recruiter profile views, once per recruiter per day, kept 90 days | S-10 |
 | post_views | 🟡 | Post views, traffic source, README expand count | S-4, P-7 |
@@ -1051,7 +1067,7 @@ erDiagram
 
 **follows**: `follower_id + following_id` UK. Mutual follow = the reverse row exists. Blocking deletes rows in both directions.
 
-**feed_seen_posts**: Records recommended posts that appeared on screen in the feed. Grows fast, so rows older than 30 days are deleted by batch. Can move to a Redis Set if it gets heavy.
+**feed_seen_posts**: Records posts that appeared on screen in a developer's feed; "추천" moves posts first seen before the current visit (`created_at`) to the end. Grows fast, so rows older than 30 days are deleted by batch. Can move to a Redis Set if it gets heavy.
 
 **profile_visits, post_views**: Self-visits and guest visits are not recorded. `profile_visits` is written only when a `user_type = RECRUITER` member views a developer profile; Pro screens and the weekly notice show only the weekly **count** (never who or which company). Rows older than 90 days are deleted. `post_views.source` is feed (FEED), profile (PROFILE), recruit post (RECRUIT_POST), chat share card or Linker link card (CHAT_SHARE), and copied links with `?from=share` or other external traffic (EXTERNAL). Free shows only total views; Pro aggregates by traffic source and date.
 
@@ -1068,7 +1084,7 @@ erDiagram
 
 | Column | Notes |
 | --- | --- |
-| team_id | Nullable because a post can be written without a team. Set once team creation is done before the first acceptance |
+| team_id | Required on create/edit since 2026-11-09 (POL-R-1): an active team the author owns or admins. The column stays nullable only for posts saved before that; editing one asks for a team, and accepting on it still returns `TEAM_REQUIRED` |
 | status | OPEN ↔ CLOSED. Becomes CLOSED (batch or transaction) when the deadline passes or every role's `accepted_count` reaches `headcount` |
 | sort_at | Sort key for the newest list. `created_at` on write (bump was dropped in the 2026-10-30 subscription revamp; kept so it can return without a migration) |
 
@@ -1108,6 +1124,8 @@ erDiagram
 
 **github_webhook_deliveries**: `delivery_id` UK prevents processing the same webhook twice. Stored and acknowledged immediately on receipt, then processed asynchronously (@Async / Redis queue). Processed rows are deleted after 30 days.
 
+Current foundation implementation: V1 has no installation FK and stores the external GitHub installation ID from the payload. Page 08 must resolve it through `github_installations.github_installation_id` before wiring the planned relation; do not treat it as an internal PK. The dispatcher uses the existing status/attempts/error fields, short outcome transactions and a session advisory lock (no DB transaction during handler HTTP calls). Stale RECEIVED/FAILED rows are requeued with operational retry settings. Queue delivery is at least once; domain handlers remain idempotent. No new table/column/enum is introduced by this foundation work. See [GitHub App operations](../operations/06-github-app.md).
+
 **teams**
 
 | Column | Notes |
@@ -1129,7 +1147,7 @@ erDiagram
 
 - Constraint: partial unique index `(team_id, user_id) WHERE left_at IS NULL`. One OWNER per team (service-layer check).
 
-**team_project_boards, board_status_mappings**: If there's no board, Linker creates a "Linker" board with `created_by_linker = true` and auto-inserts 4 mappings: Todo, In Progress, Blocked, Done. If an existing board is chosen, the user sets the mapping and unmapped options become OTHER. Changing boards creates a new row and re-syncs `project_item_id` for the team's issues.
+**team_project_boards, board_status_mappings**: If there's no board, Linker creates a "Linker" board with `created_by_linker = true` and auto-inserts 4 mappings: Todo, In Progress, Blocked, Done (fixed Status option colors Todo=GRAY, In Progress=BLUE, Blocked=RED, Done=GREEN). If an existing board is chosen, the user sets the mapping and unmapped options become OTHER; each option's GitHub Status `color` enum is stored on the mapping at link time (no hex). Changing boards creates a new row and re-syncs `project_item_id` for the team's issues. GitHub-only color edits after link are out of scope until the board is re-linked. Issue screens 07 / 11–15 read colors from this table only (not per-issue colors).
 
 **team_completions, completion_records**: Completing creates a `team_completions` row, revertible for 7 days. After 7 days a batch sets `confirmed_at` and creates per-member `completion_records`. Members at completion time with 14+ days of membership are COMPLETED; those who left during the period are DROPPED. Issue completion rate = `done_issue_count / assigned_issue_count`.
 
@@ -1140,7 +1158,7 @@ erDiagram
 | issues | 🟢 | GitHub issues + Projects date/status cache | I-1~I-5 |
 | issue_assignees | 🟢 | Assignees, max 10 | I-2, I-5 |
 | issue_labels | 🟢 | Labels | I-2 |
-| issue_sync_jobs | 🟢 | Per-step retries after issue creation: add to project, dates, status | POL ch. 7 sync |
+| issue_sync_jobs | 🟢 | Per-step retries after creation and detail edits: project, dates, status, assignees, labels | POL ch. 7 sync |
 | pull_requests | 🟢 | PR cache, team chat PR list tab | C-3 |
 | team_progress_snapshots | 🟡 | Daily per-team status counts for the project progress graph (last 14 days trend) | T-7, S-9, POL-T-7 |
 
@@ -1156,11 +1174,11 @@ erDiagram
 | deleted_at | Set when deleted on GitHub. Issue cards in chat show "삭제된 이슈" (Deleted issue) |
 
 - Indexes: `(team_id, due_date)` calendar, `(team_id, board_status)` status board, `(repo_id, number)` UK.
-- "My issues" (I-5) = `issue_assignees.user_id = me` + `due_date` ascending.
+- "My issues" (I-5) = `issue_assignees.user_id = me` + selected `team_id` + `due_date` ascending. Default team = my `team_members` row with the latest `joined_at` (prefer non-archived).
 
 **issue_assignees**: Stores GitHub assignees as-is and links `user_id` if that GitHub user is a Linker member. If an assignee leaves the team, the row stays and the UI shows "팀 밖 사용자" (Outside the team).
 
-**issue_sync_jobs**: Creating one issue needs 3–5 GitHub calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
+**issue_sync_jobs**: Page 13 also uses `step=CREATE` for a durable creation intent: `team_id`, `request_key` (unique with `requested_by`) and `created_at` let the server enforce per-author KST daily quota and idempotent draft resends before GitHub returns an issue ID. `issue_id` stays null until a real GitHub issue is confirmed; no local-only issue is inserted. The JSON payload checkpoints CREATE/CREATE_SENT/ADD_TO_PROJECT/SET_START/SET_DUE/SET_STATUS/VERIFY/DONE. A lost creation response is recovered by an opaque body marker; if its result cannot be confirmed, stop with CREATE_OUTCOME_UNKNOWN rather than POST a duplicate. Tokens are never stored. These columns extend the existing table and do not add a 70th table. Page 12 also persists failed assignee/label edits as `SET_ASSIGNEES`/`SET_LABELS`; schedule/status jobs retain the full desired value and replay idempotently, then verify source reads. Retry attempts are bounded operationally; no token is stored in payload. Creating an issue is a multi-step GitHub workflow; source verification may add read calls. Once the issue itself is created, the remaining steps are queued as rows and a scheduler processes them by `next_retry_at`. Steps that don't need the user's identity use the installation token.
 
 **team_progress_snapshots**: Columns are `team_id`, `snapshot_date` (UK together), `todo_count`, `in_progress_count`, `blocked_count`, `done_count`, `overdue_count`. A batch at 00:00 KST counts `issues.board_status` (excluding OTHER and NONE) per team. Stored for every team regardless of Flex; only the screen is Flex-only. Today's value isn't stored; it's counted from `issues` when the screen opens. Issue status change history is not stored, so metrics like cycle time (days spent In Progress) belong to the phase 2 bottleneck dashboard (T-6) with its own event table. Rows older than 1 year are deleted.
 
@@ -1183,8 +1201,8 @@ erDiagram
 | --- | --- |
 | room_type | TEAM uses `team_id` (UK), DIRECT uses `dm_key` (UK) |
 | dm_key | The two user ids joined as small:large. Ensures only one room per pair |
-| dm_status | ACCEPTED from the start for mutual follows or teammates. Otherwise REQUESTED (first message only) → ACCEPTED / REJECTED / EXPIRED (30 days) |
-| last_message_id, last_message_at | Denormalized for chat list sort and preview |
+| dm_status | ACCEPTED from the start for mutual follows or teammates. Otherwise REQUESTED (first message only) → ACCEPTED / REJECTED / EXPIRED (30 days). The pair keeps one row: a later request after expiry, 30 days after a rejection, or from the person who rejected reopens it as REQUESTED (`requester_id` and `request_expires_at` reset); becoming mutual follows or teammates turns it ACCEPTED |
+| last_message_id, last_message_at | Denormalized latest message. Page 16 list still computes the viewer-visible message. Text send writes the pointer only after checking the message is in that room. An edit does not move this pointer. `team_id` has no FK until `teams` exists (page 08). V3 adds `client_message_id` (unique with `sender_id`). `payload` stays deferred. V10 adds `edited_at` |
 | request_kind | Drives the "채용 제안" (Recruiting offer) label in the request inbox. RECRUITING for rooms created by recruiters, otherwise GENERAL. Kept after acceptance for stats (offer acceptance rate) and the recruiter my page "보낸 채용 제안" (Sent offers) list. List status maps dm_status for display: ACCEPTED → 대화 중 (In conversation), REQUESTED / REJECTED (within 30 days) → 응답 대기 (Awaiting reply), EXPIRED / REJECTED (after 30 days) → 응답 없음 (No reply). Index `(requester_id, request_kind, created_at desc)`. 10/day (Scout 50) limit in Redis |
 
 **chat_room_members**: Unread count = messages in the room with `id > last_read_message_id`. Team chat "unread by N people" = number of members whose `last_read_message_id` is less than the message id. Leaving the team sets `left_at`, and later messages are not visible.
@@ -1199,6 +1217,7 @@ erDiagram
 | body | Team chat search target. `pg_trgm` GIN index for Korean partial-match search. Free teams can only search and view the last 60 days (older messages aren't deleted, the API filters them; 30-day grace after Flex ends) |
 | message_type = SHARE_CARD | Card created by "채팅방에 공유" (Share to chat room) in the share sheet. `payload` holds only `{targetType: POST / RECRUIT_POST / PROFILE, targetId}`; content isn't copied. When shown, the original is read; deleted, hidden or blocked → "볼 수 없는 게시물이에요". A TEXT message containing a Linker URL stores the same structure in `payload.linkerCard` |
 | visibility | HIDDEN when hidden by report ("운영 정책에 따라 숨겨진 메시지예요" — hidden under the operating policy) |
+| edited_at | Set when the author revises a TEXT message. V4 adds the column. The 24-hour window is measured from `created_at`, and the equal endpoint is still inside the window |
 
 - Indexes: `(room_id, id desc)` infinite scroll, `body` GIN (trgm).
 - 1:1 messages from a blocked user are stored but not delivered to or readable by the recipient. Filter messages whose `sender_id` is the blocked user and whose `created_at` falls in any recipient-owned `user_blocks` period: `[created_at, unblocked_at)` (an open period has no end). Apply the same filter to history, reconnect catch-up, previews, unread counts, search and notifications. Closed periods still apply after unblocking (POL ch. 9); team chat is exempt.
@@ -1230,9 +1249,11 @@ erDiagram
 | appeals | 🟢 | One appeal | POL ch. 9 appeals |
 | banned_github_ids | 🟢 | Blocks re-sign-up of permanently banned GitHub accounts | POL ch. 9 re-sign-up |
 
-**user_blocks**: `created_at` is the start of each blocking period; nullable `unblocked_at` is its end. Replace the pair-wide unique constraint with a partial unique index `(blocker_id, blocked_id) WHERE unblocked_at IS NULL`. Blocking an already-active pair is idempotent. Unblocking sets `unblocked_at` instead of deleting the row; blocking again inserts a new period, preserving all previous intervals. Lists and current access checks use only active periods; DM visibility checks use both active and closed periods. Index `(blocker_id, blocked_id, created_at)` for interval lookup and CHECK `unblocked_at IS NULL OR unblocked_at >= created_at`. Serialize block/unblock and message-visibility decisions for the same pair to avoid races. Preserve history while related DM messages remain, subject to the account/data-deletion policy; unblocking alone must not purge it. No new tables, enums, controllers or endpoints are introduced (69 tables / 40 controllers / 204 REST endpoints unchanged).
+**user_blocks**: `created_at` is the start of each blocking period; nullable `unblocked_at` is its end. Replace the pair-wide unique constraint with a partial unique index `(blocker_id, blocked_id) WHERE unblocked_at IS NULL`. Blocking an already-active pair is idempotent. Unblocking sets `unblocked_at` instead of deleting the row; blocking again inserts a new period, preserving all previous intervals. Lists and current access checks use only active periods; DM visibility checks use both active and closed periods. Index `(blocker_id, blocked_id, created_at)` for interval lookup and CHECK `unblocked_at IS NULL OR unblocked_at >= created_at`. Serialize block/unblock and message-visibility decisions for the same pair to avoid races. Preserve history while related DM messages remain, subject to the account/data-deletion policy; unblocking alone must not purge it. New `user_blocks` periods take `created_at` and `unblocked_at` from the application clock truncated to microseconds, the same authority as a chat text `created_at`. PostgreSQL `now()` is not the period start. Global JPA auditing is unchanged. The blocking-period change introduces no tables, enums or endpoints. Current WBS totals are 69 tables / 18 system HTTP controllers / 205 REST endpoints; controller consolidation does not change this data model.
 
-**report_cases, reports**: A new report attaches to the pending case with the same `target_type + target_id`, or creates one. `reports` UK `case_id + reporter_id` counts duplicate reports from one person as one. When distinct reporters reach 5, `auto_hidden_at` is set and the target content's `visibility` becomes UNDER_REVIEW. Reports from users restricted for false reporting are not counted in `reporter_count`.
+**report_cases, reports**: A new report attaches to the pending case with the same `target_type + target_id`, or creates one. `reports` UK `case_id + reporter_id` counts duplicate reports from one person as one. When distinct reporters reach 5, `auto_hidden_at` is set and the target content's `visibility` becomes UNDER_REVIEW (chat messages have no UNDER_REVIEW and become HIDDEN). Dismissing a case that was auto-hidden shows the content again; a sender's own deletion stays. Reports from users restricted for false reporting are not counted in `reporter_count`.
+
+**report_message_snapshots**: Only the report that opens a case (TEAM_MESSAGE / DM_MESSAGE) stores rows; later reports on the same case add none, so operators see at most the reported message (`rel_position` 0) and 10 lines on each side. Lines are copied from what the reporter could read at report time (active room member, free 60-day team history, the reporter's own block periods in 1:1). Deleted, hidden and system (no sender) messages are skipped and the next readable message fills the slot; near the start or end of a room fewer lines are kept.
 
 **sanctions**: The current step is computed from unrevoked sanctions in the last year. Creating a suspension also sets `users.status = SUSPENDED` and `users.suspended_until`. Recruit-post restriction (30 days) and report restriction (30 days) go in the same table as `sanction_type`.
 
@@ -1251,8 +1272,8 @@ erDiagram
 | --- | --- |
 | plan, user_id, team_id | PRO and SCOUT fill only `user_id`, FLEX only `team_id` (CHECK constraint). SCOUT only for `user_type = RECRUITER`, PRO only for DEVELOPER (server check). SCOUT has no trial (`is_trial` always false) |
 | seats | FLEX only. Set to the team headcount on the billing date; amount = ₩7,900 + max(0, seats − 6) × ₩1,900 (draft; amounts live in server config). Headcount changes during a period apply on the next billing date |
-| grace_ends_at | 30 days after FLEX becomes EXPIRED. Until then, full chat history and image originals stay as they are |
-| status | TRIALING → ACTIVE → PAST_DUE (payment failed, benefits kept until `grace_until`) → EXPIRED. Cancel sets `cancel_at_period_end = true`; EXPIRED when the period ends |
+| grace_ends_at | 30 days after FLEX becomes EXPIRED (`current_period_end` + 30 days, set by the expiry job). Until then, full chat history and image originals stay as they are |
+| status | TRIALING → ACTIVE → PAST_DUE (payment failed, benefits kept until `grace_until`) → EXPIRED. Cancel sets `cancel_at_period_end = true` and `canceled_at`; EXPIRED when the period ends. A refund moves `current_period_end` back to where the refunded period started; CANCELED (benefits end at once) only when no paid period is left |
 | is_trial | Free trial is once per account for Pro and once per team for Flex, so if a row with true exists, no new trial |
 | current_period_end | Basis for benefits. "Is Pro now" = status is TRIALING / ACTIVE / PAST_DUE and this is after now |
 
@@ -1261,11 +1282,20 @@ erDiagram
 
 **payments**: The client success response is not trusted; the server verifies with the Toss confirm API, then sets `status = DONE`, `approved_at`, and extends the subscription period. `order_id` is generated by the server before the payment request to prevent amount tampering. Not deleted for 5 years even after withdrawal.
 
+| Column | Notes |
+| --- | --- |
+| plan, billing_cycle, team_id, seats | Snapshot of the server order at checkout (status READY), before any subscription row exists. The amount comes from these values, never from the client. FLEX fills `team_id` and `seats` (CHECK constraint) |
+| subscription_id | Null while READY or FAILED; set together with `status = DONE` (CHECK: DONE needs `subscription_id`, `payment_key`, `approved_at`) |
+| payment_key | Bound by the first confirm call; a retry must send the same key. A bound READY order is not ended by the fail return |
+| status | READY → DONE after Toss confirm answers DONE; READY → FAILED on the fail return or a Toss refusal. A Toss timeout or 5xx keeps READY so the same confirm can be retried (Toss `Idempotency-Key` per order). DONE → CANCELED on a full refund through the Toss cancel API (`Idempotency-Key` `cancel:` + order; sets `canceled_at`, `cancel_reason`, `refunded_amount`); a timeout keeps DONE for retry |
+
+- A paid order on a user/team that already has a live row extends that row: the new period starts at the old `current_period_end` (or now if it has passed) and `cancel_at_period_end` is cleared.
+
 ### 4-10. Job ads
 
 | Table | Scope | Purpose | Basis |
 | --- | --- | --- | --- |
-| user_job_categories | 🟡 | Job categories of interest picked by a developer, max 3. Used only to pick job ads; not shown on the profile | H-8, POL-H-8 |
+| user_job_categories | 🟡 | Job categories of interest picked by a developer, max 3. Used to pick job ads and to match "추천" feed posts (POL-P-4); not shown on the profile | H-8, POL-H-8 |
 | recruiter_ads | 🟡 | A recruiter's job ad (one per recruiter) with the external posting URL | H-7, POL-H-7 |
 | ad_hides | 🟡 | A developer closed (7 days) / hid (permanent) an ad | H-9, POL-H-9 |
 | ad_daily_stats | 🟡 | Per-ad daily impression/click/close/hide counts (who saw it is not stored) | H-9, Privacy Policy art. 7 |
@@ -1298,12 +1328,13 @@ Several tables share state names, so Java enum names are fixed here.
 | JobSeekingStatus | OPEN, OFFERS_ONLY, OFF | users.job_seeking_status |
 | VerificationPurpose | SIGNUP, PASSWORD_RESET | email_verifications.purpose |
 | DmRequestKind | GENERAL, RECRUITING | chat_rooms.request_kind |
-| Visibility | VISIBLE, UNDER_REVIEW, HIDDEN | posts, comments, recruit_posts, chat_messages |
+| Visibility | VISIBLE, UNDER_REVIEW, HIDDEN | posts, comments, recruit_posts (chat_messages: VISIBLE, HIDDEN only) |
 | RecruitStatus | OPEN, CLOSED | recruit_posts.status |
 | ApplicationStatus | PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELED | applications.status |
 | TeamStatus | ACTIVE, COMPLETED, READ_ONLY, ARCHIVED, DELETED | teams.status |
 | TeamRole | OWNER, ADMIN, MEMBER | team_members.role |
 | BoardStatus | TODO, IN_PROGRESS, BLOCKED, DONE, OTHER, NONE | issues.board_status, board_status_mappings.linker_status (except NONE) |
+| BoardStatusColor | BLUE, GRAY, GREEN, ORANGE, PINK, PURPLE, RED, YELLOW | board_status_mappings.color (GitHub Projects Status option color; UI tokens map the enum) |
 | SyncStatus | SYNCED, PENDING, FAILED | issues.sync_status |
 | DmStatus | REQUESTED, ACCEPTED, REJECTED, EXPIRED | chat_rooms.dm_status |
 | ReportTargetType | USER, POST, COMMENT, RECRUIT_POST, TEAM_MESSAGE, DM_MESSAGE, RECRUITER_AD | report_cases.target_type |
@@ -1343,7 +1374,7 @@ Used when planning backend batch tasks in the WBS.
 
 ## 7. MVP build order and tables
 
-The same table list is split two ways. 7-1 is for milestones; 7-2 is for the WBS where one page = one task.
+The same table list is split two ways. 7-1 is for milestones; 7-2 is for WBS page work and shows the page that first needs each table, not table ownership.
 
 ### 7-1. By bundle (MVP Definition)
 
@@ -1368,13 +1399,13 @@ Reports, blocking and notifications are called by screens before bundles 6–7, 
 
 ### 7-2. By page (07 TODO)
 
-Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New tables** are first needed on that page, so their entity, repository and migration are created there; each of the 69 appears exactly once. **Shared tables** were already created on an earlier page. "(after NN)" means the table is created on a later page, so that feature is wired up then.
+Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New tables** are first needed on that page, so their migration is first added there; each of the 69 appears exactly once. Entities and repositories still go in the shared business packages of the [backend blueprint §3](05-backend-blueprint.md#3-package-structure), not in per-page copies. **Shared tables** were already created on an earlier page. "(after NN)" means the table is created on a later page, so that feature is wired up then.
 
 | # | Page | New tables | Shared tables |
 | --- | --- | --- | --- |
-| 00 | Common foundation | users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks (blocking periods), report_cases, reports, github_webhook_deliveries, admins (seed) | — |
+| 00 | Common foundation | users, auth_identities, github_tokens, user_sessions, uploaded_files, notifications, user_blocks (blocking periods), report_cases, reports, github_webhook_deliveries, admins (seed), tech_tags (seed) | — |
 | 01 | Start & login | banned_github_ids | users, auth_identities, github_tokens, user_sessions |
-| 02 | Onboarding | user_agreements, tech_tags (seed), user_tech_tags | users |
+| 02 | Onboarding | user_agreements, user_tech_tags | users, tech_tags |
 | 03 | Legal documents | None (static docs) | — |
 | 04 | Profile | follows, 🟡 contribution_days, 🟡 username_redirects, 🟡 pinned_posts (2nd pass), 🟡 profile_visits (2nd pass), 🟡 recruiter_ads (recruiter side, after 31 and 28) | users, user_tech_tags, user_blocks, notifications, completion_records (after 09), posts (after 22), team_members (after 08), recruiter_profiles (after 31), subscriptions (after 28) |
 | 05 | Profile edit | 🟡 user_job_categories | users, user_tech_tags, tech_tags, recruiter_profiles (after 31) |
@@ -1382,7 +1413,7 @@ Pages 00–33 in the order of [07 Page TODO](../planning/07-page-todo.md). **New
 | 07 | Workspace home | None | teams, team_members (after 08), issues, issue_assignees (after 11) |
 | 08 | Create team | github_installations, github_repos, teams, team_members, team_repos, team_project_boards, board_status_mappings, chat_rooms, chat_room_members | github_tokens, github_webhook_deliveries |
 | 09 | Team settings & members | team_invite_links, github_org_invitations, team_completions, completion_records, team_ownership_transfers | teams, team_members, team_repos, github_repos, team_project_boards, board_status_mappings, chat_room_members, notifications, subscriptions (after 28) |
-| 10 | Accept invite | None | team_invite_links, teams, team_members, chat_room_members |
+| 10 | Accept invite | None | team_invite_links, teams, team_members, chat_room_members, notifications (TEAM_INVITE from 09) |
 | 11 | Issue list | issues, issue_assignees, issue_labels, 🟡 team_progress_snapshots | subscriptions (after 28), teams, team_repos, github_repos, board_status_mappings, github_webhook_deliveries |
 | 12 | Issue detail | issue_sync_jobs | issues, issue_assignees, issue_labels, team_members, notifications |
 | 13 | Create issue | None | issues, issue_assignees, issue_labels, issue_sync_jobs, team_repos, team_project_boards, github_tokens |

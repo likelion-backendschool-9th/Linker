@@ -1,0 +1,70 @@
+/*
+ * 01 callback. Frames "1-2-로딩 처리" and "1-2-로딩 실패-타임 아웃" (375×800):
+ * three centered dots, and a bottom button only after failure.
+ * The home indicator is safe-area, not a drawn bar.
+ */
+
+.main {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  width: min(100%, var(--content-max-width));
+  min-height: 100dvh;
+  margin-inline: auto;
+  outline: none;
+}
+
+.dots {
+  display: flex;
+  gap: calc(var(--space-md) + var(--space-xxs));
+}
+
+.dots span {
+  width: calc(var(--space-xl) + var(--space-xxs));
+  height: calc(var(--space-xl) + var(--space-xxs));
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.failure {
+  position: absolute;
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  left: 50%;
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: center;
+  width: min(calc(100% - 2 * var(--page-gutter)), var(--content-max-width));
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+.retry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--control-height);
+  margin-top: var(--space-xs);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}

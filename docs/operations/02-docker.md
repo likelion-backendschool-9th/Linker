@@ -68,7 +68,7 @@ docker compose ps
 ```
 
 개발 설정을 지정하지 않으면 Dockerfile의 마지막 `runtime` 단계를 사용합니다. 개발 서버와 Compose Watch는 실제 공개 서버에서 사용하지 않습니다.
-리눅스 서버에서는 [배포 가이드](03-deployment.md)에 따라 `compose.yml`과 `compose.prod.yml`을 함께 지정합니다. 기본 파일만 실행하면 로컬 디버깅 포트가 다시 열립니다.
+서버 초기 수동 구성에서는 `compose.yml`과 `compose.prod.yml`을 함께 지정합니다. **현재 서버는 자동 배포로 운영 중이므로 수동 재빌드하지 않습니다.** 서버 명령은 [서버 운영](03-deployment.md), 배포 절차는 [자동 배포](04-automatic-deployment.md)를 참고하세요. 기본 파일만 실행하면 로컬 디버깅 포트가 다시 열립니다.
 
 | 서비스 | 로컬 주소 | 준비 상태 확인 |
 | --- | --- | --- |
@@ -97,7 +97,7 @@ DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 
 
 `nginx/default.conf`가 위 경로를 정의합니다. 컨테이너가 재생성되어 IP가 바뀌면 Docker DNS로 다시 조회합니다.
 인증 쿠키를 JavaScript에 노출하거나 별도의 사용자 ID 헤더로 변환하지 않습니다. 실제 로그인·쿠키 발급·WebSocket 권한 검사는 아직 구현 전입니다.
-인증이 구현되면 STOMP heartbeat를 프록시 timeout보다 짧게 설정하고 실제 송수신·재연결을 검증해야 합니다.
+STOMP 서버는 10초마다 heartbeat를 보내 프록시 300초 timeout에 걸리지 않습니다. 백그라운드 탭·WebView의 타이머 지연 때문에 클라이언트 heartbeat는 요구하지 않습니다(`WebSocketConfig.HEARTBEAT_MS`).
 기본 구성은 HTTP 로컬 실행용입니다. 서버 HTTPS는 호스트 Nginx에서 종료하고, `compose.prod.yml`이 선택하는 `nginx/production.conf`에서 HTTPS 전달 정보를 유지합니다. 서버 운영 절차는 [배포 가이드](03-deployment.md)를 참고하세요.
 
 ## 환경변수와 네트워크
@@ -126,6 +126,8 @@ docker compose up -d --build --wait --wait-timeout 240
 # 컨테이너 종료 (DB·Redis 볼륨은 유지)
 docker compose down
 ```
+
+`docker compose down -v`는 DB·Redis 데이터 볼륨을 삭제한다. DB 도구 접속과 기존 볼륨의 비밀번호는 [로컬 DB 안내](05-database-access.md)를 본다.
 
 기본 구성은 빌드된 앱을 실행하며, `compose.dev.yml`을 함께 지정하면 개발 서버와 소스 동기화 규칙을 사용합니다.
 웹 이미지는 프론트 모노레포를 컨텍스트로 사용하고 `web` 및 공유 패키지 의존성만 설치합니다. Expo 앱은 이미지에 포함하지 않습니다.

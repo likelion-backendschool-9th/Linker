@@ -1,4 +1,4 @@
-import type { NativeToWeb } from '@linker/bridge';
+import { authCallbackPath, type NativeToWeb } from '@linker/bridge';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -6,18 +6,13 @@ import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { createDispatcher } from '@/bridge/dispatcher';
-import { authCallbackPath } from '@/bridge/handlers/auth';
 import { sendToWeb, type WebViewHandle } from '@/bridge/send-to-web';
 import { WEB_ORIGIN } from '@/lib/config';
 
 import { navigationPolicy } from './navigation-policy';
+import { createNotificationReceiver } from './notification-response';
 import { useAndroidBack } from './use-android-back';
-
-/** Path a notification carries in `data.path` (set by the server, 18) */
-function notificationPath(response: Notifications.NotificationResponse | null): string | null {
-  const path = response?.notification.request.content.data?.path;
-  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') ? path : null;
-}
+import { createWebNavigation } from './web-navigation';
 
 /**
  * The app's only screen (blueprint ch. 12): Linker web in a WebView plus the bridge.
@@ -26,25 +21,22 @@ function notificationPath(response: Notifications.NotificationResponse | null): 
 export function LinkerWebView() {
   const webView = useRef<WebViewHandle>(null);
   const canGoBack = useRef(false);
-  const webReady = useRef(false);
-  // Deep links that arrive before the web sent READY (cold start from a notification)
-  const heldPaths = useRef<string[]>([]);
   const [failed, setFailed] = useState(false);
 
   const send = useCallback((msg: NativeToWeb) => sendToWeb(webView, msg), []);
 
-  const loadPath = useCallback((path: string) => {
-    const url = JSON.stringify(`${WEB_ORIGIN}${path}`);
-    webView.current?.injectJavaScript(`window.location.replace(${url}); true;`);
-  }, []);
-
-  const openPath = useCallback(
-    (path: string) => {
-      if (webReady.current) send({ type: 'DEEP_LINK', path });
-      else heldPaths.current.push(path);
-    },
+  const navigation = useMemo(
+    () =>
+      createWebNavigation({
+        send,
+        replace: (path) => {
+          const url = JSON.stringify(`${WEB_ORIGIN}${path}`);
+          webView.current?.injectJavaScript(`window.location.replace(${url}); true;`);
+        },
+      }),
     [send],
   );
+  const { loadPath, openPath } = navigation;
 
   const { onBackResult } = useAndroidBack({
     askWeb: (id) => send({ type: 'BACK_PRESSED', id }),
@@ -57,13 +49,10 @@ export function LinkerWebView() {
       createDispatcher({
         send,
         loadPath,
-        onReady: () => {
-          webReady.current = true;
-          heldPaths.current.splice(0).forEach((path) => send({ type: 'DEEP_LINK', path }));
-        },
+        onReady: navigation.onReady,
         onBackResult,
       }),
-    [send, loadPath, onBackResult],
+    [send, loadPath, onBackResult, navigation],
   );
 
   useEffect(() => {
@@ -75,22 +64,36 @@ export function LinkerWebView() {
 
   // Notification tap: cold start and while running
   useEffect(() => {
-    const initial = notificationPath(Notifications.getLastNotificationResponse());
-    if (initial) openPath(initial);
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const path = notificationPath(response);
-      if (path) openPath(path);
-    });
+    const receive = createNotificationReceiver(
+      openPath,
+      Notifications.clearLastNotificationResponse,
+    );
+    const subscription = Notifications.addNotificationResponseReceivedListener(receive);
+    receive(Notifications.getLastNotificationResponse());
     return () => subscription.remove();
   }, [openPath]);
 
   // `linker://auth?…` opened outside the auth session (the web callback handed off from the system browser)
   useEffect(() => {
-    const subscription = Linking.addEventListener('url', ({ url }) => {
+    let active = true;
+    const receive = (url: string) => {
       const path = authCallbackPath(url);
-      if (path) loadPath(path);
+      if (active && path) loadPath(path);
+    };
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      receive(url);
     });
-    return () => subscription.remove();
+    void Linking.getInitialURL()
+      .then((url) => {
+        if (url) receive(url);
+      })
+      .catch(() => {
+        /* A failed initial-link lookup must not prevent the web from loading. */
+      });
+    return () => {
+      active = false;
+      subscription.remove();
+    };
   }, [loadPath]);
 
   if (failed) {
@@ -100,7 +103,11 @@ export function LinkerWebView() {
         <Pressable
           accessibilityRole="button"
           style={styles.retryButton}
-          onPress={() => setFailed(false)}
+          onPress={() => {
+            canGoBack.current = false;
+            navigation.onLoadStart();
+            setFailed(false);
+          }}
         >
           <Text style={styles.retryButtonText}>다시 시도</Text>
         </Pressable>
@@ -118,10 +125,11 @@ export function LinkerWebView() {
       onNavigationStateChange={(state) => {
         canGoBack.current = state.canGoBack;
       }}
-      onLoadStart={() => {
-        webReady.current = false;
+      onLoadStart={({ nativeEvent }) => navigation.onLoadStart(nativeEvent.loading)}
+      onError={() => {
+        navigation.onLoadStart();
+        setFailed(true);
       }}
-      onError={() => setFailed(true)}
       onContentProcessDidTerminate={() => webView.current?.reload()}
       onRenderProcessGone={() => webView.current?.reload()}
       sharedCookiesEnabled

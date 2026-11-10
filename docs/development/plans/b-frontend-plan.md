@@ -60,11 +60,13 @@
 | 문서 간 차이 | 이번 계획의 처리 |
 | --- | --- |
 | 루트 지침은 “5 STOMP destinations”라고 요약하지만 WBS는 `/ws` 연결 1개 + SEND 1개 + SUBSCRIBE 3개로 설명한다. | 신규 경로를 만들지 않는다. 실제 계약은 WBS의 연결 1개·STOMP 목적지 4개, 총 5개 실시간 경로를 따른다. |
-| 정책 §6은 팀 member의 GitHub 조직 초대를 허용하지 않지만 WBS 09는 `team MEMBER + org owner`로 적고 있다. | 단순히 조직 오너라는 이유로 member 버튼을 열지 않는다. 정책에 맞는 owner/admin + GitHub 조직 오너 범위로 화면을 계획하고, member 예외는 백엔드 담당과 권한 계약을 확인할 때까지 미확정으로 남긴다. |
+| 정책 §6은 팀 member의 GitHub 조직 초대를 허용하지 않지만 WBS 09는 `team MEMBER + org owner`로 적고 있다. | **2026-11-03 해소:** 팀 owner만 초대할 수 있도록 정했다. 정책 §6과 WBS 09는 `team OWNER + org owner`로 맞췄다. admin·member에게는 버튼을 열지 않는다. |
 | 백엔드 청사진의 오류 표 일부는 `PLAN_LIMIT`을 429, `GITHUB_PERMISSION`을 외부 장애와 묶는다. 다른 원문에는 403 또는 별도 의미로 쓰인다. | 임시 HTTP 번호만으로 분기하지 않는다. 기존 `ApiError`와 오류 `code/detail`을 사용하며 최종 HTTP 상태는 WBS·정책과 대조한 OpenAPI로 확정한다. |
 | 백엔드 청사진은 쿠키/BFF의 대안을 미확정으로 열어 두지만 루트 지침은 부모 도메인 httpOnly JWT를 고정한다. | 고정 지침과 현재 프론트 구조를 따른다. B의 페이지 구현에서 인증 방식·BFF·STOMP 인증 티켓을 새로 도입하지 않는다. |
 
-정책·화면·API를 새로 정하지 않는 계획이므로 원문 기획 문서와 기존 총계(33페이지·40컨트롤러·204 REST·69테이블)를 수정하지 않는다. 향후 실제 계약 변경이 필요하면 해당 담당자와 먼저 정리하고 한국어 원본의 동기화 항목도 보고한다.
+> 2026-11-03 기준: 첫 행은 해소됐다(루트 지침도 이제 연결 1 + SEND 1 + SUBSCRIBE 3의 5개 실시간 경로로 적는다). 셋째 행도 해소됐다(현재 백엔드 청사진에는 해당 오류 표가 없고, 오류는 `{code, message, detail}`과 기존 코드 기준이다). 두 행은 작성 시점 기록으로 남긴다.
+
+정책·화면·API를 새로 정하지 않는 계획이므로 원문 기획 문서와 기존 총계는 현재 WBS 기준(33페이지·18시스템 컨트롤러·205 REST·69테이블)과 맞춘다. 이 계획 문서만으로 API 계약을 바꾸지 않는다. 향후 실제 계약 변경이 필요하면 해당 담당자와 먼저 정리하고 한국어 원본의 동기화 항목도 보고한다.
 
 ## 3. 현재 코드와 팀원 디자인 확인 결과
 
@@ -178,7 +180,7 @@
 
 2차: 이름/소개 편집, 역할 변경·강퇴·탈퇴, 수신자 수락을 포함한 소유권 이전, 프로젝트 완료·7일 내 취소, 보관·이름 입력 삭제, 현재 플랜·다음 결제액·28 진입을 연결한다. 보드 교체와 Flex AI 토글은 Included이며 계약 확인 후 진행한다.
 
-- owner만 역할 변경·소유권 이전·보관·삭제를 한다. admin의 강퇴 대상은 member로 제한한다. 조직 초대는 Linker 팀 역할과 서버가 확인한 GitHub 조직 오너 조건을 함께 적용하며, member 예외의 문서 충돌은 §2.2에 따른다.
+- owner만 역할 변경·소유권 이전·보관·삭제를 한다. admin의 강퇴 대상은 member로 제한한다. 조직 초대는 팀 owner이면서 서버가 확인한 GitHub 조직 오너일 때만 가능하다(§2.2).
 - 소유권 이전은 수신자가 수락하기 전까지 기존 오너를 유지하고, 수락 후 이전 오너를 admin으로 표시한다. 청구 관리자는 소유권 변경만으로 바뀌지 않는다.
 - Free 정원 초과는 신규 가입을 막고 기존 멤버를 지우지 않는다. 연결 레포 수 제한은 추가하지 않는다.
 - 초대 공유는 기존 브리지 `SHARE`, 브라우저 `navigator.share`, 링크 복사를 사용한다. 사용자 공유 취소를 오류처럼 처리하지 않는다.
@@ -252,36 +254,37 @@
 
 ## 7. API 연결표
 
-아래는 WBS의 기존 API를 차용하는 계획이다. 새로운 REST 엔드포인트를 제안하거나 서버 구현을 포함하지 않는다. 응답 DTO·개별 오류 코드·enum은 OpenAPI 공개 시 다시 검증한다.
+아래는 WBS의 기존 API를 차용하는 계획이다. 출처 페이지는 화면·담당 단위이고, API 소속은 WBS §4의 시스템 컨트롤러다(#156). 새로운 REST 엔드포인트를 제안하거나 서버 구현을 포함하지 않는다. 응답 DTO·개별 오류 코드·enum은 OpenAPI 공개 시 다시 검증한다.
 
-| 소유 페이지 | 메서드 · 기존 경로 | 사용 |
-| --- | --- | --- |
-| 07 | `GET /api/v1/user/me/teams` | 워크스페이스·팀 헤더·전환 목록 |
-| 07 / C | `GET /api/v1/user/me/issues` | C의 내 이슈 영역 연결 |
-| 08 | `GET /api/v1/user/team-setup/install-url` | 설치 시작 |
-| 08 | `POST /api/v1/user/team-setup/installations/verify` | 설치 복귀 검증 |
-| 08 | `POST /api/v1/user/teams` | 팀 생성 |
-| 08 | `GET`, `PUT /api/v1/user/teams/{teamId}/setup/repos` | 초기 레포 조회·저장 |
-| 08 | `GET .../setup/boards`, `POST .../setup/board` | 기존 보드 미리보기·보드 연결 |
-| 08 | `GET .../setup/permission-check`, `POST .../setup/complete` | 권한 안내·설정 완료 |
-| 09 | `GET /api/v1/user/teams/{teamId}/settings`, `GET .../members` | 정보·허용 액션·멤버 |
-| 09 | `GET`, `POST .../invite-links`, `DELETE .../invite-links/{linkId}` | 초대 조회·생성·폐기 |
-| 09 | `POST .../members/{userId}/github-invitation` | GitHub 조직 초대 |
-| 09 | `POST .../repos`, `DELETE .../repos/{repoId}` | 연결 레포 관리 |
-| 09 | `PATCH /api/v1/user/teams/{teamId}` | 이름·소개 편집 |
-| 09 | `PATCH .../members/{userId}/role`, `DELETE .../members/{userId}` | 역할 변경·강퇴 |
-| 09 | `DELETE .../members/me` | 탈퇴 |
-| 09 | `POST .../ownership-transfers`, `POST .../ownership-transfers/{transferId}/accept` | 이전 요청·수락 |
-| 09 | `POST`, `DELETE .../completion` | 프로젝트 완료·기한 내 취소 |
-| 09 | `POST .../archive`, `DELETE /api/v1/user/teams/{teamId}` | 보관·삭제 |
-| 10 | `GET /api/v1/public/invites/{code}`, `POST /api/v1/user/invites/{code}/accept` | 미리보기·수락 |
-| 17 / D | `GET /api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR 목록, 기존 방 구독으로 이벤트 수신 |
-| 26 | `GET /api/v1/admin/users`, `GET /api/v1/admin/users/{userId}` | 검색/필터·상세 |
-| 26 | `POST .../users/{userId}/sanctions`, `DELETE .../users/{userId}/sanctions/{sanctionId}` | 제재·해제 |
-| 26 | `POST .../users/{userId}/email-reveal`, `POST /api/v1/admin/payments/{paymentId}/refund` | 사유 기록 열람·Included 환불 |
-| 27 | `GET /api/v1/admin/audit-logs`, `GET /api/v1/admin/audit-logs/filters` | 기록·필터 선택지 |
-| 30 | `GET /api/v1/user/me/stats/summary`, `GET .../stats/recruiter-views?weeks=8`, `GET .../stats/posts?days=30` | 기본·Pro 통계 |
-| 00 / B | `GET /api/v1/public/sitemap/{kind}?page=` | 후반 공개 URL 목록 차용 |
+| 출처 페이지 | 시스템 컨트롤러 | 메서드 · 기존 경로 | 사용 |
+| --- | --- | --- | --- |
+| 07 | TeamController | `GET /api/v1/user/me/teams` | 워크스페이스·팀 헤더·전환 목록 |
+| 07 / C | IssueController | `GET /api/v1/user/me/issues` | C의 내 이슈 영역 연결 |
+| 08 | GithubController | `GET /api/v1/user/team-setup/install-url` | 설치 시작 |
+| 08 | GithubController | `POST /api/v1/user/team-setup/installations/verify` | 설치 복귀 검증 |
+| 08 | TeamController | `POST /api/v1/user/teams` | 팀 생성 |
+| 08 | TeamController | `GET`, `PUT /api/v1/user/teams/{teamId}/setup/repos` | 초기 레포 조회·저장 |
+| 08 | TeamController | `GET .../setup/boards`, `POST .../setup/board` | 기존 보드 미리보기·보드 연결 |
+| 08 | TeamController | `GET .../setup/permission-check`, `POST .../setup/complete` | 권한 안내·설정 완료 |
+| 09 | TeamController | `GET /api/v1/user/teams/{teamId}/settings`, `GET .../members` | 정보·허용 액션·멤버 |
+| 09 | TeamController | `GET`, `POST .../invite-links`, `DELETE .../invite-links/{linkId}` | 초대 조회·생성·폐기 |
+| 09 | GithubController | `POST .../members/{userId}/github-invitation` | GitHub 조직 초대 |
+| 09 | TeamController | `POST .../repos`, `DELETE .../repos/{repoId}` | 연결 레포 관리 |
+| 09 | TeamController | `PATCH /api/v1/user/teams/{teamId}` | 이름·소개 편집 |
+| 09 | TeamController | `PATCH .../members/{userId}/role`, `DELETE .../members/{userId}` | 역할 변경·강퇴 |
+| 09 | TeamController | `DELETE .../members/me` | 탈퇴 |
+| 09 | TeamController | `POST .../ownership-transfers`, `POST .../ownership-transfers/{transferId}/accept` | 이전 요청·수락 |
+| 09 | TeamController | `POST`, `DELETE .../completion` | 프로젝트 완료·기한 내 취소 |
+| 09 | TeamController | `POST .../archive`, `DELETE /api/v1/user/teams/{teamId}` | 보관·삭제 |
+| 10 | TeamController | `GET /api/v1/public/invites/{code}`, `POST /api/v1/user/invites/{code}/accept` | 미리보기·수락 |
+| 17 / D | GithubController | `GET /api/v1/user/chat-rooms/{roomId}/pull-requests?state=` | PR 목록, 기존 방 구독으로 이벤트 수신 |
+| 26 | admin.ModerationController | `GET /api/v1/admin/users`, `GET /api/v1/admin/users/{userId}` | 검색/필터·상세 |
+| 26 | admin.ModerationController | `POST .../user/{userId}/sanctions`, `DELETE .../user/{userId}/sanctions/{sanctionId}` | 제재·해제 |
+| 26 | admin.ModerationController | `POST .../user/{userId}/email-reveal` | 사유 기록 열람 |
+| 26 | SubscriptionController | `POST /api/v1/admin/payments/{paymentId}/refund` | Included 환불 |
+| 27 | admin.ModerationController | `GET /api/v1/admin/audit-logs`, `GET /api/v1/admin/audit-logs/filters` | 기록·필터 선택지 |
+| 30 | StatsController | `GET /api/v1/user/me/stats/summary`, `GET .../stats/recruiter-views?weeks=8`, `GET .../stats/posts?days=30` | 기본·Pro 통계 |
+| 00 / B | SitemapController | `GET /api/v1/public/sitemap/{kind}?page=` | 후반 공개 URL 목록 차용 |
 
 `.../setup/*`, `.../members`, `.../completion` 등의 기본 경로는 `/api/v1/user/teams/{teamId}`다. 운영 경로의 `.../users`는 `/api/v1/admin/users`다. 필터·cursor·size는 WBS와 최종 응답을 따른다. 실제 코드에서는 축약하지 않는다.
 
@@ -457,7 +460,7 @@ frontend/apps/web/src/
 | --- | --- | --- |
 | B → C 내 이슈 | `/workspace` → `/workspace/issues` → `/teams/{id}/issues/{issueId}`, 뒤로가기로 목록·워크스페이스 복귀 | 원본 C 코드를 그대로 재사용. API 생성 시 C의 `repoName` 제안 필드 확정 |
 | B ↔ C 팀 틀 | 기존 `TeamFrame`·팀 메뉴·팀 전환·이슈 진입 재사용 | 팀 상태·권한 응답 확정. 별도 팀 헤더/내 이슈 목록을 중복 구현하지 않음 |
-| B → A 프로필 | 팀 멤버 이름·운영 회원 상세·내 통계·대표 작업물 시트 → `/u/{login}` | A의 PR #26은 조회 시 미병합. URL·시트 종료/복귀 계약을 검증했으며 해당 프로필 내용의 통합 검증과 구분 |
+| B → A 프로필 | 팀 멤버 이름·운영 회원 상세·내 통계·대표 작업물 시트 → `/user/{login}` | A의 PR #26은 조회 시 미병합. URL·시트 종료/복귀 계약을 검증했으며 해당 프로필 내용의 통합 검증과 구분 |
 | B → A 신고 | 운영 회원의 “처리된 신고 목록 보기” → `/admin/reports?tab=reports&status=HANDLED` | A의 현재 소스는 상세 선택을 로컬 상태로 관리한다. 지원되지 않는 `caseId`/overlay 파라미터를 만들어 자동 선택된다고 하지 않음. 개별 신고 직접 열기는 A와 URL 계약 합의 필요 |
 | B → D 요금제 | Free 팀·초대 정원 안내 → 팀 ID/사유/복귀 경로를 전달, 내 통계 → `reason=stats`·복귀 경로 전달 | 수신 화면에서 `teamId`를 URL 상태로 읽고 서버가 반환한 결제 가능 목록 안에서만 선택. 임의 ID는 안내 후 Flex 실행 차단. 진입만으로 주문 생성 없음 |
 | D → B 복귀 | `/subscribe`와 `/settings/subscription`의 직접 진입 뒤로가기 기본 경로가 안전한 `returnTo`를 사용 | 외부 URL은 기존 `safeReturnTo`로 거절하고 `/feed`로 복귀. 기존 결제/해지/환불 API는 변경하지 않음 |

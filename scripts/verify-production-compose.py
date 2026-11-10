@@ -18,7 +18,19 @@ def configuration(*files):
     result = subprocess.run(
         command,
         cwd=ROOT,
-        env={**os.environ, "DB_PASSWORD": "compose-validation-only", "PROXY_PORT": "3004", "IMAGE_PREFIX": "ghcr.io/example/linker", "IMAGE_TAG": "a" * 40},
+        env={
+            **os.environ,
+            "DB_PASSWORD": "compose-validation-only",
+            "JWT_PRIVATE_KEY": "compose-validation-only",
+            "JWT_PUBLIC_KEY": "compose-validation-only",
+            "GITHUB_APP_ID": "123",
+            "GITHUB_APP_SLUG": "linker-validation",
+            "GITHUB_APP_PRIVATE_KEY": "github-app-validation-only",
+            "GITHUB_WEBHOOK_SECRET": "github-webhook-validation-only",
+            "PROXY_PORT": "3004",
+            "IMAGE_PREFIX": "ghcr.io/example/linker",
+            "IMAGE_TAG": "a" * 40,
+        },
         check=True,
         capture_output=True,
         text=True,
@@ -65,6 +77,28 @@ def main():
         for field in ["ports", "healthcheck", "restart", "mem_limit"]:
             assert images["services"][name].get(field) == services[name].get(field)
     assert images["volumes"] == production["volumes"]
+    github_settings = {
+        "GITHUB_APP_ID": "123", "GITHUB_APP_SLUG": "linker-validation",
+        "GITHUB_APP_PRIVATE_KEY": "github-app-validation-only",
+        "GITHUB_WEBHOOK_SECRET": "github-webhook-validation-only",
+    }
+    for config in [base, production, images]:
+        for key, value in github_settings.items():
+            assert config["services"]["backend"]["environment"][key] == value, key
+            for other in ["web", "proxy", "db", "redis"]:
+                assert key not in config["services"][other].get("environment", {}), other
+    # Compose reads .env only for interpolation; Spring sees just the keys listed here.
+    forwarded = [
+        "SESSION_COOKIE_NAME", "SESSION_COOKIE_SECURE", "SESSION_COOKIE_DOMAIN",
+        "CHAT_PUBLIC_ORIGINS", "STORAGE_MODE", "STORAGE_LOCAL_DIR",
+        "MAIL_HOST", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD", "MAIL_FROM",
+        "MAIL_PUBLIC_BASE_URL", "ISSUE_SYNC_ENABLED", "ISSUE_WEBHOOK_ENABLED",
+        "OLLAMA_CONNECT_TIMEOUT", "OLLAMA_READ_TIMEOUT",
+    ]
+    for config in [base, production, images]:
+        environment = config["services"]["backend"]["environment"]
+        missing = [key for key in forwarded if key not in environment]
+        assert not missing, f"backend does not receive {missing}"
     print("PASS: production and image-only deployment keep ports, resources and data volumes")
 
 

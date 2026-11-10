@@ -1,0 +1,330 @@
+/* 12 Issue detail, Figma 12 (198:486). Sizes, colors and spaces come from the tokens. */
+
+.page {
+  display: grid;
+  gap: var(--space-group);
+  padding-top: var(--space-xs);
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: var(--icon-size-team-entry);
+  height: var(--icon-size-team-entry);
+}
+
+.icon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.head {
+  display: grid;
+  gap: var(--space-row-inline);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-title-cool);
+  overflow-wrap: anywhere;
+}
+
+.external {
+  position: relative;
+  flex: none;
+  color: var(--color-text-title-cool);
+}
+
+/* 44px hit area around the 20px icon */
+.external::after {
+  position: absolute;
+  inset: calc((var(--icon-size-team-entry) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+.meta,
+.subMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+}
+
+.meta > :not(.separator),
+.subMeta > :not(.separator) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subMeta {
+  font-size: var(--font-size-micro);
+}
+
+.separator {
+  flex: none;
+  width: var(--separator-dot-size);
+  height: var(--separator-dot-size);
+  background-color: currentcolor;
+  border-radius: var(--radius-full);
+}
+
+/* Info card: five lines (35px pitch, 1px dividers), each opens its sheet */
+.card {
+  margin: 0;
+  padding: var(--space-row-inline) var(--space-card-gap);
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-sm);
+}
+
+.card > li:not(:last-child) {
+  border-bottom: 1px solid var(--color-hairline-faint);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-row-block) var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  text-align: start;
+}
+
+.row:focus-visible,
+.external:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.term {
+  flex: none;
+}
+
+.value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.value[data-overdue='true'] {
+  color: var(--color-status-overdue);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-board-control-icon);
+  color: var(--status-color);
+}
+
+.dot {
+  flex: none;
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  background-color: var(--status-color);
+  border-radius: var(--radius-full);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-card-gap);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-title);
+  color: var(--color-text-title-cool);
+}
+
+.progress {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted-cool);
+}
+
+/* Body box (Figma 인풋 - 비활성화): 343×120 min, 1px line, 14px radius, text 14 Medium at 15px / 17px */
+.body {
+  min-height: var(--issue-body-min-height);
+  padding: var(--space-issue-body-block) var(--space-card-gap);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.subSection {
+  /* Figma: the list starts 5px under the "하위 이슈" heading */
+  gap: var(--space-row-inline);
+}
+
+.subList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sub {
+  padding: var(--space-row-block) var(--space-row-inline);
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+/* Figma 198:755: title+meta left, due date right */
+.subCard {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.subMain {
+  display: grid;
+  flex: 1;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.subTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+}
+
+.subDue {
+  flex: none;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  white-space: nowrap;
+}
+
+.subDue[data-overdue='true'] {
+  color: var(--color-status-overdue);
+}
+
+/* Markdown in the Figma body tone: one size, tight line spacing, nothing bigger than the text */
+.markdown {
+  min-width: 0;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.markdown > * + * {
+  margin-top: var(--space-row-block);
+}
+
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: var(--font-weight-semibold);
+  line-height: inherit;
+  color: inherit;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: var(--space-md);
+  list-style: revert;
+}
+
+.markdown li + li {
+  margin-top: var(--space-row-inline);
+}
+
+.markdown a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.markdown pre,
+.markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown pre {
+  padding: var(--space-xs);
+  background-color: var(--color-canvas-soft);
+  border-radius: var(--radius-xxs);
+}
+
+.markdown code {
+  font-size: var(--font-size-micro);
+}
+
+.markdown th,
+.markdown td {
+  padding: var(--space-xxs) var(--space-xs);
+  border: 1px solid var(--color-hairline-cool);
+}
+
+.markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-xxs);
+}
+
+.markdown li:has(> .task) {
+  margin-left: calc(-1 * var(--space-md));
+  list-style: none;
+}
+
+/* Task list mark: small and light, about the text height; the state is also in sr-only text */
+.task {
+  display: inline-grid;
+  place-items: center;
+  width: var(--task-size-issue-body);
+  height: var(--task-size-issue-body);
+  margin-right: var(--space-row-inline);
+  font-size: var(--font-size-micro);
+  line-height: 1;
+  color: var(--color-text-slate);
+  vertical-align: text-bottom;
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-full);
+}
+
+.task[data-checked='true'] {
+  background-color: var(--color-canvas-cool);
+  border-color: var(--color-text-muted-cool);
+}

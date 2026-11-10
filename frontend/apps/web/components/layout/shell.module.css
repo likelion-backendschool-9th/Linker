@@ -1,0 +1,28 @@
+/* The single app-column clamp (design guide ch. 0 rule 4): below 600px full width, at/above 600px
+   capped and centered. Every descendant (header, bottom tabs, page content) inherits this instead
+   of each re-declaring its own max-width — a page that forgets to do so (as the search panel did)
+   can no longer stretch past 600px. */
+.app,
+.entry {
+  min-height: 100dvh;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background-color: var(--color-canvas);
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile-first column: a classic desktop scrollbar would appear only on pages taller than the
+   viewport and shift the centered column by its width on every navigation between long and short
+   pages. Hide the root scrollbar (wheel/touch/keyboard scrolling still works). AdminShell doesn't
+   use these classes, so admin keeps its scrollbar. */
+:global(html):has(.app, .entry) {
+  scrollbar-width: none;
+}
+
+:global(html):has(.app, .entry)::-webkit-scrollbar {
+  display: none;
+}

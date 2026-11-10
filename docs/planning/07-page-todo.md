@@ -25,7 +25,7 @@
 | 01 | Start / login | `/`, `/auth/callback` | Required | 00 |
 | 02 | Onboarding | `/onboarding` | Required | 01 |
 | 03 | Legal documents | `/legal/[slug]` | Required | 00 |
-| 04 | Profile | `/u/[login]` | Required | 02 |
+| 04 | Profile | `/user/[login]` | Required | 02 |
 | 05 | Edit profile | `/settings/profile` | Required | 04 |
 | 06 | Settings | `/settings` | Required | 01 |
 | 07 | Workspace home / my issues | `/workspace`, `/workspace/issues` | Required | 01 |
@@ -86,12 +86,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Page frame `PageFrame`: one `header`, `main` and bottom `nav` per page, one `h1`, "본문 바로가기" (skip to content) (blueprint 6-1)
 - [ ] Sheet/modal open-close `useOverlay()`: one URL param (`overlay`), push a history entry only on first open, closing pops that entry → back navigation never traps. Top-bar back `useAppBack()` (blueprint ch. 7)
 - [ ] Policy number constants `policy.ts`, dates in KST (`@date-fns/tz`), browser API guards (`safeStorage`, `useIsClient`) (blueprint 11-1)
-- [ ] Common metadata function, `robots.ts`, search exposure table; `next/image` config + install sharp (blueprint ch. 8, 10). Root OG defaults (Linker + one-line intro + `/og-default.png`); content-based OG only on 23, 21, 04 (developers) and 10. Strip `?from=share` from canonical and `og:url`
+- [ ] Common metadata function, `robots.ts`, search exposure table; `next/image` config + install sharp (blueprint ch. 8, 10). Root OG defaults (Linker + one-line intro + `/og-default.png`); content-based OG only on 23, 21, 04 (developers). Strip `?from=share` from canonical and `og:url`
 - [ ] Web↔app bridge (`packages/bridge`, `NativeBridgeProvider`): Android back, GitHub login return, share, push permission (blueprint ch. 11, 12)
 - [ ] Test setup: Vitest + vitest-axe, Playwright + axe, MSW (orval mocks) (blueprint ch. 14)
 - [ ] Mock data mode for frontend work before the backend is live: `pnpm dev:mock`, one mock file per page with the WBS endpoints, role switcher (guest / developer / recruiter / operator) (blueprint §1-2)
 - [ ] App layout: 4 bottom tabs (Home / Find Team / Workspace / Chat), top header (bell + unread count + profile icon; "로그인" button and "설정" icon in their place for guests). Keep the tab list as an array switchable by member type (recruiter: Home / Chat, after 31)
-- [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/u/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
+- [ ] Access guard (`proxy.ts`, Next.js 16's new name for middleware): pages open per role (guest / developer / recruiter / operator) follow [Policy ch. 2 "Access by role"](04-policy.md#access-by-role) exactly. Guests can open only read URLs (`/`, `/feed`, `/posts/[id]`, `/recruits`, `/recruits/[id]`, `/user/[login]`, `/legal/[slug]`, `/invite/[code]`, `/recruiter/signup`, `/recruiter/login`, `/recruiter/reset`, `/auth/callback`); any other URL shows the login-prompt sheet + `returnTo` (33 `/recruiter/offers` also shows the login prompt). Onboarding incomplete → `/onboarding`; `/admin` operators only (404 for non-operators incl. guests); recruiters can't access team, write-recruit-post or write-post URLs (after 31)
 - [ ] Common components: bottom sheet, confirm modal, toast, empty state, error state, skeleton
 - [ ] `error.tsx` (unexpected error, retry), `not-found.tsx` ("삭제되었거나 볼 수 없는 콘텐츠예요" — deleted or unavailable content). Replace the screen map's "error" and "unavailable content" pages
 - [ ] Common banners: offline ("인터넷 연결이 끊겼어요…"), GitHub unstable ("최신 정보가 아닐 수 있어요"), suspended ("N월 N일까지 이용이 제한됐어요 · 이의 제기하기")
@@ -161,17 +161,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 1: Terms consent**
 
-- [ ] Confirm age 14+ (required)
 - [ ] Consent to Terms and Privacy Policy (required), marketing (optional)
 - [ ] "보기" (view) per item → 03 legal documents
 - [ ] Server: store agreed terms version and time
 
 **Step 2: Basic profile**
 
-- [ ] Pre-fill name, avatar, bio, blog from GitHub (editable)
-- [ ] Tech stack picker sheet (predefined tags, max 10) → reused in 05
-- [ ] Toggle "팀 찾는 중" (looking for team)
-- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔), with a one-line description under each ("채용 담당자에게만 보여요" etc.) → reused in 05
+- [ ] Display name (required, 1–20 characters) and bio (optional, up to 160 characters); start with empty fields
+- [ ] Tech stack picker sheet (predefined tags, max 5) → reused in 05
+- [ ] Choose job-seeking status (구직 중 / 제안 받기 / 구직 안 함, default 구직 안 함) in the picker → reused in 05
 - [ ] Done → `/feed` (starts with an empty feed)
 
 **Policy & exceptions**
@@ -189,14 +187,14 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Linked from onboarding (02) and settings (06)
 - [ ] No contact page; a mail link instead (replaces the screen map's "contact us" page)
 
-### 04. Profile `[Required]` · `/u/[login]`
+### 04. Profile `[Required]` · `/user/[login]`
 
 > Basis: A-2, A-4, A-5, A-6, P-5, P-7, C-4, H-7, S-10 · Needs first: 02 · Merged: followers/following pages → sheet
 > Built in two passes. Pass 1 now (header, graph, completion record); pass 2 after 22 (post list, pinned posts, message button).
 
 **Pass 1**
 
-- [ ] Header: avatar, display name, @handle, bio, blog, GitHub link, tech stack chips, "팀 찾는 중" badge, "구직 중" badge ("제안만 받기" shows as "제안 받는 중" only when a recruiter views)
+- [ ] Header: avatar, display name, @handle, bio, blog, GitHub link, tech stack chips, "팀 찾는 중" badge, "구직 중" badge ("제안 받기" shows as "제안 받는 중" only when a recruiter views)
 - [ ] Follower/following counts → (sheet) two-tab list (guests see counts only; tapping opens login prompt)
 - [ ] Own profile: "프로필 편집" (edit profile), "설정" (settings) buttons
 - [ ] Others' profile: follow/unfollow (applied on screen first, reverted on failure), more → (sheet) block/report
@@ -238,7 +236,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: A-2, A-3, H-4, H-8 · Needs first: 04
 
 - [ ] Display name (1–20 chars), bio (160), one blog link (https only)
-- [ ] Tech stack (reuse 02's sheet, max 10)
+- [ ] Tech stack (reuse 02's sheet, max 5)
 - [ ] Toggle "팀 찾는 중"
 - [ ] Job-seeking status (reuse 02's picker)
 - [ ] `[Included]` Job categories of interest: job category chips up to 3, empty by default, hint "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." Visible only to the developer (not shown on 04 profile)
@@ -269,18 +267,23 @@ Not a page, but everything every page relies on. Adding it later means reworking
 ### 07. Workspace home `[Required]` · `/workspace`, `/workspace/issues`
 
 > Basis: T-1, I-5 · Needs first: 01 · Merged: my team list + my issues → one page
-> First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07, with the same controller and access rules.
+> First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07 with the same access rules; the team list uses `TeamController` and My issues uses `IssueController` (WBS §4-7, §4-8).
+> **2026-11-03**: My issues are no longer a cross-team dump. The user picks one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at`).
+> **2026-11-03 (home preview)**: `/workspace` shows a **short preview** of those issues (UI-limited; roughly a few rows — not a fixed count), ordered by due urgency. The full selected-team list lives on `/workspace/issues` via “내 이슈 전체 보기”. Team-wide issues (everyone’s) remain on 11.
 
-- [ ] My teams: grouped active / completed / read-only / archived; team card (org avatar, team name, member count, status)
+- [ ] My teams: grouped active / completed / read-only / archived; team card (org avatar, team name, member count, status) → tap opens **11** (`/teams/[id]/issues`) for that team’s full issue list
 - [ ] "팀 만들기" (create team) button → 08
 - [ ] No teams: "팀 만들기" + "팀 찾으러 가기" (go find a team, 19)
-- [ ] `[Included]` My issues: issues assigned to me across all teams by due date, overdue in red, team name shown, tap → 12. Empty: "배정된 이슈가 없어요"
-- [ ] “내 이슈 전체 보기” → `/workspace/issues`; its back fallback is `/workspace`. B owns the entry link; C owns the list and data query.
-- [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15)
+- [ ] `[Included]` My issues on `/workspace` (preview): team picker; changing the team reloads the preview. Short preview of open issues assigned to me in the selected team (UI-limited; not a hard N). Sort by due urgency: overdue first (oldest due first), then soonest due date, then no due date last. Overdue in red. Tap → 12. Empty: "배정된 이슈가 없어요"
+- [ ] Default selected team = the one I joined most recently (`team_members.joined_at` desc). Prefer non-archived; if every membership is archived, fall back to the newest archived. Keep the choice in the URL (`teamId`, nuqs) so back/refresh keeps it
+- [ ] “내 이슈 전체 보기” → `/workspace/issues?teamId=` (same team; **full** list of my assigned issues in that team, same sort, no preview cap); back fallback `/workspace`. B owns the entry link; C owns preview, full list, team picker and data query. **Visible copy is exactly「내 이슈 전체 보기」(not「더 보기」; c-role-audit #6)**
+- [ ] Create-issue `+` on 07/11: hide for read-only and archived teams (c-role-audit #7; code PR3)
+- [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15). Distinct from the 07 my-issues team picker: switcher navigates into a team; the picker only filters the my-issues list
 
 **Policy & exceptions**
 
 - [ ] Max 10 teams per person (archived excluded); beyond that, show that creating teams / accepting invites isn't possible
+- [ ] Picking a `teamId` I'm not in → treat as missing filter and fall back to the default team (do not 404 the page)
 
 ### 08. Create team `[Required]` · `/teams/new`, `/teams/new/callback`
 
@@ -309,8 +312,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 4: Link board**
 
-- [ ] If the org has no board, auto-create a "Linker" board + 4 statuses (Todo / In Progress / Blocked / Done) + Start date and Due date fields
-- [ ] `[Included]` If boards exist, choose "새로 만들기 / 기존 보드 쓰기"; for existing boards preview name, card count, status columns → map to the 4 statuses → add missing date fields. If the schedule slips, ship with "create new" only
+- [ ] If the org has no board, auto-create a "Linker" board + 4 statuses (Todo / In Progress / Blocked / Done; fixed colors GRAY / BLUE / RED / GREEN) + Start date and Due date fields
+- [ ] `[Included]` If boards exist, choose "새로 만들기 / 기존 보드 쓰기"; for existing boards preview name, card count, status columns + option `color` → map to the 4 statuses → persist option colors on `board_status_mappings` → add missing date fields. If the schedule slips, ship with "create new" only
 - [ ] One board per team; changing later only in team settings (09)
 
 **Step 5: Permission check and done**
@@ -328,8 +331,9 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **Pass 1 (needed to test issues and chat)**
 
 - [ ] Member list: role (owner / admin / member), GitHub org status (member / invited / not a member), count "N/6"
-- [ ] Create (7-day valid) / revoke / share (Web Share API, copy) invite links
-- [ ] Send GitHub org invite: enabled only for GitHub org owners, otherwise disabled + reason. Error copy for daily send limit
+- [ ] Create (7-day valid) / revoke / share (Web Share API, copy) invite links — external recipients open `/invite/[code]` (10)
+- [ ] Notify a Linker developer of an invite (pick by @handle / GitHub login who already has a developer account): create `TEAM_INVITE` notification with `link_path` `/invite/[code]` so they see it in 18 without needing the external link. Same invite code as the shareable URL
+- [ ] Send GitHub org invite: enabled only for the team owner who is also a GitHub org owner, otherwise disabled + reason. Error copy for daily send limit
 - [ ] Add/remove linked repos (owner, admin)
 - [ ] Hide/disable buttons per permission table (owner / admin / member)
 
@@ -355,14 +359,22 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 ### 10. Accept invite `[Required]` · `/invite/[code]`
 
-> Basis: T-2 · Needs first: 09
+> Basis: T-2, POL-T-2, POL-N-1 · Needs first: 09
+> Thin landing (Discord-style join). No team detail preview and no dedicated status screens.
+>
+> **Two entry paths**: (1) **External** — opening the shared `/invite/[code]` URL (Kakao, Discord, browser) always shows this page. (2) **In-app** — a logged-in developer who was invited sees a team-invite notification in 18; tapping it opens this same URL. Accept always happens here (or via the same accept API).
 
-- [ ] Team preview (org avatar, team name, member count, inviter)
-- [ ] Accept → add as team member + join team chat → go to team issues (11)
-- [ ] If not logged in: login → onboarding → back to this page (`returnTo`)
-- [ ] Status screens: expired/revoked link, already a member, team at member limit, over 10 teams
-- [ ] After accepting: "GitHub 조직 초대를 수락해야 이슈 담당자가 될 수 있어요" (accept the GitHub org invite to become assignable)
-- [ ] `generateMetadata` ("OO 팀 초대" (Invite to team OO), team description, org avatar), `noindex` (blueprint 8-3)
+**Screen (guest and logged-in share the same layout)**
+
+- [ ] Linker logo
+- [ ] Primary: "팀에 합류하기" — logged-in developer: accept → add as team member + join team chat → team issues (11). Guest: start GitHub login with `returnTo` this invite URL (same destination as the button below)
+- [ ] Secondary: "GitHub로 빠르게 시작하기" — GitHub login with `returnTo` this invite URL; after login/onboarding return here so they can join
+- [ ] Recruiter: keep showing the landing; accept/GitHub start blocked with "개발자 계정만 팀에 참여할 수 있어요"
+
+**Errors & metadata**
+
+- [ ] Expired/revoked link, already a member, team at member limit, over 10 teams → toast or one-line error from accept API codes (no separate status pages). Already a member may go straight to 11
+- [ ] Static metadata title "팀 초대", root default OG, `noindex` (not content-based OG; blueprint 8-3)
 
 ---
 
@@ -375,16 +387,17 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: I-2, I-3, T-7, S-9, POL-I sync · Needs first: 08 · Skeleton of the issue screens and where GitHub sync is validated
 
 - [ ] Team layout and tabs
-- [ ] Issue row: repo, number, title, status, assignee avatars, due date, labels, overdue in red
-- [ ] (sheet) Filters: repo, status, assignee, label, open/closed. Filters stored in URL (nuqs) → reused in 14, 15
-- [ ] "일정 없음" (no schedule) tab: issues not on the board or without a due date + "프로젝트에 추가" (add to project)
+- [ ] Issue row: repo, number, title, status (+ shared `statusColor` from board mapping, with the name), assignee avatars, due date, labels, overdue in red
+- [ ] Header right icon opens **team change** sheet only (same as team name). Issue filter sheet removed from 11/14/15 (QA; c-role-audit #3). Board keeps its own「상태 필터」menu
+- [ ] Title search box (11 only, POL-I-6), stored in URL as `q`; status chips 전체 / 작업 전 / 진행 / 정지 / 완료 with counts (Figma 11)
+- [ ] "일정 없음": **no chip/tab on 11** (intentional shrink). Enter via 15 `?` → `?view=unscheduled` list + "프로젝트에 추가" when writable
 - [ ] Pull to refresh (that screen's issues only, once per minute)
-- [ ] "이슈 작성" (create issue) button (hidden for read-only teams / no write permission)
+- [ ] "이슈 작성" (create issue) button (hidden for read-only / archived / no write permission; c-role-audit #7)
 - [ ] Server: issue cache table, first full sync with installation token
 - [ ] Server: refresh cache from `issues` and `projects_v2_item` webhooks; full sync every 15 min for active teams, otherwise daily
 - [ ] Server: if the same value changes concurrently, the later arrival wins
 - [ ] Server: daily 00:00 KST per-team progress snapshot (counts of the 4 status columns, all teams), delete rows older than 1 year. Start collecting before the progress graph exists
-- [ ] `[Included]` Progress card (Flex, after 28): top of the issue list. Completion ring + "12개 중 7개 완료, 58%", bars for the 4 status columns (column names written out), last 14 days trend, open issues per assignee (no ranking), overdue and due-within-3-days counts (tap to filter). Each chart has a summary sentence + "표로 보기" (blueprint ch. 6). Free teams see a Flex prompt in the card's place (owner/billing manager: "Flex 알아보기", members: "오너에게 요청")
+- [ ] Progress (intentional shrink vs POL-T-7; c-role-audit #2): status cards 4 for all teams + Flex 14-day trend only. No completion ring / assignee bars / overdue taps / "표로 보기" button / Free「Flex 알아보기·오너에게 요청」prompt. Full POL-T-7 UI stays deferred, not restored
 
 ### 12. Issue detail `[Required]` · `/teams/[id]/issues/[issueId]`
 
@@ -395,7 +408,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] (sheet) Assignees: team members with access to that repo, max 10; members who haven't accepted the org invite are excluded
 - [ ] (sheet) Labels
 - [ ] (sheet) Start / due date: start ≤ due; past dates confirm once with "이미 지난 날짜예요"
-- [ ] (sheet) Change status: 작업 전 / 작업 중 / 작업 중단 / 작업 완료. Moving to Done closes the issue, moving back from Done reopens it; Blocked stays open with a "중단" mark
+- [ ] (sheet) Change status: 작업 전 / 작업 중 / 작업 중단 / 작업 완료 (option colors from board mapping when available). Moving to Done closes the issue, moving back from Done reopens it; Blocked stays open with a "중단" mark. Detail response includes `statusColor`
 - [ ] Without repo write permission, assignee/label/status buttons disabled + toast with reason on tap
 - [ ] Server: after saving, verify from GitHub's response that the assignee was actually set
 - [ ] Server: assignment → create notification
@@ -429,24 +442,25 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: I-4 · Needs first: 12
 
-- [ ] 4 columns (작업 전 / 작업 중 / 작업 중단 / 작업 완료) + an "기타" (other) column for unmapped values
+- [ ] 4 columns (작업 전 / 작업 중 / 작업 중단 / 작업 완료) + an "기타" (other) column for unmapped values; column/card status color from shared `statusColor` (board mapping, POL-I-3), with the status name
 - [ ] Card: title, assignees, due date, labels, "중단" mark, overdue in red
 - [ ] Drag to change status (dnd-kit; long-press drag on mobile) + card menu "상태 바꾸기" (12's sheet)
 - [ ] Move first; if writing to GitHub fails, move back to the original column and notify
 - [ ] No drag without write permission
-- [ ] Horizontal scroll of columns on mobile; reuse 11's filters
+- [ ] Columns pan horizontally on mobile; **hide the visible X scrollbar** (QA; `c-page14-board-no-horizontal-scroll`). Header = team change (not issue filter sheet). Board「상태 필터」menu kept
 
 ### 15. Calendar `[Required]` · `/teams/[id]/calendar`
 
 > Basis: I-4, N-1 (due reminders) · Needs first: 12
+> Intentional shrink (`c-page15-calendar-screen`, c-role-audit): month only; bars for due-only too; no overdue red UI; header = team change
 
-- [ ] Month/week toggle, KST
-- [ ] Period bar from start to due date; dot if only a due date
-- [ ] Assignee filter, overdue in red
+- [ ] Month view, KST (week toggle deferred; `view=week` ignored)
+- [ ] Period/due bars (due-only as bars, not dots)
+- [ ] Status chips + `?` popover → unscheduled list on 11; header team-change icon
 - [ ] Tapping a date opens a sheet listing that day's issues → 12
-- [ ] Issues without a due date don't appear (point to 11's "일정 없음" tab)
+- [ ] Issues without a due date don't appear (point via `?` to 11 `?view=unscheduled`)
 - [ ] No drag-to-reschedule (phase 2 I-7)
-- [ ] Server: notify assignees at 9 AM one day before due (scheduler)
+- [ ] Server: notify assignees at 9 AM one day before due (scheduler; needs `ISSUE_SYNC_ENABLED=true` in staging/prod)
 - [ ] Fill 07's "My issues" section now
 
 ---
@@ -457,10 +471,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: C-1, C-4 · Needs first: 08 (team chat room data) · Merged: message requests → third tab
 
+- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with no time and no row button (the red "삭제" circle was dropped in the latest design, user 2026-11-10; delete a request from the row menu). Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
 - [ ] Tabs: 팀 (team) / 개인 (1:1) / 요청 (requests, with count)
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge
 - [ ] Requests tab: accept / delete; disappears after 30 days
+- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API). After a touch long press opens the sheet, the browser's own long-press menu (which lands on the sheet) is cancelled until shortly after the finger lifts; same for 17's message menu
 - [ ] `[Included]` Recruiting offer requests show a "채용 제안" label + company name (after 31). Recruiters see their sent offers as "대기 중" (pending) in the 1:1 tab
 - [ ] Rooms with blocked people hidden; after unblocking, messages from blocked periods stay invisible. Use retained `user_blocks` intervals for DM history, catch-up, previews and unread counts; team chat is exempt (Policy ch. 9, ERD ch. 4-8)
 - [ ] Empty-state copy
@@ -475,11 +491,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] STOMP connection; on disconnect auto-reconnect and load missed messages; over 500 → "안 읽은 메시지 500개+" and jump to last read position
 - [ ] Virtualized message list (TanStack Virtual), infinite load upward, date dividers
 - [ ] Sending = dimmed; on failure resend/delete buttons; auto-retry 3 times; over 5/sec → send delayed
-- [ ] Text 2,000 chars, photo attachments (10 at once, 10MB each) + full-screen photo viewer
+- [ ] With a mouse/keyboard (not `pointer: coarse`), Enter sends and Shift+Enter adds a line break; the Enter that ends a Korean IME composition never sends, and with mention suggestions open Enter picks the first one. Touch keyboards have no Shift+Enter, so there the return key keeps adding a line break and the send button sends (user request 2026-11-10)
+- [ ] Text 2,000 chars, photos (5 at once, 10MB each) + full-screen photo viewer. The photo button opens the system picker; picked photos fill the "사진 업로드 N장" panel above the composer (100px tiles, × per photo, retry on failure, × in the header drops them all) and the photo button becomes "+" to add more. While photos are picked the input is locked with the placeholder "사진 업로드시 채팅을 칠 수 없습니다" (the typed text comes back afterwards); send, enabled once every photo has uploaded, sends each photo as its own message. Photos in messages keep their shape within 220 × 220px, without a bubble around a photo-only message (user request 2026-11-10).
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
-- [ ] (sheet) Room info: members, mute, leave (1:1), `[Included]` photo gallery
+- [ ] Room info (full screen from the header ☰, Figma 351:580): "멤버 N명" (+ "초대하기" → 09 invite section, team owner/admin only) over the team card (photo, name, "PR 보러 가기" → PR list; user reference 2026-11-10), members with team role (오너/관리자/멤버, owner first), mute as the header bell icon, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
 - [ ] Server: rooms, participants (last read message), messages tables shared by team and 1:1
 - [ ] Server: STOMP auth, new message notifications (bundled per room)
 
@@ -491,22 +508,21 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
+- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
-**AI chat summary (Flex, after 28)** `[Included]`
+**AI chat summary (Flex, after 28)** — current shrink + `[Included]` follow-ups (c-role-audit #8, `c-page17-ai-chat-summary`)
 
-- [ ] "AI 요약" button at the top of team chat rooms; range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후). Fewer than 20 messages → "직접 읽는 게 더 빨라요"; over 500 → summarize the latest 500 and say so
-- [ ] Free teams: tap → (sheet) "Flex 구독 팀만 쓸 수 있어요". Owner/billing manager get "Flex 알아보기" (7-day free trial if not used yet) → 28; members get "오너에게 Flex를 요청해 보세요"
-- [ ] (sheet) Summary result: one-line summary, decisions, to-dos, open questions; tap an item to scroll to the original message; "AI가 만든 요약이라 틀릴 수 있어요"; remaining N/10
-- [ ] "채팅에 공유" → minutes card message; "이슈 만들기" per to-do → 13 with title/body pre-filled
-- [ ] Over 30 seconds → "요약하는 중이에요" + notify when done; on failure "요약하지 못했어요"
-- [ ] While a team has AI summary on, top banner "이 팀은 AI 요약을 사용해요" (first 7 days)
-- [ ] Server: messages in range (excluding deleted, hidden, images, blocked users; max 500) → `LlmClient` (default Ollama, JSON response) → keep result 7 days, 10/day per person (Redis), Flex check via `PlanLimits`
+- [ ] **Now:** "AI 요약" → always latest 500 messages (no range picker UI). Result = one `summary` body + disclaimer + N/10. Free → PlanLimitSheet. Loading「요약하는 중이에요」/ fail「요약하지 못했어요」. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
+- [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); min-20「직접 읽는 게 더 빨라요」copy path if still required
+- [ ] `[Included]` follow-up: minutes sections (decisions / to-dos / open questions) + tap-to-scroll originals; "채팅에 공유"; per to-do "이슈 만들기" → 13
+- [ ] Over 30 seconds → loading + done toast (push notify type still open); Free Flex prompt copy as Policy when implementing full sheet
+- [ ] Server (now): latest ≤500 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) → `LlmClient` → 7-day retention, 10/day Redis, Flex via `PlanLimits`. Prompt isolation minimum in PR3 (c-role-audit #9)
 
 **1:1 chat only (with 22–24)**
 
 - [ ] Start rules: direct if mutual follow or same team; otherwise only 1 first message goes to requests
-- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees accept/delete at the top
+- [ ] Sender sees "상대가 수락하면 대화가 열려요"; recipient sees a bottom panel in place of the composer (Figma 350:123): "{name}님이 메시지 요청을 보냈어요" / "수락 버튼을 누르시면 대화하실 수 있습니다" + 수락 · 거절 (= delete) · 차단
 - [ ] Delete (reject) isn't disclosed, and blocks new requests from the same person for 30 days
 - [ ] Blocking hides the room from my list and the other's messages aren't delivered to me
 - [ ] `[Included]` First external link preview (OG; 1:1 only when mutual follow)
@@ -529,8 +545,9 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
-- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, sanctions
-- [ ] Tap → navigate to the screen + mark read; "모두 읽음" (mark all read)
+- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
+- [ ] Tabs: 전체 (all) / 읽지 않음 (unread, server `unread=true`; empty → "읽지 않은 알림이 없어요."), kept in the URL (nuqs). Rows grouped by day ("11월 5일" + "오늘" / "N일 전"); each row is a dot (unread dark, read muted) + the title only (Figma 248:1243)
+- [ ] Tap → navigate to the screen + mark read; "전체 읽기" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
 - [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning
@@ -559,7 +576,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (within 60 days from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
-- [ ] Choose a team to link (teams where I'm owner/admin; can write without a team)
+- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay
 - [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
 - [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification)
@@ -568,30 +585,30 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 ### 21. Recruit post detail (apply & manage applicants) `[Required]` · `/recruits/[id]`
 
-> Basis: R-3, R-4, P-7 · Needs first: 20, 08 (teams), 17 (team chat) · Merged: received application list + application detail → author-only tab and sheet
+> Basis: R-3, R-4, P-7 · Needs first: 20, 08 (teams), 17 (team chat) · Merged: received applications → author bottom CTA + applicants drawer
 
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [ ] (sheet) Apply: choose one role + message 300 chars, note that profile is attached automatically
+- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말")
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
-- [ ] Already a member of that team → "이미 함께하는 팀이에요"
+- [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
 - [ ] Server: application-received notification
 
 **What the author sees**
 
-- [ ] "지원자 N" (applicants N) tab: applicant cards per role, days left until 14-day auto-expiry
-- [ ] (sheet) Application: tech stack, graph, posts, completion record, message, "프로필 전체 보기" (full profile, 04)
-- [ ] Accept: add team member + join team chat + accept notification. If the author is the org owner, a "GitHub 조직 초대" button (not sent automatically)
-- [ ] Accept exceptions: no team → "팀 먼저 만들기" (create a team first) sheet (application stays pending); role full → "인원 늘리고 수락"; free team at member limit (6) → reason + Flex prompt
-- [ ] Reject: (sheet) optional reason; applicant only sees the fixed copy
-- [ ] Accept/reject still possible after closing; edit / close / delete menu
+- [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
+- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant
+- [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
+- [ ] Reject: row "거절" + (sheet) optional reason; applicant only sees the fixed copy
+- [ ] Invite/reject still possible after closing; edit / close / delete menu
 - [ ] `[Included]` Share button → 00 share sheet
 - [ ] `generateMetadata` (title, "remaining slots per role · closes D-n") + `opengraph-image.tsx` (title, remaining roles, D-n). Defaults if deleted or hidden
 - [ ] Server: auto-expire applications unhandled for 14 days + notify
-- [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after acceptance, remind applicant and owner
-- [ ] `[Included]` Server: if the team is deleted within 7 days after acceptance, flag for fake-recruitment review
+- [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after invite, remind applicant and owner
+- [ ] `[Included]` Server: if the team is deleted within 7 days after invite, flag for fake-recruitment review
 
 ---
 
@@ -626,7 +643,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
-- [ ] Comments with one level of replies (500 chars); author can edit/delete, post owner can delete only; deleting a comment with replies shows "삭제된 댓글입니다"
+- [ ] Flat comments only (500 chars, no replies); author can edit/delete, post owner can delete only
 - [ ] (sheet) Post more: edit/delete (own), report (others'). (sheet) Comment more works the same way
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)
@@ -640,24 +657,29 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: P-4, H-9 · Needs first: 23 (posts must exist to test)
 
-- [ ] Post card: cover photo (repo card if none), author (small badge if Seeking), one-line intro, like and comment counts, one-line "why shown"
+- [ ] "추천" / "팔로잉" tabs under the header (Figma 785:770, tab kept in URL `?tab=following`): same scroll behavior as 19 — leaving the top hides the header and pins the tabs to the top, back at the top both return. "추천": developers and operators get posts matching their tech stack or job categories first, then the rest at random; guests and recruiters get every post at random (POL-P-4). "팔로잉": posts by people I follow, newest first, no ads; guests see "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." + "로그인 하러 가기" (login prompt); empty list "팔로잉한 사용자가 없습니다."
+- [ ] Post card: cover photo (repo card if none), author with job status above the login for all three states (Figma 785:778: "구직 중" blue, "제안 받기" accent, "구직 안 함" gray, POL-H-4), one-line intro, like and comment counts, one-line "why shown" (screen readers only; matched "추천" posts only)
 - [ ] Infinite scroll + virtualization
 - [ ] Write button → 22
-- [ ] Empty feed: 5 developers recommended by my tech stack (with follow buttons) + popular posts
-- [ ] Guest feed: popular this week + latest only (no following, 2nd-degree or same-stack), write button shows login prompt, seen posts not recorded
-- [ ] Server: 1 recommendation per 4 following posts, only recommendations if following nobody, max 2 consecutive by the same author
-- [ ] Server: recommendation exclusions (already seen, own posts, blocked people, hidden posts)
+- [ ] Card comment icon → comment sheet (Figma 374:3944)
+- [ ] Card paper-plane icon → feed share drawer (Figma 780:584, POL-P-7 feed share drawer): centered card, max 600px tall (only the room list scrolls, scrollbar hidden); title "공유하기" + ×, room search (blue border on focus), one room list (photo + name, blue "팀" after team rooms, per-row "공유하기" sends the card), "링크 복사하기" at the bottom. Recruiters: 1:1 rooms only. Guests get the login prompt. Feed only; 23, 21, 04 keep the 00 share sheet
+- [ ] Empty "추천" (no visible posts at all): 5 developers recommended by my tech stack (with follow buttons)
+- [ ] Guest feed: "추천" in random order with no "why shown", write button shows login prompt, seen posts not recorded
+- [ ] Server "추천" for developers and operators: posts sharing a tag with my tech stack or whose author picked one of my job categories first (by popularity score), then the rest in random order; posts seen on an earlier visit last; max 2 consecutive by the same author
+- [ ] Server "추천" for guests and recruiters: every post in random order, fixed for one visit (cursor carries the visit start, so scrolling never repeats or skips; reshuffled on the next visit)
+- [ ] Server: exclusions (own posts, blocked people, hidden posts)
 - [ ] Server: popularity score (like 1, comment by others 2, decays with age, likes from accounts < 7 days old excluded)
-- [ ] "Why shown" copy (one, by priority): "OO님이 좋아해요" > "OO님과 아는 사이" > "React를 쓰는 사람들의 인기 글" > "이번 주 인기"
-- [ ] `[Included]` 2nd-degree (mutual follows of mutual follows) recommendations. If the schedule slips, pass 1 is "popular this week + same stack" only
-- [ ] `[Included]` Recruiter feed (after 31): no follows so recommendations only, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL)
+- [ ] "Why shown" copy (one, by priority): "React를 쓰는 사람들의 인기 글" > "프론트엔드 직군의 인기 글"
+- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); only the "추천" tab (no "팔로잉") and no follow chip on cards
 
 **Job ads (after the 04 job ad sheet)** `[Included]`
+
+> **User decision 2026-11-10:** Ops-side job-ad handling (25 filter `RECRUITER_AD` + job-ad report detail) is deferred further — Figma for admin ads is not out yet. Admin UI no longer exposes the job-ad target filter; keep feed/recruiter ad APIs as `[Included]` but treat **admin ads after the rest of the ad work**.
 
 - [ ] Ad card: "광고" (Ad) label at top, company, posting title, job category, closing date, "외부 공고 보기" (view external posting), X at top right, more (⋯). Different background from regular posts. Screen readers read "광고" first
 - [ ] Tapping the card → click API → returned URL opens via 00's external link sheet (confirm on first-time domain) → external browser
 - [ ] X close: collapse the card and toast "광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기" (undo cancels the close)
-- [ ] More → (sheet) "이 광고 숨기기" (hide this ad, never shown again, toast "이 광고는 다시 보이지 않아요."), "신고" (00 report sheet, target type job ad)
+- [ ] More → (sheet) "이 광고 숨기기" (hide this ad, never shown again, toast "이 광고는 다시 보이지 않아요."), "신고" (00 report sheet, target type job ad; **admin processing of that report is deferred — see 25**)
 - [ ] No ad slot at all for guests, recruiters, and developers with empty job categories
 - [ ] Server: mix ad items into the feed response (1 per 10 posts, not on the first screen, 3 per person per day and same ad once per day via Redis counters). Eligible = job category matches, showing, not closed within 7 days, not hidden, no block relation. Rotate among multiple matches
 - [ ] Server: collect impressions/clicks in Redis, write `ad_daily_stats` once a day (who saw it is not stored)
@@ -674,8 +696,8 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 - [ ] Entry: only Linker accounts with operator permission; logged out after 30 min of inactivity. `/admin` goes to this page
 - [ ] `[Included]` OTP 2FA on every entry. If the schedule slips, permission check only and OTP right after launch
-- [ ] List filters: pending / handled / appealed; target type (user, post, comment, recruit post, team chat, 1:1 chat, job ad); grouping by target; flag items past the handling target (2 business days)
-- [ ] `[Included]` Job ad report detail: company, posting title, job category, closing date, posting URL (tap → external confirm), advertising recruiter → 26. Action = hide the ad (notify the recruiter with the reason)
+- [ ] List filters: pending / handled / appealed; target type (user, post, comment, recruit post, team chat, 1:1 chat); grouping by target; flag items past the handling target (2 business days). **`job ad` / `RECRUITER_AD` filter deferred** (user decision 2026-11-10 — no admin ad design yet; see 24 Job ads note)
+- [ ] `[Included]` `[deferred after ads]` Job ad report detail: company, posting title, job category, closing date, posting URL (tap → external confirm), advertising recruiter → 26. Action = hide the ad (notify the recruiter with the reason). **Out of admin UI until the ad design ships** (user decision 2026-11-10)
 - [ ] Detail panel: report reasons, reported content; chat reports show only the 10 messages before/after copied at report time
 - [ ] Actions: hide, delete (reason required), dismiss, restore handled content, "이 사용자 제재하기" (sanction this user) → 26
 - [ ] Notify the author with the reason; notify reporters of the result only
@@ -712,7 +734,8 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 > Basis: S-1, S-3, S-7, H-5 · Needs first: screens with benefits (04, 09, 17, 20, 22) · Merged: plan comparison + web checkout + payment complete → one page and two return URLs
 
-- [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Flex is monthly only
+- [ ] Plan comparison: Free / Pro / Flex (prices and benefits in PRD ch. 6, Policy ch. 11). Recruiters see only Scout (no free trial, monthly only). Yearly = 12 months 10% off for Pro and Flex (Pro ₩31,320; Flex ₩85,320 up to 6, ₩20,520 per member from the 7th); the toggle reads "연간 결제 10% 할인" (Figma) and yearly cards show the discounted yearly price (user decision 2026-11-10)
+- [ ] Figma 28 (288:471 developer, 293:218 recruiter): title "Linker를 구독하고 / 더 좋은 서비스를 경험해 보세요" + subtitle, "월간 결제 / 연간 결제" toggle, plan cards (name, one-line pitch, price + "월간 청구"/"연간 청구", "{plan} 플랜 구독하기", checked benefits), terms/privacy links, blue note "계정 당 Pro, Flex의 무료 체험은 1회만 제공 됩니다". No card for the free plan; Flex picks its team in a "결제할 팀 선택" sheet opened by its button (user decisions 2026-11-09). **The trial note is Figma copy shown by user decision, but the free trial is `[Included]` and not implemented yet**, so no account actually gets a trial. Recruiters see the Scout card (Figma 293:218) display-only, without the toggle: the button reads "Scout 플랜 준비 중" (disabled) with "결제는 곧 열릴 예정이에요." because the server's recruiter checkout is still `[Included]` (user decision 2026-11-10)
 - [ ] Server: plans API includes personal trial eligibility. Return `Cache-Control: private, no-store`; frontend uses server `no-store` and account-scoped TanStack queries, with no shared Next cache
 - [ ] Monthly/annual toggle; show the entry reason (`?reason=photo-limit` etc. when coming from a limit prompt sheet)
 - [ ] Flex requires choosing a team (where I'm owner or billing manager) + price from current headcount (₩7,900 up to 6, ₩1,900 per member from the 7th), "인원이 바뀌면 다음 결제일부터 반영돼요" (headcount changes apply from the next billing date)
@@ -727,12 +750,13 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 > Basis: S-2 · Needs first: 28 · Needed for the MVP launch demo "test payment → benefits → cancel → back to free"
 
+- [ ] Figma 29 (294:306 Pro, 295:459 Flex, 364:1694 cancel modal): grey "현재 사용 중인 요금제" card ("{plan} 요금제", description, "요금제 변경하기" → 28), info box ("다음 결제일" — "이용 만료일"/"혜택 종료일" until auto-renewal exists, "현재 결제 주기", "월 결제 금액 2,900(Pro)", Flex adds "팀 인원 N명", "결제 담당자", "결제 담당자 변경", then "요금제 해지 ›"), "결제 내역" with "전체 보기" (3 rows first; date, "{plan} 월간 결제", "N 원 결제/환불"). Several subscriptions repeat card + info box; no subscription shows a "무료 요금제" card. Refund is a small "환불" button on refundable payment rows, confirmed in the same modal style (user decisions 2026-11-09). **"결제 담당자 변경" is shown but `[Included]` and not built: it toasts "미구현 기능입니다."** Server: subscription items add `amount` (current period price) and `payerName` (Flex billing manager).
 - [ ] Current plan, next billing date (or expiry), payment history
 - [ ] Cancel (confirm sheet): benefits kept until the paid period ends
-- [ ] Refund: within 7 days of payment + benefits unused → full refund via Toss Payments cancel
+- [ ] Refund: within 7 days of payment + benefits unused (its paid period has not started; latest payment only) → full refund via Toss Payments cancel
 - [ ] Server: on expiry switch to free. Existing photos/pinned posts/recruit posts stay; free limits apply from new writes/edits; team keeps existing members and only blocks new ones. When Scout ends, the job ad becomes "ended" (content kept) and the offer limit is 10
-- [ ] Server: Flex 30-day grace after it ends. Notify the team 7 days before Flex ends and 7 days before grace ends; when grace ends, hide messages older than 60 days (not deleted) and queue image originals older than 90 days for deletion
-- [ ] Server: on the Flex billing date compute the amount from that day's headcount (`subscriptions.seats`), notify "next payment: N members, amount" the day before
+- [ ] Server: Flex 30-day grace after it ends. Notify the team 7 days before Flex ends and 7 days before grace ends; when grace ends, hide messages older than 60 days (not deleted) and queue image originals older than 90 days for deletion. Pass 1 records `grace_ends_at` on expiry only; notices and hiding come with 17's `[Included]` full chat history (every team sees 60 days until then)
+- [ ] Server: on the Flex billing date compute the amount from that day's headcount (`subscriptions.seats`), notify "next payment: N members, amount" the day before. Needs a billing date, so it comes with `[Included]` auto-renewal (28); until then each payment uses the checkout headcount
 - [ ] `[Included]` Payment-failure banner and 7-day grace
 - [ ] `[Included]` Hand over Flex billing manager
 
@@ -751,7 +775,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 ## 10. Recruiting (minimal)
 
-Recruiters get only three new pages: sign-up (31), login (32) and the sent offers list (33). After entering, they share feed (24), posts (23), profiles (04) and chat (16, 17) with developers; only the buttons on screen change. All three are `[Included]`, so they're deferred first if the schedule slips; job-seeking status (02, 04, 05) remains even then. Feed job ads (the `[Included]` items on 04, 05, 24, 25, 28, 29) are deferred before recruiting offers.
+Recruiters get only three new pages: sign-up (31), login (32) and the sent offers list (33). After entering, they share feed (24), posts (23), profiles (04) and chat (16, 17) with developers; only the buttons on screen change. All three are `[Included]`, so they're deferred first if the schedule slips; job-seeking status (02, 04, 05) remains even then. Feed job ads (the `[Included]` items on 04, 05, 24, 28, 29) are deferred before recruiting offers. **Within ads, admin job-ad handling on 25 is deferred further** (no Figma yet; user decision 2026-11-10).
 
 ### 31. Recruiter sign-up `[Included]` · `/recruiter/signup`
 
@@ -863,7 +887,7 @@ Screen-map MVP pages not kept as separate pages here, and where their features w
 | Account management, blocked users, delete account | Sections and sheets in 06 settings | Only a few items |
 | Appeal (user), usage restriction notice | 00 suspension banner + 18's appeal sheet | Viewing is allowed while suspended, so no reason to block the whole screen |
 | Unavailable content, error screen | 00 `not-found.tsx`, `error.tsx` | Framework default files |
-| My team list, my issues | 07 workspace home | One tab landing screen |
+| My team list, my issues (per selected team; default = most recently joined) | 07 workspace home | One tab landing screen |
 | Create team: start, install check, board link | 08 one stepper page | Consecutive wizard |
 | Team home | Removed; 11 issue list is the team's first screen | Summary info overlaps other tabs |
 | Team members, invite, linked repo management, team plan | Sections in 09 team settings | Management screens for owner/admin only |

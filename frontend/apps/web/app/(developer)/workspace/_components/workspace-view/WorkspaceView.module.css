@@ -1,0 +1,239 @@
+/* Figma 7 (123:1966). New values stay local; shared tokens and other pages are unchanged. */
+.workspace {
+  --workspace-row-height: 64px;
+  --workspace-avatar-size: 38px;
+  --workspace-fab-ink: #e7e7e7;
+  display: grid;
+  gap: var(--space-block);
+  min-width: 0;
+}
+.preview {
+  display: grid;
+  gap: var(--space-group);
+  min-width: 0;
+}
+.teamPicker,
+.issues {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.sectionTitle {
+  min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+}
+.selectedCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-row-block) var(--space-xs);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-xs);
+}
+.teamTrigger {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target-min);
+  text-align: start;
+}
+.teamContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.selectedAvatar,
+.avatar {
+  display: block;
+  flex-shrink: 0;
+  width: var(--workspace-avatar-size);
+  height: var(--workspace-avatar-size);
+  object-fit: cover;
+  background: var(--color-canvas-cool);
+  border-radius: var(--radius-xs);
+}
+.selectedAvatar {
+  width: var(--avatar-size-team);
+  height: var(--avatar-size-team);
+}
+.selectedSummary,
+.rowSummary {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-row-block);
+}
+.selectedName,
+.rowName {
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-black);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.selectedMeta {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-slate);
+}
+.entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+}
+.chevron {
+  --icon-box-size: var(--icon-size-team-entry);
+  --icon-stroke-width: 1.8;
+  color: var(--color-text-slate);
+}
+.issueHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.addIssue,
+.more {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-slate);
+}
+.addIssueIcon {
+  --icon-box-size: var(--icon-size-add);
+}
+.addIssue::after {
+  position: absolute;
+  inset: calc((var(--icon-size-add) - var(--touch-target-min)) / 2);
+  content: '';
+}
+.more {
+  gap: var(--space-icon-text-compact);
+  min-height: var(--control-height-compact);
+  margin-block-start: calc(var(--space-list-action) - var(--space-sm));
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  background: var(--color-canvas-cool);
+  border-radius: var(--radius-control-sm);
+}
+.more::after {
+  position: absolute;
+  inset: calc((var(--control-height-compact) - var(--touch-target-min)) / 2) 0;
+  content: '';
+}
+.moreIcon {
+  --icon-box-size: var(--icon-size-sm);
+  --icon-stroke-width: 1.5;
+}
+.teamList {
+  display: grid;
+  gap: var(--space-row-block);
+  min-width: 0;
+}
+.tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-inline: calc(-1 * var(--page-gutter));
+}
+
+/* Figma's OUTSIDE stroke does not add to the 48px tab layout. */
+.tabs::before {
+  position: absolute;
+  top: calc(-1 * var(--space-xs));
+  right: 0;
+  left: 0;
+  height: var(--space-xs);
+  background: var(--color-canvas-cool);
+  content: '';
+}
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-chip-block);
+  min-width: 0;
+  height: var(--tabs-row-height);
+  padding-inline: var(--space-xxs);
+  border-bottom: 1px solid var(--color-tab-divider);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
+}
+.tab[aria-pressed='true'] {
+  border-bottom: 2px solid var(--color-text-slate);
+  color: var(--color-text-slate);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: var(--workspace-row-height);
+  padding: var(--space-row-block) var(--space-icon-text-compact);
+}
+.row > .chevron {
+  margin-inline: calc((var(--touch-target-min) - var(--icon-size-team-entry)) / 2);
+}
+.rowSummary {
+  gap: var(--space-xxs);
+}
+.rowName {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
+}
+.rowMeta {
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+}
+.empty {
+  padding-block: var(--space-md);
+}
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+.fab {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: calc(
+    var(--tab-bar-height) + var(--space-list-action) - 2px + env(safe-area-inset-bottom)
+  );
+  z-index: var(--z-chrome);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--workspace-fab-ink);
+  background: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+.fab::after {
+  position: absolute;
+  inset: calc((var(--fab-size) - var(--touch-target-min)) / 2);
+  content: '';
+}
+.fab:disabled {
+  cursor: not-allowed;
+}

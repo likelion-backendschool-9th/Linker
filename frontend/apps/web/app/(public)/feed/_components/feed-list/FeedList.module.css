@@ -1,0 +1,223 @@
+/* Cancel PageFrame main top padding so the tabs sit right under the header */
+.feed {
+  margin-top: calc(-1 * var(--space-md));
+}
+
+/*
+ * Tab chrome latch — same rules as 19 (`useTabChromeCollapse`, `tab-chrome-collapsed` on <html>):
+ * - At scrollY === 0 the tabs sit in normal flow under the header.
+ * - As soon as scroll leaves the top, the header hides and the tabs pin to the viewport top
+ *   (`position: fixed`), easing up from their pre-pin Y (`--tab-chrome-pin-from`).
+ * `.chromeSlot` keeps the in-flow height so the list doesn't jump under the fixed tabs, and runs
+ * edge to edge past the main gutter (Figma 785:1211 is the full 375 width).
+ */
+.chromeSlot {
+  margin-inline: calc(-1 * var(--page-gutter));
+  background-color: var(--color-canvas);
+}
+
+:global(html.tab-chrome-collapsed) .chromeSlot {
+  height: calc(env(safe-area-inset-top) + var(--control-height-feed-tab));
+}
+
+.chromeSticky {
+  position: relative;
+  z-index: var(--z-chrome);
+  background-color: var(--color-canvas);
+}
+
+:global(html.tab-chrome-collapsed) .chromeSticky {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-chrome);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding-top: env(safe-area-inset-top);
+  animation: tab-chrome-pin var(--duration-chrome-collapse) var(--ease-standard) forwards;
+}
+
+@keyframes tab-chrome-pin {
+  from {
+    transform: translateY(var(--tab-chrome-pin-from, 0px));
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Tabs to the first card: 25 (Figma 785:1211 → 785:772) */
+.panel {
+  padding-top: var(--space-feed-top);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-md);
+}
+
+/* Toggle with a switch track; on = filled thumb on the right, and aria-pressed for screen readers */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  border-radius: var(--radius-full);
+}
+
+.switch {
+  position: relative;
+  width: calc(var(--icon-size) * 2);
+  height: var(--icon-size);
+  background-color: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-overlay) var(--ease-standard);
+}
+
+.switch::after {
+  position: absolute;
+  top: 50%;
+  left: var(--space-xxs);
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  content: '';
+  background-color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  transform: translateY(-50%);
+  transition: transform var(--duration-overlay) var(--ease-standard);
+}
+
+.toggle[aria-pressed='true'] .switch {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.toggle[aria-pressed='true'] .switch::after {
+  background-color: var(--color-on-primary);
+  transform: translate(calc(var(--icon-size) - var(--space-xxs)), -50%);
+}
+
+/* Virtual list: rows are absolutely placed; the gap between rows is each row's bottom padding */
+.list {
+  position: relative;
+  margin-bottom: var(--space-md);
+}
+
+.row {
+  position: absolute;
+  top: 0;
+  /* Space between stacked cards (Figma 92:249 → 92:251) */
+  padding-bottom: var(--space-feed-card);
+}
+
+/* Write FAB — Figma 92:289: 40 circle 16 from the right, 20 above the GNB pill;
+   #2e2e2e fill, #383838 rule, faint glow; 22 pen in #e7e7e7 at stroke 1.5 */
+.fabLayer {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-bar-pill-top) + var(--space-feed-fab) + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: var(--z-chrome);
+  display: flex;
+  justify-content: flex-end;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  pointer-events: none;
+}
+
+.fab {
+  display: flex;
+  pointer-events: auto;
+  border-radius: var(--radius-full);
+}
+
+.fabVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  background-color: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.fabIcon {
+  --icon-box-size: var(--icon-size-feed-fab);
+  --icon-stroke-width: 1.5;
+  color: var(--color-fab-icon);
+}
+
+/* Empty feed: recommended developers */
+.recommended {
+  display: grid;
+  gap: var(--space-sm);
+  max-width: var(--form-max-width);
+  margin-inline: auto;
+}
+
+.recommendedTitle {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  color: var(--color-text-heading);
+}
+
+.people {
+  display: grid;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.personLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: var(--touch-target-min);
+}
+
+.personAvatar {
+  flex-shrink: 0;
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.personText {
+  display: grid;
+  min-width: 0;
+}
+
+.personName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title);
+}
+
+.personStack {
+  overflow: hidden;
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

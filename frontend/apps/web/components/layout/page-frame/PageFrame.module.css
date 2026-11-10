@@ -1,0 +1,18 @@
+/* Width comes from the ancestor .app column (shell.module.css), not from here */
+.main {
+  padding: var(--space-md) var(--page-gutter) calc(var(--space-xxl) + env(safe-area-inset-bottom));
+  outline: none;
+}
+
+/* Room for the fixed bottom tab bar */
+.withTabs {
+  padding-bottom: calc(var(--tab-bar-height) + var(--space-xxl) + env(safe-area-inset-bottom));
+}
+
+.title {
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-page-title);
+  color: var(--color-text-heading);
+}

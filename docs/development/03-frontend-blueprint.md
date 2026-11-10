@@ -1,7 +1,7 @@
 # Linker Frontend Blueprint
 
 > **What structure and rules do AI (and humans) follow when writing Linker frontend code?**
-> Sources of truth: pages and paths → [07 Page TODO](../planning/07-page-todo.md), APIs and controllers → [02 WBS](02-wbs.md), access and numbers → [04 Policy](../planning/04-policy.md). This document turns them into folder, component and code rules; **if it disagrees with a source, the source wins.** Look and feel → [04 Design Guide](04-design-guide.md); token values → `frontend/apps/web/src/styles/tokens/`.
+> Sources of truth: pages and paths → [07 Page TODO](../planning/07-page-todo.md), APIs and controllers → [02 WBS](02-wbs.md), access and numbers → [04 Policy](../planning/04-policy.md). This document turns them into folder, component and code rules; **if it disagrees with a source, the source wins.** Look and feel → [04 Design Guide](04-design-guide.md); token values → `frontend/apps/web/styles/tokens/`.
 >
 > `MUST` / `NEVER` are followed without exception; `RECOMMENDED` needs judgment. Work in 07 page order (00 → 01 → … → 33); no page work before §1-1 is done. For a page: ① ch. 13 row → ② 07 checklist with the same number → ③ finish with ch. 14.
 >
@@ -32,9 +32,9 @@
 8. Per page: 1 `header`, 1 `main`, 1 main-menu `nav`, exactly one `h1` (ch. 6).
 9. Actions are `<button>`, navigation is `<Link>`. `div onClick` NEVER.
 10. Numbers (character counts, limits, plan values) come from `src/lib/policy.ts` (values from 04 Policy), never hard-coded.
-11. Mobile first: base styles at 360px, widen with `@media (min-width: 600px | 1024px)` (tablet, desktop).
+11. App UI is a **mobile column**: implement 360–600px. Below 600px = full width of the viewport column; at/above 600px = `max-width: var(--content-max-width)` (**600px**), centered. **NEVER** add tablet/desktop app layouts that are not in Figma. Admin (25–27) is a separate, desktop-only tool with its own shell — it has no mobile layout and sits outside this rule entirely.
 12. APIs only through orval hooks/functions. Direct `fetch('/api/v1/...')` NEVER outside `src/lib/api/`.
-13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + Design Guide first. No CSS-in-JS, no utility-class framework.
+13. Styles are CSS Modules reading `var(--token)`. NEVER raw hex, font size, spacing or radius; add new values to tokens + Design Guide first. No CSS-in-JS, no utility-class framework. **Visual authority:** page Figma → tokens → Design Guide. Mobbin is retired as an authority (Design Guide ch. 6).
 
 ### 1-1. Foundation built before pages (the most important work)
 Every page depends on this; build it D1–D2 in order. Checkboxes: [07 TODO 00](../planning/07-page-todo.md); owners/dates: [02 WBS ch. 3](02-wbs.md).
@@ -87,7 +87,7 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 - Local Docker screen development: `docker compose -f compose.yml -f compose.dev.yml up --build --watch` from the repository root runs Next.js in development mode and syncs web/shared-package sources. Nginx forwards the Next.js HMR connection separately from Spring STOMP. The default Compose command still builds and runs the production bundle; see [Docker 가이드](../operations/02-docker.md) for mode switching and dependency/environment changes.
 
 ### 2-1. orval (`packages/api`)
-- Generated from springdoc `/v3/api-docs`. Controller `@Tag` = page (WBS §1-3 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
+- Generated from springdoc `/v3/api-docs`. Preserve each endpoint’s original page `@Tag` at method level when system controllers combine pages (WBS §2 rule 6) → `mode: 'tags-split'`, one file per page (e.g. `generated/p11-issue-list/p11-issue-list.ts`).
 - Output: react-query hooks + query options, MSW mocks, zod schemas. Never hand-edited.
 - One mutator: `apps/web/src/lib/api/api-fetch.ts` (§5-4). `pnpm --filter @linker/api generate` runs before Turborepo `build`.
 
@@ -95,10 +95,22 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 ### 3-1. Principles
 - Used by one page → that page's private folders (`_components`, `_hooks`, `_lib`, `_views`; `_` never becomes a URL).
 - Used by 2+ pages → nearest common ancestor (e.g. `(developer)/posts/_components/post-editor/`, `teams/[id]/_components/issue-sheets/`).
-- Used across role groups → `src/features/<domain>/`.
-- `src/components/` = domain-free only (`ui/`, `layout/`, `overlay/`).
+- Used across role groups → `features/<domain>/` (under `apps/web/`, not under `src/`).
+- `components/` = domain-free only (`ui/`, `layout/`, `overlay/`).
 - Tests next to the target (`*.test.tsx`); per-screen MSW overrides in `_lib/handlers.ts`.
-- kebab-case file names, PascalCase exported component, one exported component per file.
+- **Route files** (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, …) and **route segment folders** stay kebab-case / Next conventions.
+- **All other components** use PascalCase filenames (`AdminUserActionSheet.tsx`). Exported symbol matches the file.
+- **`_components` unit folder** (one interactive unit = one folder):
+  ```
+  _components/admin-user-action-sheet/
+    AdminUserActionSheet.tsx      # view only
+    AdminUserActionSheet.module.css
+    api.ts                        # fetch / orval / query helpers
+    hook.ts                       # events and behavior
+    index.ts                      # re-export the view (and types as needed)
+    AdminUserActionSheet.test.tsx # optional
+  ```
+  Folder name is kebab-case; the view file is PascalCase. Do not leave flat `foo-bar.tsx` directly under `_components/`.
 
 ### 3-2. Role groups
 | Group | Pages | On entry |
@@ -113,33 +125,32 @@ Frontend work is due before Spring is ready (target 2 Nov), so pages are built a
 Operators = developer + operator permission: they use `(developer)`, `(member)`, `(public)` like developers, plus `(admin)`.
 
 ### 3-3. Tree (`apps/web`)
-Page paths per group are in ch. 13. Beyond them:
+Page paths per group are in ch. 13. Beyond them. Source lives next to `package.json` (no `src/` wrapper):
 ```
-next.config.ts  public/
-src/proxy.ts    (with a src/ dir Next 16 requires it next to app/)
-src/app/        layout.tsx (<html lang="ko">)  providers.tsx ('use client': QueryClient, NuqsAdapter, LazyMotion, Toaster, NativeBridgeProvider)
+next.config.ts  public/  proxy.ts
+app/            layout.tsx (<html lang="ko">)  providers.tsx ('use client': QueryClient, NuqsAdapter, LazyMotion, Toaster, NativeBridgeProvider)
                 not-found.tsx ("삭제되었거나 볼 수 없는 콘텐츠예요")  error.tsx  global-error.tsx  robots.ts  manifest.ts
+  (public)/user/[login]/                       profile URL `/user/[login]` (was `/u/[login]`)
   (public)/_components/recruiter-ad-card/          shared by 24 feed and 04 job ad sheet
   (developer)/teams/[id]/layout.tsx                team name, switcher sheet, team menu nav, chat shortcut
   (developer)/teams/[id]/_components/issue-sheets/ made by 12, used by 13–15; _lib/issue-filters.ts (11 → 14, 15)
   (developer)/{recruits,posts}/_components/{recruit,post}-editor/   shared by 20 / 22 create and edit
   (admin)/admin/layout.tsx                         operator check + OTP gate + 30-min idle logout; page.tsx → /admin/reports
-src/components/ ui/  layout/  overlay/ (OverlaySheet, OverlayDialog)
-src/features/   auth  report  block  plan-limit  share (ShareButton, ShareSheet, ShareTargetPicker, ShareCard)
-                chart (Ring, StackedBar, Line, ChartFigure)  external-link  draft-restore (7-day draft)
+components/     ui/  layout/  overlay/ (OverlaySheet, OverlayDialog) — each unit is a kebab folder + PascalCase view
+features/       auth  report  block  plan-limit  share  chart  external-link  draft-restore
                 tech-tags  job-status  job-categories  image-upload  user  chat-request
-src/hooks/      useIsClient, useMediaQuery, useInfiniteScrollTrigger
-src/lib/        api/ (api-fetch, api-error, query-client)  auth/ (session, route-access)
-                navigation/ (use-overlay, overlay-keys, nav-depth, use-app-back)  bridge/  realtime/
-                seo/ (metadata, seo-flags)  format/ (time KST, number "1.2천", text counts)  browser/ (safe-storage)  policy.ts
-src/stores/     Zustand (no server data, no overlays)
-src/mocks/      core/ (define, viewer)  fixtures/  pages/pNN-*.ts  routes.ts  mock-fetch.ts  mock-realtime.ts — dev data, ch. 1-2
-src/features/mock/  MockRoleSwitcher (mock mode only)   public/mock/  placeholder images
-src/styles/     globals.css  tokens.css  tokens/{color,typography,layout}.css
+hooks/          useIsClient, useMediaQuery, useInfiniteScrollTrigger
+lib/            api/  auth/  navigation/  bridge/  realtime/  seo/  format/  browser/  policy.ts
+stores/         Zustand (no server data, no overlays)
+mocks/          core/  fixtures/  pages/pNN-*.ts  routes.ts  mock-fetch.ts  mock-realtime.ts — ch. 1-2
+features/mock/  MockRoleSwitcher (mock mode only)   public/mock/  placeholder images
+styles/         globals.css  tokens.css  tokens/{color,typography,layout}.css
+assets/         fonts
 ```
+Path alias `@/*` maps to `apps/web/*` (see `tsconfig.json`).
 
 ### 3-4. One page folder
-`page.tsx` (server: params, prefetch, `generateMetadata`, landmarks) · `loading.tsx` (same landmarks) · `_lib/get-*.ts` (React `cache()`) · `_views/` (only for per-role screens) · `_components/` (server frames + small client leaves, e.g. `comment-section.tsx` server → `comment-form.tsx` client) · `page.test.tsx`.
+`page.tsx` (server: params, prefetch, `generateMetadata`, landmarks) · `loading.tsx` (same landmarks) · `_lib/get-*.ts` (React `cache()`) · `_views/` (PascalCase view files for per-role screens) · `_components/<kebab-unit>/` (view + `api.ts` + `hook.ts` + module CSS) · `page.test.tsx`.
 
 ## 4. Role separation and access guards
 ### 4-1. Reading the role
@@ -168,13 +179,13 @@ Don't split the URL; `page.tsx` reads the session and picks a view. If only butt
 
 | Page | `_views/` | Picked by |
 | --- | --- | --- |
-| 04 `/u/[login]` | `developer-profile-view.tsx`, `recruiter-profile-view.tsx`, `recruiter-my-page-view.tsx` | Owner type × is it mine. Viewer role only changes buttons in `profile-actions.tsx` |
+| 04 `/user/[login]` | `developer-profile-view.tsx`, `recruiter-profile-view.tsx`, `recruiter-my-page-view.tsx` | Owner type × is it mine. Viewer role only changes buttons in `profile-actions.tsx` |
 | 06 `/settings` | `developer-settings-view.tsx`, `recruiter-settings-view.tsx` | My type (recruiter: no GitHub, Scout only, password change) |
 | 05 `/settings/profile` | `developer-profile-form.tsx`, `recruiter-profile-form.tsx` | My type (job categories developer-only) |
 | 28, 29 | none | Server returns only that type's plans (Pro·Flex / Scout) |
 | 16 `/chats` | none | Tab array per role (recruiters: personal only) |
 | 24 `/feed` | none | Only the top toggle ("제안 받는 개발자만") and write button differ by role; ad cards arrive only for logged-in developers, so no role branch: render `RecruiterAdCard` when `item.type === 'AD'` |
-| 10 `/invite/[code]` | none | Accept area only: guest → login prompt, recruiter → "개발자 계정만 팀에 참여할 수 있어요" |
+| 10 `/invite/[code]` | none | Slim landing (logo + "팀에 합류하기" + "GitHub로 빠르게 시작하기"); guest → GitHub login with `returnTo`, recruiter → "개발자 계정만 팀에 참여할 수 있어요" |
 
 ### 4-5. Guest actions: `useRequireLogin()`
 Every "login prompt" cell in POL-A-9 uses this hook: for guests it opens the login-prompt sheet and returns `false` (`onClick={() => requireLogin() && like.mutate(...)}`).
@@ -219,6 +230,63 @@ NEVER split only because a file is long (one region of one screen stays one file
 - Cacheable public data uses separate cookie-less server functions (ch. 9).
 - Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [Docker 가이드](../operations/02-docker.md).
 
+### 5-5. Toasts: which response gets which kind
+`toast(message, { tone, key?, placement?, action? })` from `stores/toast-store.ts`, rendered by `<Toaster>` (Figma 877:415), white, under the header by default (`placement: 'bottom'` puts it above the bottom tab bar). Four kinds:
+
+| Kind (`tone`) | Look | Time | Screen reader |
+| --- | --- | --- | --- |
+| `success` (default) | blue dot | 3 s | polite (Radix `type="background"`) |
+| `error` | red dot | 5 s | assertive (Radix `type="foreground"`) |
+| `info` | no dot | 3 s | polite |
+| `persistent` | orange dot | until `dismissToast(key)` | polite |
+
+A toast with an `action` (되돌리기, 채팅방으로 가기) has no dot, shows the action label in blue after the message, runs the action on a tap anywhere on the toast, and stays 6 s. A new toast with the same `key` replaces the one already up.
+
+| Response | Toast | Notes |
+| --- | --- | --- |
+| 200 / 201 / 204 on a user action (POST, PATCH, PUT, DELETE) | `success` — "~했어요." (Policy ch. 12 copy first) | Skip it when the screen already shows the result (optimistic like, follow toggle) |
+| 202 Accepted, or a request still running after the loading timeout | `persistent` — e.g. "처리 중 입니다. 잠시만 기다려 주세요.", "요약하는 중이에요" | Always give it a `key`; on settle `dismissToast(key)` and show `success` or `error` with the same key |
+| No response: offline (`navigator.onLine === false`) or the request never reached the server | `persistent` — "인터넷 연결이 끊겼어요. 연결되면 자동으로 다시 불러올게요." | Dismiss on the `online` event |
+| 400 `VALIDATION_ERROR`, `TOO_LONG`, `CODE_MISMATCH`, `TOKEN_INVALID` | `error` — server `message` | Forms show it on the field first (`aria-invalid`); toast only when there is no field to mark |
+| 401 `LOGIN_REQUIRED` | none | Login prompt sheet (§4-5) |
+| 403 `FORBIDDEN`, `TEAM_ROLE_REQUIRED`, `SCOUT_REQUIRED` | `error` — server `message` | |
+| 403 `DEVELOPER_ONLY` | `error` | Also logged (Sentry later): the button shouldn't exist (§4-5) |
+| 403 `SUSPENDED` | none | Suspension banner |
+| `PLAN_LIMIT` | none | Limit sheet → `/subscribe?reason=` |
+| 404 `NOT_FOUND` on an action | `error` — server `message` | A missing page shows `not-found` instead of a toast |
+| 409 `ALREADY_APPLIED`, `ALREADY_APPEALED`, `NOT_PENDING` (already in that state) | `info` — e.g. "이미 이의 제기를 접수했어요" | Nothing failed; the state is already what the user wanted |
+| 409 `STATE_CONFLICT`, `CONFLICT`, `ROLE_LOCKED`, `PAYMENT_PROCESSING` and other conflicts | `error` — server `message` | |
+| 410 `TOKEN_EXPIRED` | `error` — server `message` | |
+| 429 `RATE_LIMITED` | `error` — "잠시 후 다시 시도해 주세요 (N초 후)" | `handle-api-error.ts` |
+| 500, 502 (`PAYMENT_GATEWAY_ERROR`), 503 (`SERVICE_UNAVAILABLE`, `STORAGE_UNAVAILABLE`, `PAYMENT_UNAVAILABLE`) | `error` — server `message`, else "잠시 후 다시 시도해 주세요" | |
+| 503 `GITHUB_UNAVAILABLE` | none | GitHub banner |
+| A failed read (GET) that fills the screen | none | Inline `ErrorState` with retry, not a toast |
+| Client-side notice with no request (cooldown left, 미구현 기능) | `info` | |
+| Client-side failure with no request (clipboard denied) | `error` | |
+| No response within the time limit (`RequestTimeoutError`) | `error` — "네트워크 연결 시간이 초과되었습니다." (one toast, key `request-timeout`) | Mutations always. A query that times out while a loading orb is on screen (`PageLoading`, `Skeleton`) turns that loading into the timeout screen (Figma 301:326) instead; any other query (background refetch, side query with no loader) gets the toast. App-chrome queries (badge counts) pass `meta: { background: true }` and stay silent |
+
+#### Timeouts
+- Every request goes through `apiFetch` → `fetchWithTimeout` (`lib/api/fetch-with-timeout.ts`): an `AbortController` aborts it after `NETWORK.requestTimeoutMs` (10 s, `lib/policy.ts`) and it rejects with `RequestTimeoutError` (`name: 'TimeoutError'`). A slower endpoint passes its own limit: `apiFetch(url, { timeoutMs: 30_000 })`.
+- Identify it with `isTimeoutError(error)`, never `error.name === 'AbortError'`: TanStack Query aborts requests it no longer needs (unmount, key change) with an `AbortError`, and that must stay silent. The caller's own `signal` still cancels the request.
+- No automatic retry on a timeout (`retryOnce` in `query-client.ts`): a second 10 s wait is worse than going back. 5xx still gets one retry; 4xx none. Mutations never retry.
+- Loading UI (`components/ui/page-loading`): every route `loading.tsx` renders `PageLoading` (Figma 301:294: white full screen, thinking-orbs "working" 64px in the middle, no header); `Skeleton` shows the same orb centered in its section. While any orb is mounted it counts in `loadersMounted`; a timeout then raises `loadTimedOutAt` and `LoadTimeoutScreen` (mounted once in providers) shows `PageLoadTimeout` (Figma 301:326: the orb stopped + "돌아가기", which goes back or to `/feed`). It clears on navigation.
+- Shared handling in `handle-api-error.ts` (above table). Mock mode: `localStorage.setItem('linker_mock_delay_ms', '12000')` slows every mock response to try the timeout UI; remove the key afterwards.
+- While a mutation is in flight, its button is disabled (no double submit, no duplicate rows):
+
+```tsx
+'use client';
+
+export function SaveButton({ onSave }: { onSave: () => Promise<void> }) {
+  const save = useMutation({ mutationFn: onSave, onSuccess: () => toast('저장했어요.') });
+  return (
+    <Button disabled={save.isPending} aria-busy={save.isPending} onClick={() => save.mutate()}>
+      저장
+    </Button>
+  );
+}
+```
+
+
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)
 Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/StackHeader: logo or back, search, notification bell; guests get a "설정" icon that opens the login sheet instead) → `main id="main" tabIndex={-1} aria-labelledby="page-title"` with one `h1` (may be `sr-only`) → `nav aria-label="주 메뉴"` (bottom tabs, after `main` in the DOM).
@@ -253,16 +321,20 @@ All overlays are Radix `Dialog` (styled in `components/overlay/`): focus trap, `
 
 ### 6-5. Other musts
 - Contrast: text 4.5:1, large text/icons 3:1 (measured values in Design Guide ch. 1).
-- Never remove `focus-visible` rings. Touch targets ≥ 44×44px. Never block zoom (no `maximumScale`/`userScalable: false`).
+- Never remove `focus-visible` rings. Never block zoom (no `maximumScale`/`userScalable: false`).
+- Touch targets (Design Guide §3-3): primary CTA / list rows / bottom tabs / form controls ≥ **44×44px** (`--touch-target-min`); dense header/toolbar **icon clusters** ≥ **24×24px** hit (`--touch-target-icon`) with **Figma visual size** — never enlarge the visible icon box to 44px just to satisfy hit area.
 - Drag has a button alternative: board "상태 바꾸기", photos "앞으로/뒤로"; dnd-kit `KeyboardSensor` + Korean `announcements`.
 - `<MotionConfig reducedMotion="user">`; GIFs play only on tap.
 - Infinite lists end with a "더 보기" button; virtualized items get `aria-setsize`/`aria-posinset`.
 - Every page needs a unique `title` (Next route announcer reads it).
 
-### 6-6. Mobile first
-- Base = 360px (mobile 360–599, tablet from 600, desktop from 1024). App screens use `max-width: var(--content-max-width)` (1440px, centered); side gutter is `var(--page-gutter)`. Bottom tab bar on all sizes; the top bar is shared by mobile and tablet. The admin shell is separate and goes two-column at 1024px.
-- `100dvh`; bottom tabs/input bars use `padding-bottom: env(safe-area-inset-bottom)`; `viewportFit: 'cover'`.
+### 6-6. Mobile column (app) and the admin tool
+- **App screens (all non-admin):** one mobile layout. QA at **360** and **600**. Viewport width **&lt; 600** → column fills the width; **≥ 600** → column `max-width: var(--content-max-width)` (**600px**), centered; outside the column is `--color-canvas-outside` (dark `body`, Figma 472:415) only. Side gutter `var(--page-gutter)` (16px). Header and bottom tab bar share that same centered column — do not full-bleed chrome across a wide browser.
+- **Safe areas:** `env(safe-area-inset-top)` on the sticky header; `env(safe-area-inset-bottom)` on bottom tabs, composers, sheets, and toasts. Main content clears `--header-height` + top inset and `--tab-bar-height` (or composer) + bottom inset so chrome never covers actions.
+- **Admin (25–27):** a separate, desktop-only tool with no mobile layout — not part of the app's mobile-column rule. Own shell, two-column (`--admin-aside-width`).
+- `100dvh`; `viewportFit: 'cover'`.
 - Input font ≥ 16px. No hover-only UI; long-press has a "더보기" button alternative.
+- Match the page’s **Figma** frame. Do not invent desktop top-nav / text-only GNB / multi-column app grids absent from Figma.
 
 ## 7. Overlays and back navigation
 ### 7-1. What causes trapping
@@ -313,6 +385,20 @@ export function useOverlay(key: OverlayKey) {
 ### 7-5. Top-bar back
 `useAppBack(fallbackHref)`: `getNavDepth() > 0 ? router.back() : router.replace(fallbackHref)`, so a shared-link visitor never leaves the app. `nav-depth.ts` tracks depth in `sessionStorage` (popstate −1, other path change +1, first entry 0) behind the §11-1 guard.
 
+### 7-6. Scroll lock vs. the 600px column
+The page scrolls on `html`/`body`, not inside `.app`/`.entry` (the centered 600px column itself has no `overflow`) — see design guide §3-1. Every sheet/dialog is Radix Dialog, which locks background scroll via `react-remove-scroll`: it sets `body[data-scroll-locked]` and injects `margin-right: <scrollbar width>px !important` on `body` so *normal-flow* content doesn't shift when the scrollbar disappears.
+
+Our sheets and scrims are `position: fixed` (`overlay.module.css` `.sheet`/`.scrim`), so they center against the viewport directly and never see that `body` margin — while `.app`/`.entry`'s own `margin: 0 auto` centering does. Left uncorrected, the sheet ends up visibly offset from the page behind it on viewports ≥ 600px (the two no longer share a center point). Fixed globally in `globals.css`:
+
+```css
+/* Higher specificity than react-remove-scroll's own injected (and later-loaded) `!important` rule */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+```
+
+This neutralizes the compensation instead of relocating it — the brief reflow of the dimmed background behind the scrim when a sheet opens/closes isn't visible, so it's an acceptable trade for keeping the sheet aligned with the page. **NEVER** remove this rule or reintroduce per-page margin/padding compensation for `data-scroll-locked`; it would reopen the misalignment. Moving the scroll container itself inside `.entry` (`height: 100dvh; overflow-y: auto`) was considered as a deeper fix but rejected: it touches sticky/fixed layout and native WebView scroll feel (momentum, pull-to-refresh) across every page for a problem the CSS override already fully resolves.
+
 ## 8. SEO and metadata
 ### 8-1. Search exposure (04 POL-A-9)
 | Page | Index | Sitemap |
@@ -320,14 +406,14 @@ export function useOverlay(key: OverlayKey) {
 | 01 `/`, 03 `/legal/[slug]`, 24 `/feed`, 19 `/recruits` | Yes | Yes |
 | 23 `/posts/[id]` | Yes | Yes (`lastModified`) |
 | 21 `/recruits/[id]` | Yes (closed too; 404 if deleted) | Open posts only |
-| 04 `/u/[login]` developer | Yes | Yes |
+| 04 `/user/[login]` developer | Yes | Yes |
 | 04 recruiter, 10 `/invite/[code]`, `(auth)` callback/recruiter screens, all `(member)` `(developer)` `(recruiter)` | `noindex` | No |
 | `/admin/*` | `noindex, nofollow` + `X-Robots-Tag` | No |
 | Hidden/deleted/suspended/withdrawing/blocked content | `notFound()` → 404 | No |
 
 - Rules live in `INDEXABLE` (`lib/seo/seo-flags.ts`). Root default `noindex`; indexed pages opt in with `buildMetadata({ indexable: true })`.
 - `robots.ts`: allow all, `Disallow: /admin`, `/api/` only, plus `Sitemap:`.
-- `sitemap.ts`: `generateSitemaps()` per kind (`/sitemap/posts/0.xml`, `/sitemap/recruits/0.xml`, `/sitemap/users/0.xml`; ≤ 50,000 each) from the backend sitemap API, `revalidate: 86400`.
+- `sitemap.ts`: `generateSitemaps()` per kind (`/sitemap/posts/0.xml`, `/sitemap/recruits/0.xml`, `/sitemap/user/0.xml`; ≤ 50,000 each) from the backend sitemap API, `revalidate: 86400`.
 - canonical and `og:url` drop query params (including `?from=share`). Old GitHub-login profile URLs → 308 to the new URL (90-day forwarding, 07 TODO 04).
 - OG 1200×630. Posts: cover photo, else `opengraph-image.tsx` repo card. Recruit posts: title, remaining roles, D-n. Developer profiles: avatar, name, stack. Others: `/og-default.png`.
 
@@ -344,11 +430,11 @@ export function useOverlay(key: OverlayKey) {
 | 04 developer | `generateMetadata` | "Name (@login) · top 3 stack" | Bio 160 chars, else "완주 N회 · 작업물 N개" | `opengraph-image.tsx` |
 | 19, 24 (04 recruiter: all default) | static | "팀 찾기", "홈" | fixed | default |
 | 03 | `generateMetadata` + `generateStaticParams` | Document name | Effective date | none |
-| 10 | `generateMetadata` | "OO 팀 초대" | Team intro | Org avatar |
+| 10 | static | "팀 초대" | fixed / default | default |
 | Logged-in screens | static title only | "채팅", "이슈" … | default | default |
 | Admin | static title | "운영 · 신고 처리" | none | none |
 
-- Content previews only on 23, 21, 04 (developer) and 10. Login-only screens NEVER put team names, issue titles or chat text into title/OG. Hidden/deleted/blocked content uses defaults.
+- Content previews only on 23, 21, 04 (developer). Invite (10) uses the root default OG — no team name, intro, or org avatar in metadata. Login-only screens NEVER put team names, issue titles or chat text into title/OG. Hidden/deleted/blocked content uses defaults.
 - All metadata goes through `buildMetadata({ title, description, image, path, indexable })` (`lib/seo/metadata.ts`), which strips `overlay`, `oid` and filters from canonical.
 - JSON-LD on indexed pages: profile `ProfilePage` + `Person` (`sameAs` GitHub, blog); post `CreativeWork` (`author`, `image`, `datePublished`, `codeRepository`); recruit posts are not jobs, so `CreativeWork`, not `JobPosting`. `<script type="application/ld+json">` rendered in a server component, every `<` in JSON strings replaced with the escape sequence backslash-u003c.
 - Indexed pages render their full body on the server without cookies (logged-in-only info is added on the client).
@@ -380,17 +466,17 @@ export function useOverlay(key: OverlayKey) {
 
 ## 10. Images
 ### 10-1. Install and config
-`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 600, 1024, 1440]`; `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
+`pnpm --filter web add sharp` (+ `onlyBuiltDependencies`). `next.config.ts` `images`: formats avif/webp; `remotePatterns` `avatars.githubusercontent.com` and `NEXT_PUBLIC_IMAGE_HOST`; `deviceSizes [360, 414, 600]` (app column; admin may still request larger if needed); `imageSizes [24, 32, 40, 48, 64, 96, 128, 256]`.
 
 ### 10-2. Usage
 | Image | Rule |
 | --- | --- |
-| Feed cover | `sizes="(min-width: 1024px) 480px, (min-width: 600px) 50vw, 100vw"`; only the first card `preload` |
+| Feed cover | `sizes="600px"` (app column cap) or `100vw` under 600; only the first card `preload` |
 | Post gallery | First image `preload`, rest lazy; `fill` + fixed-ratio parent |
 | Avatar | Fixed size 24–96; GitHub `?s=` param |
 | Chat photo | Thumbnail `sizes="240px"`; large in the viewer |
 | GIF | Server-made first-frame still via `Image`; original plays on tap |
-| Logo, icons | SVG components (lucide-react), not `Image` |
+| Logo, icons | Solar Icons (`@solar-icons/static` / `@solar-icons/react`) SVG components, not `Image`. **MUST** prefer Solar Icons; do not introduce Lucide (or other icon sets) as the default |
 
 - `alt`: post photos auto `"{repo name} 이미지"`, numbered for 2+ (`"Linker 이미지 2"`); no input field. Avatars next to a visible name: `alt=""`.
 - Unknown sizes: `fill` + fixed-ratio parent.
@@ -459,44 +545,60 @@ Web and app share these types and zod schemas. Envelope: `{ v: BRIDGE_VERSION (1
 
 ## 13. Folder structure double-check
 ### 13-1. All 33 pages
-Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Access: Guest / Developer / Recruiter / Operator ("prompt" = login-prompt sheet).
+Matched against 07 paths, 04 access table and the [backend blueprint](05-backend-blueprint.md) **29 HTTP controller** classes (still under WBS S01–S18 maintainers); no new URLs. Access: Guest / Developer / Recruiter / Operator ("prompt" = login-prompt sheet). The controller column lists owning **HTTP** classes (folder-qualified: `user.` / `recruiter.` / `admin.`); business-system ownership stays in WBS. Keep method-level OpenAPI tags as the page slug (`pNN-…`).
 
-| # | Path (07) | Group | Access (04) | Controller (09) · tag |
+| # | Path (07) | Group | Access (04) | HTTP controller · tag |
 | --- | --- | --- | --- | --- |
-| 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | LoginController · p01 |
-| 02 | `/onboarding` | (developer) | × / ○ / × / ○ | OnboardingController · p02 |
+| 01 | `/`, `/auth/callback` | (auth) | ○ / →feed / →feed / →feed | AuthController · p01 |
+| 02 | `/onboarding` | (developer) | × / ○ / × / ○ | user.AccountController · p02 |
 | 03 | `/legal/[slug]` | (public) | ○ everyone | LegalController · p03 |
-| 04 | `/u/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | ProfileController · p04 |
-| 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | ProfileEditController · p05 |
-| 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | SettingsController · p06 |
-| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | WorkspaceController · p07 |
-| 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | TeamCreateController · p08 |
-| 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | TeamSettingsController · p09 |
-| 10 | `/invite/[code]` | (public) | preview / ○ / × message / ○ | InviteController · p10 |
-| 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | IssueList, IssueDetail, IssueCreate, Board, CalendarController · p11–p15 |
-| 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | ChatListController · p16 |
-| 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | ChatRoomController · p17 |
-| 18 | `/notifications` | (member) | prompt / ○ / ○ / ○ | NotificationController · p18 |
-| 19 | `/recruits` | (public) | view / ○ / view / ○ | RecruitListController · p19 |
-| 20 | `/recruits/new`, `/recruits/[id]/edit` | (developer) | prompt / ○ / × / ○ | RecruitEditorController · p20 |
-| 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | RecruitDetailController · p21 |
-| 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | PostEditorController · p22 |
-| 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PostDetailController · p23 |
-| 24 | `/feed` | (public) | view / ○ / view / ○ | FeedController · p24 |
-| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | AdminReport, AdminUser, AdminAuditController · p25–p27 |
-| 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | SubscribeController · p28 |
-| 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | SubscriptionManageController · p29 |
-| 30 | `/me/stats` | (developer) | prompt / ○ / × / ○ | StatsController · p30 |
-| 31 | `/recruiter/signup` | (auth) | ○ / × / →feed / × | RecruiterSignupController · p31 |
-| 32 | `/recruiter/login`, `/recruiter/reset` | (auth) | ○ / × / →feed / × | RecruiterLoginController · p32 |
-| 33 | `/recruiter/offers` | (recruiter) | × / × / ○ / × ※3 | RecruiterOfferController · p33 |
+| 04 | `/user/[login]` | (public) + `_views` | view / ○ / view + offer, my page / ○ | AccountController, user.AccountController, PostController, TeamController, recruiter.AdController (+ UserChat / RecruiterChat as borrowed) · p04 |
+| 05 | `/settings/profile` | (member) + `_views` | × / ○ / ○ / ○ | user.AccountController · p05 |
+| 06 | `/settings` | (member) + `_views` | × / ○ / ○ / ○ | user.AccountController, user.SessionController, user.NotificationController (+ recruiter.AuthController for password) · p06 |
+| 07 | `/workspace`, `/workspace/issues` | (developer) | prompt / ○ / × / ○ | user.TeamController, user.IssueController · p07 |
+| 08 | `/teams/new`, `/teams/new/callback` | (developer) | prompt / ○ / × / ○ | user.TeamController, user.GithubController · p08 |
+| 09 | `/teams/[id]/settings` | (developer) | × / team role / × / ○ ※1 | user.TeamController, user.GithubController · p09 |
+| 10 | `/invite/[code]` | (public) | slim landing / ○ / × message / ○ | TeamController, user.TeamController · p10 |
+| 11–15 | `/teams/[id]/issues`, `…/issues/[issueId]`, `…/issues/new`, `…/board`, `…/calendar` | (developer) | × / team member / × / ○ ※1 | user.IssueController · p11–p15 |
+| 16 | `/chats` | (member) | prompt / ○ / personal tab / ○ | user.ChatController · p16 |
+| 17 | `/chats/[roomId]` | (member) | × / ○ / personal only / ○ ※1 | user.ChatController (+ UserGithub / UserIssue as borrowed) · p17 |
+| 18 | `/notifications` | (member) | prompt / ○ / ○ / ○ | user.NotificationController, user.ModerationController · p18 |
+| 19 | `/recruits` | (public) | view / ○ / view / ○ | RecruitmentController · p19 |
+| 20 | `/recruits/new`, `/recruits/[id]/edit` | (developer) | prompt / ○ / × / ○ | user.RecruitmentController · p20 |
+| 21 | `/recruits/[id]` | (public) | view / ○ / view / ○ | RecruitmentController, user.RecruitmentController · p21 |
+| 22 | `/posts/new`, `/posts/[id]/edit` | (developer) | prompt / ○ / × / ○ | user.PostController · p22 |
+| 23 | `/posts/[id]` | (public) | view / ○ / view + offer / ○ | PostController, user.PostController · p23 |
+| 24 | `/feed` | (public) | view / ○ / view / ○ | PostController, user.PostController, recruiter.AdController · p24 |
+| 25–27 | `/admin/reports`, `/admin/users`, `/admin/audit` | (admin) | × / × / × / ○ ※2 | admin.ModerationController (+ admin.SubscriptionController for 26 refund) · p25–p27 |
+| 28 | `/subscribe`, `/subscribe/success`, `/subscribe/fail` | (member) | prompt / ○ Pro·Flex / ○ Scout / ○ | user.SubscriptionController · p28 |
+| 29 | `/settings/subscription` | (member) | prompt / ○ / ○ Scout / ○ | user.SubscriptionController · p29 |
+| 30 | `/me/stats` | (developer) | prompt / ○ / × / ○ | user.StatsController · p30 |
+| 31 | `/recruiter/signup` | (auth) | ○ / × / →feed / × | AuthController · p31 |
+| 32 | `/recruiter/login`, `/recruiter/reset` | (auth) | ○ / × / →feed / × | AuthController · p32 |
+| 33 | `/recruiter/offers` | (recruiter) | × / × / ○ / × ※3 | recruiter.ChatController · p33 |
 
 - ※1 Guest "×" = login-prompt sheet + `returnTo` (04 Policy aligned 2026-10-29); logged-in "×" → `/feed`.
 - ※2 The admin OTP gate is inside `(admin)/admin/layout.tsx`, no separate URL.
-- ※3 The recruiter my page is `_views/recruiter-my-page-view.tsx` of `/u/[login]`, no new URL.
+- ※3 The recruiter my page is `_views/recruiter-my-page-view.tsx` of `/user/[login]`, no new URL.
 - Same URL prefix may span groups (`/recruits`, `/posts`, `/recruiter`). 28 and 29 are in `(member)` because recruiters pay for Scout (2026-10-30).
 
 ## 14. Page completion checklist (before a PR)
+
+### Foundation test harness (C, Stage 3)
+
+Run from `frontend/`:
+
+```bash
+pnpm --filter web test
+pnpm --filter web e2e:foundation
+```
+
+Vitest uses jsdom, Testing Library, the global `toHaveNoViolations` matcher and MSW from `vitest.setup.ts`. Add test-specific HTTP responses with `server.use()` from `src/mocks/server`; cleanup and `resetHandlers()` run after every test. Unhandled network frames fail the test (`onUnhandledFrame: 'error'` in installed MSW 3). `src/test/test-harness.test.tsx` verifies interception through the shared API transport, handler isolation, unhandled-request rejection and axe detection. Continue importing limits and formatters from the existing policy/format modules.
+
+`e2e:foundation` runs the existing foundation and C policy/SEO specs with Playwright + axe at the mobile 360px viewport. It starts its own mock-mode Next server on localhost:3138 and refuses to reuse another server. Stop any Next dev process using the same web checkout first, because Next's dev lock is shared across ports. Install Chromium once with `pnpm --filter web exec playwright install chromium` when needed. Browser axe includes contrast checks; jsdom axe cannot validate visual contrast.
+
+MSW handles Vitest requests; browser/SSR mock mode uses the existing `src/mocks/mock-fetch` route layer. These runs verify frontend behavior with fixtures. Shared role/session/provider and production API contracts remain owned by their existing maintainers. B/C backend integration is tracked as follow-up work.
+
 - [ ] Group and URL from ch. 13; a rule exists in `route-access.ts`
 - [ ] No `'use client'` in `page.tsx`/`layout.tsx`; client components only at leaves
 - [ ] Every split component has a §5-3 reason
@@ -508,7 +610,8 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 - [ ] No browser API access during render; no hydration warnings in `pnpm build`
 - [ ] As a guest: reading works, actions show the login-prompt sheet
 - [ ] Checked with recruiter and developer seed accounts (multi-role pages)
-- [ ] No horizontal scroll at 360px; everything works by keyboard
+- [ ] No horizontal scroll at 360px or 600px; above 600 the app column stays 600 centered (admin exempt); everything works by keyboard
+- [ ] Safe-area + header/tab (or composer) clearance; icon clusters use 24px hit without blowing up Figma gaps
 - [ ] 0 axe violations (Vitest + vitest-axe, Playwright + axe)
 - [ ] Works with `pnpm dev:mock` as each role the page allows; a field the page needs is in the page's mock file (§1-2)
 - [ ] Numbers come from `policy.ts`; passes the [04 Design Guide](04-design-guide.md) ch. 8 checklist
@@ -518,9 +621,9 @@ Matched against 07 paths, 04 access table and 09 controllers; no new URLs. Acces
 - **CORS**: `api.` allows `credentials: true` for the `app.` origin; the STOMP handshake uses the same cookie.
 - **orval tags**: `@Tag(name = "pNN-…")` per controller; renaming breaks frontend imports.
 - **Mock → real switch** (§1-2): response shapes in `src/mocks/` are guesses from WBS. After the first OpenAPI export, compare field names per page before removing its mock file.
-- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to 01 `LoginController` (not in WBS yet).
+- **App login token**: only `AUTH_SESSION_SAVE` (no JWT). If iOS webview cookies disappear in a demo, add app-only recovery-token issue/exchange APIs to `AuthController` (S01, page 01; not in WBS yet).
 - **GitHub App callback URLs**: register web `/auth/callback` and app (`?client=app` or a separate URL).
-- **Search**: sitemap lists from WBS 00 `SitemapController` (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
-- **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens`.
+- **Search**: sitemap lists from `SitemapController` (WBS S18, foundation 00) (`GET /api/v1/public/sitemap/{kind}?page=`, B, D10). Guest read limit 60/min per IP has a separate limit for reverse-DNS-verified Googlebot/Yeti.
+- **Push tokens**: 18's `POST/DELETE /api/v1/user/push-tokens` (`user.NotificationController`).
 - **Feed ad items** (WBS 24): `items` = `{ type: 'POST', … } | { type: 'AD', adId, companyName, title, jobCategory, closesOn }`. No URL in the item; tap → `POST /api/v1/user/ads/{adId}/click` returns it; open with the `features/external-link` confirm sheet.
-- **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to 00 `UploadController` (resize, EXIF strip).
+- **Image host**: `NEXT_PUBLIC_IMAGE_HOST` and GIF first-frame generation belong to `user.UploadController` (WBS S05, foundation 00; resize, EXIF strip).

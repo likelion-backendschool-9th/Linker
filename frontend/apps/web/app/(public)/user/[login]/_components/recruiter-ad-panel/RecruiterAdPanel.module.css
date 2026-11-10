@@ -1,0 +1,61 @@
+.panel,
+.form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.panel h2,
+.prompt p,
+.card p,
+.error {
+  margin: 0;
+}
+
+.prompt,
+.card {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.meta,
+.error {
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.switch {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  padding-inline: var(--space-md);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-text-heading);
+}
+
+.switch[aria-pressed='true'] {
+  border-color: var(--color-primary);
+}
+
+.form label {
+  display: grid;
+  gap: var(--space-xxs);
+  color: var(--color-text-heading);
+}
+
+.form input,
+.form select {
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
+  color: var(--color-text-heading);
+  font: inherit;
+  font-size: var(--font-size-body);
+}

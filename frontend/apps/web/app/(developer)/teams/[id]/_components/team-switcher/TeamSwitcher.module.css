@@ -1,0 +1,14 @@
+/* Figma 11 header title "Dawn Guys": 18px SemiBold; the button keeps a 44px hit area */
+.trigger {
+  display: block;
+  max-width: 100%;
+  min-height: var(--touch-target-min);
+  overflow: hidden;
+  font: inherit;
+  color: var(--color-text-title-cool);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+}

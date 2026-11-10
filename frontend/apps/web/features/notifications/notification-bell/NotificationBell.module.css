@@ -1,0 +1,10 @@
+/* Sits just outside the 24x24 icon's top-right corner (Figma 51:227) */
+.dot {
+  position: absolute;
+  top: -3px;
+  right: -1px;
+  width: var(--badge-dot-size);
+  height: var(--badge-dot-size);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}

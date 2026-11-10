@@ -1,0 +1,168 @@
+/* 03 legal reader. The terms frame starts at the first clause; other documents retain document navigation. */
+
+.layout {
+  display: grid;
+  gap: var(--space-lg);
+  min-width: 0;
+  /* PageFrame already insets 16px. The frame starts the body 8px under the header. */
+  margin-top: calc(var(--space-xs) - var(--space-md));
+}
+
+.readerLayout {
+  /* Terms and privacy frames begin at the first clause directly below the stack header. */
+  margin-top: calc(0px - var(--space-md));
+}
+
+.documentNav h2,
+.toc h2,
+.markdown h2,
+.markdown h3 {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body);
+}
+
+.documentNav ul,
+.toc ol {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.documentNav a,
+.toc a,
+.markdown a {
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body);
+  text-decoration: underline;
+  text-underline-offset: var(--space-xxs);
+}
+
+.documentNav a,
+.toc a {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+}
+
+.documentNav a[aria-current='page'] {
+  color: var(--color-text-heading);
+  font-weight: var(--font-weight-semibold);
+}
+
+.meta {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+.nested {
+  padding-left: var(--space-lg);
+}
+
+.markdown {
+  color: var(--color-text-body);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.readerMarkdown {
+  font-size: var(--font-size-legal);
+  line-height: var(--line-height-legal);
+}
+
+.readerLayout .readerMarkdown h2 {
+  font-size: inherit;
+  line-height: inherit;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.readerLayout .readerMarkdown h2:first-child {
+  margin-top: 0;
+}
+
+.readerLayout .readerMarkdown ol {
+  padding-left: calc(var(--space-md) + var(--space-xxs));
+}
+
+.markdown h2,
+.markdown h3 {
+  /* One blank line between clauses. paragraphSpacing in the frame is 0. */
+  margin-top: var(--space-lg);
+  scroll-margin-top: calc(var(--header-height) + env(safe-area-inset-top) + var(--space-xs));
+}
+
+.markdown h2:first-child,
+.markdown h3:first-child {
+  margin-top: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote {
+  margin: 0;
+}
+
+.markdown p + p,
+.markdown ul + p,
+.markdown ol + p {
+  margin-top: var(--space-md);
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: var(--space-lg);
+}
+
+.markdown ul {
+  list-style: disc;
+}
+
+.markdown ol {
+  list-style: decimal;
+}
+
+.markdown li + li {
+  margin-top: 0;
+}
+
+.markdown ::marker {
+  color: var(--color-text-body);
+}
+
+.markdown table {
+  display: block;
+  max-width: 100%;
+  margin-top: var(--space-md);
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.markdown th,
+.markdown td {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-hairline);
+  text-align: start;
+}
+
+.markdown th {
+  color: var(--color-text-heading);
+  background: var(--color-canvas-soft);
+}
+
+.markdown blockquote {
+  margin-top: var(--space-md);
+  padding-left: var(--space-md);
+  border-left: 2px solid var(--color-hairline);
+  color: var(--color-text-secondary);
+}

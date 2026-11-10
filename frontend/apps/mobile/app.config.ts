@@ -5,6 +5,11 @@ const config: ExpoConfig = {
   name: 'Linker',
   slug: 'linker',
   scheme: 'linker',
+  extra: {
+    ...(process.env.EXPO_PUBLIC_EAS_PROJECT_ID
+      ? { eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID } }
+      : {}),
+  },
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',

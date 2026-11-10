@@ -4,11 +4,14 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./*": "./src/generated/*.ts"
+    "./*": "./src/generated/*.ts",
+    "./team-invitations/*": "./src/team-invitations/*.ts"
   },
   "scripts": {
     "generate": "orval --config ./orval.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/check-client-pipeline.mjs",
+    "generate:team-invitations": "node scripts/generate-team-invitations.mjs"
   },
   "dependencies": {
     "@faker-js/faker": "^10.6.0",
