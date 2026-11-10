@@ -117,7 +117,8 @@ export const CHAT = {
   autoRetries: 3,
   catchUpMax: 500,
   messageMax: 2000,
-  imagesPerSend: 10,
+  /** Photos picked at once; each leaves as its own message (user request 2026-11-10) */
+  imagesPerSend: 5,
   editWithinHours: 24,
   offerMessageMax: 1000,
   teamImageOriginalRetentionDaysFree: 90,

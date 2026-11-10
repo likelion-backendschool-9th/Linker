@@ -23,7 +23,12 @@ export function PendingBubble({
             <div className={styles.images}>
               {item.images.map((image, index) => (
                 <div className={styles.image} key={image.fileId}>
-                  <Image src={image.url} alt={`전송 대기 사진 ${index + 1}`} fill sizes="(max-width: 600px) 50vw, 320px" />
+                  <Image
+                    src={image.url}
+                    alt={`전송 대기 사진 ${index + 1}`}
+                    width={220}
+                    height={220}
+                  />
                 </div>
               ))}
             </div>
