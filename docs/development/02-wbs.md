@@ -292,7 +292,7 @@
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/members/me` | 2nd pass: leave team (not owner) | team MEMBER |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/ownership-transfers` | 2nd pass: request owner transfer | team OWNER |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/ownership-transfers/{transferId}/accept` | 2nd pass: recipient accepts | team MEMBER (recipient) |
-| 09 | B | POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "작업물 올리기" (Post your project) notification to members | team OWNER/ADMIN |
+| 09 | B | POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "프로젝트를 완주 하셨습니다! 수고 하셨습니다" notification to members (no link) | team OWNER/ADMIN |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: revert within 7 days | team OWNER/ADMIN |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/archive` | 2nd pass: archive | team OWNER |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}` | 2nd pass: delete (confirm team name) | team OWNER |
@@ -412,7 +412,7 @@
 | 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
 | 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
-| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
+| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day counting published posts only → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
 | 20 | E | PUT | `/api/v1/user/recruits/{recruitId}` | Edit. Author no longer owner/admin of the linked team → 403 `TEAM_ROLE_REQUIRED`; emoji in text → 400 `VALIDATION_ERROR` | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/close` | Close — also borrowed by 21's menu | author |
@@ -437,9 +437,9 @@
 | --- | --- | --- | --- | --- | --- |
 | 04 | A | GET | `/api/v1/public/user/{login}/posts` | 2nd pass: project posts (pinned first) | public |
 | 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: replace featured posts and order (free 1, Pro 5; saved pins stay after Pro ends) | user · developers only |
-| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team | user · developers only |
+| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
-| 22 | E | POST | `/api/v1/user/posts` | Publish (10/day, photos 5 / Pro 10) | user · developers only |
+| 22 | E | POST | `/api/v1/user/posts` | Publish (10/day counting published posts only, photos 5 / Pro 10, no emoji in intro/body) | user · developers only |
 | 22 | E | GET | `/api/v1/user/posts/{postId}/edit-form` | Edit form values | author |
 | 22 | E | PUT | `/api/v1/user/posts/{postId}` | Edit ("수정됨" (Edited)) | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}?from=` | Post (repo state, commit/issue counts, like count, "검토 중" (Under review) to the author if hidden). If logged in: my like, view logging (traffic source: feed, profile, recruit post, chat share, external link `from=share`) | public |
@@ -978,7 +978,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: photo upload (00), tech tags (00), limit notice → 28
 - Tables: new posts, post_images, post_demo_links, post_tags · shared github_repos, uploaded_files, tech_tags, issues, team_members, subscriptions (after 28)
-- [ ] Frontend: stepped (repo → content), reorder photos and retry partial failures, optional fields, email registration guide when commits are 0, draft restore
+- [ ] Frontend: stepped (repo → content), reorder photos and retry partial failures, optional fields, draft restore
 
 </details>
 

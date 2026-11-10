@@ -106,13 +106,9 @@ public class PostController {
 				.body(posts.repoSummary(user, repoId));
 	}
 
+	/** 10/day counts only published posts, so the limit is checked in the service, not by {@code @RateLimit} */
 	@PostMapping("/posts")
 	@DeveloperOnly
-	@RateLimit(
-			key = "post.create",
-			permits = PlanLimits.POSTS_PER_DAY,
-			windowSeconds = PlanLimits.POSTS_PER_DAY_WINDOW_SECONDS
-	)
 	@Operation(tags = {"p22-post-editor"})
 	public ResponseEntity<PostIdResponse> create(
 			@AuthenticationPrincipal AuthenticatedUser user,

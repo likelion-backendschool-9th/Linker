@@ -53,6 +53,8 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
+import com.linker.backend.integration.github.GithubRepoSource;
+import com.linker.backend.integration.github.GithubTeamSource;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubRepoRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
@@ -65,13 +67,18 @@ import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service("userPostService")
 public class PostService {
 
+	private static final Logger log = LoggerFactory.getLogger(PostService.class);
 	private static final String UNAVAILABLE = "삭제되었거나 볼 수 없는 콘텐츠예요";
 	private static final String DELETED_COMMENT = "삭제된 댓글입니다";
 
@@ -90,6 +97,10 @@ public class PostService {
 	private final RedisRateLimiter rateLimiter;
 	private final ProMembership pro;
 	private final TeamRepository teams;
+	/** GitHub HTTP runs outside DB transactions, so the repo list uses explicit templates */
+	private final GithubRepoSource github;
+	private final TransactionTemplate write;
+	private final TransactionTemplate read;
 	private final Clock clock;
 
 	public PostService(
@@ -108,6 +119,8 @@ public class PostService {
 			RedisRateLimiter rateLimiter,
 			ProMembership pro,
 			TeamRepository teams,
+			GithubRepoSource github,
+			PlatformTransactionManager transactions,
 			Clock clock
 	) {
 		this.repos = repos;
@@ -125,7 +138,11 @@ public class PostService {
 		this.rateLimiter = rateLimiter;
 		this.pro = pro;
 		this.teams = teams;
+		this.github = github;
 		this.clock = clock;
+		this.write = new TransactionTemplate(transactions);
+		this.read = new TransactionTemplate(transactions);
+		this.read.setReadOnly(true);
 	}
 
 	@Transactional
@@ -191,9 +208,58 @@ public class PostService {
 		return new RecommendedUsersResponse(List.of());
 	}
 
-	@Transactional(readOnly = true)
+	/**
+	 * Step 1 list (POL-P-1). The unfiltered personal list first pulls my own public repos (forks included)
+	 * from GitHub into the shared repo cache, so repos never linked to a team can be posted too. Search
+	 * and the team list read that cache. If GitHub fails, the cache is shown as it is (04 ch. 2).
+	 */
 	public EditorRepoListResponse listRepos(AuthenticatedUser user, String q, Long teamId) {
 		String query = blankToNull(q);
+		if (teamId == null && query == null) {
+			List<Long> synced = syncOwnedPublicRepos(user);
+			if (synced != null) {
+				return read.execute(status -> toEditorRepos(user, ownedSelectable(user, synced), null));
+			}
+		}
+		return read.execute(status -> toEditorRepos(user, cachedRepos(user, query, teamId), teamId));
+	}
+
+	/** Upserted `github_repos` ids of my public repos, or null when GitHub couldn't be read */
+	private List<Long> syncOwnedPublicRepos(AuthenticatedUser user) {
+		List<GithubTeamSource.Repository> fetched;
+		try {
+			fetched = github.ownedPublicRepositories(user.userId(), user.login());
+		}
+		catch (ApiException exception) {
+			if ("LOGIN_REQUIRED".equals(exception.getCode())) {
+				throw exception;
+			}
+			// The list still works from the cache; the log shows when the sync itself keeps failing
+			log.warn("post editor repo sync failed: user={} status={} code={}",
+					user.userId(), exception.getStatus(), exception.getCode());
+			return null;
+		}
+		if (fetched.isEmpty()) {
+			return List.of();
+		}
+		Instant now = clock.instant();
+		// Shared upsert by GitHub repo id (ON CONFLICT … RETURNING), the same one 08/09 use for team repos
+		return write.execute(status -> fetched.stream().map(repo -> teams.cacheRepo(repo, now)).toList());
+	}
+
+	/** The synced rows, still public and mine, by name like the cache query */
+	private List<GithubRepo> ownedSelectable(AuthenticatedUser user, List<Long> ids) {
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+		return repos.findAllById(ids).stream()
+				.filter(GithubRepo::isSelectable)
+				.filter(repo -> repo.getOwnerLogin().equalsIgnoreCase(user.login()))
+				.sorted(Comparator.comparing(GithubRepo::getFullName, String.CASE_INSENSITIVE_ORDER))
+				.toList();
+	}
+
+	private List<GithubRepo> cachedRepos(AuthenticatedUser user, String query, Long teamId) {
 		List<GithubRepo> rows;
 		if (teamId != null) {
 			// Linked team repos (POL-P-1 / WBS 441). Caller must be able to open the team elsewhere.
@@ -201,7 +267,7 @@ public class PostService {
 					.map(com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo::repoId)
 					.toList();
 			if (linkedIds.isEmpty()) {
-				return new EditorRepoListResponse(List.of());
+				return List.of();
 			}
 			rows = repos.findAllById(linkedIds).stream()
 					.filter(repo -> repo.getDeletedAt() == null && !repo.isPrivate())
@@ -216,6 +282,10 @@ public class PostService {
 					? repos.findPublicByOwner(user.login())
 					: repos.findPublicByOwnerAndQuery(user.login(), query);
 		}
+		return rows;
+	}
+
+	private EditorRepoListResponse toEditorRepos(AuthenticatedUser user, List<GithubRepo> rows, Long teamId) {
 		if (rows.isEmpty()) {
 			return new EditorRepoListResponse(List.of());
 		}
@@ -252,8 +322,10 @@ public class PostService {
 			throw new ApiException(409, "REPO_ALREADY_POSTED", "이미 작업물로 올린 레포예요");
 		}
 		ValidatedContent content = validateContent(request, user.userId());
-		User author = users.findById(user.userId())
+		// Row lock: two publishes at once can't both slip under the daily limit
+		User author = users.lockById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		enforceDailyPostLimit(user.userId());
 		Post post = Post.publish(
 				author,
 				repo,
@@ -476,17 +548,40 @@ public class PostService {
 		post.softDelete(now);
 	}
 
+	/**
+	 * Policy ch. 2 "Write post 10/day": only posts actually published count, so a request rejected for
+	 * any reason (validation, repo already posted, …) leaves the quota alone. Deleted posts still count.
+	 */
+	private void enforceDailyPostLimit(long userId) {
+		Instant now = clock.instant();
+		List<Instant> recent = posts.findCreatedAtSince(
+				userId, now.minusSeconds(PlanLimits.POSTS_PER_DAY_WINDOW_SECONDS));
+		if (recent.size() < PlanLimits.POSTS_PER_DAY) {
+			return;
+		}
+		Instant freed = recent.get(recent.size() - PlanLimits.POSTS_PER_DAY)
+				.plusSeconds(PlanLimits.POSTS_PER_DAY_WINDOW_SECONDS);
+		long retryAfter = Math.max(1, freed.getEpochSecond() - now.getEpochSecond());
+		throw new ApiException(
+				429,
+				"RATE_LIMITED",
+				"오늘은 더 할 수 없어요. 내일 다시 시도해 주세요.",
+				Map.of("retryAfterSeconds", retryAfter)
+		);
+	}
+
 	private ValidatedContent validateContent(PostWriteRequest request, long userId) {
 		if (request == null) {
 			throw new ApiException(400, "VALIDATION_ERROR", "게시물 내용을 확인해 주세요");
 		}
+		rejectEmoji(request.intro(), request.body(), request.myRole());
 		String intro = requireText(request.intro(), PlanLimits.POST_INTRO_MIN, PlanLimits.POST_INTRO_MAX, "한 줄 소개를 확인해 주세요");
 		String body = request.body() == null ? "" : request.body().trim();
-		if (body.length() > PlanLimits.POST_BODY_MAX) {
+		if (chars(body) > PlanLimits.POST_BODY_MAX) {
 			throw new ApiException(400, "VALIDATION_ERROR", "본문은 2,000자까지예요");
 		}
 		String myRole = blankToNull(request.myRole());
-		if (myRole != null && myRole.length() > PlanLimits.POST_ROLE_MAX) {
+		if (myRole != null && chars(myRole) > PlanLimits.POST_ROLE_MAX) {
 			throw new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요");
 		}
 		List<PostDemoLink> demoLinks = normalizeDemoLinks(request.demoLinks());
@@ -802,10 +897,32 @@ public class PostService {
 			throw new ApiException(400, "VALIDATION_ERROR", message);
 		}
 		String value = raw.trim();
-		if (value.length() < min || value.length() > max) {
+		if (chars(value) < min || chars(value) > max) {
 			throw new ApiException(400, "VALIDATION_ERROR", message);
 		}
 		return value;
+	}
+
+	/** Policy ch. 2 character count (code points, so a character outside the BMP is still 1) */
+	private static int chars(String value) {
+		return value.codePointCount(0, value.length());
+	}
+
+	/** POL-P-2: post text takes no emoji. Same code points as 20 (`RecruitmentService`) and FE `hasEmoji`. */
+	private static void rejectEmoji(String... values) {
+		for (String value : values) {
+			if (value != null && value.codePoints().anyMatch(PostService::isEmojiCodePoint)) {
+				throw new ApiException(400, "VALIDATION_ERROR", "이모지는 입력할 수 없어요.");
+			}
+		}
+	}
+
+	/** Emoji shown as pictures by default, flag letters, and the emoji-style / keycap marks */
+	private static boolean isEmojiCodePoint(int codePoint) {
+		return Character.isEmojiPresentation(codePoint)
+				|| (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF)
+				|| codePoint == 0xFE0F
+				|| codePoint == 0x20E3;
 	}
 
 	private static String blankToNull(String raw) {

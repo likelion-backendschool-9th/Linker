@@ -192,9 +192,11 @@ public class RecruitmentService {
 		assertOpenSlotAvailable(user.userId());
 		ValidatedWrite validated = validateWrite(request);
 		requireLinkableTeam(user.userId(), validated.teamId(), null);
-		User author = users.findById(user.userId())
+		// Row lock: two publishes at once can't both slip under the daily limit
+		User author = users.lockById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
 		Instant now = clock.instant();
+		enforceDailyRecruitLimit(user.userId(), now);
 		RecruitPost post = RecruitPost.open(
 				author,
 				validated.title(),
@@ -672,6 +674,26 @@ public class RecruitmentService {
 			throw new ApiException(403, "FORBIDDEN", "내 모집 글이 아니에요");
 		}
 		return post;
+	}
+
+	/**
+	 * Policy ch. 2 "Write recruit post 5/day": only recruit posts actually published count, so a request
+	 * rejected for any reason leaves the quota alone. Deleted posts still count.
+	 */
+	private void enforceDailyRecruitLimit(long authorId, Instant now) {
+		List<Instant> recent = posts.findCreatedAtSince(
+				authorId, now.minusSeconds(PlanLimits.RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS));
+		if (recent.size() < PlanLimits.RECRUIT_POSTS_PER_DAY) {
+			return;
+		}
+		Instant freed = recent.get(recent.size() - PlanLimits.RECRUIT_POSTS_PER_DAY)
+				.plusSeconds(PlanLimits.RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS);
+		throw new ApiException(
+				429,
+				"RATE_LIMITED",
+				"하루 모집글의 최대 한도는 " + PlanLimits.RECRUIT_POSTS_PER_DAY + "번 입니다.",
+				Map.of("retryAfterSeconds", Math.max(1, freed.getEpochSecond() - now.getEpochSecond()))
+		);
 	}
 
 	private void assertOpenSlotAvailable(long authorId) {

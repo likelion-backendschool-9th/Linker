@@ -17,6 +17,7 @@ import {
   RECRUIT_GOALS,
 } from '@/features/recruit/recruit-labels';
 import { TechTagSheet } from '@/features/tech-tags/tech-tag-sheet/TechTagSheet';
+import { noEmojiField } from '@/lib/format/no-emoji-field';
 import { countChars } from '@/lib/format/text';
 import { RECRUIT } from '@/lib/policy';
 
@@ -100,7 +101,8 @@ function EditorForm(
   // zod schema's own requirements; still clickable while "empty" so handleSubmit's errors show
   // where exactly to fix something, rather than leaving a disabled button with no explanation.
   // 프로젝트 소개 grows with its text instead of scrolling (CSS keeps the 120px minimum)
-  const introField = form.register('intro');
+  // POL-R-1: no emoji. Text fields drop them as typed or pasted instead of showing an error
+  const introField = noEmojiField(form.register('intro'));
   const introRef = useRef<HTMLTextAreaElement | null>(null);
   useLayoutEffect(() => {
     const element = introRef.current;
@@ -134,7 +136,7 @@ function EditorForm(
             className={styles.input}
             placeholder="프로젝트 제목을 작성해 주세요."
             aria-invalid={errors.title ? true : undefined}
-            {...form.register('title')}
+            {...noEmojiField(form.register('title'))}
           />
         </div>
 
@@ -241,7 +243,7 @@ function EditorForm(
               placeholder="예: 서울 강남"
               maxLength={RECRUIT.regionMax}
               aria-invalid={errors.region ? true : undefined}
-              {...form.register('region')}
+              {...noEmojiField(form.register('region'))}
             />
           </div>
         )}
@@ -293,7 +295,7 @@ function EditorForm(
             id={field('duration')}
             className={styles.input}
             placeholder="예: 2주, 3개월"
-            {...form.register('duration')}
+            {...noEmojiField(form.register('duration'))}
           />
         </div>
 

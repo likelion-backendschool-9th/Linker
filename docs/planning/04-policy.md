@@ -119,10 +119,10 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 
 | Action | Limit |
 | --- | --- |
-| Write post | 10/day |
+| Write post | 10/day (only published posts count; rejected attempts don't) |
 | Write comment | 10/min, 300/day |
 | Follow | 200/day |
-| Write recruit post | Max 3 open (Pro 10), 5/day |
+| Write recruit post | Max 3 open (Pro 10), 5/day (only published recruit posts count; rejected attempts don't) |
 | Apply | 20/day |
 | Chat message | 5/sec (beyond that, sending is delayed) |
 | Report | 20/day |
@@ -258,7 +258,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-1 Repo selection | Only **public** repos of the user's account or orgs they belong to. Private repos can't be selected. One post per repo (progress updates are phase 2) |
 | POL-P-1 Repo changes | If the repo becomes private or is deleted, keep the post, show the repo card as "레포를 볼 수 없음" (repo unavailable), hide the README toggle |
 | POL-P-2 Required fields | Repo, one-line intro (1–60 chars) |
-| POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links |
+| POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links. The one-line intro and body take no emoji: the input drops emoji as they are typed or pasted, with no error message |
 | POL-P-2 Photos | Free 5 / Pro 10, 10MB each, JPG/PNG/WebP/GIF. Resize long side to 2,048px and strip EXIF on upload. First photo is the cover |
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
@@ -290,8 +290,8 @@ Popularity score = likes × 1 + comments × 2 (excluding the author's own), deca
 ### Exceptions
 
 - **Repo renamed or transferred to another account** → tracked by GitHub repo id; card info refreshed once a day. Post author doesn't change.
-- **Forked repo** → can be posted, but the card shows "포크" (fork) and the original repo.
-- **Org repo with none of my commits** → can be posted, but the card shows "내 커밋 0개" (0 of my commits). Shows 0 also when the commit email isn't registered to GitHub, so commit counts are never used as evidence for plagiarism or sanctions. If 0 or low, show the author "커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 숫자에 잡혀요" with a link to GitHub email settings.
+- **Forked repo** → can be posted. The 22 repo list shows a "포크" badge; the 23 post shows a "Fork" chip above the title, next to the role chip.
+- **Org repo with none of my commits** → can be posted, but the card shows "내 커밋 0개" (0 of my commits). Shows 0 also when the commit email isn't registered to GitHub, so commit counts are never used as evidence for plagiarism or sanctions.
 - **Several teammates post the same repo** → each can post; the detail page groups "이 레포의 다른 게시물" (other posts for this repo).
 - **Only some photos upload** → show retry on failed photos; publishing allowed only after all upload.
 - **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked.
@@ -308,7 +308,7 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (today through 6 months from today) |
 | POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
-| POL-R-1 No emoji | Title, intro, region and expected duration take no emoji (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. Copy: "이모지는 입력할 수 없어요." |
+| POL-R-1 No emoji | Title, intro, region and expected duration take no emoji (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. The inputs drop emoji as they are typed or pasted, with no error message; the server still rejects them ("이모지는 입력할 수 없어요.") |
 | POL-R-1 Who can edit | The author, and only while they still own or admin the linked team. If they have lost that role, saving an edit shows "글을 수정할 권한이 없습니다." |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |

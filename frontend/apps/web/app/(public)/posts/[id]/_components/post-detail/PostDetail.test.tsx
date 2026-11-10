@@ -107,6 +107,20 @@ it('shows a guest the whole post and sends reactions to the login prompt', async
   expect(screen.getByRole('button', { name: /댓글을 작성해 주세요/ })).toBeVisible();
 });
 
+it('marks a forked repo with a "Fork" chip next to the role, and only then', async () => {
+  serve({ ...base, repo: { ...base.repo, isFork: true } });
+  const { unmount } = renderWithProviders(<PostDetail postId="1" />);
+  expect(await screen.findByRole('heading', { name: base.intro })).toBeVisible();
+  expect(screen.getByText('프론트엔드 개발')).toBeVisible();
+  expect(screen.getByText('Fork')).toBeVisible();
+  unmount();
+
+  serve(base);
+  renderWithProviders(<PostDetail postId="1" />);
+  expect(await screen.findByRole('heading', { name: base.intro })).toBeVisible();
+  expect(screen.queryByText('Fork')).not.toBeInTheDocument();
+});
+
 it('applies a like at once and rolls it back when the server fails', async () => {
   // The server answers only when the test says so: optimistic state first, then the failure
   let failLike: (error: unknown) => void = () => undefined;

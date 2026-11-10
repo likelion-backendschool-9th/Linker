@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { UploadedImage } from '@/features/image-upload/upload-image';
-import { countChars, normalizeLineBreaks } from '@/lib/format/text';
+import { countChars, hasEmoji, normalizeLineBreaks } from '@/lib/format/text';
 import { POST } from '@/lib/policy';
 
 import type { PostRequest } from './editor-queries';
@@ -48,6 +48,10 @@ const isHttps = (value: string) => {
 const { min: TEAM_MIN, max: TEAM_MAX } = POST.teamSize;
 const limit = (max: number) => max.toLocaleString('ko-KR');
 
+/** POL-P-2: post text takes no emoji (same rule and copy as 20, backend `PostService.rejectEmoji`) */
+const NO_EMOJI = '이모지는 입력할 수 없어요.';
+const noEmoji = (value: string) => !hasEmoji(value);
+
 export const postFormSchema = z
   .object({
     intro: z
@@ -56,13 +60,15 @@ export const postFormSchema = z
       .refine(
         (value) => countChars(value) <= POST.intro.max,
         `한 줄 소개는 ${POST.intro.max}자까지 쓸 수 있어요.`,
-      ),
+      )
+      .refine(noEmoji, NO_EMOJI),
     body: z
       .string()
       .refine(
         (value) => countChars(value) <= POST.bodyMax,
         `본문은 ${limit(POST.bodyMax)}자까지 쓸 수 있어요.`,
-      ),
+      )
+      .refine(noEmoji, NO_EMOJI),
     myRole: z
       .string()
       .refine(
