@@ -83,7 +83,9 @@ test('17 PR system messages match the four Figma states and organization groupin
         expect(box.width).toBeLessThan(288);
         expect(box.height).toBe(106);
       }
-      for (let i = 1; i < cards.length; i++) expect(cards[i]!.y - cards[i - 1]!.y).toBe(113);
+      // The virtualized viewport may scroll by a fractional CSS pixel.
+      for (let i = 1; i < cards.length; i++)
+        expect(cards[i]!.y - cards[i - 1]!.y).toBeCloseTo(113, 0);
       expect(cards[0]!.width).toBeLessThan(cards[1]!.width);
       expect(
         await opened.locator('[data-event]').evaluate((node) => getComputedStyle(node).color),
@@ -229,6 +231,9 @@ test('17 floating summary keeps the existing result flow and leaves photo attach
   await input.fill('작성 중인 메시지');
   await summary.focus();
   await page.keyboard.press('Enter');
+  // D's current contract starts an async job; the result opens from the done toast.
+  await expect(page.getByText('요약이 끝났어요', { exact: true })).toBeVisible({ timeout: 20000 });
+  await page.getByRole('button', { name: '보기', exact: true }).click();
   const result = page.getByRole('dialog', { name: 'AI 요약', exact: true });
   await expect(result).toBeVisible();
   await expect(

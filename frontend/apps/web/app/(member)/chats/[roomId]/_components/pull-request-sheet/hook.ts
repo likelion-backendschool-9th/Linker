@@ -68,11 +68,12 @@ export function usePullRequestSheet({
     staleTime: 0,
   });
   const items = query.isError ? [] : (query.data?.items ?? []);
-  const selected = items.find((pr) => pr.id === selectedPr) ?? items[0];
+  const selected = items.find((pr) => pr.id === selectedPr);
   useEffect(() => {
     if (!overlay.isOpen) sharing.current = false;
   }, [overlay.isOpen]);
-  const canShare = !disabled && !!onShare && !!selected && !query.isPending && !query.isError;
+  const canShare =
+    !disabled && !!onShare && !!selected && !query.isFetching && !query.isPending && !query.isError;
   function share() {
     if (!canShare || !selected || !onShare || sharing.current) return;
     sharing.current = true;
