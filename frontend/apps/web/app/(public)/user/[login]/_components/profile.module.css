@@ -432,22 +432,42 @@
   white-space: pre-wrap;
 }
 
+/* One line only: chips that don't fit collapse into "+N" (ProfileTechStack) */
+.stackWrap {
+  position: relative;
+  min-width: 0;
+  margin-top: var(--space-xxs);
+}
+
 .stackRow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-xs);
-  margin: var(--space-xxs) 0 0;
+  margin: 0;
   padding: 0;
+  overflow: hidden;
   list-style: none;
+}
+
+/* Hidden copy of every chip, only for measuring widths */
+.stackMeasure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* Tech stack chip — Figma 121:1189: 28 high, 3/8 padding, r4, 14 regular #4b5563 on #f3f4f6 */
 .stackRow li {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   justify-content: center;
   width: auto;
   min-height: var(--control-height-chip-sm);
+  white-space: nowrap;
   padding: var(--space-chip-block) var(--space-xs);
   color: var(--color-text-slate);
   font-size: var(--font-size-caption);
@@ -579,10 +599,12 @@
   grid-column: 1 / -1;
 }
 
-/* Work card — Figma 123:1406: square, 8 padding, r8; cover 148x123 (r5), title 9 below it */
+/* Work card — Figma 123:1406: square, 8 padding, r8; cover 148x123 (r5), title 9 below it.
+   Cover + title sit centered in the square, so wider columns (600px) keep even space above and below */
 .workCard {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--space-profile-work-title);
   aspect-ratio: 1;
   padding: var(--space-xs);
