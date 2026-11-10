@@ -39,6 +39,7 @@ public class TeamManagementService {
   private final TeamMemberRepository members;
   private final TeamRepoRepository repos;
   private final UserRepository users;
+  private final com.linker.backend.repository.account.AuthIdentityRepository identities;
   private final SubscriptionRepository subscriptions;
   private final NotificationService notifications;
   private final GithubTeamSource github;
@@ -46,14 +47,23 @@ public class TeamManagementService {
   private final Clock clock;
   private final TransactionTemplate write;
 
-  public TeamManagementService(TeamRepository teams, TeamMemberRepository members,
-      TeamRepoRepository repos, UserRepository users, SubscriptionRepository subscriptions,
-      NotificationService notifications, GithubTeamSource github, TeamSyncService sync,
-      Clock clock, PlatformTransactionManager transactions) {
+  public TeamManagementService(
+      TeamRepository teams,
+      TeamMemberRepository members,
+      TeamRepoRepository repos,
+      UserRepository users,
+      SubscriptionRepository subscriptions,
+      NotificationService notifications,
+      GithubTeamSource github,
+      TeamSyncService sync,
+      Clock clock,
+      PlatformTransactionManager transactions,
+      com.linker.backend.repository.account.AuthIdentityRepository identities) {
     this.teams = teams;
     this.members = members;
     this.repos = repos;
     this.users = users;
+    this.identities = identities;
     this.subscriptions = subscriptions;
     this.notifications = notifications;
     this.github = github;
@@ -83,14 +93,34 @@ public class TeamManagementService {
     // D currently implements one-time checkout, not automatic renewal. Do not promise a next charge.
     var billing = new Billing(payer, payerName,
         writable && (role == TeamRole.OWNER || Objects.equals(payer, principal.userId())), null, null);
-    return new TeamSettingsResponse(teamId, team.getName(), team.getDescription(),
-        team.getGithubOrgLogin(), team.getAvatarUrl(), team.getStatus().name(),
-        flex ? "FLEX" : "FREE", role.name(),
+    return new TeamSettingsResponse(
+        teamId,
+        team.getName(),
+        team.getDescription(),
+        team.getGithubOrgLogin(),
+        team.getAvatarUrl(),
+        team.getStatus().name(),
+        flex ? "FLEX" : "FREE",
+        role.name(),
         // Do not advertise flows whose migration/contracts and endpoints are still pending.
-        new Permissions(admin, admin, false, admin, owner, false, false,
-            owner, owner, role != TeamRole.OWNER && writable),
-        linked, board, team.isAiSummaryEnabled(), flex ? null : (long) PlanLimits.TEAM_MEMBERS_FREE,
-        billing);
+        new Permissions(
+            admin,
+            admin,
+            admin,
+            admin,
+            owner,
+            false,
+            false,
+            owner,
+            owner,
+            role != TeamRole.OWNER && writable),
+        linked,
+        board,
+        team.isAiSummaryEnabled(),
+        flex ? null : (long) PlanLimits.TEAM_MEMBERS_FREE,
+        billing,
+        false,
+        "팀 오너이면서 GitHub 조직 오너만 조직에 초대할 수 있어요");
   }
 
   @Transactional(readOnly = true)
@@ -99,14 +129,31 @@ public class TeamManagementService {
     var current = members.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(teamId);
     Map<Long, User> accounts = users.findAllById(current.stream().map(TeamMember::getUserId).toList())
         .stream().collect(Collectors.toMap(User::getId, Function.identity()));
-    var items = current.stream().map(m -> {
-      User account = accounts.get(m.getUserId());
-      boolean visible = account != null && account.getDeletedAt() == null;
-      return new Member(m.getUserId(), visible ? account.getUsername() : null,
-          visible ? account.visibleName() : "탈퇴한 사용자",
-          visible ? account.getAvatarUrl() : null, m.getRole().name(),
-          m.getGithubOrgState().name(), m.getJoinedAt());
-    }).toList();
+    var githubLogins =
+        identities.findGithubLogins(accounts.keySet()).stream()
+            .filter(row -> row.getLogin() != null)
+            .collect(
+                Collectors.toMap(
+                    com.linker.backend.repository.account.AuthIdentityRepository.GithubLogin
+                        ::getUserId,
+                    com.linker.backend.repository.account.AuthIdentityRepository.GithubLogin
+                        ::getLogin));
+    var items =
+        current.stream()
+            .map(m -> {
+              User account = accounts.get(m.getUserId());
+              boolean visible = account != null && account.getDeletedAt() == null;
+              return new Member(
+                  m.getUserId(),
+                  visible ? account.getUsername() : null,
+                  visible ? account.visibleName() : "탈퇴한 사용자",
+                  visible ? account.getAvatarUrl() : null,
+                  m.getRole().name(),
+                  m.getGithubOrgState().name(),
+                  m.getJoinedAt(),
+                  visible ? githubLogins.get(m.getUserId()) : null);
+            })
+            .toList();
     return new Members(items, items.size(), subscriptions.hasFlexBenefit(teamId, clock.instant())
         ? null : (long) PlanLimits.TEAM_MEMBERS_FREE);
   }

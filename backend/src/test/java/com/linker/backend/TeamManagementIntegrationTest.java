@@ -73,6 +73,8 @@ class TeamManagementIntegrationTest {
   @Autowired JdbcTemplate jdbc;
   @Autowired UserRepository users;
   @Autowired TeamRepository teams;
+  @Autowired com.linker.backend.repository.account.AuthIdentityRepository identities;
+  @Autowired com.linker.backend.service.user.TeamInvitationService invitations;
   @Autowired SubscriptionRepository subscriptions;
   @Autowired AuthService sessions;
   @Autowired PlatformTransactionManager transactions;
@@ -115,9 +117,10 @@ class TeamManagementIntegrationTest {
     var sub = subscriptions.saveAndFlush(Subscription.paid(SubscriptionPlan.FLEX, null, team,
         admin.getId(), BillingCycle.MONTHLY, 3, Instant.now().minusSeconds(1), Instant.now().plusSeconds(3600)));
     mvc.perform(get(base + "/settings").cookie(cookie(owner)))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.plan").value("FLEX"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.plan").value("FLEX"))
         .andExpect(jsonPath("$.memberLimit").isEmpty())
-        .andExpect(jsonPath("$.permissions.createInviteLink").value(false))
+        .andExpect(jsonPath("$.permissions.createInviteLink").value(true))
         .andExpect(jsonPath("$.permissions.transferOwnership").value(false))
         .andExpect(jsonPath("$.permissions.completeProject").value(false))
         .andExpect(jsonPath("$.billing.managerUserId").value(admin.getId()))
@@ -267,10 +270,14 @@ class TeamManagementIntegrationTest {
   @Test
   @Transactional
   void preparationSqlDoesNotChooseOrModifyFlywayVersion() {
-    assertThat(jdbc.queryForObject("select to_regclass('team_invite_links')", String.class)).isNull();
+    assertThat(jdbc.queryForObject("select to_regclass('team_invite_links')", String.class))
+        .isNotNull();
     new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/09-team-settings.sql"))
         .execute(jdbc.getDataSource());
-    assertThat(jdbc.queryForObject("select max(version::int) from flyway_schema_history", Integer.class)).isEqualTo(27);
+    assertThat(
+            jdbc.queryForObject(
+                "select max(version::int) from flyway_schema_history", Integer.class))
+        .isEqualTo(28);
     for (String table : List.of("team_invite_links", "github_org_invitations", "team_ownership_transfers",
         "team_completions", "completion_records"))
       assertThat(jdbc.queryForObject("select to_regclass(?) is not null", Boolean.class, table)).isTrue();
@@ -346,10 +353,482 @@ class TeamManagementIntegrationTest {
     assertThat(teamChat.mentionCandidates(owner.getId(), team)).isEmpty();
   }
 
+  @Test
+  void inviteCreationReturnsCodeOnceAndStoresOnlyItsHash() throws Exception {
+    var link = createInvite(admin);
+    String code = link.path("code").asString();
+    assertThat(code).matches("[A-Za-z0-9_-]{43}");
+    assertThat(
+            jdbc.queryForObject(
+                "select token_hash from team_invite_links where id=?",
+                String.class,
+                link.path("id").asLong()))
+        .hasSize(64)
+        .isNotEqualTo(code);
+    mvc.perform(get(base + "/invite-links").cookie(cookie(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value(link.path("id").asLong()))
+        .andExpect(jsonPath("$.items[0].code").doesNotExist());
+    mvc.perform(get("/api/v1/public/invites/" + code))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Cache-Control", "no-store"))
+        .andExpect(jsonPath("$.status").value("VALID"))
+        .andExpect(jsonPath("$.team.name").doesNotExist());
+    mvc.perform(delete(base + "/invite-links/" + link.path("id").asLong()).cookie(cookie(admin)))
+        .andExpect(status().isNoContent());
+    mvc.perform(get("/api/v1/public/invites/" + code))
+        .andExpect(jsonPath("$.status").value("REVOKED"));
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isGone());
+  }
+
+  @Test
+  void inviteNotifyValidatesCodeAndDeveloperThenCreatesOneReusableNotification() throws Exception {
+    var link = createInvite(owner);
+    long id = link.path("id").asLong();
+    String code = link.path("code").asString();
+    send(
+            post(base + "/invite-links/" + id + "/notify"),
+            admin,
+            "{\"handle\":\"@" + outsider.getUsername() + "\",\"code\":\"wrong\"}")
+        .andExpect(status().isNotFound());
+    String body =
+        "{\"handle\":\"@" + outsider.getUsername().toUpperCase() + "\",\"code\":\"" + code + "\"}";
+    send(post(base + "/invite-links/" + id + "/notify"), admin, body)
+        .andExpect(status().isNoContent());
+    send(post(base + "/invite-links/" + id + "/notify"), admin, body)
+        .andExpect(status().isNoContent());
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from notifications where user_id=? and notification_type='TEAM_INVITE' and link_path=?",
+                Long.class,
+                outsider.getId(),
+                "/invite/" + code))
+        .isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "select payload->>'title' from notifications where user_id=? and notification_type='TEAM_INVITE' and link_path=?",
+                String.class,
+                outsider.getId(),
+                "/invite/" + code))
+        .contains("기존 팀");
+  }
+
+  @Test
+  void acceptingInviteJoinsTeamAndChatAtomicallyAndRepeatedAcceptDoesNotDuplicate()
+      throws Exception {
+    var link = createInvite(owner);
+    String code = link.path("code").asString();
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.teamId").value(team));
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from team_members where team_id=? and user_id=? and left_at is null",
+                Long.class,
+                team,
+                outsider.getId()))
+        .isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from chat_room_members where room_id=? and user_id=? and left_at is null",
+                Long.class,
+                room,
+                outsider.getId()))
+        .isEqualTo(1);
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("ALREADY_MEMBER"));
+    mvc.perform(get("/api/v1/public/invites/" + code).cookie(cookie(outsider)))
+        .andExpect(jsonPath("$.participation.state").value("ALREADY_MEMBER"));
+  }
+
+  @Test
+  void expiredReadOnlyAndArchivedTeamsCannotAcceptInvites() throws Exception {
+    var link = createInvite(owner);
+    String code = link.path("code").asString();
+    jdbc.update(
+        "update team_invite_links set expires_at=now() where id=?", link.path("id").asLong());
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isGone());
+    jdbc.update(
+        "update team_invite_links set expires_at=now()+interval '1 day' where id=?",
+        link.path("id").asLong());
+    for (String state : List.of("READ_ONLY", "ARCHIVED", "DELETED")) {
+      jdbc.update("update teams set status=? where id=?", state, team);
+      send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+          .andExpect(status().isConflict());
+    }
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from team_members where team_id=? and user_id=?",
+                Long.class,
+                team,
+                outsider.getId()))
+        .isZero();
+  }
+
+  @Test
+  void inviteManagementCannotBeUsedByGuestsRecruitersMembersOrDifferentTeams() throws Exception {
+    mvc.perform(post(base + "/invite-links")).andExpect(status().isUnauthorized());
+    send(post(base + "/invite-links"), recruiter, "{}").andExpect(status().isForbidden());
+    send(post(base + "/invite-links"), member, "{}").andExpect(status().isForbidden());
+    send(post(base + "/invite-links"), outsider, "{}").andExpect(status().isForbidden());
+    var link = createInvite(owner);
+    send(post("/api/v1/user/invites/" + link.path("code").asString() + "/accept"), recruiter, "{}")
+        .andExpect(status().isForbidden());
+    var unknown = "/api/v1/user/teams/999999999/invite-links/" + link.path("id").asLong();
+    mvc.perform(delete(unknown).cookie(cookie(owner))).andExpect(status().isForbidden());
+  }
+
+  @Test
+  void inviteAcceptanceEnforcesFreeLimitAndUsesExistingFlexBenefit() throws Exception {
+    for (int i = 0; i < 3; i++) join(user(UserType.DEVELOPER), "MEMBER");
+    String code = createInvite(owner).path("code").asString();
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("TEAM_MEMBER_LIMIT"));
+    subscriptions.saveAndFlush(
+        Subscription.paid(
+            SubscriptionPlan.FLEX,
+            null,
+            team,
+            owner.getId(),
+            BillingCycle.MONTHLY,
+            6,
+            Instant.now().minusSeconds(1),
+            Instant.now().plusSeconds(3600)));
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void simultaneousInvitesCannotConsumeTheSameLastFreeSeatTwice() throws Exception {
+    join(user(UserType.DEVELOPER), "MEMBER");
+    join(user(UserType.DEVELOPER), "MEMBER");
+    String code = createInvite(owner).path("code").asString();
+    var second = user(UserType.DEVELOPER);
+    var start = new java.util.concurrent.CountDownLatch(1);
+    var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+    try {
+      var calls =
+          java.util.stream.Stream.of(outsider, second)
+              .map(target ->
+                  pool.submit(() -> {
+                    start.await();
+                    try {
+                      invitations.accept(principal(target), code);
+                      return "OK";
+                    } catch (com.linker.backend.global.error.ApiException failure) {
+                      return failure.getCode();
+                    }
+                  }))
+              .toList();
+      start.countDown();
+      assertThat(List.of(calls.get(0).get(), calls.get(1).get()))
+          .containsExactlyInAnyOrder("OK", "TEAM_MEMBER_LIMIT");
+      assertThat(
+              jdbc.queryForObject(
+                  "select count(*) from team_members where team_id=? and left_at is null",
+                  Long.class,
+                  team))
+          .isEqualTo(6);
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void failedChatAdmissionRollsBackTeamMembership() throws Exception {
+    String code = createInvite(owner).path("code").asString();
+    jdbc.update("delete from chat_room_members where room_id=?", room);
+    jdbc.update("delete from chat_rooms where id=?", room);
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isConflict());
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from team_members where team_id=? and user_id=?",
+                Long.class,
+                team,
+                outsider.getId()))
+        .isZero();
+  }
+
+  @Test
+  void githubInvitationRequiresBothOwnersAndNeverCallsGitHubInsideTransaction() throws Exception {
+    jdbc.update(
+        "update team_members set github_org_state='NOT_MEMBER' where team_id=? and user_id=?",
+        team,
+        member.getId());
+    when(github.organizationOwner(eq(owner.getId()), eq(org), anyString()))
+        .thenAnswer(call -> {
+          assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+          return true;
+        });
+    when(github.organizationMemberState(
+            eq(owner.getId()), eq(org), anyString(), anyString(), anyLong()))
+        .thenReturn("NONE", "PENDING");
+    when(github.inviteOrganizationMember(eq(owner.getId()), eq(org), anyString(), anyLong()))
+        .thenAnswer(call -> {
+          assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+          return 987L;
+        });
+    String path = base + "/members/" + member.getId() + "/github-invitation";
+    send(post(path), admin, "{}").andExpect(status().isForbidden());
+    send(post(path), owner, "{}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("PENDING"));
+    send(post(path), owner, "{}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sent").value(false));
+    verify(github, times(1))
+        .inviteOrganizationMember(eq(owner.getId()), eq(org), anyString(), anyLong());
+    assertThat(
+            jdbc.queryForObject(
+                "select github_org_state from team_members where team_id=? and user_id=? and left_at is null",
+                String.class,
+                team,
+                member.getId()))
+        .isEqualTo("INVITED");
+    assertThat(
+            jdbc.queryForObject(
+                "select status from github_org_invitations where team_id=? and invitee_user_id=?",
+                String.class,
+                team,
+                member.getId()))
+        .isEqualTo("PENDING");
+  }
+
+  @Test
+  void githubOwnerCheckFailureDoesNotHideSettingsOrPretendAnInvitationWasSent() throws Exception {
+    when(github.organizationOwner(eq(owner.getId()), eq(org), anyString()))
+        .thenThrow(
+            new com.linker.backend.global.error.ApiException(
+                503, "SERVICE_UNAVAILABLE", "연결 확인 필요"));
+    mvc.perform(get(base + "/settings").cookie(cookie(owner)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.githubOrgOwner").value(false))
+        .andExpect(jsonPath("$.githubInvitationBlockedReason").value("연결 확인 필요"));
+    send(post(base + "/members/" + member.getId() + "/github-invitation"), owner, "{}")
+        .andExpect(status().isServiceUnavailable());
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from github_org_invitations where team_id=?", Long.class, team))
+        .isZero();
+  }
+
+  @Test
+  void githubRateLimitIsRecordedAsFailureRatherThanMembership() throws Exception {
+    jdbc.update(
+        "update team_members set github_org_state='NOT_MEMBER' where team_id=? and user_id=?",
+        team,
+        member.getId());
+    when(github.organizationOwner(anyLong(), anyLong(), anyString())).thenReturn(true);
+    when(github.organizationMemberState(anyLong(), anyLong(), anyString(), anyString(), anyLong()))
+        .thenReturn("NONE");
+    when(github.inviteOrganizationMember(anyLong(), anyLong(), anyString(), anyLong()))
+        .thenThrow(
+            new com.linker.backend.global.error.ApiException(429, "GITHUB_INVITE_LIMIT", "초대 한도"));
+    send(post(base + "/members/" + member.getId() + "/github-invitation"), owner, "{}")
+        .andExpect(status().isTooManyRequests());
+    assertThat(
+            jdbc.queryForObject(
+                "select status from github_org_invitations where team_id=?", String.class, team))
+        .isEqualTo("FAILED");
+    assertThat(
+            jdbc.queryForObject(
+                "select github_org_state from team_members where team_id=? and user_id=? and left_at is null",
+                String.class,
+                team,
+                member.getId()))
+        .isEqualTo("NOT_MEMBER");
+  }
+
+  @Test
+  void personalMembershipCapCountsCurrentTeamsButNotArchivedTeams() throws Exception {
+    long archivedCandidate = 0;
+    for (int index = 0; index < 10; index++)
+      archivedCandidate = createExtraTeam(outsider, 1000 + index);
+    String code = createInvite(owner).path("code").asString();
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("TEAM_COUNT_LIMIT"));
+    final long archive = archivedCandidate;
+    new TransactionTemplate(transactions)
+        .executeWithoutResult(
+            status -> teams.lockTeamForSetup(archive).orElseThrow().archive(Instant.now()));
+    send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void rejoiningWithNewInvitePreservesMembershipHistoryAndReusesChatMembership() throws Exception {
+    String code = createInvite(owner).path("code").asString();
+    mvc.perform(delete(base + "/members/me").cookie(cookie(member)))
+        .andExpect(status().isNoContent());
+    send(post("/api/v1/user/invites/" + code + "/accept"), member, "{}").andExpect(status().isOk());
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from team_members where team_id=? and user_id=?",
+                Long.class,
+                team,
+                member.getId()))
+        .isEqualTo(2);
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from team_members where team_id=? and user_id=? and left_at is null",
+                Long.class,
+                team,
+                member.getId()))
+        .isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from chat_room_members where room_id=? and user_id=? and left_at is null",
+                Long.class,
+                room,
+                member.getId()))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void simultaneousInvitesAcrossDifferentTeamsRespectOnePersonalLimit() throws Exception {
+    for (int index = 0; index < 9; index++) createExtraTeam(outsider, 2000 + index);
+    long another = createExtraTeam(owner, 3000);
+    String first = createInvite(owner).path("code").asString();
+    String second = invitations.create(principal(owner), another).code();
+    var start = new java.util.concurrent.CountDownLatch(1);
+    var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+    try {
+      var calls =
+          java.util.stream.Stream.of(first, second)
+              .map(code ->
+                  pool.submit(() -> {
+                    start.await();
+                    try {
+                      invitations.accept(principal(outsider), code);
+                      return "OK";
+                    } catch (com.linker.backend.global.error.ApiException failure) {
+                      return failure.getCode();
+                    }
+                  }))
+              .toList();
+      start.countDown();
+      assertThat(List.of(calls.get(0).get(), calls.get(1).get()))
+          .containsExactlyInAnyOrder("OK", "TEAM_COUNT_LIMIT");
+      assertThat(teams.countedTeams(outsider.getId())).isEqualTo(10);
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void uncertainGithubDeliveryIsReconciledBeforeRetryAndWebhookConfirmationClosesThePendingRow()
+      throws Exception {
+    jdbc.update(
+        "update team_members set github_org_state='NOT_MEMBER' where team_id=? and user_id=?",
+        team,
+        member.getId());
+    when(github.organizationOwner(anyLong(), anyLong(), anyString())).thenReturn(true);
+    when(github.organizationMemberState(anyLong(), anyLong(), anyString(), anyString(), anyLong()))
+        .thenReturn("NONE", "PENDING");
+    when(github.inviteOrganizationMember(anyLong(), anyLong(), anyString(), anyLong()))
+        .thenThrow(
+            new com.linker.backend.global.error.ApiException(503, "SERVICE_UNAVAILABLE", "응답 미확인"));
+    String path = base + "/members/" + member.getId() + "/github-invitation";
+    send(post(path), owner, "{}").andExpect(status().isServiceUnavailable());
+    send(post(path), owner, "{}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("PENDING"));
+    verify(github, times(1)).inviteOrganizationMember(anyLong(), anyLong(), anyString(), anyLong());
+    assertThat(
+            jdbc.queryForObject(
+                "select status from github_org_invitations where team_id=?", String.class, team))
+        .isEqualTo("PENDING");
+    new TransactionTemplate(transactions)
+        .executeWithoutResult(status -> teams.confirmMember(team, member.getId(), Instant.now()));
+    assertThat(
+            jdbc.queryForObject(
+                "select status from github_org_invitations where team_id=?", String.class, team))
+        .isEqualTo("ACCEPTED");
+  }
+
+  @Test
+  void administratorCanListRepositoriesForSettingsButCannotWriteInitialSetup() throws Exception {
+    when(github.repositories(eq(admin.getId()), eq(installation), eq(org)))
+        .thenReturn(
+            List.of(
+                new GithubTeamSource.Repository(
+                    900,
+                    "org",
+                    "repo",
+                    "org/repo",
+                    null,
+                    null,
+                    0,
+                    0,
+                    null,
+                    false,
+                    false,
+                    null,
+                    "main")));
+    mvc.perform(get(base + "/setup/repos").cookie(cookie(admin)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value(900));
+    send(put(base + "/setup/repos"), admin, "{\"repoIds\":[900]}")
+        .andExpect(status().isForbidden());
+    mvc.perform(get(base + "/setup/repos").cookie(cookie(member)))
+        .andExpect(status().isForbidden());
+  }
+
+  private long createExtraTeam(User creator, int offset) {
+    return new TransactionTemplate(transactions)
+        .execute(status ->
+            teams.create(
+                creator.getId(),
+                new GithubInstallationView(
+                    installation + offset, org + offset, "cap-org-" + (org + offset), null),
+                new CreateTeamRequest(Long.toString(installation + offset), "추가 팀", "소개"),
+                Instant.now()))
+        .id();
+  }
+
+  private tools.jackson.databind.JsonNode createInvite(User creator) throws Exception {
+    return tools.jackson.databind.json.JsonMapper.builder()
+        .build()
+        .readTree(
+            send(post(base + "/invite-links"), creator, "{}")
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString());
+  }
+
+  private com.linker.backend.global.security.AuthenticatedUser principal(User user) {
+    return new com.linker.backend.global.security.AuthenticatedUser(
+        user.getId(),
+        user.getUsername(),
+        user.getUserType(),
+        user.getStatus(),
+        null,
+        false,
+        false,
+        true,
+        0);
+  }
+
   private User user(UserType type) {
     var user = User.create("p09-" + UUID.randomUUID().toString().substring(0, 12), type);
     user.completeOnboarding(Instant.now());
-    return users.saveAndFlush(user);
+    var saved = users.saveAndFlush(user);
+    if (type == UserType.DEVELOPER)
+      identities.saveAndFlush(
+          com.linker.backend.entity.account.AuthIdentity.github(
+              saved,
+              Long.toString(9000000 + saved.getId()),
+              saved.getUsername(),
+              null,
+              Instant.now()));
+    return saved;
   }
   @Test
   void temporaryOwnerSuspensionDelegatesOnlyWhileThePeriodIsOpen() throws Exception {
