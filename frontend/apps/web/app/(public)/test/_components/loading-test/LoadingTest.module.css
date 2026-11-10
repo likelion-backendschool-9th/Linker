@@ -1,0 +1,12 @@
+.list {
+  display: grid;
+  gap: var(--space-sm);
+  padding-block: var(--space-md);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-secondary);
+}
