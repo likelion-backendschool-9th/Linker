@@ -40,7 +40,6 @@ export const OVERLAY_KEYS = [
   'subscribe-flex-team',
   'subscription-cancel',
   'payment-refund',
-  'issue-filter',
   'issue-assignees',
   'issue-labels',
   'issue-schedule',

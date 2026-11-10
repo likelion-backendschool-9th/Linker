@@ -51,17 +51,14 @@ test('search and status chips narrow the list through the URL', async ({ page })
   await expect(page.getByRole('button', { name: /일정 없음/ })).toHaveCount(0);
 });
 
-test('the header filter icon opens the filter sheet; the team name opens "팀 변경"', async ({
-  page,
-}) => {
+test('the header icon and the team name both open "팀 변경"', async ({ page }) => {
   await page.goto('/teams/1/issues');
-  await page.getByRole('button', { name: '필터', exact: true }).click();
-  // Escape reaches the sheet once its focus trap has moved focus to "닫기"
-  await expect(page.getByRole('dialog').getByRole('button', { name: '닫기' })).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toBeHidden();
-  await page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ }).click();
+  await page.getByRole('button', { name: '팀 변경', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: '팀 변경' });
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: '닫기' }).click();
+  await expect(sheet).toBeHidden();
+  await page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ }).click();
   await expect(sheet.getByRole('radio', { name: 'Linker 해커톤팀' })).toBeChecked();
   await expect(sheet.getByRole('button', { name: '팀 변경', exact: true })).toBeVisible();
 });

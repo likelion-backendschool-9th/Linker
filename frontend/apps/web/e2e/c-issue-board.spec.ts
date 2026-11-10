@@ -11,13 +11,13 @@ test.beforeEach(async ({ page }) => {
 const column = (page: Page, name: string) =>
   page.getByRole('region', { name: new RegExp(`^${name} \\d+개$`) });
 
-test('header, tabs, 필터·최신순, status columns and cards', async ({ page }) => {
+test('header, tabs, 팀 변경·최신순, status columns and cards', async ({ page }) => {
   await page.goto('/teams/1/board');
   await expect(page.getByRole('link', { name: '보드', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
   );
-  await expect(page.getByRole('button', { name: '필터', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '팀 변경', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '상태 필터' })).toBeVisible();
   await expect(page.getByRole('button', { name: '정렬, 최신순' })).toBeVisible();
   for (const name of ['작업 전', '작업 중', '작업 중단', '작업 완료']) {
