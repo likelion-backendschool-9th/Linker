@@ -203,6 +203,8 @@ export interface ChatPullRequest {
   draft: boolean;
   author: string;
   url: string;
+  /** Last update time reported by GitHub; not the local cache creation time */
+  githubUpdatedAt: string;
 }
 
 export interface ChatPullRequestsResponse {
