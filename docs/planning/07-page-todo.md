@@ -517,7 +517,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Button ring: short spinning arc while queued → blue filling clockwise from 12 o'clock while running → full blue until "채팅에 공유" or "새로 요약하기" → red after a failure (tap summarizes again). Tap while running → one-line bubble with a thin gray border (「대화 읽는 중 · N/100」 / 「요약 쓰는 중 · N/100」, number three digits wide / 「앞에 N건 기다리는 중」). The ring resumes from room info `myAiSummary`
 - [ ] Done → toast「요약이 끝났어요」+「보기」; away from the room → `AI_SUMMARY_DONE` / `AI_SUMMARY_FAILED` notification (18) opens `?overlay=ai-summary&oid={id}`
 - [ ] Minutes sheet: one line, 결정한 것 / 할 일 / 아직 정하지 못한 것 (≤3 each), tap a line → its source message when loaded, 「최근 메시지 N개를 요약했어요 · 오늘 N/10회 사용」, disclaimer, 「채팅에 공유」, 「새로 요약하기」 (confirm, spends one use)
-- [ ] Shared `AI_SUMMARY` card: one line + counts; tap → the full minutes (from the card's payload) for everyone in the room
+- [ ] Shared `AI_SUMMARY` card: centered full-width card like the PR cards (not a bubble), "{name}님이 AI 요약을 공유했어요 · time" above, one line (2 lines max) + counts + 「회의록 보기」; tap → the full minutes (from the card's payload) for everyone in the room; long press / right click → message menu (report, delete)
 - [ ] Server: latest ≤200 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) trimmed to the budget → `LlmClient` (Ollama `qwen3:4b`, thinking off, JSON schema, output cap) on one worker; progress in Redis; 7-day retention, 10/day Redis (refund on failure), Flex via `PlanLimits`. Chat text is passed as data, not instructions (prompt isolation)
 - [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); per to-do "이슈 만들기" → 13; failure retry/cancel choices
 

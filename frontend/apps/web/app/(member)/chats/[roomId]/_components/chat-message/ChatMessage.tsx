@@ -79,10 +79,7 @@ export function ChatMessage({
         <p>운영 정책에 따라 숨겨진 메시지예요</p>
       ) : (
         <>
-          {/* AI_SUMMARY text is the list preview ("AI 요약 · …"); the card shows it instead */}
-          {message.text && message.type !== 'AI_SUMMARY' && (
-            <p className={styles.text}>{message.text}</p>
-          )}
+          {message.text && <p className={styles.text}>{message.text}</p>}
           {!!message.imageUrls.length && (
             <div className={styles.images}>
               {message.imageUrls.map((url, index) => (
@@ -105,14 +102,10 @@ export function ChatMessage({
           )}
           {!system &&
             kind !== 'REQUEST' &&
-            message.type !== 'AI_SUMMARY' &&
             message.text &&
             messageUrls(message.text).length > 0 && (
               <ExternalLinkPreview roomId={message.roomId} text={message.text} />
             )}
-          {message.type === 'AI_SUMMARY' && (
-            <AiSummaryCard messageId={message.id} payload={message.payload} />
-          )}
         </>
       )}
     </div>
@@ -129,6 +122,12 @@ export function ChatMessage({
       </p>
     </div>
   );
+
+  // Shared AI minutes sit centered across the timeline like PR cards, not inside a bubble.
+  if (message.type === 'AI_SUMMARY' && !hidden && !message.deletedAt)
+    return (
+      <AiSummaryCard message={message} senderName={senderName} canMenu={canMenu} onMenu={onMenu} />
+    );
 
   // B's PR view owns its organization identity and card; regular D message rendering stays below.
   if (message.type === 'PR_EVENT' && !hidden && !message.deletedAt)
