@@ -30,11 +30,11 @@
 
 /*
  * Opt-in scroll-hide (19 recruit list scenario 2): collapses as soon as scroll leaves the top,
- * and only slides back open at `scrollY === 0` (see `useRecruitHeaderCollapse`). Shares
+ * and only slides back open at `scrollY === 0` (see `useTabChromeCollapse`, pages 19 and 24). Shares
  * `--duration-chrome-collapse` with the tab chrome's pin slide so header and tabs ease together.
  * Every other tab screen never toggles the class, so its header is unaffected.
  */
-:global(.recruit-header-collapsed) .header {
+:global(html.tab-chrome-collapsed) .header {
   max-height: 0;
   padding-top: 0;
   opacity: 0;
