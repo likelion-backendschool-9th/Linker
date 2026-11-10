@@ -179,7 +179,7 @@
   --color-profile-github-quiet: #f2f3f8; /* 04 "GitHub" button on someone else's profile (Figma 301:629) */
   --color-profile-work-cover: #f4f4f4; /* 04 work card cover before its image loads (Figma 123:1415) */
   --color-github-mark-original: #24292f; /* 09 Social Icons Github Original fill */
-  --color-team-delete-fill: #e000001a; /* 09 owner "팀 삭제" CTA fill (Figma 695:1525) */
+  --color-team-delete-fill: #fce6e6; /* 09 owner "팀 삭제" CTA fill: Figma 695:1525 #e000001a over white, opaque because the CTA is pinned over scrolling content */
   --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */
 
   /* Figma 16 chat list (247:1019, 321:2336, 321:2417) */

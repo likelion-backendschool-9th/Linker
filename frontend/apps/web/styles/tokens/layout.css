@@ -23,6 +23,9 @@
   --space-team-invite: 11px; /* 09 between invite buttons, and buttons to the hints (Figma 368:387) */
   --space-team-settings-band: 30px; /* 09 invite hints to the gray band (Figma 368:387) */
   --space-team-repos-top: 22px; /* 09 gray band to "GitHub 저장소" (Figma 368:387) */
+  --space-team-cta-bottom: 28px; /* 09 pinned 팀 삭제 / 팀 나가기 from the screen bottom: 4 above the 24 home indicator (Figma 368:1563) */
+  --space-team-cta-gap: 25px; /* 09 last repo row to the pinned CTA (Figma 368:1563) */
+  --control-height-team-delete: 45px; /* 09 "팀 삭제" (Figma 695:1525) */
   --space-profile-fab-bottom: 24px; /* P04 chat FAB from the screen bottom, incl. home indicator (Figma 365:246) */
   --space-profile-badge: 6px; /* P04 name to its status badge (Figma 116:427) */
   --space-profile-badge-block: 2px; /* P04 status badge vertical padding (Figma 116:427) */
