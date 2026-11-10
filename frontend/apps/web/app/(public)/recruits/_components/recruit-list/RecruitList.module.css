@@ -137,3 +137,39 @@
   --icon-box-size: var(--icon-size);
   color: var(--color-text-inverse);
 }
+
+.empty {
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  margin: 0;
+  padding: var(--space-xxl) var(--space-md);
+  text-align: center;
+  font-size: var(--font-size-body);
+  color: var(--color-text-slate);
+}
+
+.sentinel {
+  height: 1px;
+}
+
+.application {
+  display: grid;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-lg);
+}
+
+.applicationActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+}
+
+.applicationStatus {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-slate);
+}
