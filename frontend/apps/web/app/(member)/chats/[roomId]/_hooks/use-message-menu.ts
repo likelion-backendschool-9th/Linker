@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react';
 
+import { swallowLongPressMenu } from '../../_lib/swallow-long-press-menu';
+
 const HOLD_MS = 500;
 const MOVE_TOLERANCE = 10;
 
@@ -70,6 +72,7 @@ export function useMessageMenu(enabled: boolean, onOpen: () => void) {
         timer.current = null;
         suppressClick.current = true;
         onOpen();
+        swallowLongPressMenu();
       }, HOLD_MS);
     },
     onPointerMove: (event: PointerEvent<HTMLElement>) => {

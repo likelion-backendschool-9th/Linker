@@ -328,6 +328,8 @@ describe('row menu (right-click / long press)', () => {
       const sheet = await screen.findByRole('dialog', { name: 'ShowMoa의 채팅방' });
       expect(within(sheet).getByRole('button', { name: '팀 나가기' })).toBeVisible();
       expect(within(sheet).getByRole('button', { name: '읽음 처리' })).toBeEnabled();
+      // The browser's own long-press menu lands on the sheet now under the finger; it is cancelled
+      expect(fireEvent.contextMenu(document.body)).toBe(false);
       fireEvent.pointerUp(link, { pointerType: 'touch' });
       // The click after the hold is swallowed; a later plain tap still navigates.
       expect(fireEvent.click(link)).toBe(false);
