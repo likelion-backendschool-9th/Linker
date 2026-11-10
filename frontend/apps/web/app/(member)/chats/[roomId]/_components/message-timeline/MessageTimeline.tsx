@@ -18,6 +18,8 @@ type Props = {
   onPhoto?: (id: number, index: number) => void;
   onMenu?: (id: number) => void;
   readPosition?: { id: number } | null;
+  /** Scrolls a loaded message into view when a new object arrives (AI summary source lines) */
+  jumpTo?: { id: number } | null;
   /** Called when the reader scrolls near the top; loads the previous page (replaces "이전 대화 불러오기") */
   onReachTop?: () => void;
 };
@@ -29,6 +31,7 @@ export function MessageTimeline({
   login,
   onRead,
   readPosition,
+  jumpTo,
   onMenu,
   onPhoto,
   onReachTop,
@@ -37,6 +40,7 @@ export function MessageTimeline({
     messages,
     onRead,
     readPosition,
+    jumpTo,
   });
 
   return (

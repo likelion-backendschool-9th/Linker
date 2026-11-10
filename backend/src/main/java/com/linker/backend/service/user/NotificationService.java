@@ -391,7 +391,7 @@ public class NotificationService {
 	}
 
 	private Instant deliverAfter(String type, Instant now) {
-		if (NotificationTypes.isChat(type)) {
+		if (NotificationTypes.skipsQuietHours(type)) {
 			return null;
 		}
 		ZonedDateTime local = now.atZone(PlanLimits.APP_ZONE);

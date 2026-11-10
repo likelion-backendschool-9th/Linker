@@ -510,13 +510,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
-**AI chat summary (Flex, after 28)** — current shrink + `[Included]` follow-ups (c-role-audit #8, `c-page17-ai-chat-summary`)
+**AI chat summary (Flex, after 28)** — D (taken over from C on 2026-11-10); Policy POL-C-5
 
-- [ ] **Now:** "AI 요약" → always latest 500 messages (no range picker UI). Result = one `summary` body + disclaimer + N/10. Free → PlanLimitSheet. Loading「요약하는 중이에요」/ fail「요약하지 못했어요」. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
-- [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); min-20「직접 읽는 게 더 빨라요」copy path if still required
-- [ ] `[Included]` follow-up: minutes sections (decisions / to-dos / open questions) + tap-to-scroll originals; "채팅에 공유"; per to-do "이슈 만들기" → 13
-- [ ] Over 30 seconds → loading + done toast (push notify type still open); Free Flex prompt copy as Policy when implementing full sheet
-- [ ] Server (now): latest ≤500 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) → `LlmClient` → 7-day retention, 10/day Redis, Flex via `PlanLimits`. Prompt isolation minimum in PR3 (c-role-audit #9)
+- [ ] Tap "AI 채팅 요약" → summary starts at once (latest messages within ~1,500 tokens, min 20「직접 읽는 게 더 빨라요」). Free → PlanLimitSheet. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
+- [ ] Button ring: short spinning arc while queued → blue filling clockwise from 12 o'clock while running → full blue until "채팅에 공유" or "새로 요약하기" → red after a failure (tap summarizes again). Tap while running → one-line bubble with a thin gray border (「대화 읽는 중 · N/100」 / 「요약 쓰는 중 · N/100」, number three digits wide / 「앞에 N건 기다리는 중」). The ring resumes from room info `myAiSummary`
+- [ ] Done → toast「요약이 끝났어요」+「보기」; away from the room → `AI_SUMMARY_DONE` / `AI_SUMMARY_FAILED` notification (18) opens `?overlay=ai-summary&oid={id}`
+- [ ] Minutes sheet: one line, 결정한 것 / 할 일 / 아직 정하지 못한 것 (≤3 each), tap a line → its source message when loaded, 「최근 메시지 N개를 요약했어요 · 오늘 N/10회 사용」, disclaimer, 「채팅에 공유」, 「새로 요약하기」 (confirm, spends one use)
+- [ ] Shared `AI_SUMMARY` card: centered full-width card like the PR cards (not a bubble), "{name}님이 AI 요약을 공유했어요 · time" above, one line (2 lines max) + counts + 「회의록 보기」; tap → the full minutes (from the card's payload) for everyone in the room; long press / right click → message menu (report, delete)
+- [ ] Server: latest ≤200 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) trimmed to the budget → `LlmClient` (Ollama `qwen3:4b`, thinking off, JSON schema, output cap) on one worker; progress in Redis; 7-day retention, 10/day Redis (refund on failure), Flex via `PlanLimits`. Chat text is passed as data, not instructions (prompt isolation)
+- [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); per to-do "이슈 만들기" → 13; failure retry/cancel choices
 
 **1:1 chat only (with 22–24)**
 
@@ -544,12 +546,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
-- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
+- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions, AI summary done/failed (`AI_SUMMARY_DONE` → 17 minutes sheet, `AI_SUMMARY_FAILED` → 17 room)
 - [ ] Tabs: 전체 (all) / 읽지 않음 (unread, server `unread=true`; empty → "읽지 않은 알림이 없어요."), kept in the URL (nuqs). Rows grouped by day ("11월 5일" + "오늘" / "N일 전"); each row is a dot (unread dark, read muted) + the title only (Figma 248:1243)
 - [ ] Tap → navigate to the screen + mark read; "전체 읽기" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
-- [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning
+- [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning (AI summary results go out at once, POL-N-1)
 - [ ] Push (Android app only): register Expo push tokens and send; tapping opens the app at that URL. iOS push needs a paid Apple developer account, so it is out of the MVP. Not sent while the "푸시 알림" switch in 06 is off
 - [ ] Push permission prompt sheet on first launch (Android app)
 
@@ -838,8 +840,8 @@ Assumes each of the 5 people owns both frontend and server for their pages. If r
 | --- | --- | --- |
 | A. Account & recruiting | 00 auth, access table, page frame; 01, 02, 03, 04 (pass 1), 06 | 05, 25, 31, 04 (pass 2), 32, 33, `[Included]` job ad server, 04 job ad sheet, 05 job categories |
 | B. GitHub, teams, ops | 00 GitHub App, webhooks, app bridge; 07, 08, 09 (pass 1), 10 | 09 (pass 2: completion, ownership transfer), 17 PR posting, 26, 27, 30, sync hardening |
-| C. Issues | 00 Projects spike, policy numbers, SEO, test setup; 11, 12 | 13, 14, 15, 07 my issues, 17 AI summary (Flex), 11 progress card (Flex) |
-| D. Chat & notifications | 00 STOMP, notification service, STOMP client; 16, 17 (team chat) | 18, 17 (1:1 chat, share cards, link cards), 00 share sheet, 28, 29 (incl. Scout plan) |
+| C. Issues | 00 Projects spike, policy numbers, SEO, test setup; 11, 12 | 13, 14, 15, 07 my issues, 11 progress card (Flex) |
+| D. Chat & notifications | 00 STOMP, notification service, STOMP client; 16, 17 (team chat) | 18, 17 (1:1 chat, share cards, link cards, AI summary (Flex), taken over from C 2026-11-10), 00 share sheet, 28, 29 (incl. Scout plan) |
 | E. Find Team & posts | 00 monorepo, API calls, sheet open/close, common sheets, image uploader; 19, 20, 21 | 21 wrap-up, 22, 23, 24, `[Included]` 24 job ad card |
 
 | Days | Goal |

@@ -15,6 +15,7 @@ import { IssueMessageCards } from '../issue-message-cards';
 import { PrEventCard } from '../pr-event-card';
 import { SharedContentCard } from '../shared-content-card';
 import { ExternalLinkPreview } from '../external-link-preview';
+import { AiSummaryCard } from '../ai-summary-card';
 
 type Props = {
   message: RoomMessage;
@@ -105,9 +106,6 @@ export function ChatMessage({
             messageUrls(message.text).length > 0 && (
               <ExternalLinkPreview roomId={message.roomId} text={message.text} />
             )}
-          {message.type === 'AI_SUMMARY' && (
-            <p className={styles.card}>AI 요약 · {String(message.payload?.oneLine ?? '')}</p>
-          )}
         </>
       )}
     </div>
@@ -124,6 +122,12 @@ export function ChatMessage({
       </p>
     </div>
   );
+
+  // Shared AI minutes sit centered across the timeline like PR cards, not inside a bubble.
+  if (message.type === 'AI_SUMMARY' && !hidden && !message.deletedAt)
+    return (
+      <AiSummaryCard message={message} senderName={senderName} canMenu={canMenu} onMenu={onMenu} />
+    );
 
   // B's PR view owns its organization identity and card; regular D message rendering stays below.
   if (message.type === 'PR_EVENT' && !hidden && !message.deletedAt)

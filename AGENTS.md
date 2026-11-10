@@ -19,8 +19,8 @@ One person owns both frontend and backend of their pages. API ownership follows 
 | --- | --- | --- |
 | A | Accounts & recruiting | 01, 02, 03, 04, 05, 06, 25, 31, 32, 33 |
 | B | GitHub, teams, ops | 07, 08, 09, 10, 26, 27, 30 + PR posting in 17 |
-| C | Issues | 11, 12, 13, 14, 15 + my issues in 07 + AI summary (Flex) in 17 + progress card (Flex) in 11 |
-| D | Chat, notifications, subscription | 16, 17, 18, 28, 29 |
+| C | Issues | 11, 12, 13, 14, 15 + my issues in 07 + progress card (Flex) in 11 |
+| D | Chat, notifications, subscription | 16, 17 (incl. AI summary, taken over from C), 18, 28, 29 |
 | E | Find Team & project posts | 19, 20, 21, 22, 23, 24 |
 
 Foundation page 00 (D1–D2) is split across everyone; see WBS ch. 3.
@@ -55,7 +55,7 @@ Guest (read-only on feed, posts, recruit posts, profiles) / Developer (GitHub lo
 - Chat uses Spring WebSocket + STOMP, with `@stomp/stompjs` on web.
 - JWT stays in an httpOnly parent-domain cookie; never expose it to JavaScript or the native bridge.
 - Index only developer profiles, posts, and recruitment posts; everything else is `noindex`.
-- Backend hosting, email provider, and AI summary model remain open decisions: ask the user before selecting them.
+- Backend hosting and email provider remain open decisions: ask the user before selecting them. The AI summary model is Ollama `qwen3:4b` at 2 CPUs / 4 GiB (decided 2026-11-10); ask before changing it.
 
 ## Backend structure (details: blueprint §3–§4)
 - Base package `com.linker.backend`; layers `controller`, `service`, `repository`, `entity`, `dto`, plus `integration`, `async`, `global`. 18 business systems (WBS S01–S18), 29 controller classes.
