@@ -225,6 +225,8 @@ export interface ChatCounterpartResponse {
 }
 
 export interface ChatLastMessageResponse {
+  /** Message id; the list's 읽음 처리 sends it as lastReadMessageId */
+  id: number;
   /**
      * Preview text; null for an image-only message
      * @nullable
@@ -272,6 +274,11 @@ export interface ChatRoomItemResponse {
      * @nullable
      */
   title: string | null;
+  /**
+     * TEAM: team id for the 팀 나가기 link to page 09. 1:1: null
+     * @nullable
+     */
+  teamId: number | null;
   /** @nullable */
   counterpart: ChatCounterpartResponse | null;
   /** @nullable */

@@ -33,7 +33,7 @@ class ChatCursorTest {
 		ChatRoomRepository rooms = mock(ChatRoomRepository.class);
 		Instant sortAt = Instant.parse("2026-11-01T00:00:00Z");
 		ChatListRow row = new ChatListRow(
-				4L, "DIRECT", "GENERAL", false, sortAt, "안녕", "VISIBLE", null, sortAt, 1L, null, "상대", "other", null, null, null
+				4L, "DIRECT", "GENERAL", false, sortAt, 9L, "안녕", "VISIBLE", null, sortAt, 1L, null, "상대", "other", null, null, null, null
 		);
 		when(rooms.listPage(anyLong(), anyString(), org.mockito.ArgumentMatchers.any(Instant.class), nullable(Instant.class), nullable(Long.class), anyInt()))
 				.thenReturn(Collections.nCopies(21, row));

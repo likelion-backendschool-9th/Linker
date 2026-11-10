@@ -1624,11 +1624,12 @@ public class ChatService {
 		}
 		ChatLastMessageResponse lastMessage = row.previewCreatedAt() == null
 				? null
-				: new ChatLastMessageResponse(previewText(row), row.previewCreatedAt());
+				: new ChatLastMessageResponse(row.previewId(), previewText(row), row.previewCreatedAt());
 		return new ChatRoomItemResponse(
 				row.roomId(),
 				tab,
 				title,
+				team ? row.teamId() : null,
 				counterpart,
 				row.requestKind(),
 				"REQUEST".equals(tab) ? "RECEIVED" : null,

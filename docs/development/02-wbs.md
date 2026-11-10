@@ -344,7 +344,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 16 | D | GET | `/api/v1/user/chat-rooms?tab=TEAM\|DIRECT\|REQUEST` | Room list (last message, unread count, muted), excluding blocked users | user |
+| 16 | D | GET | `/api/v1/user/chat-rooms?tab=TEAM\|DIRECT\|REQUEST` | Room list (last message with its id for 읽음 처리, unread count, muted, TEAM `teamId` for 팀 나가기 → 09), excluding blocked users | user |
 | 16 | D | GET | `/api/v1/user/chat-rooms/unread-summary` | Unread count per tab, received request count (bottom tab badge) | user |
 | 16 | D | POST | `/api/v1/user/chat-requests/{roomId}/accept` | Accept message request — also borrowed by the top of 17 | user |
 | 16 | D | DELETE | `/api/v1/user/chat-requests/{roomId}` | Delete request (reject, sender not notified, blocks re-request for 30 days) | user |
