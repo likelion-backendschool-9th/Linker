@@ -118,6 +118,12 @@
   --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
   --avatar-size-team: 50px; /* 07 selected-team image */
   --avatar-size-profile: 60px; /* 04 developer profile image (Figma 301:572) */
+  --size-profile-skeleton-name-w: 147px; /* 04 skeleton name bar (Figma 982:482) */
+  --size-profile-skeleton-name-h: 26px;
+  --size-profile-skeleton-meta-w: 125px; /* 04 skeleton follow line (Figma 982:483) */
+  --size-profile-skeleton-meta-h: 17px;
+  --size-profile-skeleton-bio-w: 227px; /* 04 skeleton bio line (Figma 982:485) */
+  --size-profile-skeleton-bio-h: 16px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
