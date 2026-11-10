@@ -398,8 +398,8 @@ class TeamManagementIntegrationTest {
         .isNotNull();
     assertThat(
             jdbc.queryForObject(
-                "select max(version::int) from flyway_schema_history", Integer.class))
-        .isEqualTo(29);
+                "select count(*) from flyway_schema_history where version='29' and success", Integer.class))
+        .isEqualTo(1);
     for (String table : List.of("team_invite_links", "github_org_invitations", "team_ownership_transfers",
         "team_completions", "completion_records"))
       assertThat(jdbc.queryForObject("select to_regclass(?) is not null", Boolean.class, table)).isTrue();
