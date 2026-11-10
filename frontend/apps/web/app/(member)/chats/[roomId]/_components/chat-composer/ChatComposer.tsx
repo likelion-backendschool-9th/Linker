@@ -23,11 +23,11 @@ type Props = {
   room?: RoomInfo;
   login?: string | null;
   onSend: (message: { text: string; images: UploadedImage[]; references?: ChatReferences }) => void;
-  /** Extra button between the input and send (the team room's "AI 채팅 요약") */
-  beforeSend?: ReactNode;
+  /** Button stacked right above send (the team room's "AI 채팅 요약"); the input grows to match */
+  aboveSend?: ReactNode;
 };
 
-export function ChatComposer({ disabled, onSend, room, login = null, beforeSend }: Props) {
+export function ChatComposer({ disabled, onSend, room, login = null, aboveSend }: Props) {
   const {
     uploader,
     attachments,
@@ -112,11 +112,14 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
           placeholder="채팅을 입력해 주세요."
           className={styles.input}
         />
-        {beforeSend}
-        <button type="submit" disabled={!canSubmit} className={styles.send}>
-          <ArrowUp aria-hidden />
-          <span className="sr-only">보내기</span>
-        </button>
+        {/* AI 요약 sits on top of send inside the bar (user request 2026-11-10) */}
+        <div className={styles.sendColumn}>
+          {aboveSend}
+          <button type="submit" disabled={!canSubmit} className={styles.send}>
+            <ArrowUp aria-hidden />
+            <span className="sr-only">보내기</span>
+          </button>
+        </div>
       </div>
       {!!uploader.items.length && (
         <button

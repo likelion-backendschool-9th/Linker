@@ -128,11 +128,6 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}
         />
-        {room.team && room.kind !== 'REQUEST' && (
-          <div className={styles.aiSummary}>
-            <AiSummaryFab roomId={roomId} />
-          </div>
-        )}
       </div>
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
@@ -168,6 +163,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             room={room}
             login={viewer.login}
             disabled={readOnly}
+            aboveSend={room.team ? <AiSummaryFab roomId={roomId} /> : undefined}
             onSend={({ text, images, references }) =>
               outbox.enqueue({
                 clientMessageId: crypto.randomUUID(),

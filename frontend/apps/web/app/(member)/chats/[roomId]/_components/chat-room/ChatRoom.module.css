@@ -18,13 +18,6 @@
   min-height: 0;
 }
 
-/* Figma 750:3125: keep the summary above the composer, outside the scrolling messages. */
-.aiSummary {
-  position: absolute;
-  right: calc(var(--space-row-inline) - (67px - var(--fab-size)) / 2);
-  bottom: var(--space-sm);
-}
-
 .viewport {
   position: relative;
   flex: 1;
@@ -370,9 +363,20 @@
   outline-offset: 2px;
 }
 
+/* Send with the team room's "AI 채팅 요약" stacked on top (user request 2026-11-10) */
+.sendColumn {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
 /* Input text stays 16px so iOS never zooms; only the placeholder takes the Figma 12px */
 .input {
   flex: 1;
+  /* Stretches to the send column, so it is taller when "AI 채팅 요약" sits above send */
+  align-self: stretch;
   min-width: 0;
   min-height: var(--control-height-chat);
   max-height: calc(var(--control-height-chat) * 3);
