@@ -47,7 +47,7 @@ export function LoginPromptSheet() {
     try {
       await startGithubLogin(returnTo());
     } catch {
-      toast('GitHub에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' });
+      toast('GitHub에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' });
     } finally {
       setPending(false);
     }

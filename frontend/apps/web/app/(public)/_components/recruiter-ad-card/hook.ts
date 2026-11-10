@@ -25,7 +25,7 @@ export function useRecruiterAdCard({ ad, onDismissed, onRestored }: UseRecruiter
   const open = useMutation({
     mutationFn: () => clickAd(ad.adId),
     onSuccess: ({ url }) => openExternal(url),
-    onError: () => toast('공고를 열지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' }),
+    onError: () => toast('공고를 열지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' }),
   });
   const restore = useMutation({
     mutationFn: () => dismissAd(ad.adId, false),

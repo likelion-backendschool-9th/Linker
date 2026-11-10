@@ -7,6 +7,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactNode } from 'react';
 
 import { OverlayRoot } from '@/components/overlay/overlay-root/OverlayRoot';
+import { LoadTimeoutScreen } from '@/components/ui/page-loading';
 import { Toaster } from '@/components/ui/toaster/Toaster';
 import { LoginPromptSheet } from '@/features/auth/login-prompt-sheet/LoginPromptSheet';
 import { SessionClaimSync } from '@/features/auth/session-claim-sync/SessionClaimSync';
@@ -47,6 +48,7 @@ export function Providers({
                 <ExternalLinkSheet />
                 <ReportSheet />
                 <Toaster />
+                <LoadTimeoutScreen />
                 <MockRoleSwitcher />
               </NativeBridgeProvider>
             </MotionConfig>

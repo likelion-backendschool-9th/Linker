@@ -1,10 +1,6 @@
-import { PageFrame } from '@/components/layout/page-frame/PageFrame';
-import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { PageLoading } from '@/components/ui/page-loading';
 
+/** Full-screen loading (Figma 301:294) */
 export default function OnboardingLoading() {
-  return (
-    <PageFrame title="약관 동의" variant="stack" backHref="/feed" bottomTabs={false}>
-      <Skeleton variant="line" count={6} />
-    </PageFrame>
-  );
+  return <PageLoading />;
 }

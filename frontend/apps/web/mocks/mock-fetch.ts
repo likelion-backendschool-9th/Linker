@@ -13,6 +13,16 @@ import { routes } from './routes';
  */
 
 const BROWSER_DELAY_MS = 150;
+/** Dev only: `localStorage.setItem('linker_mock_delay_ms', '12000')` slows every mock response, e.g. to
+ *  see the 10 s timeout screen. Remove the key to go back to normal. */
+function browserDelayMs() {
+  try {
+    const custom = Number(window.localStorage.getItem('linker_mock_delay_ms'));
+    return Number.isFinite(custom) && custom > 0 ? custom : BROWSER_DELAY_MS;
+  } catch {
+    return BROWSER_DELAY_MS;
+  }
+}
 const ADMIN_OTP_IDLE_MS = ADMIN.otpIdleMinutes * 60 * 1000;
 let adminOtpLastActiveAt: number | null = null;
 let adminOtpRole: MockRole | null = null;
@@ -100,7 +110,7 @@ export async function mockFetch<T>(url: string, init: RequestInit = {}): Promise
   const method = (init.method ?? 'GET').toUpperCase();
   const entry = find(method, parsed.pathname);
 
-  if (typeof window !== 'undefined') await new Promise((r) => setTimeout(r, BROWSER_DELAY_MS));
+  if (typeof window !== 'undefined') await new Promise((r) => setTimeout(r, browserDelayMs()));
 
   if (!entry) {
     console.warn(`[mock] no mock for ${method} ${parsed.pathname}`);

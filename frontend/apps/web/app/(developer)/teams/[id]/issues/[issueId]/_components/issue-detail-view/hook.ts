@@ -56,7 +56,7 @@ export function useIssueDetailView(teamId: string, issueId: string) {
       if (!canWrite) {
         toast(
           viewer.status === 'SUSPENDED' ? '이용이 제한된 동안에는 바꿀 수 없어요.' : NO_PERMISSION,
-          { tone: 'alert' },
+          { tone: 'error' },
         );
         return;
       }

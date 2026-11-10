@@ -87,7 +87,7 @@ export function useShareButton(target: ShareTarget) {
       if (current?.isOpen && current.id === id) await current.closeAnd(notify);
       else notify();
     } catch {
-      toast('링크를 복사하지 못했어요. 다시 시도해 주세요.', { tone: 'alert' });
+      toast('링크를 복사하지 못했어요. 다시 시도해 주세요.', { tone: 'error' });
     } finally {
       setCopying(false);
     }

@@ -53,7 +53,7 @@ export function useInviteAcceptArea(invite: Invite) {
     try {
       await startGithubLogin(returnTo);
     } catch {
-      toast('GitHub에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' });
+      toast('GitHub에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' });
     } finally {
       setPending(false);
     }
@@ -62,11 +62,11 @@ export function useInviteAcceptArea(invite: Invite) {
   async function onJoin() {
     if (pending) return;
     if (viewer.role === 'recruiter') {
-      toast(RECRUITER_BLOCK, { tone: 'alert' });
+      toast(RECRUITER_BLOCK, { tone: 'error' });
       return;
     }
     if (invite.status !== 'VALID') {
-      toast(invalidMessage(invite.status), { tone: 'alert' });
+      toast(invalidMessage(invite.status), { tone: 'error' });
       return;
     }
     if (viewer.role === 'guest') {
@@ -74,7 +74,7 @@ export function useInviteAcceptArea(invite: Invite) {
       return;
     }
     if (viewer.status === 'SUSPENDED') {
-      toast('이용이 제한된 동안에는 팀에 참여할 수 없어요.', { tone: 'alert' });
+      toast('이용이 제한된 동안에는 팀에 참여할 수 없어요.', { tone: 'error' });
       return;
     }
     setPending(true);
@@ -90,7 +90,7 @@ export function useInviteAcceptArea(invite: Invite) {
         error instanceof ApiError && error.message
           ? error.message
           : '팀에 합류하지 못했어요. 잠시 후 다시 시도해 주세요.',
-        { tone: 'alert' },
+        { tone: 'error' },
       );
     } finally {
       setPending(false);
@@ -100,11 +100,11 @@ export function useInviteAcceptArea(invite: Invite) {
   async function onGithubSignup() {
     if (pending) return;
     if (viewer.role === 'recruiter') {
-      toast(RECRUITER_BLOCK, { tone: 'alert' });
+      toast(RECRUITER_BLOCK, { tone: 'error' });
       return;
     }
     if (invite.status !== 'VALID') {
-      toast(invalidMessage(invite.status), { tone: 'alert' });
+      toast(invalidMessage(invite.status), { tone: 'error' });
       return;
     }
     await startGithub();

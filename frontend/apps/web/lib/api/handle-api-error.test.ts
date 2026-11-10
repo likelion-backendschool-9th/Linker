@@ -1,6 +1,8 @@
 import { useAppSignalStore } from '@/stores/app-signal-store';
+import { useToastStore } from '@/stores/toast-store';
 
 import { ApiError } from './api-error';
+import { RequestTimeoutError } from './fetch-with-timeout';
 import { handleApiError } from './handle-api-error';
 
 beforeEach(() => {
@@ -42,4 +44,13 @@ it('uses an empty reason when PLAN_LIMIT has no detail', () => {
     reason: '',
     message: 'Flex 구독 팀만 쓸 수 있어요.',
   });
+});
+
+it('shows one error toast for timeouts, however many requests time out together', () => {
+  useToastStore.setState({ toasts: [] });
+  handleApiError(new RequestTimeoutError(10_000));
+  handleApiError(new RequestTimeoutError(10_000));
+  const toasts = useToastStore.getState().toasts;
+  expect(toasts).toHaveLength(1);
+  expect(toasts[0]).toMatchObject({ message: '네트워크 연결 시간이 초과되었습니다.', tone: 'error' });
 });

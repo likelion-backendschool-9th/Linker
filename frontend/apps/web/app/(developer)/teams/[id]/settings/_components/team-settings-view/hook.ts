@@ -43,7 +43,7 @@ export function useTeamSettingsView(teamId: string) {
           : '자동으로 복사하지 못했어요. 아래 링크를 선택해 복사해 주세요.',
       );
     },
-    onError: (error) => toast(error.message, { tone: 'alert' }),
+    onError: (error) => toast(error.message, { tone: 'error' }),
   });
   const team = settings.data;
   const editable =
