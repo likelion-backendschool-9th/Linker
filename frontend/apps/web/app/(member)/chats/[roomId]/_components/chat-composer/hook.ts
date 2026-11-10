@@ -5,7 +5,6 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useImageUpload } from '@/features/image-upload/use-image-upload';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { countChars, normalizeLineBreaks } from '@/lib/format/text';
-import { useOverlay } from '@/lib/navigation/use-overlay';
 import { CHAT } from '@/lib/policy';
 
 import { useChatReferences } from '../../_hooks/use-chat-references';
@@ -21,21 +20,40 @@ type Props = {
 
 export function useChatComposer({ disabled, onSend, room, login = null }: Props) {
   const uploader = useImageUpload(CHAT.imagesPerSend, { purpose: 'CHAT' });
-  const attachments = useOverlay('chat-attachments');
+  const picker = useRef<HTMLInputElement>(null);
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
   const input = useRef<HTMLTextAreaElement>(null);
-  const references = useChatReferences(room, login, text, caret, disabled);
+  // With photos picked the input is locked so text never rides along (user request 2026-11-10)
+  const photoMode = uploader.items.length > 0;
+  const references = useChatReferences(room, login, text, caret, disabled || photoMode);
   const normalized = normalizeLineBreaks(text).trim();
   const count = countChars(normalized);
   const tooLong = count > CHAT.messageMax;
-  // Photos leave from the attach sheet's "전송" (user request 2026-11-10); the bar sends text only.
-  const canSubmit = !disabled && !!normalized && !tooLong && !references.blocked;
-  const canSendPhotos = !disabled && uploader.items.length > 0 && uploader.allDone;
+  const canSendPhotos = !disabled && photoMode && uploader.allDone;
+  const canSendText = !disabled && !!normalized && !tooLong && !references.blocked;
+  const canSubmit = photoMode ? canSendPhotos : canSendText;
+
+  /** Opens the system photo picker; picked photos start uploading into the panel right away */
+  function pickPhotos() {
+    if (disabled || uploader.items.length >= uploader.max) return;
+    picker.current?.click();
+  }
+
+  /** Each photo leaves as its own message, in the panel's order (user request 2026-11-10) */
+  function sendPhotos() {
+    if (!canSendPhotos) return;
+    uploader.uploaded.forEach((image) => onSend({ text: '', images: [image] }));
+    uploader.reset([]);
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (!canSubmit) return;
+    if (photoMode) {
+      sendPhotos();
+      return;
+    }
+    if (!canSendText) return;
     onSend({
       text: normalized,
       images: [],
@@ -43,14 +61,6 @@ export function useChatComposer({ disabled, onSend, room, login = null }: Props)
     });
     references.reset();
     setText('');
-  }
-
-  /** Send the sheet's uploaded photos as one photo message; the typed text stays in the input. */
-  function sendPhotos() {
-    if (!canSendPhotos) return;
-    onSend({ text: '', images: uploader.uploaded });
-    uploader.reset([]);
-    attachments.close();
   }
 
   function onMention(mentionLogin: string) {
@@ -67,7 +77,10 @@ export function useChatComposer({ disabled, onSend, room, login = null }: Props)
 
   return {
     uploader,
-    attachments,
+    picker,
+    photoMode,
+    pickPhotos,
+    clearPhotos: () => uploader.reset([]),
     text,
     setText,
     setCaret,
@@ -77,8 +90,6 @@ export function useChatComposer({ disabled, onSend, room, login = null }: Props)
     tooLong,
     canSubmit,
     submit,
-    canSendPhotos,
-    sendPhotos,
     onMention,
   };
 }

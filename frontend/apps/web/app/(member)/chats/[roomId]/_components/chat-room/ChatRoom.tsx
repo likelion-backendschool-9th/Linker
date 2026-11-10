@@ -114,7 +114,11 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           이전 대화를 불러오는 중이에요.
         </p>
       )}
-      <div className={styles.timelineArea}>
+      <div
+        className={
+          room.team ? `${styles.timelineArea} ${styles.withSummaryFab}` : styles.timelineArea
+        }
+      >
         <MessageTimeline
           kind={room.kind}
           onUnread={(id) => unreadMembers.open(String(id))}
@@ -128,6 +132,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}
         />
+        {room.team && <AiSummaryFab roomId={roomId} />}
       </div>
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
@@ -163,7 +168,6 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             room={room}
             login={viewer.login}
             disabled={readOnly}
-            aboveSend={room.team ? <AiSummaryFab roomId={roomId} /> : undefined}
             onSend={({ text, images, references }) =>
               outbox.enqueue({
                 clientMessageId: crypto.randomUUID(),

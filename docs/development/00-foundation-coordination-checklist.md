@@ -225,7 +225,7 @@ D 담당 채팅·알림·구독만 대조했다. 기준은 `docs/planning/04-pol
 | --- | --- | --- | --- |
 | 채팅 전송 | 2장 5회/초 | `CHAT_SENDS_PER_SECOND` 5 | `CHAT.sendsPerSecond` 5 |
 | 메시지 길이 | 8장 2,000자 | `CHAT_MESSAGE_MAX_CHARS` 2000 | `CHAT.messageMax` 2000 |
-| 사진 수 | 8장 한 번에 10장 | `CHAT_IMAGES_PER_SEND` 10 | `CHAT.imagesPerSend` 10 |
+| 사진 수 | 8장 한 번에 5장 | `CHAT_IMAGES_PER_SEND` 5 | `CHAT.imagesPerSend` 5 |
 | 수정 가능 시간 | 8장 24시간 | `CHAT_EDIT_WITHIN_HOURS` 24 | `CHAT.editWithinHours` 24 |
 | 채용 첫 메시지 | 8장 1,000자 | `CHAT_OFFER_MESSAGE_MAX_CHARS` 1000 | `CHAT.offerMessageMax` 1000 |
 | 재접속 한 번에 불러오기 | 8장 예외 500개 | `CHAT_CATCH_UP_MAX` 500 | `CHAT.catchUpMax` 500 |

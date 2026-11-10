@@ -141,6 +141,9 @@
   --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
   --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
   --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
+  --chat-photo-tile-size: 100px; /* composer photo panel tile (user design 2026-11-10) */
+  --chat-photo-remove-size: 24px; /* its × circle */
+  --chat-image-max-size: 220px; /* a photo in a message: max width and max height (user request 2026-11-10) */
   --chat-ai-logo-size: 32px; /* animated orb inside the "AI 채팅 요약" button: ThinkingOrb's 32px size preset (Figma logo 33px) */
   --space-chat-card: 14px; /* PR card padding */
   --chat-request-panel-height: 140px; /* request panel replacing the composer */
@@ -234,10 +237,10 @@
   /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
-  --shadow-profile-work-card: 0 2px 12px rgb(18 18 18 / 0.10); /* 04 work card, Figma 301:572 drop shadow */
+  --shadow-profile-work-card: 0 2px 12px rgb(18 18 18 / 0.1); /* 04 work card, Figma 301:572 drop shadow */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
   --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
-  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */
+  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) and photo panel (user design 2026-11-10) */
   --shadow-gnb: 0 2px 4px rgb(0 0 0 / 0.2); /* bottom GNB pill (Figma 800:1299, 455:316 exception) */
 
   /* Figma 15 values (calendar) */
