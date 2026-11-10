@@ -19,11 +19,12 @@ import styles from './TeamSettingsView.module.css';
  * Team settings body.
  * Base: Figma 368:387. Owner deltas: Figma 368:1563 (member chevrons, red repo remove, 팀 삭제).
  * Delete confirm modal: Figma 695:1527 / 695:1640 (same chrome as login prompt ConfirmDialog).
- * "팀 나가기" is an explicit extra for non-owners (not on frame 9).
+ * "팀 나가기" is an explicit extra for non-owners (not on frame 9); its confirm reuses the 팀 삭제 modal.
  */
 export function TeamSettingsView({ teamId }: { teamId: string }) {
   const { settings, members, action, team, permissions } = useTeamSettingsView(teamId);
   const deleteConfirm = useOverlay('team-delete');
+  const leaveConfirm = useOverlay('team-leave');
 
   if (settings.isPending || members.isPending) return <Skeleton variant="card" count={3} />;
   if (settings.isError || members.isError)
@@ -159,7 +160,7 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
         </div>
       ) : (
         <div className={styles.leaveWrap}>
-          <button type="button" className={styles.leave} onClick={() => action.open('leave')}>
+          <button type="button" className={styles.leave} onClick={() => leaveConfirm.open()}>
             팀 나가기
           </button>
         </div>
@@ -173,6 +174,14 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
         description="해당 팀을 삭제하시겠습니까? 한번 팀을 삭제하면 되돌릴 수 없습니다. 삭제하시겠습니까?"
         confirmLabel="삭제하기"
         onConfirm={() => deleteConfirm.close()}
+      />
+      {/* Same modal as 팀 삭제 — markup only; leave API/policy later */}
+      <ConfirmDialog
+        overlay={leaveConfirm}
+        title="팀 나가기"
+        description="팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"
+        confirmLabel="팀 나가기"
+        onConfirm={() => leaveConfirm.close()}
       />
     </div>
   );
