@@ -56,11 +56,13 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 				      and b.createdAt <= m.createdAt and (b.unblockedAt is null or b.unblockedAt > m.createdAt)))), r.createdAt)
 				""";
 		String pattern = "%" + search.toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
-		return em.createQuery("select distinct r.id, r.roomType, " + title + ", " + sort + SHARE_FROM
+		String avatar = "case when r.roomType = 'TEAM' then t.avatarUrl else u.avatarUrl end";
+		return em.createQuery("select distinct r.id, r.roomType, " + title + ", " + sort + ", " + avatar + SHARE_FROM
 				+ " and lower(" + title + ") like :search escape '!' order by 4 desc, r.id desc", Object[].class)
 				.setParameter("viewer", viewerId).setParameter("developer", developer).setParameter("search", pattern)
 				.getResultList().stream()
-				.map(row -> new ChatShareTargetResponse((Long) row[0], ((RoomType) row[1]).name(), (String) row[2]))
+				.map(row -> new ChatShareTargetResponse((Long) row[0], ((RoomType) row[1]).name(), (String) row[2],
+						(String) row[4]))
 				.toList();
 	}
 

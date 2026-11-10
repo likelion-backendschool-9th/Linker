@@ -1,4 +1,5 @@
 package com.linker.backend.dto.chat.response;
 
-public record ChatShareTargetResponse(long roomId, String kind, String title) {
+/** {@code avatarUrl}: the team photo for TEAM rooms, the other person's photo for DIRECT (null when none). */
+public record ChatShareTargetResponse(long roomId, String kind, String title, String avatarUrl) {
 }

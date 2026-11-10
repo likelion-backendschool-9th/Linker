@@ -34,5 +34,9 @@
   --line-height-compact: 22px; /* 07 issue row lines (Figma) */
   --line-height-card-desc: 20px; /* 19 recruit card description (Figma) */
   --line-height-board-control: 1.2; /* 14 buttons, menus, column names (Figma text boxes) */
+  --line-height-feed: 19px; /* 24 feed card name, counts, time, title and excerpt (Figma) */
   --line-height-chat: 18px; /* 17 bubble text (Figma) */
+
+  /* Letter spacing */
+  --letter-spacing-tight: -0.03em; /* Figma -3%: 24 share drawer search placeholder */
 }

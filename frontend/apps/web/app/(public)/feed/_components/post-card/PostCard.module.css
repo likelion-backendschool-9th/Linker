@@ -1,19 +1,19 @@
-/* Feed card — Figma 92:249 (single column) */
+/* Feed card — Figma 92:249: shell, reactions row, then title + excerpt, 16 apart */
 .card {
   display: grid;
-  gap: 16px;
+  gap: var(--space-md);
   min-width: 0;
 }
 
-/* Author + media shell (Figma 92:181): pad 15, gap 15, radius 14 */
+/* Author + cover shell (Figma 92:181): pad 15, gap 15, r14, #f6f6f6 with a #f2f2f2 rule */
 .shell {
   display: grid;
-  gap: 15px;
-  padding: 15px;
+  gap: var(--space-list-action);
+  padding: var(--space-list-action);
+  overflow: hidden;
   background-color: var(--color-feed-card);
   border: 1px solid var(--color-board-control);
-  border-radius: 14px;
-  overflow: hidden;
+  border-radius: var(--radius-control-md);
 }
 
 .authorRow {
@@ -21,73 +21,98 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  min-height: 42px;
+  min-height: var(--size-feed-avatar);
 }
 
+/* Avatar 42 (r12), name column 12 to its right, centered on the avatar */
 .author {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
   min-width: 0;
   color: inherit;
   text-decoration: none;
 }
 
-/* Figma avatar is 42 with radius 12 (rounded square) */
 .avatar {
   flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: var(--size-feed-avatar);
+  height: var(--size-feed-avatar);
   object-fit: cover;
   background-color: var(--color-radio-border);
+  border-radius: var(--radius-card-compact);
 }
 
+/* Job status 2 above the login (Figma 785:777) */
 .authorText {
   display: grid;
-  gap: 4px;
+  gap: var(--space-feed-status);
   min-width: 0;
 }
 
-.seeking {
-  font-size: var(--font-size-meta);
+/* Job status — Figma 785:778: 14 medium. "구직 중" #2563eb, "제안 받기" the accent, "구직 안 함" #b2b7c3 */
+.seeking,
+.open,
+.off {
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: 14px;
+  line-height: normal;
   color: var(--color-cta-cool);
 }
 
+.open {
+  color: var(--color-accent);
+}
+
+.off {
+  color: var(--color-job-status-off);
+}
+
+/* Login — 16 medium #111827 */
 .login {
+  overflow: hidden;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: 19px;
+  line-height: var(--line-height-feed);
   color: var(--color-text-title-cool);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* Follow default (Figma 92:214): cool fill, title ink — action wiring later */
-.follow {
+/* Follow chip — Figma 785:780 "팔로우" (#111827 on #e7e7e7) and "팔로잉" (#2563eb / white):
+   29 high, 6/8 padding, r6, 14 medium */
+.follow,
+.following {
+  display: inline-flex;
   flex-shrink: 0;
-  min-height: 26px;
-  padding: 6px 8px;
-  font-size: var(--font-size-meta);
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height-feed-follow);
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: 14px;
+  line-height: normal;
   color: var(--color-text-title-cool);
+  white-space: nowrap;
   background-color: var(--color-feed-follow);
-  border-radius: 6px;
+  border: 0;
+  border-radius: var(--radius-feed-follow);
 }
 
-/* Cover 308×270 → fill width, fixed 270 (Figma 92:187) */
+.following {
+  color: var(--color-on-primary);
+  background-color: var(--color-cta-cool);
+}
+
+/* Cover — Figma 92:187: full shell width, 270 high, r12 */
 .cover {
   position: relative;
   display: block;
   width: 100%;
-  height: 270px;
+  height: var(--feed-cover-height);
   overflow: hidden;
   background-color: var(--color-canvas-soft);
-  border-radius: 12px;
+  border-radius: var(--radius-card-compact);
 }
 
 .image {
@@ -110,78 +135,97 @@
 }
 
 .repoLanguage {
-  font-size: var(--font-size-meta);
+  font-size: var(--font-size-micro);
   color: var(--color-text-muted-cool);
 }
 
-/* Reactions + relative time (Figma 92:225 / 92:246): row height 20 */
+/* Reactions + relative time — Figma 92:225 / 92:246: one 20 row */
 .meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  height: 20px;
+  height: var(--icon-size-feed-stat);
 }
 
+/* Groups 10 apart, icon to count 4; icons 20 in #3c3c3c at stroke 1.5 */
 .reactions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 20px;
-  /* Figma reaction strokes are 1.5 (default token is 2) */
+  gap: var(--space-row-block);
   --icon-stroke-width: 1.5;
 }
 
 .stat {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 20px;
+  gap: var(--space-xxs);
   color: var(--color-text-slate);
 }
 
-.statIcon {
-  --icon-box-size: 20px;
-  display: inline-flex;
+.statIcon,
+.likedIcon {
+  --icon-box-size: var(--icon-size-feed-stat);
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
   color: var(--color-icon-ink);
 }
 
-.statCount {
+/* Comment icon + count as one button on the feed (opens the comment sheet) */
+.statButton {
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-xxs);
+}
+
+/* Heart toggle: just the 20 icon (Figma size, no 44 hit box) */
+.likeButton {
   display: inline-flex;
-  align-items: center;
-  height: 19px;
+  flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-xxs);
+}
+
+/* Liked — Figma 92:297 solar heart-bold #ff3040 */
+.likedIcon {
+  color: var(--color-reaction-liked);
+}
+
+/* Counts — 16 medium #4b5563 */
+.statCount {
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: 19px;
+  line-height: var(--line-height-feed);
   font-variant-numeric: tabular-nums;
 }
 
+/* "2시간 전" — 14 medium #98a3b4 */
 .time {
-  display: inline-flex;
   flex-shrink: 0;
-  align-items: center;
-  height: 19px;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: 19px;
+  line-height: var(--line-height-feed);
   color: var(--color-text-muted-cool);
 }
 
-/* Title + excerpt (Figma 92:219): gap 15 */
+/* Title + excerpt — Figma 92:219: 15 apart */
 .copy {
   display: grid;
-  gap: 15px;
+  gap: var(--space-list-action);
   min-width: 0;
 }
 
+/* Title — 16 medium #111827 */
 .title {
   margin: 0;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: 19px;
+  line-height: var(--line-height-feed);
   color: var(--color-text-title-cool);
   overflow-wrap: anywhere;
 }
@@ -191,23 +235,29 @@
   text-decoration: none;
 }
 
-.excerpt {
+/* Excerpt — Figma 92:212: 14 medium #4b5563, line 19, at most two lines. "더 보기" (#98a3b4) follows
+   the last character; when the text is longer, PostExcerpt cuts it to "…" so the link stays on the
+   second line (never a third) */
+.excerpt,
+.excerptPending {
   margin: 0;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: 19px;
+  line-height: var(--line-height-feed);
   color: var(--color-text-slate);
 }
 
-.excerptText {
+/* Before the first measurement (SSR, first client pass): plain two-line clamp */
+.excerptPending {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .more {
   color: var(--color-text-muted-cool);
-  text-decoration: none;
   white-space: nowrap;
+  text-decoration: none;
 }

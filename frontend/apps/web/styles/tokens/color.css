@@ -111,7 +111,8 @@
 
   /* 24 home feed (Figma 91:105 / 92:181): card shell + reaction icons */
   --color-feed-card: #f6f6f6;
-  --color-feed-follow: #e5e5e5; /* follow chip on card — #f3f4f6 blended into the shell */
+  --color-feed-follow: #e7e7e7; /* follow chip on card (Figma 785:780) */
+  --color-job-status-off: #b2b7c3; /* card "구직 안 함" (owner's choice; 1.9:1 on the #f6f6f6 shell — supplementary text) */
   --color-reaction-liked: #ff3040;
   --color-icon-ink: #3c3c3c;
 
@@ -134,6 +135,9 @@
 
   /* Shared by 11 team-chat FAB and 19 write-recruit FAB (same hex, different fill tokens above) */
   --color-fab-border: #383838;
+  --color-fab-icon: #e7e7e7; /* 24 write FAB pen (Figma 92:291): 11:1 on --color-fab-bg */
+  --color-sheet-close: #374151; /* 24 comment sheet × (Figma 700:1651): 10.3:1 on white */
+  --color-share-team: #2563eb; /* 24 share drawer "팀" mark after a team room name (Figma 800:1370): 5.17:1 on white */
 
   /* Figma 14 values (status board, 200:1028 and the 368:3414/3562/3741 menus). Low contrast ones kept by design decision */
   --color-board-column: #f5f5f5; /* 14 column fill */
