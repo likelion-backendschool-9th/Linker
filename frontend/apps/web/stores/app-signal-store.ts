@@ -13,9 +13,9 @@ type AppSignalState = {
   githubUnavailable: boolean;
   /** SUSPENDED from an API call after the page loaded (the layout covers the initial case) */
   suspended: boolean;
-  /** Set when a query timed out while a loading orb was up; `LoadTimeoutScreen` shows Figma 301:326 */
+  /** Set when a query timed out while a registered loader was up; `LoadTimeoutScreen` shows Figma 301:326 */
   loadTimedOutAt: number;
-  /** How many loading orbs (`PageLoading`, `Skeleton`) are on screen right now */
+  /** How many loaders registered via `useLoaderPresence` are on screen right now */
   loadersMounted: number;
 };
 

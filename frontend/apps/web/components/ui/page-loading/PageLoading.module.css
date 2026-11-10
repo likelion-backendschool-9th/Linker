@@ -1,4 +1,4 @@
-/* Figma 301:294 / 301:326 — white screen over the app column (header and tabs included), orb centered */
+/* Figma 301:326 — white screen over the app column (header and tabs included), orb centered */
 .screen {
   position: fixed;
   inset: 0;
@@ -26,12 +26,4 @@
   background-color: var(--color-cta-cool);
   border: 0;
   border-radius: var(--radius-control-md);
-}
-
-/* Inline variant for section loading (Skeleton): the same orb centered in its own area */
-.inline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-block: var(--space-xl);
 }
