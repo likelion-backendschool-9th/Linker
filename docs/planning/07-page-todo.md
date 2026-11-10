@@ -669,7 +669,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Server: exclusions (own posts, blocked people, hidden posts)
 - [ ] Server: popularity score (like 1, comment by others 2, decays with age, likes from accounts < 7 days old excluded)
 - [ ] "Why shown" copy (one, by priority): "React를 쓰는 사람들의 인기 글" > "프론트엔드 직군의 인기 글"
-- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); only the "추천" tab (no "팔로잉")
+- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); only the "추천" tab (no "팔로잉") and no follow chip on cards
 
 **Job ads (after the 04 job ad sheet)** `[Included]`
 
