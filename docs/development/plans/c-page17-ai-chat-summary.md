@@ -10,7 +10,7 @@
 - Ollama `LlmClient` (`OLLAMA_BASE_URL` / `OLLAMA_MODEL`), Redis 10/일(KST, 실패 환불).
 - Free→Flex: 기존 `PlanLimitSheet` (`PLAN_LIMIT` + `AI_SUMMARY`).
 - 로딩 문구「요약하는 중이에요」, 실패 토스트「요약하지 못했어요」.
-- 배너「이 팀은 AI 요약을 사용해요」: 팀 생성 7일 + session dismiss.
+- ~~배너「이 팀은 AI 요약을 사용해요」: 팀 생성 7일 + session dismiss.~~ 팀 결정으로 제거 (2026-11-10).
 
 ## 비범위
 

@@ -516,7 +516,6 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] (sheet) Summary result: one-line summary, decisions, to-dos, open questions; tap an item to scroll to the original message; "AI가 만든 요약이라 틀릴 수 있어요"; remaining N/10
 - [ ] "채팅에 공유" → minutes card message; "이슈 만들기" per to-do → 13 with title/body pre-filled
 - [ ] Over 30 seconds → "요약하는 중이에요" + notify when done; on failure "요약하지 못했어요"
-- [ ] While a team has AI summary on, top banner "이 팀은 AI 요약을 사용해요" (first 7 days)
 - [ ] Server: messages in range (excluding deleted, hidden, images, blocked users; max 500) → `LlmClient` (default Ollama, JSON response) → keep result 7 days, 10/day per person (Redis), Flex check via `PlanLimits`
 
 **1:1 chat only (with 22–24)**

@@ -199,7 +199,7 @@ AI chat summary is available only to Flex teams (including the 7-day free trial)
 
 **Notifying teammates in advance**
 
-When AI summary is on, my messages may be used in AI summaries requested by other teammates. So when the feature is turned on, a banner "이 팀은 AI 요약을 사용해요" (this team uses AI summary) is shown at the top of team chat with a link to the feature notice.
+When AI summary is on, my messages may be used in AI summaries requested by other teammates. This notice explains it in advance, and team owners can turn the feature off for the whole team in team settings.
 
 **Voice chat & minutes (later phase)**
 

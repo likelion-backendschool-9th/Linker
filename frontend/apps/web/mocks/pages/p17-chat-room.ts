@@ -76,7 +76,6 @@ export const routes: MockRoute[] = [
             status: team.status,
             avatarUrl: team.orgAvatarUrl ?? null,
             aiSummaryEnabled: team.plan === 'FLEX',
-            aiSummaryBanner: team.plan === 'FLEX',
           }
         : null,
       // Free teams only see the last 60 days (04 ch. 8)

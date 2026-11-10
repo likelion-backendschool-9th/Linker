@@ -14,7 +14,6 @@ import { MessageTimeline } from '../message-timeline';
 import { RequestRoomBar } from '../request-room-bar';
 import { RoomInfoSheet } from '../room-info-sheet';
 import { PullRequestSheet } from '../pull-request-sheet';
-import { AiSummaryBanner } from '../ai-summary-banner';
 import { AiSummaryFab } from '../ai-summary-fab';
 import styles from './ChatRoom.module.css';
 import { CONNECTION, useChatRoom } from './hook';
@@ -88,9 +87,6 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             })
           }
         />
-      )}
-      {room.team && (
-        <AiSummaryBanner teamId={room.team.id} visible={Boolean(room.team.aiSummaryBanner)} />
       )}
       {largeGap && <p role="status">안 읽은 메시지 {CHAT.catchUpMax}개+</p>}
       {catchUpError && (
