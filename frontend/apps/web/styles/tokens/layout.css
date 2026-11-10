@@ -155,6 +155,8 @@
   --size-chat-list-skeleton-title-h: 19px;
   --size-chat-list-skeleton-preview-w: 206px; /* 16 skeleton last message (Figma 999:1417) */
   --size-chat-list-skeleton-preview-h: 19px;
+  --size-notification-skeleton-line-w: 247px; /* 18 skeleton notification text (Figma 1025:1420) */
+  --size-notification-skeleton-line-h: 19px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
