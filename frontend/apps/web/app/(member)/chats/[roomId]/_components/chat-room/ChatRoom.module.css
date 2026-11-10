@@ -322,8 +322,9 @@
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-xs);
   flex-shrink: 0;
-  padding: var(--space-xs) var(--space-xxs)
-    max(var(--space-home-indicator), env(safe-area-inset-bottom)) 0;
+  /* 4px more above and below than the Figma bar (user request 2026-11-10: it sat too tight) */
+  padding: var(--space-sm) var(--space-xxs)
+    calc(max(var(--space-home-indicator), env(safe-area-inset-bottom)) + var(--space-xxs)) 0;
   background: var(--color-canvas);
 }
 
