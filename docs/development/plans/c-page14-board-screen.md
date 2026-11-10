@@ -5,7 +5,7 @@
 ## 범위
 
 - `/teams/[id]/board` 화면을 Figma 14(`200:1028`, 정렬 메뉴 `368:3414`, 필터 메뉴 `368:3562`, 카드 상태 메뉴 `368:3741`)에 맞춰 새로 만들었다. 기존 화면 코드(`BoardView`, `hook`, CSS, 테스트)는 지우고 `page.tsx`·`loading.tsx`만 남겨 고쳤다.
-- 그대로 쓴 것: `board/_lib/board-queries.ts`, `board-view/api.ts`, 12번 상태 API(`saveStatus`), 목업 `p14-board.ts`, 생성 타입, 백엔드. 11의 `TeamFrame`·`TeamNav`·`IssueFilterButton`·`IssueFilterSheet`(`showStatus={false}`)는 고치지 않고 썼다.
+- 그대로 쓴 것: `board/_lib/board-queries.ts`, `board-view/api.ts`, 12번 상태 API(`saveStatus`), 목업 `p14-board.ts`, 생성 타입, 백엔드. (당시) 11의 `TeamFrame`·`TeamNav`·`IssueFilterButton`·`IssueFilterSheet`(`showStatus={false}`). **2026-11-10:** 헤더 필터 시트 제거→팀변경; 보드「상태 필터」메뉴 유지; X 스크롤바만 숨김 — [c-role-audit.md](c-role-audit.md), `c-team-nav-filter-to-team-change`, `c-page14-board-no-horizontal-scroll`.
 - 새 파일: `board-view`(화면·칸), `board-card`(카드·끌기 미리보기), `board-menu`(드롭다운 3종 공용), `board/_lib/board-sort.ts`, `e2e/c-issue-board.spec.ts`.
 - 엔드포인트·테이블·페이지 수는 그대로다(205 REST, 69 테이블).
 
