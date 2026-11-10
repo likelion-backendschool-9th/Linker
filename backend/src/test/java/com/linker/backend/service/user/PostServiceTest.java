@@ -336,28 +336,17 @@ class PostServiceTest {
 		Post other = otherAuthorsPost();
 		ReflectionTestUtils.setField(other, "id", 77L);
 		other.increaseCommentCount();
-		other.increaseCommentCount();
-		User someone = User.create("other", UserType.DEVELOPER);
-		ReflectionTestUtils.setField(someone, "id", 99L);
-		Comment parent = Comment.write(other, someone, null, "원댓글");
-		ReflectionTestUtils.setField(parent, "id", 2L);
 		Comment mine = Comment.write(other, member, null, "다른 글의 댓글");
 		ReflectionTestUtils.setField(mine, "id", 3L);
-		Comment threaded = Comment.write(other, member, parent, "답글");
-		ReflectionTestUtils.setField(threaded, "id", 4L);
 
-		when(comments.findByAuthorId(10L)).thenReturn(List.of(onOwn, mine, threaded));
-		when(comments.countByParentId(3L)).thenReturn(0L);
-		when(comments.countByParentId(4L)).thenReturn(1L);
+		when(comments.findByAuthorId(10L)).thenReturn(List.of(onOwn, mine));
 		when(posts.findByAuthor_Id(10L)).thenReturn(List.of(own));
 		when(comments.findByPostIdOrderByIdAsc(42L)).thenReturn(List.of(onOwn));
 
 		service.deleteAuthoredContent(10L, NOW);
 
 		verify(comments).delete(mine);
-		assertThat(threaded.isDeleted()).isTrue();
-		assertThat(threaded.getBody()).isEmpty();
-		assertThat(other.getCommentCount()).isZero();
+		assertThat(other.getCommentCount()).isEqualTo(1);
 		assertThat(onOwn.isDeleted()).isTrue();
 		assertThat(own.getDeletedAt()).isEqualTo(NOW);
 		verify(likes).deleteByPostId(42L);

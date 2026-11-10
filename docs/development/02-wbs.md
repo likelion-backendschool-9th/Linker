@@ -447,10 +447,10 @@
 | 23 | E | POST | `/api/v1/user/posts/{postId}/likes` | Like (notification) | user · developers only |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}/likes` | Unlike | user · developers only |
 | 23 | E | GET | `/api/v1/user/posts/{postId}/likes` | Likers sheet (people list, so login only) | user |
-| 23 | E | GET | `/api/v1/public/posts/{postId}/comments` | Comments and one-level replies | public |
-| 23 | E | POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars, 10/min and 300/day, notification) | user · developers only |
+| 23 | E | GET | `/api/v1/public/posts/{postId}/comments` | Flat comments (no replies) | public |
+| 23 | E | POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars, 10/min and 300/day, notification; no parentId) | user · developers only |
 | 23 | E | PATCH | `/api/v1/user/posts/{postId}/comments/{commentId}` | Edit comment | comment author |
-| 23 | E | DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment ("삭제된 댓글입니다" if it has replies) | comment author / post owner |
+| 23 | E | DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment | comment author / post owner |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}` | Delete post | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}/same-repo-posts` | Other posts for this repo | public |
 | 24 | E | GET | `/api/v1/public/feed?tab=&cursor=&offersOnly=` | `tab` omitted or `recommended` = "추천": developers and operators get posts matching their tech stack or job categories first (by popularity, one-line "why shown"), then the rest in random order, posts seen on an earlier visit last; guests and recruiters get every post in random order with no "why shown"; max 2 in a row from the same author. `tab=following` = "팔로잉": posts by people I follow, newest first, no ads (empty for guests and recruiters; the web never calls it for guests). `cursor` = opaque `<visit start ms>.<offset>`: fixes the shuffle and drops posts written later, so pages never repeat or skip. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers), "추천" only | public |
@@ -995,7 +995,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: report (00), "채용 제안 보내기" (Send recruiting offer) → 17's `POST /api/v1/recruiter/chat-requests`, edit → 22
 - Tables: new post_likes, comments, 🟡 post_views · shared posts, post_images, github_repos, users, notifications, reports, user_blocks
-- [ ] Frontend: photo swipe and viewer, README toggle, guests tapping like / comment input / more → login prompt, optimistic like, comments and replies, more sheet, for recruiters hide input + offer menu (after 31), `[Included]` share button (00 share sheet), `generateMetadata` + OG image (cover photo, otherwise `opengraph-image.tsx` repo card; strip `?from=share` from canonical, blueprint 8-3)
+- [ ] Frontend: photo swipe and viewer, README toggle, guests tapping like / comment input / more → login prompt, optimistic like, flat comments (no replies), more sheet, for recruiters hide input + offer menu (after 31), `[Included]` share button (00 share sheet), `generateMetadata` + OG image (cover photo, otherwise `opengraph-image.tsx` repo card; strip `?from=share` from canonical, blueprint 8-3)
 
 </details>
 

@@ -211,20 +211,10 @@ public class PostService {
 	public CommentListResponse comments(long postId) {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
 		loadReadable(postId, viewer);
-		List<Comment> rows = comments.findByPostIdOrderByIdAsc(postId);
-		Set<Long> parentsWithReplies = new HashSet<>();
-		for (Comment row : rows) {
-			if (row.getParent() != null) {
-				parentsWithReplies.add(row.getParent().getId());
-			}
-		}
-		List<CommentResponse> items = new ArrayList<>();
-		for (Comment row : rows) {
-			if (row.isDeleted() && !parentsWithReplies.contains(row.getId())) {
-				continue;
-			}
-			items.add(toComment(row));
-		}
+		List<CommentResponse> items = comments.findByPostIdOrderByIdAsc(postId).stream()
+				.filter(row -> !row.isDeleted())
+				.map(this::toComment)
+				.toList();
 		return new CommentListResponse(items);
 	}
 

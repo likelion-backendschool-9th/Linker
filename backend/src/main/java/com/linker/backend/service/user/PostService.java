@@ -375,20 +375,11 @@ public class PostService {
 		enforceCommentDayLimit(user.userId());
 		Post post = requireReadablePost(user, postId);
 		String text = requireCommentText(request == null ? null : request.text());
-		Comment parent = null;
-		Long parentId = request == null ? null : request.parentId();
-		if (parentId != null) {
-			parent = comments.findDetailedById(parentId)
-					.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요"));
-			if (parent.getPost().getId() != postId || parent.getParent() != null || parent.isDeleted()) {
-				throw new ApiException(400, "VALIDATION_ERROR", "답글 대상을 확인해 주세요");
-			}
-		}
 		User author = users.findById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
-		Comment comment = comments.save(Comment.write(post, author, parent, text));
+		Comment comment = comments.save(Comment.write(post, author, null, text));
 		post.increaseCommentCount();
-		notifyComment(post, parent, user.userId(), comment.getId());
+		notifyComment(post, null, user.userId(), comment.getId());
 		return toCommentResponse(comment);
 	}
 
@@ -424,14 +415,10 @@ public class PostService {
 		eraseComment(comment, post, clock.instant());
 	}
 
-	/**
-	 * Page 06 withdrawal batch. Deletes this member's posts and comments.
-	 * A comment that still has replies stays as a deleted placeholder.
-	 */
+	/** Page 06 withdrawal batch. Deletes this member's posts and comments. */
 	@Transactional
 	public void deleteAuthoredContent(long userId, Instant now) {
 		List<Comment> authored = new ArrayList<>(comments.findByAuthorId(userId));
-		authored.sort(Comparator.comparing(comment -> comment.getParent() == null));
 		for (Comment comment : authored) {
 			Post post = comment.getPost();
 			if (comment.isDeleted() || post.getAuthor().getId() == userId) {
@@ -454,12 +441,7 @@ public class PostService {
 	}
 
 	private void eraseComment(Comment comment, Post post, Instant now) {
-		if (comments.countByParentId(comment.getId()) > 0) {
-			comment.softDelete(now);
-		}
-		else {
-			comments.delete(comment);
-		}
+		comments.delete(comment);
 		post.decreaseCommentCount();
 	}
 
