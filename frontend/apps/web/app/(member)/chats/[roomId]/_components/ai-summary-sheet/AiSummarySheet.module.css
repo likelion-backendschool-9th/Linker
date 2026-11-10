@@ -1,100 +1,103 @@
 /*
- * Figma 351:362 panel. Type steps down title (20) → one line (18) → section heading (16) → line (14)
- * → footnotes (13); the first three are bold (user request 2026-11-10).
+ * Figma 351:362 panel (user decision 2026-11-11): 16px padding on top and sides, 15px between the
+ * header, the paragraph and the CTA. Unmapped Figma values stay local.
+ * Exception to guide ch. 4: square corners and a top shadow instead of the dimming scrim.
  */
+
+/* The scrim stays (outside tap still closes) but no longer dims the chat */
+.scrim {
+  background-color: transparent;
+}
+
+.sheet {
+  --summary-gap: 15px;
+  --summary-title-from: #0e00a5;
+  --summary-title-to: #a100af;
+  --summary-cta-height: 46px;
+  /* "새로 요약 받기" icon: Figma 20px, set to 14px with 2px after the label (user request 2026-11-11) */
+  --summary-renew-icon: 14px;
+  --summary-renew-gap: 2px;
+  padding-top: var(--space-md);
+  border-radius: 0;
+  box-shadow: var(--shadow-ai-summary-sheet);
+}
+
+.sheetBody {
+  margin-top: var(--summary-gap);
+}
+
+/* "AI 요약": 16px Medium with the Figma gradient (left #0e00a5 → right #a100af) */
 .title {
-  font-weight: var(--font-weight-bold);
+  background: linear-gradient(90deg, var(--summary-title-from) 3.333%, var(--summary-title-to) 100%);
+  background-clip: text;
+  color: transparent;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.03em;
+  line-height: normal;
+}
+
+.renew {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--summary-renew-gap);
+  min-height: var(--touch-target-icon);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.03em;
+  line-height: normal;
+  cursor: pointer;
+}
+
+.renewIcon {
+  width: var(--summary-renew-icon);
+  height: var(--summary-renew-icon);
+}
+
+.renew:focus-visible,
+.share:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  padding-bottom: var(--space-lg);
+  gap: var(--summary-gap);
 }
 
 .notice {
   margin: 0;
-  padding-bottom: var(--space-lg);
   color: var(--color-text-body);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-caption);
 }
 
 .summary {
   margin: 0;
-  color: var(--color-text-heading);
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-bold);
-  line-height: 1.45;
+  color: var(--color-text-sheet-title);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xxs);
-}
-
-.heading {
-  margin: 0;
-  color: var(--color-text-heading);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-bold);
-  line-height: normal;
-}
-
-.items {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.item {
-  margin: 0;
-  padding: var(--space-xxs) 0;
-  color: var(--color-text-body);
-  font-size: var(--font-size-caption);
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-/* A line with a loaded source message: tap scrolls the timeline to it. 24px is the WCAG 2.2 AA minimum */
-.jump {
-  display: block;
+.share {
   width: 100%;
-  min-height: var(--touch-target-icon);
+  height: var(--summary-cta-height);
   border: 0;
-  background: none;
-  text-align: left;
-  text-decoration: underline;
-  text-decoration-color: var(--color-text-meta);
+  border-radius: var(--radius-control-md);
+  background-color: var(--color-sheet-cta);
+  color: var(--color-on-sheet-cta);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
 
-.jump:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-/* "최근 메시지 N개…" and the AI disclaimer read as one block */
-.footnotes {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xxs);
-}
-
-.meta {
-  margin: 0;
-  color: var(--color-text-meta);
-  font-size: var(--font-size-meta);
-  line-height: normal;
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+.share[aria-disabled='true'] {
+  cursor: progress;
+  opacity: 0.6;
 }

@@ -21,6 +21,9 @@ public interface ChatMessageRepositoryCustom {
 
 	boolean visibleTo(long viewerId, long roomId, boolean team, Instant historyStart, long messageId);
 
+	/** Visible text messages containing the keyword, newest first. */
+	List<ChatMessageRow> search(long roomId, Instant historyStart, String keyword);
+
 	/**
 	 * Server URLs in {@code sort_order}. Callers drop these for deleted, hidden, and not-visible rows.
 	 */

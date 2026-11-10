@@ -123,6 +123,28 @@ class ChatQueryRepositoriesIntegrationTest {
 	}
 
 	@Test
+	void searchFindsVisibleTextByPartialCaseInsensitiveMatchNewestFirstAndHonorsCutoff() {
+		User a = user("search-a");
+		User b = user("search-b");
+		ChatRoom room = direct(a, b, DmStatus.ACCEPTED, RequestKind.GENERAL);
+		long old = message(room, a, "Design 오래된 기록", T0.minusSeconds(1));
+		long newest = message(room, b, "새 DESIGN 검토", T0.plusSeconds(2));
+		long literal = message(room, a, "진행률 100% 확인", T0.plusSeconds(3));
+		long hidden = message(room, a, "design 숨김", T0.plusSeconds(4));
+		jdbc.update("update chat_messages set visibility = 'HIDDEN' where id = ?", hidden);
+
+		assertThat(messages.search(room.getId(), null, "design"))
+				.extracting(ChatMessageRepositoryCustom.ChatMessageRow::id)
+				.containsExactly(newest, old);
+		assertThat(messages.search(room.getId(), T0, "design"))
+				.extracting(ChatMessageRepositoryCustom.ChatMessageRow::id)
+				.containsExactly(newest);
+		assertThat(messages.search(room.getId(), null, "100%"))
+				.extracting(ChatMessageRepositoryCustom.ChatMessageRow::id)
+				.containsExactly(literal);
+	}
+
+	@Test
 	void systemMessagesHaveNoSenderAndCountEveryActiveMemberUnread() {
 		User a = user("sys-a");
 		User b = user("sys-b");

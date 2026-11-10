@@ -16,6 +16,7 @@ import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
+import com.linker.backend.dto.chat.response.ChatSearchResponse;
 import com.linker.backend.dto.chat.response.AiChatSummaryResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
@@ -153,6 +154,22 @@ public class ChatController {
 			@RequestParam(required = false) Long after
 	) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.messages(user, roomId, before, after));
+	}
+
+	@GetMapping("/chat-rooms/{roomId}/search")
+	@Tag(name = "p17-chat-room")
+	@Operation(operationId = "searchChatMessages")
+	@ApiResponse(responseCode = "200", description = "Visible matching text messages, newest first")
+	@ApiResponse(responseCode = "400", description = "VALIDATION_ERROR (blank q)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "401", description = "LOGIN_REQUIRED", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "403", description = "FORBIDDEN (not a team room)", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	@ApiResponse(responseCode = "404", description = "NOT_FOUND", content = @Content(schema = @Schema(implementation = ApiErrorBody.class)))
+	public ResponseEntity<ChatSearchResponse> search(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@PathVariable long roomId,
+			@RequestParam String q
+	) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(chat.search(user, roomId, q));
 	}
 
 	@GetMapping("/chat-rooms/{roomId}/mention-candidates")

@@ -63,6 +63,17 @@
   padding-bottom: var(--space-chat-row);
 }
 
+.searchHit {
+  border-radius: var(--radius-md);
+  background: var(--color-board-label-blue);
+}
+
+/* Matched keyword inside the selected search result; fixed text colour so it reads in the dark own bubble too */
+.searchMark {
+  background: var(--color-search-mark);
+  color: var(--color-text-heading);
+}
+
 /* Date divider (Page TODO 17, not in the Figma frame): kept in the time-label style */
 .date {
   margin-bottom: var(--space-chat-row);

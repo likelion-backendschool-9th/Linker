@@ -736,10 +736,10 @@ erDiagram
     bigint to_message_id
     int message_count "latest within ~1,500 tokens (≤200 read)"
     varchar status "PENDING, DONE, FAILED"
-    varchar summary_line
-    jsonb decisions "with source message ids"
-    jsonb action_items "text, messageId (source), issue_id later"
-    jsonb open_questions
+    varchar summary_line "the summary paragraph"
+    jsonb decisions "unused since 2026-11-11, null"
+    jsonb action_items "unused since 2026-11-11, null"
+    jsonb open_questions "unused since 2026-11-11, null"
     varchar llm_model "Ollama model name, etc."
     bigint shared_message_id FK "card shared to chat, nullable"
     timestamptz expires_at "7 days"
@@ -1193,7 +1193,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 | chat_messages | 🟢 | Messages (text, images, issue cards, PR system messages) | C-1~C-4, S-6 |
 | chat_message_images | 🟢 | Message images, max 10 at once | C-1 |
 | chat_message_mentions | 🟢 | @person, @all mention notifications | POL ch. 8 mentions |
-| ai_chat_summaries | 🟡 | AI chat summary (minutes format) for Flex teams, kept 7 days | C-5, S-8, POL-C-5 |
+| ai_chat_summaries | 🟡 | AI chat summary (one paragraph) for Flex teams, kept 7 days | C-5, S-8, POL-C-5 |
 
 **chat_rooms**
 
@@ -1222,7 +1222,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 - Indexes: `(room_id, id desc)` infinite scroll, `body` GIN (trgm).
 - 1:1 messages from a blocked user are stored but not delivered to or readable by the recipient. Filter messages whose `sender_id` is the blocked user and whose `created_at` falls in any recipient-owned `user_blocks` period: `[created_at, unblocked_at)` (an open period has no end). Apply the same filter to history, reconnect catch-up, previews, unread counts, search and notifications. Closed periods still apply after unblocking (POL ch. 9); team chat is exempt.
 
-**ai_chat_summaries**: Created only in chat rooms of teams with an active Flex subscription (including the 7-day free trial) and `teams.ai_summary_enabled` (server check). 10 per person per day is a Redis counter. Pressing "채팅에 공유" (Share to chat) creates a `message_type = AI_SUMMARY` message, copies the summary into its payload and stores it in `shared_message_id`. So the shared card stays in team chat even after the summary row is deleted after 7 days. `decisions`, `action_items` and `open_questions` are arrays of `{text, messageId}` (at most 3 each; `messageId` null when the model cited no loaded message). `range_type` is `LATEST` until the range picker ships. Progress while PENDING lives in Redis, not in this table; a PENDING row older than 15 minutes is marked FAILED by a job. Creating an issue from an action item will fill `issue_id` in `action_items` (later).
+**ai_chat_summaries**: Created only in chat rooms of teams with an active Flex subscription (including the 7-day free trial) and `teams.ai_summary_enabled` (server check). 10 per person per day is a Redis counter. Pressing "채팅창에 공유하기" (Share to chat) creates a `message_type = AI_SUMMARY` message, copies the summary into its payload and stores it in `shared_message_id`. So the shared card stays in team chat even after the summary row is deleted after 7 days. `summary_line` holds the one-paragraph summary (user decision 2026-11-11). `decisions`, `action_items` and `open_questions` are left from the earlier minutes format and stay null for new rows; dropping them is a later migration. `range_type` is `LATEST` until the range picker ships. Progress while PENDING lives in Redis, not in this table; a PENDING row older than 15 minutes is marked FAILED by a job.
 
 ### 4-7. Notifications
 

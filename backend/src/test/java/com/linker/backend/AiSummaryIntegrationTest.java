@@ -101,11 +101,10 @@ class AiSummaryIntegrationTest {
 	}
 
 	@Test
-	void summaryRunsInBackgroundMapsSourcesAndNotifiesRequester() throws Exception {
+	void summaryRunsInBackgroundStoresOneParagraphAndNotifiesRequester() throws Exception {
 		Room room = flexRoom(25);
 		reply("""
-				{"oneLine":"배포 일정을 정했어요","decisions":[{"text":"금요일 배포","ref":1},{"text":"금요일 배포","ref":2}],
-				 "actionItems":[{"text":"민수: 리뷰","ref":999}],"openQuestions":[{"text":"회의 시간?","ref":25},{"text":"  ","ref":3}]}
+				{"summary":"  배포 일정을 이야기했어요. 금요일에 배포하기로 했고 민수님이 리뷰를 맡았어요.  "}
 				""");
 
 		AiChatSummaryResponse started = summaries.create(room.me(), room.id());
@@ -116,14 +115,8 @@ class AiSummaryIntegrationTest {
 		assertThat(done.status()).isEqualTo("DONE");
 		assertThat(done.phase()).isEqualTo("DONE");
 		assertThat(done.progress()).isEqualTo(100);
-		assertThat(done.oneLine()).isEqualTo("배포 일정을 정했어요");
+		assertThat(done.summary()).isEqualTo("배포 일정을 이야기했어요. 금요일에 배포하기로 했고 민수님이 리뷰를 맡았어요.");
 		assertThat(done.messageCount()).isEqualTo(25);
-		// ref 1 is the oldest message read; duplicates and blank items are dropped; unknown refs lose their link
-		assertThat(done.decisions()).hasSize(1);
-		assertThat(done.decisions().getFirst().messageId()).isEqualTo(room.messageIds().getFirst());
-		assertThat(done.actionItems().getFirst().messageId()).isNull();
-		assertThat(done.openQuestions()).hasSize(1);
-		assertThat(done.openQuestions().getFirst().messageId()).isEqualTo(room.messageIds().getLast());
 		assertThat(done.disclaimer()).isEqualTo("AI가 만든 요약이라 틀릴 수 있어요");
 
 		assertThat(jdbc.queryForMap("""
@@ -145,7 +138,7 @@ class AiSummaryIntegrationTest {
 		when(llm.chat(any(), any())).thenAnswer(invocation -> {
 			release.await(10, TimeUnit.SECONDS);
 			return result("""
-					{"oneLine":"요약","decisions":[],"actionItems":[],"openQuestions":[]}
+					{"summary":"요약"}
 					""");
 		});
 
@@ -181,12 +174,12 @@ class AiSummaryIntegrationTest {
 		when(llm.chat(any(), any()))
 				.thenThrow(new LlmException(true, "connection refused"))
 				.thenReturn(result("""
-						{"oneLine":"다시 시도해서 됐어요","decisions":[],"actionItems":[],"openQuestions":[]}
+						{"summary":"다시 시도해서 됐어요"}
 						"""));
 
 		AiChatSummaryResponse started = summaries.create(room.me(), room.id());
 
-		assertThat(awaitFinal(room, started.summaryId()).oneLine()).isEqualTo("다시 시도해서 됐어요");
+		assertThat(awaitFinal(room, started.summaryId()).summary()).isEqualTo("다시 시도해서 됐어요");
 		verify(llm, times(2)).chat(any(), any());
 	}
 
@@ -194,7 +187,7 @@ class AiSummaryIntegrationTest {
 	void shareRequiresDonePostsOneCardAndClearsTheRing() throws Exception {
 		Room room = flexRoom(20);
 		reply("""
-				{"oneLine":"PR 리뷰를 나눴어요","decisions":[{"text":"리뷰는 오늘","ref":2}],"actionItems":[],"openQuestions":[]}
+				{"summary":"PR 리뷰를 나눴어요. 리뷰는 오늘 하기로 했어요."}
 				""");
 		AiChatSummaryResponse started = summaries.create(room.me(), room.id());
 		awaitFinal(room, started.summaryId());
@@ -204,10 +197,10 @@ class AiSummaryIntegrationTest {
 		ChatMessageResponse again = summaries.share(room.me(), room.id(), started.summaryId());
 
 		assertThat(card.type()).isEqualTo("AI_SUMMARY");
-		assertThat(card.text()).isEqualTo("AI 요약 · PR 리뷰를 나눴어요");
+		assertThat(card.text()).isEqualTo("AI 요약 · PR 리뷰를 나눴어요. 리뷰는 오늘 하기로 했어요.");
 		JsonNode payload = JSON.valueToTree(card.payload());
-		assertThat(payload.path("oneLine").asString()).isEqualTo("PR 리뷰를 나눴어요");
-		assertThat(payload.path("decisions").get(0).path("messageId").asLong()).isEqualTo(room.messageIds().get(1));
+		assertThat(payload.path("summary").asString()).isEqualTo("PR 리뷰를 나눴어요. 리뷰는 오늘 하기로 했어요.");
+		assertThat(payload.has("decisions")).isFalse();
 		assertThat(again.id()).isEqualTo(card.id());
 		assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id = ? and message_type = 'AI_SUMMARY'",
 				Long.class, room.id())).isOne();

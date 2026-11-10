@@ -55,6 +55,14 @@
   color: var(--color-text-heading);
 }
 
+/* Title plus an optional control beside it (titleAside) */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
 .description {
   margin-top: var(--space-xs);
   font-size: var(--font-size-caption);

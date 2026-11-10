@@ -1,34 +1,22 @@
 /*
- * Shared minutes: centered across the timeline like the PR cards (user decision 2026-11-10), the same
- * light card for everyone so it never nests inside a dark bubble.
+ * Shared summary card in the bubble slot (user decision 2026-11-11, reference screenshot): the same
+ * light card for everyone, so it never sits inside the dark own bubble. Title gradient as Figma 351:362.
  */
-.wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xxs);
-  width: 100%;
-}
-
-.byline {
-  margin: 0;
-  color: var(--color-text-meta);
-  font-size: var(--font-size-micro);
-  line-height: normal;
-  text-align: center;
-}
-
 .card {
+  --summary-title-from: #0e00a5;
+  --summary-title-to: #a100af;
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
-  gap: var(--space-xxs);
-  width: 100%;
+  gap: var(--space-xs);
+  min-width: 0;
+  max-width: 100%;
   min-height: var(--touch-target-min);
-  padding: var(--space-sm);
+  padding: var(--space-md);
   border: 1px solid var(--color-hairline-cool);
   border-radius: var(--radius-card-compact);
-  background: var(--color-canvas-cool);
-  color: var(--color-text-body);
+  background: var(--color-canvas);
+  color: var(--color-text-sheet-title);
   text-align: left;
   cursor: pointer;
   -webkit-touch-callout: none;
@@ -41,41 +29,29 @@
 }
 
 .label {
-  color: var(--color-chat-accent);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
+  width: fit-content;
+  background: linear-gradient(90deg, var(--summary-title-from) 3.333%, var(--summary-title-to) 100%);
+  background-clip: text;
+  color: transparent;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   line-height: normal;
 }
 
-/* Two lines at most; the full text is in the sheet */
-.line {
+/* Six lines at most in the timeline; the full paragraph is in the sheet */
+.text {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  color: var(--color-text-heading);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.45;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
   word-break: break-word;
 }
 
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-.counts,
-.more {
-  color: var(--color-text-body);
-  font-size: var(--font-size-caption);
-  line-height: normal;
-}
-
-.more {
-  flex: none;
-  font-weight: var(--font-weight-semibold);
+.unavailable {
+  margin: 0;
+  color: var(--color-text-meta);
+  font-size: var(--font-size-micro);
 }

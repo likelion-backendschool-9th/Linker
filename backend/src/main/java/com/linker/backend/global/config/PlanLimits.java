@@ -76,6 +76,7 @@ public final class PlanLimits {
 	public static final int TEAM_MEMBERS_FREE = 6;
 	/** Policy ch. 6 — deleted teams keep chat for this many days before removal. */
 	public static final int TEAM_DELETED_CHAT_RETENTION_DAYS = 30;
+	public static final int FLEX_CHAT_HISTORY_GRACE_DAYS = 30;
 	/** POL-P-2 / ch. 2 — project post writes and photo caps. */
 	public static final int POSTS_PER_DAY = 10;
 	public static final int POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
@@ -196,8 +197,8 @@ public final class PlanLimits {
 	public static final int AI_SUMMARY_INPUT_TOKEN_BUDGET = 1500;
 	/** One message contributes at most this many characters to the prompt. */
 	public static final int AI_SUMMARY_MESSAGE_MAX_CHARS = 200;
-	/** Policy ch. 8 — at most this many decisions, to-dos and open questions each. */
-	public static final int AI_SUMMARY_ITEMS_MAX = 3;
+	/** Policy ch. 8 — the summary is one paragraph of at most this many characters (asked in the prompt). */
+	public static final int AI_SUMMARY_TEXT_MAX_CHARS = 250;
 	/** Hard cap on the model reply (tokens); a schema-bound reply never stops without one. */
 	public static final int AI_SUMMARY_MAX_OUTPUT_TOKENS = 512;
 	/** Policy ch. 8 — one summary job gives up after this long, then shows "요약하지 못했어요". */
