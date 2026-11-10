@@ -816,7 +816,7 @@ Recruiters get only three new pages: sign-up (31), login (32) and the sent offer
 
 - [ ] Email + password login; 5 wrong attempts → 10-min lock ("N분 뒤 다시 시도해 주세요")
 - [ ] Session uses the same cookie and 30-day rule as developers (reuse 00); suspended / pending-deletion handling same as 01 (pending deletion restores on login)
-- [ ] "비밀번호를 잊었어요" (forgot password) → enter email → reset link (30 min, single-use). Same message regardless of whether the email is registered (don't reveal registration)
+- [ ] `/recruiter/reset` password reset flow: enter email → reset link (30 min, single-use). Same message regardless of whether the email is registered (don't reveal registration); the login frame has no visible reset link per the 2026-11-11 UI update
 - [ ] `/recruiter/reset?token=` enter new password → changing it logs out all other devices
 - [ ] Recruiter section in 06 settings: change password, blocked users, terms, delete account (GitHub items hidden; subscription & billing is Scout only → 29)
 

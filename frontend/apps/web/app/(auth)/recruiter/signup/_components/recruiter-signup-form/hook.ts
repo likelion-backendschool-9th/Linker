@@ -198,8 +198,9 @@ export function useRecruiterSignupForm() {
 
   function proceedFromBusinessRegistration() {
     if (businessRegistrationNumber.length !== 10) return;
-    setApiError(null);
-    setStep(3);
+    toast('사업자 인증 API가 아직 준비되지 않아 다음 단계로 이동할 수 없어요.', {
+      tone: 'error',
+    });
   }
 
   async function sendCode() {
