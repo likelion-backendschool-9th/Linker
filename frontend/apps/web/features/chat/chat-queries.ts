@@ -9,6 +9,10 @@ import {
   listChatRooms,
   unreadChatSummary,
 } from '@linker/api/p16-chat-list/p16-chat-list';
+import {
+  leaveChatRoom as leaveChatRoomApi,
+  markChatRead,
+} from '@linker/api/p17-chat-room/p17-chat-room';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 export const CHAT_TABS = ['TEAM', 'DIRECT', 'REQUEST'] as const;
@@ -51,4 +55,14 @@ export function acceptChatRequest(roomId: number) {
 
 export function deleteChatRequest(roomId: number) {
   return deleteChatRequestApi(roomId);
+}
+
+/** The list's row menu (16): same read endpoint as the room (17), up to the row's preview message. */
+export function markChatRoomRead(roomId: number, lastReadMessageId: number) {
+  return markChatRead(roomId, { lastReadMessageId });
+}
+
+/** 1:1 only; the server refuses team rooms (leaving a team is page 09). */
+export function leaveChatRoom(roomId: number) {
+  return leaveChatRoomApi(roomId);
 }

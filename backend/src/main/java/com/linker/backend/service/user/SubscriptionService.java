@@ -160,15 +160,17 @@ public class SubscriptionService {
 				.map(subscription -> subscription.getPlan().name())
 				.orElse("FREE");
 		if (user.userType() != UserType.DEVELOPER) {
-			// Scout and the recruiter checkout are [Included]; nothing is for sale to recruiters yet.
-			return new PlansResponse(entry, List.of(), current);
+			// Recruiters see the Scout card (Figma 293:218); its checkout is [Included] and still refused.
+			return new PlansResponse(entry, List.of(
+					new PlanResponse("SCOUT", "Scout", PlanLimits.SCOUT_MONTHLY_KRW, null, SCOUT_BENEFITS, false, null, null)),
+					current);
 		}
 		return new PlansResponse(entry, List.of(
-				new PlanResponse("FREE", "무료", 0, 0, FREE_BENEFITS, false, null),
+				new PlanResponse("FREE", "무료", 0, 0, FREE_BENEFITS, false, null, null),
 				new PlanResponse("PRO", "Pro", PlanLimits.PRO_MONTHLY_KRW, PlanLimits.PRO_YEARLY_KRW,
-						PRO_BENEFITS, false, null),
-				new PlanResponse("FLEX", "Flex", PlanLimits.FLEX_BASE_MONTHLY_KRW, null,
-						FLEX_BENEFITS, false, PlanLimits.FLEX_EXTRA_SEAT_KRW)), current);
+						PRO_BENEFITS, false, null, null),
+				new PlanResponse("FLEX", "Flex", PlanLimits.FLEX_BASE_MONTHLY_KRW, PlanLimits.FLEX_BASE_YEARLY_KRW,
+						FLEX_BENEFITS, false, PlanLimits.FLEX_EXTRA_SEAT_KRW, PlanLimits.FLEX_EXTRA_SEAT_YEARLY_KRW)), current);
 	}
 
 	@Transactional(readOnly = true)
@@ -186,7 +188,8 @@ public class SubscriptionService {
 			int seats = seats(team);
 			Subscription flex = live.get(team.teamId());
 			String plan = flex != null && current(flex, now) ? "FLEX" : "FREE";
-			return new TeamCandidateResponse(team.teamId(), team.name(), seats, PlanLimits.flexMonthlyAmount(seats), plan);
+			return new TeamCandidateResponse(team.teamId(), team.name(), seats, PlanLimits.flexMonthlyAmount(seats),
+					PlanLimits.flexYearlyAmount(seats), plan);
 		}).toList());
 	}
 
@@ -203,7 +206,7 @@ public class SubscriptionService {
 		SubscriptionPlan plan = plan(request.planKey());
 		requireAllowed(user, plan);
 		BillingCycle cycle = cycle(request.billing());
-		if (cycle == BillingCycle.YEARLY && plan != SubscriptionPlan.PRO) {
+		if (cycle == BillingCycle.YEARLY && plan == SubscriptionPlan.SCOUT) {
 			throw new ApiException(400, "INVALID_BILLING", "이 요금제는 월간 결제만 가능해요.");
 		}
 		String orderId = "lnk_" + UUID.randomUUID().toString().replace("-", "");
@@ -212,8 +215,10 @@ public class SubscriptionService {
 			FlexTeam team = flexTeam(user.userId(), request.teamId())
 					.orElseThrow(SubscriptionService::teamPermission);
 			int seats = seats(team);
+			boolean yearly = cycle == BillingCycle.YEARLY;
 			order = Payment.order(user.userId(), plan, cycle, team.teamId(), seats, orderId,
-					orderName("Flex · " + team.name() + " 구독"), PlanLimits.flexMonthlyAmount(seats));
+					orderName("Flex · " + team.name() + (yearly ? " 연간 구독" : " 구독")),
+					yearly ? PlanLimits.flexYearlyAmount(seats) : PlanLimits.flexMonthlyAmount(seats));
 		}
 		else {
 			int amount = cycle == BillingCycle.YEARLY ? PlanLimits.PRO_YEARLY_KRW : PlanLimits.PRO_MONTHLY_KRW;
@@ -619,7 +624,7 @@ public class SubscriptionService {
 				subscription.getStatus().name(), subscription.getBillingCycle().name(), subscription.getTeamId(),
 				teamName, subscription.getCurrentPeriodEnd().atZone(PlanLimits.APP_ZONE).toLocalDate(), null,
 				subscription.isCancelAtPeriodEnd(), subscription.getSeats(), nextSeats,
-				nextSeats == null ? null : PlanLimits.flexMonthlyAmount(nextSeats), periodAmount(subscription),
+				nextSeats == null ? null : flexAmount(nextSeats, subscription.getBillingCycle()), periodAmount(subscription),
 				flex ? payerName : null);
 	}
 
@@ -628,9 +633,14 @@ public class SubscriptionService {
 		return switch (subscription.getPlan()) {
 			case PRO -> subscription.getBillingCycle() == BillingCycle.YEARLY
 					? PlanLimits.PRO_YEARLY_KRW : PlanLimits.PRO_MONTHLY_KRW;
-			case FLEX -> PlanLimits.flexMonthlyAmount(subscription.getSeats() == null ? 1 : subscription.getSeats());
+			case FLEX -> flexAmount(subscription.getSeats() == null ? 1 : subscription.getSeats(),
+					subscription.getBillingCycle());
 			case SCOUT -> PlanLimits.SCOUT_MONTHLY_KRW;
 		};
+	}
+
+	private static int flexAmount(int seats, BillingCycle cycle) {
+		return cycle == BillingCycle.YEARLY ? PlanLimits.flexYearlyAmount(seats) : PlanLimits.flexMonthlyAmount(seats);
 	}
 
 	private static String payerName(User payer) {

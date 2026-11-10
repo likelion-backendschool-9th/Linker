@@ -245,7 +245,7 @@ Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여�
 
 | 항목 | Policy | 없는 곳 |
 | --- | --- | --- |
-| Pro 연 요금 ₩29,000 | 11장 | `PlanLimits`. `policy.ts`의 `proYearly` 29000은 Policy와 같음 |
+| Pro 연 요금 ₩31,320 (10% 할인) | 11장 | `PlanLimits`. `policy.ts`의 `proYearly` 31320은 Policy와 같음 |
 | 결제 실패 유예 7일 | 11장 | `policy.ts`. `PAYMENT_FAILURE_GRACE_DAYS` 7은 Policy와 같음 |
 | 무료 팀 채팅 이미지 원본 90일 | 8장·11장 | `PlanLimits`, `policy.ts` |
 | AI 요약 결과 보관 7일 | 11장 | `PlanLimits`, `policy.ts` |
@@ -312,7 +312,7 @@ Policy가 숫자를 정했으므로 페이지에서 새로 만들지 않고 여�
 
 | 서버 키                                        | 값·단위    | 적용 대상 / C와 맞출 의미                                      |
 | ---------------------------------------------- | ---------- | -------------------------------------------------------------- |
-| `PRO_YEARLY_KRW`                               | 29000원/년 | Pro 연 결제, 기존 프론트 proYearly와 대응                      |
+| `PRO_YEARLY_KRW`                               | 31320원/년 | Pro 연 결제, 기존 프론트 proYearly와 대응                      |
 | `PAYMENT_FAILURE_GRACE_DAYS` (기존)            | 7일        | 결제 실패 후 혜택 유지 기간, 프론트 누락 보완 필요             |
 | `TEAM_CHAT_IMAGE_ORIGINAL_RETENTION_DAYS_FREE` | 90일       | 무료 팀 채팅 이미지 원본만. 메시지 보관 기간·1:1 이미지와 별개 |
 | `AI_SUMMARY_RETENTION_DAYS`                    | 7일        | 요약 결과 보관. 공유한 카드 수명과 별개                        |
@@ -329,7 +329,7 @@ C는 프론트 상수 및 구독 화면·목업의 Flex 포함 인원 참조를 
 
 | 서버                                           | 프론트                                          | 동일 값  |
 | ---------------------------------------------- | ----------------------------------------------- | -------- |
-| `PRO_YEARLY_KRW`                               | `SUBSCRIPTION_PRICE.proYearly` (기존)           | 29000원  |
+| `PRO_YEARLY_KRW`                               | `SUBSCRIPTION_PRICE.proYearly` (기존)           | 31320원  |
 | `PAYMENT_FAILURE_GRACE_DAYS`                   | `SUBSCRIPTION_RULES.paymentFailureGraceDays`    | 7일      |
 | `TEAM_CHAT_IMAGE_ORIGINAL_RETENTION_DAYS_FREE` | `CHAT.teamImageOriginalRetentionDaysFree`       | 90일     |
 | `AI_SUMMARY_RETENTION_DAYS`                    | `CHAT.aiSummaryRetentionDays`                   | 7일      |

@@ -155,9 +155,13 @@ export const PLAN_LIMITS = {
 /** Policy ch. 11. UI prices come from the API; these values seed the mock/server contract. */
 export const SUBSCRIPTION_PRICE = {
   proMonthly: 2900,
-  proYearly: 29000,
+  proYearly: 31320,
   flexMonthly: 7900,
   flexExtraMember: 1900,
+  /** Yearly = 12 months, 10% off ("연간 결제 10% 할인"), Pro and Flex alike; Scout is monthly only */
+  flexYearly: 85320,
+  flexExtraMemberYearly: 20520,
+  yearlyDiscountPercent: 10,
   /** Billing inclusion, independent of the free-team member cap. */
   flexIncludedSeats: 6,
   scoutMonthly: 14900,

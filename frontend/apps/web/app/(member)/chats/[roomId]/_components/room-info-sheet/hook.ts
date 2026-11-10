@@ -28,6 +28,8 @@ export function useRoomInfoSheet({
       await client.invalidateQueries({ queryKey: ['chat', login] });
       toast(room.muted ? '알림을 켰어요.' : '알림을 껐어요.');
     },
+    // The bell sits in the header with no room for an inline error, so failures toast.
+    onError: () => toast('알림 설정을 바꾸지 못했어요. 다시 시도해 주세요.', { tone: 'alert' }),
   });
   const leave = useMutation({
     mutationFn: () => leaveRoom(room.id),

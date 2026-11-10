@@ -124,10 +124,13 @@ it('cancels idempotently while keeping benefits until expiresOn', async () => {
   ).toEqual(result);
 });
 
-it('isolates accounts and offers recruiters no plan until Scout opens', async () => {
+it('isolates accounts and shows recruiters the Scout card while its checkout stays closed', async () => {
   const pro = (await subscriptions()).find((item) => item.planKey === 'PRO')!;
   login('recruiter');
-  expect(await mockFetch('/api/v1/user/plans')).toMatchObject({ plans: [], currentPlan: 'FREE' });
+  expect(await mockFetch('/api/v1/user/plans')).toMatchObject({
+    plans: [{ key: 'SCOUT', yearly: null }],
+    currentPlan: 'FREE',
+  });
   await expect(
     mockFetch('/api/v1/user/payments/checkout', json({ planKey: 'SCOUT', billing: 'MONTHLY' })),
   ).rejects.toMatchObject({ status: 403, code: 'PLAN_MISMATCH' });

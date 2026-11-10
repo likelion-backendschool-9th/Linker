@@ -66,7 +66,7 @@ it('enforces plan/role/billing/team ownership on order creation and approval', a
       '/api/v1/user/payments/checkout',
       post({ planKey: 'FLEX', billing: 'YEARLY', teamId: 1 }),
     ),
-  ).rejects.toMatchObject({ status: 400, code: 'INVALID_BILLING' });
+  ).resolves.toMatchObject({ planKey: 'FLEX', billing: 'YEARLY', teamId: 1 });
   login('developer');
   await expect(
     mockFetch(

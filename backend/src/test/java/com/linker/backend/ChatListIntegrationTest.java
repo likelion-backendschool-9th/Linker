@@ -159,6 +159,8 @@ class ChatListIntegrationTest {
 				.andExpect(jsonPath("$.items[0].title").value("상대"))
 				.andExpect(jsonPath("$.items[0].requestKind").value("GENERAL"))
 				.andExpect(jsonPath("$.items[0].companyName").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].teamId").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].lastMessage.id").value(newer.getId()))
 				.andExpect(jsonPath("$.items[0].lastMessage.text").value("내가 보낸 마지막"))
 				.andExpect(jsonPath("$.items[0].unreadCount").value(0))
 				.andExpect(jsonPath("$.items[1].id").value(empty.getId()))
@@ -551,6 +553,7 @@ class ChatListIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items[0].id").value(team.getId()))
 				.andExpect(jsonPath("$.items[0].title").value("채팅 팀"))
+				.andExpect(jsonPath("$.items[0].teamId").value(teamId))
 				.andExpect(jsonPath("$.items[0].counterpart.avatarUrl").value("https://avatars.example/chat-org.png"))
 				.andExpect(jsonPath("$.items[0].lastMessage").value(nullValue()));
 	}
