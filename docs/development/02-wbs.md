@@ -407,7 +407,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 19 | E | GET | `/api/v1/public/recruits?role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; excludes blocked relations if logged in | public |
+| 19 | E | GET | `/api/v1/public/recruits?q=&role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; `q` = title search (POL-R-2); excludes blocked relations if logged in | public |
 | 19 | E | GET | `/api/v1/user/me/recruits` | My recruit posts tab | user · developers only |
 | 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
 | 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
@@ -926,7 +926,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Tables: new recruit_posts, recruit_roles, recruit_post_tags · shared tech_tags, user_blocks, applications (after 21)
-- [ ] Frontend: 3 tabs (guests see only the All tab; "모집 글 쓰기" (Write recruit post) → login prompt), card (remaining headcount per role, D-day), filter sheet (nuqs), infinite scroll, empty-result copy
+- [ ] Frontend: 3 tabs (guests see only the All tab; "모집 글 쓰기" (Write recruit post) → login prompt), card (remaining headcount per role, D-day), title search `q` + filter sheet (nuqs), infinite scroll, empty-result copy
 
 </details>
 

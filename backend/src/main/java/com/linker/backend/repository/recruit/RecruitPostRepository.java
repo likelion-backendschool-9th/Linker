@@ -56,6 +56,7 @@ public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> 
 			where p.status = :status
 			  and p.visibility = :visibility
 			  and p.deletedAt is null
+			  and (:titlePattern is null or lower(p.title) like :titlePattern escape '!')
 			  and (:role is null or r.role = :role)
 			  and (:mode is null or p.workMode = :mode)
 			  and (:tech is null or tag.name = :tech)
@@ -65,6 +66,7 @@ public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> 
 	List<RecruitPost> findOpenNewest(
 			@Param("status") RecruitStatus status,
 			@Param("visibility") RecruitVisibility visibility,
+			@Param("titlePattern") String titlePattern,
 			@Param("role") RecruitRoleType role,
 			@Param("mode") WorkMode mode,
 			@Param("tech") String tech,
@@ -81,6 +83,7 @@ public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> 
 			where p.status = :status
 			  and p.visibility = :visibility
 			  and p.deletedAt is null
+			  and (:titlePattern is null or lower(p.title) like :titlePattern escape '!')
 			  and (:role is null or r.role = :role)
 			  and (:mode is null or p.workMode = :mode)
 			  and (:tech is null or tag.name = :tech)
@@ -90,6 +93,7 @@ public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> 
 	List<RecruitPost> findOpenByDeadline(
 			@Param("status") RecruitStatus status,
 			@Param("visibility") RecruitVisibility visibility,
+			@Param("titlePattern") String titlePattern,
 			@Param("role") RecruitRoleType role,
 			@Param("mode") WorkMode mode,
 			@Param("tech") String tech,
