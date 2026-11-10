@@ -91,7 +91,8 @@ export const GetMeResponse = zod.object({
   "isAdmin": zod.boolean().optional(),
   "status": zod.string().optional(),
   "onboarded": zod.boolean().optional(),
-  "suspendedUntil": zod.iso.datetime({"offset":true}).optional()
+  "suspendedUntil": zod.iso.datetime({"offset":true}).optional(),
+  "avatarUrl": zod.string().optional()
 })
 
 export const ListBlocksResponseItem = zod.object({

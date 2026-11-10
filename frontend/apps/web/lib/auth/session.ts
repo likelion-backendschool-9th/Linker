@@ -24,6 +24,8 @@ export type Session = {
   onboarded: boolean;
   /** ISO date; null when not suspended or suspended permanently */
   suspendedUntil: string | null;
+  /** `users.avatar_url` (GitHub photo); null when the account has none */
+  avatarUrl: string | null;
 };
 
 /** The member for this request, or null for guests. One API call per request (React `cache()`). */

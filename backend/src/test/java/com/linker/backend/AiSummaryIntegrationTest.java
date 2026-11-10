@@ -169,6 +169,21 @@ class AiSummaryIntegrationTest {
 	}
 
 	@Test
+	void reasoningInsteadOfASummaryFailsAndGivesTheUseBack() throws Exception {
+		Room room = flexRoom(20);
+		reply("""
+				{"summary":"채팅 기록을 요약해 보자. 먼저, 채팅 기록을 분석해 보고, 주요 내용을 파악해야 한다. 1. 게임 이야기 2. 일상 이야기"}
+				""");
+
+		AiChatSummaryResponse started = summaries.create(room.me(), room.id());
+		AiChatSummaryResponse failed = awaitFinal(room, started.summaryId());
+
+		assertThat(failed.status()).isEqualTo("FAILED");
+		assertThat(failed.summary()).isNull();
+		assertThat(failed.usedToday()).isZero();
+	}
+
+	@Test
 	void unreachableModelIsRetriedOnce() throws Exception {
 		Room room = flexRoom(20);
 		when(llm.chat(any(), any()))

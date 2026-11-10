@@ -3,7 +3,9 @@ package com.linker.backend.service.user;
 import java.time.Clock;
 
 import com.linker.backend.dto.auth.response.MeResponse;
+import com.linker.backend.entity.account.User;
 import com.linker.backend.global.security.AuthenticatedUser;
+import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.account.UserSessionRepository;
 
 import org.springframework.stereotype.Service;
@@ -17,11 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class SessionService {
 
 	private final UserSessionRepository sessions;
+	private final UserRepository users;
 	private final AccountService accounts;
 	private final Clock clock;
 
-	public SessionService(UserSessionRepository sessions, AccountService accounts, Clock clock) {
+	public SessionService(UserSessionRepository sessions, UserRepository users, AccountService accounts, Clock clock) {
 		this.sessions = sessions;
+		this.users = users;
 		this.accounts = accounts;
 		this.clock = clock;
 	}
@@ -29,6 +33,7 @@ public class SessionService {
 	@Transactional(readOnly = true)
 	public MeResponse me(AuthenticatedUser user) {
 		accounts.deliverJobSeekingOffNotice(user.userId());
+		String avatarUrl = users.findById(user.userId()).map(User::getAvatarUrl).orElse(null);
 		return new MeResponse(
 				user.userId(),
 				user.login(),
@@ -36,7 +41,8 @@ public class SessionService {
 				user.adminRegistered(),
 				user.status().name(),
 				user.onboarded(),
-				user.suspendedUntil()
+				user.suspendedUntil(),
+				avatarUrl
 		);
 	}
 
