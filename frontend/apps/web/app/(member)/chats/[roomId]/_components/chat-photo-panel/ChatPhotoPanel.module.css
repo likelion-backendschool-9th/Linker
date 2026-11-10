@@ -1,6 +1,6 @@
 /*
  * User design 2026-11-10: full-bleed white panel with the request panel's top shadow, 100px tiles
- * three to a row. Margins undo the composer's padding so the panel spans the room edge to edge.
+ * filling each row before wrapping (user request 2026-11-10). Margins undo the composer's padding so the panel spans the room edge to edge.
  */
 .panel {
   margin: calc(-1 * var(--space-sm)) calc(-1 * (var(--space-sm) + var(--space-xxs))) 0
@@ -61,8 +61,8 @@
 
 .grid {
   display: grid;
-  /* Shrinks below 100px only when three tiles no longer fit (320px screens) */
-  grid-template-columns: repeat(3, minmax(0, var(--chat-photo-tile-size)));
+  /* As many 100px tiles per row as fit (3 at the 360px QA width), wrapping only when full */
+  grid-template-columns: repeat(auto-fill, var(--chat-photo-tile-size));
   gap: var(--space-row-block);
   margin: 0;
   padding: 0;
