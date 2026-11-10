@@ -312,7 +312,7 @@ class PostServiceTest {
 		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
 		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
 
-		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ", null)))
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ")))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("EMPTY"));
 	}

@@ -255,9 +255,9 @@ class PostServiceTest {
 				.startsWith(4L, 6L, 5L)
 				.endsWith(3L)
 				.containsExactlyInAnyOrder(3L, 4L, 5L, 6L, 7L, 8L);
-		assertThat(page.items().get(0).whyShown()).isEqualTo("React¸¦ ¾²´Â »ç¶÷µéÀÇ ÀÎ±â ±Û");
-		assertThat(page.items().get(1).whyShown()).isEqualTo("ÇÁ·ÐÆ®¿£µå Á÷±ºÀÇ ÀÎ±â ±Û");
-		assertThat(page.items().get(2).whyShown()).isEqualTo("React¸¦ ¾²´Â »ç¶÷µéÀÇ ÀÎ±â ±Û");
+		assertThat(page.items().get(0).whyShown()).isEqualTo("Reactë¥¼ ì“°ëŠ” ì‚¬ëžŒë“¤ì˜ ì¸ê¸° ê¸€");
+		assertThat(page.items().get(1).whyShown()).isEqualTo("í”„ë¡ íŠ¸ì—”ë“œ ì§êµ°ì˜ ì¸ê¸° ê¸€");
+		assertThat(page.items().get(2).whyShown()).isEqualTo("Reactë¥¼ ì“°ëŠ” ì‚¬ëžŒë“¤ì˜ ì¸ê¸° ê¸€");
 		assertThat(page.items().subList(3, 6)).extracting(item -> item.whyShown()).containsOnlyNulls();
 	}
 
@@ -294,20 +294,20 @@ class PostServiceTest {
 	void feedRejectsUnknownTabAndBrokenCursor() {
 		assertThatThrownBy(() -> service.feed("popular", null, null))
 				.isInstanceOf(ApiException.class)
-				.hasMessage("ÅÇÀ» È®ÀÎÇØ ÁÖ¼¼¿ä");
+				.hasMessage("íƒ­ì„ í™•ì¸í•´ ì£¼ì„¸ìš”");
 		assertThatThrownBy(() -> service.feed(null, "10", null))
 				.isInstanceOf(ApiException.class)
-				.hasMessage("Ä¿¼­¸¦ È®ÀÎÇØ ÁÖ¼¼¿ä");
+				.hasMessage("ì»¤ì„œë¥¼ í™•ì¸í•´ ì£¼ì„¸ìš”");
 	}
 
 	@Test
 	void objectParticleFollowsTheLastSound() {
-		assertThat(PostService.withObjectParticle("React")).isEqualTo("React¸¦");
-		assertThat(PostService.withObjectParticle("Spring")).isEqualTo("SpringÀ»");
-		assertThat(PostService.withObjectParticle("Kotlin")).isEqualTo("KotlinÀ»");
-		assertThat(PostService.withObjectParticle("Vue")).isEqualTo("Vue¸¦");
-		assertThat(PostService.withObjectParticle("ÆÄÀÌ½ã")).isEqualTo("ÆÄÀÌ½ãÀ»");
-		assertThat(PostService.withObjectParticle("ÀÚ¹Ù")).isEqualTo("ÀÚ¹Ù¸¦");
+		assertThat(PostService.withObjectParticle("React")).isEqualTo("Reactë¥¼");
+		assertThat(PostService.withObjectParticle("Spring")).isEqualTo("Springì„");
+		assertThat(PostService.withObjectParticle("Kotlin")).isEqualTo("Kotlinì„");
+		assertThat(PostService.withObjectParticle("Vue")).isEqualTo("Vueë¥¼");
+		assertThat(PostService.withObjectParticle("íŒŒì´ì¬")).isEqualTo("íŒŒì´ì¬ì„");
+		assertThat(PostService.withObjectParticle("ìžë°”")).isEqualTo("ìžë°”ë¥¼");
 	}
 
 	@Test
@@ -325,7 +325,7 @@ class PostServiceTest {
 		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(3L, 7L)).thenReturn(true);
 		assertThatThrownBy(() -> service.profilePosts("octocat"))
 				.isInstanceOf(ApiException.class)
-				.hasMessage("º¼ ¼ö ¾ø´Â ÇÁ·ÎÇÊ");
+				.hasMessage("ë³¼ ìˆ˜ ì—†ëŠ” í”„ë¡œí•„");
 	}
 
 	@Test

@@ -507,7 +507,7 @@ class RecruitmentServiceTest {
 				ArgumentCaptor.forClass(CreateNotificationCommand.class);
 		verify(notifications).create(captor.capture());
 		assertThat(captor.getValue().notificationType()).isEqualTo(NotificationTypes.APPLICATION_ACCEPTED);
-		assertThat(captor.getValue().deepLink()).isEqualTo("/chats/55");
+		assertThat(captor.getValue().linkPath()).isEqualTo("/chats/55");
 	}
 
 	@Test
