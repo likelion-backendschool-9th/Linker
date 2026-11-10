@@ -184,7 +184,7 @@ public class TeamInvitationService {
         rooms
             .lockTeamRoom(teamId)
             .orElseThrow(() -> new ApiException(409, "STATE_CONFLICT", "팀 채팅방을 확인해 주세요"));
-    members.saveAndFlush(TeamMember.join(teamId, user.userId(), clock.instant()));
+    members.saveAndFlush(TeamMember.member(teamId, user.userId(), clock.instant()));
     var participant = participants.findAnyInRoom(room.getId(), user.userId()).orElse(null);
     if (participant == null) participants.saveAndFlush(ChatRoomMember.join(room, user.userId()));
     else participant.rejoin();

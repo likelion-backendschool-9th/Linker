@@ -69,19 +69,16 @@ public class TeamMember {
 		return member;
 	}
 
-  public static TeamMember join(long teamId, long userId, Instant now) {
-    var member = new TeamMember();
-    member.teamId = teamId;
-    member.userId = userId;
-    member.role = TeamRole.MEMBER;
-    member.githubOrgState = GithubOrgState.NOT_MEMBER;
-    member.joinedAt = now;
-    return member;
-  }
-
-  public void markGithubInvited() {
-    if (githubOrgState != GithubOrgState.MEMBER) githubOrgState = GithubOrgState.INVITED;
-  }
+	/** Recruit accept (POL-R-4): Linker member first; GitHub org invite is a separate owner action. */
+	public static TeamMember member(long teamId, long userId, Instant joinedAt) {
+		TeamMember member = new TeamMember();
+		member.teamId = teamId;
+		member.userId = userId;
+		member.role = TeamRole.MEMBER;
+		member.githubOrgState = GithubOrgState.NOT_MEMBER;
+		member.joinedAt = joinedAt;
+		return member;
+	}
 
 	public Long getId() {
 		return id;
@@ -89,6 +86,10 @@ public class TeamMember {
 
 	public void changeRole(TeamRole role) {
 		this.role = role;
+	}
+
+	public void markGithubInvited() {
+		if (githubOrgState != GithubOrgState.MEMBER) githubOrgState = GithubOrgState.INVITED;
 	}
 
 	public void leave(Instant now, TeamLeaveType reason) {

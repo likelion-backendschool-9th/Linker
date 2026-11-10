@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -205,13 +205,6 @@ export function useTeamSettingsActionSheet({
         await overlay.closeThen('/workspace');
       else if (overlay.id === requestId) overlay.close();
     },
-    onError: (_error, requestId) => {
-      if (requestId !== overlay.id) return;
-      if (kind === 'invite' || kind === 'github')
-        document
-          .getElementById(kind === 'invite' ? 'team-invite-handle' : 'github-org-invite-handle')
-          ?.focus();
-    },
     // A multi-repository update can partially succeed: refetch authoritative state even on error.
     onSettled: async () => {
       await Promise.all([
@@ -222,6 +215,19 @@ export function useTeamSettingsActionSheet({
       ]);
     },
   });
+  // Focus after React reenables the input; the mutation callback runs while it is disabled.
+  useEffect(() => {
+    if (
+      mutation.isError &&
+      mutation.variables === overlay.id &&
+      overlay.isOpen &&
+      (kind === 'invite' || kind === 'github')
+    ) {
+      document
+        .getElementById(kind === 'invite' ? 'team-invite-handle' : 'github-org-invite-handle')
+        ?.focus();
+    }
+  }, [mutation.isError, mutation.variables, overlay.id, overlay.isOpen, kind]);
   const canSubmit =
     supported &&
     !denied &&

@@ -48,13 +48,15 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
   await expect(page.getByRole('button', { name: '삭제하기', exact: true })).toBeEnabled();
   await page.screenshot({
     path: info.outputPath('p09-delete-confirm.png'),
-    fullPage: true,
+    fullPage: false,
+    scale: 'css',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
   await page.keyboard.press('Escape');
   await page.screenshot({
     path: info.outputPath('p09-members.png'),
-    fullPage: true,
+    fullPage: false,
+    scale: 'css',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
   await page.goto('/teams/2/settings');
@@ -84,7 +86,8 @@ test('09 copies a newly created invite link and submits the final invitation she
   await page.getByLabel('GitHub 로그인').fill('@jiwoo-kang');
   await page.screenshot({
     path: info.outputPath('p09-team-invite.png'),
-    fullPage: true,
+    fullPage: false,
+    scale: 'css',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
   await page.getByRole('button', { name: '초대', exact: true }).click();
@@ -97,7 +100,8 @@ test('09 copies a newly created invite link and submits the final invitation she
   );
   await page.screenshot({
     path: info.outputPath('p09-github-invite-error.png'),
-    fullPage: true,
+    fullPage: false,
+    scale: 'css',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
 });
