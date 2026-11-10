@@ -1460,6 +1460,9 @@ export interface TeamSetupBoards {
   items: TeamSetupBoardPreview[];
 }
 
+/**
+ * UNKNOWN when GitHub omits the organization default permission; show permission guidance
+ */
 export type TeamSetupPermissionBasePermission = typeof TeamSetupPermissionBasePermission[keyof typeof TeamSetupPermissionBasePermission];
 
 
@@ -1468,9 +1471,11 @@ export const TeamSetupPermissionBasePermission = {
   READ: 'READ',
   WRITE: 'WRITE',
   ADMIN: 'ADMIN',
+  UNKNOWN: 'UNKNOWN',
 } as const;
 
 export interface TeamSetupPermission {
+  /** UNKNOWN when GitHub omits the organization default permission; show permission guidance */
   basePermission: TeamSetupPermissionBasePermission;
   settingsUrl: string;
 }
