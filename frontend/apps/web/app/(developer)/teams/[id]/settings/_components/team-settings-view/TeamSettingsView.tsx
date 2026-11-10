@@ -138,10 +138,13 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
           </button>
         </div>
         {linkActions.manualUrl && (
-          <div>
-            <label htmlFor="manual-team-invite">복사할 초대 링크</label>
+          <div className={styles.manualInvite}>
+            <label htmlFor="manual-team-invite" className={styles.manualInviteLabel}>
+              복사할 초대 링크
+            </label>
             <input
               id="manual-team-invite"
+              className={styles.manualInviteInput}
               readOnly
               value={linkActions.manualUrl}
               onFocus={(event) => event.target.select()}

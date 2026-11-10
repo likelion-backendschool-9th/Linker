@@ -187,6 +187,31 @@
   border-radius: var(--radius-xs);
 }
 
+.manualInvite {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.manualInviteLabel {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-text-slate);
+}
+
+.manualInviteInput {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  font-size: var(--font-size-micro);
+  line-height: 1;
+  color: var(--color-text-title-cool);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle, #e5e7eb);
+  border-radius: var(--radius-xs);
+}
+
 .inviteHints {
   display: grid;
   gap: 2px;

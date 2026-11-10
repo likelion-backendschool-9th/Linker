@@ -10,6 +10,44 @@ afterEach(() => {
   else Reflect.deleteProperty(navigator, 'share');
   vi.resetAllMocks();
 });
+it('keeps clipboard permission across a deferred invite URL', async () => {
+  const write = vi.fn().mockResolvedValue(undefined);
+  const ClipboardItemMock = vi.fn(function ClipboardItem(this: unknown, items: unknown) {
+    return items;
+  });
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { write, writeText: vi.fn() },
+  });
+  Object.defineProperty(window, 'ClipboardItem', {
+    configurable: true,
+    value: ClipboardItemMock,
+  });
+
+  const { useInviteLinkActions } = await import('./hook');
+  let api!: ReturnType<typeof useInviteLinkActions>;
+  function Probe() {
+    api = useInviteLinkActions('unused');
+    return null;
+  }
+  render(<Probe />);
+
+  let release!: (href: string) => void;
+  const href = new Promise<string>((resolve) => {
+    release = resolve;
+  });
+  const pending = api.copyDeferred(href);
+  expect(write).toHaveBeenCalledOnce();
+  const firstCall = write.mock.calls[0];
+  const items = firstCall?.[0] as [{ 'text/plain': Promise<Blob> }] | undefined;
+  expect(items?.[0]).toBeDefined();
+  release('http://localhost:3000/invite/live-code');
+  await expect(items![0]!['text/plain'].then((blob) => blob.text())).resolves.toBe(
+    'http://localhost:3000/invite/live-code',
+  );
+  await expect(pending).resolves.toBe(true);
+});
+
 it('cancelling browser sharing is not reported as an error', async () => {
   vi.mocked(isInApp).mockReturnValue(false);
   const share = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'));
