@@ -232,4 +232,4 @@ Implementation notes as of this document (not rules; re-check against code):
 2. Add paired entry services only with real endpoints in the same change; never bulk-scaffold. Use role-named services for real use cases and keep shared DTO/repository/entity contracts.
 3. Verify build, security, transactions and STOMP after moves.
 
-Still open: JWT/cookie rotation; BFF; payment trial/renewal; AI/mail/storage providers; Included launch gates; remaining paired entry services.
+Still open: JWT/cookie rotation; BFF; payment trial/renewal; AI/mail providers (file storage is the server disk: `LocalObjectStorage` on the `linker_uploads` volume, served at `GET /files/{key}` as a static path outside `/api/v1`, user decision 2026-11-10); Included launch gates; remaining paired entry services.

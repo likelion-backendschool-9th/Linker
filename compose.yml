@@ -79,9 +79,9 @@ services:
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-linker_session}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
-      # "local" writes inside the container unless a volume is mounted at STORAGE_LOCAL_DIR.
-      STORAGE_MODE: ${STORAGE_MODE:-unconfigured}
-      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-}
+      # Uploads live on the linker_uploads volume (user decision 2026-11-10) and are served at /files/.
+      STORAGE_MODE: ${STORAGE_MODE:-local}
+      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-/data/uploads}
       # Empty MAIL_HOST disables sending. compose.dev.yml points it at Mailpit.
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-1025}
@@ -89,6 +89,8 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-Linker <noreply@linker.local>}
       MAIL_PUBLIC_BASE_URL: ${MAIL_PUBLIC_BASE_URL:-http://localhost:3000}
+    volumes:
+      - linker_uploads:/data/uploads
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -154,3 +156,5 @@ services:
 volumes:
   linker_postgres_data:
   linker_redis_data:
+  # Uploaded images; back it up with the database (DEPLOY_CHECKLIST step 5)
+  linker_uploads:
