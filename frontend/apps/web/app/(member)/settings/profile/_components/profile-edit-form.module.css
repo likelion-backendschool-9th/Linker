@@ -266,6 +266,14 @@
   border: 0;
 }
 
+.categoryPickerField {
+  gap: 0;
+}
+
+.categoryPickerLabel {
+  margin-bottom: var(--space-sm);
+}
+
 .selectRow {
   display: flex;
   align-items: center;

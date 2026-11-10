@@ -337,8 +337,8 @@ export function DeveloperProfileForm({
             </button>
           </div>
 
-          <fieldset className={styles.pickerField}>
-            <legend className={styles.labelRow}>
+          <fieldset className={`${styles.pickerField} ${styles.categoryPickerField}`}>
+            <legend className={`${styles.labelRow} ${styles.categoryPickerLabel}`}>
               관심 직군
               <span className={styles.hint}>최대 {PROFILE.jobCategoriesMax}개</span>
             </legend>
