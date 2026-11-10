@@ -68,6 +68,7 @@
 
   /* Focus and overlay */
   --color-focus-ring: var(--color-primary);
+  --color-focus-ring-input: #2563eb; /* Page 32 focused login inputs (Figma 364:2013) */
   --color-focus-ring-search: #2563eb; /* search field focus border only (Figma 51:275); other inputs keep --color-focus-ring */
   --color-focus-ring-on-dark: #ffffff;
   --color-scrim: rgb(20 20 20 / 0.5); /* behind bottom sheets, dialogs, drawers */

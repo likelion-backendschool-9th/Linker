@@ -25,7 +25,7 @@ export function StartScreen() {
                 className={styles.logo}
                 src="/textlogo.svg"
                 alt=""
-                width={210}
+                width={185}
                 height={64}
                 priority
               />

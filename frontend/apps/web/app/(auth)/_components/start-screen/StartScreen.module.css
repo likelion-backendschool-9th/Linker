@@ -36,8 +36,8 @@
 }
 
 .logo {
-  width: auto;
-  height: calc(var(--space-xxl) + var(--space-md));
+  width: var(--auth-wordmark-width);
+  height: var(--auth-wordmark-height);
 }
 
 .tagline {

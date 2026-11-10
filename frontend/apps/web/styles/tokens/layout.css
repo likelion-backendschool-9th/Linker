@@ -90,6 +90,7 @@
 
   /* Size */
   --touch-target-min: 44px; /* CTA, list rows, tabs, form controls */
+  --border-width-recruiter-login-focus: 2px; /* Page 32 focused login inputs (Figma 364:2013) */
   --touch-target-icon: 24px; /* dense header/toolbar icon-cluster hit area (WCAG 2.2 AA) */
   --control-height: 48px; /* pill buttons and inputs */
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */
@@ -179,6 +180,15 @@
   --space-room-member: 15px; /* room info: between member rows */
   --room-member-avatar-size: 44px;
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
+  --auth-wordmark-width: 185px; /* Auth screen Linker wordmark width */
+  --auth-wordmark-height: 64px; /* Auth screen Linker wordmark height */
+  --recruiter-login-wordmark-width: 191px; /* Page 32 Linker wordmark width (Figma 364:2013) */
+  --space-recruiter-login-top: 102px; /* Page 32 main content top to logo, after header and main gutter */
+  --space-recruiter-login-gap: 15px; /* Page 32 form and section spacing (Figma 364:2013) */
+  --space-recruiter-login-brand: 9px; /* Page 32 logo to tagline (Figma 364:2013) */
+  --space-recruiter-login-inline: 15px; /* Page 32 input text inset (Figma 364:2013) */
+  --recruiter-login-field-height: 52px; /* Page 32 email and password inputs (Figma 364:2013) */
+  --recruiter-login-submit-height: 53px; /* Page 32 login button (Figma 364:2013) */
   --page-gutter: 16px; /* side gutter inside the app column */
   --sheet-max-width: 600px; /* bottom sheets capped to the app column */
   --form-max-width: 600px; /* writing forms stay within the app column */

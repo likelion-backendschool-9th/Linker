@@ -47,6 +47,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-hairline-cool` | `#e5e7eb` | Page 07 issue rows and selected-team card |
 | `--color-hairline-faint` | `#f5f5f5` | Page 07 sheet option divider |
 | `--color-selection` | `#2563eb` | Page 07 sheet selected radio |
+| `--color-focus-ring-input` | `#2563eb` | Page 32 focused email/password input border (Figma 364:2013) |
 | `--color-scrim-team-picker` | `rgb(25 31 40 / 0.32)` | Page 07 sheet scrim (Figma `#191f28` 32%), with `--blur-scrim`. Other overlays keep `--color-scrim` |
 | `--color-radio-surface` / `--color-radio-border` | `#f6f7fb` / `#eaeaea` | Page 07 sheet radio fill and unselected outline |
 | `--color-sheet-cta` / `--color-on-sheet-cta` | `#121212` / `#f8f9f6` | Page 07 sheet CTA fill and label; page 10 join CTA reuses the fill with `--color-on-primary` label |
@@ -104,7 +105,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-status-overdue` | `#e62e00` | Overdue due date on the issue rows of 07 and 11: the date alone in this color, no "마감 지남" text (07 decision). Low contrast, see §1-3 | Caption |
 | `--color-text-placeholder-search` | `#a3a3a8` | Page 19 scroll-revealed search input placeholder. Low contrast, see §1-3 | Caption |
 | `--color-text-title-cool` | `#111827` | Page 11 section titles, current team tab, search text | Card title / Caption |
-| `--color-text-placeholder-cool` | `#a3a3a8` | Page 11 search placeholder on `#f3f4f6`. Low contrast, see §1-3 | Body |
+| `--color-text-placeholder-cool` | `#a3a3a8` | Page 11 search and page 32 email/password placeholders on `#f3f4f6`. Low contrast, see §1-3 | Body |
 | `--color-progress-done` / `-active` / `-blocked` | `#158000` / `#007be6` / `#e62e00` | Page 11 status card counts and trend lines, always with the status word. `-active`, `-blocked` low contrast, see §1-3 | Caption |
 
 How the palette's text names map here (the palette's own text colors are **not** tokens):
@@ -189,6 +190,11 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 | `--space-xxl` | 48px | Large gap inside a section |
 | `--space-section` | 48px | Gap between page sections |
 | `--space-section-lg` | 80px | Gap between major blocks |
+| `--auth-wordmark-width` / `--auth-wordmark-height` | 185px / 64px | Page 01 Linker wordmark |
+| `--recruiter-login-wordmark-width` | 191px | Page 32 Linker wordmark (Figma 364:2013) |
+| `--space-recruiter-login-top` / `--space-recruiter-login-gap` | 102px / 15px | Page 32 content top and vertical gaps (Figma 364:2013) |
+| `--space-recruiter-login-brand` / `--space-recruiter-login-inline` | 9px / 15px | Page 32 logo-to-tagline gap and input inset (Figma 364:2013) |
+| `--recruiter-login-field-height` / `--recruiter-login-submit-height` | 52px / 53px | Page 32 inputs and login button (Figma 364:2013) |
 | `--space-profile-identity` | 10px | Page 04 profile avatar/info and name/meta gaps (Figma 301:572) |
 | `--space-profile-block` | 20px | Page 04 profile header-to-feed gap (Figma 301:572) |
 | `--space-row-inline` | 5px | Page 07 row side padding, title to meta (Figma, off the grid) |
@@ -235,6 +241,7 @@ Apply on app screens (WebView and mobile Safari):
 
 | Control | Minimum hit size | Visual size |
 | --- | --- | --- |
+| `--border-width-recruiter-login-focus` | 2px | Page 32 focused email/password border (Figma 364:2013) |
 | Primary CTA, text buttons, list rows, bottom tabs, form controls | `--touch-target-min` (**44px**); buttons/inputs often `--control-height` (48px) | Per Figma |
 | Dense header / toolbar **icon clusters** (bell, more, search, close in a tight group) | `--touch-target-icon` (**24px**) hit area | **Exactly Figma** (e.g. 24px icon). **NEVER** enlarge the visible icon box to 44px — that blows up gaps |
 | Segmented controls | At least 44px high per option | Per Figma |

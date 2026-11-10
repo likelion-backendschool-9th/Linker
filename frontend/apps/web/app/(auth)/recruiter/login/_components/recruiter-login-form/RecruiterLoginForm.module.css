@@ -2,37 +2,37 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-recruiter-login-gap);
   width: calc(100vw - 2 * var(--page-gutter));
   max-width: calc(var(--content-max-width) - 2 * var(--page-gutter));
-  padding-top: calc(var(--space-section-lg) + var(--space-xl));
+  padding-top: var(--space-recruiter-login-top);
   padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
 }
 
 .brand {
   display: grid;
   justify-items: center;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-md);
+  gap: var(--space-recruiter-login-brand);
+  margin-bottom: var(--space-recruiter-login-gap);
 }
 
 .logo {
-  width: auto;
-  height: calc(var(--space-xxl) + var(--space-md));
+  width: var(--recruiter-login-wordmark-width);
+  height: var(--auth-wordmark-height);
 }
 
 .tagline {
   margin: 0;
-  color: var(--color-text-heading);
+  color: var(--color-text-title-cool);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-board-control);
   text-align: center;
 }
 
 .form {
   display: grid;
-  gap: var(--space-md);
+  gap: var(--space-recruiter-login-gap);
   width: 100%;
 }
 
@@ -44,10 +44,10 @@
 .field input,
 .control {
   width: 100%;
-  min-height: calc(var(--control-height) + var(--space-xxs));
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-sm);
-  background: var(--color-canvas-soft);
+  min-height: var(--recruiter-login-field-height);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control-md);
+  background: var(--color-canvas-cool);
   color: var(--color-text-heading);
   font-size: var(--font-size-body);
 }
@@ -58,24 +58,28 @@
 }
 
 .field input {
-  padding: 0 var(--space-md);
+  padding: 0 var(--space-recruiter-login-inline);
 }
 
-.field input::placeholder {
-  color: var(--color-text-subtle-on-tint);
+.field input::placeholder,
+.control input::placeholder {
+  color: var(--color-text-placeholder-cool);
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-board-control);
 }
 
-.field input:focus-visible,
-.control:focus-within {
-  border-color: var(--color-primary);
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
+.field > input:focus,
+.control:has(input:focus) {
+  border: var(--border-width-recruiter-login-focus) solid var(--color-focus-ring-input);
+  outline: none;
 }
 
 .control input {
   flex: 1;
   min-width: 0;
-  min-height: calc(var(--control-height) + var(--space-xxs) - 2px);
+  min-height: calc(
+    var(--recruiter-login-field-height) - 2 * var(--border-width-recruiter-login-focus)
+  );
   border: 0;
   outline: none;
   background: transparent;
@@ -97,7 +101,6 @@
   justify-content: center;
   width: var(--touch-target-min);
   height: var(--touch-target-min);
-  margin-right: var(--space-xxs);
   color: var(--color-text-meta);
 }
 
@@ -122,12 +125,12 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: var(--touch-target-min);
-  color: var(--color-on-primary);
+  min-height: var(--recruiter-login-submit-height);
+  color: var(--color-on-sheet-cta);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
-  background: var(--color-primary);
-  border-radius: var(--radius-sm);
+  background: var(--color-sheet-cta);
+  border-radius: var(--radius-control-md);
 }
 
 .submit:disabled {
@@ -135,22 +138,16 @@
   opacity: 0.7;
 }
 
-.signup,
-.forgot {
+.signup {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--touch-target-min);
-  font-size: var(--font-size-meta);
+  font-size: var(--font-size-micro);
   text-underline-offset: 3px;
 }
 
 .signup {
-  color: var(--color-accent);
+  color: var(--color-cta-cool);
   text-decoration: underline;
-}
-
-.forgot {
-  color: var(--color-text-meta);
-  text-decoration: none;
 }
