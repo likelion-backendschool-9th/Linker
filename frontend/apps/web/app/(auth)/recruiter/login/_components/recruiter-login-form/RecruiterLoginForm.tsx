@@ -94,9 +94,6 @@ export function RecruiterLoginForm({ returnTo }: { returnTo: string }) {
       <Link className={styles.signup} href="/recruiter/signup">
         비즈니스 회원가입
       </Link>
-      <Link className={styles.forgot} href="/recruiter/reset">
-        비밀번호를 잊었어요
-      </Link>
     </section>
   );
 }

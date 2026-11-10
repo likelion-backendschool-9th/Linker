@@ -19,10 +19,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-lg);
+  gap: var(--space-auth-start-section);
   width: 100%;
-  padding: var(--space-xxl) var(--page-gutter)
-    calc(var(--space-xxl) + env(safe-area-inset-bottom));
+  padding: var(--space-auth-start-inset) var(--page-gutter)
+    calc(var(--space-auth-start-inset) + env(safe-area-inset-bottom));
 }
 
 .brand {
@@ -36,16 +36,17 @@
 }
 
 .logo {
-  width: auto;
-  height: calc(var(--space-xxl) + var(--space-md));
+  display: block;
+  width: var(--auth-wordmark-width);
+  height: var(--auth-wordmark-height);
 }
 
 .tagline {
   margin: 0;
-  color: var(--color-text-heading);
+  color: var(--color-text-title-cool);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-feed);
   text-align: center;
 }
 
@@ -65,14 +66,14 @@
   padding: 0 var(--control-height);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-feed);
   border-radius: var(--radius-xs);
 }
 
 .github {
   position: relative;
   color: var(--color-on-primary);
-  background: var(--color-primary);
+  background: var(--color-auth-start-github);
 }
 
 .github:disabled {
@@ -82,14 +83,14 @@
 
 .githubIcon {
   position: absolute;
-  left: var(--space-sm);
-  width: var(--icon-size);
-  height: var(--icon-size);
+  left: var(--space-auth-start-github-icon);
+  width: var(--icon-size-auth-start-github);
+  height: var(--icon-size-auth-start-github);
 }
 
 .secondary {
-  color: var(--color-text-body);
-  background: var(--color-canvas-soft);
+  color: var(--color-text-slate);
+  background: var(--color-canvas-cool);
 }
 
 .or {
@@ -97,10 +98,10 @@
   align-items: center;
   gap: var(--space-xs);
   margin: 0;
-  color: var(--color-text-body);
+  color: var(--color-text-slate);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-caption);
+  line-height: var(--line-height-board-control);
 }
 
 .or::before,
@@ -108,7 +109,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--color-hairline);
+  background: var(--color-hairline-tab);
 }
 
 .error {
@@ -122,28 +123,28 @@
 .policy {
   display: grid;
   justify-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-auth-start-policy);
   width: 100%;
 }
 
 .legal {
   display: grid;
   justify-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-auth-start-policy);
 }
 
 .legal a {
-  color: var(--color-accent);
+  color: var(--color-cta-cool);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-caption);
+  line-height: var(--line-height-board-control);
 }
 
 .notice {
   margin: 0;
-  color: var(--color-text-meta);
+  color: var(--color-text-disabled-cool);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-caption);
+  line-height: var(--line-height-board-control);
   text-align: center;
 }
