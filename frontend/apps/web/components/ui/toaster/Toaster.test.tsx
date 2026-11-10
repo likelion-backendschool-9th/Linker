@@ -1,5 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { dismissToast, toast, useToastStore } from '@/stores/toast-store';
 
@@ -44,13 +43,14 @@ it('shows the four kinds from Figma 877:415: a dot for success, error and persis
   expect(screen.queryByText('처리 중 입니다. 잠시만 기다려 주세요.')).not.toBeInTheDocument();
 });
 
-it('runs an action toast from a tap anywhere on it, once, and shows no dot', async () => {
+it('runs an action toast from a tap anywhere on it, once, and shows no dot', () => {
   const undo = vi.fn();
   render(<Toaster />);
   act(() => toast('광고를 닫았어요.', { action: { label: '되돌리기', onClick: undo } }));
 
   const item = screen.getByText('광고를 닫았어요.').closest('[data-tone]');
   expect(item?.querySelector('span[aria-hidden]')).toBeNull();
-  await userEvent.setup().click(screen.getByText('광고를 닫았어요.'));
+  // fireEvent: jsdom has no pointer capture for Radix's swipe handling
+  fireEvent.click(screen.getByText('광고를 닫았어요.'));
   expect(undo).toHaveBeenCalledTimes(1);
 });

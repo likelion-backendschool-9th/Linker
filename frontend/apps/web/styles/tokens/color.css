@@ -176,6 +176,7 @@
   --color-post-author-divider: #eaeaea; /* author row bottom line */
   --color-github-mark: #121212; /* repo card GitHub mark; also the 04 "GitHub" button fill */
   --color-profile-settings: #414141; /* 04 settings icon (Figma 785:766) */
+  --color-on-load-timeout: #f6f6f6; /* load timeout "돌아가기" label on --color-cta-cool (Figma 301:335) */
   --color-toast-bg: #ffffff; /* toast fill (Figma 877:415 is white 20%; solid so it reads over photos) */
   --color-toast-error: #ed0004; /* error toast dot (Figma 841:382) */
   --color-toast-persistent: #ed8e00; /* persistent toast dot (Figma 877:408) */

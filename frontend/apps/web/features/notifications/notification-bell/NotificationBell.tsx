@@ -18,8 +18,10 @@ export function NotificationBell({
   initiallyUnread?: boolean;
 }) {
   const { login, role } = useViewer();
+  // Chrome badge: a slow count must never take over the screen (blueprint §5-5)
   const count = useQuery({
     ...notificationCountOptions(login),
+    meta: { background: true },
     enabled: role !== 'guest' && login !== null,
   });
   const unread = count.data ? count.data.count > 0 : initiallyUnread;

@@ -1,6 +1,8 @@
 import { isServer, MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import { cache } from 'react';
 
+import { useAppSignalStore } from '@/stores/app-signal-store';
+
 import { ApiError } from './api-error';
 import { isTimeoutError } from './fetch-with-timeout';
 import { handleApiError } from './handle-api-error';
@@ -16,11 +18,17 @@ function retryOnce(failureCount: number, error: Error) {
 }
 
 /**
- * A query that had nothing on screen yet shows its own failure UI (timeout screen, `ErrorState`), so the
- * shared timeout toast is only for a background refetch over data already shown. Other codes as before.
+ * Timeouts (blueprint §5-5): if a loading orb is on screen right now (`PageLoading` / `Skeleton`), the
+ * screen failed to load, so the loading turns into the timeout screen (Figma 301:326) instead of a toast.
+ * Otherwise (a background refetch, a side query with no loader) it is the shared timeout toast.
+ * App-chrome queries (badge counts) mark `meta: { background: true }` and stay silent. Other codes as before.
  */
-function onQueryError(error: Error, query: { state: { data: unknown } }) {
-  if (isTimeoutError(error) && query.state.data === undefined) return;
+export function onQueryError(error: Error, query: { meta?: Record<string, unknown> }) {
+  if (isTimeoutError(error) && query.meta?.background) return;
+  if (isTimeoutError(error) && useAppSignalStore.getState().loadersMounted > 0) {
+    useAppSignalStore.setState({ loadTimedOutAt: Date.now() });
+    return;
+  }
   handleApiError(error);
 }
 
