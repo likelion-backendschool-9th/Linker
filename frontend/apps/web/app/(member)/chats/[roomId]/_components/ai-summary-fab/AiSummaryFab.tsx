@@ -81,11 +81,15 @@ export function AiSummaryFab({ roomId, initial, loadedIds, onJump }: Props) {
         )}
         {fab.bubbleOpen && (ring.state === 'queued' || ring.state === 'running') && (
           <div id={bubbleId} className={styles.bubble} role="group" aria-label="AI 요약 진행 상황">
-            {/* One line, e.g. "요약 쓰는 중 64/100" (user request 2026-11-10) */}
+            {/* One line, e.g. "요약 쓰는 중 ·   9/100" (user request 2026-11-10) */}
             <p className={styles.bubbleText}>
               {stageText(ring)}
               {ring.state === 'running' && (
-                <span className={styles.bubbleProgress}> {ring.progress}/100</span>
+                <>
+                  {' · '}
+                  {/* Three digits wide even for 9, so the bubble does not jump as it counts */}
+                  <span className={styles.bubblePercent}>{ring.progress}</span>/100
+                </>
               )}
             </p>
           </div>
