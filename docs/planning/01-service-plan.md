@@ -86,7 +86,7 @@ Minho finished a project and wants to share it. A GitHub repo link alone doesn't
 | --- | --- |
 | A repo alone shows no context | **Project post.** Repo card (name, language, stars) is automatic; one-line intro, my role, problem & solution, demo links and photos are filled by the author. README expands on the detail page |
 | Hard to prove contribution | Post automatically shows my commit count in this repo and issues handled in Linker. Profile shows the contribution graph and completion record |
-| No place for reactions/feedback | Following feed + recommended feed (recently popular, 2nd-degree, same stack) so even a first post gets exposure. Feedback via likes/comments, comment notifications |
+| No place for reactions/feedback | "추천" feed (same tech stack and job categories first, then everything else at random) + "팔로잉" feed so even a first post gets exposure. Feedback via likes/comments, comment notifications |
 | Don't know how my post performs | Post stats (Free: likes/comments/views; Pro: views by traffic source, 30-day trend, README expands). See where posts get seen and pick featured posts |
 | Showing my post to people I know is tedious | Share button → "링크 복사" (Copy link) or "채팅방에 공유" (Share to chat room: pick a team or 1:1 chat room and send a card). A Linker URL pasted into chat shows as the same card |
 | No channel for developers to connect | Follow; 1:1 chat that starts in the message-request box unless mutual follow. People who were on the same team can chat directly |

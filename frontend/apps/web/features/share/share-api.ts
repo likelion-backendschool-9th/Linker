@@ -4,7 +4,13 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 export type ShareTargetType = 'POST' | 'RECRUIT_POST' | 'PROFILE';
 export type ShareTarget = { targetType: ShareTargetType; targetId: number; path: string };
-export type ShareRoom = { roomId: number; kind: 'TEAM' | 'DIRECT'; title: string };
+export type ShareRoom = {
+  roomId: number;
+  kind: 'TEAM' | 'DIRECT';
+  title: string;
+  /** Team photo for TEAM rooms, the other person's photo for DIRECT (24 share drawer row) */
+  avatarUrl: string | null;
+};
 
 /** WBS P17 contract. Spring implements it; the committed p17 orval output predates it (full regeneration is deferred). */
 export function shareRoomsOptions(login: string | null, search: string) {

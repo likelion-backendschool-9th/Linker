@@ -16,7 +16,7 @@ const FILTER_FIELDS: FilterField[] = ['role', 'tech', 'format', 'sort'];
 
 /**
  * 19 recruit list area B (Figma 253:2122): revealed under the tabs once scroll leaves the top
- * (scenario 2). Visibility/height is driven by `.recruit-header-collapsed`, see RecruitList.module.css.
+ * (scenario 2). Visibility/height is driven by `.tab-chrome-collapsed`, see RecruitList.module.css.
  * The search field's 2px focus border is scenario 3 (Figma 346:360). The filter chips each open
  * RecruitFilterSheet (scenario 5, Figma 352:958).
  */
@@ -47,7 +47,7 @@ export function RecruitSearchPanel({
             className={styles.searchInput}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            data-recruit-search-input
+            data-tab-chrome-blur
           />
           {value && (
             <button

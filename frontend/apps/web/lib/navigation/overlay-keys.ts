@@ -73,6 +73,8 @@ export const OVERLAY_KEYS = [
   'recruit-role-full',
   'photo-viewer',
   'post-likers',
+  'feed-comments',
+  'feed-share',
   'ad-menu',
   'recruiter-ad',
 ] as const;

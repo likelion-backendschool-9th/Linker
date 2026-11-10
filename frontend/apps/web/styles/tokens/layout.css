@@ -48,7 +48,6 @@
   /* Figma 22 post editor (265:142) */
   --space-post-intro: 10px; /* step-1 title to hint */
   --space-post-search: 25px; /* hint to search field */
-  --space-post-repo: 13px; /* gap between repo rows */
   --stepper-height: 4px; /* top progress bar */
   --space-field-gap: 20px; /* 20 recruit editor: gap between fields (Figma itemSpacing) */
   --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
@@ -179,10 +178,34 @@
   --size-post-photo: 74px; /* 22 photo tile (Figma 274:321) */
   --radius-post-photo: 6px; /* 22 photo tile corner (Figma 274:321) */
   --radius-post-photo-more: 5px; /* 22 "more photos" badge corner (Figma 660:585) */
+  /* Figma 24 home feed card (91:105, 92:249) */
+  --size-feed-avatar: 42px; /* author photo (rounded square, --radius-card-compact) */
+  --feed-cover-height: 270px; /* cover photo / repo card height */
+  --space-feed-card: 35px; /* between feed cards (Figma 785:772 → 785:829) */
+  --space-feed-top: 25px; /* "추천 / 팔로잉" tabs to the first card (Figma 785:1211 → 785:772) */
+  --control-height-feed-tab: 51px; /* "추천" / "팔로잉" tab (Figma 785:1211) */
+  --control-height-feed-follow: 29px; /* "팔로우"/"팔로잉" chip, 14px label (Figma 785:780) */
+  --space-feed-status: 2px; /* card job status to the login (Figma 785:777) */
+  --radius-feed-follow: 6px;
+  --icon-size-feed-stat: 20px; /* like / comment / share icons */
+  --icon-size-feed-fab: 22px; /* write FAB pen (Figma 92:290) */
+  --tab-bar-pill-top: 77px; /* bottom GNB pill top above the screen bottom (8 margin + 69 pill); add safe-area */
+  --space-feed-fab: 20px; /* write FAB bottom to the GNB pill top (Figma 92:289) */
+  /* Figma 24 comment sheet (374:4092) */
+  --sheet-comments-top-gap: 100px; /* sheet max-height = 100dvh minus this */
+  --space-comment-sheet: 25px; /* sheet top and bottom padding */
+  /* Figma 24 share drawer (780:584): centered card; search uses --control-height-search */
+  --share-drawer-max-height: 600px; /* card cap; past it only the room list scrolls (no visible bar) */
+  --space-share-drawer-block: 18px; /* card top and bottom padding (sides are --space-md) */
+  --control-height-share-row: 54px; /* room row */
+  --size-share-room-avatar: 30px; /* team / person photo in a room row */
+  --control-height-share-copy: 47px; /* "링크 복사하기" button */
   --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
   --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
-  --chip-size: 14px; /* GNB unread-count chip diameter (Figma 455:316) */
+  --chip-size: 18px; /* GNB unread-count chip diameter (Figma 455:350) */
+  --size-gnb-avatar: 27px; /* GNB 프로필 tab avatar (Figma 455:347) */
+  --space-tab-avatar-gap: 5px; /* GNB 프로필 tab: avatar to label, so the label lines up with the icon tabs (Figma 455:346) */
   --tab-bar-gap-4: 36px; /* gap between bottom GNB tabs: 4 tabs, guest (Figma 453:227) */
   --tab-bar-gap-5: 20px; /* gap between bottom GNB tabs: 5 tabs, signed-in incl. profile (Figma 453:258/455:316) */
   --tab-bar-padding-wide: 80px; /* bottom GNB side padding at the 600px upper bound (Figma 476:563/593) */
@@ -215,6 +238,7 @@
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
   --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
   --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */
+  --shadow-gnb: 0 2px 4px rgb(0 0 0 / 0.2); /* bottom GNB pill (Figma 800:1299, 455:316 exception) */
 
   /* Figma 15 values (calendar) */
   --space-calendar-legend: 14px; /* 15 status chips to weekday row */

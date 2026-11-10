@@ -1,22 +1,22 @@
 import { useEffect } from 'react';
 
-const COLLAPSED_CLASS = 'recruit-header-collapsed';
-const CHROME_SELECTOR = '[data-recruit-chrome]';
-/** RecruitSearchPanel's input; blurred when area B closes so a focused field doesn't stay focused
- * while hidden (`overflow: hidden` lets it keep focus, it just visually disappears). */
-const SEARCH_INPUT_SELECTOR = '[data-recruit-search-input]';
-/** Start offset for the pin slide; read by `RecruitList.module.css` keyframes. */
-const PIN_FROM_VAR = '--recruit-chrome-pin-from';
+/** On `<html>` while the page is scrolled off the top; read by `:global(html.tab-chrome-collapsed)` rules */
+export const TAB_CHROME_COLLAPSED_CLASS = 'tab-chrome-collapsed';
+const CHROME_SELECTOR = '[data-tab-chrome]';
+/** Fields inside the chrome that must lose focus when it reopens (19 search panel's input): a
+ * hidden field under `overflow: hidden` would otherwise keep focus while invisible. */
+const BLUR_SELECTOR = '[data-tab-chrome-blur]';
+/** Start offset for the pin slide; read by the pages' `tab-chrome-pin` keyframes. */
+const PIN_FROM_VAR = '--tab-chrome-pin-from';
 
 /**
- * 19 recruit list scenario 2: any scroll off the top collapses the header and pins the tabs /
- * search chrome to the viewport top with a FLIP slide (see `RecruitList.module.css`); only
- * `scrollY === 0` restores both with the CSS open animation. Toggles a plain class on `<html>` —
- * matching `:global(.recruit-header-collapsed)` rules in `header.module.css`,
- * `RecruitList.module.css`, and `RecruitSearchPanel.module.css` — rather than React state, since
- * the header lives outside this component's tree (PageFrame).
+ * 19 recruit list scenario 2, shared with 24 home feed: any scroll off the top collapses the
+ * header and pins the page's tab chrome (`[data-tab-chrome]`) to the viewport top with a FLIP
+ * slide; only `scrollY === 0` restores both with the CSS open animation. Toggles a plain class on
+ * `<html>` — matching `:global(html.tab-chrome-collapsed)` rules in `header.module.css` and each
+ * page's CSS — rather than React state, since the header lives outside the page tree (PageFrame).
  */
-export function useRecruitHeaderCollapse() {
+export function useTabChromeCollapse() {
   useEffect(() => {
     const root = document.documentElement;
     let collapsed = false;
@@ -33,11 +33,11 @@ export function useRecruitHeaderCollapse() {
       }
 
       collapsed = next;
-      root.classList.toggle(COLLAPSED_CLASS, next);
+      root.classList.toggle(TAB_CHROME_COLLAPSED_CLASS, next);
 
       if (!next) {
         chrome?.style.removeProperty(PIN_FROM_VAR);
-        if (document.activeElement?.matches(SEARCH_INPUT_SELECTOR)) {
+        if (document.activeElement?.matches(BLUR_SELECTOR)) {
           (document.activeElement as HTMLElement).blur();
         }
       }
@@ -61,7 +61,7 @@ export function useRecruitHeaderCollapse() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
-      root.classList.remove(COLLAPSED_CLASS);
+      root.classList.remove(TAB_CHROME_COLLAPSED_CLASS);
       document.querySelector<HTMLElement>(CHROME_SELECTOR)?.style.removeProperty(PIN_FROM_VAR);
     };
   }, []);

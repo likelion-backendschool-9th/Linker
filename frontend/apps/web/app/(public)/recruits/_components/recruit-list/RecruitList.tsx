@@ -17,7 +17,7 @@ import {
 } from '../recruit-filter-sheet';
 import { RecruitSearchPanel } from '../recruit-search-panel';
 import { RecruitTabs } from '../recruit-tabs';
-import { RecruitHeaderCollapseEffect } from './RecruitHeaderCollapseEffect';
+import { TabChromeCollapseEffect } from '../../../_components/tab-chrome-collapse';
 import styles from './RecruitList.module.css';
 
 const SAMPLE_RECRUITS: RecruitCardData[] = [
@@ -72,10 +72,10 @@ export function RecruitList() {
 
   return (
     <div className={styles.page}>
-      <RecruitHeaderCollapseEffect />
+      <TabChromeCollapseEffect />
       {/* Slot keeps in-flow height while the chrome pins to the viewport top when collapsed */}
       <div className={styles.chromeSlot}>
-        <div className={styles.chromeSticky} data-recruit-chrome>
+        <div className={styles.chromeSticky} data-tab-chrome>
           <RecruitTabs />
           <RecruitSearchPanel filterOverlay={filterOverlay} selectedFilters={selectedFilters} />
         </div>
