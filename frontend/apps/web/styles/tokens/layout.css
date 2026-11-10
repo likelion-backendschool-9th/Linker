@@ -177,6 +177,10 @@
   --size-post-detail-skeleton-login-h: 14px;
   --size-post-detail-skeleton-follow-w: 49px; /* 23 skeleton follow (Figma 1025:1450) */
   --size-post-detail-skeleton-follow-h: 25px;
+  --size-feed-skeleton-card-h: 359px; /* 24 skeleton card shell (Figma 1025:1462) */
+  --size-feed-skeleton-meta-w: 141px; /* 24 skeleton reactions / title (Figma 1025:1466) */
+  --size-feed-skeleton-meta-h: 17px;
+  --size-feed-skeleton-time-w: 50px; /* 24 skeleton relative time (Figma 1025:1464) */
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
