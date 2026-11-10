@@ -322,7 +322,7 @@
 .stage {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-profile-block);
   margin: calc(var(--space-md) * -1) calc(var(--page-gutter) * -1)
     calc((var(--space-xxl) + env(safe-area-inset-bottom)) * -1);
   padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
@@ -336,22 +336,33 @@
 
 .identityRow {
   display: flex;
-  align-items: center;
-  gap: var(--space-xs);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-profile-identity);
+  width: min(100%, var(--profile-identity-width));
+  height: var(--avatar-size-profile);
   min-width: 0;
 }
 
+.identityRowSelf {
+  width: 100%;
+}
+
 .stage .avatar {
-  width: calc(var(--control-height) - var(--space-xxs));
+  width: var(--avatar-size-profile);
 }
 
 .stage .identityText {
-  display: grid;
+  position: relative;
+  display: block;
   flex: 1;
-  gap: var(--space-xs);
+  height: var(--avatar-size-profile);
 }
 
 .nameLine {
+  position: absolute;
+  top: var(--space-xs);
+  left: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -360,14 +371,14 @@
 
 .displayName {
   margin: 0;
-  color: var(--color-text-heading);
+  color: var(--color-text-title-cool);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-body);
+  line-height: var(--line-height-title);
 }
 
 .statusBadge {
-  padding: var(--space-xxs) var(--space-xxs);
+  padding: var(--space-chip-block) var(--space-xxs);
   color: var(--color-accent);
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-medium);
@@ -377,33 +388,49 @@
 }
 
 .followLine {
+  position: absolute;
+  top: calc(var(--space-xl) - var(--space-xxs));
+  left: 0;
   display: flex;
+  align-items: center;
   gap: var(--space-xs);
   min-height: var(--touch-target-min);
   padding: 0;
   color: var(--color-text-body);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  background: transparent;
 }
 
-.chevron {
+.followLine button {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.profileSettings {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
   width: var(--touch-target-min);
   height: var(--touch-target-min);
-  color: var(--color-text-body);
+  margin-top: var(--space-xs);
+  color: var(--color-text-title-cool);
 }
 
-.chevron svg {
+.profileSettings svg {
   width: var(--icon-size);
   height: var(--icon-size);
 }
 
 .bio {
-  margin: 0;
+  margin: var(--space-xxs) 0 0;
   color: var(--color-text-body);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
@@ -415,7 +442,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
-  margin: 0;
+  margin: var(--space-xxs) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -425,12 +452,12 @@
   align-items: center;
   justify-content: center;
   width: auto;
-  min-height: calc(var(--space-lg) + var(--space-xxs));
-  padding: 0 var(--space-sm);
+  min-height: var(--control-height-chip-sm);
+  padding: var(--space-chip-block) var(--space-xs);
   color: var(--color-text-body);
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-medium);
-  background: var(--color-canvas-soft);
+  background: var(--color-canvas-cool);
   border-radius: var(--radius-xxs);
 }
 
@@ -496,26 +523,27 @@
 .feed {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
-  padding: 0 var(--space-sm) var(--space-lg);
-  background: var(--color-canvas-soft);
+  gap: var(--space-md);
+  padding: 0 var(--page-gutter) var(--space-lg);
+  background: var(--color-canvas-cool);
 }
 
 .projectTabs {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: 1fr 1fr;
-  min-height: calc(var(--control-height) - var(--space-xs));
-  margin-inline: calc(var(--space-sm) * -1);
+  height: var(--profile-project-tabs-height);
+  margin-inline: calc(var(--page-gutter) * -1);
   border-top: 1px solid var(--color-hairline-soft);
   background: var(--color-canvas);
 }
 
 .projectTabs button {
   display: grid;
+  align-content: center;
   justify-items: center;
-  gap: var(--space-xxs);
-  min-height: calc(var(--control-height) - var(--space-xs));
+  gap: calc(var(--space-xxs) / 2);
+  min-height: var(--touch-target-min);
   color: var(--color-text-meta);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
@@ -552,13 +580,13 @@
 .workCard {
   display: grid;
   gap: var(--space-xs);
-  min-height: calc(var(--space-section-lg) * 2);
+  aspect-ratio: 1;
   padding: var(--space-xs);
   color: var(--color-text-heading);
   text-decoration: none;
   background: var(--color-canvas);
-  border: 1px solid var(--color-hairline-soft);
   border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-profile-work-card);
 }
 
 .workCover {
@@ -585,7 +613,7 @@
 .fab {
   position: fixed;
   right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
-  bottom: calc(var(--space-xxl) + env(safe-area-inset-bottom));
+  bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
   z-index: var(--z-chrome);
   display: inline-flex;
   align-items: center;
