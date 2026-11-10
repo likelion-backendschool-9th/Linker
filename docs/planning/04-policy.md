@@ -638,22 +638,22 @@ Follow/like/comment, writing and sharing posts, 1:1 chat, team chat, Find Team, 
 - Stats are visible only to the user. The recruiter view alert shows **only the count**, never who or which company. The same recruiter viewing several times on one day counts once. Guest, developer and own views are not counted.
 - Recruiters are told at sign-up, via the Business Member Supplementary Terms, that viewing a profile is shown to the developer as a count.
 
-### Flex benefits (team, from ₩7,900/month)
+### Flex benefits (team, from ₩7,900/month / ₩79,000/year)
 
 | Benefit | Free team | Flex |
 | --- | --- | --- |
-| Price | ₩0 | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th (e.g. 7 members ₩9,800) |
+| Price | ₩0 | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th (e.g. 7 members ₩9,800). Yearly = 10 months, like Pro: ₩79,000/year (up to 6 members), ₩19,000/year per member from the 7th (e.g. 7 members ₩98,000) |
 | Team members | 6 | No limit |
 | Team chat search & scroll-back | Last 60 days | All history |
 | Team chat image originals | 90 days | While the team exists |
 | AI chat summary (minutes) | Only during the 7-day free trial, then Flex prompt | 10/day per person, results kept 7 days |
 | Project progress graph (POL-T-7) | None; Flex prompt in the card's place | Progress card on the issue tab |
 
-- The per-member price uses the **team headcount on the billing date**. Headcount changes during a period apply from the next billing date; no pro-rating. Checkout and the day-before notice show "next payment: N members, amount".
+- The per-member price uses the **team headcount on the billing date**. Headcount changes during a period apply from the next billing date; no pro-rating (on a yearly plan, the next billing date is a year later). Checkout and the day-before notice show "next payment: N members, amount".
 - Free GitHub orgs have a daily org invite limit (50 for new orgs), so even without a member limit, inviting many people at once may spill into the next day.
 - Detailed AI chat summary rules are in [ch. 8 POL-C-5](#ai-chat-summary-pol-c-5).
 
-### Scout benefits (recruiter, ₩14,900/month)
+### Scout benefits (recruiter, ₩14,900/month, monthly only)
 
 | Benefit | Free (recruiter) | Scout |
 | --- | --- | --- |

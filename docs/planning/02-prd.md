@@ -227,7 +227,7 @@ Metrics such as sign-ups and active teams are not built into the back office; us
 | --- | --- | --- | --- |
 | Free | All developers | ₩0 | All collaboration and social features |
 | Pro | Individual | ₩2,900/month / ₩29,000/year | Recruiter profile-view alert, post traffic-source stats, higher limits for post photos, featured posts, recruit posts |
-| Flex | Team (owner pays) | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th | No team member limit, full-history team chat search/scroll and image retention, AI chat summary (minutes), project progress graph |
+| Flex | Team (owner pays) | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th / yearly ₩79,000 (up to 6), ₩19,000 per member from the 7th | No team member limit, full-history team chat search/scroll and image retention, AI chat summary (minutes), project progress graph |
 | Scout | Recruiters | ₩14,900/month | One feed job ad (job-category matched), recruiting offers 10 → 50 per day. Phase 4 may add talent search filters and ad stats |
 
 Flex and Scout are working names. Free on every plan: follow/like/comment, 1:1 chat, team chat, Find Team, teams/issues/calendar. Exact limits per benefit and payment/cancel/refund rules are in [Policy: Subscription](04-policy.md#11-subscription).
