@@ -215,6 +215,76 @@ export function findIssue(teamId: string | number, issueId: string | number) {
   );
 }
 
+/**
+ * Seed ids vs rows added at runtime (p13 create). Browser POST and server RSC use different module
+ * heaps — bridge created rows through a cookie (and sessionStorage in the tab).
+ */
+const ISSUE_SEED_IDS = new Set(ISSUES.map((item) => item.id));
+const CREATED_COOKIE = 'linker_mock_created_issues';
+const CREATED_STORAGE = 'linker:mock:created-issues';
+
+function parseExtras(raw: string | null | undefined): MockIssue[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as MockIssue[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Replace non-seed rows with `extras` (seed in-place mutations stay). */
+export function mergeCreatedIssues(extras: MockIssue[]) {
+  for (let index = ISSUES.length - 1; index >= 0; index -= 1) {
+    if (!ISSUE_SEED_IDS.has(ISSUES[index]!.id)) ISSUES.splice(index, 1);
+  }
+  for (const issue of [...extras].reverse()) {
+    if (!ISSUES.some((item) => item.id === issue.id)) ISSUES.unshift(issue);
+  }
+}
+
+async function readCreatedExtras(): Promise<MockIssue[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = parseExtras(sessionStorage.getItem(CREATED_STORAGE));
+      if (stored.length > 0) return stored;
+    } catch {
+      /* storage blocked */
+    }
+    const match = document.cookie.match(new RegExp(`(?:^|; )${CREATED_COOKIE}=([^;]*)`));
+    return parseExtras(match?.[1] ? decodeURIComponent(match[1]) : null);
+  }
+  try {
+    const { cookies } = await import('next/headers');
+    const raw = (await cookies()).get(CREATED_COOKIE)?.value;
+    return parseExtras(raw ? decodeURIComponent(raw) : null);
+  } catch {
+    return [];
+  }
+}
+
+/** Call at the start of each mockFetch so server RSC sees browser-created issues. */
+export async function syncCreatedIssues() {
+  mergeCreatedIssues(await readCreatedExtras());
+}
+
+/** Browser only: persist non-seed issues for the next server render. */
+export function persistCreatedIssues() {
+  if (typeof window === 'undefined') return;
+  const extras = ISSUES.filter((item) => !ISSUE_SEED_IDS.has(item.id));
+  const payload = JSON.stringify(extras);
+  try {
+    sessionStorage.setItem(CREATED_STORAGE, payload);
+  } catch {
+    /* optional */
+  }
+  try {
+    document.cookie = `${CREATED_COOKIE}=${encodeURIComponent(payload)}; path=/; samesite=lax`;
+  } catch {
+    /* optional */
+  }
+}
+
 export const STATUS_LABELS: Record<IssueStatus, string> = {
   TODO: '작업 전',
   IN_PROGRESS: '작업 중',
