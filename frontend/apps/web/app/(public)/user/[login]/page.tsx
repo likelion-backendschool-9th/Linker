@@ -78,7 +78,7 @@ export default async function ProfilePage({ params }: ProfileRouteProps) {
       title={profile.isMe ? '내 프로필' : profile.name}
       variant="stack"
       backHref="/feed"
-      bottomTabs={false}
+      bottomTabs={profile.isMe}
     >
       {profile.kind === 'DEVELOPER' ? (
         <DeveloperProfileView profile={profile} viewerRole={viewerRole} />

@@ -459,16 +459,13 @@ export function DeveloperProfileForm({
         }}
       >
         <div className={styles.techStackChipRows}>
-          {TECH_STACK_ROWS.map((row, rowIndex) => (
-            <ul key={rowIndex} className={styles.techStackChipRow}>
-              {row.map((name, columnIndex) => {
-                const tag = techTags.find((option) => option.name === name);
-                if (!tag) return null;
-                const optionIndex = rowIndex * 5 + columnIndex;
-                return renderTechChip(tag, optionIndex);
-              })}
-            </ul>
-          ))}
+          <ul className={styles.techStackChipRow}>
+            {TECH_STACK_OPTIONS.map((name, optionIndex) => {
+              const tag = techTags.find((option) => option.name === name);
+              if (!tag) return null;
+              return renderTechChip(tag, optionIndex);
+            })}
+          </ul>
         </div>
         <button
           type="button"
