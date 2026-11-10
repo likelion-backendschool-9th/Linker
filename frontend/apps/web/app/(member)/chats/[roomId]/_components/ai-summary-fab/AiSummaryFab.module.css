@@ -5,18 +5,19 @@
   --summary-tooltip-tail: 7px;
   --summary-gradient-middle: #822ad6;
   --summary-gradient-end: #c600c6;
-  position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Label sits close to the button (user request 2026-11-10); the tail just meets the button */
+  gap: var(--space-row-inline);
+  width: var(--fab-size);
 }
 
-/* Floats above the button so the composer column stays as wide as the send button */
+/* Inside the composer with the button; wider than the column, so it overflows evenly both sides */
 .tooltip {
-  position: absolute;
-  bottom: calc(100% + var(--space-chat-name));
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
   display: flex;
+  flex: none;
   width: var(--summary-tooltip-width);
   justify-content: center;
   padding: var(--space-xxs);

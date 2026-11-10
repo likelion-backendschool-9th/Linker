@@ -70,8 +70,9 @@ test('17 PR system messages match the four Figma states and organization groupin
     const summary = await page
       .getByRole('button', { name: 'AI 채팅 요약', exact: true })
       .boundingBox();
-    // "AI 채팅 요약" is stacked 8px above send inside the bar; the input stretches to both (90px)
-    expect(input!.height).toBe(90);
+    // "AI 채팅 요약" (22px label, 5px, 40px button) is stacked 8px above send inside the bar;
+    // the input stretches to the whole column (117px)
+    expect(input!.height).toBe(117);
     expect(attach!.width).toBe(42);
     expect(send!.width).toBe(42);
     expect(summary!.width).toBe(40);
@@ -79,9 +80,9 @@ test('17 PR system messages match the four Figma states and organization groupin
     expect(input!.x - attach!.x - attach!.width).toBe(10);
     expect(send!.x - input!.x - input!.width).toBe(10);
     expect(send!.y - summary!.y - summary!.height).toBe(8);
-    expect(summary!.y).toBe(input!.y);
-    // 800px viewport − 28px bottom padding − 90px bar
-    expect(input!.y).toBe(682);
+    expect(summary!.y - input!.y).toBe(27);
+    // 800px viewport − 28px bottom padding − 117px bar
+    expect(input!.y).toBe(655);
     if (width === 375) {
       expect(input!.x).toBe(64);
       expect(input!.width).toBe(243);
