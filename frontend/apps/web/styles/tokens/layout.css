@@ -149,6 +149,8 @@
   --size-board-skeleton-title-h: 22px;
   --size-board-skeleton-card-w: 210px; /* 14 skeleton issue card (Figma 982:1483) */
   --size-board-skeleton-card-h: 200px;
+  --size-calendar-skeleton-chip-w: 67px; /* 15 skeleton status chip (Figma 982:1630) */
+  --size-calendar-skeleton-chip-h: 27px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
