@@ -18,6 +18,8 @@ import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -222,12 +224,13 @@ class GithubTeamClientTest {
     assertThat(requests.getFirst()).contains("createProjectV2", "clientMutationId");
   }
 
-  @Test
-  void nullOrganizationBasePermissionRemainsUnknownInsteadOfGrantingWrite() {
+  @ParameterizedTest
+  @ValueSource(strings = {"", ",\"default_repository_permission\":null"})
+  void missingOrganizationBasePermissionRemainsUnknownInsteadOfGrantingWrite(String permissionField) {
     // An App can receive an organization identity while this owner-only value is null.
     response = request -> request.startsWith("/user/memberships/orgs/org")
         ? "{\"state\":\"active\",\"organization\":{\"id\":500}}"
-        : "{\"id\":500,\"node_id\":\"ORG_500\",\"login\":\"org\",\"type\":\"Organization\",\"default_repository_permission\":null}";
+        : "{\"id\":500,\"node_id\":\"ORG_500\",\"login\":\"org\",\"type\":\"Organization\"" + permissionField + "}";
 
     var organization = client.organization(7, 500, "org");
 

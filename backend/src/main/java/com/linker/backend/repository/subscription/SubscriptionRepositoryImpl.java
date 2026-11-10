@@ -108,6 +108,18 @@ class SubscriptionRepositoryImpl implements SubscriptionRepositoryCustom {
 
 	@Override
 	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public boolean hasFlexChatHistoryBenefit(long teamId, java.time.Instant graceCutoff) {
+		return entityManager.createQuery("""
+				select count(s)>0 from Subscription s where s.teamId=:id and s.plan='FLEX'
+				  and s.currentPeriodEnd>:graceCutoff
+				""", Boolean.class)
+				.setParameter("id", teamId)
+				.setParameter("graceCutoff", graceCutoff)
+				.getSingleResult();
+	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
 	public boolean hasScoutBenefit(long userId, java.time.Instant now, boolean graceAvailable) {
 		String grace = graceAvailable ? " or s.graceUntil>:now" : "";
 		return entityManager.createQuery("select count(s)>0 from Subscription s where s.userId=:id and s.plan='SCOUT'"

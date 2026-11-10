@@ -58,12 +58,16 @@ export function useTeamSetupCompletion(teamId: number | null, onComplete?: () =>
     mutationFn: async () => {
       if (!teamId) throw new Error('GitHub 조직을 먼저 연결해 주세요.');
       const data = await checkSetupPermission(teamId, { cache: 'no-store' });
-      if (!['READ', 'NONE', 'WRITE', 'ADMIN'].includes(data.basePermission))
+      if (!['READ', 'NONE', 'WRITE', 'ADMIN', 'UNKNOWN'].includes(data.basePermission))
         throw new Error('GitHub 조직 기본 권한을 확인해 주세요');
       return data;
     },
     onSuccess: (data, retry) => {
-      if (data.basePermission === 'READ' || data.basePermission === 'NONE') {
+      if (
+        data.basePermission === 'UNKNOWN' ||
+        data.basePermission === 'READ' ||
+        data.basePermission === 'NONE'
+      ) {
         overlay.open(`setup-permission-${teamId}`);
       } else if (data.basePermission === 'WRITE' || data.basePermission === 'ADMIN') {
         complete.mutate(retry);

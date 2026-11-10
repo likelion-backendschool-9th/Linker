@@ -165,13 +165,78 @@ it('shares only the selected PR URL through the provided chat sender', async () 
     vi.mocked(apiFetch).mock.calls.every(([, init]) => !init?.method || init.method === 'GET'),
   ).toBe(true);
 });
+
+it.each(['', '&selectedPr=999'])(
+  'keeps sharing disabled without a current explicit selection (%s)',
+  async (selection) => {
+    const send = vi.fn();
+    vi.mocked(apiFetch).mockResolvedValue({ items: [row('open')] });
+    renderWithProviders(<PullRequestSheet roomId={7} login="me" onShare={send} />, {
+      searchParams: `?overlay=chat-pull-requests${selection}`,
+    });
+    expect(await screen.findByRole('radio')).not.toBeChecked();
+    const share = screen.getByRole('button', { name: '팀에 공유 하기' });
+    expect(share).toBeDisabled();
+    await userEvent.click(share);
+    expect(send).not.toHaveBeenCalled();
+  },
+);
+
+it('clears the selection on a tab switch even when the same PR ID is returned', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (url: string) => ({
+    items: [row(url.includes('state=merged') ? 'merged' : 'open')],
+  }));
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" onShare={vi.fn()} />, {
+    searchParams: '?overlay=chat-pull-requests',
+  });
+  await userEvent.click(await screen.findByRole('radio'));
+  expect(screen.getByRole('button', { name: '팀에 공유 하기' })).toBeEnabled();
+  await userEvent.click(screen.getByRole('button', { name: '병합 된 PR' }));
+  await screen.findByText('#42 실제 API 필드의 병합 PR');
+  expect(screen.getByRole('radio')).not.toBeChecked();
+  expect(screen.getByRole('button', { name: '팀에 공유 하기' })).toBeDisabled();
+});
+
+it('blocks sharing during refresh and does not substitute another PR when the selected record disappears', async () => {
+  const send = vi.fn();
+  const other = {
+    ...row('open'),
+    id: 22,
+    number: 43,
+    title: '다른 PR',
+    url: 'https://github.com/linker-test-org/server/pull/43',
+  };
+  let finish!: (value: { items: ChatPullRequest[] }) => void;
+  vi.mocked(apiFetch)
+    .mockResolvedValueOnce({ items: [row('open'), other] })
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+  renderWithProviders(<PullRequestSheet roomId={7} login="me" onShare={send} />, {
+    searchParams: '?overlay=chat-pull-requests&selectedPr=11',
+  });
+  expect(await screen.findByRole('radio', { name: /#42/ })).toBeChecked();
+  const share = screen.getByRole('button', { name: '팀에 공유 하기' });
+  await waitFor(() => expect(share).toBeEnabled());
+  act(() => subscribe.mock.calls.at(-1)![0].onResubscribe?.());
+  await waitFor(() => expect(share).toBeDisabled());
+  await userEvent.click(share);
+  expect(send).not.toHaveBeenCalled();
+  await act(async () => finish({ items: [other] }));
+  await waitFor(() => expect(screen.queryByRole('radio', { name: /#42/ })).not.toBeInTheDocument());
+  expect(screen.getByRole('radio', { name: /#43/ })).not.toBeChecked();
+  expect(share).toBeDisabled();
+});
 it('keeps viewing available in a read-only room while sharing is disabled', async () => {
   const send = vi.fn();
   vi.mocked(apiFetch).mockResolvedValue({ items: [row('open')] });
   renderWithProviders(<PullRequestSheet roomId={7} login="me" disabled onShare={send} />, {
     searchParams: '?overlay=chat-pull-requests',
   });
-  await screen.findByRole('radio');
+  await userEvent.click(await screen.findByRole('radio'));
   expect(screen.getByRole('button', { name: '팀에 공유 하기' })).toBeDisabled();
   await userEvent.click(screen.getByRole('button', { name: '팀에 공유 하기' }));
   expect(send).not.toHaveBeenCalled();

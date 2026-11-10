@@ -18,8 +18,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 /**
- * Page 17 AI chat summary in minutes form (POL-C-5). The three item lists are jsonb arrays of
- * {@code {text, messageId}}; {@code messageId} points at the source message and may be null.
+ * Page 17 AI chat summary (POL-C-5): one paragraph in {@code summary_line} (user decision 2026-11-11).
+ * The three jsonb item columns are left from the earlier minutes format and stay null for new rows.
  */
 @Entity
 @Table(name = "ai_chat_summaries")
@@ -108,12 +108,8 @@ public class AiChatSummary {
 		return row;
 	}
 
-	/** Item lists are JSON arrays; see the class comment. */
-	public void complete(String summaryLine, String decisions, String actionItems, String openQuestions) {
-		this.summaryLine = summaryLine;
-		this.decisions = decisions;
-		this.actionItems = actionItems;
-		this.openQuestions = openQuestions;
+	public void complete(String summary) {
+		this.summaryLine = summary;
 		this.status = AiSummaryStatus.DONE;
 	}
 

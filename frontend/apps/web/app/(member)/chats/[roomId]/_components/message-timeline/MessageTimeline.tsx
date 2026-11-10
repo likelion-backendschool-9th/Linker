@@ -20,6 +20,9 @@ type Props = {
   readPosition?: { id: number } | null;
   /** Scrolls a loaded message into view when a new object arrives (AI summary source lines) */
   jumpTo?: { id: number } | null;
+  highlightId?: number | null;
+  /** Search keyword marked inside the highlighted message */
+  highlightKeyword?: string;
   /** Called when the reader scrolls near the top; loads the previous page (replaces "이전 대화 불러오기") */
   onReachTop?: () => void;
 };
@@ -32,6 +35,8 @@ export function MessageTimeline({
   onRead,
   readPosition,
   jumpTo,
+  highlightId,
+  highlightKeyword,
   onMenu,
   onPhoto,
   onReachTop,
@@ -71,7 +76,7 @@ export function MessageTimeline({
               ref={virtualizer.measureElement}
               data-index={row.index}
               data-message-id={message.id}
-              className={styles.virtualRow}
+              className={`${styles.virtualRow}${message.id === highlightId ? ` ${styles.searchHit}` : ''}`}
               style={{
                 transform: `translateY(${row.start}px)`,
                 paddingBottom: continuesPrGroup(message, messages[row.index + 1])
@@ -92,6 +97,7 @@ export function MessageTimeline({
                 mine={message.sender?.login === login}
                 onMenu={onMenu}
                 onPhoto={onPhoto}
+                highlight={message.id === highlightId ? highlightKeyword : undefined}
               />
             </div>
           );
