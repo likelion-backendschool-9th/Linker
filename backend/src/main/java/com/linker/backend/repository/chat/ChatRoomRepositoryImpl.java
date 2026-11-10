@@ -56,7 +56,8 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 				      and b.createdAt <= m.createdAt and (b.unblockedAt is null or b.unblockedAt > m.createdAt)))), r.createdAt)
 				""";
 		String pattern = "%" + search.toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
-		String avatar = "case when r.roomType = 'TEAM' then t.avatarUrl else u.avatarUrl end";
+		// Trailing space: SHARE_FROM starts with "from" right after this select item
+		String avatar = "case when r.roomType = 'TEAM' then t.avatarUrl else u.avatarUrl end ";
 		return em.createQuery("select distinct r.id, r.roomType, " + title + ", " + sort + ", " + avatar + SHARE_FROM
 				+ " and lower(" + title + ") like :search escape '!' order by 4 desc, r.id desc", Object[].class)
 				.setParameter("viewer", viewerId).setParameter("developer", developer).setParameter("search", pattern)
