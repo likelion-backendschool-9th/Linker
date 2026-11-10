@@ -1,8 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
@@ -40,7 +41,13 @@ export function DeveloperProfileView({
       {({ openPeople, showFollow, following, followPending, toggleFollow, actionError }) => (
         <article className={styles.stage}>
           <div className={styles.intro}>
-            <div className={styles.identityRow}>
+            <div
+              className={
+                profile.isMe
+                  ? `${styles.identityRow} ${styles.identityRowSelf}`
+                  : styles.identityRow
+              }
+            >
               <span className={styles.avatar}>
                 {profile.avatarUrl && (
                   <Image src={profile.avatarUrl} alt="" fill sizes="60px" priority />
@@ -55,16 +62,19 @@ export function DeveloperProfileView({
                     <span className={styles.statusBadge}>제안 받는 중</span>
                   )}
                 </div>
-                <button type="button" className={styles.followLine} onClick={() => openPeople('followers')}>
-                  <span>팔로워 {profile.followerCount}</span>
-                  <span>팔로잉 {profile.followingCount}</span>
-                </button>
+                <div className={styles.followLine}>
+                  <button type="button" onClick={() => openPeople('followers')}>
+                    팔로워 {profile.followerCount}
+                  </button>
+                  <button type="button" onClick={() => openPeople('followings')}>
+                    팔로잉 {profile.followingCount}
+                  </button>
+                </div>
               </div>
               {profile.isMe ? (
-                <button type="button" className={styles.chevron} onClick={() => openPeople('followers')}>
-                  <ChevronRight aria-hidden />
-                  <span className="sr-only">팔로우 목록</span>
-                </button>
+                <Link className={styles.profileSettings} href="/settings" aria-label="설정">
+                  <Settings aria-hidden />
+                </Link>
               ) : null}
             </div>
 
