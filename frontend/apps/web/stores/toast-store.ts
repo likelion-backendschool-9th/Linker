@@ -13,7 +13,7 @@ export type ToastItem = {
   id: number;
   message: string;
   tone: ToastTone;
-  /** `top` drops in under the stack header (e.g. 20 form errors, where the bottom holds a CTA); default `bottom` */
+  /** Default `top`, just under the header at eye level; `bottom` only rises above the bottom tab bar */
   placement?: 'top' | 'bottom';
   /** A new toast with the same key replaces the one already up instead of stacking */
   key?: string;

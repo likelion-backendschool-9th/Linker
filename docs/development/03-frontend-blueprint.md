@@ -231,7 +231,7 @@ NEVER split only because a file is long (one region of one screen stays one file
 - Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [Docker 가이드](../operations/02-docker.md).
 
 ### 5-5. Toasts: which response gets which kind
-`toast(message, { tone, key?, placement?, action? })` from `stores/toast-store.ts`, rendered by `<Toaster>` (Figma 877:415). Four kinds:
+`toast(message, { tone, key?, placement?, action? })` from `stores/toast-store.ts`, rendered by `<Toaster>` (Figma 877:415), white, under the header by default (`placement: 'bottom'` puts it above the bottom tab bar). Four kinds:
 
 | Kind (`tone`) | Look | Time | Screen reader |
 | --- | --- | --- | --- |

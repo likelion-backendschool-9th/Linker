@@ -29,8 +29,8 @@ const DOT_CLASS: Partial<Record<ToastTone, string>> = {
  *  provider owns a single viewport. */
 export function Toaster() {
   const toasts = useToastStore((state) => state.toasts);
-  const top = toasts.filter((item) => item.placement === 'top');
-  const bottom = toasts.filter((item) => item.placement !== 'top');
+  const top = toasts.filter((item) => item.placement !== 'bottom');
+  const bottom = toasts.filter((item) => item.placement === 'bottom');
 
   return (
     <>

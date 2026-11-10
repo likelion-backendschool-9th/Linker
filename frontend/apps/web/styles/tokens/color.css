@@ -176,7 +176,7 @@
   --color-post-author-divider: #eaeaea; /* author row bottom line */
   --color-github-mark: #121212; /* repo card GitHub mark; also the 04 "GitHub" button fill */
   --color-profile-settings: #414141; /* 04 settings icon (Figma 785:766) */
-  --color-toast-bg: rgb(255 255 255 / 0.2); /* toast fill (Figma 877:415) */
+  --color-toast-bg: #ffffff; /* toast fill (Figma 877:415 is white 20%; solid so it reads over photos) */
   --color-toast-error: #ed0004; /* error toast dot (Figma 841:382) */
   --color-toast-persistent: #ed8e00; /* persistent toast dot (Figma 877:408) */
   --color-profile-github-quiet: #f2f3f8; /* 04 "GitHub" button on someone else's profile (Figma 301:629) */
