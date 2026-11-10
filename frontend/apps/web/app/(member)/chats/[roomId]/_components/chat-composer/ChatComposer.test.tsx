@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { uploadImage } from '@/features/image-upload/upload-image';
@@ -37,6 +37,29 @@ it('sends normalized non-empty text once and clears the input', async () => {
   await userEvent.click(screen.getByRole('button', { name: '보내기' }));
   expect(send).toHaveBeenCalledExactlyOnceWith({ text: '안녕하세요', images: [] });
   expect(input).toHaveValue('');
+});
+
+it('sends on Enter, breaks the line on Shift+Enter, and ignores Enter while composing Korean', async () => {
+  const send = vi.fn();
+  const user = userEvent.setup();
+  render(<ChatComposer disabled={false} onSend={send} />);
+  const input = screen.getByRole('textbox', { name: '메시지' });
+  expect(input).toHaveAttribute('enterkeyhint', 'send');
+  await user.type(input, '첫 줄');
+  await user.keyboard('{Shift>}{Enter}{/Shift}');
+  await user.type(input, '둘째 줄');
+  expect(input).toHaveValue('첫 줄\n둘째 줄');
+  expect(send).not.toHaveBeenCalled();
+  // The Enter that ends an IME composition arrives with isComposing
+  fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+  fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+  expect(send).not.toHaveBeenCalled();
+  await user.keyboard('{Enter}');
+  expect(send).toHaveBeenCalledExactlyOnceWith({ text: '첫 줄\n둘째 줄', images: [] });
+  expect(input).toHaveValue('');
+  // Enter on an empty input sends nothing
+  await user.keyboard('{Enter}');
+  expect(send).toHaveBeenCalledTimes(1);
 });
 
 it('blocks writes while read-only', () => {

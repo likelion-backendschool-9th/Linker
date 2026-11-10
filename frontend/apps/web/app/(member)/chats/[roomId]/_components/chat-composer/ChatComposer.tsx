@@ -98,7 +98,21 @@ export function ChatComposer({ disabled, onSend, room, login = null, aboveSend }
           }}
           onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
           aria-controls={references.active ? 'chat-mention-suggestions' : undefined}
+          enterKeyHint="send"
           onKeyDown={(event) => {
+            // Korean IME: the Enter that ends a composition must not send (keyCode 229 in Chrome)
+            const composing = event.nativeEvent.isComposing || event.keyCode === 229;
+            // Enter sends, Shift+Enter breaks the line (user request 2026-11-10)
+            if (!composing && event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              const suggestion = references.active
+                ? document.querySelector<HTMLButtonElement>('#chat-mention-suggestions button')
+                : null;
+              // With mention suggestions open, Enter picks the first one instead of sending
+              if (suggestion) suggestion.click();
+              else event.currentTarget.form?.requestSubmit();
+              return;
+            }
             if (!event.nativeEvent.isComposing && event.key === 'ArrowDown' && references.active) {
               const first = document.querySelector<HTMLButtonElement>(
                 '#chat-mention-suggestions button',
