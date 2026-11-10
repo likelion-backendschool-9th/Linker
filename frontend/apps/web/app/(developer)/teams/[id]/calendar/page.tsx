@@ -3,11 +3,9 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/api/query-client';
 import { buildMetadata } from '@/lib/seo/metadata';
 
-import { IssueFilterButton } from '../_components/issue-filter-button';
-import { IssueFilterSheet } from '../_components/issue-filter-sheet/IssueFilterSheet';
+import { TeamChangeIconButton } from '../_components/team-change-icon-button';
 import { TeamFrame } from '../_components/team-frame/TeamFrame';
 import { loadIssueFilters } from '../_lib/issue-filters';
-import { issueFilterOptions } from '../_lib/issue-queries';
 import { CalendarView } from './_components/calendar-view';
 import {
   anchorOf,
@@ -28,16 +26,12 @@ export default async function CalendarPage({
   const { assignee } = loadIssueFilters(query);
   const { from, to } = calendarRange('month', anchorOf(date));
   const client = getQueryClient();
-  await Promise.all([
-    client.prefetchQuery(calendarOptions(id, from, to, assignee)),
-    client.prefetchQuery(issueFilterOptions(id)),
-  ]);
+  await client.prefetchQuery(calendarOptions(id, from, to, assignee));
 
   return (
-    <TeamFrame teamId={id} title="캘린더" actions={<IssueFilterButton appearance="icon" />}>
+    <TeamFrame teamId={id} title="캘린더" actions={<TeamChangeIconButton />}>
       <HydrationBoundary state={dehydrate(client)}>
         <CalendarView teamId={id} />
-        <IssueFilterSheet teamId={id} />
       </HydrationBoundary>
     </TeamFrame>
   );
