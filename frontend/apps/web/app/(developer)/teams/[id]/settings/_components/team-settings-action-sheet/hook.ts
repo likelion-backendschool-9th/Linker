@@ -21,6 +21,7 @@ import {
   changeTeamMemberRole,
   removeTeamRepository,
   addTeamRepository,
+  invitesOptions,
   getOrCreateTeamInvite,
   notifyTeamInvite,
   inviteGithubMember,
@@ -31,6 +32,8 @@ import {
 } from './api';
 
 export const TITLES: Record<string, string> = {
+  settings: '팀 설정',
+  invites: '초대 링크 관리',
   info: '팀 정보 편집',
   invite: '팀 초대',
   member: '멤버 관리',
@@ -100,6 +103,8 @@ export function useTeamSettingsActionSheet({
     (team.myRole === 'OWNER' || team.permissions.changeRoles || member.role === 'MEMBER');
   const p = team.permissions;
   const allowed: Record<string, boolean> = {
+    settings: true,
+    invites: p.createInviteLink,
     info: p.editInfo,
     invite: p.createInviteLink,
     github: team.myRole === 'OWNER' && !!team.githubOrgOwner,
@@ -114,7 +119,7 @@ export function useTeamSettingsActionSheet({
     'accept-transfer': !!team.ownershipTransfer?.isRecipient,
     claim: !!team.ownershipClaim?.eligible,
     complete: p.completeProject && team.status === 'ACTIVE',
-    completion: p.completeProject,
+    completion: !!team.completedAt,
     'undo-completion': p.completeProject && !!team.completion?.canUndo,
     restart: p.completeProject && !!team.completion?.canRestart,
     archive: p.archive,
@@ -126,10 +131,26 @@ export function useTeamSettingsActionSheet({
   const denied =
     overlay.isOpen &&
     (!allowed[kind] ||
-      (kind !== 'completion' &&
+      (!['completion', 'settings'].includes(kind) &&
         (viewer.status === 'SUSPENDED' || ['READ_ONLY', 'ARCHIVED'].includes(team.status))));
 
   const client = useQueryClient();
+  const invites = useQuery({
+    ...invitesOptions(String(team.id)),
+    enabled: overlay.isOpen && kind === 'invites' && !denied,
+  });
+  const inviteCreation = useMutation({
+    mutationFn: async () => {
+      if (denied || kind !== 'invites') throw new Error('이 작업을 할 수 없어요.');
+      return getOrCreateTeamInvite(client, team.id, viewer.login);
+    },
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: ['team-settings', String(team.id), 'invites'] }),
+  });
+  const createdInvite =
+    inviteCreation.data && invites.data?.items.some((item) => item.id === inviteCreation.data?.id)
+      ? inviteCreation.data
+      : null;
   const supported = [
     'invite',
     'github',
@@ -282,6 +303,9 @@ export function useTeamSettingsActionSheet({
     (kind !== 'repos' || repoCandidates.isSuccess);
 
   return {
+    invites,
+    inviteCreation,
+    createdInvite,
     newOwner,
     setNewOwner,
     aiEnabled,

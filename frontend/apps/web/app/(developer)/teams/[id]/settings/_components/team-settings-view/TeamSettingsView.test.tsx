@@ -93,7 +93,8 @@ it('renders the actual server response with nullable avatar/board and no deferre
   expect(vi.mocked(apiFetch).mock.calls.map(([url]) => url)).not.toContain(
     '/api/v1/user/teams/1/invite-links',
   );
-  await userEvent.click(screen.getByRole('button', { name: '팀 정보 편집' }));
+  await userEvent.click(screen.getByRole('button', { name: '팀 설정' }));
+  await userEvent.click(await screen.findByRole('button', { name: '팀 정보 편집' }));
   await userEvent.clear(await screen.findByLabelText('팀 소개'));
   await userEvent.type(screen.getByLabelText('팀 소개'), '수정 소개');
   await userEvent.click(screen.getByRole('button', { name: '저장' }));
@@ -106,12 +107,15 @@ it('renders the actual server response with nullable avatar/board and no deferre
   );
 });
 
-it('does not allow write actions on a read-only team even with stale permission flags', async () => {
+it('keeps settings readable but hides write actions on a read-only team with stale flags', async () => {
   renderSettings({ ...team, status: 'READ_ONLY' });
   await screen.findByText('오너 @owner');
-  expect(screen.getByRole('button', { name: '팀 정보 편집' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '팀 삭제' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '저장소 추가' })).toBeDisabled();
+  await userEvent.click(screen.getByRole('button', { name: '팀 설정' }));
+  expect(await screen.findByRole('dialog', {name:'팀 설정'})).toBeVisible();
+  expect(screen.queryByRole('button', {name:'팀 정보 편집'})).not.toBeInTheDocument();
+  expect(screen.getByRole('button', {name:'플랜 보기'})).toBeEnabled();
 });
 
 it('connects the actual delete button to typed confirmation and waits for server success', async () => {
