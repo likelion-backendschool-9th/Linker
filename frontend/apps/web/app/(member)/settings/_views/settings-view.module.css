@@ -158,7 +158,7 @@
 .blockHeader.blockHeader { align-items: center; justify-content: flex-start; gap: var(--space-md); min-height: var(--touch-target-min); }
 .blockTitle.blockTitle { order: 1; margin: 0; color: var(--color-text-title-cool); font-size: var(--font-size-card-title); font-weight: var(--font-weight-semibold); }
 .blockClose.blockClose { order: 0; width: var(--touch-target-icon); height: var(--touch-target-icon); margin: 0; }
-.blockClose svg { width: var(--icon-size-sm); height: var(--icon-size-sm); }
+.blockClose svg { width: var(--touch-target-icon); height: var(--touch-target-icon); }
 .blockBody.blockBody { margin-top: var(--space-row-block); }
 .searchField {
   display: flex;
@@ -192,6 +192,7 @@
   clip: rect(0 0 0 0);
 }
 .blockList { display: grid; gap: var(--space-manage-block); margin: 0; padding: 0; list-style: none; }
+.blockEmpty { margin: 0; text-align: center; }
 .blockItem { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); min-height: var(--touch-target-min); }
 .person { display: flex; align-items: center; gap: var(--space-row-block); min-width: 0; }
 .personText { display: grid; gap: var(--space-row-inline); min-width: 0; }
