@@ -17,6 +17,15 @@ export function hasEmoji(value: string): boolean {
   return EMOJI.test(value);
 }
 
+/** What `hasEmoji` finds, plus the joiners, skin tones and tag letters an emoji leaves behind */
+const EMOJI_PARTS =
+  /[\p{Emoji_Presentation}\p{Regional_Indicator}\p{Emoji_Modifier}️⃣‍\u{E0020}-\u{E007F}]/gu;
+
+/** For inputs that take no emoji: drops them as they are typed or pasted, keeping the rest */
+export function stripEmoji(value: string): string {
+  return value.replace(EMOJI_PARTS, '');
+}
+
 /** Keeps at most two consecutive line breaks (04 ch. 2). Apply before saving. */
 export function normalizeLineBreaks(value: string): string {
   const max = INPUT.maxConsecutiveLineBreaks;

@@ -3,6 +3,7 @@ package com.linker.backend.service.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -184,7 +185,7 @@ class RecruitmentServiceTest {
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN))
 				.thenReturn((long) PlanLimits.OPEN_RECRUIT_POSTS_FREE);
 		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 43L);
@@ -202,7 +203,7 @@ class RecruitmentServiceTest {
 		ReflectionTestUtils.setField(author, "id", 10L);
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
 		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 42L);
@@ -218,6 +219,41 @@ class RecruitmentServiceTest {
 		assertThat(captor.getValue().getTitle()).isEqualTo("함께 만들어요");
 		assertThat(captor.getValue().getRoles()).hasSize(1);
 		assertThat(captor.getValue().getTeamId()).isEqualTo(7L);
+	}
+
+	@Test
+	void createRejectsTheSixthPublishedRecruitPostOfTheDay() {
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
+		Instant oldest = NOW.minusSeconds(3_600);
+		List<Instant> five = java.util.stream.IntStream.range(0, PlanLimits.RECRUIT_POSTS_PER_DAY)
+				.mapToObj(i -> oldest.plusSeconds(i * 60L))
+				.toList();
+		when(posts.findCreatedAtSince(10L, NOW.minusSeconds(PlanLimits.RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS)))
+				.thenReturn(five);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getStatus()).isEqualTo(429);
+					assertThat(api.getCode()).isEqualTo("RATE_LIMITED");
+					assertThat(api.getMessage()).isEqualTo("하루 모집글의 최대 한도는 5번 입니다.");
+					assertThat(api.getDetail()).containsEntry("retryAfterSeconds", 23L * 3_600);
+				});
+		verify(posts, never()).save(any());
+	}
+
+	@Test
+	void rejectedRecruitPublishesDoNotTouchTheDailyLimit() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null, null)))
+				.isInstanceOf(ApiException.class);
+		verify(posts, never()).findCreatedAtSince(anyLong(), any());
 	}
 
 	@Test
@@ -262,7 +298,7 @@ class RecruitmentServiceTest {
 		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
 		User author = User.create("dev", UserType.DEVELOPER);
 		ReflectionTestUtils.setField(author, "id", 10L);
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 42L);

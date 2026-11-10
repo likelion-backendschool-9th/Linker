@@ -147,6 +147,29 @@ it('validates the content step and publishes the post body', async () => {
   });
 });
 
+it('drops emoji from the intro and body as they are typed or pasted (POL-P-2)', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(
+    <PostContentForm
+      target={{ mode: 'create', repoId: 12 }}
+      repo={summary}
+      photoLimit={summary.photoLimit}
+      initial={{ values: emptyPostForm(), photos: [] }}
+      draftKey="draft:post:emoji"
+      onSaved={vi.fn()}
+    />,
+    developer,
+  );
+
+  await user.type(screen.getByLabelText(/프로젝트 소개/), '배포 🚀완료');
+  expect(screen.getByLabelText(/프로젝트 소개/)).toHaveValue('배포 완료');
+
+  await user.click(screen.getByLabelText(/프로젝트 본문/));
+  await user.paste('감사합니다🙏 다음에도');
+  expect(screen.getByLabelText(/프로젝트 본문/)).toHaveValue('감사합니다 다음에도');
+  expect(screen.queryByText('이모지는 입력할 수 없어요.')).not.toBeInTheDocument();
+});
+
 it('opens the start-date wheel sheet with year, month and day', async () => {
   const user = userEvent.setup();
   renderWithProviders(

@@ -62,10 +62,20 @@ export function PostDetail({ postId }: { postId: string }) {
         <div className={styles.content}>
           <header className={styles.head}>
             <div className={styles.titleLead}>
-              {post.myRole && (
+              {(post.myRole || post.repo.isFork) && (
                 <p className={styles.chips}>
-                  <span className="sr-only">내 역할 </span>
-                  <span className={styles.roleChip}>{post.myRole}</span>
+                  {post.myRole && (
+                    <span className={styles.roleChip}>
+                      <span className="sr-only">내 역할 </span>
+                      {post.myRole}
+                    </span>
+                  )}
+                  {/* Forked repo (04 ch. 4 exceptions): same chip as the role, next to it */}
+                  {post.repo.isFork && (
+                    <span className={styles.roleChip}>
+                      Fork<span className="sr-only"> 레포</span>
+                    </span>
+                  )}
                 </p>
               )}
               <h2 id="post-intro" className={styles.intro}>

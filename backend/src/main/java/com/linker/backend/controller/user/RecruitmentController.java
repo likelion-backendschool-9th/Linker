@@ -91,13 +91,9 @@ public class RecruitmentController {
 				.body(recruitment.editorOptions(user));
 	}
 
+	/** 5/day counts only published recruit posts, so the limit is checked in the service, not by {@code @RateLimit} */
 	@PostMapping("/recruits")
 	@DeveloperOnly
-	@RateLimit(
-			key = "recruit.create",
-			permits = PlanLimits.RECRUIT_POSTS_PER_DAY,
-			windowSeconds = PlanLimits.RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS
-	)
 	@Operation(tags = {"p20-recruit-editor"})
 	public ResponseEntity<RecruitIdResponse> create(
 			@AuthenticationPrincipal AuthenticatedUser user,
