@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type MouseEvent, type PointerEvent } from 'react';
 
+import { swallowLongPressMenu } from '../../_lib/swallow-long-press-menu';
+
 /** Touch hold before the row menu opens (iOS has no contextmenu event for a long press) */
 const LONG_PRESS_MS = 500;
 
@@ -37,6 +39,7 @@ export function useRowMenuGesture(onOpen?: () => void) {
         timer.current = null;
         opened.current = true;
         onOpen();
+        swallowLongPressMenu();
       }, LONG_PRESS_MS);
     },
     // A scroll starts with pointercancel, so the hold never fires mid-swipe.

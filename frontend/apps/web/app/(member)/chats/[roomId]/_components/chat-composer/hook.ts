@@ -16,11 +16,7 @@ type Props = {
   disabled: boolean;
   room?: RoomInfo;
   login?: string | null;
-  onSend: (message: {
-    text: string;
-    images: UploadedImage[];
-    references?: ChatReferences;
-  }) => void;
+  onSend: (message: { text: string; images: UploadedImage[]; references?: ChatReferences }) => void;
 };
 
 export function useChatComposer({ disabled, onSend, room, login = null }: Props) {
@@ -33,24 +29,28 @@ export function useChatComposer({ disabled, onSend, room, login = null }: Props)
   const normalized = normalizeLineBreaks(text).trim();
   const count = countChars(normalized);
   const tooLong = count > CHAT.messageMax;
-  const canSubmit =
-    !disabled &&
-    !(!normalized && !uploader.items.length) &&
-    !tooLong &&
-    uploader.allDone &&
-    !references.blocked;
+  // Photos leave from the attach sheet's "전송" (user request 2026-11-10); the bar sends text only.
+  const canSubmit = !disabled && !!normalized && !tooLong && !references.blocked;
+  const canSendPhotos = !disabled && uploader.items.length > 0 && uploader.allDone;
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!canSubmit) return;
     onSend({
       text: normalized,
-      images: uploader.uploaded,
+      images: [],
       ...(references.team ? { references: references.payload } : {}),
     });
     references.reset();
-    uploader.reset([]);
     setText('');
+  }
+
+  /** Send the sheet's uploaded photos as one photo message; the typed text stays in the input. */
+  function sendPhotos() {
+    if (!canSendPhotos) return;
+    onSend({ text: '', images: uploader.uploaded });
+    uploader.reset([]);
+    attachments.close();
   }
 
   function onMention(mentionLogin: string) {
@@ -77,6 +77,8 @@ export function useChatComposer({ disabled, onSend, room, login = null }: Props)
     tooLong,
     canSubmit,
     submit,
+    canSendPhotos,
+    sendPhotos,
     onMention,
   };
 }
