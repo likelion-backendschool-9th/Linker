@@ -111,7 +111,8 @@ public final class PlanLimits {
 	/** Policy ch. 2 / ch. 8 — chat send rate and message shape. */
 	public static final int CHAT_SENDS_PER_SECOND = 5;
 	public static final int CHAT_MESSAGE_MAX_CHARS = 2_000;
-	public static final int CHAT_IMAGES_PER_SEND = 10;
+	/** Policy ch. 8: 5 photos at once. The web client sends each as its own message. */
+	public static final int CHAT_IMAGES_PER_SEND = 5;
 	public static final int CHAT_EDIT_WITHIN_HOURS = 24;
 	public static final int CHAT_OFFER_MESSAGE_MAX_CHARS = 1_000;
 	public static final int CHAT_CATCH_UP_MAX = 500;
