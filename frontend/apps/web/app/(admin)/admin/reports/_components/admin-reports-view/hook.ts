@@ -20,6 +20,7 @@ import {
 } from './api';
 
 export const STATUSES = ['PENDING', 'HANDLED', 'APPEALED'] as const;
+/** Job-ad reports stay out of the admin UI until the ad design ships. */
 export const TARGET_TYPES = [
   'USER',
   'POST',
@@ -27,7 +28,6 @@ export const TARGET_TYPES = [
   'RECRUIT_POST',
   'TEAM_MESSAGE',
   'DIRECT_MESSAGE',
-  'RECRUITER_AD',
 ] as const;
 export const STATUS_LABEL: Record<ReportStatus, string> = {
   PENDING: '대기',

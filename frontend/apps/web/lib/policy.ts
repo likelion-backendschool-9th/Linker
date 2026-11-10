@@ -79,14 +79,13 @@ export const POST = {
   commentMax: 500,
 } as const;
 
-/** 04 ch. 5 POL-R-1, POL-R-3 */
+/** 04 ch. 5 POL-R-1, POL-R-3 — apply has no free-text message; author reviews the profile. */
 export const RECRUIT = {
   titleMax: 40,
   introMax: 1000,
   headcountPerRole: { min: 1, max: 10 },
   deadlineWithinDays: 60,
   techTagsMax: 10,
-  applyMessageMax: 300,
 } as const;
 
 /** 04 ch. 6 */

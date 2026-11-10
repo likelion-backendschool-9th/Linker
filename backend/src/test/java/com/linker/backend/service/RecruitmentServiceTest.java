@@ -21,9 +21,13 @@ import com.linker.backend.entity.recruit.type.RecruitStatus;
 import com.linker.backend.entity.recruit.type.RecruitVisibility;
 import com.linker.backend.entity.recruit.type.WorkMode;
 import com.linker.backend.global.error.ApiException;
+import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
+import com.linker.backend.repository.team.TeamMemberRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -43,12 +47,22 @@ class RecruitmentServiceTest {
 	ApplicationRepository applications;
 	@Mock
 	UserBlockRepository blocks;
+	@Mock
+	TeamMemberRepository teamMembers;
+	@Mock
+	TeamRepository teams;
+	@Mock
+	ChatRoomRepository chatRooms;
+	@Mock
+	UserRepository users;
 
 	RecruitmentService service;
 
 	@BeforeEach
 	void setUp() {
-		service = new RecruitmentService(posts, applications, blocks, new RecruitCardMapper());
+		service = new RecruitmentService(
+				posts, applications, blocks, new RecruitCardMapper(),
+				teamMembers, teams, chatRooms, users);
 	}
 
 	@Test
@@ -87,6 +101,9 @@ class RecruitmentServiceTest {
 		assertThat(detail.myApplication()).isNull();
 		assertThat(detail.applicantCount()).isEqualTo(2);
 		assertThat(detail.authorCard().id()).isEqualTo(9L);
+		assertThat(detail.teamMembers()).hasSize(1);
+		assertThat(detail.teamMembers().getFirst().isAuthor()).isTrue();
+		assertThat(detail.author().jobStatus()).isEqualTo("OFF");
 	}
 
 	@Test
