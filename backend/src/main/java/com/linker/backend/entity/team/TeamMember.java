@@ -69,6 +69,20 @@ public class TeamMember {
 		return member;
 	}
 
+  public static TeamMember join(long teamId, long userId, Instant now) {
+    var member = new TeamMember();
+    member.teamId = teamId;
+    member.userId = userId;
+    member.role = TeamRole.MEMBER;
+    member.githubOrgState = GithubOrgState.NOT_MEMBER;
+    member.joinedAt = now;
+    return member;
+  }
+
+  public void markGithubInvited() {
+    if (githubOrgState != GithubOrgState.MEMBER) githubOrgState = GithubOrgState.INVITED;
+  }
+
 	public Long getId() {
 		return id;
 	}

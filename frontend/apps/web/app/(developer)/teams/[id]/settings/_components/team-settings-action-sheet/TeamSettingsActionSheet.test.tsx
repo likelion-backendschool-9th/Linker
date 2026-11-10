@@ -138,3 +138,146 @@ it('server-approved succession has its own informational screen without assuming
   expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument();
   expect(apiFetch).not.toHaveBeenCalled();
 });
+
+it('requires the exact team name before sending a delete request', async () => {
+  vi.mocked(apiFetch).mockRejectedValue(new Error('삭제 요청을 다시 시도해 주세요.'));
+  renderSheet(
+    { ...team, status: 'ACTIVE', permissions: { ...team.permissions, deleteTeam: true } },
+    'delete',
+  );
+  const confirm = screen.getByRole('button', { name: '확인' });
+  expect(confirm).toBeDisabled();
+  const input = screen.getByLabelText('확인을 위해 팀 이름을 입력해 주세요');
+  await userEvent.type(input, '다른 팀');
+  expect(confirm).toBeDisabled();
+  await userEvent.clear(input);
+  await userEvent.type(input, team.name);
+  await userEvent.click(confirm);
+  expect(apiFetch).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1',
+    expect.objectContaining({
+      method: 'DELETE',
+      body: JSON.stringify({ confirmName: team.name }),
+    }),
+  );
+  expect(await screen.findByRole('alert')).toHaveTextContent('삭제 요청을 다시 시도해 주세요.');
+  expect(screen.getByRole('dialog')).toBeVisible();
+});
+
+it('sends the selected role through the existing member role API', async () => {
+  vi.mocked(apiFetch).mockResolvedValue(undefined);
+  const owner = {
+    ...team,
+    myRole: 'OWNER' as const,
+    permissions: { ...team.permissions, changeRoles: true },
+  };
+  renderSheet(owner, 'member:2', [member]);
+  await userEvent.selectOptions(screen.getByLabelText('팀 역할'), 'MEMBER');
+  await userEvent.click(screen.getByRole('button', { name: '역할 변경 확인' }));
+  await userEvent.click(await screen.findByRole('button', { name: '역할 변경' }));
+  expect(apiFetch).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1/members/2/role',
+    expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({ role: 'MEMBER' }),
+    }),
+  );
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+});
+
+it('disconnects using the cached ID while leaving the GitHub repository intact', async () => {
+  vi.mocked(apiFetch).mockResolvedValue(undefined);
+  renderSheet(
+    { ...team, repos: [{ id: 41, githubRepoId: 9001, name: 'repo', fullName: 'org/repo' }] },
+    'remove-repo:41',
+  );
+  await userEvent.click(screen.getByRole('button', { name: '확인' }));
+  expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/teams/1/repos/41', { method: 'DELETE' });
+});
+
+it('uses GitHub IDs for additions and cached IDs for removals when saving repo selection', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (_url, init) =>
+    init?.method
+      ? undefined
+      : ({
+          items: [
+            { id: 9001, name: 'old', fullName: 'org/old', private: false },
+            { id: 9002, name: 'new', fullName: 'org/new', private: false },
+          ],
+          notInstalledCount: null,
+        } as never),
+  );
+  renderSheet(
+    {
+      ...team,
+      myRole: 'OWNER',
+      repos: [{ id: 41, githubRepoId: 9001, name: 'old', fullName: 'org/old' }],
+    },
+    'repos',
+  );
+  await userEvent.click(await screen.findByRole('checkbox', { name: 'org/old' }));
+  await userEvent.click(screen.getByRole('checkbox', { name: 'org/new' }));
+  await userEvent.click(screen.getByRole('button', { name: '저장' }));
+  await waitFor(() =>
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/teams/1/repos/41', { method: 'DELETE' }),
+  );
+  expect(apiFetch).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1/repos',
+    expect.objectContaining({ method: 'POST', body: JSON.stringify({ repoId: 9002 }) }),
+  );
+});
+
+it('does not repeat a pending request after a second click', async () => {
+  vi.mocked(apiFetch).mockReturnValue(new Promise(() => {}));
+  renderSheet(team, 'remove:2', [{ ...member, role: 'MEMBER' }]);
+  const submit = screen.getByRole('button', { name: '팀에서 내보내기' });
+  await userEvent.dblClick(submit);
+  expect(apiFetch).toHaveBeenCalledTimes(1);
+  expect(submit).toBeDisabled();
+});
+
+it('creates a link then notifies the typed Linker developer with that same code', async () => {
+  vi.mocked(apiFetch).mockResolvedValueOnce({
+    id: 51,
+    code: 'created-code',
+    expiresAt: '2026-11-17T00:00:00Z',
+    createdBy: '오너',
+  });
+  vi.mocked(apiFetch).mockResolvedValueOnce(undefined);
+  renderSheet(team, 'invite');
+  const submit = screen.getByRole('button', { name: '초대' });
+  expect(submit).toBeDisabled();
+  await userEvent.type(screen.getByLabelText('GitHub 로그인'), '@new-member');
+  await userEvent.click(submit);
+  await waitFor(() =>
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/v1/user/teams/1/invite-links/51/notify',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ handle: 'new-member', code: 'created-code' }),
+      }),
+    ),
+  );
+});
+
+it('uses the current member ID for GitHub invitations even when GitHub login differs from Linker handle', async () => {
+  vi.mocked(apiFetch).mockResolvedValue({ sent: true, status: 'PENDING' });
+  renderSheet({ ...team, myRole: 'OWNER', githubOrgOwner: true }, 'github', [
+    { ...member, githubLogin: 'actual-github-login', inGithubOrg: false },
+  ]);
+  await userEvent.type(screen.getByLabelText('GitHub 로그인'), 'actual-github-login');
+  await userEvent.click(screen.getByRole('button', { name: '초대' }));
+  expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/teams/1/members/2/github-invitation', {
+    method: 'POST',
+  });
+});
+
+it('retains an upstream invitation error without announcing success or closing the sheet', async () => {
+  vi.mocked(apiFetch).mockRejectedValue(new Error('오늘은 GitHub 초대를 더 보낼 수 없어요'));
+  renderSheet({ ...team, myRole: 'OWNER', githubOrgOwner: true }, 'github:2', [member]);
+  await userEvent.click(screen.getByRole('button', { name: '초대' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    '오늘은 GitHub 초대를 더 보낼 수 없어요',
+  );
+  expect(screen.getByRole('dialog')).toBeVisible();
+});

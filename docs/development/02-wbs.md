@@ -272,7 +272,7 @@
 | 04 | A | GET | `/api/v1/public/user/{login}/teams` | 2nd pass: teams (active, completed) | public |
 | 07 | B | GET | `/api/v1/user/me/teams` | My teams (grouped active / completed / read-only / archived), includes `joinedAt` for default team pick; also used by the team switcher sheet and 07 my-issues team picker | user · developers only |
 | 08 | B | POST | `/api/v1/user/teams` | Create team + team chat room + register owner | user · developers only |
-| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on | team OWNER |
+| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on (also reused by 09 linked-repo management) | team ADMIN |
 | 08 | B | PUT | `/api/v1/user/teams/{teamId}/setup/repos` | Set initial linked repos | team OWNER |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns, Status option `id`/`name`/`color` enum) | team OWNER/ADMIN |
 | 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields; fixed colors Todo=GRAY / In Progress=BLUE / Blocked=RED / Done=GREEN) or use existing board + status mapping; persist each option's GitHub `color` on `board_status_mappings` | team OWNER/ADMIN |
