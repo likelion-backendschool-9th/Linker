@@ -67,6 +67,88 @@ public class GithubTeamClient implements GithubTeamSource {
   }
 
   @Override
+  public boolean organizationOwner(long userId, long expectedOrgId, String login) {
+    var membership = get("/user/memberships/orgs/{org}", userToken(userId), login);
+    if (!"active".equals(membership.path("state").asString(""))
+        || membership.path("organization").path("id").asLong(0) != expectedOrgId) throw forbidden();
+    return "admin".equals(membership.path("role").asString(""));
+  }
+
+  @Override
+  public String organizationMemberState(
+      long userId, long expectedOrgId, String login, String memberLogin, long memberId) {
+    String token = userToken(userId);
+    if (get("/users/{login}", token, memberLogin).path("id").asLong(0) != memberId)
+      throw forbidden();
+    try {
+      var row =
+          http.get()
+              .uri("/orgs/{org}/memberships/{login}", login, memberLogin)
+              .headers(h -> h.setBearerAuth(token))
+              .retrieve()
+              .onStatus(
+                  status -> status.value() == 404,
+                  (request, response) -> {
+                    throw new MissingMembership();
+                  })
+              .onStatus(
+                  status -> status.isError(),
+                  (request, response) -> {
+                    throw upstream(response.getStatusCode().value());
+                  })
+              .body(JsonNode.class);
+      if (row == null || row.path("organization").path("id").asLong(0) != expectedOrgId)
+        throw forbidden();
+      String state = row.path("state").asString("");
+      if (!List.of("active", "pending").contains(state)) throw unavailable();
+      return state.toUpperCase(java.util.Locale.ROOT);
+    } catch (MissingMembership e) {
+      return "NONE";
+    } catch (RestClientException e) {
+      throw unavailable();
+    }
+  }
+
+  private static class MissingMembership extends RuntimeException {}
+
+  @Override
+  public long inviteOrganizationMember(
+      long userId, long expectedOrgId, String login, long githubUserId) {
+    outside();
+    if (!organizationOwner(userId, expectedOrgId, login)) throw forbidden();
+    try {
+      var result =
+          http.post()
+              .uri("/orgs/{org}/invitations", login)
+              .headers(h -> h.setBearerAuth(userToken(userId)))
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(Map.of("invitee_id", githubUserId, "role", "direct_member"))
+              .retrieve()
+              .onStatus(
+                  status -> status.isError(),
+                  (request, response) -> {
+                    int status = response.getStatusCode().value();
+                    if (status == 429
+                        || response.getHeaders().getFirst("Retry-After") != null
+                        || "0".equals(response.getHeaders().getFirst("X-RateLimit-Remaining")))
+                      throw new ApiException(
+                          429, "GITHUB_INVITE_LIMIT", "GitHub 초대 한도에 도달했어요. 잠시 후 다시 시도해 주세요");
+                    if (status == 422)
+                      throw new ApiException(
+                          409,
+                          "STATE_CONFLICT",
+                          "GitHub 초대가 처리되지 않았어요. 기존 초대·멤버 상태와 일일 초대 한도를 확인해 주세요");
+                    throw upstream(status);
+                  })
+              .body(JsonNode.class);
+      if (result == null || result.path("id").asLong(0) <= 0) throw unavailable();
+      return result.path("id").asLong(0);
+    } catch (RestClientException exception) {
+      throw unavailable();
+    }
+  }
+
+  @Override
   public Organization organization(long userId, long expectedOrgId, String login) {
     String token = userToken(userId);
     var membership = get("/user/memberships/orgs/{org}", token, login);

@@ -88,6 +88,10 @@ public class TeamMember {
 		this.role = role;
 	}
 
+	public void markGithubInvited() {
+		if (githubOrgState != GithubOrgState.MEMBER) githubOrgState = GithubOrgState.INVITED;
+	}
+
 	public void leave(Instant now, TeamLeaveType reason) {
 		if (this.leftAt == null) {
 			this.leftAt = now;

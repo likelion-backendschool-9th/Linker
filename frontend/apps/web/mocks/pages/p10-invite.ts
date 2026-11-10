@@ -38,6 +38,8 @@ export const routes: MockRoute[] = [
   post(
     '/api/v1/user/invites/:code/accept',
     ({ params }) => {
+      if (['demo-read-only', 'demo-archived'].includes(params.code))
+        fail(409, 'STATE_CONFLICT', '읽기 전용 팀에는 참여할 수 없어요');
       if (params.code === 'demo-member') fail(409, 'ALREADY_MEMBER', '이미 함께하는 팀이에요');
       if (params.code === 'demo-full') fail(409, 'TEAM_MEMBER_LIMIT', '팀 인원이 가득 찼어요');
       if (params.code === 'demo-limit')

@@ -61,7 +61,7 @@ test('26 status, member type and search filters use URL state and show real empt
   await page.getByRole('button', { name: '정지', exact: true }).click();
   await expect(page).toHaveURL(/status=SUSPENDED/);
   await expect(page.getByRole('table').getByRole('button', { name: /윤태양/ })).toBeVisible();
-  await expect(page.getByRole('table').getByRole('button', { name: /한서준/ })).toHaveCount(0);
+  await expect(page.getByRole('table').getByRole('button', { name: /JUNHORANG/ })).toHaveCount(0);
   await page.getByRole('button', { name: '전체', exact: true }).click();
   await page.getByLabel('계정 유형', { exact: true }).selectOption('RECRUITER');
   await expect(page).toHaveURL(/userType=RECRUITER/);
@@ -136,7 +136,7 @@ test('26 keeps the narrow detail-to-action overlay path usable', async ({ page }
   await page.setViewportSize({ width: 600, height: 900 });
   await page.goto('/admin/users');
   await unlock(page);
-  await page.getByRole('button', { name: /한서준/ }).click();
+  await page.getByRole('button', { name: /JUNHORANG/ }).click();
   await expect(page.getByRole('dialog', { name: '회원 상세' })).toBeVisible();
   await page.getByRole('button', { name: '사유 입력 후 열람' }).click();
   await expect(page.getByRole('dialog', { name: '이메일 열람 사유' })).toBeVisible();

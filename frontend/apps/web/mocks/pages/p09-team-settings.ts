@@ -1,10 +1,13 @@
 import { daysFromNow, del, fail, get, newId, patch, post, type MockRoute } from '../core/define';
 import { findTeam, TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
+import { DEVELOPERS } from '../fixtures/users';
 import { SUBSCRIPTION_PRICE } from '@/lib/policy';
+import { routes as setupRoutes } from './p08-team-create';
 
 /** 09 Team settings & members: `TeamController / GithubController` */
 
 type InviteLink = { id: number; code: string; expiresAt: string; createdBy: string };
+const githubInvited = new Set<string>();
 const inviteLinks: Record<number, InviteLink[]> = {
   1: [{ id: 1, code: 'demo-valid', expiresAt: daysFromNow(5), createdBy: '한서준' }],
 };
@@ -25,8 +28,8 @@ function permissions(role: 'OWNER' | 'ADMIN' | 'MEMBER') {
     createInviteLink: admin,
     manageMembers: admin,
     changeRoles: owner,
-    transferOwnership: owner,
-    completeProject: admin,
+    transferOwnership: false,
+    completeProject: false,
     archive: owner,
     deleteTeam: owner,
     leave: !owner,
@@ -46,7 +49,7 @@ export const routes: MockRoute[] = [
       plan: team.plan,
       myRole: team.myRole,
       permissions: permissions(team.myRole),
-      repos: team.repos,
+      repos: team.repos.map((repo) => ({ ...repo, githubRepoId: repo.id })),
       board: {
         id: 'board-1',
         name: 'Linker',
@@ -91,15 +94,29 @@ export const routes: MockRoute[] = [
     const items = TEAM_MEMBERS[team.id] ?? [];
     return {
       items: items.map((member) => ({
-        ...member,
-        githubOrgStatus: member.inGithubOrg ? 'MEMBER' : 'INVITED',
+        userId: member.user.id,
+        handle: member.user.login,
+        githubLogin: member.user.login,
+        name: member.user.name,
+        avatarUrl: member.user.avatarUrl,
+        role: member.role,
+        joinedAt: member.joinedAt,
+        githubOrgStatus: member.inGithubOrg
+          ? 'MEMBER'
+          : githubInvited.has(`${team.id}:${member.user.id}`)
+            ? 'INVITED'
+            : 'NOT_MEMBER',
       })),
       count: items.length,
       limit: team.plan === 'FLEX' ? null : 6,
     };
   }),
   get('/api/v1/user/teams/:teamId/invite-links', ({ params }) => ({
-    items: inviteLinks[Number(params.teamId)] ?? [],
+    items: (inviteLinks[Number(params.teamId)] ?? []).map(({ id, expiresAt, createdBy }) => ({
+      id,
+      expiresAt,
+      createdBy,
+    })),
   })),
   post('/api/v1/user/teams/:teamId/invite-links', ({ params }) => {
     const link: InviteLink = {
@@ -111,6 +128,25 @@ export const routes: MockRoute[] = [
     (inviteLinks[Number(params.teamId)] ??= []).push(link);
     return link;
   }),
+  post('/api/v1/user/teams/:teamId/invite-links/:linkId/notify', ({ params, body }) => {
+    const team = teamOr404(params.teamId);
+    if (team.myRole === 'MEMBER') fail(403, 'TEAM_ROLE_REQUIRED', '팀 권한이 필요해요');
+    const link = inviteLinks[team.id]?.find(
+      (link) => link.id === Number(params.linkId) && link.code === body.code,
+    );
+    if (!link) fail(404, 'NOT_FOUND', '초대 정보를 찾을 수 없어요');
+    if (new Date(link.expiresAt).getTime() <= Date.now())
+      fail(410, 'INVITE_INVALID', '더 이상 쓸 수 없는 초대 링크예요');
+    const handle = String(body.handle ?? '')
+      .trim()
+      .replace(/^@/, '')
+      .toLowerCase();
+    const target = DEVELOPERS.find((user) => user.login.toLowerCase() === handle);
+    if (!target) fail(404, 'NOT_FOUND', '초대할 개발자를 찾을 수 없어요');
+    if (TEAM_MEMBERS[team.id]?.some((member) => member.user.id === target.id))
+      fail(409, 'ALREADY_MEMBER', '이미 함께하는 팀이에요');
+    return undefined;
+  }),
   del('/api/v1/user/teams/:teamId/invite-links/:linkId', ({ params }) => {
     const list = inviteLinks[Number(params.teamId)];
     if (list)
@@ -118,21 +154,29 @@ export const routes: MockRoute[] = [
     return undefined;
   }),
   post('/api/v1/user/teams/:teamId/members/:userId/github-invitation', ({ params }) => {
-    // Only the GitHub org owner may send it; the daily limit comes back as an error
+    const team = teamOr404(params.teamId);
+    if (team.myRole !== 'OWNER') fail(403, 'TEAM_ROLE_REQUIRED', '팀 오너만 사용할 수 있어요');
+    const member = TEAM_MEMBERS[team.id]?.find(
+      (member) => member.user.id === Number(params.userId),
+    );
+    if (!member) fail(404, 'NOT_FOUND', '현재 팀원을 찾을 수 없어요');
+    if (member.inGithubOrg) return { sent: false, status: 'MEMBER' };
     if (params.userId === '5')
       fail(429, 'GITHUB_INVITE_LIMIT', '오늘은 GitHub 초대를 더 보낼 수 없어요');
-    return { sent: true };
+    githubInvited.add(`${team.id}:${member.user.id}`);
+    return { sent: true, status: 'PENDING' };
   }),
-  post('/api/v1/user/teams/:teamId/repos', ({ params, body }) => {
-    const team = teamOr404(params.teamId);
-    const repo = {
-      id: Number(body.repoId ?? newId()),
-      name: String(body.name ?? 'new-repo'),
-      fullName: `${team.orgLogin}/${String(body.name ?? 'new-repo')}`,
-      private: false,
-    };
-    team.repos.push(repo);
-    return repo;
+  post('/api/v1/user/teams/:teamId/repos', (context) => {
+    const team = teamOr404(context.params.teamId);
+    // Reuse the setup mock's installed-repository list, just as the UI reuses that endpoint.
+    const list = setupRoutes.find(
+      (route) => route.method === 'GET' && route.path === '/api/v1/user/teams/:teamId/setup/repos',
+    )!;
+    const { items } = list.handle(context) as { items: typeof team.repos };
+    const repo = items.find((item) => item.id === Number(context.body.repoId));
+    if (!repo) fail(403, 'FORBIDDEN', 'App 접근이 허용된 저장소만 연결할 수 있어요');
+    if (!team.repos.some((item) => item.id === repo.id)) team.repos.push({ ...repo });
+    return undefined;
   }),
   del('/api/v1/user/teams/:teamId/repos/:repoId', ({ params }) => {
     const team = teamOr404(params.teamId);
@@ -186,7 +230,9 @@ export const routes: MockRoute[] = [
     teamOr404(params.teamId).status = 'ARCHIVED';
     return undefined;
   }),
-  del('/api/v1/user/teams/:teamId', ({ params }) => {
+  del('/api/v1/user/teams/:teamId', ({ params, body }) => {
+    if (body.confirmName !== teamOr404(params.teamId).name)
+      fail(400, 'VALIDATION_ERROR', '팀 이름을 정확히 입력해 주세요');
     const index = TEAMS.findIndex((team) => team.id === Number(params.teamId));
     if (index >= 0) TEAMS.splice(index, 1);
     return undefined;

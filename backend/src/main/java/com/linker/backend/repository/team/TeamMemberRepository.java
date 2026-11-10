@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
+  long countByTeamIdAndLeftAtIsNull(long teamId);
+
   @Query("""
       select count(m)>0 from TeamMember m, User u where m.userId=u.id and m.teamId=:teamId
         and m.role='OWNER' and m.leftAt is null and u.deletedAt is null
