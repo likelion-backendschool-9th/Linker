@@ -138,6 +138,8 @@
   --size-team-settings-skeleton-role-w: 57px; /* 09 skeleton role (Figma 982:856) */
   --size-team-settings-skeleton-name-w: 137px; /* 09 skeleton name (Figma 982:857) */
   --size-team-settings-skeleton-line-h: 18px;
+  --size-issue-progress-skeleton-line-w: 114px; /* 11 skeleton progress card caption (Figma 982:1045) */
+  --size-issue-progress-skeleton-line-h: 19px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
