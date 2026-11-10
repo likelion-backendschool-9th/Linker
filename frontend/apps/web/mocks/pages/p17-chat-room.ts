@@ -29,6 +29,55 @@ import { lastMessage, nextMessageId } from '../fixtures/chat';
 
 const PAGE = 30;
 
+/** AI summaries (POL-C-5): the mock walks QUEUED → READING → WRITING → DONE over ~14 s. */
+type MockAiSummary = {
+  id: number;
+  roomId: number;
+  userId: number;
+  startedAt: number;
+  sharedMessageId: number | null;
+};
+const AI_SUMMARIES: MockAiSummary[] = [];
+
+function aiSummaryOr404(id: string) {
+  const summary = AI_SUMMARIES.find((item) => item.id === Number(id));
+  if (!summary) fail(404, 'NOT_FOUND', '요약을 찾지 못했어요');
+  return summary;
+}
+
+function aiSummaryView(summary: MockAiSummary) {
+  const elapsed = (Date.now() - summary.startedAt) / 1000;
+  const done = elapsed >= 14;
+  const phase = done ? 'DONE' : elapsed < 2 ? 'QUEUED' : elapsed < 8 ? 'READING' : 'WRITING';
+  const firstId = MESSAGES.find((m) => m.roomId === summary.roomId)?.id ?? null;
+  return {
+    summaryId: summary.id,
+    status: done ? 'DONE' : 'PENDING',
+    phase,
+    progress: done
+      ? 100
+      : phase === 'QUEUED'
+        ? 0
+        : Math.min(99, Math.floor(((elapsed - 2) / 12) * 100)),
+    queueAhead: phase === 'QUEUED' ? 1 : 0,
+    remainingSeconds: done || phase === 'QUEUED' ? null : Math.ceil(14 - elapsed),
+    oneLine: done ? '로그인 시트를 오늘 끝내고 내일 저녁에 회의하기로 했어요.' : null,
+    decisions: done ? [{ text: '내일 저녁 8시에 회의해요', messageId: firstId }] : [],
+    actionItems: done
+      ? [
+          { text: '민수: 로그인 시트 구현 마무리', messageId: firstId },
+          { text: '지현: 웹훅 서명 검증 리뷰', messageId: null },
+        ]
+      : [],
+    openQuestions: done ? [{ text: '피드 카드 디자인은 누가 볼까요?', messageId: null }] : [],
+    messageCount: 42,
+    sharedMessageId: summary.sharedMessageId,
+    usedToday: 3,
+    limit: 10,
+    disclaimer: 'AI가 만든 요약이라 틀릴 수 있어요',
+  };
+}
+
 function roomOr404(id: string) {
   const room = findRoom(id);
   if (!room) fail(404, 'NOT_FOUND', '삭제되었거나 볼 수 없는 콘텐츠예요');
@@ -80,6 +129,11 @@ export const routes: MockRoute[] = [
         : null,
       // Free teams only see the last 60 days (04 ch. 8)
       historyLimitDays: team && team.plan === 'FREE' ? 60 : null,
+      myAiSummary: (() => {
+        const latest = AI_SUMMARIES.filter((item) => item.roomId === room.id).at(-1);
+        if (!latest || latest.sharedMessageId) return null;
+        return { summaryId: latest.id, status: aiSummaryView(latest).status };
+      })(),
     };
   }),
   get('/api/v1/user/chat-rooms/:roomId/messages', ({ params, query }) => {
@@ -377,7 +431,7 @@ export const routes: MockRoute[] = [
   ),
 
   // `[Included]` AI summary (Flex): reduced DTO — one `summary` string, no share/minutes
-  post('/api/v1/user/chat-rooms/:roomId/ai-summaries', ({ params }) => {
+  post('/api/v1/user/chat-rooms/:roomId/ai-summaries', ({ params, viewer }) => {
     const room = roomOr404(params.roomId!);
     const team = room.teamId ? findTeam(room.teamId) : undefined;
     if (team?.plan !== 'FLEX') {
@@ -385,27 +439,59 @@ export const routes: MockRoute[] = [
         reason: 'AI_SUMMARY',
       });
     }
-    return {
-      summaryId: newId(),
-      status: 'DONE',
-      summary:
-        '로그인 시트 구현을 오늘 안에 끝내고 내일 저녁에 회의하기로 했어요. 피드 카드와 웹훅 서명 검증도 이어서 마무리하기로 했습니다.',
-      messageCount: 42,
-      usedToday: 3,
-      limit: 10,
-      disclaimer: 'AI가 만든 요약이라 틀릴 수 있어요',
+    const running = AI_SUMMARIES.find(
+      (item) =>
+        item.roomId === room.id &&
+        item.userId === viewer.me!.id &&
+        aiSummaryView(item).status === 'PENDING',
+    );
+    if (running) return aiSummaryView(running);
+    const summary = {
+      id: newId(),
+      roomId: room.id,
+      userId: viewer.me!.id,
+      startedAt: Date.now(),
+      sharedMessageId: null as number | null,
     };
+    AI_SUMMARIES.push(summary);
+    return aiSummaryView(summary);
   }),
-  get('/api/v1/user/chat-rooms/:roomId/ai-summaries/:summaryId', ({ params }) => ({
-    summaryId: Number(params.summaryId),
-    status: 'DONE',
-    summary:
-      '로그인 시트 구현을 오늘 안에 끝내고 내일 저녁에 회의하기로 했어요. 피드 카드와 웹훅 서명 검증도 이어서 마무리하기로 했습니다.',
-    messageCount: 42,
-    usedToday: 3,
-    limit: 10,
-    disclaimer: 'AI가 만든 요약이라 틀릴 수 있어요',
-  })),
+  get('/api/v1/user/chat-rooms/:roomId/ai-summaries/:summaryId', ({ params }) =>
+    aiSummaryView(aiSummaryOr404(params.summaryId!)),
+  ),
+  post('/api/v1/user/chat-rooms/:roomId/ai-summaries/:summaryId/share', ({ params, viewer }) => {
+    const summary = aiSummaryOr404(params.summaryId!);
+    const view = aiSummaryView(summary);
+    if (view.status !== 'DONE') fail(409, 'STATE_CONFLICT', '요약이 끝난 뒤에 공유할 수 있어요');
+    const existing = MESSAGES.find((item) => item.id === summary.sharedMessageId);
+    if (existing) return withReadState(existing);
+    const message = {
+      id: nextMessageId(),
+      roomId: summary.roomId,
+      sender: brief(viewer.me!),
+      type: 'AI_SUMMARY' as const,
+      text: `AI 요약 · ${view.oneLine}`,
+      imageUrls: [],
+      payload: {
+        summaryId: summary.id,
+        oneLine: view.oneLine,
+        decisions: view.decisions,
+        actionItems: view.actionItems,
+        openQuestions: view.openQuestions,
+        messageCount: view.messageCount,
+        disclaimer: view.disclaimer,
+      },
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      deletedAt: null,
+    };
+    MESSAGES.push(message);
+    summary.sharedMessageId = message.id;
+    const response = withReadState(message);
+    emit(`/topic/chat-rooms/${summary.roomId}`, { event: 'MESSAGE', message: response });
+    emit('/user/queue/chat-rooms', { event: 'MESSAGE', roomId: summary.roomId });
+    return response;
+  }),
 
   // `[Included]` Recruiting offer (recruiter → developer). 1,000 chars, no photos (POL-H-3)
   post('/api/v1/recruiter/chat-requests', ({ body }) => {

@@ -32,7 +32,7 @@ class ChatControllerTest {
 				public boolean canSend(long userId, long roomId) {
 					return userId == 7L && roomId == 10L;
 				}
-			}, null, null, null, Clock.systemUTC(), null, null, null, mock(PlatformTransactionManager.class), null, null, null, null, null, null, null, null, "http://localhost:3000"),
+			}, null, null, null, Clock.systemUTC(), null, null, null, mock(PlatformTransactionManager.class), null, null, null, null, null, null, null, null, null, "http://localhost:3000"),
 			mock(AiSummaryService.class)
 	);
 

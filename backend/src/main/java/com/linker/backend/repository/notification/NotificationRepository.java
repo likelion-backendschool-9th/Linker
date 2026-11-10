@@ -104,6 +104,23 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			""")
 	int markVisibleUnread(@Param("userId") long userId, @Param("now") Instant now);
 
+	/** Opening an AI summary reads its DONE/FAILED notification (page 17). */
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			update Notification notification
+			set notification.readAt = :now
+			where notification.user.id = :userId
+			  and notification.targetType = :targetType
+			  and notification.targetId = :targetId
+			  and notification.readAt is null
+			""")
+	int markTargetRead(
+			@Param("userId") long userId,
+			@Param("targetType") String targetType,
+			@Param("targetId") long targetId,
+			@Param("now") Instant now
+	);
+
 	/** Records a push as sent. A direct UPDATE, so it does not depend on the caller's persistence context. */
 	@Transactional
 	@Modifying(clearAutomatically = true, flushAutomatically = true)

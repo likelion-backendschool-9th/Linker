@@ -11,9 +11,11 @@ type Props = {
   messages: RoomMessage[];
   onRead: (id: number) => void;
   readPosition?: { id: number } | null;
+  /** A new object scrolls that loaded message into the middle (AI summary source lines) */
+  jumpTo?: { id: number } | null;
 };
 
-export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
+export function useMessageTimeline({ messages, onRead, readPosition, jumpTo }: Props) {
   'use no memo'; // TanStack Virtual exposes a mutable virtualizer.
   const root = useRef<HTMLDivElement>(null);
   const restoredPosition = useRef<Props['readPosition']>(null);
@@ -74,6 +76,16 @@ export function useMessageTimeline({ messages, onRead, readPosition }: Props) {
     messages,
     readPosition,
   ]);
+
+  const handledJump = useRef<Props['jumpTo']>(null);
+  useLayoutEffect(() => {
+    if (!jumpTo || handledJump.current === jumpTo) return;
+    const index = messages.findIndex((message) => message.id === jumpTo.id);
+    if (index < 0) return;
+    handledJump.current = jumpTo;
+    setAtBottom(false);
+    virtualizer.scrollToIndex(index, { align: 'center' });
+  }, [jumpTo, messages, virtualizer]);
 
   // Only rows intersecting the message viewport while the document is visible count as read.
   useEffect(() => {

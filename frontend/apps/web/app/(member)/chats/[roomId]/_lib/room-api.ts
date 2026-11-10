@@ -23,7 +23,14 @@ export type ChatMember = ChatMemberResponse;
 export type RoomTeam = NonNullable<ChatRoomInfoResponse['team']> & {
   aiSummaryEnabled?: boolean;
 };
-export type RoomInfo = Omit<ChatRoomInfoResponse, 'team'> & { team: RoomTeam | null };
+/**
+ * `myAiSummary` is hand-written until the client is regenerated: the caller's latest unshared AI
+ * summary in a team room, so the "AI 채팅 요약" ring resumes (POL-C-5).
+ */
+export type RoomInfo = Omit<ChatRoomInfoResponse, 'team'> & {
+  team: RoomTeam | null;
+  myAiSummary?: { summaryId: number; status: 'PENDING' | 'DONE' | 'FAILED' } | null;
+};
 /** `updatedAt` is the row version: every edit, delete, hide and restore moves it forward. */
 export type RoomMessage = ChatMessageResponse;
 /** `nextAfter` is set when `after` stopped at the 500 cap; `loadAfter` follows it to the end. */
@@ -48,7 +55,11 @@ export function roomInfoOptions(login: string | null, id: number) {
  * everything at once). `catchUpLimited` stays true when any batch was capped, so the screen can show
  * the 500+ notice. `after` must be a message id in this room.
  */
-export async function loadAfter(id: number, after: number, signal?: AbortSignal): Promise<MessagePage> {
+export async function loadAfter(
+  id: number,
+  after: number,
+  signal?: AbortSignal,
+): Promise<MessagePage> {
   const items: RoomMessage[] = [];
   let cursor = after;
   let limited = false;
@@ -70,7 +81,8 @@ export function messagesOptions(login: string | null, id: number) {
     queryKey: messagesKey(login, id),
     initialPageParam: null as number | null,
     queryFn: async ({ pageParam, signal, client }): Promise<MessagePage> => {
-      const previous = client.getQueryData<InfiniteData<MessagePage>>(messagesKey(login, id))?.pages[0];
+      const previous = client.getQueryData<InfiniteData<MessagePage>>(messagesKey(login, id))
+        ?.pages[0];
       // A large reconnect batch also contains the last-read anchor. Refetching only
       // the default latest page on READ would discard it and move the viewport.
       if (pageParam === null && previous && previous.items.length > CHAT.catchUpMax) {
@@ -79,7 +91,9 @@ export function messagesOptions(login: string | null, id: number) {
         const page = await loadAfter(id, anchor!.id, signal);
         return { ...page, items: [anchor!, ...page.items], hasMore: previous.hasMore };
       }
-      return listChatMessages(id, pageParam === null ? undefined : { before: pageParam }, { signal });
+      return listChatMessages(id, pageParam === null ? undefined : { before: pageParam }, {
+        signal,
+      });
     },
     getNextPageParam: (page) => (page.hasMore ? page.items[0]?.id : undefined),
   });
@@ -106,10 +120,20 @@ export function setMuted(id: number, muted: boolean) {
  */
 function editedAtMicros(value: string | null): bigint | null {
   if (!value) return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/.exec(
+      value,
+    );
   if (!match) return null;
   const zone = match[8]!;
-  let millis = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6]));
+  let millis = Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6]),
+  );
   if (Number.isNaN(millis)) return null;
   if (zone !== 'Z') {
     const sign = zone.startsWith('-') ? -1 : 1;
@@ -125,7 +149,10 @@ function editedAtMicros(value: string | null): bigint | null {
  * Rows without `updatedAt` (an older server) fall back to direction rules: a hidden or deleted row
  * is not replaced by an earlier frame's text, and edits compare the full microsecond `editedAt`.
  */
-export function mergeRoomMessage(current: RoomMessage | undefined, incoming: RoomMessage): RoomMessage {
+export function mergeRoomMessage(
+  current: RoomMessage | undefined,
+  incoming: RoomMessage,
+): RoomMessage {
   if (!current) return incoming;
   const currentVersion = editedAtMicros(current.updatedAt ?? null);
   const incomingVersion = editedAtMicros(incoming.updatedAt ?? null);
@@ -145,7 +172,8 @@ export function mergeRoomMessage(current: RoomMessage | undefined, incoming: Roo
 export function orderedMessages(pages: MessagePage[]): RoomMessage[] {
   const unique = new Map<number, RoomMessage>();
   for (const page of [...pages].reverse())
-    for (const message of page.items) unique.set(message.id, mergeRoomMessage(unique.get(message.id), message));
+    for (const message of page.items)
+      unique.set(message.id, mergeRoomMessage(unique.get(message.id), message));
   return [...unique.values()].sort((a, b) => a.id - b.id);
 }
 
@@ -155,10 +183,12 @@ export function mergeCatchUpHistory(
   incoming: MessagePage,
 ): InfiniteData<MessagePage> {
   return {
-    pages: [{
-      items: orderedMessages([incoming, ...(history?.pages ?? [])]),
-      hasMore: history?.pages.at(-1)?.hasMore ?? false,
-    }],
+    pages: [
+      {
+        items: orderedMessages([incoming, ...(history?.pages ?? [])]),
+        hasMore: history?.pages.at(-1)?.hasMore ?? false,
+      },
+    ],
     pageParams: [null],
   };
 }
@@ -174,11 +204,16 @@ export function deleteMessage(roomId: number, messageId: number) {
 export const unreadMembersKey = (login: string | null, roomId: number) =>
   [...roomKey(login, roomId), 'unread-members'] as const;
 
-export function unreadMembersOptions(login: string | null, roomId: number, messageId: number | null) {
+export function unreadMembersOptions(
+  login: string | null,
+  roomId: number,
+  messageId: number | null,
+) {
   return queryOptions({
     queryKey: [...unreadMembersKey(login, roomId), messageId],
     staleTime: 0,
     enabled: messageId !== null,
-    queryFn: ({ signal }) => listUnreadChatMembers(roomId, messageId!, { signal, cache: 'no-store' }),
+    queryFn: ({ signal }) =>
+      listUnreadChatMembers(roomId, messageId!, { signal, cache: 'no-store' }),
   });
 }
