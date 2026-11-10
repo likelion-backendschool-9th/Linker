@@ -99,7 +99,8 @@ function errorInfo(error: unknown, fallback: string) {
 export function useRecruiterSignupForm() {
   const router = useRouter();
   const refreshSession = useAccountSessionRefresh();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [businessRegistrationNumber, setBusinessRegistrationNumber] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [signupToken, setSignupToken] = useState<string | null>(null);
   const [validMinutes, setValidMinutes] = useState<number | null>(null);
@@ -113,6 +114,10 @@ export function useRecruiterSignupForm() {
   });
   const email = useWatch({ control: form.control, name: 'email' });
   const checked = useWatch({ control: form.control });
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -140,7 +145,7 @@ export function useRecruiterSignupForm() {
     onSuccess: (result) => {
       setSignupToken(result.signupToken);
       setApiError(null);
-      setStep(3);
+      setStep(4);
     },
     onError: (error) => setApiError(errorInfo(error, '인증 코드를 확인하지 못했어요.')),
   });
@@ -187,6 +192,16 @@ export function useRecruiterSignupForm() {
     }
   }
 
+  function updateBusinessRegistrationNumber(event: ChangeEvent<HTMLInputElement>) {
+    setBusinessRegistrationNumber(event.target.value.replace(/\D/g, '').slice(0, 10));
+  }
+
+  function proceedFromBusinessRegistration() {
+    if (businessRegistrationNumber.length !== 10) return;
+    setApiError(null);
+    setStep(3);
+  }
+
   async function sendCode() {
     if (!(await form.trigger('email', { shouldFocus: true }))) return;
     requestCode.mutate(email.trim());
@@ -208,20 +223,14 @@ export function useRecruiterSignupForm() {
   function submit(values: FormValues) {
     if (!signupToken) {
       setApiError({ message: '회사 이메일 인증을 먼저 완료해 주세요.' });
-      setStep(2);
+      setStep(3);
       return;
     }
     setApiError(null);
     signup.mutate(values);
   }
 
-  function toggleAllConsents() {
-    const all =
-      !checked.ageConfirmed ||
-      !checked.termsAccepted ||
-      !checked.businessTermsAccepted ||
-      !checked.personalDataAccepted ||
-      !checked.marketingAccepted;
+  function setAllConsents(checkedValue: boolean) {
     for (const field of [
       'ageConfirmed',
       'termsAccepted',
@@ -229,11 +238,11 @@ export function useRecruiterSignupForm() {
       'personalDataAccepted',
       'marketingAccepted',
     ] as const) {
-      form.setValue(field, all, { shouldValidate: true });
+      form.setValue(field, checkedValue);
     }
   }
 
-  function goToStep(next: 1 | 2 | 3) {
+  function goToStep(next: 1 | 2 | 3 | 4) {
     setApiError(null);
     setStep(next);
   }
@@ -241,6 +250,8 @@ export function useRecruiterSignupForm() {
   return {
     form,
     step,
+    checked,
+    businessRegistrationNumber,
     email,
     codeSent,
     validMinutes,
@@ -251,11 +262,13 @@ export function useRecruiterSignupForm() {
     signupPending: signup.isPending,
     handlers: {
       proceedFromConsents,
+      updateBusinessRegistrationNumber,
+      proceedFromBusinessRegistration,
       sendCode,
       checkCode,
       updateEmail,
       submit,
-      toggleAllConsents,
+      setAllConsents,
       goToStep,
     },
   };
