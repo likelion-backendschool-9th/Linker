@@ -12,7 +12,7 @@
 | 설치 검증 | 사용자·세션에 묶인 Redis 일회용 state → 서버의 사용자 토큰으로 `GET /user/installations` 조회 → 현재 App·Organization·정지 여부 검증 |
 | A 연결점 | `PersistedGithubUserAccessTokenSource.tokenFor(userId)`가 소셜 로그인으로 저장한 `github_tokens`를 복호화한다. 설정 키가 없으면 503 `SERVICE_UNAVAILABLE`. 토큰이 없거나 갱신에 실패하면 401 `LOGIN_REQUIRED`. 임시 토큰을 환경변수나 요청 본문으로 받지 않음 |
 | 실환경 스파이크 | 실제 GitHub App·키·테스트 조직과 A의 사용자 토큰 경로가 준비된 후 수행. 자동 테스트 통과와 별개 |
-| E 스토리지 | 업체 미결정 유지. 별도 업로드 API·클라우드 설정을 추가하지 않음 |
+| E 스토리지 | 서버 디스크로 결정(2026-11-10). `linker_uploads` 볼륨에 저장하고 `/files/{key}`로 제공. 클라우드 설정은 추가하지 않음 |
 
 ## App 등록 설정
 

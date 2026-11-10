@@ -107,8 +107,8 @@ it('changes tabs through the URL and shows the Figma request row with accessible
   expect(screen.getByRole('img', { name: '알림 꺼짐' })).toBeVisible();
   expect(screen.getByRole('button', { name: /^요청/ })).toHaveAttribute('aria-pressed', 'true');
   expect(await axe(container)).toHaveNoViolations();
-  // Figma 16 has only the red 삭제 on a request; accepting is in the room's request panel (17).
-  expect(screen.getByRole('button', { name: '김개발 요청 삭제' })).toBeVisible();
+  // Latest design: a request row has no buttons; delete is in the row menu, accept in 17's panel.
+  expect(screen.queryByRole('button', { name: /요청 삭제/ })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /요청 수락/ })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: /김개발/ })).toHaveAttribute('href', '/chats/3');
 });
@@ -139,7 +139,8 @@ it('shows a retry when loading fails and recovers', async () => {
   expect(await screen.findByText('아직 팀 채팅이 없어요.')).toBeVisible();
 });
 
-it('deletes a received request only after confirming and refreshes the list', async () => {
+it('deletes a received request from the row menu only after confirming and refreshes the list', async () => {
+  const user = userEvent.setup();
   let removed = false;
   fetchMock.mockImplementation(async (url, init) => {
     if (url.endsWith('unread-summary'))
@@ -152,15 +153,22 @@ it('deletes a received request only after confirming and refreshes the list', as
   });
   renderWithProviders(<ChatList />, {
     viewer: { role: 'developer', login: 'developer' },
-    searchParams: '?tab=REQUEST&overlay=delete-confirm&oid=3',
+    searchParams: '?tab=REQUEST',
   });
-  await screen.findByText('김개발');
-  await userEvent.click(screen.getByRole('button', { name: '삭제' }));
+  fireEvent.contextMenu(
+    (await screen.findByRole('heading', { name: '김개발' })).closest('article')!,
+  );
+  const sheet = await screen.findByRole('dialog', { name: '김개발님과의 채팅방' });
+  await user.click(within(sheet).getByRole('button', { name: '방 나가기' }));
+  const confirm = await screen.findByRole('alertdialog', { name: '메시지 요청을 삭제할까요?' });
+  expect(fetchMock).not.toHaveBeenCalledWith('/api/v1/user/chat-requests/3', { method: 'DELETE' });
+  await user.click(within(confirm).getByRole('button', { name: '삭제' }));
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/chat-requests/3', { method: 'DELETE' }),
   );
   expect(await screen.findByText('받은 메시지 요청이 없어요.')).toBeVisible();
-  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  // The confirm closes with history.back() (the menu pushed the overlay), which the nuqs testing
+  // adapter doesn't follow; the browser check covers that.
 });
 
 it('omits a missing team name and a missing preview without inventing copy', async () => {
@@ -320,6 +328,8 @@ describe('row menu (right-click / long press)', () => {
       const sheet = await screen.findByRole('dialog', { name: 'ShowMoa의 채팅방' });
       expect(within(sheet).getByRole('button', { name: '팀 나가기' })).toBeVisible();
       expect(within(sheet).getByRole('button', { name: '읽음 처리' })).toBeEnabled();
+      // The browser's own long-press menu lands on the sheet now under the finger; it is cancelled
+      expect(fireEvent.contextMenu(document.body)).toBe(false);
       fireEvent.pointerUp(link, { pointerType: 'touch' });
       // The click after the hold is swallowed; a later plain tap still navigates.
       expect(fireEvent.click(link)).toBe(false);

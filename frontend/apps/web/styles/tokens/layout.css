@@ -141,7 +141,7 @@
   --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
   --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
   --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
-  --chat-ai-logo-size: 33px; /* logo inside the "AI 채팅 요약" button (--control-height-chat circle) */
+  --chat-ai-logo-size: 32px; /* animated orb inside the "AI 채팅 요약" button: ThinkingOrb's 32px size preset (Figma logo 33px) */
   --space-chat-card: 14px; /* PR card padding */
   --chat-request-panel-height: 140px; /* request panel replacing the composer */
   --space-chat-request-title: 19px; /* request panel top to its title */
@@ -307,7 +307,6 @@
   --space-chat-list-top: 15px; /* tabs to the first room */
   --chat-list-avatar-size: 50px; /* room photo */
   --chat-list-badge-size: 18px; /* unread count circle */
-  --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
 
   /* Figma 13 create (200:806) */
   --issue-create-body-min-height: 163px; /* markdown / preview field */

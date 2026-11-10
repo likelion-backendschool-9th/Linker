@@ -1,6 +1,5 @@
 /* Unmapped Figma 750:3125 tooltip values stay local; shared tokens are unchanged. */
 .fab {
-  --summary-tooltip-width: 67px;
   --summary-tooltip-radius: 2px;
   --summary-tooltip-tail: 7px;
   --summary-gradient-middle: #822ad6;
@@ -8,15 +7,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-chat-name);
-  width: var(--summary-tooltip-width);
+  /* Label sits close to the button (user request 2026-11-10); the tail just meets the button */
+  gap: var(--space-row-inline);
+  width: var(--fab-size);
 }
 
+/*
+ * Inside the composer with the button. Sized to its text and kept narrower than the send column plus
+ * both 10px gaps, so it never touches the input's border (user request 2026-11-10).
+ */
 .tooltip {
   position: relative;
   display: flex;
+  flex: none;
+  width: max-content;
   justify-content: center;
-  padding: var(--space-xxs);
+  /* No side padding: the input's focus ring reaches 4px past its edge */
+  padding: var(--space-xxs) 0;
   border-radius: var(--summary-tooltip-radius);
   background: var(--color-canvas-cool);
   pointer-events: none;
@@ -43,7 +50,7 @@
   );
   background-clip: text;
   color: transparent;
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-chat-time);
   font-weight: var(--font-weight-regular);
   line-height: 14px;
   white-space: nowrap;
