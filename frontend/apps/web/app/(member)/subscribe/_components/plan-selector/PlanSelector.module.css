@@ -63,7 +63,7 @@
   color: var(--color-text-inverse);
 }
 
-/* "2개월 무료" next to 연간 결제 (Figma "10% 할인" spot): lighter than the label */
+/* "10% 할인" next to 연간 결제 (Figma 291:94): lighter than the label */
 .toggleNote {
   font-weight: var(--font-weight-regular);
 }
@@ -142,13 +142,6 @@
 .billing {
   font-size: var(--font-size-micro);
   color: var(--color-text-slate);
-}
-
-/* Yearly saving under the billing line */
-.saving {
-  font-size: var(--font-size-micro);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-plan-accent);
 }
 
 /* Scout card note while its checkout is not open ([Included]) */

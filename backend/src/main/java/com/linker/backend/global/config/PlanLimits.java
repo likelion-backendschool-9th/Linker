@@ -195,12 +195,13 @@ public final class PlanLimits {
 
 	/** Policy ch. 11 / To-be-decided — tentative KRW prices (server is source of truth). */
 	public static final int PRO_MONTHLY_KRW = 2_900;
-	public static final int PRO_YEARLY_KRW = 29_000;
+	/** Yearly = 12 months of the monthly price, 10% off (Pro and Flex; Scout is monthly only). */
+	public static final int PRO_YEARLY_KRW = 31_320;
 	public static final int FLEX_BASE_MONTHLY_KRW = 7_900;
 	public static final int FLEX_EXTRA_SEAT_KRW = 1_900;
-	/** Policy ch. 11 — Flex yearly follows Pro: 10 months of the monthly price (2 months free). */
-	public static final int FLEX_BASE_YEARLY_KRW = 79_000;
-	public static final int FLEX_EXTRA_SEAT_YEARLY_KRW = 19_000;
+	/** Policy ch. 11 — Flex yearly follows Pro: 12 months, 10% off. */
+	public static final int FLEX_BASE_YEARLY_KRW = 85_320;
+	public static final int FLEX_EXTRA_SEAT_YEARLY_KRW = 20_520;
 	public static final int FLEX_INCLUDED_SEATS = 6;
 	public static final int SCOUT_MONTHLY_KRW = 14_900;
 	public static final int SUBSCRIPTION_TRIAL_DAYS = 7;

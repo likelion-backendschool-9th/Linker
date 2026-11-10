@@ -624,7 +624,7 @@ Subscription principles, plans and prices are set in [PRD ch. 6](02-prd.md#6-rev
 
 Follow/like/comment, writing and sharing posts, 1:1 chat, team chat, Find Team, and teams/issues/calendar/status board work regardless of subscription. Everything that works on free keeps working on a paid plan; subscriptions only add on top.
 
-### Pro benefits (individual, ₩2,900/month / ₩29,000/year)
+### Pro benefits (individual, ₩2,900/month / ₩31,320/year, 10% off)
 
 | Benefit | Free | Pro |
 | --- | --- | --- |
@@ -638,11 +638,11 @@ Follow/like/comment, writing and sharing posts, 1:1 chat, team chat, Find Team, 
 - Stats are visible only to the user. The recruiter view alert shows **only the count**, never who or which company. The same recruiter viewing several times on one day counts once. Guest, developer and own views are not counted.
 - Recruiters are told at sign-up, via the Business Member Supplementary Terms, that viewing a profile is shown to the developer as a count.
 
-### Flex benefits (team, from ₩7,900/month / ₩79,000/year)
+### Flex benefits (team, from ₩7,900/month / ₩85,320/year)
 
 | Benefit | Free team | Flex |
 | --- | --- | --- |
-| Price | ₩0 | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th (e.g. 7 members ₩9,800). Yearly = 10 months, like Pro: ₩79,000/year (up to 6 members), ₩19,000/year per member from the 7th (e.g. 7 members ₩98,000) |
+| Price | ₩0 | ₩7,900/month (up to 6 members), ₩1,900/month per member from the 7th (e.g. 7 members ₩9,800). Yearly = 12 months 10% off, like Pro: ₩85,320/year (up to 6 members), ₩20,520/year per member from the 7th (e.g. 7 members ₩105,840) |
 | Team members | 6 | No limit |
 | Team chat search & scroll-back | Last 60 days | All history |
 | Team chat image originals | 90 days | While the team exists |

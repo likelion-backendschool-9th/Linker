@@ -509,7 +509,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 26 | B | POST | `/api/v1/admin/payments/{paymentId}/refund` | `[Included]` Refund (Toss payment cancel) | admin |
 | 28 | D | GET | `/api/v1/user/plans?reason=` | Developers: Free / Pro / Flex; recruiters: Scout only (display; Scout checkout `[Included]`). Monthly and yearly prices (Scout monthly only; Flex also `perExtraMemberYearly`), entry reason, free trial eligibility. Personalized response: `Cache-Control: private, no-store`; frontend server `no-store`, no shared Next cache | user |
-| 28 | D | GET | `/api/v1/user/plans/team-candidates` | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price: `amount` monthly (₩7,900 up to 6, ₩1,900 per member from the 7th), `yearlyAmount` (₩79,000 up to 6, ₩19,000 per member from the 7th) | user · developers only |
+| 28 | D | GET | `/api/v1/user/plans/team-candidates` | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price: `amount` monthly (₩7,900 up to 6, ₩1,900 per member from the 7th), `yearlyAmount` (10% off: ₩85,320 up to 6, ₩20,520 per member from the 7th) | user · developers only |
 | 28 | D | POST | `/api/v1/user/payments/checkout` | Create order (orderId, amount, customerKey). Checks plan matches member type | user |
 | 28 | D | POST | `/api/v1/user/payments/confirm` | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day) | user |
 | 28 | D | POST | `/api/v1/user/payments/{orderId}/fail` | Record failure return | user |

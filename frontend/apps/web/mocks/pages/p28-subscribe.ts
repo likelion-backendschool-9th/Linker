@@ -74,7 +74,9 @@ function candidates() {
       name: team.name,
       memberCount: teamSeats(team.id),
       amount: flexAmount(teamSeats(team.id)),
-      yearlyAmount: flexAmount(teamSeats(team.id)) * 10,
+      yearlyAmount:
+        (flexAmount(teamSeats(team.id)) * 12 * (100 - SUBSCRIPTION_PRICE.yearlyDiscountPercent)) /
+        100,
       currentPlan: team.plan,
     }),
   );

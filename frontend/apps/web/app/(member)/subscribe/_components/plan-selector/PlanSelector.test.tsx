@@ -14,7 +14,7 @@ const plans = [
     key: 'PRO',
     name: 'Pro',
     monthly: 2900,
-    yearly: 29000,
+    yearly: 31320,
     benefits: ['피드 저장소 사진 10장으로 확장'],
     trialAvailable: true,
   },
@@ -22,11 +22,11 @@ const plans = [
     key: 'FLEX',
     name: 'Flex',
     monthly: 7900,
-    yearly: 79000,
+    yearly: 85320,
     benefits: ['팀 혜택'],
     trialAvailable: true,
     perExtraMember: 1900,
-    perExtraMemberYearly: 19000,
+    perExtraMemberYearly: 20520,
   },
   {
     key: 'SCOUT',
@@ -48,7 +48,7 @@ beforeEach(() => {
               name: '내 팀',
               memberCount: 7,
               amount: 9800,
-              yearlyAmount: 98000,
+              yearlyAmount: 105840,
               currentPlan: 'FREE',
             },
           ],
@@ -56,24 +56,21 @@ beforeEach(() => {
       : { plans, currentPlan: 'FREE', reason: null },
   );
 });
-it('shows yearly prices and the saving for Pro and Flex, and checks out the Flex team yearly', async () => {
+it('shows 10%-off yearly prices for Pro and Flex and checks out the Flex team yearly', async () => {
   renderWithProviders(<PlanSelector reason="" />, {
     viewer: { role: 'developer', login: 'developer' },
   });
   await screen.findByRole('heading', { name: 'Pro' });
   expect(screen.getByText('월간 청구, 7명 이상 인당 + ₩1,900')).toBeVisible();
-  expect(screen.queryByText(/절약/)).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole('button', { name: '연간 결제 2개월 무료' }));
-  expect(screen.getByText('₩29,000')).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: '연간 결제 10% 할인' }));
+  expect(screen.getByText('₩31,320')).toBeVisible();
   expect(screen.getByText('연간 청구')).toBeVisible();
-  expect(screen.getByText('월간 결제보다 ₩5,800 절약 (2개월 무료)')).toBeVisible();
-  expect(screen.getByText('₩79,000')).toBeVisible();
-  expect(screen.getByText('연간 청구, 7명 이상 인당 + ₩19,000')).toBeVisible();
-  expect(screen.getByText('월간 결제보다 ₩15,800 절약 (2개월 무료)')).toBeVisible();
+  expect(screen.getByText('₩85,320')).toBeVisible();
+  expect(screen.getByText('연간 청구, 7명 이상 인당 + ₩20,520')).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: 'Flex 플랜 구독하기' }));
   const sheet = await screen.findByRole('dialog', { name: '결제할 팀 선택' });
   expect(within(sheet).getByRole('button', { name: 'Flex 결제 준비' })).toBeDisabled();
-  await userEvent.click(within(sheet).getByRole('radio', { name: /내 팀.*₩98,000 \/ 년/ }));
+  await userEvent.click(within(sheet).getByRole('radio', { name: /내 팀.*₩105,840 \/ 년/ }));
   fetchMock.mockResolvedValue({
     orderId: 'order-1',
     amount: 9800,

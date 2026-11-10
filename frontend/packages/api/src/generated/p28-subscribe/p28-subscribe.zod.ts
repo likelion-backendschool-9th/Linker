@@ -87,7 +87,7 @@ export const ListFlexTeamCandidatesResponse = zod.object({
   "name": zod.string(),
   "memberCount": zod.int().describe('Current members; the amount uses this headcount'),
   "amount": zod.int().describe('KRW 7,900 up to 6 members, +1,900 per member from the 7th'),
-  "yearlyAmount": zod.int().describe('Yearly: KRW 79,000 up to 6 members, +19,000 per member from the 7th'),
+  "yearlyAmount": zod.int().describe('Yearly (10% off): KRW 85,320 up to 6 members, +20,520 per member from the 7th'),
   "currentPlan": zod.string().describe('FREE or FLEX')
 }))
 })

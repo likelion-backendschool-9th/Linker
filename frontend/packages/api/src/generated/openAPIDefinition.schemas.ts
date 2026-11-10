@@ -1926,7 +1926,7 @@ export interface TeamCandidateResponse {
   memberCount: number;
   /** KRW 7,900 up to 6 members, +1,900 per member from the 7th */
   amount: number;
-  /** Yearly: KRW 79,000 up to 6 members, +19,000 per member from the 7th */
+  /** Yearly (10% off): KRW 85,320 up to 6 members, +20,520 per member from the 7th */
   yearlyAmount: number;
   /** FREE or FLEX */
   currentPlan: string;

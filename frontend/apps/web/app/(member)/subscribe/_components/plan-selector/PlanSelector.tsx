@@ -30,15 +30,6 @@ function billingLine(plan: Plan, yearly: boolean) {
   return cycle;
 }
 
-/** Yearly discount line: what twelve monthly payments would cost minus the yearly price */
-function savingLine(plan: Plan) {
-  if (plan.yearly == null) return null;
-  const saved = plan.monthly * 12 - plan.yearly;
-  return saved > 0
-    ? `월간 결제보다 ${formatWon(saved)} 절약 (${SUBSCRIPTION_PRICE.yearlyFreeMonths}개월 무료)`
-    : null;
-}
-
 /**
  * Figma 28 (288:471 developer, 293:218 recruiter): title, 월간/연간 toggle, plan cards with a
  * "구독하기" button and benefits, terms links. Flex picks its team in a sheet first.
@@ -134,7 +125,7 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
                 <>
                   연간 결제{' '}
                   <span className={styles.toggleNote}>
-                    {SUBSCRIPTION_PRICE.yearlyFreeMonths}개월 무료
+                    {SUBSCRIPTION_PRICE.yearlyDiscountPercent}% 할인
                   </span>
                 </>
               )}
@@ -151,7 +142,6 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
             // Scout is monthly only (yearly null), so it keeps its monthly price on the yearly tab.
             const yearly = billing === 'YEARLY' && plan.yearly != null;
             const amount = yearly ? plan.yearly : plan.monthly;
-            const saving = yearly ? savingLine(plan) : null;
             // Scout's checkout is [Included]: the server still refuses it, so the card is display-only.
             const forSale = plan.key !== 'SCOUT';
             return (
@@ -172,7 +162,6 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
                         {amount == null ? '결제 기간을 확인해 주세요' : formatWon(amount)}
                       </span>
                       <span className={styles.billing}>{billingLine(plan, yearly)}</span>
-                      {saving && <span className={styles.saving}>{saving}</span>}
                     </p>
                     <button
                       type="button"
