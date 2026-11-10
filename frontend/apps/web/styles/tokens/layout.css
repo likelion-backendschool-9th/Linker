@@ -151,6 +151,10 @@
   --size-board-skeleton-card-h: 200px;
   --size-calendar-skeleton-chip-w: 67px; /* 15 skeleton status chip (Figma 982:1630) */
   --size-calendar-skeleton-chip-h: 27px;
+  --size-chat-list-skeleton-title-w: 79px; /* 16 skeleton room title (Figma 999:1416) */
+  --size-chat-list-skeleton-title-h: 19px;
+  --size-chat-list-skeleton-preview-w: 206px; /* 16 skeleton last message (Figma 999:1417) */
+  --size-chat-list-skeleton-preview-h: 19px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
