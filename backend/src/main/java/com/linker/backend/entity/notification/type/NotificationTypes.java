@@ -29,6 +29,10 @@ public final class NotificationTypes {
 	public static final String REPORT_OUTCOME = "REPORT_OUTCOME";
 	public static final String JOB_AD_ENDED = "JOB_AD_ENDED";
 	public static final String MARKETING = "MARKETING";
+	/** Page 17 AI summary finished (POL-C-5). Links to the result sheet. */
+	public static final String AI_SUMMARY_DONE = "AI_SUMMARY_DONE";
+	/** Page 17 AI summary could not be made; the daily count was given back. */
+	public static final String AI_SUMMARY_FAILED = "AI_SUMMARY_FAILED";
 
 	private NotificationTypes() {
 	}
@@ -36,5 +40,13 @@ public final class NotificationTypes {
 	/** Chat notifications skip quiet hours and are pushed by the chat delivery job. */
 	public static boolean isChat(String type) {
 		return CHAT.equals(type) || CHAT_MENTION.equals(type);
+	}
+
+	/**
+	 * POL-N-1 quiet hours do not hold these: chat, and the result of an AI summary the person just asked
+	 * for. AI summary rows still go out through the non-chat push job.
+	 */
+	public static boolean skipsQuietHours(String type) {
+		return isChat(type) || AI_SUMMARY_DONE.equals(type) || AI_SUMMARY_FAILED.equals(type);
 	}
 }

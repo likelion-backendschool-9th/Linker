@@ -13,11 +13,20 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
+/**
+ * Page 17 AI chat summary in minutes form (POL-C-5). The three item lists are jsonb arrays of
+ * {@code {text, messageId}}; {@code messageId} points at the source message and may be null.
+ */
 @Entity
 @Table(name = "ai_chat_summaries")
 public class AiChatSummary {
+
+	/** Latest messages within the input budget. The range picker values in the ERD are not offered yet. */
+	public static final String RANGE_LATEST = "LATEST";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +38,6 @@ public class AiChatSummary {
 	@Column(nullable = false)
 	private Long requesterId;
 
-	/** Always last-N messages; stored for ERD compatibility (no range picker). */
 	@Column(nullable = false, length = 32)
 	private String rangeType;
 
@@ -46,6 +54,18 @@ public class AiChatSummary {
 
 	@Column(columnDefinition = "text")
 	private String summaryLine;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(columnDefinition = "jsonb")
+	private String decisions;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(columnDefinition = "jsonb")
+	private String actionItems;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(columnDefinition = "jsonb")
+	private String openQuestions;
 
 	@Column(length = 64)
 	private String llmModel;
@@ -78,7 +98,7 @@ public class AiChatSummary {
 		AiChatSummary row = new AiChatSummary();
 		row.roomId = roomId;
 		row.requesterId = requesterId;
-		row.rangeType = "RECENT_500";
+		row.rangeType = RANGE_LATEST;
 		row.messageCount = messageCount;
 		row.fromMessageId = fromMessageId;
 		row.toMessageId = toMessageId;
@@ -88,13 +108,21 @@ public class AiChatSummary {
 		return row;
 	}
 
-	public void complete(String summaryLine) {
+	/** Item lists are JSON arrays; see the class comment. */
+	public void complete(String summaryLine, String decisions, String actionItems, String openQuestions) {
 		this.summaryLine = summaryLine;
+		this.decisions = decisions;
+		this.actionItems = actionItems;
+		this.openQuestions = openQuestions;
 		this.status = AiSummaryStatus.DONE;
 	}
 
 	public void fail() {
 		this.status = AiSummaryStatus.FAILED;
+	}
+
+	public void markShared(long messageId) {
+		this.sharedMessageId = messageId;
 	}
 
 	public Long getId() {
@@ -119,6 +147,22 @@ public class AiChatSummary {
 
 	public String getSummaryLine() {
 		return summaryLine;
+	}
+
+	public String getDecisions() {
+		return decisions;
+	}
+
+	public String getActionItems() {
+		return actionItems;
+	}
+
+	public String getOpenQuestions() {
+		return openQuestions;
+	}
+
+	public Long getSharedMessageId() {
+		return sharedMessageId;
 	}
 
 	public Instant getExpiresAt() {
