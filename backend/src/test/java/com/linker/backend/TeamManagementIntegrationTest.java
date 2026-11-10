@@ -578,7 +578,9 @@ class TeamManagementIntegrationTest {
     send(post(path), owner, "{}")
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("PENDING"));
-    send(post(path), owner, "{}").andExpect(status().isOk());
+    send(post(path), owner, "{}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sent").value(false));
     verify(github, times(1))
         .inviteOrganizationMember(eq(owner.getId()), eq(org), anyString(), anyLong());
     assertThat(

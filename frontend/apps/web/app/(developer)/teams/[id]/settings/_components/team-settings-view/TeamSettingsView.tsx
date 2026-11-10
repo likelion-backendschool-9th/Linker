@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 
+import { TeamDeleteDialog } from '../team-delete-dialog/TeamDeleteDialog';
 import { TeamSettingsActionSheet } from '../team-settings-action-sheet';
 import { ROLES, useTeamSettingsHeaderAction, useTeamSettingsView } from './hook';
 import styles from './TeamSettingsView.module.css';
@@ -190,18 +191,8 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
         </ul>
       </section>
 
-      {isOwnerView ? (
-        <div className={styles.deleteWrap}>
-          <button
-            type="button"
-            className={styles.delete}
-            disabled={!editable || !permissions.deleteTeam}
-            onClick={() => action.open('delete')}
-          >
-            팀 삭제
-          </button>
-        </div>
-      ) : (
+      <TeamDeleteDialog team={team} />
+      {!isOwnerView && (
         <div className={styles.leaveWrap}>
           <button
             type="button"

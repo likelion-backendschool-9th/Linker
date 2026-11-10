@@ -43,9 +43,9 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
   await expect(page.getByLabel('팀 소개', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '팀 삭제', exact: true }).click();
-  await expect(page.getByRole('button', { name: '확인', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '삭제하기', exact: true })).toBeDisabled();
   await page.getByLabel('확인을 위해 팀 이름을 입력해 주세요').fill('Linker 해커톤팀');
-  await expect(page.getByRole('button', { name: '확인', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '삭제하기', exact: true })).toBeEnabled();
   await page.screenshot({
     path: info.outputPath('p09-delete-confirm.png'),
     fullPage: true,

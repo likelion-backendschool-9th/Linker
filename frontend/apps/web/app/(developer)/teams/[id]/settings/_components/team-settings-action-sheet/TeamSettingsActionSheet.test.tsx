@@ -281,3 +281,42 @@ it('retains an upstream invitation error without announcing success or closing t
   );
   expect(screen.getByRole('dialog')).toBeVisible();
 });
+
+it('starts a fresh invitation after success so deliberate re-invites are not suppressed', async () => {
+  let linkId = 60;
+  vi.mocked(apiFetch).mockImplementation(async (url, init) => {
+    if (url.endsWith('/notify')) return undefined as never;
+    if (init?.method === 'POST')
+      return {
+        id: ++linkId,
+        code: `link-${linkId}`,
+        expiresAt: '2099-01-01T00:00:00Z',
+        createdBy: '오너',
+      } as never;
+    return { items: [] } as never;
+  });
+  function Preview() {
+    const overlay = useOverlay('team-settings-action');
+    return (
+      <>
+        <button onClick={() => overlay.open('invite')}>새 초대</button>
+        <TeamSettingsActionSheet team={team} members={[]} />
+      </>
+    );
+  }
+  renderWithProviders(<Preview />, {
+    viewer: { role: 'developer', login: 'me' },
+    searchParams: '?overlay=team-settings-action&oid=invite',
+  });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt) await userEvent.click(screen.getByRole('button', { name: '새 초대' }));
+    // The nuqs memory adapter does not consume window.history.back().
+    resetOverlayHistory();
+    await userEvent.type(await screen.findByLabelText('GitHub 로그인'), '@same-person');
+    await userEvent.click(screen.getByRole('button', { name: '초대' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  }
+  const urls = vi.mocked(apiFetch).mock.calls.map(([url]) => url);
+  expect(urls).toContain('/api/v1/user/teams/1/invite-links/61/notify');
+  expect(urls).toContain('/api/v1/user/teams/1/invite-links/62/notify');
+});

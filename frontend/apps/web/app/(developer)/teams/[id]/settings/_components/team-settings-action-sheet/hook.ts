@@ -184,6 +184,10 @@ export function useTeamSettingsActionSheet({
     },
     onSuccess: async (data, requestId) => {
       if (requestId.split(':')[0] === 'invite') {
+        client.removeQueries({
+          queryKey: ['team-settings', String(team.id), 'created-invite', viewer.login],
+          exact: true,
+        });
         toast('팀 초대를 보냈어요.');
       }
       if (requestId.split(':')[0] === 'github')
