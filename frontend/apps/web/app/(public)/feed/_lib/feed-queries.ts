@@ -14,6 +14,8 @@ export type FeedPost = {
     avatarUrl: string;
     /** Only SEEKING shows a badge to everyone (POL-H-4) */
     jobStatus: 'SEEKING' | 'OPEN' | 'OFF';
+    /** Proposal beyond WBS: card shows "팔로잉" instead of "팔로우" (Figma 92:259); false for guests */
+    isFollowing: boolean;
   };
   /** One-line title under the media (Figma 92:189) */
   intro: string;
@@ -24,6 +26,8 @@ export type FeedPost = {
   repoFullName: string;
   language: string | null;
   likeCount: number;
+  /** Proposal beyond WBS: filled red heart when I liked it (Figma 92:297); false for guests */
+  likedByMe: boolean;
   commentCount: number;
   createdAt: string;
 };
@@ -39,21 +43,36 @@ export type RecommendedUser = {
   techStack: string[];
 };
 
+/** "추천" (everyone) / "팔로잉" (posts by people I follow; guests see a login notice instead) — Figma 785:1211 */
+export const FEED_TABS = ['recommended', 'following'] as const;
+export type FeedTab = (typeof FEED_TABS)[number];
+
 export const feedKeys = {
   // Per account: guests, developers and recruiters get different mixes
-  feed: (login: string | null, offersOnly: boolean) => ['feed', login, offersOnly] as const,
+  feed: (login: string | null, offersOnly: boolean, tab: FeedTab = 'recommended') =>
+    ['feed', login, offersOnly, tab] as const,
   recommended: (login: string | null) => ['feed', login, 'recommended-users'] as const,
 };
 
-/** Guests: popular this week + newest; logged in: following + recommendations (POL-P-4) */
-export function feedOptions(login: string | null, offersOnly: boolean) {
+/**
+ * "추천": developers/operators get tech stack and job category matches first, then the rest at
+ * random; guests and recruiters get every post at random (POL-P-4). The cursor is opaque.
+ * "팔로잉" (`tab=following`): posts by people I follow, newest first; `offersOnly` is 추천 only.
+ */
+export function feedOptions(
+  login: string | null,
+  offersOnly: boolean,
+  tab: FeedTab = 'recommended',
+) {
+  const following = tab === 'following';
   return infiniteQueryOptions({
-    queryKey: feedKeys.feed(login, offersOnly),
+    queryKey: feedKeys.feed(login, following ? false : offersOnly, tab),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => {
       const query = new URLSearchParams();
+      if (following) query.set('tab', 'following');
       if (pageParam) query.set('cursor', pageParam);
-      if (offersOnly) query.set('offersOnly', 'true');
+      if (offersOnly && !following) query.set('offersOnly', 'true');
       return apiFetch<FeedPage>(`/api/v1/public/feed${query.size ? `?${query}` : ''}`, { signal });
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,

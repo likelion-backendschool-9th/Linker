@@ -453,7 +453,7 @@
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment ("삭제된 댓글입니다" if it has replies) | comment author / post owner |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}` | Delete post | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}/same-repo-posts` | Other posts for this repo | public |
-| 24 | E | GET | `/api/v1/public/feed?cursor=&offersOnly=` | Guests: this week's popular + newest only. Logged in: 1 recommendation per 4 following posts, one-line "why shown", max 2 in a row from the same author. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers) | public |
+| 24 | E | GET | `/api/v1/public/feed?tab=&cursor=&offersOnly=` | `tab` omitted or `recommended` = "추천": developers and operators get posts matching their tech stack or job categories first (by popularity, one-line "why shown"), then the rest in random order, posts seen on an earlier visit last; guests and recruiters get every post in random order with no "why shown"; max 2 in a row from the same author. `tab=following` = "팔로잉": posts by people I follow, newest first, no ads (empty for guests and recruiters; the web never calls it for guests). `cursor` = opaque `<visit start ms>.<offset>`: fixes the shuffle and drops posts written later, so pages never repeat or skip. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers), "추천" only | public |
 | 24 | E | POST | `/api/v1/user/feed/seen` | Log posts shown on screen (to exclude from recommendations) | user |
 | 24 | E | GET | `/api/v1/user/feed/recommended-users` | Empty feed: 5 developers by my tech stack | user |
 
@@ -1013,7 +1013,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: follow → 04, like → 23, ad report → ModerationController (target RECRUITER_AD)
 - Tables: new feed_seen_posts, 🟡 ad_hides, 🟡 ad_daily_stats · shared posts, post_likes, comments, follows, users, user_tech_tags, post_tags, user_blocks, user_job_categories, recruiter_ads, subscriptions
 - [ ] Server `[Included]`: mix `type: "AD"` items into the feed response (only for logged-in developers with matching job categories, 1 per 10 posts, not on the first screen, 3 per person per day and same ad once per day via Redis), exclude closed within 7 days / hidden / block relations, impression/click Redis counters → `ad_daily_stats` once a day
-- [ ] Server: popularity score (like 1, comment by others 2, time decay, ignore likes from accounts under 7 days old), "why shown" priority, `[Included]` 2nd-degree recommendations
+- [ ] Server: "추천" by role (developers/operators: tech stack tag or job category match first, rest shuffled; guests/recruiters: shuffled), `tab=following`, visit-start cursor, popularity score (like 1, comment by others 2, time decay, ignore likes from accounts under 7 days old), "why shown" priority
 - [ ] Frontend `[Included]`: ad card ("광고" (Ad) label, company, title, job category, closing date, X, more → hide/report), close undo toast, tap → click API → external link sheet
 - [ ] Frontend: card (job-seeking badge), infinite + virtual scroll, write button (none for recruiters, login prompt for guests), guests don't send `seen`, empty feed, `[Included]` recruiter toggle (nuqs)
 

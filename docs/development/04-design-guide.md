@@ -32,8 +32,8 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-primary` | `#141414` | Primary CTA fill, footer band, focus ring |
 | `--color-on-primary` | `#ffffff` | Text and icons on `--color-primary` (18.4:1) |
 | `--color-accent` | `#0066ff` | Popular/new badges, savings emphasis. **NEVER** a CTA fill |
-| `--color-gnb-current` | `#2563eb` | Active bottom GNB label/icon on the gray pill (4.65:1 on `--color-canvas-soft`) |
-| `--color-gnb-inactive` | `#b2b7c3` | Inactive bottom GNB label/icon (1.81:1 on `--color-canvas-soft` — below AA text contrast; accepted because every tab keeps an icon + label, and the active tab's `--color-gnb-current` carries the real affordance, not color alone) |
+| `--color-gnb-current` | `#2563eb` | Active bottom GNB label/icon on the white pill (5.17:1 on white) |
+| `--color-gnb-inactive` | `#b2b7c3` | Inactive bottom GNB label/icon (2.01:1 on white — below AA text contrast; accepted because every tab keeps an icon + label, and the active tab's `--color-gnb-current` carries the real affordance, not color alone) |
 | `--color-canvas` | `#ffffff` | Page and card background |
 | `--color-canvas-outside` | `#0c0c0c` | `body` background outside the 600px app column on wide browsers (Figma 472:415); AdminShell overrides back to `--color-canvas` |
 | `--color-canvas-soft` | `#f3f3f3` | Nav pill, featured card, accordion row, toggle track, soft pill |
@@ -364,11 +364,11 @@ Avatars are circles (`--radius-full`).
 - Recorded exception: page 07 compact link uses `--shadow-compact-link` (`0 0 4px rgb(0 0 0 / 0.12)`). 07 Figma value, front-end owner's decision (Figma first). Do not reuse it elsewhere.
 - Recorded exception: page 11 team chat shortcut and page 19 write-recruit-post FAB share `--shadow-fab` (`0 0 2px rgb(222 222 222 / 0.25)`). Figma values for those screens. Do not reuse it elsewhere.
 - Recorded exceptions: page 14 columns use `--shadow-board-column` (`0 4px 10px rgb(0 0 0 / 0.15)`) and its dropdown menus `--shadow-board-menu` (`0 2px 4px rgb(0 0 0 / 0.15)`). 14 Figma values ("Figma first"). Do not reuse them elsewhere.
+- Recorded exception: the bottom GNB pill uses `--shadow-gnb` (`0 2px 4px rgb(0 0 0 / 0.2)`) under its white frosted fill (Figma 800:1299, 455:316). Do not reuse it elsewhere.
 - Bottom sheets, dialogs and drawers are separated from the page by `--color-scrim`, not by a shadow. Sheets use `--radius-md` on their top corners unless Figma specifies otherwise.
 
 ## 5. Components
 
-- Recorded exception: the bottom GNB pill uses `--shadow-gnb` (`0 2px 4px rgb(0 0 0 / 0.2)`) under its white frosted fill (Figma 800:1299, 455:316). Do not reuse it elsewhere.
 Each item says the default Linker recipe. **When Figma for that screen conflicts, Figma wins** — update tokens if needed, then match the frame. Write components as `*.module.css` using tokens. A component not listed is composed from ch. 1–4 without new values. Prefer page `_components/` over growing a large shared kit during MVP.
 
 **Button, primary** — the single CTA style.

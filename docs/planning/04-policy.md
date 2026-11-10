@@ -82,7 +82,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 21 | Recruit post detail | View; apply = prompt | ○ apply; author manages applicants | View | Same as developer |
 | 22 | Write/edit project post | Prompt | ○ | × | Same as developer |
 | 23 | Project post detail | View (except list of likers) | ○ | View + "Send recruiting offer" to author | Same as developer |
-| 24 | Home feed | View (popular this week + latest, no job ads) | ○ following + recommended + job-category job ads | View (recommended only, "only developers open to offers" toggle, no job ads) | Same as developer |
+| 24 | Home feed | View ("추천" in random order; "팔로잉" shows the login notice; no job ads) | ○ "추천" by my tech stack and job categories + job-category job ads; "팔로잉" | View ("추천" in random order with the "only developers open to offers" toggle; "팔로잉" always empty; no job ads) | Same as developer |
 | 25–27 | Ops: reports, users, action log | × | × | × | ○ (permanent suspension, lifting sanctions, reviewing appeals = lead operator) |
 | 28·29 | Plans & checkout, manage subscription | Prompt | ○ Pro/Flex | ○ Scout only | Same as developer |
 | 30 | My stats | Prompt | ○ free scope; Pro adds traffic sources and recruiter view counts | × | Same as developer |
@@ -185,9 +185,9 @@ In MVP, sign-up completes with company email verification alone and the account 
 
 | Value | Who sees it | Recruiter messages |
 | --- | --- | --- |
-| Seeking (구직 중) | Everyone. "구직 중" badge on profile header and next to the author on feed cards | Receives |
-| Open to offers (제안만 받기) | Recruiters only. Not shown among developers | Receives |
-| Off (끔, default) | Not shown | Doesn't receive. No "Send recruiting offer" button on profile |
+| Seeking (구직 중) | Everyone. "구직 중" badge on profile header and above the author's login on feed cards | Receives |
+| Open to offers (제안만 받기) | Profile: recruiters only. Feed cards (24, also profile post cards): everyone, as "제안 받기" above the login | Receives |
+| Off (끔, default) | Profile: not shown. Feed cards: everyone, as "구직 안 함" above the login in gray | Doesn't receive. No "Send recruiting offer" button on profile |
 
 - Turning job-seeking off blocks only new offers. Already accepted conversations and pending requests stay.
 - After 90 days without login, set to Off and send a "구직 상태를 껐어요" (we turned off your job-seeking status) notification on next login.
@@ -201,14 +201,14 @@ A recruiter with a Scout subscription shows their posting from an external job s
 
 | Policy | Details |
 | --- | --- |
-| POL-H-8 Job categories of interest | Developer picks up to 3 from the list in profile edit. Optional, empty by default. Visible only to the developer; not shown on the profile or to recruiters. Empty = no job ads. UI copy "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." (Pick job categories to see only job ads for them in your feed. Leave empty for no ads.) |
+| POL-H-8 Job categories of interest | Developer picks up to 3 from the list in profile edit. Optional, empty by default. Visible only to the developer; not shown on the profile or to recruiters. Used to pick job ads and to match "추천" feed posts (POL-P-4). Empty = no job ads. UI copy "관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요." (Pick job categories to see only job ads for them in your feed. Leave empty for no ads.) |
 | POL-H-5 Scout subscription | Paid by recruiters only. Benefits: one job ad and 50 recruiting offers per day (free: 10). No free trial. When it ends, the ad stops showing (content kept) and the offer limit becomes 10/day from the next day |
 | POL-H-7 Fields | One job category, posting title 2–40 chars, posting URL, closing date (within 90 days from today), all required. Company name is attached from the recruiter profile. No images |
 | POL-H-7 Allowed URLs | https only. Only one of: ① allowed job sites jobkorea.co.kr, saramin.co.kr, wanted.co.kr, work24.go.kr (WorkNet merged into Work24) and their subdomains ② the verified company email domain and its subdomains (e.g. signed up with @abc.com → abc.com, careers.abc.com). Short URLs, IP addresses and other domains rejected. Allowed-site list in server config |
 | POL-H-7 Count & status | One ad per recruiter. Status: showing / off (turned off by owner) / ended (closing date passed or subscription ended) / hidden (operator action). Changing the closing date allows turning it on again |
 | POL-H-7 Review | No operator pre-review; showing starts on save. Handled after the fact via reports (ch. 9) |
 | POL-H-9 Audience | Logged-in developers whose job categories include the ad's category. No ads for guests, recruiters or people with empty categories. Not shown to people who blocked the advertising recruiter |
-| POL-H-9 Frequency | One per 10 feed posts (never on the first screen), max 3 per person per day, same ad once per day. Multiple matching ads rotate. Ad spend never affects post ranking |
+| POL-H-9 Frequency | One per 10 "추천" posts (never on the first screen; none in "팔로잉"), max 3 per person per day, same ad once per day. Multiple matching ads rotate. Ad spend never affects post ranking |
 | POL-H-9 Card | "광고" (Ad) label at top, company, posting title, job category, closing date, "외부 공고 보기" (View external posting) button, X at top right, more (⋯) menu. Different background color from regular posts |
 | POL-H-9 On tap | Server records the click and returns the posting URL; opened in an external browser after confirmation per the common external link rule (ch. 2) |
 | POL-H-9 X close | Hides that ad for 7 days. Undo toast "광고를 닫았어요 · 되돌리기" (Ad closed · Undo) |
@@ -227,7 +227,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 
 | Category | Details |
 | --- | --- |
-| Can read | Home feed (popular this week and latest; "why shown" only "이번 주 인기" / "새로 올라온 작업물"), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, invite landing (`/invite/[code]`: logo + join CTAs only) |
+| Can read | Home feed ("추천" in random order with no "why shown"; "팔로잉" shows the login notice), post detail (photos, repo card, README, comment list, like count), recruit post list (All tab) and detail (body, remaining slots per role, author card), profiles (header, tech stack, graph, completion record, posts, teams), legal documents, invite landing (`/invite/[code]`: logo + join CTAs only) |
 | Login required to see | Follower/following lists, list of likers (people lists are easy to scrape), "Open to offers" (recruiters only), applicant list (author only) |
 | Login-prompt sheet | Like, write comment, follow, share to chat room (incl. the 24 feed card's share icon, POL-P-7), apply, message/recruiting offer, report, block, write post/recruit post buttons; bottom tabs Workspace, Chat; the header's profile icon (my profile); notifications in the header |
 | Sheet copy | "로그인한 사용자만 쓸 수 있는 기능이에요" (this feature is for logged-in users) + "GitHub로 시작" (start with GitHub) + small link "채용 담당자 로그인" (recruiter login). After login, returns to the screen being viewed (does not perform the attempted action) |
@@ -262,28 +262,27 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
-| POL-P-4 Feed composition | 1 recommended post per 4 following posts. Only recommendations if following nobody. At most 2 consecutive posts from the same author. Job ads: 1 per 10 posts (POL-H-9) |
-| POL-P-4 Recommendation pool | Posts from the last 7 days with many likes/comments, posts by mutual follows of mutual follows (2nd-degree). Exclude already seen, own posts, blocked users' posts, hidden posts |
+| POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so their "팔로잉" is always empty. The "제안 받는 개발자만" toggle is on "추천" only |
+| POL-P-4 "추천" by role | **Developers and operators**: posts that share a tag with my tech stack, or whose author picked one of my job categories of interest (POL-H-8), come first, ordered by popularity score; after them, every other post in random order. Job ads 1 per 10 posts (POL-H-9). **Guests and recruiters**: every post in random order, no "why shown", no job ads |
+| POL-P-4 "추천" rules | Exclude my own posts, posts by users in a block relation (either direction) and hidden posts. For developers and operators, posts already seen on an earlier visit go to the very end. The random order is fixed for one visit, so infinite scroll never repeats or skips a post; posts written during the visit appear on the next visit, and coming back or refreshing reshuffles. At most 2 consecutive posts from the same author |
 | POL-P-5 Likes | Once per post, can undo. List of who liked is public |
 | POL-P-5 Comments | ≤ 500 chars, one level of replies. Author can edit/delete; post owner can delete only. Deleting a comment with replies shows "삭제된 댓글입니다" (deleted comment) |
 | POL-P-5 Follow | Follow immediately without approval. 200/day limit (anti-abuse). Mutual follow = following each other |
 | POL-P-7 Share button | Posts, recruit posts and profiles have a share button. It opens a bottom sheet with only two options: "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). Guests can only copy the link; "Share to chat room" shows the login prompt |
 | POL-P-7 Copy link | Copies the page's public URL and shows a "링크를 복사했어요" (link copied) toast. A share marker (`?from=share`) is appended so the visit counts as traffic source "external link" |
 | POL-P-7 Share to chat room | Pick one room from my chat room list (most recent first, search by name); it is sent immediately as a card message with no extra confirmation, and a "○○에 공유했어요 · 채팅방으로 가기" (shared to ○○ · go to chat room) toast appears. The list contains only team chat rooms I belong to and 1:1 rooms whose conversation is open (excludes pending requests, request box, blocked partners, read-only or archived teams) |
-| POL-P-7 Share card | Post: cover photo, repo name, one-line intro, author. Recruit post: title, remaining roles, closing date. Profile: name, handle, tech stack. The card doesn't copy content at send time; it reads the latest state when shown. If the original was deleted or hidden, or the viewer blocked the author, it shows "볼 수 없는 게시물이에요" (this post is unavailable) |
 | POL-P-7 Feed share drawer | Only on the 24 feed card: its paper-plane icon opens the "공유하기" (Share) drawer directly instead of the two-option sheet. It is a centered card (at most 600px tall; past that only the room list scrolls, with no visible scrollbar) with a × close, a "검색어를 입력해 주세요" room search (partial name, same rules as above), one list of my chat rooms most recent first, and a "링크 복사하기" (Copy link) button at the bottom. Each row shows the photo (team photo / the other person's photo) and name, with a blue "팀" (team) after team room names, and its own "공유하기" (Share) button that sends the card to that room at once, closes the drawer and shows the same toast as above. "링크 복사하기" works like Copy link above and closes the drawer. No tabs, no radio, no default selection; recruiters see only their 1:1 rooms. Same room list rules as above. Guests get the login prompt. Other share buttons (23, 21, 04) keep the two-option sheet above |
+| POL-P-7 Share card | Post: cover photo, repo name, one-line intro, author. Recruit post: title, remaining roles, closing date. Profile: name, handle, tech stack. The card doesn't copy content at send time; it reads the latest state when shown. If the original was deleted or hidden, or the viewer blocked the author, it shows "볼 수 없는 게시물이에요" (this post is unavailable) |
 | Blocking | Follows ch. 9 "Blocking" |
 
 ### "Why shown" copy
 
-If a post has several reasons, show only the highest one.
+Only matched "추천" posts of developers and operators have a reason; random posts, guests, recruiters and "팔로잉" show none. If a post has several reasons, show only the highest one.
 
 | Priority | Condition | Copy |
 | --- | --- | --- |
-| 1 | Someone I follow liked it | OO님이 좋아해요 (OO likes this) |
-| 2 | Written by a 2nd-degree connection | OO님과 아는 사이 (knows OO) |
-| 3 | Overlaps my tech stack tags | React를 쓰는 사람들의 인기 글 (popular among React users) |
-| 4 | Top likes/comments in the last 7 days | 이번 주 인기 (popular this week) |
+| 1 | Shares a tag with my tech stack (the first in my stack order) | React를 쓰는 사람들의 인기 글 (popular among React users) |
+| 2 | The author picked one of my job categories of interest | 프론트엔드 직군의 인기 글 (popular in Frontend) |
 
 Popularity score = likes × 1 + comments × 2 (excluding the author's own), decaying with post age. Likes from accounts less than 7 days old don't count (prevents like-for-like manipulation).
 
@@ -295,7 +294,7 @@ Popularity score = likes × 1 + comments × 2 (excluding the author's own), deca
 - **Several teammates post the same repo** → each can post; the detail page groups "이 레포의 다른 게시물" (other posts for this repo).
 - **Only some photos upload** → show retry on failed photos; publishing allowed only after all upload.
 - **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked.
-- **Empty feed** (right after sign-up) → recommend 5 developers by my tech stack plus popular posts.
+- **Empty "추천"** (no visible posts at all) → the empty feed copy plus 5 developers by my tech stack. A developer with no matching posts still sees every post in random order, so "추천" is never empty while posts exist.
 - **Someone I follow is suspended or deletes their account** → keep the follow, remove their posts from the feed. If deleted, the follow is removed too.
 
 ## 5. Find Team

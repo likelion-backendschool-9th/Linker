@@ -112,7 +112,7 @@ Read each item as "The user can …". It is done only when all completion condit
 | P-1 | Write a post by choosing my repo | Repo card (name, language, stars, URL) automatic; body pre-filled with repo description | PP-3 | 1 | P0 |
 | P-2 | Body, photos, tags, optional fields | Required: repo and one-line intro. Optional: my role, problem & solution, demo links, period, team size. Multiple photos, first is cover (repo card if none). Auto-shows my commit count in the repo and issues handled in Linker | PP-3 | 1 | P0 |
 | P-3 | View README | Toggle-expand on detail; wide tables/code scroll horizontally | PP-3 | 1 | P1 |
-| P-4 | Home feed (following + recommended) | Mix recommended posts (popular in last 7 days, 2nd-degree, same stack) between following posts with a "why shown" line; infinite scroll | PP-3 | 1 | P0 |
+| P-4 | Home feed (recommended + following tabs) | "추천" tab: logged-in developers see posts matching their tech stack and job categories of interest first with a "why shown" line, then the rest; guests and recruiters see posts in random order. "팔로잉" tab: posts by people I follow, newest first; infinite scroll | PP-3 | 1 | P0 |
 | P-5 | Likes, comments, follows | One level of replies; notify the author | PP-3 | 1 | P0 |
 | P-6 | Explore | Browse posts and people by tech stack, popularity, newness | PP-3 | 2 | P2 |
 | P-7 | Post sharing | The share button opens a bottom sheet with exactly two options: "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). "Share to chat room" lists my chat rooms (team chat rooms and open 1:1 rooms); picking one sends a post card. Recruit posts and profiles use the same button | PP-3 | 1 | P1 |
