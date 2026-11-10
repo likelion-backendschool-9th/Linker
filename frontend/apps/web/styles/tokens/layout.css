@@ -132,6 +132,12 @@
   --size-workspace-skeleton-issue-title-w: 158px; /* 07 skeleton issue heading (Figma 1029:1477) */
   --size-workspace-skeleton-issue-title-h: 17px;
   --size-workspace-skeleton-issue-row-h: 38px; /* 07 skeleton issue row (Figma 982:740) */
+  --size-team-settings-skeleton-count-w: 37px; /* 09 skeleton member count (Figma 982:861) */
+  --size-team-settings-skeleton-count-h: 18px;
+  --size-team-settings-skeleton-avatar: 40px; /* 09 skeleton member avatar (Figma 982:859) */
+  --size-team-settings-skeleton-role-w: 57px; /* 09 skeleton role (Figma 982:856) */
+  --size-team-settings-skeleton-name-w: 137px; /* 09 skeleton name (Figma 982:857) */
+  --size-team-settings-skeleton-line-h: 18px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
