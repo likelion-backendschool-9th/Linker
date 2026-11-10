@@ -350,10 +350,6 @@ public class RecruitmentService {
 		if (request == null || request.roleId() == null) {
 			throw new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요");
 		}
-		String message = request.message() == null ? "" : request.message().trim();
-		if (message.length() > PlanLimits.APPLICATION_MESSAGE_MAX) {
-			throw new ApiException(400, "TOO_LONG", "300자까지 쓸 수 있어요");
-		}
 		RecruitRole role = post.getRoles().stream()
 				.filter(item -> item.getId().equals(request.roleId()))
 				.findFirst()
@@ -375,11 +371,12 @@ public class RecruitmentService {
 		User applicant = users.findById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
 		Instant now = clock.instant();
+		// POL-R-3: no free-text "하고 싶은 말"; author reviews the public profile instead.
 		Application application = Application.pending(
 				post,
 				role,
 				applicant,
-				message,
+				"",
 				maxAttempt + 1,
 				now.plusSeconds(PlanLimits.APPLICATION_EXPIRE_DAYS * 24L * 3600L)
 		);
@@ -431,7 +428,6 @@ public class RecruitmentService {
 		return new ApplicationSheetResponse(
 				application.getId(),
 				application.getStatus().name(),
-				application.getMessage(),
 				application.getCreatedAt().toString(),
 				cards.toAuthor(application.getApplicant()),
 				List.of(),

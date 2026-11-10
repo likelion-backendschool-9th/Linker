@@ -68,19 +68,6 @@ export type ApplicantRow = {
   daysLeft: number;
 };
 
-export type ApplicationDetail = {
-  id: number;
-  status: ApplicationStatus;
-  message: string;
-  appliedAt: string;
-  applicant: RecruitSummary['author'];
-  /** Attached automatically (POL-R-3) */
-  techStack: string[];
-  completion: { projectCount: number; issueCompletionRate: number };
-  contributions: { date: string; count: number }[];
-  posts: { id: number; intro: string; repoFullName: string }[];
-};
-
 export type AcceptResult = { teamId: number; chatRoomId: number; needsGithubInvite: boolean };
 
 const recruitPath = (recruitId: string) => `/api/v1/user/recruits/${encodeURIComponent(recruitId)}`;
@@ -91,8 +78,6 @@ export const detailKeys = {
     ['recruits', login, 'detail', recruitId] as const,
   applicants: (login: string | null, recruitId: string) =>
     ['recruits', login, 'detail', recruitId, 'applicants'] as const,
-  application: (login: string | null, recruitId: string, applicationId: string) =>
-    ['recruits', login, 'detail', recruitId, 'application', applicationId] as const,
 };
 
 /** Public: guests read it too; with a cookie it adds my application and author flags */
@@ -115,24 +100,13 @@ export function applicantsOptions(login: string | null, recruitId: string) {
   });
 }
 
-export function applicationOptions(login: string | null, recruitId: string, applicationId: string) {
-  return queryOptions({
-    queryKey: detailKeys.application(login, recruitId, applicationId),
-    queryFn: ({ signal }) =>
-      apiFetch<ApplicationDetail>(
-        `${recruitPath(recruitId)}/applications/${encodeURIComponent(applicationId)}`,
-        { signal },
-      ),
-  });
-}
-
 const json = (body: unknown) => ({
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 });
 
-/** One role + message (300 chars), 20/day, one re-apply after cancelling (POL-R-3) */
-export function applyToRecruit(recruitId: string, body: { roleId: number; message: string }) {
+/** One role, 20/day, one re-apply after cancelling. No free-text message (POL-R-3). */
+export function applyToRecruit(recruitId: string, body: { roleId: number }) {
   return apiFetch<{ id: number; status: ApplicationStatus }>(
     `${recruitPath(recruitId)}/applications`,
     { method: 'POST', ...json(body) },

@@ -394,7 +394,7 @@ class RecruitmentServiceTest {
 			return application;
 		});
 
-		var response = service.apply(developer, 8L, new ApplyRecruitRequest(5L, "참여하고 싶어요"));
+		var response = service.apply(developer, 8L, new ApplyRecruitRequest(5L));
 
 		assertThat(response.id()).isEqualTo(70L);
 		assertThat(response.status()).isEqualTo("PENDING");
@@ -405,7 +405,7 @@ class RecruitmentServiceTest {
 	void applyRejectsOwnPost() {
 		when(posts.findDetailedById(3L)).thenReturn(Optional.of(ownedPost()));
 
-		assertThatThrownBy(() -> service.apply(developer, 3L, new ApplyRecruitRequest(5L, "hi")))
+		assertThatThrownBy(() -> service.apply(developer, 3L, new ApplyRecruitRequest(5L)))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("FORBIDDEN"));
 	}
@@ -416,7 +416,7 @@ class RecruitmentServiceTest {
 		post.close(NOW);
 		when(posts.findDetailedById(8L)).thenReturn(Optional.of(post));
 
-		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L, "hi")))
+		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L)))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("RECRUIT_CLOSED"));
 	}
@@ -526,7 +526,7 @@ class RecruitmentServiceTest {
 		assertThat(application.getRejectReason()).isEqualTo("내부 메모");
 		var sheet = service.applicationSheet(developer, 3L, 7L);
 		assertThat(sheet.status()).isEqualTo("REJECTED");
-		assertThat(sheet.message()).isEqualTo("hello");
+		assertThat(sheet.applicant().id()).isEqualTo(20L);
 		ArgumentCaptor<CreateNotificationCommand> captor =
 				ArgumentCaptor.forClass(CreateNotificationCommand.class);
 		verify(notifications).create(captor.capture());
