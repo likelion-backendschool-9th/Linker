@@ -288,6 +288,39 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void updateRejectsWhenAuthorNoLongerManagesTheLinkedTeam() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(7L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(7L, 10L))
+				.thenReturn(Optional.of(TeamMember.member(7L, 10L, NOW)));
+
+		assertThatThrownBy(() -> service.update(developer, 3L, writeRequest(5L)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getStatus()).isEqualTo(403);
+					assertThat(api.getCode()).isEqualTo("TEAM_ROLE_REQUIRED");
+					assertThat(api.getMessage()).isEqualTo("글을 수정할 권한이 없습니다.");
+				});
+		assertThat(post.getTitle()).isEqualTo("title");
+	}
+
+	@Test
+	void updateAllowsTheOwnerOfTheLinkedTeam() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(7L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(7L, 10L))
+				.thenReturn(Optional.of(TeamMember.owner(7L, 10L, NOW)));
+		when(applications.findLockedRoleIds(3L, ApplicationStatus.CANCELED)).thenReturn(List.of());
+
+		service.update(developer, 3L, writeRequest(5L));
+
+		assertThat(post.getTitle()).isEqualTo("함께 만들어요");
+	}
+
+	@Test
 	void createRejectsOfflineWithoutRegion() {
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
 		RecruitWriteRequest request = new RecruitWriteRequest(

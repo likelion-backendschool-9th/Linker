@@ -255,6 +255,7 @@ public class RecruitmentService {
 	@Transactional
 	public RecruitIdResponse update(AuthenticatedUser user, long recruitId, RecruitWriteRequest request) {
 		RecruitPost post = requireOwnedPost(user.userId(), recruitId);
+		requireLinkedTeamManager(user.userId(), post.getTeamId());
 		post.getTags().size();
 		ValidatedWrite validated = validateWrite(request);
 		requireLinkableTeam(user.userId(), validated.teamId(), post.getTeamId());
@@ -694,8 +695,26 @@ public class RecruitmentService {
 	}
 
 	/**
+	 * POL-R-1: editing needs the author to still own or admin the linked team (invites on 21 add
+	 * people to it). A post saved before a team became required has none and skips this.
+	 */
+	private void requireLinkedTeamManager(long userId, Long teamId) {
+		if (teamId == null) {
+			return;
+		}
+		boolean manager = teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId)
+				.map(TeamMember::getRole)
+				.filter(role -> role == TeamRole.OWNER || role == TeamRole.ADMIN)
+				.isPresent();
+		if (!manager) {
+			throw new ApiException(403, "TEAM_ROLE_REQUIRED", "글을 수정할 권한이 없습니다.");
+		}
+	}
+
+	/**
 	 * POL-R-1: every post links a team the author owns or admins, since invites on 21 add people
-	 * to it. On edit the team already linked may stay even if the author has since lost the role.
+	 * to it. On edit the team already linked may stay ({@link #requireLinkedTeamManager} already
+	 * checked the author still owns or admins it).
 	 */
 	private void requireLinkableTeam(long userId, Long teamId, Long currentTeamId) {
 		if (teamId == null) {

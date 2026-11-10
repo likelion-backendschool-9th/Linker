@@ -52,6 +52,12 @@ export const DAILY_LIMIT_MESSAGE = `하루 모집글의 최대 한도는 ${RECRU
 
 const isDailyLimit = (error: unknown) => error instanceof ApiError && error.code === 'RATE_LIMITED';
 
+/** POL-R-1: editing needs the author to still own or admin the linked team (server 403 TEAM_ROLE_REQUIRED) */
+export const NO_EDIT_PERMISSION_MESSAGE = '글을 수정할 권한이 없습니다.';
+
+const lostTeamRole = (error: unknown) =>
+  error instanceof ApiError && error.code === 'TEAM_ROLE_REQUIRED';
+
 /** Why saving failed; the content is kept on the device first */
 function saveErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status < 500) {
@@ -189,6 +195,11 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
       // Resending today would hit the same limit, so no "다시 보내기"
       if (creating && isDailyLimit(error)) {
         showError(DAILY_LIMIT_MESSAGE);
+        return;
+      }
+      // Resending won't help until the author owns or admins the team again
+      if (!creating && lostTeamRole(error)) {
+        showError(NO_EDIT_PERMISSION_MESSAGE);
         return;
       }
       showError(saveErrorMessage(error), { label: '다시 보내기', onClick: () => void submit() });

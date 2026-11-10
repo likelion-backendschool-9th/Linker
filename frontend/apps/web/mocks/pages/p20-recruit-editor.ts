@@ -128,7 +128,13 @@ export const routes: MockRoute[] = [
     };
   }),
   put('/api/v1/user/recruits/:recruitId', ({ params, body }) => {
-    applyForm(ownRecruit(params.recruitId!), body);
+    const item = ownRecruit(params.recruitId!);
+    // Editing needs the author to still own or admin the linked team (POL-R-1)
+    const team = TEAMS.find((t) => t.id === item.teamId);
+    if (team && team.myRole === 'MEMBER') {
+      fail(403, 'TEAM_ROLE_REQUIRED', '글을 수정할 권한이 없습니다.');
+    }
+    applyForm(item, body);
     return { id: Number(params.recruitId) };
   }),
   post('/api/v1/user/recruits/:recruitId/close', ({ params }) => {
