@@ -91,7 +91,7 @@ export function useTeamSettingsActionSheet({
     member &&
     member.role !== 'OWNER' &&
     team.permissions.manageMembers &&
-    (team.myRole === 'OWNER' || member.role === 'MEMBER');
+    (team.myRole === 'OWNER' || team.permissions.changeRoles || member.role === 'MEMBER');
   const p = team.permissions;
   const allowed: Record<string, boolean> = {
     info: p.editInfo,
@@ -245,7 +245,7 @@ export function useTeamSettingsActionSheet({
     !denied &&
     !mutation.isPending &&
     (!['invite', 'github'].includes(kind) || !!handle.trim().replace(/^@/, '')) &&
-    (kind !== 'revoke' || !!target && /^\d+$/.test(target)) &&
+    (kind !== 'revoke' || (!!target && /^\d+$/.test(target))) &&
     (kind !== 'delete' || confirmName === team.name) &&
     (kind !== 'info' || !!name.trim()) &&
     (kind !== 'repos' || repoCandidates.isSuccess);

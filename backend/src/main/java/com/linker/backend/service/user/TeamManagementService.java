@@ -183,7 +183,8 @@ public class TeamManagementService {
     TeamMember actor = member(teamId, principal.userId());
     TeamMember target = member(teamId, targetId);
     if (targetId == principal.userId() || target.getRole() == TeamRole.OWNER
-        || (actor.getRole() == TeamRole.ADMIN && target.getRole() != TeamRole.MEMBER))
+        || (actor.getRole() == TeamRole.ADMIN && !ownerAuthority(actor.getRole(), teamId)
+            && target.getRole() != TeamRole.MEMBER))
       throw new ApiException(403, "TEAM_ROLE_REQUIRED", "팀원을 내보낼 권한이 없어요");
     close(teamId, target, TeamLeaveType.KICKED);
     Set<Long> recipients = new HashSet<>(teams.currentOwnerIds(teamId, false));

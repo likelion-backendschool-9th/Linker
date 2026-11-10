@@ -115,3 +115,46 @@ test('09 copies a newly created invite link and submits the final invitation she
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
 });
+
+test('09 deletes only after exact name confirmation and returns to workspace', async ({
+  page,
+}, info) => {
+  await page.goto('/teams/1/settings');
+  await page.getByRole('button', { name: '팀 삭제', exact: true }).click();
+  const dialog = page.getByRole('alertdialog', { name: '팀 삭제' });
+  const confirm = dialog.getByRole('button', { name: '삭제하기', exact: true });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel('확인을 위해 팀 이름을 입력해 주세요').fill('Linker 해커톤팀');
+  await expect(confirm).toBeEnabled();
+  await page.screenshot({
+    path: info.outputPath('p09-delete-qa.png'),
+    animations: 'disabled',
+    fullPage: false,
+    scale: 'css',
+    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+  });
+  await confirm.click();
+  await expect(page).toHaveURL('/workspace');
+  await expect(dialog).toBeHidden();
+});
+
+test('09 member leave confirmation calls the existing flow and returns to workspace', async ({
+  page,
+}, info) => {
+  await page.goto('/teams/2/settings');
+  await page.getByRole('button', { name: '팀 나가기', exact: true }).click();
+  const dialog = page.getByRole('alertdialog', { name: '팀 나가기' });
+  await expect(
+    dialog.getByText('팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?'),
+  ).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath('p09-leave-qa.png'),
+      animations: 'disabled',
+    fullPage: false,
+    scale: 'css',
+    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+  });
+  await dialog.getByRole('button', { name: '팀 나가기', exact: true }).click();
+  await expect(page).toHaveURL('/workspace');
+  await expect(dialog).toBeHidden();
+});
