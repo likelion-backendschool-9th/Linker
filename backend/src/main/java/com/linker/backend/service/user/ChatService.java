@@ -51,6 +51,7 @@ import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
 import com.linker.backend.dto.chat.response.ChatRoomTeamResponse;
 import com.linker.backend.dto.chat.response.ChatShareTargetsResponse;
 import com.linker.backend.dto.chat.response.ChatShareCardResponse;
+import com.linker.backend.dto.chat.response.ChatSearchResponse;
 import com.linker.backend.dto.chat.response.UnreadMembersResponse;
 import com.linker.backend.dto.chat.response.UnreadSummaryResponse;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
@@ -87,6 +88,7 @@ import com.linker.backend.repository.chat.ChatMessageRepository;
 import com.linker.backend.repository.chat.ChatRoomMemberRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.profile.FollowRepository;
+import com.linker.backend.repository.subscription.SubscriptionRepository;
 import com.linker.backend.repository.team.TeamMemberRepository;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 
@@ -148,6 +150,7 @@ public class ChatService {
 	private final FollowRepository follows;
 	private final TeamMemberRepository teamMembers;
 	private final AiChatSummaryRepository aiSummaries;
+	private final SubscriptionRepository subscriptions;
 	private final Set<String> linkerOrigins;
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final Pattern LINK_URL = Pattern.compile("https?://[^\\s<>\"']+", Pattern.CASE_INSENSITIVE);
@@ -172,6 +175,7 @@ public class ChatService {
 			FollowRepository follows,
 			TeamMemberRepository teamMembers,
 			AiChatSummaryRepository aiSummaries,
+			SubscriptionRepository subscriptions,
 			@Value("${linker.chat.public-origins:http://localhost:3000}") String publicOrigins
 	) {
 		this.chatRooms = chatRooms;
@@ -192,6 +196,7 @@ public class ChatService {
 		this.follows = follows;
 		this.teamMembers = teamMembers;
 		this.aiSummaries = aiSummaries;
+		this.subscriptions = subscriptions;
 		this.linkerOrigins = Arrays.stream(publicOrigins.split(",")).map(String::strip).filter(s -> !s.isEmpty())
 				.map(s -> origin(URI.create(s))).filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
 	}
@@ -638,6 +643,26 @@ public class ChatService {
 				nextAfter,
 				team ? new ChatHistoryLimitResponse(FREE_HISTORY, false) : null
 		);
+	}
+
+	@Transactional(readOnly = true)
+	public ChatSearchResponse search(AuthenticatedUser user, long roomId, String rawKeyword) {
+		String keyword = rawKeyword == null ? "" : rawKeyword.strip();
+		if (keyword.isEmpty()) {
+			throw new ApiException(400, "VALIDATION_ERROR", "검색어를 입력해 주세요");
+		}
+		ChatRoomMember member = members.findActive(roomId, user.userId())
+				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		if (member.getRoom().getRoomType() != RoomType.TEAM) {
+			throw new ApiException(403, "FORBIDDEN", "팀 채팅에서만 검색할 수 있어요");
+		}
+		Long teamId = member.getRoom().getTeamId();
+		boolean flex = teamId != null && subscriptions.hasFlexChatHistoryBenefit(teamId,
+				clock.instant().minus(Duration.ofDays(PlanLimits.FLEX_CHAT_HISTORY_GRACE_DAYS)));
+		Instant start = flex ? null : historyStart(true);
+		List<ChatMessageRow> rows = messages.search(roomId, start, keyword);
+		return new ChatSearchResponse(toMessages(user.userId(), rows),
+				flex ? null : new ChatHistoryLimitResponse(FREE_HISTORY, false));
 	}
 
 	@Transactional(readOnly = true)

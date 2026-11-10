@@ -95,6 +95,31 @@ class ChatMessageRepositoryImpl implements ChatMessageRepositoryCustom {
 	}
 
 	@Override
+	public List<ChatMessageRow> search(long roomId, Instant historyStart, String keyword) {
+		StringBuilder where = new StringBuilder("""
+				where m.room.id = :room
+				  and m.messageType = com.linker.backend.entity.chat.type.MessageType.TEXT
+				  and m.visibility = com.linker.backend.entity.chat.type.MessageVisibility.VISIBLE
+				  and m.deletedAt is null
+				  and lower(m.body) like :keyword escape '\\'
+				""");
+		if (historyStart != null) {
+			where.append("and m.createdAt >= :historyStart\n");
+		}
+		TypedQuery<Object[]> query = em.createQuery(SELECT + where + " order by m.id desc", Object[].class)
+				.setParameter("room", roomId)
+				.setParameter("keyword", "%" + escapeLike(keyword.toLowerCase(java.util.Locale.ROOT)) + "%");
+		if (historyStart != null) {
+			query.setParameter("historyStart", historyStart);
+		}
+		return query.getResultList().stream().map(ChatMessageRepositoryImpl::map).toList();
+	}
+
+	private static String escapeLike(String value) {
+		return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+	}
+
+	@Override
 	public Map<Long, List<String>> imageUrls(Collection<Long> messageIds) {
 		if (messageIds == null || messageIds.isEmpty()) {
 			return Map.of();

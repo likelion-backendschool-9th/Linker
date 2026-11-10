@@ -25,7 +25,24 @@ type Props = {
   onUnread?: (id: number) => void;
   onPhoto?: (id: number, index: number) => void;
   onMenu?: (id: number) => void;
+  /** Search keyword to mark inside the text (only passed to the selected search result) */
+  highlight?: string;
 };
+
+/** Wraps case-insensitive keyword matches in <mark>, like the server's lower(body) LIKE match. */
+function highlightText(text: string, keyword?: string) {
+  if (!keyword) return text;
+  const pattern = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.split(pattern).map((part, index) =>
+    index % 2 ? (
+      <mark key={index} className={styles.searchMark}>
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
 
 function SenderAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
   const initial = name.trim().slice(0, 1) || '?';
@@ -48,6 +65,7 @@ export function ChatMessage({
   onUnread,
   onMenu,
   onPhoto,
+  highlight,
 }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
   const payload = messagePayload(message.payload);
@@ -79,7 +97,7 @@ export function ChatMessage({
         <p>운영 정책에 따라 숨겨진 메시지예요</p>
       ) : (
         <>
-          {message.text && <p className={styles.text}>{message.text}</p>}
+          {message.text && <p className={styles.text}>{highlightText(message.text, highlight)}</p>}
           {!!message.imageUrls.length && (
             <div className={styles.images}>
               {message.imageUrls.map((url, index) => (

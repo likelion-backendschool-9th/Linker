@@ -507,8 +507,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
-- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
-- [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
+- [x] Header search icon opens the in-room search bar. The "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) remains visible before its feature exists and says "미구현 기능입니다." when tapped (user decision 2026-11-09)
+- [x] `[Included]` Team chat search: partial keyword match; keep the conversation visible and start at the newest result, with previous (older) / next (newer) navigation and the selected message highlighted. Free teams search the last 60 days; Flex searches full history, including the 30-day grace after Flex ends; deleted/hidden messages are excluded (user decision 2026-11-10). Free-team scroll-back beyond 60 days and its Flex prompt remain separate work.
 
 **AI chat summary (Flex, after 28)** — D (taken over from C on 2026-11-10); Policy POL-C-5
 

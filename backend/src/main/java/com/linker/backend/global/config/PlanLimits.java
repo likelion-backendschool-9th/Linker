@@ -74,6 +74,7 @@ public final class PlanLimits {
 	public static final int TEAM_MEMBERS_FREE = 6;
 	/** Policy ch. 6 — deleted teams keep chat for this many days before removal. */
 	public static final int TEAM_DELETED_CHAT_RETENTION_DAYS = 30;
+	public static final int FLEX_CHAT_HISTORY_GRACE_DAYS = 30;
 	/** POL-P-2 / ch. 2 — project post writes and photo caps. */
 	public static final int POSTS_PER_DAY = 10;
 	public static final int POSTS_PER_DAY_WINDOW_SECONDS = 86_400;

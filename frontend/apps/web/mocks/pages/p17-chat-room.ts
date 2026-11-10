@@ -322,13 +322,27 @@ export const routes: MockRoute[] = [
     };
   }),
   get('/api/v1/user/chat-rooms/:roomId/search', ({ params, query }) => {
+    const room = roomOr404(params.roomId);
+    if (!room.teamId) fail(403, 'FORBIDDEN', '팀 채팅에서만 검색할 수 있어요');
     const q = (query.get('q') ?? '').trim();
+    if (!q) fail(400, 'VALIDATION_ERROR', '검색어를 입력해 주세요');
+    const team = findTeam(room.teamId);
+    const cutoff =
+      team?.plan === 'FREE'
+        ? Date.now() - PLAN_LIMITS.teamChatHistoryDays.free * 24 * 60 * 60 * 1000
+        : null;
     return {
-      items: q
-        ? MESSAGES.filter(
-            (m) => m.roomId === Number(params.roomId) && !m.deletedAt && m.text?.includes(q),
-          )
-        : [],
+      items: MESSAGES.filter(
+        (m) =>
+          m.roomId === room.id &&
+          !m.deletedAt &&
+          m.type === 'TEXT' &&
+          m.text?.toLocaleLowerCase().includes(q.toLocaleLowerCase()) &&
+          (cutoff === null || new Date(m.createdAt).getTime() >= cutoff),
+      )
+        .sort((a, b) => b.id - a.id)
+        .map(withReadState),
+      history: team?.plan === 'FREE' ? { applied: 'FREE_60_DAYS', flexSupported: false } : null,
     };
   }),
   // Rooms I can share to: team rooms + open 1:1 rooms (04 POL-P-7)
