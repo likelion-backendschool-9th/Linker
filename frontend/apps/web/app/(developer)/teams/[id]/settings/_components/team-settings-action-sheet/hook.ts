@@ -12,6 +12,7 @@ import {
   deleteTeam,
   leaveTeam,
   archiveTeam,
+  revokeTeamInviteLink,
   removeTeamMember,
   changeTeamMemberRole,
   removeTeamRepository,
@@ -134,6 +135,7 @@ export function useTeamSettingsActionSheet({
     'delete',
     'repos',
     'remove-repo',
+    'revoke',
   ].includes(kind);
   const connected = team.repos.map((repo) => repo.githubRepoId ?? repo.id);
   const selection = selectedRepos ?? connected;
@@ -159,6 +161,10 @@ export function useTeamSettingsActionSheet({
       if (kind === 'delete') return deleteTeam(team.id, { confirmName });
       if (kind === 'leave') return leaveTeam(team.id);
       if (kind === 'archive') return archiveTeam(team.id);
+      if (kind === 'revoke') {
+        if (!target || !/^\d+$/.test(target)) throw new Error('초대 링크를 확인해 주세요.');
+        return revokeTeamInviteLink(team.id, Number(target));
+      }
       if (kind === 'remove') return removeTeamMember(team.id, Number(target));
       if (kind === 'role' && member) {
         const role = roleDrafts[target!] ?? member.role;
@@ -198,6 +204,12 @@ export function useTeamSettingsActionSheet({
               ? 'GitHub 조직 초대가 이미 진행 중이에요.'
               : 'GitHub 조직 초대를 보냈어요.',
         );
+      if (requestId.split(':')[0] === 'revoke') {
+        client.removeQueries({
+          queryKey: ['team-settings', String(team.id), 'created-invite'],
+        });
+        toast('초대 링크를 폐기했어요.');
+      }
       setInviteHandle(null);
       setSelectedRepos(null);
       setConfirmName('');
@@ -233,6 +245,7 @@ export function useTeamSettingsActionSheet({
     !denied &&
     !mutation.isPending &&
     (!['invite', 'github'].includes(kind) || !!handle.trim().replace(/^@/, '')) &&
+    (kind !== 'revoke' || !!target && /^\d+$/.test(target)) &&
     (kind !== 'delete' || confirmName === team.name) &&
     (kind !== 'info' || !!name.trim()) &&
     (kind !== 'repos' || repoCandidates.isSuccess);

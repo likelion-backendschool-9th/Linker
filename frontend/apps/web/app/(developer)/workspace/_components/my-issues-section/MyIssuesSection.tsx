@@ -56,15 +56,17 @@ export function MyIssuesSection({ previewRows, allIssuesHref }: MyIssuesSectionP
           <h2 id={titleId} className={styles.title}>
             내 {team.name} 팀의 이슈
           </h2>
-          <Link href={`/teams/${team.id}/issues/new` as Route} className={styles.create}>
-            {/* Figma solar:add-bold (package SVG string) */}
-            <span
-              aria-hidden
-              className={styles.createIcon}
-              dangerouslySetInnerHTML={{ __html: AddBoldIcon }}
-            />
-            <span className="sr-only">이슈 작성</span>
-          </Link>
+          {['ACTIVE', 'COMPLETED'].includes(team.status) && (
+            <Link href={`/teams/${team.id}/issues/new` as Route} className={styles.create}>
+              {/* Figma solar:add-bold (package SVG string) */}
+              <span
+                aria-hidden
+                className={styles.createIcon}
+                dangerouslySetInnerHTML={{ __html: AddBoldIcon }}
+              />
+              <span className="sr-only">이슈 작성</span>
+            </Link>
+          )}
         </div>
         {issues.isPending ? (
           <Skeleton count={3} />

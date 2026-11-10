@@ -263,13 +263,49 @@ it('creates a link then notifies the typed Linker developer with that same code'
 it('uses the current member ID for GitHub invitations even when GitHub login differs from Linker handle', async () => {
   vi.mocked(apiFetch).mockResolvedValue({ sent: true, status: 'PENDING' });
   renderSheet({ ...team, myRole: 'OWNER', githubOrgOwner: true }, 'github', [
-    { ...member, githubLogin: 'actual-github-login', inGithubOrg: false },
+    {
+      ...member,
+      githubLogin: 'actual-github-login',
+      inGithubOrg: false,
+      githubOrgStatus: 'NOT_MEMBER',
+    },
   ]);
+  expect(
+    screen.getByText('Github 조직 초대는 조직으로 사용자 초대를 보낼 수 있습니다'),
+  ).toBeVisible();
+  expect(
+    screen.queryByText('팀 초대는 Linker 가입자를 팀으로 초대 합니다'),
+  ).not.toBeInTheDocument();
   await userEvent.type(screen.getByLabelText('GitHub 로그인'), 'actual-github-login');
   await userEvent.click(screen.getByRole('button', { name: '초대' }));
   expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/teams/1/members/2/github-invitation', {
     method: 'POST',
   });
+});
+
+it('revokes an invite link through the existing confirmation sheet', async () => {
+  vi.mocked(apiFetch).mockResolvedValue(undefined);
+  renderSheet(
+    { ...team, myRole: 'OWNER', status: 'ACTIVE', permissions: { ...team.permissions, createInviteLink: true } },
+    'revoke:42',
+  );
+  await userEvent.click(screen.getByRole('button', { name: '확인' }));
+  await waitFor(() =>
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/teams/1/invite-links/42', {
+      method: 'DELETE',
+    }),
+  );
+});
+
+it('shows invited GitHub org status on the member sheet', async () => {
+  renderSheet({ ...team, myRole: 'OWNER', githubOrgOwner: true, status: 'ACTIVE' }, 'member:2', [
+    { ...member, inGithubOrg: false, githubOrgStatus: 'INVITED' },
+  ]);
+  expect(
+    screen.getByText('GitHub 조직 초대가 진행 중이에요. 수락해야 이슈 담당자가 될 수 있어요.'),
+  ).toBeVisible();
+  expect(screen.getByText('GitHub 조직 초대가 이미 진행 중이에요.')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'GitHub 조직 초대' })).toBeDisabled();
 });
 
 it('retains an upstream invitation error without announcing success or closing the sheet', async () => {

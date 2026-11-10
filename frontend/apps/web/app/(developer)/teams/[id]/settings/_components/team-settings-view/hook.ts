@@ -23,9 +23,10 @@ export function useTeamSettingsView(teamId: string) {
   const members = useQuery(membersOptions(teamId));
   const viewer = useViewer();
   const canManage = settings.data?.myRole !== 'MEMBER' && !!settings.data;
+  // Invite-link list is unused until a revoke/list UI ships; keep the option for that handoff.
   const invites = useQuery({
     ...invitesOptions(teamId),
-    enabled: !!settings.data?.permissions.createInviteLink,
+    enabled: false,
   });
   const action = useOverlay('team-settings-action');
   const external = useOpenExternal();

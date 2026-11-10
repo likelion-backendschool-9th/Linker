@@ -167,7 +167,9 @@ export function TeamSettingsActionSheet({
               autoComplete="off"
               spellCheck={false}
             />
-            <p className={inviteStyles.inviteHint}>팀 초대는 Linker 가입자를 팀으로 초대 합니다</p>
+            <p className={inviteStyles.inviteHint}>
+              Github 조직 초대는 조직으로 사용자 초대를 보낼 수 있습니다
+            </p>
           </div>
           {mutation.isError && mutation.variables === overlay.id && (
             <p id={`${kind}-invite-error`} role="alert">
@@ -240,13 +242,19 @@ export function TeamSettingsActionSheet({
               </select>
             </div>
             <p className={styles.description}>
-              {member.inGithubOrg
+              {member.githubOrgStatus === 'MEMBER'
                 ? 'GitHub 조직에 참여한 멤버예요.'
-                : 'GitHub 조직 초대를 수락해야 이슈 담당자가 될 수 있어요.'}
+                : member.githubOrgStatus === 'INVITED'
+                  ? 'GitHub 조직 초대가 진행 중이에요. 수락해야 이슈 담당자가 될 수 있어요.'
+                  : 'GitHub 조직 초대를 수락해야 이슈 담당자가 될 수 있어요.'}
             </p>
             <Button
               variant="outline"
-              disabled={team.myRole !== 'OWNER' || !team.githubOrgOwner || member.inGithubOrg}
+              disabled={
+                team.myRole !== 'OWNER' ||
+                !team.githubOrgOwner ||
+                member.githubOrgStatus !== 'NOT_MEMBER'
+              }
               onClick={() => overlay.open(`github:${target}`)}
             >
               GitHub 조직 초대
@@ -254,7 +262,11 @@ export function TeamSettingsActionSheet({
             <p className={styles.description}>
               {team.githubInvitationBlockedReason ??
                 (team.githubOrgOwner
-                  ? 'GitHub 조직 초대는 아직 전송되지 않아요.'
+                  ? member.githubOrgStatus === 'INVITED'
+                    ? 'GitHub 조직 초대가 이미 진행 중이에요.'
+                    : member.githubOrgStatus === 'MEMBER'
+                      ? '이미 GitHub 조직에 참여한 멤버예요.'
+                      : 'GitHub 조직 초대는 아직 전송되지 않아요.'
                   : 'GitHub 조직 오너만 조직에 초대할 수 있어요.')}
             </p>
             {team.permissions.changeRoles && (
