@@ -48,7 +48,7 @@ export function useTeamInstall() {
       )
         return;
       toast(error instanceof ApiError ? error.message : '잠시 후 다시 시도해 주세요.', {
-        tone: 'alert',
+        tone: 'error',
       });
     },
   });

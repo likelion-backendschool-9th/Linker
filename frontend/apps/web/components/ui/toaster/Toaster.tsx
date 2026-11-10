@@ -2,11 +2,28 @@
 
 import { Toast } from 'radix-ui';
 
-import { useToastStore, type ToastItem } from '@/stores/toast-store';
+import { useToastStore, type ToastItem, type ToastTone } from '@/stores/toast-store';
 
 import styles from './Toaster.module.css';
 
-const DURATION_MS = 4000;
+/**
+ * How long each kind stays up (ms). `persistent` never times out: the caller removes it with
+ * `dismissToast(key)` once the state it reports is over. A toast with an action gets more time to tap.
+ */
+const DURATION_MS: Record<ToastTone, number> = {
+  success: 3000,
+  info: 3000,
+  error: 5000,
+  persistent: Infinity,
+};
+const ACTION_DURATION_MS = 6000;
+
+/** Dot color per kind (Figma 877:415); `info` has no dot */
+const DOT_CLASS: Partial<Record<ToastTone, string>> = {
+  success: styles.dotSuccess,
+  error: styles.dotError,
+  persistent: styles.dotPersistent,
+};
 
 /** Renders `toast()` calls. Mounted once in providers: one region per placement, since a Radix
  *  provider owns a single viewport. */
@@ -33,26 +50,33 @@ function ToastRegion({
   const dismiss = useToastStore((state) => state.dismiss);
 
   return (
-    <Toast.Provider duration={DURATION_MS} label="알림">
-      {toasts.map((item) => (
-        <Toast.Root
-          key={item.id}
-          className={styles.toast}
-          type={item.tone === 'alert' ? 'foreground' : 'background'}
-          onOpenChange={(open) => !open && dismiss(item.id)}
-        >
-          <Toast.Description className={styles.message}>{item.message}</Toast.Description>
-          {item.action && (
-            <Toast.Action
-              className={styles.action}
-              altText={item.action.label}
-              onClick={item.action.onClick}
-            >
-              {item.action.label}
-            </Toast.Action>
-          )}
-        </Toast.Root>
-      ))}
+    <Toast.Provider label="알림">
+      {toasts.map((item) => {
+        const dot = DOT_CLASS[item.tone];
+        return (
+          <Toast.Root
+            key={item.id}
+            className={styles.toast}
+            data-tone={item.tone}
+            duration={item.action ? ACTION_DURATION_MS : DURATION_MS[item.tone]}
+            // Errors are announced assertively, the rest politely (Radix foreground / background)
+            type={item.tone === 'error' ? 'foreground' : 'background'}
+            onOpenChange={(open) => !open && dismiss(item.id)}
+          >
+            {dot && <span className={`${styles.dot} ${dot}`} aria-hidden />}
+            <Toast.Description className={styles.message}>{item.message}</Toast.Description>
+            {item.action && (
+              <Toast.Action
+                className={styles.action}
+                altText={item.action.label}
+                onClick={item.action.onClick}
+              >
+                {item.action.label}
+              </Toast.Action>
+            )}
+          </Toast.Root>
+        );
+      })}
       <Toast.Viewport
         className={[styles.viewport, placement === 'top' && styles.viewportTop]
           .filter(Boolean)

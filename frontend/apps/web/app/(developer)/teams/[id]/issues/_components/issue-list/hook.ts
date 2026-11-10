@@ -150,7 +150,7 @@ export function useIssueList(teamId: string) {
       await client.invalidateQueries({ queryKey: issueKeys.team(teamId) });
     },
     onError: () =>
-      toast('프로젝트에 추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' }),
+      toast('프로젝트에 추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' }),
   });
 
   const refreshBlocked = refresh.isPending || cooldown.left !== null;
@@ -164,7 +164,7 @@ export function useIssueList(teamId: string) {
 
   function onRefreshClick() {
     if (cooldown.left !== null) {
-      toast(`${cooldown.left}초 후에 다시 새로 고칠 수 있어요.`);
+      toast(`${cooldown.left}초 후에 다시 새로 고칠 수 있어요.`, { tone: 'info' });
       return;
     }
     if (!refresh.isPending) refresh.mutate();

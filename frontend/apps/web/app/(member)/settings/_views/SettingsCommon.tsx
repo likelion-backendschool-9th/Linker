@@ -102,7 +102,7 @@ export function SettingsCommon({
       router.replace('/');
       router.refresh();
     },
-    onError: (error) => toast(errorMessage(error, '로그아웃하지 못했어요. 다시 시도해 주세요.'), { tone: 'alert' }),
+    onError: (error) => toast(errorMessage(error, '로그아웃하지 못했어요. 다시 시도해 주세요.'), { tone: 'error' }),
   });
 
   const withdrawal = useMutation({
@@ -142,7 +142,7 @@ export function SettingsCommon({
         queryClient.invalidateQueries({ queryKey: ['account-blocks'] }),
         queryClient.invalidateQueries({ queryKey: chatKeys.all }),
       ]),
-    onError: (error) => toast(errorMessage(error, '차단을 해제하지 못했어요.'), { tone: 'alert' }),
+    onError: (error) => toast(errorMessage(error, '차단을 해제하지 못했어요.'), { tone: 'error' }),
   });
 
   const blockRows = Array.isArray(blocks.data) ? blocks.data : [];

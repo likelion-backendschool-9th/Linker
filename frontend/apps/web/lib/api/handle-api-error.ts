@@ -23,7 +23,7 @@ export function handleApiError(error: unknown) {
     case 'RATE_LIMITED': {
       const seconds = Number(error.detail?.retryAfterSeconds);
       const wait = Number.isFinite(seconds) && seconds > 0 ? ` (${Math.ceil(seconds)}초 후)` : '';
-      toast(`잠시 후 다시 시도해 주세요${wait}`, { tone: 'alert' });
+      toast(`잠시 후 다시 시도해 주세요${wait}`, { tone: 'error' });
       break;
     }
     case 'SUSPENDED':
@@ -35,7 +35,7 @@ export function handleApiError(error: unknown) {
     case 'DEVELOPER_ONLY':
       // The button shouldn't exist for this role: a screen-branching bug (blueprint §4-5). Sentry later.
       console.error('DEVELOPER_ONLY reached the API', error);
-      toast(error.message, { tone: 'alert' });
+      toast(error.message, { tone: 'error' });
       break;
   }
 }

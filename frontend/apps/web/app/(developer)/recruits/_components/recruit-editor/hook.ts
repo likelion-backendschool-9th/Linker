@@ -84,7 +84,7 @@ function firstErrorMessage(errors: FieldErrors<RecruitFormValues>): string {
 const ERROR_TOAST = 'recruit-editor-error';
 
 function showError(message: string, action?: { label: string; onClick: () => void }) {
-  toast(message, { tone: 'alert', placement: 'top', key: ERROR_TOAST, action });
+  toast(message, { tone: 'error', placement: 'top', key: ERROR_TOAST, action });
 }
 
 export function useRecruitEditor(props: RecruitEditorProps) {

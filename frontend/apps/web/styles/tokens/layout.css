@@ -19,6 +19,10 @@
   --space-profile-block: 20px; /* P04 profile header-to-feed gap (Figma 301:572) */
   --space-profile-top: 15px; /* P04 header to the identity row (Figma 116:427) */
   --space-team-settings-top: 20px; /* 09 tabs to "팀원 프로필" (Figma 368:387) */
+  --control-height-toast: 33px; /* toast (Figma 877:415) */
+  --space-toast-inline: 18px; /* toast side padding (Figma 877:415) */
+  --toast-dot-size: 8px; /* toast kind dot (Figma 877:415) */
+  --radius-toast: 5px; /* toast (Figma 877:415) */
   --space-team-member-name: 3px; /* 09 member role line to the name (Figma 368:387) */
   --space-team-invite: 11px; /* 09 between invite buttons, and buttons to the hints (Figma 368:387) */
   --space-team-settings-band: 30px; /* 09 invite hints to the gray band (Figma 368:387) */
@@ -252,6 +256,7 @@
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
   /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
+  --shadow-toast: 0 4px 12px rgb(0 0 0 / 0.25); /* toast (Figma 877:415) */
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
   --shadow-profile-work-card: 0 2px 10px rgb(18 18 18 / 0.10); /* 04 work card, Figma 116:427 / 301:572 drop shadow (blur 10) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */

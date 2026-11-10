@@ -68,7 +68,7 @@ export function useShareChoice(postId: number, overlay: OverlayControl) {
         error instanceof ApiError && error.status < 500
           ? error.message
           : '공유하지 못했어요. 다시 시도해 주세요.',
-        { tone: 'alert' },
+        { tone: 'error' },
       ),
   });
 
@@ -100,7 +100,7 @@ export function useCopyPostLink(postId: number, overlay: OverlayControl) {
       );
       await overlay.closeAnd(() => toast('링크를 복사했어요'));
     } catch {
-      toast('링크를 복사하지 못했어요. 다시 시도해 주세요.', { tone: 'alert' });
+      toast('링크를 복사하지 못했어요. 다시 시도해 주세요.', { tone: 'error' });
     } finally {
       setCopying(false);
     }

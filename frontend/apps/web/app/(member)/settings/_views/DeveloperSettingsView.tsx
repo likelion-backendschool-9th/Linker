@@ -35,7 +35,7 @@ export function DeveloperSettingsView({
       jobStatusOverlay.close();
       router.refresh();
     },
-    onError: () => toast('구직 상태를 저장하지 못했어요. 다시 시도해 주세요.', { tone: 'alert' }),
+    onError: () => toast('구직 상태를 저장하지 못했어요. 다시 시도해 주세요.', { tone: 'error' }),
   });
 
   function openJobStatus() {
