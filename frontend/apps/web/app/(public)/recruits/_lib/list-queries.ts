@@ -1,3 +1,9 @@
+import {
+  cancelApplication,
+  list as listOpenRecruits,
+  myApplications,
+  myRecruits,
+} from '@linker/api/p19-recruit-list/p19-recruit-list';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import {
@@ -10,8 +16,8 @@ import {
 } from '@/features/recruit/recruit-labels';
 
 export type { RecruitFormat, RecruitRoleKey };
-import { apiFetch } from '@/lib/api/api-fetch';
 import { formatDeadlineDate, formatFullDate } from '@/lib/format/time';
+import { RECRUIT } from '@/lib/policy';
 import type { Route } from 'next';
 
 import type { RecruitCardData } from '../_components/recruit-card';
@@ -51,6 +57,14 @@ export type MyApplication = {
 
 export type CursorPage<T> = { items: T[]; nextCursor: string | null };
 
+/**
+ * The p19 OpenAPI schemas leave every field optional and enums as `string` (no required/enum
+ * metadata on the DTOs); RecruitmentController always sends the full card, so narrow here once.
+ */
+async function asCursorPage<T>(response: Promise<unknown>): Promise<CursorPage<T>> {
+  return (await response) as CursorPage<T>;
+}
+
 export const RECRUIT_LIST_TABS = ['all', 'mine', 'applied'] as const;
 export type RecruitListTab = (typeof RECRUIT_LIST_TABS)[number];
 
@@ -62,7 +76,18 @@ export const RECRUIT_SORT_LABELS: Record<RecruitSort, string> = {
   DEADLINE: '마감순',
 };
 
+/** POL-R-2: title-only search of the All tab, kept in the URL as `?q=`. */
+export const RECRUIT_SEARCH_MAX_LENGTH = RECRUIT.searchMaxLength;
+
+/** Trimmed, capped search text; blank = no search (POL-R-2). */
+export function parseRecruitSearch(value: string | string[] | null | undefined): string | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const text = typeof raw === 'string' ? raw.trim().slice(0, RECRUIT_SEARCH_MAX_LENGTH) : '';
+  return text === '' ? null : text;
+}
+
 export type RecruitListFilters = {
+  q: string | null;
   role: RecruitRoleKey | null;
   tech: string | null;
   mode: RecruitFormat | null;
@@ -80,16 +105,20 @@ export function publicRecruitsOptions(login: string | null, filters: RecruitList
   return infiniteQueryOptions({
     queryKey: recruitListKeys.all(login, filters),
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam, signal }) => {
-      const query = new URLSearchParams();
-      if (filters.role) query.set('role', filters.role);
-      if (filters.tech) query.set('tech', filters.tech);
-      if (filters.mode) query.set('mode', filters.mode);
-      if (filters.sort !== 'NEWEST') query.set('sort', filters.sort);
-      if (pageParam) query.set('cursor', pageParam);
-      const suffix = query.size ? `?${query}` : '';
-      return apiFetch<CursorPage<RecruitCard>>(`/api/v1/public/recruits${suffix}`, { signal });
-    },
+    queryFn: ({ pageParam, signal }) =>
+      asCursorPage<RecruitCard>(
+        listOpenRecruits(
+          {
+            ...(filters.q ? { q: filters.q } : {}),
+            ...(filters.role ? { role: filters.role } : {}),
+            ...(filters.tech ? { tech: filters.tech } : {}),
+            ...(filters.mode ? { mode: filters.mode } : {}),
+            ...(filters.sort !== 'NEWEST' ? { sort: filters.sort } : {}),
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+          { signal },
+        ),
+      ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 }
@@ -98,10 +127,8 @@ export function myRecruitsOptions(login: string | null) {
   return infiniteQueryOptions({
     queryKey: recruitListKeys.mine(login),
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam, signal }) => {
-      const query = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : '';
-      return apiFetch<CursorPage<RecruitCard>>(`/api/v1/user/me/recruits${query}`, { signal });
-    },
+    queryFn: ({ pageParam, signal }) =>
+      asCursorPage<RecruitCard>(myRecruits(pageParam ? { cursor: pageParam } : {}, { signal })),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 }
@@ -110,18 +137,16 @@ export function myApplicationsOptions(login: string | null) {
   return infiniteQueryOptions({
     queryKey: recruitListKeys.applied(login),
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam, signal }) => {
-      const query = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : '';
-      return apiFetch<CursorPage<MyApplication>>(`/api/v1/user/me/applications${query}`, {
-        signal,
-      });
-    },
+    queryFn: ({ pageParam, signal }) =>
+      asCursorPage<MyApplication>(
+        myApplications(pageParam ? { cursor: pageParam } : {}, { signal }),
+      ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 }
 
 export function cancelMyApplication(applicationId: number) {
-  return apiFetch<void>(`/api/v1/user/me/applications/${applicationId}`, { method: 'DELETE' });
+  return cancelApplication(applicationId);
 }
 
 /** Map API card → 19 list card view model (Figma 254:2255). */

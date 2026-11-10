@@ -1964,3 +1964,73 @@ reason?: string;
 export type ListMyPaymentsParams = {
 cursor?: string;
 };
+
+export interface AuthorBriefResponse {
+  id?: number;
+  login?: string;
+  name?: string;
+  avatarUrl?: string;
+  userType?: string;
+  jobStatus?: string;
+  isFollowing?: boolean;
+}
+
+export interface RecruitRoleResponse {
+  id?: number;
+  role?: string;
+  name?: string;
+  headcount?: number;
+  filled?: number;
+  remaining?: number;
+}
+
+export interface RecruitCardResponse {
+  id?: number;
+  title?: string;
+  author?: AuthorBriefResponse;
+  format?: string;
+  region?: string;
+  goal?: string;
+  deadline?: string;
+  status?: string;
+  techTags?: string[];
+  roles?: RecruitRoleResponse[];
+  createdAt?: string;
+}
+
+export interface CursorPageRecruitCardResponse {
+  items?: RecruitCardResponse[];
+  nextCursor?: string;
+}
+
+export interface MyApplicationResponse {
+  id?: number;
+  status?: string;
+  appliedAt?: string;
+  roleName?: string;
+  recruit?: RecruitCardResponse;
+  teamChatRoomId?: number;
+}
+
+export interface CursorPageMyApplicationResponse {
+  items?: MyApplicationResponse[];
+  nextCursor?: string;
+}
+
+export type MyRecruitsParams = {
+cursor?: string;
+};
+
+export type MyApplicationsParams = {
+status?: string;
+cursor?: string;
+};
+
+export type ListParams = {
+q?: string;
+role?: string;
+tech?: string;
+mode?: string;
+sort?: string;
+cursor?: string;
+};

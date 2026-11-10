@@ -2,7 +2,7 @@
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { parseAsString, parseAsStringLiteral, useQueryState, useQueryStates } from 'nuqs';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import {
@@ -20,6 +20,7 @@ import {
   cancelMyApplication,
   myApplicationsOptions,
   myRecruitsOptions,
+  parseRecruitSearch,
   publicRecruitsOptions,
   RECRUIT_LIST_TABS,
   RECRUIT_SORT_LABELS,
@@ -42,6 +43,17 @@ const sortParser = parseAsStringLiteral(RECRUIT_SORTS)
   .withDefault('NEWEST')
   .withOptions({ history: 'replace' });
 const techParser = parseAsString.withOptions({ history: 'replace' });
+const searchParser = parseAsString.withOptions({ history: 'replace' });
+
+const SEARCH_DELAY_MS = 300;
+
+/** What the search box shows and edits; the list follows `?q=` (POL-R-2, title only). */
+export type RecruitSearchControl = {
+  draft: string;
+  setDraft: (value: string) => void;
+  submit: (event: FormEvent) => void;
+  clear: () => void;
+};
 
 function sheetLabel(field: FilterField, value: string | null): string | null {
   if (!value) return null;
@@ -63,8 +75,33 @@ export function useRecruitList() {
     sort: sortParser,
   });
 
+  // Search box: typed locally, written to `?q=` after a short pause or on Enter (same as 11)
+  const [rawQ, setQ] = useQueryState('q', searchParser);
+  const q = parseRecruitSearch(rawQ);
+  const [draft, setDraft] = useState(q ?? '');
+  const applySearch = useCallback((next: string | null) => void setQ(next), [setQ]);
+  useEffect(() => {
+    const next = parseRecruitSearch(draft);
+    if (next === q) return;
+    const timer = window.setTimeout(() => applySearch(next), SEARCH_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [draft, q, applySearch]);
+  const search: RecruitSearchControl = {
+    draft,
+    setDraft,
+    submit: (event) => {
+      event.preventDefault();
+      applySearch(parseRecruitSearch(draft));
+    },
+    clear: () => {
+      setDraft('');
+      applySearch(null);
+    },
+  };
+
   const loginNeeded = (tab === 'mine' || tab === 'applied') && viewer.role === 'guest';
   const listFilters = {
+    q,
     role: filters.role,
     tech: filters.tech,
     mode: filters.mode,
@@ -110,10 +147,12 @@ export function useRecruitList() {
     sort: sheetLabel('sort', listFilters.sort) ?? DEFAULT_FILTER_STATE.sort,
   };
 
+  /** Picking the selected role/tech/format again clears it ("필터를 줄여 보세요"); sort always has one. */
   function handleSelect(field: FilterField, value: string) {
-    if (field === 'role') void setFilters({ role: value as RecruitRoleKey });
-    else if (field === 'tech') void setFilters({ tech: value });
-    else if (field === 'format') void setFilters({ mode: value as RecruitFormat });
+    const next = selectedFilters[field] === value ? null : value;
+    if (field === 'role') void setFilters({ role: next as RecruitRoleKey | null });
+    else if (field === 'tech') void setFilters({ tech: next });
+    else if (field === 'format') void setFilters({ mode: next as RecruitFormat | null });
     else if (field === 'sort') void setFilters({ sort: value as RecruitSort });
   }
 
@@ -131,6 +170,7 @@ export function useRecruitList() {
     loginNeeded,
     promptLogin: () => void requireLogin(`/recruits?tab=${tab}`),
     filterOverlay,
+    search,
     selectedFilters,
     chipFilters,
     handleSelect,
