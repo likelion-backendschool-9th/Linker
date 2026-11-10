@@ -19,6 +19,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long>, ChatR
 	@Query("select count(r) from ChatRoom r where r.requesterId=:userId and r.requestKind='RECRUITING' and r.dmStatus='ACCEPTED' and r.respondedAt>=:since")
 	long countAcceptedRecruitingOffersSince(long userId, Instant since);
 
+	@Query("select r from ChatRoom r where r.teamId=:teamId and r.roomType='TEAM'")
+	Optional<ChatRoom> findTeamRoom(long teamId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select r from ChatRoom r where r.teamId=:teamId and r.roomType='TEAM'")
 	Optional<ChatRoom> lockTeamRoom(long teamId);

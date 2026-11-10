@@ -179,7 +179,9 @@ public class PostService {
 			recordView(post, viewer.userId(), source);
 		}
 
-		boolean canSendOffer = viewer != null && viewer.userType() == UserType.RECRUITER;
+		boolean canSendOffer = viewer != null
+				&& viewer.userType() == UserType.RECRUITER
+				&& post.getAuthor().getJobSeekingStatus() != JobSeekingStatus.OFF;
 		boolean repoAvailable = isRepoAvailable(post);
 		return new PostDetailResponse(
 				post.getId(),

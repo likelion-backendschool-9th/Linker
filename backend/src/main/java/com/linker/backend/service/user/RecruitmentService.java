@@ -139,14 +139,23 @@ public class RecruitmentService {
 		int from = Math.min(offset, rows.size());
 		int to = Math.min(from + PlanLimits.RECRUIT_PAGE_SIZE, rows.size());
 		List<MyApplicationResponse> items = rows.subList(from, to).stream()
-				.map(application -> new MyApplicationResponse(
-						application.getId(),
-						application.getStatus().name(),
-						application.getCreatedAt().toString(),
-						application.getRecruitRole().getRole().label(),
-						cards.toCard(application.getRecruitPost()),
-						null
-				))
+				.map(application -> {
+					Long chatRoomId = null;
+					if (application.getStatus() == ApplicationStatus.ACCEPTED) {
+						Long teamId = application.getRecruitPost().getTeamId();
+						if (teamId != null) {
+							chatRoomId = chatRooms.findTeamRoom(teamId).map(room -> room.getId()).orElse(null);
+						}
+					}
+					return new MyApplicationResponse(
+							application.getId(),
+							application.getStatus().name(),
+							application.getCreatedAt().toString(),
+							application.getRecruitRole().getRole().label(),
+							cards.toCard(application.getRecruitPost()),
+							chatRoomId
+					);
+				})
 				.toList();
 		String next = to < rows.size() ? Integer.toString(to) : null;
 		return new CursorPage<>(items, next);
@@ -338,6 +347,10 @@ public class RecruitmentService {
 		}
 		if (post.getAuthor().getId() == user.userId()) {
 			throw new ApiException(403, "FORBIDDEN", "내 모집 글에는 지원할 수 없어요");
+		}
+		if (post.getTeamId() != null
+				&& teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(post.getTeamId(), user.userId()).isPresent()) {
+			throw new ApiException(403, "FORBIDDEN", "이미 팀에 속해 있어요");
 		}
 		if (post.getStatus() == RecruitStatus.CLOSED) {
 			throw new ApiException(409, "RECRUIT_CLOSED", "모집이 끝났어요");

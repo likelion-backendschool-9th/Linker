@@ -42,7 +42,9 @@ import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
+import com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +88,8 @@ class PostServiceTest {
 	RecruitCardMapper authors;
 	@Mock
 	RedisRateLimiter rateLimiter;
+	@Mock
+	TeamRepository teams;
 
 	PostService service;
 	AuthenticatedUser developer;
@@ -94,7 +98,7 @@ class PostServiceTest {
 	void setUp() {
 		service = new PostService(
 				repos, posts, users, techTags, uploads,
-				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, CLOCK);
+				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, teams, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
@@ -114,10 +118,18 @@ class PostServiceTest {
 	}
 
 	@Test
-	void listReposReturnsEmptyWhenTeamIdPresent() {
-		assertThat(service.listRepos(developer, null, 1L).items()).isEmpty();
+	void listReposUsesLinkedTeamReposWhenTeamIdPresent() {
+		GithubRepo repo = publicRepo(11L, "org/linker-web");
+		when(teams.findLinkedRepos(1L)).thenReturn(List.of(new LinkedRepo(11L, 99L, "org", "linker-web")));
+		when(repos.findAllById(List.of(11L))).thenReturn(List.of(repo));
+		when(posts.findPostedRepoIds(10L, List.of(11L))).thenReturn(List.of());
+
+		var response = service.listRepos(developer, null, 1L);
+
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.items().getFirst().repoId()).isEqualTo(11L);
+		assertThat(response.items().getFirst().teamId()).isEqualTo(1L);
 		verify(repos, never()).findPublicByOwner(any());
-		verify(repos, never()).findPublicByOwnerAndQuery(any(), any());
 	}
 
 	@Test

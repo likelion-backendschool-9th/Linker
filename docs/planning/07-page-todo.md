@@ -589,7 +589,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [ ] (sheet) Apply: choose one open role only (no "하고 싶은 말")
+- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말")
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
@@ -642,7 +642,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
-- [ ] Comments with one level of replies (500 chars); author can edit/delete, post owner can delete only; deleting a comment with replies shows "삭제된 댓글입니다"
+- [ ] Flat comments only (500 chars, no replies); author can edit/delete, post owner can delete only
 - [ ] (sheet) Post more: edit/delete (own), report (others'). (sheet) Comment more works the same way
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)

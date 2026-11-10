@@ -9,6 +9,7 @@ import com.linker.backend.dto.recruit.response.RecruitRoleResponse;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.recruit.RecruitPost;
 import com.linker.backend.entity.recruit.RecruitRole;
+import com.linker.backend.service.user.AccountService;
 
 import org.springframework.stereotype.Component;
 
@@ -58,7 +59,7 @@ public class RecruitCardMapper {
 				author.visibleName(),
 				author.getAvatarUrl() == null ? "" : author.getAvatarUrl(),
 				author.getUserType().name(),
-				author.getJobSeekingStatus().name(),
+				AccountService.jobStatus(author.getJobSeekingStatus()),
 				isFollowing
 		);
 	}
