@@ -22,7 +22,6 @@
   --space-profile-badge-block: 2px; /* P04 status badge vertical padding (Figma 116:427) */
   --space-profile-count: 2px; /* P04 "팔로워" / "팔로잉" label to its count (Figma 116:519) */
   --space-profile-work: 15px; /* P04 feed: tabs to the first work card and between cards (Figma 116:427) */
-  --space-profile-work-title: 9px; /* P04 work card cover to its title (Figma 123:1406) */
   --space-tab-icon-gap: 6px; /* bottom GNB: gap between a tab's icon and its label (Figma itemSpacing) */
   /* Figma 07 values off the 4px grid */
   --space-row-inline: 5px; /* compact list row side padding, title to meta */

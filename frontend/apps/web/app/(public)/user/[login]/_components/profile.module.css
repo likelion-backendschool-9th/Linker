@@ -599,13 +599,12 @@
   grid-column: 1 / -1;
 }
 
-/* Work card — Figma 123:1406: square, 8 padding, r8; cover 148x123 (r5), title 9 below it.
+/* Work card — Figma 123:1406: square, 8 padding, r8; cover 148x123 (r5), then the title.
    Cover + title sit centered in the square, so wider columns (600px) keep even space above and below */
 .workCard {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: var(--space-profile-work-title);
   aspect-ratio: 1;
   padding: var(--space-xs);
   color: var(--color-text-heading);
@@ -619,6 +618,8 @@
   position: relative;
   display: block;
   flex-shrink: 0;
+  /* Same as the card padding, so the title sits as far below the cover as the card edge */
+  margin-bottom: var(--space-xs);
   aspect-ratio: 148 / 123;
   overflow: hidden;
   background: var(--color-profile-work-cover);
