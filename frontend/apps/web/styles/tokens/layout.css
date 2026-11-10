@@ -13,6 +13,10 @@
   --space-lg: 24px;
   --space-xl: 32px;
   --space-xxl: 48px;
+  --space-auth-start-section: 23px; /* 01 start: brand / actions / policy (Figma 109:1932) */
+  --space-auth-start-inset: 100px; /* 01 start: vertical content inset (Figma 109:1932) */
+  --space-auth-start-policy: 14px; /* 01 start: legal text rows (Figma 109:1932) */
+  --space-auth-start-github-icon: 10px; /* 01 start: GitHub mark inset (Figma 109:1932) */
   --space-section: 48px; /* gap between page sections */
   --space-section-lg: 80px; /* gap between major blocks */
   --space-profile-identity: 10px; /* P04 profile avatar-to-info and name-to-meta gap (Figma 301:572) */
@@ -180,8 +184,9 @@
   --space-room-member: 15px; /* room info: between member rows */
   --room-member-avatar-size: 44px;
   --content-max-width: 600px; /* app column; centered when the viewport is wider (blueprint §6-6) */
-  --auth-wordmark-width: 185px; /* Auth screen Linker wordmark width */
+  --auth-wordmark-width: 185px; /* Page 01 Linker wordmark width */
   --auth-wordmark-height: 64px; /* Auth screen Linker wordmark height */
+  --icon-size-auth-start-github: 23px; /* 01 start GitHub mark size (Figma 109:1932) */
   --recruiter-login-wordmark-width: 191px; /* Page 32 Linker wordmark width (Figma 364:2013) */
   --space-recruiter-login-top: 102px; /* Page 32 main content top to logo, after header and main gutter */
   --space-recruiter-login-gap: 15px; /* Page 32 form and section spacing (Figma 364:2013) */

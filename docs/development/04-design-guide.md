@@ -30,6 +30,7 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | Token | Value | Use |
 | --- | --- | --- |
 | `--color-primary` | `#141414` | Primary CTA fill, footer band, focus ring |
+| `--color-auth-start-github` | `#121212` | Page 01 GitHub button (Figma 109:1932) |
 | `--color-on-primary` | `#ffffff` | Text and icons on `--color-primary` (18.4:1) |
 | `--color-accent` | `#0066ff` | Popular/new badges, savings emphasis. **NEVER** a CTA fill |
 | `--color-gnb-current` | `#2563eb` | Active bottom GNB label/icon on the white pill (5.17:1 on white) |
@@ -188,9 +189,12 @@ Tokens in `tokens/layout.css`. 8px base unit, 4px half-step.
 | `--space-lg` | 24px | Card padding, gap between groups |
 | `--space-xl` | 32px | Gap between form blocks |
 | `--space-xxl` | 48px | Large gap inside a section |
+| `--space-auth-start-section` / `--space-auth-start-inset` | 23px / 100px | Page 01 section gap and vertical inset (Figma 109:1932) |
+| `--space-auth-start-policy` / `--space-auth-start-github-icon` | 14px / 10px | Page 01 legal rows and GitHub mark inset (Figma 109:1932) |
 | `--space-section` | 48px | Gap between page sections |
 | `--space-section-lg` | 80px | Gap between major blocks |
 | `--auth-wordmark-width` / `--auth-wordmark-height` | 185px / 64px | Page 01 Linker wordmark |
+| `--icon-size-auth-start-github` | 23px | Page 01 GitHub mark size (Figma 109:1932) |
 | `--recruiter-login-wordmark-width` | 191px | Page 32 Linker wordmark (Figma 364:2013) |
 | `--space-recruiter-login-top` / `--space-recruiter-login-gap` | 102px / 15px | Page 32 content top and vertical gaps (Figma 364:2013) |
 | `--space-recruiter-login-brand` / `--space-recruiter-login-inline` | 9px / 15px | Page 32 logo-to-tagline gap and input inset (Figma 364:2013) |

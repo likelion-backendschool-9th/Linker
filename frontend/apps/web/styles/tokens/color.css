@@ -7,6 +7,7 @@
 :root {
   /* Brand */
   --color-primary: #141414; /* primary CTA fill, footer, focus ring */
+  --color-auth-start-github: #121212; /* 01 start GitHub button (Figma 109:1932) */
   --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
   --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
   --color-gnb-current: #2563eb; /* active bottom GNB icon/label (Figma 453:227/258, 455:316) */
