@@ -108,6 +108,69 @@ class TeamManagementIntegrationTest {
   }
 
   @Test
+  void finalAccountDeletionClosesTeamAndChatTogetherButWithdrawingKeepsBoth() {
+    var accounts=new TransactionTemplate(transactions);
+    accounts.executeWithoutResult(tx -> {var user=users.findById(member.getId()).orElseThrow();user.markWithdrawing(Instant.now());users.saveAndFlush(user);});
+    assertThat(jdbc.queryForObject("select count(*) from team_members where team_id=? and user_id=? and left_at is null",Long.class,team,member.getId())).isEqualTo(1);
+    accounts.executeWithoutResult(tx -> {var user=users.findById(member.getId()).orElseThrow();user.anonymize(Instant.now());management.closeDeletedAccountMemberships(user,Instant.now());});
+    assertThat(jdbc.queryForObject("select count(*) from team_members where team_id=? and user_id=? and left_at is null",Long.class,team,member.getId())).isZero();
+    assertThat(jdbc.queryForObject("select count(*) from chat_room_members where room_id=? and user_id=? and left_at is null",Long.class,room,member.getId())).isZero();
+  }
+
+  @Test
+  void ownershipRequiresRecipientAndChangesRolesOnlyAfterAcceptance() throws Exception {
+    send(post(base+"/ownership-transfers"),admin,"{\"toUserId\":"+member.getId()+"}").andExpect(status().isForbidden());
+    String body=send(post(base+"/ownership-transfers"),owner,"{\"toUserId\":"+member.getId()+"}")
+        .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+    long id=new tools.jackson.databind.ObjectMapper().readTree(body).path("transferId").asLong();
+    assertThat(jdbc.queryForObject("select role from team_members where team_id=? and user_id=? and left_at is null",String.class,team,owner.getId())).isEqualTo("OWNER");
+    mvc.perform(post(base+"/ownership-transfers/"+id+"/accept").cookie(cookie(admin))).andExpect(status().isForbidden());
+    mvc.perform(get(base+"/settings").cookie(cookie(member))).andExpect(jsonPath("$.ownershipTransfer.isRecipient").value(true));
+    mvc.perform(post(base+"/ownership-transfers/"+id+"/accept").cookie(cookie(member))).andExpect(status().isNoContent());
+    assertThat(jdbc.queryForObject("select role from team_members where team_id=? and user_id=? and left_at is null",String.class,team,owner.getId())).isEqualTo("ADMIN");
+    assertThat(jdbc.queryForObject("select role from team_members where team_id=? and user_id=? and left_at is null",String.class,team,member.getId())).isEqualTo("OWNER");
+    mvc.perform(post(base+"/ownership-transfers/"+id+"/accept").cookie(cookie(member))).andExpect(status().isConflict());
+  }
+
+  @Test
+  void completionUsesLastJoinAndRetainsFourteenDayThresholdAndSevenDayUndoWindow() throws Exception {
+    Instant now=Instant.parse("2026-11-11T00:00:00Z");doReturn(now).when(clock).instant();
+    jdbc.update("update team_members set joined_at=? where team_id=? and user_id=?",java.sql.Timestamp.from(now.minus(Duration.ofDays(14))),team,owner.getId());
+    jdbc.update("update team_members set joined_at=? where team_id=? and user_id=?",java.sql.Timestamp.from(now.minus(Duration.ofDays(14)).plusSeconds(1)),team,admin.getId());
+    jdbc.update("update team_members set joined_at=? where team_id=? and user_id=?",java.sql.Timestamp.from(now.minus(Duration.ofDays(7))),team,member.getId());
+    jdbc.update("insert into team_members(team_id,user_id,role,github_org_state,joined_at,left_at,leave_type,created_at,updated_at) values(?,?,'MEMBER','MEMBER',?,?,'LEFT',now(),now())",team,member.getId(),java.sql.Timestamp.from(now.minus(Duration.ofDays(60))),java.sql.Timestamp.from(now.minus(Duration.ofDays(20))));
+    mvc.perform(post(base+"/completion").cookie(cookie(member))).andExpect(status().isForbidden());
+    mvc.perform(post(base+"/completion").cookie(cookie(admin))).andExpect(status().isNoContent());
+    mvc.perform(post(base+"/completion").cookie(cookie(owner))).andExpect(status().isConflict());
+    assertThat(jdbc.queryForObject("select count(*) from completion_records where completion_id in (select id from team_completions where team_id="+team+")",Long.class)).isZero();
+    doReturn(now.plus(Duration.ofDays(7)).minusSeconds(1)).when(clock).instant();
+    management.finalizeCompletions();
+    assertThat(jdbc.queryForObject("select count(*) from completion_records where completion_id in (select id from team_completions where team_id="+team+")",Long.class)).isZero();
+    doReturn(now.plus(Duration.ofDays(7))).when(clock).instant();
+    mvc.perform(delete(base+"/completion").cookie(cookie(owner))).andExpect(status().isConflict());
+    management.finalizeCompletions();management.finalizeCompletions();
+    assertThat(jdbc.queryForObject("select count(*) from completion_records where user_id=?",Long.class,owner.getId())).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from completion_records where user_id in (?,?)",Long.class,admin.getId(),member.getId())).isZero();
+    doCallRealMethod().when(clock).instant();
+  }
+
+  @Test
+  void undoRemovesPendingCompletionAndAllowsCompletingAgain() throws Exception {
+    mvc.perform(post(base+"/completion").cookie(cookie(owner))).andExpect(status().isNoContent());
+    mvc.perform(delete(base+"/completion").cookie(cookie(admin))).andExpect(status().isNoContent());
+    assertThat(teams.findById(team).orElseThrow().getStatus().name()).isEqualTo("ACTIVE");
+    mvc.perform(post(base+"/completion").cookie(cookie(owner))).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void aiSwitchIsOwnerOnlyAndOmittedFieldKeepsExistingValue() throws Exception {
+    send(patch(base),admin,"{\"name\":\"팀\",\"aiSummaryEnabled\":false}").andExpect(status().isForbidden());
+    send(patch(base),owner,"{\"name\":\"팀\",\"aiSummaryEnabled\":false}").andExpect(status().isNoContent());
+    send(patch(base),admin,"{\"name\":\"새 팀\"}").andExpect(status().isNoContent());
+    assertThat(teams.findById(team).orElseThrow().isAiSummaryEnabled()).isFalse();
+  }
+
+  @Test
   void settingsAndMembersExposeRolesAndRealFlexWithoutPrivateAccountData() throws Exception {
     mvc.perform(get(base + "/settings").cookie(cookie(member)))
         .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
@@ -122,8 +185,8 @@ class TeamManagementIntegrationTest {
         .andExpect(jsonPath("$.plan").value("FLEX"))
         .andExpect(jsonPath("$.memberLimit").isEmpty())
         .andExpect(jsonPath("$.permissions.createInviteLink").value(true))
-        .andExpect(jsonPath("$.permissions.transferOwnership").value(false))
-        .andExpect(jsonPath("$.permissions.completeProject").value(false))
+        .andExpect(jsonPath("$.permissions.transferOwnership").value(true))
+        .andExpect(jsonPath("$.permissions.completeProject").value(true))
         .andExpect(jsonPath("$.billing.managerUserId").value(admin.getId()))
         .andExpect(jsonPath("$.billing.nextBillingAt").isEmpty());
     mvc.perform(get(base + "/members").cookie(cookie(admin)))
@@ -330,15 +393,13 @@ class TeamManagementIntegrationTest {
 
   @Test
   @Transactional
-  void preparationSqlDoesNotChooseOrModifyFlywayVersion() {
+  void agreedOwnershipCompletionMigrationIsApplied() {
     assertThat(jdbc.queryForObject("select to_regclass('team_invite_links')", String.class))
         .isNotNull();
-    new ResourceDatabasePopulator(new ClassPathResource("db/team-schema/09-team-settings.sql"))
-        .execute(jdbc.getDataSource());
     assertThat(
             jdbc.queryForObject(
-                "select max(version::int) from flyway_schema_history", Integer.class))
-        .isEqualTo(28);
+                "select count(*) from flyway_schema_history where version='29' and success", Integer.class))
+        .isEqualTo(1);
     for (String table : List.of("team_invite_links", "github_org_invitations", "team_ownership_transfers",
         "team_completions", "completion_records"))
       assertThat(jdbc.queryForObject("select to_regclass(?) is not null", Boolean.class, table)).isTrue();

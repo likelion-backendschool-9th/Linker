@@ -1,7 +1,7 @@
 import { daysFromNow, del, fail, get, newId, patch, post, type MockRoute } from '../core/define';
 import { findTeam, TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
 import { DEVELOPERS } from '../fixtures/users';
-import { SUBSCRIPTION_PRICE } from '@/lib/policy';
+import { SUBSCRIPTION_PRICE, TEAM } from '@/lib/policy';
 import { routes as setupRoutes } from './p08-team-create';
 
 /** 09 Team settings & members: `TeamController / GithubController` */
@@ -28,13 +28,15 @@ function permissions(role: 'OWNER' | 'ADMIN' | 'MEMBER') {
     createInviteLink: admin,
     manageMembers: admin,
     changeRoles: owner,
-    transferOwnership: false,
-    completeProject: false,
+    transferOwnership: owner,
+    completeProject: admin,
     archive: owner,
     deleteTeam: owner,
     leave: role === 'MEMBER',
   };
 }
+
+const aiSettings = new Map<number, boolean>();
 
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/settings', ({ params }) => {
@@ -55,7 +57,7 @@ export const routes: MockRoute[] = [
         name: 'Linker',
         url: `https://github.com/orgs/${team.orgLogin}/projects/1`,
       },
-      aiSummaryEnabled: team.plan === 'FLEX',
+      aiSummaryEnabled: aiSettings.get(team.id) ?? team.plan === 'FLEX',
       completedAt: team.completedAt,
       // Free teams: 6 members (POL-T-1)
       memberLimit: team.plan === 'FLEX' ? null : 6,
@@ -83,9 +85,9 @@ export const routes: MockRoute[] = [
         team.id === 2 ? { id: 1, fromName: '이도윤', toName: '한서준', isRecipient: true } : null,
       ownershipClaim: null,
       completion: {
-        canUndo: false,
+        canUndo: !!team.completedAt && Date.now() - Date.parse(team.completedAt) < TEAM.completionUndoDays * 86400000,
         finalized: team.status === 'COMPLETED',
-        canRestart: team.status === 'COMPLETED',
+        canRestart: false,
       },
     };
   }),
@@ -187,6 +189,10 @@ export const routes: MockRoute[] = [
   // 2nd pass
   patch('/api/v1/user/teams/:teamId', ({ params, body }) => {
     const team = teamOr404(params.teamId);
+    if (typeof body.aiSummaryEnabled === 'boolean') {
+      if (team.myRole !== 'OWNER') fail(403, 'TEAM_ROLE_REQUIRED', '팀 오너만 변경할 수 있어요');
+      aiSettings.set(team.id, body.aiSummaryEnabled);
+    }
     Object.assign(team, {
       name: body.name ?? team.name,
       description: body.description ?? team.description,

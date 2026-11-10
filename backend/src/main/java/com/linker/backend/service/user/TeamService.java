@@ -179,4 +179,9 @@ public class TeamService {
       AuthenticatedUser user, String code) {
     return invitations.accept(user, code);
   }
+  public com.linker.backend.dto.team.response.TeamSettingsResponse.TransferCreated requestOwnership(AuthenticatedUser user,long teamId,TransferTeamOwnershipRequest request) {return management.requestOwnership(user,teamId,request);}
+  public void acceptOwnership(AuthenticatedUser user,long teamId,long transferId) {management.acceptOwnership(user,teamId,transferId);}
+  public void completeProject(AuthenticatedUser user,long teamId) {management.complete(user,teamId);}
+  public void undoCompletion(AuthenticatedUser user,long teamId) {management.undoCompletion(user,teamId);}
+
 }

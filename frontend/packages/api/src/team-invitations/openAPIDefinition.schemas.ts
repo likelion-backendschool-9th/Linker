@@ -9,6 +9,15 @@ export interface AddTeamRepoRequest {
   repoId?: number;
 }
 
+export interface TransferTeamOwnershipRequest {
+  /** @exclusiveMinimum 0 */
+  toUserId: number;
+}
+
+export interface TransferCreated {
+  transferId: number;
+}
+
 export type GithubOrgInvitationResponseStatus = typeof GithubOrgInvitationResponseStatus[keyof typeof GithubOrgInvitationResponseStatus];
 
 
@@ -70,6 +79,7 @@ export interface UpdateTeamRequest {
      */
   name: string;
   description?: string;
+  aiSummaryEnabled?: boolean;
 }
 
 export type ChangeTeamRoleRequestRole = typeof ChangeTeamRoleRequestRole[keyof typeof ChangeTeamRoleRequestRole];
@@ -150,6 +160,19 @@ export interface TeamSettingsBilling {
   nextBillingAt: string | null;
 }
 
+export interface OwnershipTransfer {
+  id: number;
+  fromName: string;
+  toName: string;
+  isRecipient: boolean;
+}
+
+export interface Completion {
+  canUndo: boolean;
+  finalized: boolean;
+  canRestart: boolean;
+}
+
 export interface TeamSettingsResponse {
   id: number;
   name: string;
@@ -171,6 +194,10 @@ export interface TeamSettingsResponse {
   githubOrgOwner: boolean;
   /** @nullable */
   githubInvitationBlockedReason: string | null;
+  ownershipTransfer: OwnershipTransfer | null;
+  /** @nullable */
+  completedAt: string | null;
+  completion: Completion | null;
 }
 
 export type TeamSettingsMemberRole = typeof TeamSettingsMemberRole[keyof typeof TeamSettingsMemberRole];

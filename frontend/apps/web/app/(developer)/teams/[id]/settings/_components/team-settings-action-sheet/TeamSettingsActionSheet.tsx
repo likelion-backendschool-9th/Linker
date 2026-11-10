@@ -22,6 +22,10 @@ export function TeamSettingsActionSheet({
   members: Members['items'];
 }) {
   const {
+    newOwner,
+    setNewOwner,
+    aiEnabled,
+    setAiEnabled,
     handle,
     setInviteHandle,
     mutation,
@@ -322,7 +326,12 @@ export function TeamSettingsActionSheet({
           <>
             <div className={styles.field}>
               <label htmlFor="new-team-owner">새 오너</label>
-              <select id="new-team-owner" className={styles.select} defaultValue="">
+              <select
+                id="new-team-owner"
+                className={styles.select}
+                value={newOwner}
+                onChange={(event) => setNewOwner(event.target.value)}
+              >
                 <option value="" disabled>
                   멤버를 선택해 주세요
                 </option>
@@ -368,9 +377,7 @@ export function TeamSettingsActionSheet({
               {team.ownershipTransfer.fromName}님이 보낸 소유권 이전 요청이에요. 수락하면 내가
               오너가 되고 이전 오너는 관리자가 돼요.
             </p>
-            <p className={styles.description}>
-              청구 관리자는 바뀌지 않아요. 수락 기능은 아직 실행되지 않아요.
-            </p>
+            <p className={styles.description}>청구 관리자는 바뀌지 않아요.</p>
           </>
         )}
         {kind === 'claim' && (
@@ -394,12 +401,14 @@ export function TeamSettingsActionSheet({
         {kind === 'ai' && (
           <>
             <label className={styles.choice}>
-              <input type="checkbox" defaultChecked={team.aiSummaryEnabled} />
+              <input
+                type="checkbox"
+                checked={aiEnabled}
+                onChange={(event) => setAiEnabled(event.target.checked)}
+              />
               AI 요약 사용
             </label>
-            <p className={styles.description}>
-              Flex 팀의 오너만 설정할 수 있어요. 입력 내용을 바꿔도 실제 설정은 저장되지 않아요.
-            </p>
+            <p className={styles.description}>Flex 팀의 오너만 설정할 수 있어요.</p>
           </>
         )}
         {kind === 'completion' && (

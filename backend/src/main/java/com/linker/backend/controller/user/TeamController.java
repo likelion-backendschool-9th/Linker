@@ -1,6 +1,7 @@
 package com.linker.backend.controller.user;
 
 import com.linker.backend.dto.team.request.NotifyTeamInviteRequest;
+import com.linker.backend.dto.team.request.TransferTeamOwnershipRequest;
 
 import com.linker.backend.dto.team.request.CompleteTeamSetupRequest;
 import com.linker.backend.dto.team.request.CreateTeamRequest;
@@ -307,4 +308,30 @@ public class TeamController {
         .cacheControl(CacheControl.noStore())
         .body(teams.acceptInvite(user, code));
   }
+  @PostMapping("/teams/{teamId}/ownership-transfers")
+  @DeveloperOnly @TeamRole(TeamRole.Level.OWNER) @Tag(name="p09-team-settings")
+  @Operation(operationId="requestTeamOwnership")
+  public ResponseEntity<TeamSettingsResponse.TransferCreated> requestOwnership(@AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,@Valid @RequestBody TransferTeamOwnershipRequest request) {
+    return ResponseEntity.status(201).cacheControl(CacheControl.noStore()).body(teams.requestOwnership(user,teamId,request));
+  }
+  @PostMapping("/teams/{teamId}/ownership-transfers/{transferId}/accept")
+  @DeveloperOnly @TeamRole(TeamRole.Level.MEMBER) @Tag(name="p09-team-settings")
+  @Operation(operationId="acceptTeamOwnership")
+  public ResponseEntity<Void> acceptOwnership(@AuthenticationPrincipal AuthenticatedUser user,@PathVariable long teamId,@PathVariable long transferId) {
+    teams.acceptOwnership(user,teamId,transferId);return ResponseEntity.noContent().build();
+  }
+  @PostMapping("/teams/{teamId}/completion")
+  @DeveloperOnly @TeamRole(TeamRole.Level.ADMIN) @Tag(name="p09-team-settings")
+  @Operation(operationId="completeTeamProject")
+  public ResponseEntity<Void> completeProject(@AuthenticationPrincipal AuthenticatedUser user,@PathVariable long teamId) {
+    teams.completeProject(user,teamId);return ResponseEntity.noContent().build();
+  }
+  @DeleteMapping("/teams/{teamId}/completion")
+  @DeveloperOnly @TeamRole(TeamRole.Level.ADMIN) @Tag(name="p09-team-settings")
+  @Operation(operationId="undoTeamCompletion")
+  public ResponseEntity<Void> undoCompletion(@AuthenticationPrincipal AuthenticatedUser user,@PathVariable long teamId) {
+    teams.undoCompletion(user,teamId);return ResponseEntity.noContent().build();
+  }
+
 }
