@@ -18,6 +18,7 @@ public record RecruitDetailResponse(
 		String duration,
 		String teamName,
 		AuthorCardResponse authorCard,
+		List<RecruitTeamMemberResponse> teamMembers,
 		boolean isAuthor,
 		boolean isTeamMember,
 		MyApplicationBriefResponse myApplication,

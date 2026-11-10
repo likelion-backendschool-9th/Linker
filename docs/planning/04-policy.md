@@ -266,7 +266,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-4 "추천" by role | **Developers and operators**: posts that share a tag with my tech stack, or whose author picked one of my job categories of interest (POL-H-8), come first, ordered by popularity score; after them, every other post in random order. Job ads 1 per 10 posts (POL-H-9). **Guests and recruiters**: every post in random order, no "why shown", no job ads |
 | POL-P-4 "추천" rules | Exclude my own posts, posts by users in a block relation (either direction) and hidden posts. For developers and operators, posts already seen on an earlier visit go to the very end. The random order is fixed for one visit, so infinite scroll never repeats or skips a post; posts written during the visit appear on the next visit, and coming back or refreshing reshuffles. At most 2 consecutive posts from the same author |
 | POL-P-5 Likes | Once per post, can undo. List of who liked is public |
-| POL-P-5 Comments | ≤ 500 chars, one level of replies. Author can edit/delete; post owner can delete only. Deleting a comment with replies shows "삭제된 댓글입니다" (deleted comment) |
+| POL-P-5 Comments | ≤ 500 chars, flat list (no replies). Author can edit/delete; post owner can delete only |
 | POL-P-5 Follow | Follow immediately without approval. 200/day limit (anti-abuse). Mutual follow = following each other |
 | POL-P-7 Share button | Posts, recruit posts and profiles have a share button. It opens a bottom sheet with only two options: "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). Guests can only copy the link; "Share to chat room" shows the login prompt |
 | POL-P-7 Copy link | Copies the page's public URL and shows a "링크를 복사했어요" (link copied) toast. A share marker (`?from=share`) is appended so the visit counts as traffic source "external link" |
@@ -331,8 +331,8 @@ Pending applications stay when a recruit post closes; the author can still invit
 
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
-- **Inviting when that role is full** → pending Invite stays disabled until headcount increases. Optional "인원 늘리고 초대" (increase headcount and invite) may raise the role cap by one; no subscription/BM prompt on recruit detail.
-- **Free team member limit reached** (6) → can't invite; show the reason only on recruit detail. Flex upgrade is not required from this page (team/plan surfaces own that BM; Flex teams have no member limit).
+- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams are sent to the Flex checkout sheet from recruit detail.
+- **Free team member limit reached** (6) → can't invite; recruit detail returns `PLAN_LIMIT` / `TEAM_MEMBERS` and opens the Flex checkout sheet. Flex teams have no member limit.
 - **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
 - **Accepted applicant doesn't accept the GitHub org invite within 7 days** → stays in the Linker team and can chat, but doesn't appear as assignable for issues. Notify applicant and owner again.
 - **Fake recruitment reported** → follow report/sanction policy. If the author deletes the team within 7 days after accepting, auto-flag for fake-recruitment review.

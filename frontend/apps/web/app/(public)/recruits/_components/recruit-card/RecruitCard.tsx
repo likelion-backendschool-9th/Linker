@@ -1,6 +1,8 @@
 'use client';
 
 import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
+import type { Route } from 'next';
+import Link from 'next/link';
 import { useId, useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
@@ -9,12 +11,14 @@ import styles from './RecruitCard.module.css';
 
 export type RecruitCardData = {
   id: string;
+  href: Route;
   format: string;
   goal: string;
   deadlineLabel: string;
   deadlineFullLabel: string;
   title: string;
-  description: string;
+  /** Optional body preview; public list cards omit intro today. */
+  description?: string;
   roles: string[];
   /** "모집 직군" in the detail panel (Figma 346:573): a single summary value, independent of `roles` */
   recruitingRoleLabel: string;
@@ -27,18 +31,20 @@ export function RecruitCard({ recruit }: { recruit: RecruitCardData }) {
   const detailId = useId();
 
   return (
-    <li className={styles.card} data-expanded={expanded}>
+    <article className={styles.card} data-expanded={expanded}>
       <div className={styles.body}>
         <div className={styles.chipRow}>
           <div className={styles.chips}>
             <span className={styles.formatChip}>{recruit.format}</span>
-            <span className={styles.goalChip}>{recruit.goal}</span>
+            {recruit.goal ? <span className={styles.goalChip}>{recruit.goal}</span> : null}
           </div>
           <span className={styles.deadline}>{recruit.deadlineLabel}</span>
         </div>
         <div className={styles.textBlock}>
-          <h2 className={styles.title}>{recruit.title}</h2>
-          <p className={styles.description}>{recruit.description}</p>
+          <h2 className={styles.title}>
+            <Link href={recruit.href}>{recruit.title}</Link>
+          </h2>
+          {recruit.description ? <p className={styles.description}>{recruit.description}</p> : null}
         </div>
       </div>
       <div className={styles.meta}>
@@ -67,10 +73,12 @@ export function RecruitCard({ recruit }: { recruit: RecruitCardData }) {
                   <dt>진행 방식</dt>
                   <dd>{recruit.format}</dd>
                 </div>
-                <div className={styles.detailRow}>
-                  <dt>목적</dt>
-                  <dd>{recruit.goal}</dd>
-                </div>
+                {recruit.goal ? (
+                  <div className={styles.detailRow}>
+                    <dt>목적</dt>
+                    <dd>{recruit.goal}</dd>
+                  </div>
+                ) : null}
                 <div className={styles.detailRow}>
                   <dt>마감일</dt>
                   <dd>{recruit.deadlineFullLabel}</dd>
@@ -94,6 +102,6 @@ export function RecruitCard({ recruit }: { recruit: RecruitCardData }) {
           </div>
         </div>
       </div>
-    </li>
+    </article>
   );
 }
