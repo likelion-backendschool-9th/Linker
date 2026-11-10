@@ -504,9 +504,19 @@
   border: 1px solid var(--color-hairline-cool);
 }
 
+/* Someone else's "GitHub" — Figma 301:629: 42 high, #f2f3f8, 16 medium #111827 */
 .githubButtonQuiet {
-  color: var(--color-text-heading);
-  background: var(--color-canvas-soft);
+  min-height: var(--control-height-profile-github);
+  color: var(--color-text-title-cool);
+  background: var(--color-profile-github-quiet);
+}
+
+/* "팔로우" / "팔로잉" — Figma 301:1033: 42 high, #121212, r5, 16 semibold white */
+.followButton {
+  min-height: var(--control-height-profile-github);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-sheet-cta);
+  border-radius: var(--radius-profile-follow);
 }
 
 .compactCalendar {
@@ -599,13 +609,11 @@
   grid-column: 1 / -1;
 }
 
-/* Work card — Figma 123:1406: square, 8 padding, r8; cover 148x123 (r5), then the title.
-   Cover + title sit centered in the square, so wider columns (600px) keep even space above and below */
+/* Work card — Figma 123:1406: 8 padding, r8; cover 148x123 (r5), then the title. Height follows the
+   content (no fixed square), so every side keeps the same 8 padding at any column width */
 .workCard {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  aspect-ratio: 1;
   padding: var(--space-xs);
   color: var(--color-text-heading);
   text-decoration: none;
@@ -641,22 +649,23 @@
   white-space: nowrap;
 }
 
+/* Chat FAB — Figma 365:246: 40 circle #2e2e2e with a #383838 rim and soft glow, white Solar
+   chat-round-add 24; 16 from the right, on the home-indicator line at the bottom */
 .fab {
   position: fixed;
   right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
-  bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
+  bottom: max(var(--space-profile-fab-bottom), env(safe-area-inset-bottom));
   z-index: var(--z-chrome);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-xl);
-  height: var(--space-xl);
-  color: var(--color-on-primary);
-  background: var(--color-primary);
+  width: var(--fab-size);
+  height: var(--fab-size);
+  padding: 0;
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  background: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
   border-radius: var(--radius-full);
-}
-
-.fab svg {
-  width: var(--space-md);
-  height: var(--space-md);
+  box-shadow: var(--shadow-fab);
 }
