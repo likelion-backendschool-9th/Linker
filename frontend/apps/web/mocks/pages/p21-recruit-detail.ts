@@ -1,7 +1,7 @@
 import { fail, get, newId, post, type MockRoute } from '../core/define';
 import { APPLICATIONS, findRecruit, recruitCard, type MockApplication } from '../fixtures/recruits';
 import { TEAM_MEMBERS, TEAMS } from '../fixtures/teams';
-import { brief, ME, findUserById } from '../fixtures/users';
+import { brief, findUserById } from '../fixtures/users';
 
 /** 21 Recruit post detail: `RecruitmentController` (apply and manage applicants) */
 
@@ -51,8 +51,11 @@ export const routes: MockRoute[] = [
       teamMembers,
       // Logged in: my application, already a member, am I the author
       isAuthor: viewer.me?.id === item.author.id,
+      // Team 1 only: the logged-in developer also sits in team 2 for read-only demos but applied to recruit 2
       isTeamMember: Boolean(
-        team && viewer.me && team.id === 1 && viewer.me.id === ME.id && item.teamId === 1,
+        viewer.me &&
+        item.teamId === 1 &&
+        members.some((member) => member.user.id === viewer.me!.id),
       ),
       myApplication: mine
         ? {
@@ -74,6 +77,10 @@ export const routes: MockRoute[] = [
       const me = viewer.me!;
       if (item.author.id === me.id) fail(403, 'FORBIDDEN', '내 모집 글에는 지원할 수 없어요');
       if (item.status === 'CLOSED') fail(409, 'RECRUIT_CLOSED', '모집이 끝났어요');
+      const role = item.roles.find((r) => r.id === Number(body.roleId));
+      if (role && role.filled >= role.headcount) {
+        fail(409, 'ROLE_FULL', '해당 역할은 마감됐어요', { roleId: role.id });
+      }
       if (
         APPLICATIONS.some(
           (a) => a.recruitId === item.id && a.applicant.id === me.id && a.status === 'PENDING',
@@ -138,10 +145,10 @@ export const routes: MockRoute[] = [
       if (!item.teamId) fail(409, 'TEAM_REQUIRED', '팀을 먼저 만들어야 수락할 수 있어요');
       if (role && role.filled >= role.headcount) {
         if (body.increaseHeadcount === true && role.headcount < 10) {
-          // Flex-only: free teams hit PLAN_LIMIT → shared Flex sheet
+          // Flex-only: free teams hit PLAN_LIMIT; 21 shows the reason only (no Flex sheet)
           const team = TEAMS.find((entry) => entry.id === item.teamId);
           if (!team || team.plan !== 'FLEX') {
-            fail(403, 'PLAN_LIMIT', '역할 인원을 늘리려면 Flex 구독이 필요해요.', {
+            fail(403, 'PLAN_LIMIT', '무료 팀은 역할 인원을 늘릴 수 없어요.', {
               reason: 'ROLE_HEADCOUNT',
             });
           }

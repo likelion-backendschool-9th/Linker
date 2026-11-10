@@ -28,7 +28,12 @@ export function useApplyForm(recruit: RecruitDetail, overlay: OverlayControl) {
       await client.invalidateQueries({ queryKey: ['recruits'] });
     },
     onError: (failure) => {
-      if (failure instanceof ApiError && failure.code === 'RATE_LIMITED') {
+      if (failure instanceof ApiError && failure.code === 'ROLE_FULL') {
+        // Filled meanwhile: show it on the role and refresh the slots so that role turns disabled
+        setRoleId(null);
+        setError({ field: 'role', text: '해당 역할은 마감됐어요.' });
+        void client.invalidateQueries({ queryKey: ['recruits'] });
+      } else if (failure instanceof ApiError && failure.code === 'RATE_LIMITED') {
         setError({ field: null, text: '오늘은 더 할 수 없어요. 내일 다시 시도해 주세요.' });
       } else if (failure instanceof ApiError && failure.status < 500) {
         setError({ field: null, text: failure.message });

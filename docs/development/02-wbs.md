@@ -292,7 +292,7 @@
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/members/me` | 2nd pass: leave team (not owner) | team MEMBER |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/ownership-transfers` | 2nd pass: request owner transfer | team OWNER |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/ownership-transfers/{transferId}/accept` | 2nd pass: recipient accepts | team MEMBER (recipient) |
-| 09 | B | POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "작업물 올리기" (Post your project) notification to members | team OWNER/ADMIN |
+| 09 | B | POST | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: complete project → "프로젝트를 완주 하셨습니다! 수고 하셨습니다" notification to members (no link) | team OWNER/ADMIN |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}/completion` | 2nd pass: revert within 7 days | team OWNER/ADMIN |
 | 09 | B | POST | `/api/v1/user/teams/{teamId}/archive` | 2nd pass: archive | team OWNER |
 | 09 | B | DELETE | `/api/v1/user/teams/{teamId}` | 2nd pass: delete (confirm team name) | team OWNER |
@@ -403,7 +403,7 @@
 
 - **범위:** 모집·지원·수락·거절·취소
 - **주요 참조 데이터:** recruit_posts, recruit_roles, recruit_post_tags, applications. 전체 연결은 기존 ERD §7-2와 5장.
-- **완료 기준:** 수락은 Team·Chat 서비스와 연결한다. GitHub 조직 초대 버튼은 별도 GitHub 기능이다.
+- **완료 기준:** 수락은 Team·Chat 서비스와 연결한다. GitHub 조직 초대는 09의 `github-invitation` API를 쓰며, 21에서 초대(수락)가 성공하고 작성자가 팀 오너이면 FE가 자동으로 이어서 호출한다. GitHub 초대가 실패해도 팀 초대는 유지한다.
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
@@ -412,18 +412,18 @@
 | 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
 | 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
-| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
+| 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day counting published posts only → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
 | 20 | E | PUT | `/api/v1/user/recruits/{recruitId}` | Edit. Author no longer owner/admin of the linked team → 403 `TEAM_ROLE_REQUIRED`; emoji in text → 400 `VALIDATION_ERROR` | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/close` | Close — also borrowed by 21's menu | author |
 | 20 | E | POST | `/api/v1/user/recruits/{recruitId}/reopen` | Reopen. All roles filled → 409 `ROLES_FULL`; deadline passed → 409 `DEADLINE_PASSED`; open cap → 403 `PLAN_LIMIT` | author |
 | 20 | E | DELETE | `/api/v1/user/recruits/{recruitId}` | Delete (expire pending applications + notify) | author |
 | 21 | E | GET | `/api/v1/public/recruits/{recruitId}` | Body, remaining headcount per role, author card. If logged in: my application status, whether already a team member, whether I'm the author | public |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role, 20/day, one re-apply; message unused / empty) | user · developers only |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 open role, 20/day, one re-apply; message unused / empty). A role with no slots left → 409 `ROLE_FULL` "해당 역할은 마감됐어요" | user · developers only |
 | 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants drawer (days left until 14-day expiry) | author |
 | 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | `[Included]` Application detail (profile is reviewed on 04 instead) | author |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Body optional `{ increaseHeadcount?: boolean }`. Invite → team member + team chat + notification. Role full → `ROLE_FULL`; `increaseHeadcount` on a free team → `PLAN_LIMIT`/`ROLE_HEADCOUNT` (Flex); free team at 6 members → `PLAN_LIMIT`/`TEAM_MEMBERS` | author |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy) | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Body optional `{ increaseHeadcount?: boolean }`. Invite → team member + team chat + notification. Role full → `ROLE_FULL`; `increaseHeadcount` on a free team → `PLAN_LIMIT`/`ROLE_HEADCOUNT` (Flex); free team at 6 members → `PLAN_LIMIT`/`TEAM_MEMBERS`; applicant already in 10 teams → `PLAN_LIMIT`/`TEAMS_PER_USER`. `PLAN_LIMIT` messages are reason-only; 21 shows them without the shared limit sheet | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (no body, no reason; the applicant only gets the fixed copy) | author |
 
 ### 4-12. 작업물·피드·반응 — `PostController`
 
@@ -437,9 +437,9 @@
 | --- | --- | --- | --- | --- | --- |
 | 04 | A | GET | `/api/v1/public/user/{login}/posts` | 2nd pass: project posts (pinned first) | public |
 | 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: replace featured posts and order (free 1, Pro 5; saved pins stay after Pro ends) | user · developers only |
-| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team | user · developers only |
+| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
-| 22 | E | POST | `/api/v1/user/posts` | Publish (10/day, photos 5 / Pro 10) | user · developers only |
+| 22 | E | POST | `/api/v1/user/posts` | Publish (10/day counting published posts only, photos 5 / Pro 10, no emoji in intro/body) | user · developers only |
 | 22 | E | GET | `/api/v1/user/posts/{postId}/edit-form` | Edit form values | author |
 | 22 | E | PUT | `/api/v1/user/posts/{postId}` | Edit ("수정됨" (Edited)) | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}?from=` | Post (repo state, commit/issue counts, like count, "검토 중" (Under review) to the author if hidden). If logged in: my like, view logging (traffic source: feed, profile, recruit post, chat share, external link `from=share`) | public |
@@ -961,7 +961,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Borrowed: GitHub org invite → 09's `members/{userId}/github-invitation`, cancel application → 19, close/delete → 20, report → 00
 - Tables: new applications · shared recruit_posts, recruit_roles, users, user_tech_tags, contribution_days, completion_records, posts (after 22), team_members, chat_room_members, github_org_invitations, notifications, reports
 - [ ] Server: application-received notification, auto-expire after 14 days unhandled, `[Included]` reminder if org invite not accepted 7 days after acceptance, `[Included]` mark as fake recruiting if team deleted within 7 days after acceptance
-- [ ] Frontend: screens for guest / applicant / author (guest "지원하기" (Apply) → login prompt), apply sheet (role only), applicants drawer (radio + row 거절 + bottom 초대하기; 대기 stays / 완료 leaves list), capacity blocks without Flex/BM upsell on this page (reason or optional "인원 늘리고 초대"), reject sheet, `[Included]` share button (00 share sheet), `generateMetadata` + `opengraph-image.tsx` (title, remaining roles, D-n, blueprint 8-3)
+- [ ] Frontend: screens for guest / applicant / author (guest "지원하기" (Apply) → login prompt), apply sheet (role only), applicants drawer (radio + row 거절 + bottom 초대하기; 대기 stays / 완료 leaves list), GitHub org invite sent automatically after both "초대하기" and "인원 늘리고 초대" (retry button if it failed), capacity blocks without Flex/BM upsell on this page (reason or optional "인원 늘리고 초대"), reject confirm modal (no reason), `[Included]` share button (00 share sheet), `generateMetadata` + `opengraph-image.tsx` (title, remaining roles, D-n, blueprint 8-3)
 
 </details>
 
@@ -978,7 +978,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: photo upload (00), tech tags (00), limit notice → 28
 - Tables: new posts, post_images, post_demo_links, post_tags · shared github_repos, uploaded_files, tech_tags, issues, team_members, subscriptions (after 28)
-- [ ] Frontend: stepped (repo → content), reorder photos and retry partial failures, optional fields, email registration guide when commits are 0, draft restore
+- [ ] Frontend: stepped (repo → content), reorder photos and retry partial failures, optional fields, draft restore
 
 </details>
 
@@ -1194,6 +1194,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 | Toss 연계 문제 | 기존 단건 결제+만료 대안 우선 검토. 체험·자동 갱신 범위 변경은 합의 |
 | 공통 파일 충돌·로직 중복 | 시스템 주담당 검토, 공통 서비스 재사용, API 소유 중복 금지 |
 | 일정 지연 | Included 순서 조정. 필수 기능·출시 조건 변경은 별도 합의 |
+| 팀 오너가 GitHub에서 조직 오너 권한을 잃음 (Linker가 알 수 없음) | 21 초대는 팀·채팅 가입을 유지하고 GitHub 조직 초대 실패 문구만 표시. 후속: `needsGithubInvite`가 GitHub 조직 오너 여부까지 확인 — 09 소유권 이전 2차 구현 때 함께 (07 TODO 21) |
 
 기존 Included 후순위 순서: **광고 → 30 통계 → 공유 시트/카드·링크 카드 → 11 진행 현황 → 17 AI → 31~33 → 기존 보드 선택 → 운영 OTP → 피드 2차 관계 추천 → 기여 그래프**. 개발자 구직 상태는 유지한다. **광고 안에서도 운영(25) 채용 광고 신고 필터·상세는 더 후순위** — 관리자 광고 디자인 미출시 (user decision 2026-11-10).
 

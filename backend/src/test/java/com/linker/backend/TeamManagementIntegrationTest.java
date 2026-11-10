@@ -141,6 +141,12 @@ class TeamManagementIntegrationTest {
     jdbc.update("insert into team_members(team_id,user_id,role,github_org_state,joined_at,left_at,leave_type,created_at,updated_at) values(?,?,'MEMBER','MEMBER',?,?,'LEFT',now(),now())",team,member.getId(),java.sql.Timestamp.from(now.minus(Duration.ofDays(60))),java.sql.Timestamp.from(now.minus(Duration.ofDays(20))));
     mvc.perform(post(base+"/completion").cookie(cookie(member))).andExpect(status().isForbidden());
     mvc.perform(post(base+"/completion").cookie(cookie(admin))).andExpect(status().isNoContent());
+    // Congratulation only: no link into 22 (org repos can't be posted there)
+    var notices=jdbc.queryForList("select link_path,payload::text as payload from notifications where notification_type='TEAM_COMPLETED' and target_id=?",team);
+    assertThat(notices).isNotEmpty().allSatisfy(row->{
+      assertThat(row.get("link_path")).isNull();
+      assertThat((String)row.get("payload")).contains("프로젝트를 완주 하셨습니다! 수고 하셨습니다");
+    });
     mvc.perform(post(base+"/completion").cookie(cookie(owner))).andExpect(status().isConflict());
     assertThat(jdbc.queryForObject("select count(*) from completion_records where completion_id in (select id from team_completions where team_id="+team+")",Long.class)).isZero();
     doReturn(now.plus(Duration.ofDays(7)).minusSeconds(1)).when(clock).instant();

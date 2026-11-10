@@ -346,8 +346,9 @@ public class TeamManagementService {
     team.complete();
     for (var member:members.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(teamId)) {
       if (teams.canReceiveNotification(member.getUserId()))
+        // No link: org repos can't be posted from 22, so the notice only congratulates (members fork to post)
         notifications.create(new CreateNotificationCommand(member.getUserId(),"TEAM_COMPLETED",principal.userId(),
-            "TEAM",teamId,"/posts/new?teamId="+teamId,notificationText("작업물 올리기",team.getName()),null));
+            "TEAM",teamId,null,notificationText("프로젝트를 완주 하셨습니다! 수고 하셨습니다",team.getName()),null));
     }
   }
 

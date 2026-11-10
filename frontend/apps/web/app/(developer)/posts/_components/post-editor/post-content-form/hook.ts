@@ -20,6 +20,7 @@ import { useOpenExternal } from '@/features/external-link/use-open-external';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { useImageUpload } from '@/features/image-upload/use-image-upload';
 import { ApiError } from '@/lib/api/api-error';
+import { noEmojiField } from '@/lib/format/no-emoji-field';
 import { PLAN_LIMITS, POST } from '@/lib/policy';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 import { toast } from '@/stores/toast-store';
@@ -33,8 +34,6 @@ import {
   type PostFormValues,
   type RepoSummary,
 } from './api';
-
-export const GITHUB_EMAIL_SETTINGS = 'https://github.com/settings/emails';
 
 export type PostContentFormProps = {
   /** create: publishes with `repoId`; edit: updates `postId` (the repo can't change) */
@@ -148,7 +147,9 @@ export function usePostContentForm({
   const tags = (watched.tags ?? []).filter((tag): tag is string => Boolean(tag));
   const photoKeys = uploader.items.map((item) => item.key).join();
   const bodyRef = useAutoGrow(watched.body);
-  const bodyField = form.register('body');
+  // The intro and body take no emoji (POL-P-2): they are dropped as typed or pasted, no error shown
+  const registerIntro = noEmojiField(form.register('intro'));
+  const bodyField = noEmojiField(form.register('body'));
   const registerBody = {
     ...bodyField,
     ref: (el: HTMLTextAreaElement | null) => {
@@ -197,6 +198,8 @@ export function usePostContentForm({
         ? createPost({ repoId: target.repoId, ...request })
         : updatePost(target.postId, request);
     },
+    // Like 20: only publishing counts toward the daily limit, and its copy below replaces the shared toast
+    meta: creating ? { handledCodes: ['RATE_LIMITED'] } : undefined,
     onMutate: () => setFailure(null),
     onSuccess: async ({ id: postId }) => {
       done.current = true;
@@ -292,6 +295,7 @@ export function usePostContentForm({
     links,
     watched,
     tags,
+    registerIntro,
     registerBody,
     registerTeamSize,
     save,

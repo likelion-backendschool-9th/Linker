@@ -70,6 +70,9 @@ export type ApplicantRow = {
 
 export type AcceptResult = { teamId: number; chatRoomId: number; needsGithubInvite: boolean };
 
+/** `githubSent`: whether the automatic GitHub org invite went out (only when `needsGithubInvite`) */
+export type InviteResult = AcceptResult & { githubSent: boolean };
+
 const recruitPath = (recruitId: string) => `/api/v1/user/recruits/${encodeURIComponent(recruitId)}`;
 
 export const detailKeys = {
@@ -105,7 +108,7 @@ const json = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 
-/** One role, 20/day, one re-apply after cancelling. No free-text message (POL-R-3). */
+/** One open role, 20/day, one re-apply after cancelling. No free-text message (POL-R-3). A full role → 409 ROLE_FULL. */
 export function applyToRecruit(recruitId: string, body: { roleId: number }) {
   return apiFetch<{ id: number; status: ApplicationStatus }>(
     `${recruitPath(recruitId)}/applications`,
@@ -114,9 +117,9 @@ export function applyToRecruit(recruitId: string, body: { roleId: number }) {
 }
 
 /**
- * Accept → team member + team chat + notification. Fails with TEAM_REQUIRED or ROLE_FULL (409), or
- * PLAN_LIMIT (`TEAM_MEMBERS` / `ROLE_HEADCOUNT`) when Flex payment is required. `increaseHeadcount`
- * bumps the role cap by one only on Flex teams.
+ * Accept → team member + team chat + notification. Fails with TEAM_REQUIRED, ROLE_FULL or NOT_PENDING
+ * (409), or PLAN_LIMIT (`TEAM_MEMBERS` / `ROLE_HEADCOUNT` / `TEAMS_PER_USER`, shown on 21 as a reason
+ * only). `increaseHeadcount` bumps the role cap by one only on Flex teams.
  */
 export function acceptApplication(
   recruitId: string,
@@ -129,20 +132,39 @@ export function acceptApplication(
   });
 }
 
-/** The reason stays with the author; the applicant only sees the fixed copy (POL-R-4) */
-export function rejectApplication(recruitId: string, applicationId: number, reason: string) {
+/** No reason (POL-R-4); the applicant only sees the fixed copy */
+export function rejectApplication(recruitId: string, applicationId: number) {
   return apiFetch<void>(`${recruitPath(recruitId)}/applications/${applicationId}/reject`, {
     method: 'POST',
-    ...json({ reason: reason.trim() || null }),
   });
 }
 
-/** Borrowed from 09: only the GitHub org owner can send it (POL-R-4, never sent automatically) */
+/** Borrowed from 09: only the GitHub org owner can send it (POL-R-4) */
 export function sendGithubInvite(teamId: number, userId: number) {
   return apiFetch<{ sent: boolean }>(
     `/api/v1/user/teams/${teamId}/members/${userId}/github-invitation`,
     { method: 'POST' },
   );
+}
+
+/**
+ * 21 "초대하기" (both the drawer and "인원 늘리고 초대"): accept, then send the GitHub org invite
+ * automatically when the author is the team owner (POL-R-4). The team invite already stands, so a
+ * failed GitHub invite comes back as `githubSent: false` instead of failing the whole invite.
+ */
+export async function inviteApplicant(
+  recruitId: string,
+  applicationId: number,
+  applicantId: number,
+  options: { increaseHeadcount?: boolean } = {},
+): Promise<InviteResult> {
+  const result = await acceptApplication(recruitId, applicationId, options);
+  if (!result.needsGithubInvite) return { ...result, githubSent: false };
+  const githubSent = await sendGithubInvite(result.teamId, applicantId).then(
+    () => true,
+    () => false,
+  );
+  return { ...result, githubSent };
 }
 
 /** Only while pending (POL-R-3); also borrowed by 19's list tabs */

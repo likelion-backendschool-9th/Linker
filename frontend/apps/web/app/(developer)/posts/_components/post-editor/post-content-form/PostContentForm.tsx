@@ -95,6 +95,7 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
     links,
     watched,
     tags,
+    registerIntro,
     registerBody,
     registerTeamSize,
     save,
@@ -251,7 +252,7 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
             placeholder="프로젝트 제목을 작성해 주세요."
             aria-invalid={errors.intro ? true : undefined}
             aria-describedby={describe(field('intro-count'), errors.intro && errorId('intro'))}
-            {...form.register('intro')}
+            {...registerIntro}
           />
           {errors.intro && (
             <p id={errorId('intro')} className={styles.error}>
