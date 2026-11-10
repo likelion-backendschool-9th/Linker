@@ -18,6 +18,11 @@
   --space-profile-identity: 10px; /* P04 profile avatar-to-info and name-to-meta gap (Figma 301:572) */
   --space-profile-block: 20px; /* P04 profile header-to-feed gap (Figma 301:572) */
   --space-profile-top: 15px; /* P04 header to the identity row (Figma 116:427) */
+  --space-team-settings-top: 20px; /* 09 tabs to "팀원 프로필" (Figma 368:387) */
+  --space-team-member-name: 3px; /* 09 member role line to the name (Figma 368:387) */
+  --space-team-invite: 11px; /* 09 between invite buttons, and buttons to the hints (Figma 368:387) */
+  --space-team-settings-band: 30px; /* 09 invite hints to the gray band (Figma 368:387) */
+  --space-team-repos-top: 22px; /* 09 gray band to "GitHub 저장소" (Figma 368:387) */
   --space-profile-fab-bottom: 24px; /* P04 chat FAB from the screen bottom, incl. home indicator (Figma 365:246) */
   --space-profile-badge: 6px; /* P04 name to its status badge (Figma 116:427) */
   --space-profile-badge-block: 2px; /* P04 status badge vertical padding (Figma 116:427) */

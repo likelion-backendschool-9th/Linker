@@ -6,23 +6,28 @@
   padding-bottom: calc(var(--fab-size) + var(--space-fab-bottom) + env(safe-area-inset-bottom));
 }
 
-/* Figma 368:1590 — title @ y127, card @ y158 → 12px stack gap; side inset 18≈gutter */
+/* Figma 368:387 — title 20 under the tabs (PageFrame main already adds --space-md), card 12 below it.
+   Owner view (368:1563) shares every size here; it only adds chevrons, the red remove and 팀 삭제 */
 .membersSection {
   display: grid;
   gap: var(--space-sm);
-  padding: var(--space-lg) var(--page-gutter) 0;
+  padding: calc(var(--space-team-settings-top) - var(--space-md)) var(--page-gutter) 0;
 }
 
+/* Title 12 → buttons, buttons 11 → hints (Figma 368:387 초대하기 컨텐츠) */
 .inviteSection {
   display: grid;
-  gap: var(--space-sm);
   padding: var(--space-md) var(--page-gutter) 0;
+}
+
+.inviteSection > .sectionTitle {
+  margin-bottom: var(--space-sm);
 }
 
 .reposSection {
   display: grid;
   gap: 15px;
-  padding: var(--space-md) var(--page-gutter) 0;
+  padding: var(--space-team-repos-top) var(--page-gutter) 0;
 }
 
 .sectionHead {
@@ -39,11 +44,12 @@
   color: var(--color-text-title-cool);
 }
 
+/* "4/6명" — Figma 368:387: 16 medium #b2b7c3, 5 after the title */
 .sectionMeta {
   margin: 0;
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: 14px;
+  line-height: normal;
   color: var(--color-text-disabled-cool);
 }
 
@@ -86,10 +92,11 @@
   background-color: var(--color-radio-border);
 }
 
+/* Role line, then the name 3 below it (Figma 368:387) */
 .memberText {
   display: grid;
   flex: 1;
-  gap: 6px;
+  gap: var(--space-team-member-name);
   min-width: 0;
   margin-top: 3px;
   padding-right: 28px;
@@ -141,23 +148,26 @@
   color: var(--color-cta-cool);
 }
 
+/* "이준호 @JUNHORANG" — Figma 368:387: 14 medium #4b5563 */
 .memberName {
   margin: 0;
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: 14px;
+  line-height: normal;
   color: var(--color-text-slate);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Three 36-high buttons, 11 apart (Figma 버튼들: 107 each in 343) */
 .inviteActions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: var(--space-team-invite);
   width: 100%;
+  margin-bottom: var(--space-team-invite);
 }
 
 .inviteButton {
@@ -204,9 +214,10 @@
   border-radius: var(--radius-full);
 }
 
+/* 6px band 30 under the hints (Figma 구분 선) */
 .band {
   height: var(--divider-section);
-  margin-top: var(--space-xl);
+  margin-top: var(--space-team-settings-band);
   margin-inline: calc(-1 * var(--page-gutter));
   background-color: var(--color-canvas-cool);
 }
@@ -233,10 +244,12 @@
   color: var(--color-github-mark-original);
 }
 
+/* "GitHub 저장소" — Figma 368:387: 16 medium #111827 */
 .reposLabel {
   margin: 0;
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
+  line-height: normal;
   color: var(--color-text-title-cool);
 }
 
@@ -280,9 +293,11 @@
   padding: var(--space-row-inline) 0;
 }
 
+/* Row = 19 remove control + 5/5 padding = 29 (Figma 레포 표시); the name keeps auto line height */
 .repoName {
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
+  line-height: normal;
   color: var(--color-text-slate);
   overflow: hidden;
   text-overflow: ellipsis;
