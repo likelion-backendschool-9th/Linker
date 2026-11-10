@@ -20,6 +20,10 @@ spring:
   flyway:
     enabled: true
 
+  # Rolling deployment stops the old container with a 40s grace period (deploy/apply.sh).
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   jackson:
     default-property-inclusion: always
 
@@ -51,6 +55,8 @@ springdoc:
     - /api/v1/**
 
 server:
+  # Finish in-flight requests on SIGTERM instead of dropping them during deployment.
+  shutdown: graceful
   error:
     include-stacktrace: never
     include-message: never
