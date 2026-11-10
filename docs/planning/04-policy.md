@@ -82,7 +82,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 21 | Recruit post detail | View; apply = prompt | ○ apply; author manages applicants | View | Same as developer |
 | 22 | Write/edit project post | Prompt | ○ | × | Same as developer |
 | 23 | Project post detail | View (except list of likers) | ○ | View + "Send recruiting offer" to author | Same as developer |
-| 24 | Home feed | View ("추천" in random order; "팔로잉" shows the login notice; no job ads) | ○ "추천" by my tech stack and job categories + job-category job ads; "팔로잉" | View ("추천" in random order with the "only developers open to offers" toggle; "팔로잉" always empty; no job ads) | Same as developer |
+| 24 | Home feed | View ("추천" in random order; "팔로잉" shows the login notice; no job ads) | ○ "추천" by my tech stack and job categories + job-category job ads; "팔로잉" | View ("추천" only, in random order with the "only developers open to offers" toggle; no "팔로잉" tab; no job ads) | Same as developer |
 | 25–27 | Ops: reports, users, action log | × | × | × | ○ (permanent suspension, lifting sanctions, reviewing appeals = lead operator) |
 | 28·29 | Plans & checkout, manage subscription | Prompt | ○ Pro/Flex | ○ Scout only | Same as developer |
 | 30 | My stats | Prompt | ○ free scope; Pro adds traffic sources and recruiter view counts | × | Same as developer |
@@ -186,8 +186,8 @@ In MVP, sign-up completes with company email verification alone and the account 
 | Value | Who sees it | Recruiter messages |
 | --- | --- | --- |
 | Seeking (구직 중) | Everyone. "구직 중" badge on profile header and above the author's login on feed cards | Receives |
-| Open to offers (제안만 받기) | Profile: recruiters only. Feed cards (24, also profile post cards): everyone, as "제안 받기" above the login | Receives |
-| Off (끔, default) | Profile: not shown. Feed cards: everyone, as "구직 안 함" above the login in gray | Doesn't receive. No "Send recruiting offer" button on profile |
+| Open to offers (제안 받기) | Profile: recruiters only. Feed cards (24, also profile post cards): everyone, above the login | Receives |
+| Off (구직 안 함, default) | Profile: not shown. Feed cards: everyone, above the login in gray | Doesn't receive. No "Send recruiting offer" button on profile |
 
 - Turning job-seeking off blocks only new offers. Already accepted conversations and pending requests stay.
 - After 90 days without login, set to Off and send a "구직 상태를 껐어요" (we turned off your job-seeking status) notification on next login.
@@ -262,7 +262,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
-| POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so their "팔로잉" is always empty. The "제안 받는 개발자만" toggle is on "추천" only |
+| POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so they get only "추천" (no "팔로잉" tab, even with `?tab=following`). The "제안 받는 개발자만" toggle is on "추천" only |
 | POL-P-4 "추천" by role | **Developers and operators**: posts that share a tag with my tech stack, or whose author picked one of my job categories of interest (POL-H-8), come first, ordered by popularity score; after them, every other post in random order. Job ads 1 per 10 posts (POL-H-9). **Guests and recruiters**: every post in random order, no "why shown", no job ads |
 | POL-P-4 "추천" rules | Exclude my own posts, posts by users in a block relation (either direction) and hidden posts. For developers and operators, posts already seen on an earlier visit go to the very end. The random order is fixed for one visit, so infinite scroll never repeats or skips a post; posts written during the visit appear on the next visit, and coming back or refreshing reshuffles. At most 2 consecutive posts from the same author |
 | POL-P-5 Likes | Once per post, can undo. List of who liked is public |

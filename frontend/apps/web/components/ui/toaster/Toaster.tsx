@@ -52,12 +52,24 @@ function ToastRegion({
   return (
     <Toast.Provider label="알림">
       {toasts.map((item) => {
-        const dot = DOT_CLASS[item.tone];
+        // An action toast (되돌리기, 채팅방으로 가기) has no dot: the blue action label marks it instead
+        const dot = item.action ? undefined : DOT_CLASS[item.tone];
+        const action = item.action;
         return (
           <Toast.Root
             key={item.id}
-            className={styles.toast}
+            className={action ? `${styles.toast} ${styles.actionable}` : styles.toast}
             data-tone={item.tone}
+            // Tapping anywhere on an action toast runs its action (the action button itself bubbles
+            // here too, so the action is wired once, on the toast)
+            onClick={
+              action
+                ? () => {
+                    action.onClick();
+                    dismiss(item.id);
+                  }
+                : undefined
+            }
             duration={item.action ? ACTION_DURATION_MS : DURATION_MS[item.tone]}
             // Errors are announced assertively, the rest politely (Radix foreground / background)
             type={item.tone === 'error' ? 'foreground' : 'background'}
@@ -65,13 +77,9 @@ function ToastRegion({
           >
             {dot && <span className={`${styles.dot} ${dot}`} aria-hidden />}
             <Toast.Description className={styles.message}>{item.message}</Toast.Description>
-            {item.action && (
-              <Toast.Action
-                className={styles.action}
-                altText={item.action.label}
-                onClick={item.action.onClick}
-              >
-                {item.action.label}
+            {action && (
+              <Toast.Action className={styles.action} altText={action.label}>
+                {action.label}
               </Toast.Action>
             )}
           </Toast.Root>

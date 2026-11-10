@@ -6,8 +6,8 @@ import styles from './JobStatusPicker.module.css';
 
 const OPTIONS = [
   { value: 'SEEKING', label: '구직 중' },
-  { value: 'OPEN', label: '제안만 받기' },
-  { value: 'OFF', label: '끔' },
+  { value: 'OPEN', label: '제안 받기' },
+  { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
 export function JobStatusPicker({

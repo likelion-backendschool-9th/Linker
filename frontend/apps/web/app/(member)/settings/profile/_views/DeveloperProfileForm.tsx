@@ -24,8 +24,8 @@ import styles from '../_components/profile-edit-form.module.css';
 
 const JOB_STATUS = [
   { value: 'SEEKING', label: '구직 중' },
-  { value: 'OPEN', label: '제안만 받기' },
-  { value: 'OFF', label: '끔' },
+  { value: 'OPEN', label: '제안 받기' },
+  { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
 const schema = z.object({

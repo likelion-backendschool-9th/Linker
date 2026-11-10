@@ -240,7 +240,7 @@ NEVER split only because a file is long (one region of one screen stays one file
 | `info` | no dot | 3 s | polite |
 | `persistent` | orange dot | until `dismissToast(key)` | polite |
 
-A toast with an `action` (되돌리기, 채팅방으로 가기) stays 6 s. A new toast with the same `key` replaces the one already up.
+A toast with an `action` (되돌리기, 채팅방으로 가기) has no dot, shows the action label in blue after the message, runs the action on a tap anywhere on the toast, and stays 6 s. A new toast with the same `key` replaces the one already up.
 
 | Response | Toast | Notes |
 | --- | --- | --- |

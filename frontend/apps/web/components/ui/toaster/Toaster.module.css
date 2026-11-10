@@ -70,7 +70,12 @@
   line-height: normal;
 }
 
-/* Action toasts (되돌리기, 채팅방으로 가기) have no Figma yet: a plain text button after the message */
+/* Action toasts (되돌리기, 채팅방으로 가기): no dot, the label in blue after the message; the whole toast is
+   the tap target */
+.actionable {
+  cursor: pointer;
+}
+
 .action {
   flex-shrink: 0;
   padding: 0;

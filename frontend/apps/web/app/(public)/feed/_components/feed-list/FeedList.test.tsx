@@ -145,6 +145,8 @@ it('gives recruiters the offers-only toggle and no write button', async () => {
 
   await screen.findByRole('article', { name: '작업물 1' });
   expect(screen.queryByRole('button', { name: '게시물 쓰기' })).not.toBeInTheDocument();
+  // Recruiters can't follow: "추천" only, no "팔로잉" tab
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['추천']);
   const toggle = screen.getByRole('button', { name: '제안 받는 개발자만' });
   expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await user.click(toggle);

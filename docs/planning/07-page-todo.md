@@ -169,7 +169,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Display name (required, 1–20 characters) and bio (optional, up to 160 characters); start with empty fields
 - [ ] Tech stack picker sheet (predefined tags, max 5) → reused in 05
-- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔) in the picker → reused in 05
+- [ ] Choose job-seeking status (구직 중 / 제안 받기 / 구직 안 함, default 구직 안 함) in the picker → reused in 05
 - [ ] Done → `/feed` (starts with an empty feed)
 
 **Policy & exceptions**
@@ -194,7 +194,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Pass 1**
 
-- [ ] Header: avatar, display name, @handle, bio, blog, GitHub link, tech stack chips, "팀 찾는 중" badge, "구직 중" badge ("제안만 받기" shows as "제안 받는 중" only when a recruiter views)
+- [ ] Header: avatar, display name, @handle, bio, blog, GitHub link, tech stack chips, "팀 찾는 중" badge, "구직 중" badge ("제안 받기" shows as "제안 받는 중" only when a recruiter views)
 - [ ] Follower/following counts → (sheet) two-tab list (guests see counts only; tapping opens login prompt)
 - [ ] Own profile: "프로필 편집" (edit profile), "설정" (settings) buttons
 - [ ] Others' profile: follow/unfollow (applied on screen first, reverted on failure), more → (sheet) block/report
@@ -669,7 +669,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Server: exclusions (own posts, blocked people, hidden posts)
 - [ ] Server: popularity score (like 1, comment by others 2, decays with age, likes from accounts < 7 days old excluded)
 - [ ] "Why shown" copy (one, by priority): "React를 쓰는 사람들의 인기 글" > "프론트엔드 직군의 인기 글"
-- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); "팔로잉" always empty
+- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); only the "추천" tab (no "팔로잉")
 
 **Job ads (after the 04 job ad sheet)** `[Included]`
 

@@ -22,8 +22,8 @@ import styles from './OnboardingForm.module.css';
 
 const JOB_OPTIONS = [
   { value: 'SEEKING', label: '구직 중' },
-  { value: 'OPEN', label: '제안만 받기' },
-  { value: 'OFF', label: '끔' },
+  { value: 'OPEN', label: '제안 받기' },
+  { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
 export function OnboardingForm({
@@ -67,7 +67,7 @@ export function OnboardingForm({
     });
   const consentsReady = Boolean(termsAccepted && privacyAccepted);
   const allChecked = consentsReady && Boolean(marketingAccepted);
-  const jobLabel = JOB_OPTIONS.find((option) => option.value === jobStatus)?.label ?? '끔';
+  const jobLabel = JOB_OPTIONS.find((option) => option.value === jobStatus)?.label ?? '구직 안 함';
   const title =
     step === 'AGREEMENTS' ? '약관 동의' : step === 'EMAIL' ? '이메일 입력' : '기본 프로필 설정';
   const footerReady =
