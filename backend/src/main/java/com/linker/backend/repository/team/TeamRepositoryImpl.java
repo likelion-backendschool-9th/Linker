@@ -562,6 +562,11 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom {
         now,
         teamId,
         userId);
+    bulk(
+        "update GithubOrgInvitation i set i.status='ACCEPTED',i.updatedAt=:p0 where i.teamId=:p1 and i.inviteeUserId=:p2 and i.status='PENDING'",
+        now,
+        teamId,
+        userId);
   }
 
   @Override

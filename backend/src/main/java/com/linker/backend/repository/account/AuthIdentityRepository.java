@@ -10,6 +10,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AuthIdentityRepository extends JpaRepository<AuthIdentity, Long> {
+  @Query("select distinct i.user from AuthIdentity i where i.provider='GITHUB' and (lower(i.providerLogin)=lower(:login) or lower(i.user.username)=lower(:login))")
+  java.util.List<com.linker.backend.entity.account.User> findGithubUsersByLogin(String login);
+
+
+  interface GithubLogin { Long getUserId(); String getLogin(); }
+  @Query("select i.user.id as userId,i.providerLogin as login from AuthIdentity i where i.provider='GITHUB' and i.user.id in :userIds")
+  java.util.List<GithubLogin> findGithubLogins(java.util.Collection<Long> userIds);
+
+  @Query("select i.providerLogin from AuthIdentity i where i.user.id=:userId and i.provider='GITHUB'")
+  Optional<String> findGithubLogin(long userId);
 
 	@Query("select i.providerUserId from AuthIdentity i where i.user.id=:userId and i.provider='GITHUB'")
 	Optional<String> findGithubUserId(long userId);

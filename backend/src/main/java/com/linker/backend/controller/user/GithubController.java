@@ -61,4 +61,20 @@ public class GithubController {
 			@org.springframework.web.bind.annotation.RequestParam(defaultValue = "open") String state) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(github.pullRequests(user, roomId, state));
 	}
+
+  @PostMapping("/teams/{teamId}/members/{userId}/github-invitation")
+  @DeveloperOnly
+  @com.linker.backend.global.security.TeamRole(
+      com.linker.backend.global.security.TeamRole.Level.OWNER)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "inviteGithubOrganizationMember")
+  public ResponseEntity<com.linker.backend.dto.github.response.GithubOrgInvitationResponse>
+      inviteToOrganization(
+          @AuthenticationPrincipal AuthenticatedUser user,
+          @org.springframework.web.bind.annotation.PathVariable long teamId,
+          @org.springframework.web.bind.annotation.PathVariable long userId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(github.inviteToOrganization(user, teamId, userId));
+  }
 }

@@ -36,7 +36,9 @@ function setupTeam(id: string) {
 }
 
 function availableRepos(id: string) {
-  const team = setupTeam(id);
+  const team = findTeam(id);
+  if (!team) fail(404, 'NOT_FOUND', '삭제되었거나 볼 수 없는 콘텐츠예요');
+  if (team.myRole === 'MEMBER') fail(403, 'FORBIDDEN', '팀 관리자만 사용할 수 있어요');
   return team.orgLogin === orgs[0]!.login
     ? initialRepos
     : [
@@ -111,7 +113,7 @@ export const routes: MockRoute[] = [
     items: availableRepos(params.teamId),
     // As in Spring, installation-scoped listing cannot establish inaccessible repo counts.
     notInstalledCount: null,
-    settingsUrl: `https://github.com/organizations/${setupTeam(params.teamId).orgLogin}/settings/installations`,
+    settingsUrl: `https://github.com/organizations/${findTeam(params.teamId)!.orgLogin}/settings/installations`,
   })),
   put('/api/v1/user/teams/:teamId/setup/repos', ({ params, body }) => {
     const allowed = availableRepos(params.teamId);

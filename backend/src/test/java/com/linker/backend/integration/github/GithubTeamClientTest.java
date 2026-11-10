@@ -29,6 +29,7 @@ class GithubTeamClientTest {
   HttpServer server;
   GithubTeamClient client;
   Function<String, String> response;
+  Function<String, Integer> responseStatus = request -> 200;
 
   @Test
   void singlePullRequestUsesInstallationTokenAndChecksRepositoryIdentity() {
@@ -58,6 +59,72 @@ class GithubTeamClientTest {
     assertThat(requests).isEmpty();
   }
 
+  @Test
+  void organizationInvitesUseTheUserTokenAndAlwaysRequestDirectMember() {
+    response =
+        request ->
+            request.startsWith("/user/memberships/orgs/org")
+                ? "{\"state\":\"active\",\"role\":\"admin\",\"organization\":{\"id\":42}}"
+                : "{\"id\":987}";
+    assertThat(client.inviteOrganizationMember(7, 42, "org", 900)).isEqualTo(987);
+    assertThat(requests)
+        .anySatisfy(request -> {
+          assertThat(request).startsWith("/orgs/org/invitations");
+          var body = json.readTree(request.substring(request.indexOf('\n') + 1));
+          assertThat(body.path("invitee_id").asLong()).isEqualTo(900);
+          assertThat(body.path("role").asString()).isEqualTo("direct_member");
+        });
+    verifyNoInteractions(app);
+  }
+
+  @Test
+  void organizationInvitesRejectNonOwnersBeforeSending() {
+    response = request -> "{\"state\":\"active\",\"role\":\"member\",\"organization\":{\"id\":42}}";
+    assertThatThrownBy(() -> client.inviteOrganizationMember(7, 42, "org", 900))
+        .isInstanceOf(ApiException.class);
+    assertThat(requests).hasSize(1);
+  }
+
+  @Test
+  void organizationInviteRateLimitsRemainAnError() {
+    response =
+        request ->
+            request.startsWith("/user/memberships/orgs/org")
+                ? "{\"state\":\"active\",\"role\":\"admin\",\"organization\":{\"id\":42}}"
+                : "{}";
+    responseStatus = request -> request.startsWith("/orgs/org/invitations") ? 429 : 200;
+    assertThatThrownBy(() -> client.inviteOrganizationMember(7, 42, "org", 900))
+        .isInstanceOfSatisfying(
+            ApiException.class,
+            failure -> {
+              assertThat(failure.getStatus()).isEqualTo(429);
+              assertThat(failure.getCode()).isEqualTo("GITHUB_INVITE_LIMIT");
+            });
+  }
+
+  @Test
+  void memberLookupChecksGithubIdentityAndTreatsOnlyMembership404AsAbsent() {
+    response = request -> "{\"id\":900}";
+    responseStatus = request -> request.startsWith("/orgs/org/memberships/target") ? 404 : 200;
+    assertThat(client.organizationMemberState(7, 42, "org", "target", 900)).isEqualTo("NONE");
+    requests.clear();
+    assertThatThrownBy(() -> client.organizationMemberState(7, 42, "org", "target", 901))
+        .isInstanceOf(ApiException.class);
+    assertThat(requests).hasSize(1);
+  }
+
+  @Test
+  void invitationAndOwnershipReadsRejectAmbientTransactions() {
+    TransactionSynchronizationManager.setActualTransactionActive(true);
+    assertThatThrownBy(() -> client.inviteOrganizationMember(7, 42, "org", 900))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> client.organizationOwner(7, 42, "org"))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> client.organizationMemberState(7, 42, "org", "target", 900))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(requests).isEmpty();
+  }
+
   @BeforeEach
   void start() throws Exception {
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -71,7 +138,7 @@ class GithubTeamClientTest {
           requests.add(request);
           byte[] body = response.apply(request).getBytes(StandardCharsets.UTF_8);
           exchange.getResponseHeaders().set("Content-Type", "application/json");
-          exchange.sendResponseHeaders(200, body.length);
+          exchange.sendResponseHeaders(responseStatus.apply(request), body.length);
           exchange.getResponseBody().write(body);
           exchange.close();
         });
