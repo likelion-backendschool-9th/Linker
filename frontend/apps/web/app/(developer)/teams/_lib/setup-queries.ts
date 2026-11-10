@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
+import type { TeamSetupPermission } from '@linker/api/openAPIDefinition.schemas';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
@@ -30,10 +31,9 @@ export function setupPermissionOptions(teamId: string) {
   return queryOptions({
     queryKey: ['team-setup', teamId, 'permission-check'],
     queryFn: ({ signal }) =>
-      apiFetch<{ basePermission: 'READ' | 'WRITE'; settingsUrl: string }>(
-        `/api/v1/user/teams/${teamId}/setup/permission-check`,
-        { signal },
-      ),
+      apiFetch<TeamSetupPermission>(`/api/v1/user/teams/${teamId}/setup/permission-check`, {
+        signal,
+      }),
     enabled: !!teamId,
   });
 }

@@ -68,7 +68,13 @@ export const getSaveSetupBoardResponseMock = (
 export const getCheckSetupPermissionResponseMock = (
   overrideResponse: Partial<Extract<TeamSetupPermission, object>> = {},
 ): TeamSetupPermission => ({
-  basePermission: faker.helpers.arrayElement(['NONE', 'READ', 'WRITE', 'ADMIN'] as const),
+  basePermission: faker.helpers.arrayElement([
+    'NONE',
+    'READ',
+    'WRITE',
+    'ADMIN',
+    'UNKNOWN',
+  ] as const),
   settingsUrl: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
