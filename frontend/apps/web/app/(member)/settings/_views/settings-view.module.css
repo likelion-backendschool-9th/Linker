@@ -25,8 +25,7 @@
   border-radius: var(--radius-control-md);
 }
 
-.row,
-.emailRow {
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -48,16 +47,21 @@
 
 .card > :last-child { border-bottom: 0; min-height: var(--settings-row-final-height); }
 .rowLabel { margin: 0; color: inherit; font: inherit; }
-.emailDisplay { cursor: pointer; }
-.row:is(button, a) { position: relative; }
+.row:is(button, a) {
+  position: relative;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
 .row:is(button, a)::before {
   position: absolute;
-  z-index: 0;
-  inset: 0 0 auto;
-  height: max(100%, var(--touch-target-min));
+  z-index: -1;
+  inset: 50% 0 auto;
+  height: var(--touch-target-min);
   content: '';
+  transform: translateY(-50%);
 }
-.row > * { position: relative; z-index: 1; }
+.row:is(button, a) > * { position: relative; z-index: 1; }
+.row:is(button, a):active::before { background: var(--color-chip-format-bg); }
 .row:is(button, a):focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
 .emailValue {
   max-width: 62%;
@@ -83,32 +87,8 @@
   transform: rotate(-45deg);
 }
 
-.emailRow { flex-wrap: wrap; }
-.emailRow input {
-  flex: 1 1 140px;
-  min-width: 0;
-  min-height: var(--touch-target-min);
-  border: 0;
-  background: transparent;
-  color: var(--color-text-heading);
-  font: inherit;
-  font-size: var(--font-size-micro);
-  text-align: right;
-  text-overflow: ellipsis;
-}
-.emailRow input:focus-visible,
 .searchField input:focus-visible,
 .unblock:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
-.save {
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-xs);
-  border: 0;
-  background: transparent;
-  color: var(--color-accent);
-  font: inherit;
-  font-size: var(--font-size-caption);
-}
-.save:disabled { color: var(--color-text-meta); }
 
 .note,
 .description { margin: 0; color: var(--color-text-meta); font-size: var(--font-size-caption); line-height: var(--line-height-caption); }

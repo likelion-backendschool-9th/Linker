@@ -32,11 +32,6 @@ export function StartScreen() {
               <span className="sr-only">linker</span>
             </h1>
             <p className={styles.tagline}>개발자 SNS의 새로운 패러다임</p>
-            <ul className={styles.intro} aria-label="서비스 소개">
-              <li>팀을 찾아요</li>
-              <li>함께 일해요</li>
-              <li>작업물을 보여요</li>
-            </ul>
           </header>
 
           <div className={styles.actions}>

@@ -134,7 +134,6 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Start screen**
 
-- [ ] Service intro in 3 blocks (find a team · work together · show your work)
 - [ ] "GitHub로 시작" button (web: same window; WebView app: system browser)
 - [ ] `[Included]` Small link at the bottom "채용 담당자이신가요?" (are you a recruiter?) → 31 sign-up / 32 login (after 31)
 - [ ] "둘러보기" (browse) button → `/feed` (no login)
@@ -209,7 +208,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Post list (my post cards)
 - [ ] `[Included]` Pin featured posts: (sheet) choose posts, reorder, Free 1 / Pro 5, subscription prompt if over
 - [ ] "메시지" (message) button → 17 1:1 chat (direct if mutual follow / same team, otherwise message request)
-- [ ] Teams (active / completed)
+- [ ] Teams (active / completed); empty states: "진행중인 프로젝트가 없어요" / "완성된 프로젝트가 없어요"
 - [ ] Server: record recruiter profile views (once per recruiter per day, after 31) → for 30 view count and the Pro weekly notice
 - [ ] `[Included]` Share button → 00 share sheet (profile URL)
 - [ ] `generateMetadata` + `opengraph-image.tsx` (avatar, name, tech stack). Developer profiles only; recruiter profiles use the default (blueprint 8-3)
@@ -252,7 +251,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Logout is needed for testing right away, so it goes in on day 1; other sections are filled in as features arrive.
 
 - [ ] Logout (confirm modal) ← first
-- [ ] Account: linked GitHub (@handle), view/change notification email
+- [ ] Account: linked GitHub (@handle), view notification email
 - [ ] Notifications: "푸시 알림" (Push notifications) on/off switch. Off stops push only; the in-app list keeps filling. In a web browser, show "푸시는 Android 앱에서만 받아요" (Push is only received in the Android app)
 - [ ] Subscription & billing → 29
 - [ ] Blocked users → (sheet) list of active blocks, unblock; server closes the blocking period instead of deleting it (ERD `user_blocks`)
