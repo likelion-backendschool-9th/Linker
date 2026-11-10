@@ -1,0 +1,176 @@
+/* Figma 999:1015 "22-스켈레톤" — stepper/intro/search/CTA chrome + repo name bone */
+
+.editor {
+  display: grid;
+  gap: var(--space-group);
+  max-width: var(--form-max-width);
+  margin: calc(-1 * var(--space-md)) auto 0;
+}
+
+.steps {
+  display: flex;
+  width: calc(100% + 2 * var(--page-gutter));
+  margin: 0;
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem,
+.stepItemReached {
+  flex: 1;
+  height: var(--stepper-height);
+  min-height: var(--stepper-height);
+  padding: 0;
+  background-color: var(--color-canvas-cool);
+}
+
+.stepItemReached {
+  background-color: var(--color-cta-cool);
+}
+
+.step {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+  padding-bottom: calc(var(--control-height-sheet) + var(--space-md) + env(safe-area-inset-bottom));
+}
+
+.intro {
+  display: grid;
+  gap: var(--space-post-intro);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height-search);
+  margin-top: calc(var(--space-post-search) - var(--space-md));
+  padding: var(--space-sm) var(--space-md) var(--space-sm)
+    calc(var(--space-search-icon) + var(--icon-size) + var(--space-search-icon));
+  color: var(--color-text-placeholder-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.03em;
+  pointer-events: none;
+  background-color: var(--color-canvas-cool);
+  border: 2px solid transparent;
+  border-radius: var(--radius-card-compact);
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-search-icon);
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-text-placeholder-cool);
+  transform: translateY(-50%);
+}
+
+.searchIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.repo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  min-height: var(--touch-target-min);
+  padding-block: var(--space-sm);
+}
+
+.check {
+  display: block;
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-cta-cool);
+}
+
+.check > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bone {
+  display: block;
+  width: var(--size-post-write-skeleton-repo-w);
+  height: var(--size-post-write-skeleton-repo-h);
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.submitBar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--z-chrome);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: var(--space-sm) var(--page-gutter) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  pointer-events: none;
+  background-color: transparent;
+}
+
+.cta,
+.cta:disabled {
+  width: 100%;
+  min-height: var(--control-height-sheet);
+  padding: var(--space-md);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-title);
+  cursor: default;
+  background-color: var(--color-cta-cool);
+  border: 0;
+  border-radius: var(--radius-control-md);
+  opacity: 1;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}
