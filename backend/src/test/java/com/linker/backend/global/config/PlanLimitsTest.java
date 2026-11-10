@@ -24,4 +24,11 @@ class PlanLimitsTest {
 		assertThatThrownBy(() -> PlanLimits.flexMonthlyAmount(0))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
+
+	@Test
+	void flexYearlyAmountIsTenMonthsForTheSameHeadcount() {
+		assertThat(PlanLimits.flexYearlyAmount(6)).isEqualTo(79_000);
+		assertThat(PlanLimits.flexYearlyAmount(7)).isEqualTo(79_000 + 19_000);
+		assertThat(PlanLimits.flexYearlyAmount(8)).isEqualTo(PlanLimits.flexMonthlyAmount(8) * 10);
+	}
 }

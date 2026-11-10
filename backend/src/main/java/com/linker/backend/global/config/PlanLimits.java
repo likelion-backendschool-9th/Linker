@@ -198,6 +198,9 @@ public final class PlanLimits {
 	public static final int PRO_YEARLY_KRW = 29_000;
 	public static final int FLEX_BASE_MONTHLY_KRW = 7_900;
 	public static final int FLEX_EXTRA_SEAT_KRW = 1_900;
+	/** Policy ch. 11 — Flex yearly follows Pro: 10 months of the monthly price (2 months free). */
+	public static final int FLEX_BASE_YEARLY_KRW = 79_000;
+	public static final int FLEX_EXTRA_SEAT_YEARLY_KRW = 19_000;
 	public static final int FLEX_INCLUDED_SEATS = 6;
 	public static final int SCOUT_MONTHLY_KRW = 14_900;
 	public static final int SUBSCRIPTION_TRIAL_DAYS = 7;
@@ -234,5 +237,14 @@ public final class PlanLimits {
 		}
 		int extra = Math.max(0, seats - FLEX_INCLUDED_SEATS);
 		return FLEX_BASE_MONTHLY_KRW + (extra * FLEX_EXTRA_SEAT_KRW);
+	}
+
+	/** Flex yearly amount for headcount on the billing date (no mid-period pro-rate). */
+	public static int flexYearlyAmount(int seats) {
+		if (seats < 1) {
+			throw new IllegalArgumentException("seats must be >= 1");
+		}
+		int extra = Math.max(0, seats - FLEX_INCLUDED_SEATS);
+		return FLEX_BASE_YEARLY_KRW + (extra * FLEX_EXTRA_SEAT_YEARLY_KRW);
 	}
 }
