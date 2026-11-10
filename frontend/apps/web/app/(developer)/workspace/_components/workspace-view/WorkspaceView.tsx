@@ -42,8 +42,8 @@ export function WorkspaceView() {
     return (
       <div className={styles.workspace}>
         <ErrorState onRetry={() => void teams.refetch()} />
-        <Link href={myIssuesHref} className={styles.more} aria-label="더 보기, 내 이슈 전체 보기">
-          더 보기 <Icon svg={ArrowRightUpLinearIcon} className={styles.moreIcon} />
+        <Link href={myIssuesHref} className={styles.more} aria-label="내 이슈 전체 보기">
+          내 이슈 전체 보기 <Icon svg={ArrowRightUpLinearIcon} className={styles.moreIcon} />
         </Link>
       </div>
     );
@@ -118,9 +118,9 @@ export function WorkspaceView() {
             <Link
               href={myIssuesHref}
               className={styles.more}
-              aria-label="더 보기, 내 이슈 전체 보기"
+              aria-label="내 이슈 전체 보기"
             >
-              더 보기 <Icon svg={ArrowRightUpLinearIcon} className={styles.moreIcon} />
+              내 이슈 전체 보기 <Icon svg={ArrowRightUpLinearIcon} className={styles.moreIcon} />
             </Link>
           </section>
         </div>
