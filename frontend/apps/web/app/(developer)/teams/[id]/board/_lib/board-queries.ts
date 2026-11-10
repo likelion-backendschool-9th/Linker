@@ -7,8 +7,9 @@ import type { IssueRow } from '../../_lib/issue-queries';
 import type { BoardStatusColor, IssueStatus } from '../../../../_lib/issue-status';
 
 /**
- * Provisional 14 `IssueController` contract (WBS 14). Moves borrow 12's status API.
- * `canWrite` is a proposal beyond WBS (the board needs it to turn drag off, 07 TODO 14).
+ * 14 `IssueController` board. Moves borrow 12's status API.
+ * `writePermissionReason`: READ_ONLY_TEAM / SUSPENDED / NO_REPOSITORY_WRITE_PERMISSION /
+ * GITHUB_PERMISSION_UNAVAILABLE (lookup failed — UI still allows a move; the server decides).
  */
 export type BoardColumn = {
   status: IssueStatus;
@@ -16,7 +17,11 @@ export type BoardColumn = {
   label: string;
   cards: IssueRow[];
 };
-export type Board = { canWrite: boolean; columns: BoardColumn[] };
+export type Board = {
+  canWrite: boolean;
+  writePermissionReason: string | null;
+  columns: BoardColumn[];
+};
 
 /** Same filters as 11 except status: the columns are the statuses */
 export function boardOptions(teamId: string, filters: IssueFilters) {
