@@ -55,7 +55,7 @@ export function useSubscriptionManager() {
     selectedPayment,
     showAll,
     onShowAll: () => setShowAll(true),
-    onNotImplemented: () => toast(NOT_IMPLEMENTED),
+    onNotImplemented: () => toast(NOT_IMPLEMENTED, { tone: 'info' }),
     submit: (kind: 'cancel' | 'refund', id: number) => {
       if (!action.isPending) action.mutate({ kind, id });
     },

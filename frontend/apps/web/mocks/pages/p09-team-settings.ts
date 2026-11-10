@@ -32,7 +32,7 @@ function permissions(role: 'OWNER' | 'ADMIN' | 'MEMBER') {
     completeProject: false,
     archive: owner,
     deleteTeam: owner,
-    leave: !owner,
+    leave: role === 'MEMBER',
   };
 }
 

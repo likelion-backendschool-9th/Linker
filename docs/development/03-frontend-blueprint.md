@@ -230,6 +230,63 @@ NEVER split only because a file is long (one region of one screen stays one file
 - Cacheable public data uses separate cookie-less server functions (ch. 9).
 - Container execution: server requests use the server-only `API_INTERNAL_URL` when set (Compose: `http://backend:8080`), falling back to `NEXT_PUBLIC_API_BASE_URL`. Compose builds with an empty public origin so browser `/api/v1/*` goes through the same-origin Nginx proxy; `/ws` goes directly to Spring through Nginx; `/api/bff/*` is reserved for Next.js but has no BFF handler yet. Setup: [Docker 가이드](../operations/02-docker.md).
 
+### 5-5. Toasts: which response gets which kind
+`toast(message, { tone, key?, placement?, action? })` from `stores/toast-store.ts`, rendered by `<Toaster>` (Figma 877:415), white, under the header by default (`placement: 'bottom'` puts it above the bottom tab bar). Four kinds:
+
+| Kind (`tone`) | Look | Time | Screen reader |
+| --- | --- | --- | --- |
+| `success` (default) | blue dot | 3 s | polite (Radix `type="background"`) |
+| `error` | red dot | 5 s | assertive (Radix `type="foreground"`) |
+| `info` | no dot | 3 s | polite |
+| `persistent` | orange dot | until `dismissToast(key)` | polite |
+
+A toast with an `action` (되돌리기, 채팅방으로 가기) has no dot, shows the action label in blue after the message, runs the action on a tap anywhere on the toast, and stays 6 s. A new toast with the same `key` replaces the one already up.
+
+| Response | Toast | Notes |
+| --- | --- | --- |
+| 200 / 201 / 204 on a user action (POST, PATCH, PUT, DELETE) | `success` — "~했어요." (Policy ch. 12 copy first) | Skip it when the screen already shows the result (optimistic like, follow toggle) |
+| 202 Accepted, or a request still running after the loading timeout | `persistent` — e.g. "처리 중 입니다. 잠시만 기다려 주세요.", "요약하는 중이에요" | Always give it a `key`; on settle `dismissToast(key)` and show `success` or `error` with the same key |
+| No response: offline (`navigator.onLine === false`) or the request never reached the server | `persistent` — "인터넷 연결이 끊겼어요. 연결되면 자동으로 다시 불러올게요." | Dismiss on the `online` event |
+| 400 `VALIDATION_ERROR`, `TOO_LONG`, `CODE_MISMATCH`, `TOKEN_INVALID` | `error` — server `message` | Forms show it on the field first (`aria-invalid`); toast only when there is no field to mark |
+| 401 `LOGIN_REQUIRED` | none | Login prompt sheet (§4-5) |
+| 403 `FORBIDDEN`, `TEAM_ROLE_REQUIRED`, `SCOUT_REQUIRED` | `error` — server `message` | |
+| 403 `DEVELOPER_ONLY` | `error` | Also logged (Sentry later): the button shouldn't exist (§4-5) |
+| 403 `SUSPENDED` | none | Suspension banner |
+| `PLAN_LIMIT` | none | Limit sheet → `/subscribe?reason=` |
+| 404 `NOT_FOUND` on an action | `error` — server `message` | A missing page shows `not-found` instead of a toast |
+| 409 `ALREADY_APPLIED`, `ALREADY_APPEALED`, `NOT_PENDING` (already in that state) | `info` — e.g. "이미 이의 제기를 접수했어요" | Nothing failed; the state is already what the user wanted |
+| 409 `STATE_CONFLICT`, `CONFLICT`, `ROLE_LOCKED`, `PAYMENT_PROCESSING` and other conflicts | `error` — server `message` | |
+| 410 `TOKEN_EXPIRED` | `error` — server `message` | |
+| 429 `RATE_LIMITED` | `error` — "잠시 후 다시 시도해 주세요 (N초 후)" | `handle-api-error.ts` |
+| 500, 502 (`PAYMENT_GATEWAY_ERROR`), 503 (`SERVICE_UNAVAILABLE`, `STORAGE_UNAVAILABLE`, `PAYMENT_UNAVAILABLE`) | `error` — server `message`, else "잠시 후 다시 시도해 주세요" | |
+| 503 `GITHUB_UNAVAILABLE` | none | GitHub banner |
+| A failed read (GET) that fills the screen | none | Inline `ErrorState` with retry, not a toast |
+| Client-side notice with no request (cooldown left, 미구현 기능) | `info` | |
+| Client-side failure with no request (clipboard denied) | `error` | |
+| No response within the time limit (`RequestTimeoutError`) | `error` — "네트워크 연결 시간이 초과되었습니다." (one toast, key `request-timeout`) | Mutations always. A query that times out while a loading orb is on screen (`PageLoading`, `Skeleton`) turns that loading into the timeout screen (Figma 301:326) instead; any other query (background refetch, side query with no loader) gets the toast. App-chrome queries (badge counts) pass `meta: { background: true }` and stay silent |
+
+#### Timeouts
+- Every request goes through `apiFetch` → `fetchWithTimeout` (`lib/api/fetch-with-timeout.ts`): an `AbortController` aborts it after `NETWORK.requestTimeoutMs` (10 s, `lib/policy.ts`) and it rejects with `RequestTimeoutError` (`name: 'TimeoutError'`). A slower endpoint passes its own limit: `apiFetch(url, { timeoutMs: 30_000 })`.
+- Identify it with `isTimeoutError(error)`, never `error.name === 'AbortError'`: TanStack Query aborts requests it no longer needs (unmount, key change) with an `AbortError`, and that must stay silent. The caller's own `signal` still cancels the request.
+- No automatic retry on a timeout (`retryOnce` in `query-client.ts`): a second 10 s wait is worse than going back. 5xx still gets one retry; 4xx none. Mutations never retry.
+- Loading UI (`components/ui/page-loading`): every route `loading.tsx` renders `PageLoading` (Figma 301:294: white full screen, thinking-orbs "working" 64px in the middle, no header); `Skeleton` shows the same orb centered in its section. While any orb is mounted it counts in `loadersMounted`; a timeout then raises `loadTimedOutAt` and `LoadTimeoutScreen` (mounted once in providers) shows `PageLoadTimeout` (Figma 301:326: the orb stopped + "돌아가기", which goes back or to `/feed`). It clears on navigation.
+- Shared handling in `handle-api-error.ts` (above table). Mock mode: `localStorage.setItem('linker_mock_delay_ms', '12000')` slows every mock response to try the timeout UI; remove the key afterwards.
+- While a mutation is in flight, its button is disabled (no double submit, no duplicate rows):
+
+```tsx
+'use client';
+
+export function SaveButton({ onSave }: { onSave: () => Promise<void> }) {
+  const save = useMutation({ mutationFn: onSave, onSuccess: () => toast('저장했어요.') });
+  return (
+    <Button disabled={save.isPending} aria-busy={save.isPending} onClick={() => save.mutate()}>
+      저장
+    </Button>
+  );
+}
+```
+
+
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)
 Order: skip link "본문 바로가기" (`href="#main"`) → `header` (TabHeader/StackHeader: logo or back, search, notification bell; guests get a "설정" icon that opens the login sheet instead) → `main id="main" tabIndex={-1} aria-labelledby="page-title"` with one `h1` (may be `sr-only`) → `nav aria-label="주 메뉴"` (bottom tabs, after `main` in the DOM).

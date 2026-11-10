@@ -13,6 +13,10 @@ type AppSignalState = {
   githubUnavailable: boolean;
   /** SUSPENDED from an API call after the page loaded (the layout covers the initial case) */
   suspended: boolean;
+  /** Set when a query timed out while a loading orb was up; `LoadTimeoutScreen` shows Figma 301:326 */
+  loadTimedOutAt: number;
+  /** How many loading orbs (`PageLoading`, `Skeleton`) are on screen right now */
+  loadersMounted: number;
 };
 
 export const useAppSignalStore = create<AppSignalState>(() => ({
@@ -20,4 +24,6 @@ export const useAppSignalStore = create<AppSignalState>(() => ({
   planLimit: null,
   githubUnavailable: false,
   suspended: false,
+  loadTimedOutAt: 0,
+  loadersMounted: 0,
 }));

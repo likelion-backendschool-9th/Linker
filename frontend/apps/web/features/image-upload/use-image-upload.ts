@@ -67,12 +67,12 @@ export function useImageUpload(max: number, { initial = [], onOverflow, purpose 
     for (const file of Array.from(files)) {
       const error = validateImage(file);
       if (error) {
-        toast(error, { tone: 'alert' });
+        toast(error, { tone: 'error' });
         continue;
       }
       if (accepted.length >= room) {
         if (onOverflow) onOverflow();
-        else toast(`사진은 ${max}장까지 올릴 수 있어요.`, { tone: 'alert' });
+        else toast(`사진은 ${max}장까지 올릴 수 있어요.`, { tone: 'error' });
         break;
       }
       accepted.push({

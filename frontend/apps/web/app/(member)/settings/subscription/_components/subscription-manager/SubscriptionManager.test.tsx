@@ -104,7 +104,7 @@ it('shows each subscription as the Figma plan card and info box', async () => {
     '/subscribe?teamId=1',
   );
   await userEvent.click(within(flexSection).getByRole('button', { name: '결제 담당자 변경' }));
-  expect(toast).toHaveBeenCalledWith('미구현 기능입니다.');
+  expect(toast).toHaveBeenCalledWith('미구현 기능입니다.', { tone: 'info' });
 });
 
 it('shows the free plan card when nothing is paid', async () => {

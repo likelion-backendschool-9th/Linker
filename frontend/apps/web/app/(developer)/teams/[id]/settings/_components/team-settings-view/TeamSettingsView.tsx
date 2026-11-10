@@ -5,12 +5,13 @@ import { AltArrowRightLinearIcon } from '@solar-icons/static/linear/alt-arrow-ri
 import Image from 'next/image';
 import { SlidersHorizontal } from 'lucide-react';
 
+import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
+import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import { TeamDeleteDialog } from '../team-delete-dialog/TeamDeleteDialog';
 import { TeamSettingsActionSheet } from '../team-settings-action-sheet';
 import { ROLES, useTeamSettingsHeaderAction, useTeamSettingsView } from './hook';
 import styles from './TeamSettingsView.module.css';
@@ -19,11 +20,14 @@ import styles from './TeamSettingsView.module.css';
  * Team settings body.
  * Base: Figma 368:387. Owner deltas: Figma 368:1563 (member chevrons, red repo remove, 팀 삭제).
  * Delete confirm modal: Figma 695:1527 / 695:1640 (same chrome as login prompt ConfirmDialog).
- * "팀 나가기" is an explicit extra for non-owners (not on frame 9).
+ * "팀 나가기" is an explicit extra for members only — owners see 팀 삭제, admins see neither (not on
+ * frame 9); its confirm reuses the 팀 삭제 modal.
  */
 export function TeamSettingsView({ teamId }: { teamId: string }) {
   const { settings, members, action, team, permissions, editable, copyInvite, linkActions } =
     useTeamSettingsView(teamId);
+  const deleteConfirm = useOverlay('team-delete');
+  const leaveConfirm = useOverlay('team-leave');
 
   if (settings.isPending || members.isPending) return <Skeleton variant="card" count={3} />;
   if (settings.isError || members.isError)
@@ -191,21 +195,47 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
         </ul>
       </section>
 
-      <TeamDeleteDialog team={team} />
-      {!isOwnerView && (
+      {isOwnerView ? (
+        <div className={styles.deleteWrap}>
+          <button
+            type="button"
+            className={styles.delete}
+            disabled={!editable || !permissions.deleteTeam}
+            onClick={() => deleteConfirm.open()}
+          >
+            팀 삭제
+          </button>
+        </div>
+      ) : team.myRole === 'MEMBER' && permissions.leave ? (
         <div className={styles.leaveWrap}>
           <button
             type="button"
             className={styles.leave}
-            disabled={!editable || !permissions.leave}
-            onClick={() => action.open('leave')}
+            disabled={!editable}
+            onClick={() => leaveConfirm.open()}
           >
             팀 나가기
           </button>
         </div>
-      )}
+      ) : null}
 
       <TeamSettingsActionSheet team={team} members={members.data.items} />
+      {/* Figma 695:1640 — markup only; delete API/policy later */}
+      <ConfirmDialog
+        overlay={deleteConfirm}
+        title="팀 삭제"
+        description="해당 팀을 삭제하시겠습니까? 한번 팀을 삭제하면 되돌릴 수 없습니다. 삭제하시겠습니까?"
+        confirmLabel="삭제하기"
+        onConfirm={() => deleteConfirm.close()}
+      />
+      {/* Same modal as 팀 삭제 — markup only; leave API/policy later */}
+      <ConfirmDialog
+        overlay={leaveConfirm}
+        title="팀 나가기"
+        description="팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"
+        confirmLabel="팀 나가기"
+        onConfirm={() => leaveConfirm.close()}
+      />
     </div>
   );
 }

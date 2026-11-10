@@ -20,7 +20,7 @@ export function useAdMenuSheet(onHidden: (adId: number) => void) {
       onHidden(id);
       toast('이 광고는 다시 보이지 않아요.');
     },
-    onError: () => toast('광고를 숨기지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' }),
+    onError: () => toast('광고를 숨기지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' }),
   });
 
   return {

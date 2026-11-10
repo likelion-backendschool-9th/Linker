@@ -63,7 +63,7 @@ it('blocks recruiters with the policy toast and keeps the landing', async () => 
   renderWithProviders(<InviteAcceptArea invite={base} />, { viewer: { role: 'recruiter' } });
   expect(screen.getByRole('button', { name: '팀에 합류 하기' })).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: '팀에 합류 하기' }));
-  expect(toast).toHaveBeenCalledWith('개발자 계정만 팀에 참여할 수 있어요', { tone: 'alert' });
+  expect(toast).toHaveBeenCalledWith('개발자 계정만 팀에 참여할 수 있어요', { tone: 'error' });
   expect(acceptInvite).not.toHaveBeenCalled();
   expect(startGithubLogin).not.toHaveBeenCalled();
 });

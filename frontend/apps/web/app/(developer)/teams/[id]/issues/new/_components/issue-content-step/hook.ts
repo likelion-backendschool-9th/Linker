@@ -217,7 +217,7 @@ export function useIssueContentForm({
         const job = await getSyncJob(teamId, created.jobId);
         setProgress(job.steps);
         if (job.status === 'FAILED') {
-          toast('일정이 GitHub에 반영되지 않았어요', { tone: 'alert' });
+          toast('일정이 GitHub에 반영되지 않았어요', { tone: 'error' });
           break;
         }
         if (job.status === 'DONE') break;
