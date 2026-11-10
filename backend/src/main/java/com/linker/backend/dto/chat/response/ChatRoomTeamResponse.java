@@ -11,7 +11,6 @@ public record ChatRoomTeamResponse(
 		@Schema(requiredMode = REQUIRED, allowableValues = {"ACTIVE", "COMPLETED", "READ_ONLY", "ARCHIVED"}) String status,
 		@Schema(requiredMode = REQUIRED, allowableValues = {"OWNER", "ADMIN", "MEMBER"}) String myRole,
 		@Schema(requiredMode = REQUIRED, nullable = true, description = "Team photo") String avatarUrl,
-		@Schema(requiredMode = REQUIRED, description = "Owner team setting for AI summary") boolean aiSummaryEnabled,
-		@Schema(requiredMode = REQUIRED, description = "Show「이 팀은 AI 요약을 사용해요」banner (first 7 days)") boolean aiSummaryBanner
+		@Schema(requiredMode = REQUIRED, description = "Owner team setting for AI summary") boolean aiSummaryEnabled
 ) {
 }
