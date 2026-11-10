@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, BellOff, ChevronLeft } from 'lucide-react';
+import { Bell, BellOff, ChevronLeft, Plus } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import { Dialog } from 'radix-ui';
@@ -24,7 +24,7 @@ function Photo({ src, name, className }: { src: string | null; name: string; cla
 
 /**
  * Figma 17 room info (351:580), opened from the header ☰, with the user's 2026-11-10 reference: a
- * full screen with "멤버 N명", the team card ("PR 보러 가기" chip), members with their team role,
+ * full screen with "멤버 N명" (+ "초대하기" → 09 for owner/admin), the team card ("PR 보러 가기" chip), members with their team role,
  * and "팀 나가기". Mute (not in the frame) is the bell icon on the right of the header.
  */
 export function RoomInfoSheet({
@@ -74,9 +74,22 @@ export function RoomInfoSheet({
             <div className={styles.body}>
               {team && (
                 <section className={styles.team} aria-labelledby="room-info-member-count">
-                  <h2 id="room-info-member-count" className={styles.sectionTitle}>
-                    멤버 {members.length}명
-                  </h2>
+                  <div className={styles.sectionHead}>
+                    <h2 id="room-info-member-count" className={styles.sectionTitle}>
+                      멤버 {members.length}명
+                    </h2>
+                    {/* Invite links are team ADMIN+ (WBS 09); the invite UI itself stays on 09 */}
+                    {team.myRole !== 'MEMBER' && (
+                      <OverlayLink
+                        overlay={overlay}
+                        href={`/teams/${team.id}/settings#team-invite-title` as Route}
+                        className={styles.invite}
+                      >
+                        <Plus aria-hidden />
+                        초대하기
+                      </OverlayLink>
+                    )}
+                  </div>
                   <div className={styles.teamCard}>
                     <Photo src={team.avatarUrl} name={team.name} className={styles.teamPhoto} />
                     <span className={styles.teamText}>

@@ -89,6 +89,30 @@
   gap: var(--space-xs);
 }
 
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+/* "+ 초대하기": text action on the right of the member count */
+.invite {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-height: var(--touch-target-icon);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  text-decoration: none;
+}
+
+.invite svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
 .sectionTitle {
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
@@ -235,6 +259,7 @@
 
 .back:focus-visible,
 .mute:focus-visible,
+.invite:focus-visible,
 .prChip:focus-visible,
 .member:focus-visible,
 .cta:focus-visible {

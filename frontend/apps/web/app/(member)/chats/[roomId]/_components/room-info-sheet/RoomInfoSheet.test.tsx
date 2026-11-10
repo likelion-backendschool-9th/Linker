@@ -59,6 +59,8 @@ it('shows the member count, the team card, members with their team role, and "�
   renderWithProviders(<RoomInfoSheet room={team} login="member" disabled={false} />, open(3));
   const screenEl = await screen.findByRole('dialog', { name: '팀' });
   expect(within(screenEl).getByRole('heading', { name: '멤버 2명' })).toBeVisible();
+  // A plain member can't create invite links (WBS 09: team ADMIN+)
+  expect(within(screenEl).queryByRole('link', { name: '초대하기' })).not.toBeInTheDocument();
   expect(within(screenEl).getByText('RESULTOT')).toBeVisible();
   expect(within(screenEl).queryByRole('link', { name: /RESULTOT/ })).not.toBeInTheDocument();
   const members = within(screenEl).getByRole('list', { name: '참여자' });
@@ -100,4 +102,14 @@ it('keeps the confirmation open when leaving fails', async () => {
   await user.click(await screen.findByRole('button', { name: '나가기' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('대화에서 나가지 못했어요');
   expect(push).not.toHaveBeenCalled();
+});
+
+it('shows "초대하기" to team owners and admins, linking to the invite section of team settings', async () => {
+  const admin = { ...team, team: { ...team.team!, myRole: 'ADMIN' as const } };
+  renderWithProviders(<RoomInfoSheet room={admin} login="member" disabled={false} />, open(3));
+  const screenEl = await screen.findByRole('dialog', { name: '팀' });
+  expect(within(screenEl).getByRole('link', { name: '초대하기' })).toHaveAttribute(
+    'href',
+    '/teams/7/settings#team-invite-title',
+  );
 });
