@@ -1,6 +1,7 @@
 package com.linker.backend;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -183,6 +184,66 @@ class TeamManagementIntegrationTest {
     assertThat(jdbc.queryForObject("select count(*) from notifications where target_id=? and notification_type='TEAM_MEMBER_REMOVED'",
         Long.class, team)).isEqualTo(2);
     mvc.perform(get(base + "/members").cookie(cookie(member))).andExpect(status().isForbidden());
+    verifyNoInteractions(github);
+  }
+
+  @Test
+  void delegatedAdminCanRemoveOtherAdminsOnlyDuringTemporaryOwnerSuspension() throws Exception {
+    var otherAdmin = user(UserType.DEVELOPER);
+    join(otherAdmin, "ADMIN");
+    owner.suspendUntil(clock.instant().plusSeconds(3600));
+    users.saveAndFlush(owner);
+    mvc.perform(get(base + "/settings").cookie(cookie(admin)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.permissions.changeRoles").value(true))
+        .andExpect(jsonPath("$.permissions.deleteTeam").value(true));
+    mvc.perform(delete(base + "/members/" + owner.getId()).cookie(cookie(admin)))
+        .andExpect(status().isForbidden());
+    mvc.perform(delete(base + "/members/" + admin.getId()).cookie(cookie(admin)))
+        .andExpect(status().isForbidden());
+    mvc.perform(delete(base + "/members/" + otherAdmin.getId()).cookie(cookie(admin)))
+        .andExpect(status().isNoContent());
+    assertThat(jdbc.queryForObject(
+        "select leave_type from team_members where team_id=? and user_id=?",
+        String.class, team, otherAdmin.getId())).isEqualTo("KICKED");
+    assertThat(jdbc.queryForObject(
+        "select left_at is not null from chat_room_members where room_id=? and user_id=?",
+        Boolean.class, room, otherAdmin.getId())).isTrue();
+    verifyNoInteractions(github);
+  }
+
+  @Test
+  void expiredOrPermanentOwnerSuspensionDoesNotGrantAdminRemovalAuthority() throws Exception {
+    var otherAdmin = user(UserType.DEVELOPER);
+    join(otherAdmin, "ADMIN");
+    for (Instant until : java.util.Arrays.asList(clock.instant().minusSeconds(1), null)) {
+      owner.suspendUntil(until);
+      users.saveAndFlush(owner);
+      mvc.perform(get(base + "/settings").cookie(cookie(admin)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.permissions.changeRoles").value(false));
+      mvc.perform(delete(base + "/members/" + otherAdmin.getId()).cookie(cookie(admin)))
+          .andExpect(status().isForbidden());
+    }
+    assertThat(role(otherAdmin)).isEqualTo("ADMIN");
+  }
+
+  @Test
+  void ownerCanManuallyCloseADeletedMembersTeamAndChatPeriodsWithoutErasingHistory() throws Exception {
+    member.anonymize(clock.instant());
+    users.saveAndFlush(member);
+    mvc.perform(get(base + "/members").cookie(cookie(owner)))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.count").value(3))
+        .andExpect(content().string(containsString("탈퇴한 사용자")));
+    mvc.perform(delete(base + "/members/" + member.getId()).cookie(cookie(owner)))
+        .andExpect(status().isNoContent());
+    mvc.perform(get(base + "/members").cookie(cookie(owner)))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.count").value(2));
+    assertThat(jdbc.queryForObject("select count(*) from team_members where team_id=?",
+        Long.class, team)).isEqualTo(3);
+    assertThat(jdbc.queryForObject(
+        "select left_at is not null from chat_room_members where room_id=? and user_id=?",
+        Boolean.class, room, member.getId())).isTrue();
     verifyNoInteractions(github);
   }
 

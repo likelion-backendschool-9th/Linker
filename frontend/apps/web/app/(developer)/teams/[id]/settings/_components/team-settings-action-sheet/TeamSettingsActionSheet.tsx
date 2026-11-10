@@ -224,7 +224,8 @@ export function TeamSettingsActionSheet({
         {kind === 'member' && member && (
           <>
             <p>
-              {member.user.name} · @{member.user.login}
+              {member.user.name}
+              {member.user.login ? ` · @${member.user.login}` : ''}
             </p>
             <div className={styles.field}>
               <label htmlFor="member-role">팀 역할</label>

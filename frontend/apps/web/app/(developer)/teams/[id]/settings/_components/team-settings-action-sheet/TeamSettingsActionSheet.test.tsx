@@ -107,6 +107,20 @@ it('an admin cannot remove another admin by opening its overlay URL', () => {
   expect(screen.getByText('현재 역할이나 팀 상태에서는 변경할 수 없어요.')).toBeVisible();
 });
 
+it('allows a delegated admin to manage another admin using server owner-authority permissions', async () => {
+  vi.mocked(apiFetch).mockResolvedValue(undefined as never);
+  renderSheet(
+    { ...team, status: 'ACTIVE', permissions: { ...team.permissions, changeRoles: true } },
+    'remove:2',
+    [member],
+  );
+  await userEvent.click(screen.getByRole('button', { name: '팀에서 내보내기' }));
+  expect(apiFetch).toHaveBeenCalledWith(
+    '/api/v1/user/teams/1/members/2',
+    expect.objectContaining({ method: 'DELETE' }),
+  );
+});
+
 it('a read-only team cannot query board candidates through a forged overlay', () => {
   renderSheet({ ...team, status: 'READ_ONLY' }, 'board');
   expect(screen.getByText('현재 역할이나 팀 상태에서는 변경할 수 없어요.')).toBeVisible();
@@ -286,7 +300,12 @@ it('uses the current member ID for GitHub invitations even when GitHub login dif
 it('revokes an invite link through the existing confirmation sheet', async () => {
   vi.mocked(apiFetch).mockResolvedValue(undefined);
   renderSheet(
-    { ...team, myRole: 'OWNER', status: 'ACTIVE', permissions: { ...team.permissions, createInviteLink: true } },
+    {
+      ...team,
+      myRole: 'OWNER',
+      status: 'ACTIVE',
+      permissions: { ...team.permissions, createInviteLink: true },
+    },
     'revoke:42',
   );
   await userEvent.click(screen.getByRole('button', { name: '확인' }));
