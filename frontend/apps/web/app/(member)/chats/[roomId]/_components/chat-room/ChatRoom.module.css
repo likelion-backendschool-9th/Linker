@@ -18,6 +18,13 @@
   min-height: 0;
 }
 
+/* Figma 750:3125: keep the summary above the composer, outside the scrolling messages. */
+.aiSummary {
+  position: absolute;
+  right: calc(var(--space-row-inline) - (67px - var(--fab-size)) / 2);
+  bottom: var(--space-sm);
+}
+
 .viewport {
   position: relative;
   flex: 1;
@@ -308,14 +315,15 @@
   min-height: var(--touch-target-min);
 }
 
-/* Composer (Figma 248:1235): photo icon, pill input, round blue send button */
+/* Composer (Figma 750:3096): photo icon, pill input, round blue send button */
 .composer {
   display: grid;
   /* Without this the column grows to the textarea's intrinsic width and pushes "보내기" off screen */
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-xs);
   flex-shrink: 0;
-  padding: var(--space-xs) 0 calc(var(--space-sm) + env(safe-area-inset-bottom));
+  padding: var(--space-xs) var(--space-xxs)
+    max(var(--space-home-indicator), env(safe-area-inset-bottom)) 0;
   background: var(--color-canvas);
 }
 
@@ -340,7 +348,7 @@
 
 .attachmentToggle {
   background: none;
-  color: var(--color-text-black);
+  color: var(--color-text-title-cool);
   --icon-box-size: var(--icon-size-chat-attach);
   --icon-stroke-width: 1.5; /* Solar linear default, as drawn in Figma */
 }
@@ -353,10 +361,6 @@
 .send:disabled,
 .attachmentToggle:disabled {
   cursor: default;
-}
-
-.send:disabled {
-  opacity: 0.6;
 }
 
 .attachmentToggle:focus-visible,
