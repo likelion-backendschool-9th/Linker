@@ -174,7 +174,9 @@
   --color-photo-count-bg: rgb(255 255 255 / 0.7); /* "1/5" pill over the photo */
   --color-photo-count: #121212; /* "1/5" text: 14:1 on the pill over white */
   --color-post-author-divider: #eaeaea; /* author row bottom line */
-  --color-github-mark: #121212; /* repo card GitHub mark */
+  --color-github-mark: #121212; /* repo card GitHub mark; also the 04 "GitHub" button fill */
+  --color-profile-settings: #414141; /* 04 settings icon (Figma 785:766) */
+  --color-profile-work-cover: #f4f4f4; /* 04 work card cover before its image loads (Figma 123:1415) */
   --color-github-mark-original: #24292f; /* 09 Social Icons Github Original fill */
   --color-team-delete-fill: #e000001a; /* 09 owner "팀 삭제" CTA fill (Figma 695:1525) */
   --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */

@@ -1,11 +1,12 @@
 'use client';
 
+import { SettingsLinearIcon } from '@solar-icons/static/linear/settings';
 import { useQuery } from '@tanstack/react-query';
-import { Settings } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { Icon } from '@/components/ui/icon';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 import { ProfileInteractions } from '@/features/profile/profile-interactions/ProfileInteractions';
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -64,16 +65,16 @@ export function DeveloperProfileView({
                 </div>
                 <div className={styles.followLine}>
                   <button type="button" onClick={() => openPeople('followers')}>
-                    팔로워 {profile.followerCount}
+                    <span>팔로워</span> <span>{profile.followerCount}</span>
                   </button>
                   <button type="button" onClick={() => openPeople('followings')}>
-                    팔로잉 {profile.followingCount}
+                    <span>팔로잉</span> <span>{profile.followingCount}</span>
                   </button>
                 </div>
               </div>
               {profile.isMe ? (
                 <Link className={styles.profileSettings} href="/settings" aria-label="설정">
-                  <Settings aria-hidden />
+                  <Icon svg={SettingsLinearIcon} />
                 </Link>
               ) : null}
             </div>
