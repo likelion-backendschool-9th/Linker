@@ -50,6 +50,7 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
     path: info.outputPath('p09-delete-confirm.png'),
     fullPage: false,
     scale: 'css',
+    animations: 'disabled',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
   await page.keyboard.press('Escape');
@@ -57,6 +58,7 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
     path: info.outputPath('p09-members.png'),
     fullPage: false,
     scale: 'css',
+    animations: 'disabled',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
   await page.goto('/teams/2/settings');
@@ -84,10 +86,14 @@ test('09 copies a newly created invite link and submits the final invitation she
   );
   await expect(page.getByLabel('GitHub 로그인')).toBeFocused();
   await page.getByLabel('GitHub 로그인').fill('@jiwoo-kang');
+  await expect(page.getByText('초대 링크를 복사했어요.', { exact: true })).toBeHidden({
+    timeout: 7000,
+  });
   await page.screenshot({
     path: info.outputPath('p09-team-invite.png'),
     fullPage: false,
     scale: 'css',
+    animations: 'disabled',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
   await page.getByRole('button', { name: '초대', exact: true }).click();
@@ -98,10 +104,14 @@ test('09 copies a newly created invite link and submits the final invitation she
   await expect(page.getByRole('dialog').getByRole('alert')).toHaveText(
     '오늘은 GitHub 초대를 더 보낼 수 없어요',
   );
+  await expect(page.getByText('팀 초대를 보냈어요.', { exact: true })).toBeHidden({
+    timeout: 7000,
+  });
   await page.screenshot({
     path: info.outputPath('p09-github-invite-error.png'),
     fullPage: false,
     scale: 'css',
+    animations: 'disabled',
     style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
   });
 });
