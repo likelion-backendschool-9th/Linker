@@ -246,7 +246,7 @@ export function SettingsCommon({
         title="차단한 사용자"
         description="차단을 해제할 사용자를 선택해 주세요."
         describeHidden
-        closeIcon={<ArrowLeft aria-hidden size={16} />}
+        closeIcon={<ArrowLeft aria-hidden size={24} />}
         closeLabel="뒤로가기"
         classNames={{ sheet: styles.blockSheet, header: styles.blockHeader, body: styles.blockBody, title: styles.blockTitle, close: styles.blockClose }}
       >
@@ -272,7 +272,7 @@ export function SettingsCommon({
               </button>
             </li>
           ))}</ul>
-        ) : <p>{blockRows.length ? '검색 결과가 없어요.' : '차단한 사용자가 없어요.'}</p>}
+        ) : <p className={blockRows.length ? undefined : styles.blockEmpty}>{blockRows.length ? '검색 결과가 없어요.' : '차단한 사용자가 없어요.'}</p>}
       </OverlaySheet>
       <AlertDialog.Root open={withdrawalSheet.isOpen} onOpenChange={withdrawalSheet.onOpenChange}>
         <AlertDialog.Portal>
