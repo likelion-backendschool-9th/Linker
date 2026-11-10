@@ -37,6 +37,8 @@ import type {
   TeamInviteLinks,
   TeamSettingsMembers,
   TeamSettingsResponse,
+  TransferCreated,
+  TransferTeamOwnershipRequest,
   UpdateTeamRequest
 } from '../openAPIDefinition.schemas';
 
@@ -147,6 +149,157 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getAddTeamRepositoryMutationOptions(options), queryClient);
+    }
+    export const getRequestTeamOwnershipUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/v1/user/teams/${teamId}/ownership-transfers`
+}
+
+export const requestTeamOwnership = async (teamId: number,
+    transferTeamOwnershipRequest: TransferTeamOwnershipRequest, options?: Parameters<typeof apiFetch>[1]): Promise<TransferCreated> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<TransferCreated>(getRequestTeamOwnershipUrl(teamId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(transferTeamOwnershipRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestTeamOwnershipMutationKey = () => ['requestTeamOwnership'] as const;
+
+export const getRequestTeamOwnershipMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTeamOwnership>>, TError,RequestTeamOwnershipMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestTeamOwnership>>, TError,RequestTeamOwnershipMutationVariables, TContext> => {
+
+const mutationKey = getRequestTeamOwnershipMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestTeamOwnership>>, RequestTeamOwnershipMutationVariables> = (props) => {
+          const {teamId,data} = props ?? {};
+
+          return  requestTeamOwnership(teamId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestTeamOwnershipMutationResult = NonNullable<Awaited<ReturnType<typeof requestTeamOwnership>>>
+    export type RequestTeamOwnershipMutationBody = TransferTeamOwnershipRequest
+    export type RequestTeamOwnershipMutationError = unknown
+    export type RequestTeamOwnershipMutationVariables = {teamId: number;data: TransferTeamOwnershipRequest}
+
+    export const useRequestTeamOwnership = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestTeamOwnership>>, TError,RequestTeamOwnershipMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof requestTeamOwnership>>,
+        TError,
+        RequestTeamOwnershipMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestTeamOwnershipMutationOptions(options), queryClient);
+    }
+    export const getAcceptTeamOwnershipUrl = (teamId: number,
+    transferId: number,) => {
+
+
+
+
+  return `/api/v1/user/teams/${teamId}/ownership-transfers/${transferId}/accept`
+}
+
+export const acceptTeamOwnership = async (teamId: number,
+    transferId: number, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getAcceptTeamOwnershipUrl(teamId,transferId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAcceptTeamOwnershipMutationKey = () => ['acceptTeamOwnership'] as const;
+
+export const getAcceptTeamOwnershipMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptTeamOwnership>>, TError,AcceptTeamOwnershipMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptTeamOwnership>>, TError,AcceptTeamOwnershipMutationVariables, TContext> => {
+
+const mutationKey = getAcceptTeamOwnershipMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptTeamOwnership>>, AcceptTeamOwnershipMutationVariables> = (props) => {
+          const {teamId,transferId} = props ?? {};
+
+          return  acceptTeamOwnership(teamId,transferId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptTeamOwnershipMutationResult = NonNullable<Awaited<ReturnType<typeof acceptTeamOwnership>>>
+
+    export type AcceptTeamOwnershipMutationError = unknown
+    export type AcceptTeamOwnershipMutationVariables = {teamId: number;transferId: number}
+
+    export const useAcceptTeamOwnership = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptTeamOwnership>>, TError,AcceptTeamOwnershipMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof acceptTeamOwnership>>,
+        TError,
+        AcceptTeamOwnershipMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAcceptTeamOwnershipMutationOptions(options), queryClient);
     }
     export const getInviteGithubOrganizationMemberUrl = (teamId: number,
     userId: number,) => {
@@ -524,6 +677,140 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getNotifyTeamInviteMutationOptions(options), queryClient);
+    }
+    export const getCompleteTeamProjectUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/v1/user/teams/${teamId}/completion`
+}
+
+export const completeTeamProject = async (teamId: number, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getCompleteTeamProjectUrl(teamId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteTeamProjectMutationKey = () => ['completeTeamProject'] as const;
+
+export const getCompleteTeamProjectMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeTeamProject>>, TError,CompleteTeamProjectMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeTeamProject>>, TError,CompleteTeamProjectMutationVariables, TContext> => {
+
+const mutationKey = getCompleteTeamProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeTeamProject>>, CompleteTeamProjectMutationVariables> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  completeTeamProject(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteTeamProjectMutationResult = NonNullable<Awaited<ReturnType<typeof completeTeamProject>>>
+
+    export type CompleteTeamProjectMutationError = unknown
+    export type CompleteTeamProjectMutationVariables = {teamId: number}
+
+    export const useCompleteTeamProject = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeTeamProject>>, TError,CompleteTeamProjectMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeTeamProject>>,
+        TError,
+        CompleteTeamProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteTeamProjectMutationOptions(options), queryClient);
+    }
+    export const getUndoTeamCompletionUrl = (teamId: number,) => {
+
+
+
+
+  return `/api/v1/user/teams/${teamId}/completion`
+}
+
+export const undoTeamCompletion = async (teamId: number, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getUndoTeamCompletionUrl(teamId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUndoTeamCompletionMutationKey = () => ['undoTeamCompletion'] as const;
+
+export const getUndoTeamCompletionMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTeamCompletion>>, TError,UndoTeamCompletionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoTeamCompletion>>, TError,UndoTeamCompletionMutationVariables, TContext> => {
+
+const mutationKey = getUndoTeamCompletionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoTeamCompletion>>, UndoTeamCompletionMutationVariables> = (props) => {
+          const {teamId} = props ?? {};
+
+          return  undoTeamCompletion(teamId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoTeamCompletionMutationResult = NonNullable<Awaited<ReturnType<typeof undoTeamCompletion>>>
+
+    export type UndoTeamCompletionMutationError = unknown
+    export type UndoTeamCompletionMutationVariables = {teamId: number}
+
+    export const useUndoTeamCompletion = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTeamCompletion>>, TError,UndoTeamCompletionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof undoTeamCompletion>>,
+        TError,
+        UndoTeamCompletionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUndoTeamCompletionMutationOptions(options), queryClient);
     }
     export const getArchiveTeamUrl = (teamId: number,) => {
 
