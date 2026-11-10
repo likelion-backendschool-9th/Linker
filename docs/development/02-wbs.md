@@ -483,8 +483,8 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 25 | A | GET | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (`[Included]` incl. RECRUITER_AD), flag over 2 business days | admin |
-| 25 | A | GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat. A job ad adds `jobAd` (company, title, job category, closing date, URL host) | admin |
+| 25 | A | GET | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (user/post/comment/recruit/chat). **`RECRUITER_AD` filter deferred** — admin UI hides it until ad design ships (user decision 2026-11-10; see page-todo 24 Job ads) | admin |
+| 25 | A | GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat. **`jobAd` payload / admin ad detail deferred** with the same decision (BE may keep the field; FE does not surface it yet) | admin |
 | 25 | A | POST | `/api/v1/admin/report-cases/{caseId}/actions` | Hide / delete (reason required) / dismiss / restore → notify author and reporters | admin |
 | 25 | A | GET | `/api/v1/admin/appeals?status=` | Appeals list | admin |
 | 25 | A | POST | `/api/v1/admin/appeals/{appealId}/decision` | Accept (restore + delete record) / reject. Only an operator other than the original handler | admin |
@@ -1195,7 +1195,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 | 공통 파일 충돌·로직 중복 | 시스템 주담당 검토, 공통 서비스 재사용, API 소유 중복 금지 |
 | 일정 지연 | Included 순서 조정. 필수 기능·출시 조건 변경은 별도 합의 |
 
-기존 Included 후순위 순서: **광고 → 30 통계 → 공유 시트/카드·링크 카드 → 11 진행 현황 → 17 AI → 31~33 → 기존 보드 선택 → 운영 OTP → 피드 2차 관계 추천 → 기여 그래프**. 개발자 구직 상태는 유지한다.
+기존 Included 후순위 순서: **광고 → 30 통계 → 공유 시트/카드·링크 카드 → 11 진행 현황 → 17 AI → 31~33 → 기존 보드 선택 → 운영 OTP → 피드 2차 관계 추천 → 기여 그래프**. 개발자 구직 상태는 유지한다. **광고 안에서도 운영(25) 채용 광고 신고 필터·상세는 더 후순위** — 관리자 광고 디자인 미출시 (user decision 2026-11-10).
 
 ## 7. 적용·이행 범위
 
