@@ -30,6 +30,7 @@ export const OVERLAY_KEYS = [
   'chat-info',
   'chat-room-menu',
   'chat-leave',
+  'chat-attachments',
   'chat-issue-repo',
   'chat-unread',
   'chat-photo',

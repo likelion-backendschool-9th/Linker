@@ -1,10 +1,13 @@
 'use client';
 
 import { FileImageLinearIcon } from '@solar-icons/static/linear/file-image';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, ImagePlus } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
+import { Button } from '@/components/ui/button/Button';
 import { Icon } from '@/components/ui/icon/Icon';
+import { ImageUploader } from '@/features/image-upload/image-uploader/ImageUploader';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { CHAT, IMAGE } from '@/lib/policy';
 
@@ -26,18 +29,19 @@ type Props = {
 
 export function ChatComposer({ disabled, onSend, room, login = null, beforeSend }: Props) {
   const {
+    uploader,
+    attachments,
     text,
     setText,
     setCaret,
     input,
-    photoInput,
-    sendingPhotos,
-    onPickPhotos,
     references,
     count,
     tooLong,
     canSubmit,
     submit,
+    canSendPhotos,
+    sendPhotos,
     onMention,
   } = useChatComposer({ disabled, onSend, room, login });
 
@@ -47,25 +51,39 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
         메시지
       </label>
       <div className={styles.composerBar}>
-        {/* Picking photos sends them right away (user request 2026-11-10); no attach sheet */}
-        <button
-          type="button"
-          disabled={disabled || sendingPhotos > 0}
-          aria-label="사진 보내기"
-          className={styles.attachmentToggle}
-          onClick={() => photoInput.current?.click()}
+        <OverlaySheet
+          overlay={attachments}
+          title="사진 첨부"
+          description="사진을 고르고 전송을 누르면 바로 보내져요."
+          trigger={
+            <button
+              type="button"
+              disabled={disabled}
+              aria-label="사진 첨부"
+              className={styles.attachmentToggle}
+            >
+              <Icon svg={FileImageLinearIcon} />
+            </button>
+          }
         >
-          <Icon svg={FileImageLinearIcon} />
-        </button>
-        <input
-          ref={photoInput}
-          type="file"
-          accept={IMAGE.mimeTypes.join(',')}
-          multiple
-          hidden
-          aria-label={`보낼 사진 선택 (한 번에 ${CHAT.imagesPerSend}장까지)`}
-          onChange={onPickPhotos}
-        />
+          <fieldset disabled={disabled} className={styles.attachments}>
+            <legend className="sr-only">사진 첨부</legend>
+            <ImageUploader uploader={uploader} label="채팅 사진" />
+            <p className={styles.meta}>
+              사진은 {CHAT.imagesPerSend}장까지, 한 장에 {IMAGE.maxBytes / (1024 * 1024)}MB까지 보낼
+              수 있어요.
+            </p>
+            {!uploader.allDone && (
+              <p role="status">
+                사진을 모두 올린 뒤 보낼 수 있어요. 실패한 사진은 다시 올리거나 빼 주세요.
+              </p>
+            )}
+          </fieldset>
+          {/* Sends the photos right from the sheet (user request 2026-11-10) */}
+          <Button block disabled={!canSendPhotos} onClick={sendPhotos}>
+            전송
+          </Button>
+        </OverlaySheet>
         <textarea
           ref={input}
           id="chat-message"
@@ -100,10 +118,21 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
           <span className="sr-only">보내기</span>
         </button>
       </div>
-      {sendingPhotos > 0 && (
-        <p role="status" className={styles.photoStatus}>
-          사진 {sendingPhotos}장 보내는 중…
-        </p>
+      {!!uploader.items.length && (
+        <button
+          type="button"
+          className={styles.attachmentSummary}
+          disabled={disabled}
+          onClick={() => attachments.open()}
+        >
+          <ImagePlus aria-hidden />
+          사진 {uploader.items.length}장 ·{' '}
+          {uploader.items.some((item) => item.status === 'failed')
+            ? '다시 올리기 필요'
+            : uploader.allDone
+              ? '전송 대기'
+              : '업로드 중'}
+        </button>
       )}
       {references.team && <ChatReferenceTools control={references} onMention={onMention} />}
       {/* Figma shows no counter; it appears only once the limit is passed */}

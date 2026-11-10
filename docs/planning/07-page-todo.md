@@ -489,7 +489,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] STOMP connection; on disconnect auto-reconnect and load missed messages; over 500 → "안 읽은 메시지 500개+" and jump to last read position
 - [ ] Virtualized message list (TanStack Virtual), infinite load upward, date dividers
 - [ ] Sending = dimmed; on failure resend/delete buttons; auto-retry 3 times; over 5/sec → send delayed
-- [ ] Text 2,000 chars, photos (10 at once, 10MB each) + full-screen photo viewer. The photo button opens the file picker and the picked photos upload and send at once as one photo message (no attach sheet, typed text stays; user request 2026-11-10). Copy: "사진 N장 보내는 중…", "사진 N장을 보내지 못했어요. 다시 골라 주세요.", "사진은 한 번에 10장까지 보낼 수 있어요."
+- [ ] Text 2,000 chars, photos (10 at once, 10MB each) + full-screen photo viewer. The photo button opens the "사진 첨부" sheet (previews, remove, retry); its "전송" button, enabled once every photo has uploaded, sends them at once as one photo message and closes the sheet. The typed text stays, and the bar's send button sends text only (user request 2026-11-10).
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
