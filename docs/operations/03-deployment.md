@@ -79,6 +79,14 @@ install -d -m 700 ~/linker-backups
 (umask 077; sudo docker exec linker-db pg_dump -U linker -d linker -Fc > ~/linker-backups/linker-$(date +%Y%m%d-%H%M%S).dump)
 ```
 
+업로드한 사진은 `linker_uploads` 볼륨(백엔드 `/data/uploads`)에 저장되고 `/files/{key}`로 제공된다. DB 백업 때 함께 백업한다.
+
+```bash
+(umask 077; sudo docker run --rm -v linker_linker_uploads:/data:ro alpine tar -C /data -czf - . > ~/linker-backups/uploads-$(date +%Y%m%d-%H%M%S).tar.gz)
+```
+
+사진은 한 장에 10MB까지 올릴 수 있으므로 호스트 Nginx에도 `client_max_body_size 11m;`가 있어야 한다(기본값 1MB면 413). [초기 HTTP 예시](../../nginx/host-linker.http.conf.example)를 참고해 현재 설정의 `server` 블록에 한 줄만 추가하고 `sudo nginx -t` 뒤 다시 읽는다.
+
 `down -v`는 데이터를 삭제한다. DB 비밀번호 변경·스키마 변경·복구는 별도 절차로 진행한다.
 
 ## 남은 작업

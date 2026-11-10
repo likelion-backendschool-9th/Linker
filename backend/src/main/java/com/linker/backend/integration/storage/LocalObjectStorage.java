@@ -8,16 +8,25 @@ import java.util.Optional;
 import com.linker.backend.global.error.ApiException;
 
 /**
- * Dev and test stand-in. {@link com.linker.backend.service.user.UploadService} rewrites the
- * create response {@code uploadUrl} to {@code PUT /api/v1/user/uploads/{fileId}/content}, which
- * calls {@link #stage}. A real cloud provider still has to be chosen for non-local deploys.
+ * Server-disk storage (user decision 2026-11-10: uploads live on the server's Docker volume).
+ * {@link com.linker.backend.service.user.UploadService} rewrites the create response
+ * {@code uploadUrl} to {@code PUT /api/v1/user/uploads/{fileId}/content}, which calls {@link #stage}.
+ * Files are read back at {@code /files/{key}} by {@link LocalFileServingConfiguration}, a static
+ * resource path outside {@code /api/v1}, not a REST endpoint.
  */
 public final class LocalObjectStorage implements ObjectStorage {
+
+	/** Same-origin path the proxy and Next forward to the backend's static file handler. */
+	public static final String PUBLIC_PATH = "/files/";
 
 	private final Path root;
 
 	public LocalObjectStorage(Path root) {
 		this.root = root.toAbsolutePath().normalize();
+	}
+
+	public Path root() {
+		return root;
 	}
 
 	public void stage(String key, byte[] body) {
@@ -67,7 +76,7 @@ public final class LocalObjectStorage implements ObjectStorage {
 
 	@Override
 	public String publicUrl(String key) {
-		return "local://" + key;
+		return PUBLIC_PATH + key;
 	}
 
 	private Path resolve(String key) {

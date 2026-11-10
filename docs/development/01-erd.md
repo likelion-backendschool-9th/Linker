@@ -55,7 +55,7 @@ The four roles of [Policy ch. 2 "Access by role"](../planning/04-policy.md#acces
 | README, issue templates, repo label lists | Redis cache (README 1 hour) | GitHub is the source; used only for display |
 | Chat presence, STOMP sessions | Redis / memory | No need to persist |
 | Drafts in progress (posts, issues) | Device (local storage) | Policy ch. 2 "draft saved on device" |
-| Original images | Object storage | DB holds only key + metadata (`uploaded_files`) |
+| Original images | Server disk (`linker_uploads` volume, served at `/files/{key}`) | DB holds only key + metadata (`uploaded_files`); the key keeps the stored image's extension |
 
 ## 2. Domains at a glance
 

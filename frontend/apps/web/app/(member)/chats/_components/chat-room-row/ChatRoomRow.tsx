@@ -1,4 +1,4 @@
-import { BellOff, Minus, UsersRound } from 'lucide-react';
+import { BellOff, UsersRound } from 'lucide-react';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,27 +11,25 @@ import { useRowMenuGesture } from './hook';
 
 type Props = {
   room: ChatRoom;
-  disabled: boolean;
-  onDelete: () => void;
   /** Row menu (방 나가기·읽음 처리); omitted for rows without one (sent requests) */
   onOpenMenu?: () => void;
 };
 
 /**
  * Figma 16 row (247:1035, 321:2417): photo, name (+ "채용 제안"), time, last message, unread count.
- * A received request gets the red "삭제" button; accepting happens in the room's request panel (17).
+ * A received request has no row button (latest design, 2026-11-10): it is deleted from the row menu
+ * and accepted in the room's request panel (17).
  * Right-click, the keyboard menu key or a long press opens the row menu.
  */
-export function ChatRoomRow({ room, disabled, onDelete, onOpenMenu }: Props) {
+export function ChatRoomRow({ room, onOpenMenu }: Props) {
   const gesture = useRowMenuGesture(onOpenMenu);
   const request = room.kind === 'REQUEST';
-  const received = request && room.requestDirection === 'RECEIVED';
   const sent = request && room.requestDirection === 'SENT';
   return (
     <article className={styles.room} {...gesture}>
       <Link
         href={`/chats/${room.id}` as Route}
-        className={received || sent ? `${styles.link} ${styles.withAction}` : styles.link}
+        className={sent ? `${styles.link} ${styles.withAction}` : styles.link}
       >
         <span className={styles.avatar} aria-hidden>
           {room.counterpart?.avatarUrl ? (
@@ -73,19 +71,6 @@ export function ChatRoomRow({ room, disabled, onDelete, onOpenMenu }: Props) {
           </div>
         </div>
       </Link>
-      {received && (
-        <button
-          type="button"
-          className={styles.delete}
-          disabled={disabled}
-          onClick={onDelete}
-          aria-label={room.title ? `${room.title} 요청 삭제` : '요청 삭제'}
-        >
-          <span className={styles.deleteCircle} aria-hidden>
-            <Minus />
-          </span>
-        </button>
-      )}
       {sent && <span className={styles.pending}>대기 중</span>}
     </article>
   );
