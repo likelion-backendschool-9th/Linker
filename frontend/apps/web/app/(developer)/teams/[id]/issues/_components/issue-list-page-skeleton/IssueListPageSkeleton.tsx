@@ -31,9 +31,9 @@ export function IssueListLoadingActions() {
 }
 
 /** Figma 982:865 "11-스켈레톤" — team tabs + progress card bones + chat FAB chrome. */
-export function IssueListPageSkeleton() {
+export function IssueListPageSkeleton({ teamId: teamIdProp }: { teamId?: string } = {}) {
   const params = useParams<{ id: string }>();
-  const teamId = params.id;
+  const teamId = teamIdProp ?? params.id ?? 'preview';
   useLoaderPresence();
 
   return (

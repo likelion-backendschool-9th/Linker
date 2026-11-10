@@ -39,9 +39,9 @@ export function BoardLoadingActions() {
 }
 
 /** Figma 982:1449 "14-스켈레톤" — team tabs, filter chrome, column/card bones, chat FAB. */
-export function BoardPageSkeleton() {
+export function BoardPageSkeleton({ teamId: teamIdProp }: { teamId?: string } = {}) {
   const params = useParams<{ id: string }>();
-  const teamId = params.id;
+  const teamId = teamIdProp ?? params.id ?? 'preview';
   useLoaderPresence();
 
   return (

@@ -40,6 +40,13 @@ describe('resolveAccess', () => {
     expect(findRule('/teams/1/issues/new')?.page).toBe('13');
   });
 
+  it('allows skeleton preview routes for every role', () => {
+    expect(findRule('/test/skeletons')?.page).toBe('test');
+    expect(findRule('/test/skeletons/14')?.page).toBe('test');
+    expect(resolveAccess('/test/skeletons/24', GUEST)).toBe('allow');
+    expect(resolveAccess('/test/skeletons', as('developer', false))).toBe('allow');
+  });
+
   it('sends onboarding-incomplete developers to /onboarding except exempt paths', () => {
     const newcomer = as('developer', false);
     expect(resolveAccess('/feed', newcomer)).toBe('onboarding');

@@ -31,9 +31,9 @@ export function TeamSettingsLoadingActions() {
 }
 
 /** Figma 982:746 "9스켈레톤" — team tabs + member-card bones + chat FAB chrome. */
-export function TeamSettingsPageSkeleton() {
+export function TeamSettingsPageSkeleton({ teamId: teamIdProp }: { teamId?: string } = {}) {
   const params = useParams<{ id: string }>();
-  const teamId = params.id;
+  const teamId = teamIdProp ?? params.id ?? 'preview';
   useLoaderPresence();
 
   return (
