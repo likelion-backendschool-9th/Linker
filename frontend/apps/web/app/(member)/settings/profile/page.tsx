@@ -17,19 +17,13 @@ type JobCategory = { key: string; label: string };
 type TechTag = { id: number; name: string };
 
 export const metadata: Metadata = buildMetadata({
-  title: '프로필 수정',
+  title: '프로필 편집',
   path: '/settings/profile',
 });
 
-export default async function EditProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ overlay?: string }>;
-}) {
+export default async function EditProfilePage() {
   const session = await getSession();
   if (!session) redirect('/feed');
-  const { overlay } = await searchParams;
-  if (overlay === 'profile-edit-job') redirect('/settings?overlay=profile-edit-job');
 
   let avatarUrl: string | null = null;
   try {
@@ -44,7 +38,7 @@ export default async function EditProfilePage({
   if (session.userType === 'RECRUITER') {
     const initial = await apiFetch<RecruiterProfileValues>('/api/v1/recruiter/me/profile');
     return (
-      <PageFrame title="프로필 수정" variant="stack" backHref={`/user/${session.login}` as Route}>
+      <PageFrame title="프로필 편집" variant="stack" backHref={`/user/${session.login}` as Route}>
         <RecruiterProfileForm initial={initial} login={session.login} avatarUrl={avatarUrl} />
       </PageFrame>
     );
@@ -57,11 +51,10 @@ export default async function EditProfilePage({
   ]);
 
   return (
-    <PageFrame title="프로필 수정" variant="stack" backHref={`/user/${session.login}` as Route}>
+    <PageFrame title="프로필 편집" variant="stack" backHref={`/user/${session.login}` as Route}>
       <DeveloperProfileForm
         initial={initial}
         login={session.login}
-        avatarUrl={avatarUrl}
         techTags={techTags}
         jobCategories={jobCategories}
       />
