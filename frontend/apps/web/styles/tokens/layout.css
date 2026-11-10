@@ -20,7 +20,6 @@
   --space-profile-top: 15px; /* P04 header to the identity row (Figma 116:427) */
   --space-team-settings-top: 20px; /* 09 tabs to "팀원 프로필" (Figma 368:387) */
   --control-height-toast: 33px; /* toast (Figma 877:415) */
-  --space-loading-orbs: 20px; /* loading orbs side by side, like Figma 301:325's dots */
   --space-load-timeout-bottom: 24px; /* load timeout "돌아가기" from the screen bottom, on the home indicator (Figma 301:334) */
   --space-toast-inline: 18px; /* toast side padding (Figma 877:415) */
   --toast-dot-size: 8px; /* toast kind dot (Figma 877:415) */

@@ -28,14 +28,7 @@
   border-radius: var(--radius-control-md);
 }
 
-/* Figma 301:325 "Frame 699": the three marks in a row, 20 apart (now 64px orbs instead of 34px dots) */
-.orbs {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-loading-orbs);
-}
-
-/* Inline variant for section loading (Skeleton): the same orbs centered in its own area */
+/* Inline variant for section loading (Skeleton): the same orb centered in its own area */
 .inline {
   display: flex;
   align-items: center;
