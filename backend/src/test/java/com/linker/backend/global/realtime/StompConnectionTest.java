@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Type;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +33,7 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.socket.WebSocketHttpHeaders;
@@ -124,6 +126,32 @@ class StompConnectionTest {
 		session.subscribe("/topic/chat-rooms/1", ignoreFrames());
 		Thread.sleep(300);
 		assertThat(session.isConnected()).isFalse();
+	}
+
+	@Test
+	void serverSendsHeartbeatsWithoutRequiringClientOnes() throws Exception {
+		ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+		scheduler.initialize();
+		WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient());
+		client.setTaskScheduler(scheduler);
+		// Same request as the web client (stomp-client.ts HEARTBEAT_MS)
+		client.setDefaultHeartbeat(new long[] {10_000, 10_000});
+		WebSocketHttpHeaders handshake = new WebSocketHttpHeaders();
+		handshake.add(HttpHeaders.COOKIE, "linker_session=" + token);
+		// afterConnected runs after connectAsync completes, so wait on the headers themselves
+		CompletableFuture<long[]> heartbeat = new CompletableFuture<>();
+		try {
+			StompSession session = client.connectAsync(url(), handshake, new StompSessionHandlerAdapter() {
+				@Override
+				public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+					heartbeat.complete(connectedHeaders.getHeartbeat());
+				}
+			}).get(5, TimeUnit.SECONDS);
+			assertThat(heartbeat.get(5, TimeUnit.SECONDS)).containsExactly(10_000L, 0L);
+			session.disconnect();
+		} finally {
+			scheduler.shutdown();
+		}
 	}
 
 	@Test
