@@ -58,6 +58,7 @@ export function DeveloperSettingsView({
               ) : (
                 <span className={styles.value}>연결 안 됨</span>
               )}
+              <span className={styles.chevron} aria-hidden="true" />
             </span>
           </div>
         }

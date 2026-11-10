@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -596,8 +597,14 @@ class FoundationIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.fileId").value(fileId))
 				.andReturn().getResponse().getContentAsString();
-		assertThat(completed.replaceAll(".*\"url\"\\s*:\\s*\"([^\"]+)\".*", "$1"))
-				.startsWith("local://uploads/" + owner.getId() + "/");
+		String url = completed.replaceAll(".*\"url\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+		assertThat(url).startsWith("/files/uploads/" + owner.getId() + "/").endsWith(".png");
+		// Served to anyone at the returned same-origin path, typed by the stored extension
+		mockMvc.perform(get(url))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.IMAGE_PNG))
+				.andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("immutable")));
+		mockMvc.perform(get("/files/uploads/" + owner.getId() + "/missing.png")).andExpect(status().isNotFound());
 	}
 
 	@Test

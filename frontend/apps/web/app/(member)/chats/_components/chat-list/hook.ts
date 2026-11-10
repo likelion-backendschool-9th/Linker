@@ -77,7 +77,7 @@ export function useChatList(initialSummary?: UnreadSummary) {
     },
     onError: () => toast('읽음 처리하지 못했어요. 다시 시도해 주세요.', { tone: 'error' }),
   });
-  // Accepting lives in the room's request panel (17); the list only deletes (Figma 16 has no 수락).
+  // Accepting lives in the room's request panel (17); the list deletes from the row menu only.
   const pending = remove.isPending || leave.isPending;
   const items = rooms.data?.pages.flatMap((page) => page.items) ?? [];
   const mutationError = remove.error;

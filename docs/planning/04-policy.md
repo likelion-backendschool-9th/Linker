@@ -445,7 +445,7 @@ Flex teams get a "진행 현황" (Progress) card at the top of the issue tab. It
 
 | Policy | Details |
 | --- | --- |
-| Messages | Text 2,000 chars; up to 10 images at once, 10MB each (location data stripped). No file attachments in MVP |
+| Messages | Text 2,000 chars; up to 5 images at once, 10MB each (location data stripped), each sent as its own message; text can't be typed while photos are picked. No file attachments in MVP |
 | Edit/delete | Own messages editable within 24 hours ("수정됨"), deletable anytime ("삭제된 메시지입니다" — deleted message) |
 | Read status | Team chat shows unread count; 1:1 shows read/unread. "Last read position" is the basis for AI summary (POL-C-5) |
 | POL-C-2 Issue cards | Cards show the latest status. Issues from repos without permission show title only |

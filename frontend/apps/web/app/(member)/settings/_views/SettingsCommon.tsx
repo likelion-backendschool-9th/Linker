@@ -174,6 +174,7 @@ export function SettingsCommon({
           <AccountPlan settings={settings} />
           <button type="button" className={styles.row} onClick={() => logoutOverlay.open()}>
             <span>로그아웃</span>
+            <span className={styles.chevron} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -185,6 +186,7 @@ export function SettingsCommon({
             }}
           >
             <span>계정 삭제</span>
+            <span className={styles.chevron} aria-hidden="true" />
           </button>
         </div>
       </section>
@@ -207,7 +209,6 @@ export function SettingsCommon({
         <nav className={styles.card} aria-label="약관 및 정책">
           <Link className={styles.row} href="/legal/terms"><span>이용약관</span><span className={styles.trailing}><span className={styles.value}>동의함</span><span className={styles.chevron} aria-hidden="true" /></span></Link>
           <Link className={styles.row} href="/legal/privacy"><span>개인정보 처리방침</span><span className={styles.trailing}><span className={styles.value}>동의함</span><span className={styles.chevron} aria-hidden="true" /></span></Link>
-          <a className={styles.row} href="mailto:support@linker.example"><span>문의하기</span><span className={styles.chevron} aria-hidden="true" /></a>
         </nav>
       </section>
 
@@ -250,7 +251,7 @@ export function SettingsCommon({
         classNames={{ sheet: styles.blockSheet, header: styles.blockHeader, body: styles.blockBody, title: styles.blockTitle, close: styles.blockClose }}
       >
         <label className={styles.searchField}>
-          <Search aria-hidden="true" size={16} />
+          <Search aria-hidden="true" size={24} />
           <span className={styles.searchLabel}>이름 또는 아이디 검색</span>
           <input id="block-search" value={blockQuery} onChange={(event) => setBlockQuery(event.target.value)} placeholder="이름 또는 아이디 검색" />
         </label>
@@ -259,7 +260,7 @@ export function SettingsCommon({
             <li className={styles.blockItem} key={user.id}>
               <span className={styles.person}>
                 <span className={styles.avatar}>
-                  {user.avatarUrl ? <Image src={user.avatarUrl} alt="" fill sizes="32px" /> : null}
+                  {user.avatarUrl ? <Image src={user.avatarUrl} alt="" fill sizes="44px" /> : null}
                 </span>
                 <span className={styles.personText}>
                   <span className={styles.personName}>{user.name}</span>
@@ -357,10 +358,12 @@ export function SettingsCommon({
 }
 
 export function AccountPlan({ settings }: { settings: SettingsData }) {
+  const planLabel = settings.plan.label.replace(/\s+\d+\/\d+명$/, '');
+
   return (
-    <Link className={styles.row} href="/settings/subscription" aria-label="구독 관리">
+    <Link className={styles.row} href="/settings/subscription" aria-label="구독과 결제">
       <span>구독과 결제</span>
-      <span className={styles.trailing}><span className={styles.value}>{settings.plan.label}</span><span className={styles.chevron} aria-hidden="true" /></span>
+      <span className={styles.trailing}><span className={styles.value}>{planLabel}</span><span className={styles.chevron} aria-hidden="true" /></span>
     </Link>
   );
 }

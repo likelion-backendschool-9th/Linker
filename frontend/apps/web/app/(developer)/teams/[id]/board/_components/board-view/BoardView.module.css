@@ -5,7 +5,7 @@
   gap: var(--board-column-gap);
   margin-top: calc(-1 * var(--space-md));
   padding-top: var(--board-column-gap);
-  /* Keep column swipe scroll; stop wide columns / sr-only from widening the page */
+  /* Stop wide columns / sr-only from widening the page */
   min-width: 0;
   overflow-x: clip;
 }
@@ -16,7 +16,7 @@
   gap: var(--space-board-control-gap);
 }
 
-/* Columns side by side; the row scrolls sideways to the screen edges (07 TODO 14) */
+/* Columns side by side; pan allowed, scrollbar hidden (QA) */
 .columns {
   /* Positioned so it also clips the cards' sr-only text; otherwise it widens the mobile page */
   position: relative;
@@ -29,6 +29,14 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-padding-inline: var(--page-gutter);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.columns::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Figma 214:92: 240px, light gray, status-colored 4px top line, soft shadow */

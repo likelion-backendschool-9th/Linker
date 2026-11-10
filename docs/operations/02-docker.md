@@ -97,7 +97,7 @@ DB·Redis 자체 healthcheck가 통과한 뒤 Spring을 시작하고, Spring이 
 
 `nginx/default.conf`가 위 경로를 정의합니다. 컨테이너가 재생성되어 IP가 바뀌면 Docker DNS로 다시 조회합니다.
 인증 쿠키를 JavaScript에 노출하거나 별도의 사용자 ID 헤더로 변환하지 않습니다. 실제 로그인·쿠키 발급·WebSocket 권한 검사는 아직 구현 전입니다.
-인증이 구현되면 STOMP heartbeat를 프록시 timeout보다 짧게 설정하고 실제 송수신·재연결을 검증해야 합니다.
+STOMP 서버는 10초마다 heartbeat를 보내 프록시 300초 timeout에 걸리지 않습니다. 백그라운드 탭·WebView의 타이머 지연 때문에 클라이언트 heartbeat는 요구하지 않습니다(`WebSocketConfig.HEARTBEAT_MS`).
 기본 구성은 HTTP 로컬 실행용입니다. 서버 HTTPS는 호스트 Nginx에서 종료하고, `compose.prod.yml`이 선택하는 `nginx/production.conf`에서 HTTPS 전달 정보를 유지합니다. 서버 운영 절차는 [배포 가이드](03-deployment.md)를 참고하세요.
 
 ## 환경변수와 네트워크

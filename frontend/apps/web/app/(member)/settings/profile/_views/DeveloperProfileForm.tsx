@@ -28,6 +28,43 @@ const JOB_STATUS = [
   { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
+const JOB_CATEGORY_ORDER = [
+  'FRONTEND',
+  'BACKEND',
+  'FULLSTACK',
+  'DATA_AI',
+  'DEVOPS',
+  'GAME',
+  'EMBEDDED',
+  'SECURITY',
+  'MOBILE',
+  'QA',
+] as const;
+const JOB_CATEGORY_LABELS: Record<string, string> = {
+  FRONTEND: '프론트엔드',
+  BACKEND: '백엔드',
+  FULLSTACK: '풀스택',
+  DATA_AI: '데이터 사이언티스트',
+  DEVOPS: '인프라',
+  GAME: '게임',
+  EMBEDDED: '임베디드',
+  SECURITY: '보안',
+  MOBILE: '클라우드 엔지니어',
+  QA: 'QA',
+};
+
+const BIO_MAX_LENGTH = 100;
+const TECH_STACK_ROWS = [
+  ['Java', 'Kotlin', 'JavaScript', 'TypeScript', 'Python'],
+  ['Go', 'React', 'Next.js', 'Vue', 'React Native'],
+  ['Spring Boot', 'Node.js', 'Django', 'FastAPI', 'PostgreSQL'],
+  ['MySQL', 'Redis', 'Docker', 'AWS'],
+] as const;
+const TECH_STACK_OPTIONS = TECH_STACK_ROWS.flat();
+const TECH_STACK_LABELS: Record<string, string> = {
+  Vue: 'Vue.js',
+};
+
 const schema = z.object({
   kind: z.literal('DEVELOPER'),
   name: z
@@ -35,7 +72,11 @@ const schema = z.object({
     .trim()
     .min(PROFILE.displayName.min, '이름을 입력해 주세요.')
     .max(PROFILE.displayName.max, `이름은 ${PROFILE.displayName.max}자 이내로 입력해 주세요.`),
-  bio: z.string().max(PROFILE.bioMax, `소개는 ${PROFILE.bioMax}자 이내로 입력해 주세요.`),
+  bio: z
+    .string()
+    .trim()
+    .min(1, '자기 소개를 입력해 주세요.')
+    .max(BIO_MAX_LENGTH, `자기 소개는 ${BIO_MAX_LENGTH}자 이내로 입력해 주세요.`),
   blogUrl: z.string().refine((value) => {
     if (!value) return true;
     try {
@@ -60,13 +101,12 @@ const schema = z.object({
 export function DeveloperProfileForm({
   initial,
   login,
-  avatarUrl: _avatarUrl,
   techTags,
   jobCategories,
 }: {
   initial: DeveloperProfileValues;
   login: string;
-  avatarUrl: string | null;
+  avatarUrl?: string | null;
   techTags: TechTag[];
   jobCategories: JobCategory[];
 }) {
@@ -76,19 +116,34 @@ export function DeveloperProfileForm({
   const categorySheet = useOverlay('profile-edit-categories');
   const leave = useOverlay('profile-leave');
   const [error, setError] = useState<string | null>(null);
+  const [jobStatusChosen, setJobStatusChosen] = useState(initial.jobStatus !== 'OFF');
   const form = useForm<DeveloperProfileValues>({
     resolver: zodResolver(schema),
-    mode: 'onSubmit',
+    mode: 'onChange',
     defaultValues: initial,
   });
   const selectedTech = useWatch({ control: form.control, name: 'techStack' }) ?? [];
+  const [selectedTechOccurrence, setSelectedTechOccurrence] = useState<Record<string, number>>(() => {
+    const occurrences: Record<string, number> = {};
+    initial.techStack.forEach((name) => {
+      const optionIndex = TECH_STACK_OPTIONS.findIndex((option) => option === name);
+      if (optionIndex !== -1) {
+        occurrences[name] = optionIndex;
+      }
+    });
+    return occurrences;
+  });
   const selectedCategories = useWatch({ control: form.control, name: 'jobCategories' }) ?? [];
   const jobStatus = useWatch({ control: form.control, name: 'jobStatus' });
   const bio = useWatch({ control: form.control, name: 'bio' }) ?? '';
   const jobLabel = JOB_STATUS.find((option) => option.value === jobStatus)?.label ?? '';
-  const categoryLabels = jobCategories
+  const jobStatusLabel = jobStatusChosen ? jobLabel : '현재 구직 상태를 알려주세요';
+  const orderedJobCategories = JOB_CATEGORY_ORDER.flatMap((key) =>
+    jobCategories.filter((category) => category.key === key),
+  );
+  const categoryLabels = orderedJobCategories
     .filter((category) => selectedCategories.includes(category.key))
-    .map((category) => category.label);
+    .map((category) => JOB_CATEGORY_LABELS[category.key] ?? category.label);
 
   useEffect(() => {
     useUnsavedChangesStore.getState().setDirty(form.formState.isDirty);
@@ -133,30 +188,6 @@ export function DeveloperProfileForm({
       ),
   });
 
-  const sync = useMutation({
-    mutationFn: () =>
-      apiFetch<DeveloperProfileValues & { syncedAt: string }>(
-        '/api/v1/user/me/profile/github-sync',
-        { method: 'POST' },
-      ),
-    onSuccess: async (synced) => {
-      form.reset({
-        kind: 'DEVELOPER',
-        name: synced.name,
-        bio: synced.bio,
-        blogUrl: synced.blogUrl,
-        techStack: synced.techStack,
-        lookingForTeam: synced.lookingForTeam,
-        jobStatus: synced.jobStatus,
-        jobCategories: form.getValues('jobCategories'),
-      });
-      await queryClient.invalidateQueries({ queryKey: profileQueryKey(login) });
-      toast('GitHub 프로필을 다시 불러왔어요.');
-    },
-    onError: (cause) =>
-      setError(cause instanceof ApiError ? cause.message : 'GitHub 정보를 불러오지 못했어요.'),
-  });
-
   function toggleTech(name: string) {
     const current = form.getValues('techStack');
     if (!current.includes(name) && current.length >= PROFILE.techStackMax) return;
@@ -164,6 +195,49 @@ export function DeveloperProfileForm({
       'techStack',
       current.includes(name) ? current.filter((item) => item !== name) : [...current, name],
       { shouldDirty: true, shouldValidate: true },
+    );
+  }
+
+  function renderTechChip(tag: TechTag, optionIndex: number) {
+    const checked =
+      selectedTech.includes(tag.name) && selectedTechOccurrence[tag.name] === optionIndex;
+    return (
+      <li key={`${tag.id}-${optionIndex}`}>
+        <label className={styles.techStackChip} data-selected={checked}>
+          <input
+            className="sr-only"
+            type="checkbox"
+            checked={checked}
+            disabled={
+              !checked &&
+              !selectedTech.includes(tag.name) &&
+              selectedTech.length >= PROFILE.techStackMax
+            }
+            onChange={() => {
+              if (checked) {
+                toggleTech(tag.name);
+                setSelectedTechOccurrence((current) => {
+                  const next = { ...current };
+                  delete next[tag.name];
+                  return next;
+                });
+              } else if (selectedTech.includes(tag.name)) {
+                setSelectedTechOccurrence((current) => ({
+                  ...current,
+                  [tag.name]: optionIndex,
+                }));
+              } else if (selectedTech.length < PROFILE.techStackMax) {
+                toggleTech(tag.name);
+                setSelectedTechOccurrence((current) => ({
+                  ...current,
+                  [tag.name]: optionIndex,
+                }));
+              }
+            }}
+          />
+          {TECH_STACK_LABELS[tag.name] ?? tag.name}
+        </label>
+      </li>
     );
   }
 
@@ -177,19 +251,19 @@ export function DeveloperProfileForm({
     );
   }
 
-  const pending = save.isPending || sync.isPending;
+  const pending = save.isPending;
 
   return (
     <>
       <form
-        className={styles.sheetForm}
+        className={`${styles.sheetForm} ${styles.profileForm}`}
         noValidate
         onSubmit={form.handleSubmit((values) => {
           setError(null);
           save.mutate(values);
         })}
       >
-        <fieldset className={styles.fields} aria-label="개발자 프로필 정보" disabled={pending}>
+        <fieldset className={styles.fields} aria-label="프로필 정보" disabled={pending}>
           <Field id="profile-name" label="이름" required error={form.formState.errors.name?.message}>
             <input
               id="profile-name"
@@ -210,29 +284,17 @@ export function DeveloperProfileForm({
               <textarea
                 id="profile-bio"
                 rows={4}
-                maxLength={PROFILE.bioMax}
+                maxLength={BIO_MAX_LENGTH}
                 placeholder="개발자님을 간단하게 소개해 주세요"
                 aria-invalid={!!form.formState.errors.bio}
                 aria-describedby={form.formState.errors.bio ? 'profile-bio-error' : 'profile-bio-count'}
                 {...form.register('bio')}
               />
               <span id="profile-bio-count" className={styles.counter}>
-                {bio.length}/{PROFILE.bioMax}
+                {bio.length}/{BIO_MAX_LENGTH}
               </span>
             </span>
           </Field>
-          <Field id="profile-blog" label="블로그 주소" error={form.formState.errors.blogUrl?.message}>
-            <input
-              id="profile-blog"
-              type="url"
-              inputMode="url"
-              placeholder="https://"
-              aria-invalid={!!form.formState.errors.blogUrl}
-              aria-describedby={form.formState.errors.blogUrl ? 'profile-blog-error' : undefined}
-              {...form.register('blogUrl')}
-            />
-          </Field>
-
           <div className={styles.pickerField}>
             <span className={styles.labelRow} id="job-status-label">
               구직 상태
@@ -241,11 +303,11 @@ export function DeveloperProfileForm({
             <button
               type="button"
               className={styles.selectRow}
-              data-filled="true"
-              aria-label={`구직 상태, ${jobLabel}`}
+              data-filled={jobStatusChosen}
+              aria-label={`구직 상태, ${jobStatusLabel}`}
               onClick={() => jobSheet.open()}
             >
-              <span>{jobLabel}</span>
+              <span>{jobStatusLabel}</span>
               <ChevronDown aria-hidden="true" />
             </button>
           </div>
@@ -275,8 +337,8 @@ export function DeveloperProfileForm({
             </button>
           </div>
 
-          <fieldset className={styles.pickerField}>
-            <legend className={styles.labelRow}>
+          <fieldset className={`${styles.pickerField} ${styles.categoryPickerField}`}>
+            <legend className={`${styles.labelRow} ${styles.categoryPickerLabel}`}>
               관심 직군
               <span className={styles.hint}>최대 {PROFILE.jobCategoriesMax}개</span>
             </legend>
@@ -294,30 +356,16 @@ export function DeveloperProfileForm({
               <ChevronDown aria-hidden="true" />
             </button>
           </fieldset>
-
-          <label className={styles.option}>
-            <input type="checkbox" {...form.register('lookingForTeam')} />
-            함께할 팀을 찾고 있어요
-          </label>
         </fieldset>
 
         <div className={styles.footer}>
           <button
-            type="button"
-            className={styles.syncButton}
-            onClick={() => sync.mutate()}
-            disabled={sync.isPending || form.formState.isDirty || pending}
-            aria-busy={sync.isPending}
-          >
-            {sync.isPending ? '불러오는 중…' : 'GitHub에서 다시 불러오기'}
-          </button>
-          <button
             type="submit"
-            className={styles.saveButton}
-            disabled={!form.formState.isDirty || save.isPending}
+            className={styles.profileNextButton}
+            disabled={!form.formState.isDirty || !form.formState.isValid || save.isPending}
             aria-busy={save.isPending}
           >
-            {save.isPending ? '저장 중…' : '저장'}
+            다음
           </button>
           {error && (
             <p className={styles.error} role="alert">
@@ -330,28 +378,52 @@ export function DeveloperProfileForm({
       <OverlaySheet
         overlay={jobSheet}
         title="구직 상태"
-        description="현재 구직 상태를 선택해 주세요."
+        description="구직 상태"
         describeHidden
+        classNames={{
+          scrim: styles.jobStatusScrim,
+          sheet: styles.jobStatusSheet,
+          header: styles.jobStatusHeader,
+          title: styles.jobStatusTitle,
+          close: styles.jobStatusClose,
+          body: styles.jobStatusBody,
+        }}
       >
-        <div className={styles.choiceList} role="radiogroup" aria-label="구직 상태">
+        <div
+          className={`${styles.choiceList} ${styles.jobStatusChoiceList}`}
+          role="radiogroup"
+          aria-label="구직 상태"
+        >
           {JOB_STATUS.map((option) => (
-            <label key={option.value} className={styles.choice} data-selected={jobStatus === option.value}>
+            <label
+              key={option.value}
+              className={`${styles.choice} ${styles.jobStatusChoice}`}
+              data-selected={jobStatus === option.value}
+            >
               <input
                 className="sr-only"
                 type="radio"
                 value={option.value}
                 checked={jobStatus === option.value}
-                onChange={() =>
-                  form.setValue('jobStatus', option.value, { shouldDirty: true, shouldValidate: true })
-                }
+                onChange={() => {
+                  setJobStatusChosen(true);
+                  form.setValue('jobStatus', option.value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
               />
               {option.label}
             </label>
           ))}
         </div>
-        <button type="button" className={styles.saveButton} onClick={() => jobSheet.close()}>
-          완료
-        </button>
+          <button
+            type="button"
+            className={`${styles.saveButton} ${styles.jobStatusDoneButton}`}
+            onClick={() => jobSheet.close()}
+          >
+            완료
+          </button>
       </OverlaySheet>
 
       <OverlaySheet
@@ -359,27 +431,32 @@ export function DeveloperProfileForm({
         title="기술 스택"
         description={`최대 ${PROFILE.techStackMax}개까지 선택할 수 있어요.`}
         describeHidden
+        classNames={{
+          scrim: styles.jobStatusScrim,
+          sheet: styles.techStackSheet,
+          header: styles.jobStatusHeader,
+          title: styles.jobStatusTitle,
+          close: styles.jobStatusClose,
+          body: styles.techStackBody,
+        }}
       >
-        <ul className={styles.chipCloud}>
-          {techTags.map((tag) => {
-            const checked = selectedTech.includes(tag.name);
-            return (
-              <li key={tag.id}>
-                <label className={styles.chip} data-selected={checked}>
-                  <input
-                    className="sr-only"
-                    type="checkbox"
-                    checked={checked}
-                    disabled={!checked && selectedTech.length >= PROFILE.techStackMax}
-                    onChange={() => toggleTech(tag.name)}
-                  />
-                  {tag.name}
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-        <button type="button" className={styles.saveButton} onClick={() => techSheet.close()}>
+        <div className={styles.techStackChipRows}>
+          {TECH_STACK_ROWS.map((row, rowIndex) => (
+            <ul key={rowIndex} className={styles.techStackChipRow}>
+              {row.map((name, columnIndex) => {
+                const tag = techTags.find((option) => option.name === name);
+                if (!tag) return null;
+                const optionIndex = rowIndex * 5 + columnIndex;
+                return renderTechChip(tag, optionIndex);
+              })}
+            </ul>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`${styles.saveButton} ${styles.jobStatusDoneButton}`}
+          onClick={() => techSheet.close()}
+        >
           완료
         </button>
       </OverlaySheet>
@@ -387,13 +464,26 @@ export function DeveloperProfileForm({
       <OverlaySheet
         overlay={categorySheet}
         title="관심 직군"
-        description="관심 직군을 고르면 그 직군의 채용 광고만 피드에 보여요. 비워 두면 광고가 뜨지 않아요."
+        description="관심 직군"
+        describeHidden
+        classNames={{
+          scrim: styles.jobStatusScrim,
+          sheet: styles.categorySheet,
+          header: styles.jobStatusHeader,
+          title: styles.jobStatusTitle,
+          close: styles.jobStatusClose,
+          body: styles.categoryBody,
+        }}
       >
-        <div className={styles.choiceList}>
-          {jobCategories.map((category) => {
+        <div className={`${styles.choiceList} ${styles.categoryList}`}>
+          {orderedJobCategories.map((category) => {
             const checked = selectedCategories.includes(category.key);
             return (
-              <label key={category.key} className={styles.choice} data-selected={checked}>
+              <label
+                key={category.key}
+                className={`${styles.choice} ${styles.jobStatusChoice}`}
+                data-selected={checked}
+              >
                 <input
                   className="sr-only"
                   type="checkbox"
@@ -401,12 +491,16 @@ export function DeveloperProfileForm({
                   disabled={!checked && selectedCategories.length >= PROFILE.jobCategoriesMax}
                   onChange={() => toggleCategory(category.key)}
                 />
-                {category.label}
+                {JOB_CATEGORY_LABELS[category.key] ?? category.label}
               </label>
             );
           })}
         </div>
-        <button type="button" className={styles.saveButton} onClick={() => categorySheet.close()}>
+        <button
+          type="button"
+          className={`${styles.saveButton} ${styles.jobStatusDoneButton}`}
+          onClick={() => categorySheet.close()}
+        >
           완료
         </button>
       </OverlaySheet>

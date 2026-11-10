@@ -165,7 +165,10 @@
   --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
   --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
   --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
-  --chat-ai-logo-size: 33px; /* logo inside the "AI 채팅 요약" button (--control-height-chat circle) */
+  --chat-photo-tile-size: 100px; /* composer photo panel tile (user design 2026-11-10) */
+  --chat-photo-remove-size: 24px; /* its × circle */
+  --chat-image-max-size: 220px; /* a photo in a message: max width and max height (user request 2026-11-10) */
+  --chat-ai-logo-size: 32px; /* animated orb inside the "AI 채팅 요약" button: ThinkingOrb's 32px size preset (Figma logo 33px) */
   --space-chat-card: 14px; /* PR card padding */
   --chat-request-panel-height: 140px; /* request panel replacing the composer */
   --space-chat-request-title: 19px; /* request panel top to its title */
@@ -262,7 +265,7 @@
   --shadow-profile-work-card: 0 2px 10px rgb(18 18 18 / 0.10); /* 04 work card, Figma 116:427 / 301:572 drop shadow (blur 10) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
   --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
-  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */
+  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) and photo panel (user design 2026-11-10) */
   --shadow-gnb: 0 2px 4px rgb(0 0 0 / 0.2); /* bottom GNB pill (Figma 800:1299, 455:316 exception) */
 
   /* Figma 15 values (calendar) */
@@ -332,7 +335,6 @@
   --space-chat-list-top: 15px; /* tabs to the first room */
   --chat-list-avatar-size: 50px; /* room photo */
   --chat-list-badge-size: 18px; /* unread count circle */
-  --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
 
   /* Figma 13 create (200:806) */
   --issue-create-body-min-height: 163px; /* markdown / preview field */

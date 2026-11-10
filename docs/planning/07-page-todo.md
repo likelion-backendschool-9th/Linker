@@ -469,12 +469,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: C-1, C-4 · Needs first: 08 (team chat room data) · Merged: message requests → third tab
 
-- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with a red "삭제" circle and no time. Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
+- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with no time and no row button (the red "삭제" circle was dropped in the latest design, user 2026-11-10; delete a request from the row menu). Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
 - [ ] Tabs: 팀 (team) / 개인 (1:1) / 요청 (requests, with count)
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge
 - [ ] Requests tab: accept / delete; disappears after 30 days
-- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API)
+- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API). After a touch long press opens the sheet, the browser's own long-press menu (which lands on the sheet) is cancelled until shortly after the finger lifts; same for 17's message menu
 - [ ] `[Included]` Recruiting offer requests show a "채용 제안" label + company name (after 31). Recruiters see their sent offers as "대기 중" (pending) in the 1:1 tab
 - [ ] Rooms with blocked people hidden; after unblocking, messages from blocked periods stay invisible. Use retained `user_blocks` intervals for DM history, catch-up, previews and unread counts; team chat is exempt (Policy ch. 9, ERD ch. 4-8)
 - [ ] Empty-state copy
@@ -489,7 +489,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] STOMP connection; on disconnect auto-reconnect and load missed messages; over 500 → "안 읽은 메시지 500개+" and jump to last read position
 - [ ] Virtualized message list (TanStack Virtual), infinite load upward, date dividers
 - [ ] Sending = dimmed; on failure resend/delete buttons; auto-retry 3 times; over 5/sec → send delayed
-- [ ] Text 2,000 chars, photo attachments (10 at once, 10MB each) + full-screen photo viewer
+- [ ] With a mouse/keyboard (not `pointer: coarse`), Enter sends and Shift+Enter adds a line break; the Enter that ends a Korean IME composition never sends, and with mention suggestions open Enter picks the first one. Touch keyboards have no Shift+Enter, so there the return key keeps adding a line break and the send button sends (user request 2026-11-10)
+- [ ] Text 2,000 chars, photos (5 at once, 10MB each) + full-screen photo viewer. The photo button opens the system picker; picked photos fill the "사진 업로드 N장" panel above the composer (100px tiles, × per photo, retry on failure, × in the header drops them all) and the photo button becomes "+" to add more. While photos are picked the input is locked with the placeholder "사진 업로드시 채팅을 칠 수 없습니다" (the typed text comes back afterwards); send, enabled once every photo has uploaded, sends each photo as its own message. Photos in messages keep their shape within 220 × 220px, without a bubble around a photo-only message (user request 2026-11-10).
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
@@ -505,7 +506,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
-- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; between the input and the send button) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
+- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
 **AI chat summary (Flex, after 28)** `[Included]`

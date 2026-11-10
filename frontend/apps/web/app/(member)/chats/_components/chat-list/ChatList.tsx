@@ -14,7 +14,6 @@ import type { UnreadSummary } from './api';
 
 export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary }) {
   const {
-    viewer,
     tab,
     tabs,
     setTab,
@@ -22,7 +21,6 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
     summary,
     overlay,
     remove,
-    pending,
     items,
     mutationError,
     writeDisabled,
@@ -95,8 +93,6 @@ export function ChatList({ initialSummary }: { initialSummary?: UnreadSummary })
               <li key={room.id}>
                 <ChatRoomRow
                   room={room}
-                  disabled={pending || viewer.status === 'SUSPENDED'}
-                  onDelete={() => overlay.open(String(room.id))}
                   onOpenMenu={hasRoomMenu(room) ? () => menu.open(String(room.id)) : undefined}
                 />
               </li>
