@@ -9,15 +9,20 @@ export function useInviteLinkActions(code: string) {
   const [manualUrl, setManualUrl] = useState('');
   const [sharing, setSharing] = useState(false);
 
-  const url = () => new URL(`/invite/${encodeURIComponent(code)}`, window.location.origin).href;
+  const url = (value = code) =>
+    new URL(`/invite/${encodeURIComponent(value)}`, window.location.origin).href;
 
-  async function copy() {
+  async function copy(value = code) {
+    setManualUrl('');
+    setNotice('');
     try {
-      await navigator.clipboard.writeText(url());
+      await navigator.clipboard.writeText(url(value));
       setNotice('초대 링크를 복사했어요.');
+      return true;
     } catch {
-      setManualUrl(url());
+      setManualUrl(url(value));
       setNotice('자동으로 복사하지 못했어요. 아래 링크를 선택해 복사해 주세요.');
+      return false;
     }
   }
 
@@ -35,14 +40,12 @@ export function useInviteLinkActions(code: string) {
       } else if (navigator.share) await navigator.share({ title: 'Linker 팀 초대', url: url() });
       else await copy();
     } catch (error) {
-      if (
-        !(
-          typeof error === 'object' &&
-          error !== null &&
-          'name' in error &&
-          error.name === 'AbortError'
-        )
-      )
+      if (!(
+        typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        error.name === 'AbortError'
+      ))
         setNotice('공유하지 못했어요. 링크 복사를 이용해 주세요.');
     } finally {
       setSharing(false);

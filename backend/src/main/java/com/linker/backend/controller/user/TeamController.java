@@ -1,5 +1,7 @@
 package com.linker.backend.controller.user;
 
+import com.linker.backend.dto.team.request.NotifyTeamInviteRequest;
+
 import com.linker.backend.dto.team.request.CompleteTeamSetupRequest;
 import com.linker.backend.dto.team.request.CreateTeamRequest;
 import com.linker.backend.dto.team.request.SaveTeamReposRequest;
@@ -62,7 +64,7 @@ public class TeamController {
 
   @GetMapping("/teams/{teamId}/setup/repos")
   @DeveloperOnly
-  @TeamRole(TeamRole.Level.OWNER)
+  @TeamRole(TeamRole.Level.ADMIN)
   @Tag(name = "p08-team-create")
   @Operation(operationId = "listSetupRepositories")
   public ResponseEntity<TeamSetupResponse.Repos> repos(
@@ -242,5 +244,67 @@ public class TeamController {
       @PathVariable long teamId, @PathVariable long repoId) {
     teams.removeRepo(user, teamId, repoId);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/teams/{teamId}/invite-links")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "listTeamInviteLinks")
+  public ResponseEntity<com.linker.backend.dto.team.response.TeamInviteResponse.Links> inviteLinks(
+      @AuthenticationPrincipal AuthenticatedUser user, @PathVariable long teamId) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(teams.inviteLinks(user, teamId));
+  }
+
+  @PostMapping("/teams/{teamId}/invite-links")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "createTeamInviteLink")
+  public ResponseEntity<com.linker.backend.dto.team.response.TeamInviteResponse.Created>
+      createInvite(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable long teamId) {
+    return ResponseEntity.status(201)
+        .cacheControl(CacheControl.noStore())
+        .body(teams.createInvite(user, teamId));
+  }
+
+  @PostMapping("/teams/{teamId}/invite-links/{linkId}/notify")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "notifyTeamInvite")
+  public ResponseEntity<Void> notifyInvite(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long linkId,
+      @Valid @RequestBody NotifyTeamInviteRequest request) {
+    teams.notifyInvite(user, teamId, linkId, request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/teams/{teamId}/invite-links/{linkId}")
+  @DeveloperOnly
+  @TeamRole(TeamRole.Level.ADMIN)
+  @Tag(name = "p09-team-settings")
+  @Operation(operationId = "revokeTeamInviteLink")
+  public ResponseEntity<Void> revokeInvite(
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @PathVariable long teamId,
+      @PathVariable long linkId) {
+    teams.revokeInvite(user, teamId, linkId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/invites/{code}/accept")
+  @DeveloperOnly
+  @Tag(name = "p10-invite")
+  @Operation(operationId = "acceptTeamInvite")
+  public ResponseEntity<com.linker.backend.dto.team.response.TeamInviteResponse.Accepted>
+      acceptInvite(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable String code) {
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(teams.acceptInvite(user, code));
   }
 }

@@ -28,6 +28,7 @@ public class GithubService {
   private final GithubTeamSource setup;
   private final TeamRepository teams;
   private final GithubPullRequestService requests;
+  private final GithubInvitationService invitations;
 
   public GithubService(
       GithubAppProperties properties,
@@ -36,7 +37,8 @@ public class GithubService {
       GithubAppClient github,
       GithubTeamSource setup,
       TeamRepository teams,
-      GithubPullRequestService requests) {
+      GithubPullRequestService requests,
+      GithubInvitationService invitations) {
     this.properties = properties;
     this.states = states;
     this.tokens = tokens;
@@ -44,6 +46,7 @@ public class GithubService {
     this.setup = setup;
     this.teams = teams;
     this.requests = requests;
+    this.invitations = invitations;
   }
 
   @Transactional(propagation = Propagation.NEVER)
@@ -101,5 +104,10 @@ public class GithubService {
   public com.linker.backend.dto.github.response.ChatPullRequestsResponse pullRequests(
       AuthenticatedUser user, long roomId, String state) {
     return requests.list(user, roomId, state);
+  }
+
+  public com.linker.backend.dto.github.response.GithubOrgInvitationResponse inviteToOrganization(
+      AuthenticatedUser user, long teamId, long targetId) {
+    return invitations.invite(user, teamId, targetId);
   }
 }
