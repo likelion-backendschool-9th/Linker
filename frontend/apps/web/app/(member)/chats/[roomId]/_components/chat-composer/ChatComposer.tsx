@@ -2,7 +2,6 @@
 
 import { FileImageLinearIcon } from '@solar-icons/static/linear/file-image';
 import { ArrowUp, ImagePlus } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { Button } from '@/components/ui/button/Button';
@@ -23,11 +22,9 @@ type Props = {
   room?: RoomInfo;
   login?: string | null;
   onSend: (message: { text: string; images: UploadedImage[]; references?: ChatReferences }) => void;
-  /** Button stacked right above send (the team room's "AI 채팅 요약"); the input grows to match */
-  aboveSend?: ReactNode;
 };
 
-export function ChatComposer({ disabled, onSend, room, login = null, aboveSend }: Props) {
+export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
   const {
     uploader,
     attachments,
@@ -127,14 +124,10 @@ export function ChatComposer({ disabled, onSend, room, login = null, aboveSend }
           placeholder="채팅을 입력해 주세요."
           className={styles.input}
         />
-        {/* AI 요약 sits on top of send inside the bar (user request 2026-11-10) */}
-        <div className={styles.sendColumn}>
-          {aboveSend}
-          <button type="submit" disabled={!canSubmit} className={styles.send}>
-            <ArrowUp aria-hidden />
-            <span className="sr-only">보내기</span>
-          </button>
-        </div>
+        <button type="submit" disabled={!canSubmit} className={styles.send}>
+          <ArrowUp aria-hidden />
+          <span className="sr-only">보내기</span>
+        </button>
       </div>
       {!!uploader.items.length && (
         <button

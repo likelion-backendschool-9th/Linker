@@ -18,6 +18,15 @@
   min-height: 0;
 }
 
+/*
+ * Team rooms float "AI 채팅 요약" over the bottom-right corner. The space below the last row lets the
+ * latest message end at the button's top edge, overlapping it only a little (user request
+ * 2026-11-10): last row's 20px gap + this = the button's 48px (40px + 8px offset) − 8px overlap.
+ */
+.withSummaryFab .viewport {
+  padding-bottom: calc(var(--fab-size) - var(--space-chat-row));
+}
+
 .viewport {
   position: relative;
   flex: 1;
@@ -341,7 +350,7 @@
 }
 
 .attachmentToggle {
-  /* Centered on the bar, which is taller when "AI 채팅 요약" sits above send (user request 2026-11-10) */
+  /* Centered on the bar as the input grows (user request 2026-11-10) */
   align-self: center;
   background: none;
   color: var(--color-text-title-cool);
@@ -365,20 +374,9 @@
   outline-offset: 2px;
 }
 
-/* Send with the team room's "AI 채팅 요약" stacked on top (user request 2026-11-10) */
-.sendColumn {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
 /* Input text stays 16px so iOS never zooms; only the placeholder takes the Figma 12px */
 .input {
   flex: 1;
-  /* Stretches to the send column, so it is taller when "AI 채팅 요약" sits above send */
-  align-self: stretch;
   min-width: 0;
   min-height: var(--control-height-chat);
   max-height: calc(var(--control-height-chat) * 3);

@@ -85,24 +85,23 @@ test('17 PR system messages match the four Figma states and organization groupin
     const summary = await page
       .getByRole('button', { name: 'AI 채팅 요약', exact: true })
       .boundingBox();
-    // "AI 채팅 요약" (22px label, 5px, 40px button) is stacked 8px above send inside the bar;
-    // the input stretches to the whole column (117px)
-    expect(input!.height).toBe(117);
+    // "AI 채팅 요약" floats 8px above the composer (12px top padding), centered on send;
+    // the input stays one row tall (user request 2026-11-10)
+    expect(input!.height).toBe(42);
     expect(attach!.width).toBe(42);
     expect(send!.width).toBe(42);
     expect(summary!.width).toBe(40);
     expect(summary!.height).toBe(40);
     expect(input!.x - attach!.x - attach!.width).toBe(10);
     expect(send!.x - input!.x - input!.width).toBe(10);
-    expect(send!.y - summary!.y - summary!.height).toBe(8);
-    expect(summary!.y - input!.y).toBe(27);
-    // 800px viewport − 28px bottom padding − 117px bar
-    expect(input!.y).toBe(655);
+    expect(input!.y - summary!.y - summary!.height).toBe(20);
+    expect(summary!.x + summary!.width / 2).toBeCloseTo(send!.x + send!.width / 2, 0);
+    // 800px viewport − 28px bottom padding − 42px bar
+    expect(input!.y).toBe(730);
     if (width === 375) {
       expect(input!.x).toBe(64);
       expect(input!.width).toBe(243);
       expect(send!.x).toBe(317);
-      expect(summary!.x).toBeCloseTo(318, 0);
     }
     await page.screenshot({
       path: info.outputPath(`pr-system-${width}.png`),
@@ -191,6 +190,15 @@ test('17 floating summary keeps the existing result flow and leaves photo attach
   await page.goto('/chats/1');
   const summary = page.getByRole('button', { name: 'AI 채팅 요약', exact: true });
   await expect(summary).toBeVisible();
+  // The label bubble shows only on hover or keyboard focus (user request 2026-11-10); this touch
+  // device has no hover, so keyboard focus stands in for it
+  const label = summary.locator('xpath=following-sibling::*[1]');
+  await expect(label).toHaveText('AI 채팅 요약');
+  await expect(label).toBeHidden();
+  await summary.focus();
+  await expect(label).toBeVisible();
+  await summary.blur();
+  await expect(label).toBeHidden();
   const position = await summary.boundingBox();
   await page.getByRole('region', { name: '대화 내용' }).evaluate((viewport) => {
     viewport.scrollTop = 0;
