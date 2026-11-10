@@ -493,7 +493,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
-- [ ] Room info (full screen from the header ☰, Figma 351:580): "멤버 N명" over the team card (photo, name, "PR 보러 가기" → PR list; user reference 2026-11-10), members with team role (오너/관리자/멤버, owner first), mute as the header bell icon, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
+- [ ] Room info (full screen from the header ☰, Figma 351:580): "멤버 N명" (+ "초대하기" → 09 invite section, team owner/admin only) over the team card (photo, name, "PR 보러 가기" → PR list; user reference 2026-11-10), members with team role (오너/관리자/멤버, owner first), mute as the header bell icon, bottom "팀 나가기" → 09 team settings (team) / "대화 나가기" (1:1), `[Included]` photo gallery
 - [ ] Server: rooms, participants (last read message), messages tables shared by team and 1:1
 - [ ] Server: STOMP auth, new message notifications (bundled per room)
 
