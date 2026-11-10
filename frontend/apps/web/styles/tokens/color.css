@@ -7,6 +7,7 @@
 :root {
   /* Brand */
   --color-primary: #141414; /* primary CTA fill, footer, focus ring */
+  --color-auth-start-github: #121212; /* 01 start GitHub button (Figma 109:1932) */
   --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
   --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
   --color-gnb-current: #2563eb; /* active bottom GNB icon/label (Figma 453:227/258, 455:316) */
@@ -68,6 +69,7 @@
 
   /* Focus and overlay */
   --color-focus-ring: var(--color-primary);
+  --color-focus-ring-input: #2563eb; /* Page 32 focused login inputs (Figma 364:2013) */
   --color-focus-ring-search: #2563eb; /* search field focus border only (Figma 51:275); other inputs keep --color-focus-ring */
   --color-focus-ring-on-dark: #ffffff;
   --color-scrim: rgb(20 20 20 / 0.5); /* behind bottom sheets, dialogs, drawers */
