@@ -11,7 +11,8 @@
   grid-template-columns: var(--chat-avatar-size) minmax(0, 1fr);
   column-gap: var(--space-chat-avatar);
   row-gap: var(--space-chat-name);
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   padding-inline-end: var(--space-xs);
 }
 
@@ -47,11 +48,13 @@
 
 .card {
   grid-column: 2;
+  place-self: start;
   display: flex;
   align-items: flex-start;
   gap: var(--space-card-gap);
-  width: 100%;
-  max-width: var(--pr-card-max-width);
+  width: fit-content;
+  height: auto;
+  max-width: min(100%, var(--pr-card-max-width));
   min-width: 0;
   padding: var(--space-chat-card);
   border: 1px solid var(--color-hairline-cool);
@@ -80,7 +83,7 @@ button.card:focus-visible {
   flex-direction: column;
   gap: var(--space-row-block);
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
 }
 
 .event {
