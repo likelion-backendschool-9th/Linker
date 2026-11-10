@@ -469,7 +469,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: C-1, C-4 · Needs first: 08 (team chat room data) · Merged: message requests → third tab
 
-- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with a red "삭제" circle and no time. Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
+- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with no time and no row button (the red "삭제" circle was dropped in the latest design, user 2026-11-10; delete a request from the row menu). Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
 - [ ] Tabs: 팀 (team) / 개인 (1:1) / 요청 (requests, with count)
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge

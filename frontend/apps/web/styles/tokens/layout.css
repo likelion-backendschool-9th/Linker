@@ -307,7 +307,6 @@
   --space-chat-list-top: 15px; /* tabs to the first room */
   --chat-list-avatar-size: 50px; /* room photo */
   --chat-list-badge-size: 18px; /* unread count circle */
-  --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
 
   /* Figma 13 create (200:806) */
   --issue-create-body-min-height: 163px; /* markdown / preview field */
