@@ -145,6 +145,10 @@
   --size-issue-detail-skeleton-value-w: 97px; /* 12 skeleton status/label/dates (Figma 982:1293) */
   --size-issue-detail-skeleton-assignee-w: 32px; /* 12 skeleton assignee (Figma 982:1297) */
   --size-issue-detail-skeleton-line-h: 22px;
+  --size-board-skeleton-title-w: 75px; /* 14 skeleton column title (Figma 982:1594) */
+  --size-board-skeleton-title-h: 22px;
+  --size-board-skeleton-card-w: 210px; /* 14 skeleton issue card (Figma 982:1483) */
+  --size-board-skeleton-card-h: 200px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
