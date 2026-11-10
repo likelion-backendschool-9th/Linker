@@ -514,7 +514,7 @@ In MVP a recruiting offer is not a separate offer form but a 1:1 chat request. I
 | Model | Default: Ollama open model self-hosted on the Linker server (free, conversations stay in-house). If switched to a low-cost LLM API, send only under terms that it's not used for training and not stored after processing, and add the vendor to the Privacy Policy's processor table |
 | Retention | Summary results 7 days. Shared cards live as long as team chat messages (while the team exists) |
 | Label | Always show "AI가 만든 요약이라 틀릴 수 있어요" (AI-generated, may be wrong) |
-| Team setting | Owner can turn AI summary off per team. When on, a banner "이 팀은 AI 요약을 사용해요" (this team uses AI summary) shows at the top of team chat (first 7 days) |
+| Team setting | Owner can turn AI summary off per team. No banner in team chat (the "이 팀은 AI 요약을 사용해요" banner was dropped, team decision 2026-11-10) |
 | When subscription ends | Only new summaries blocked. Existing summaries viewable per the 7-day rule; shared cards remain in chat |
 
 ### Exceptions
