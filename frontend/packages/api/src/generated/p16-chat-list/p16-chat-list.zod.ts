@@ -27,6 +27,7 @@ export const ListChatRoomsResponse = zod.object({
   "id": zod.int(),
   "kind": zod.enum(['TEAM', 'DIRECT', 'REQUEST']),
   "title": zod.string().nullable().describe('TEAM: team name. 1:1: counterpart name'),
+  "teamId": zod.int().nullable().describe('TEAM: team id for the 팀 나가기 link to page 09. 1:1: null'),
   "counterpart": zod.object({
   "avatarUrl": zod.string().nullable().describe('1:1: counterpart avatar (null when withdrawn). TEAM: team photo')
 }).nullable(),
@@ -36,6 +37,7 @@ export const ListChatRoomsResponse = zod.object({
   "muted": zod.boolean(),
   "unreadCount": zod.int(),
   "lastMessage": zod.object({
+  "id": zod.int().describe('Message id; the list\'s 읽음 처리 sends it as lastReadMessageId'),
   "text": zod.string().nullable().describe('Preview text; null for an image-only message'),
   "createdAt": zod.iso.datetime({"offset":true})
 }).nullable().describe('null when the room has no visible message')

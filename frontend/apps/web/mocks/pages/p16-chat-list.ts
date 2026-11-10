@@ -16,6 +16,7 @@ export function roomRow(room: MockRoom) {
     id: room.id,
     kind: room.kind,
     title: room.title,
+    teamId: room.kind === 'TEAM' ? room.teamId : null,
     // TEAM: the team photo; 1:1: the other person's avatar (WBS 16)
     counterpart:
       room.kind === 'TEAM'
@@ -31,6 +32,7 @@ export function roomRow(room: MockRoom) {
     unreadCount: UNREAD[room.id] ?? 0,
     lastMessage: last
       ? {
+          id: last.id,
           text: last.deletedAt
             ? '삭제된 메시지입니다'
             : last.type === 'SHARE_CARD'

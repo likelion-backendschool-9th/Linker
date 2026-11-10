@@ -227,6 +227,8 @@ export interface ChatCounterpartResponse {
 }
 
 export interface ChatLastMessageResponse {
+  /** Message id; the list's 읽음 처리 sends it as lastReadMessageId */
+  id: number;
   /**
      * Preview text; null for an image-only message
      * @nullable
@@ -274,6 +276,11 @@ export interface ChatRoomItemResponse {
      * @nullable
      */
   title: string | null;
+  /**
+     * TEAM: team id for the 팀 나가기 link to page 09. 1:1: null
+     * @nullable
+     */
+  teamId: number | null;
   /** @nullable */
   counterpart: ChatCounterpartResponse | null;
   /** @nullable */
@@ -1777,7 +1784,7 @@ export interface PaymentResultResponse {
 export interface CheckoutRequest {
   /** PRO or FLEX for developers (SCOUT is [Included] and not open yet) */
   planKey?: string;
-  /** MONTHLY or YEARLY. Only PRO allows YEARLY */
+  /** MONTHLY or YEARLY. PRO and FLEX allow YEARLY */
   billing?: string;
   /**
      * Required for FLEX: a team where the caller is owner or billing owner
@@ -1896,6 +1903,8 @@ export interface PlanResponse {
   trialAvailable: boolean;
   /** FLEX only: KRW per member from the 7th */
   perExtraMember?: number;
+  /** FLEX only: KRW per member from the 7th, per year */
+  perExtraMemberYearly?: number;
 }
 
 export interface PlansResponse {
@@ -1904,7 +1913,7 @@ export interface PlansResponse {
      * @nullable
      */
   reason: string | null;
-  /** Developers: FREE, PRO, FLEX. Recruiters: empty until Scout ([Included]) opens */
+  /** Developers: FREE, PRO, FLEX. Recruiters: SCOUT for display; its checkout is [Included] and still refused */
   plans: PlanResponse[];
   /** Caller's own plan: FREE, PRO or SCOUT (team Flex is per team) */
   currentPlan: string;
@@ -1917,6 +1926,8 @@ export interface TeamCandidateResponse {
   memberCount: number;
   /** KRW 7,900 up to 6 members, +1,900 per member from the 7th */
   amount: number;
+  /** Yearly (10% off): KRW 85,320 up to 6 members, +20,520 per member from the 7th */
+  yearlyAmount: number;
   /** FREE or FLEX */
   currentPlan: string;
 }

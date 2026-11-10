@@ -14,3 +14,15 @@
   display: flex;
   flex-direction: column;
 }
+
+/* Mobile-first column: a classic desktop scrollbar would appear only on pages taller than the
+   viewport and shift the centered column by its width on every navigation between long and short
+   pages. Hide the root scrollbar (wheel/touch/keyboard scrolling still works). AdminShell doesn't
+   use these classes, so admin keeps its scrollbar. */
+:global(html):has(.app, .entry) {
+  scrollbar-width: none;
+}
+
+:global(html):has(.app, .entry)::-webkit-scrollbar {
+  display: none;
+}

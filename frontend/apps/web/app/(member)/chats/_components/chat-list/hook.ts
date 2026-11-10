@@ -1,6 +1,7 @@
 'use client';
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Route } from 'next';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 
 import { useViewer } from '@/lib/auth/viewer-context';
@@ -12,7 +13,10 @@ import {
   chatKeys,
   chatRoomsOptions,
   deleteChatRequest,
+  leaveChatRoom,
+  markChatRoomRead,
   unreadSummaryOptions,
+  type ChatRoom,
   type ChatTab,
   type UnreadSummary,
 } from './api';
@@ -43,6 +47,7 @@ export function useChatList(initialSummary?: UnreadSummary) {
   const rooms = useInfiniteQuery(chatRoomsOptions(viewer.login, tab));
   const summary = useQuery({ ...unreadSummaryOptions(viewer.login), initialData: initialSummary });
   const overlay = useOverlay('delete-confirm');
+  const deleteOverlay = (id: number) => overlay.open(String(id));
   const refresh = () => client.invalidateQueries({ queryKey: chatKeys.account(viewer.login) });
   const remove = useMutation({
     mutationFn: deleteChatRequest,
@@ -52,10 +57,32 @@ export function useChatList(initialSummary?: UnreadSummary) {
       await refresh();
     },
   });
+  // Row menu (right-click / long press): 방 나가기 · 읽음 처리. Leave confirms in 17's dialog copy.
+  const menu = useOverlay('chat-room-menu');
+  const leaveConfirm = useOverlay('chat-leave');
+  const leave = useMutation({
+    mutationFn: leaveChatRoom,
+    onSuccess: async () => {
+      leaveConfirm.close();
+      toast('대화에서 나갔어요.');
+      await refresh();
+    },
+  });
+  const read = useMutation({
+    mutationFn: (room: ChatRoom) => markChatRoomRead(room.id, room.lastMessage?.id ?? 0),
+    onSuccess: async () => {
+      menu.close();
+      toast('읽음 처리했어요.');
+      await refresh();
+    },
+    onError: () => toast('읽음 처리하지 못했어요. 다시 시도해 주세요.', { tone: 'alert' }),
+  });
   // Accepting lives in the room's request panel (17); the list only deletes (Figma 16 has no 수락).
-  const pending = remove.isPending;
+  const pending = remove.isPending || leave.isPending;
   const items = rooms.data?.pages.flatMap((page) => page.items) ?? [];
   const mutationError = remove.error;
+  const writeDisabled = pending || viewer.status === 'SUSPENDED';
+  const menuRoom = items.find((room) => String(room.id) === menu.id) ?? null;
 
   return {
     viewer,
@@ -69,6 +96,32 @@ export function useChatList(initialSummary?: UnreadSummary) {
     pending,
     items,
     mutationError,
+    writeDisabled,
+    menu,
+    menuRoom,
+    leaveConfirm,
+    leave,
+    read,
+    onLeaveFromMenu: (room: ChatRoom) => {
+      if (writeDisabled) return;
+      if (room.kind === 'TEAM') {
+        // Policy: team chat follows team membership, so leaving goes through team settings (09).
+        if (room.teamId != null) void menu.closeThen(`/teams/${room.teamId}/settings` as Route);
+      } else if (room.kind === 'REQUEST') {
+        deleteOverlay(room.id);
+      } else {
+        leave.reset();
+        leaveConfirm.open(String(room.id));
+      }
+    },
+    onReadFromMenu: (room: ChatRoom) => {
+      if (room.unreadCount > 0 && room.lastMessage && !read.isPending) read.mutate(room);
+    },
+    onConfirmLeave: () => {
+      const id = Number(leaveConfirm.id);
+      if (items.some((room) => room.id === id && room.kind === 'DIRECT') && !writeDisabled)
+        leave.mutate(id);
+    },
     onConfirmDelete: () => {
       const id = Number(overlay.id);
       if (
