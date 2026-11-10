@@ -44,7 +44,6 @@ it('sends on Enter, breaks the line on Shift+Enter, and ignores Enter while comp
   const user = userEvent.setup();
   render(<ChatComposer disabled={false} onSend={send} />);
   const input = screen.getByRole('textbox', { name: '메시지' });
-  expect(input).toHaveAttribute('enterkeyhint', 'send');
   await user.type(input, '첫 줄');
   await user.keyboard('{Shift>}{Enter}{/Shift}');
   await user.type(input, '둘째 줄');
@@ -60,6 +59,26 @@ it('sends on Enter, breaks the line on Shift+Enter, and ignores Enter while comp
   // Enter on an empty input sends nothing
   await user.keyboard('{Enter}');
   expect(send).toHaveBeenCalledTimes(1);
+});
+
+it('keeps Enter as a line break on touch keyboards', async () => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({ matches: query === '(pointer: coarse)' })),
+  );
+  try {
+    const send = vi.fn();
+    const user = userEvent.setup();
+    render(<ChatComposer disabled={false} onSend={send} />);
+    const input = screen.getByRole('textbox', { name: '메시지' });
+    await user.type(input, '첫 줄{Enter}둘째 줄');
+    expect(input).toHaveValue('첫 줄\n둘째 줄');
+    expect(send).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+    expect(send).toHaveBeenCalledExactlyOnceWith({ text: '첫 줄\n둘째 줄', images: [] });
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it('blocks writes while read-only', () => {
