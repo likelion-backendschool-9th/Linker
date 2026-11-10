@@ -329,7 +329,7 @@
   border: 0;
   border-radius: var(--radius-control-md);
   color: var(--color-text-inverse);
-  background: var(--color-text-black);
+  background: #2563eb;
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-semibold);
 }
