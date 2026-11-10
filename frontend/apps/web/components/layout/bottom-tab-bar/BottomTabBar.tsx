@@ -44,7 +44,7 @@ export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
             <>
               <span className={styles.iconSlot}>
                 {tab.avatarUrl ? (
-                  <Image src={tab.avatarUrl} alt="" width={25} height={25} className={styles.avatar} />
+                  <Image src={tab.avatarUrl} alt="" width={27} height={27} className={styles.avatar} />
                 ) : (
                   <Icon svg={ICONS[tab.key as Exclude<TabKey, 'profile'>]} className={styles.icon} />
                 )}

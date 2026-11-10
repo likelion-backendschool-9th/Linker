@@ -1,0 +1,236 @@
+/* Comment sheet — Figma 374:4092: r20 top, padding 25/16, header / list / composer 20 apart.
+   Doubled classes win over the shared overlay styles whatever the CSS load order. */
+
+.scrim.scrim {
+  background-color: var(--color-scrim-team-picker);
+  backdrop-filter: var(--blur-scrim);
+}
+
+/* At most the viewport minus 100px; the sheet itself never scrolls (the list does) */
+.sheet.sheet {
+  gap: var(--space-group);
+  max-height: calc(100dvh - var(--sheet-comments-top-gap));
+  padding: var(--space-comment-sheet) var(--space-md)
+    calc(var(--space-comment-sheet) + env(safe-area-inset-bottom));
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* "댓글 3개" + × — Figma 700:1649: one 24 row */
+.header.header {
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.title.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-block);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.count {
+  font-weight: var(--font-weight-medium);
+}
+
+/* × — Figma 700:1650: 24 box, #374151 */
+.close.close {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin: 0;
+  color: var(--color-sheet-close);
+}
+
+/* List + composer; only the list scrolls */
+.body.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-group);
+  min-height: 0;
+  margin-top: 0;
+}
+
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list {
+    scroll-behavior: auto;
+  }
+}
+
+.comments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Comment — Figma 374:4161: 15 top and bottom, photo row then text 20 below */
+.comment {
+  padding-block: var(--space-list-action);
+}
+
+.commentBody {
+  display: grid;
+  gap: var(--space-group);
+}
+
+.authorRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--avatar-size-post);
+  height: var(--avatar-size-post);
+  object-fit: cover;
+  background-color: var(--color-radio-border);
+  border-radius: var(--radius-full);
+}
+
+/* Name 16 medium black, @login 12 #98a3b4, 5 apart */
+.names {
+  display: grid;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-feed);
+  color: var(--color-text-black);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.login,
+.date {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+}
+
+.login {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Date sits level with the name (Figma 374:4170: 1 below its top) */
+.date {
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+/* Text — 14 regular #4b5563, line 20 */
+.text {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-card-desc);
+  color: var(--color-text-slate);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin: 0;
+  padding-block: var(--space-list-action);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted-cool);
+}
+
+/* Composer — Figma 374:4131 */
+.composer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-row-block);
+}
+
+/* Pill input #f3f4f6, text 15 in. The 2px border is always there (transparent at rest, blue on
+   focus), so focusing never moves the text. Inline padding = 15 − border. */
+.input {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  height: var(--control-height-chat);
+  padding: 0 calc(var(--space-chat-input-inline) - 2px);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  color: var(--color-text-body);
+  background-color: var(--color-canvas-cool);
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  outline: none;
+  box-shadow: none;
+  appearance: none;
+}
+
+/* Placeholder — 12 medium #a3a3a8 */
+.input::placeholder {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-placeholder-cool);
+  opacity: 1;
+}
+
+.input:focus {
+  border-color: var(--color-focus-ring-search);
+}
+
+/* Send — Figma 374:4158: 42 #2563eb circle, 14 white arrow (stroke 2) */
+.send {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--control-height-chat);
+  height: var(--control-height-chat);
+  padding: 0;
+  color: var(--color-on-primary);
+  cursor: pointer;
+  background-color: var(--color-chat-send);
+  border: 0;
+  border-radius: var(--radius-full);
+}
+
+.send[aria-disabled='true'] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.sendIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}

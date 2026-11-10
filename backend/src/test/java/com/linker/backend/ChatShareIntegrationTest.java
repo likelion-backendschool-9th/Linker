@@ -157,10 +157,20 @@ class ChatShareIntegrationTest {
 		ChatMessage newest = messages.saveAndFlush(ChatMessage.text(dm, me.getId(), "최근"));
 		jdbc.update("update chat_messages set created_at=? where id=?", Timestamp.from(NOW.plusSeconds(1)), newest.getId());
 
+		// Row photo (24 share drawer): the team photo for team rooms, the other person's for 1:1
+		jdbc.update("update teams set avatar_url=? where id=?", "https://example.com/team.png", active.getTeamId());
+		jdbc.update("update users set avatar_url=? where id in (select user_id from chat_room_members where room_id=? and user_id<>?)",
+				"https://example.com/dm.png", dm.getId(), me.getId());
 		mvc.perform(get("/api/v1/user/me/share-targets")).andExpect(status().isUnauthorized());
 		JsonNode response = body(mvc.perform(get("/api/v1/user/me/share-targets").cookie(cookie(me)))
 				.andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store")));
 		assertThat(ids(response)).containsExactly(dm.getId(), Math.max(active.getId(), completed.getId()), Math.min(active.getId(), completed.getId()));
+		assertThat(response.path("items").get(0).path("avatarUrl").asText()).isEqualTo("https://example.com/dm.png");
+		for (JsonNode item : response.path("items")) {
+			if (item.path("roomId").asLong() == active.getId()) {
+				assertThat(item.path("avatarUrl").asText()).isEqualTo("https://example.com/team.png");
+			}
+		}
 		assertThat(body(mvc.perform(get("/api/v1/user/me/share-targets").param("q", "%").cookie(cookie(me)))
 				.andExpect(status().isOk())).path("items").size()).isEqualTo(1);
 		mvc.perform(get("/api/v1/user/me/share-targets").param("q", "linker_").cookie(cookie(me)))

@@ -1043,8 +1043,8 @@ erDiagram
 | post_tags | 🟢 | Post tags, max 5 | POL-P-2 |
 | post_likes | 🟢 | Likes, once per post | P-5 |
 | comments | 🟢 | Comments and one-level replies | P-5 |
-| follows | 🟢 | Follows, mutual follow and 2nd-degree calculation | P-5, P-4 |
-| feed_seen_posts | 🟢 | Record to exclude already-seen posts from recommendations | POL-P-4 |
+| follows | 🟢 | Follows, mutual follow, feed "팔로잉" tab | P-5, P-4 |
+| feed_seen_posts | 🟢 | Record to move already-seen posts to the end of "추천" | POL-P-4 |
 | pinned_posts | 🟡 | Pinned featured posts, free 1 / Pro 5 | A-6 |
 | profile_visits | 🟡 | Recruiter profile views, once per recruiter per day, kept 90 days | S-10 |
 | post_views | 🟡 | Post views, traffic source, README expand count | S-4, P-7 |
@@ -1067,7 +1067,7 @@ erDiagram
 
 **follows**: `follower_id + following_id` UK. Mutual follow = the reverse row exists. Blocking deletes rows in both directions.
 
-**feed_seen_posts**: Records recommended posts that appeared on screen in the feed. Grows fast, so rows older than 30 days are deleted by batch. Can move to a Redis Set if it gets heavy.
+**feed_seen_posts**: Records posts that appeared on screen in a developer's feed; "추천" moves posts first seen before the current visit (`created_at`) to the end. Grows fast, so rows older than 30 days are deleted by batch. Can move to a Redis Set if it gets heavy.
 
 **profile_visits, post_views**: Self-visits and guest visits are not recorded. `profile_visits` is written only when a `user_type = RECRUITER` member views a developer profile; Pro screens and the weekly notice show only the weekly **count** (never who or which company). Rows older than 90 days are deleted. `post_views.source` is feed (FEED), profile (PROFILE), recruit post (RECRUIT_POST), chat share card or Linker link card (CHAT_SHARE), and copied links with `?from=share` or other external traffic (EXTERNAL). Free shows only total views; Pro aggregates by traffic source and date.
 
@@ -1295,7 +1295,7 @@ Current foundation implementation: V1 has no installation FK and stores the exte
 
 | Table | Scope | Purpose | Basis |
 | --- | --- | --- | --- |
-| user_job_categories | 🟡 | Job categories of interest picked by a developer, max 3. Used only to pick job ads; not shown on the profile | H-8, POL-H-8 |
+| user_job_categories | 🟡 | Job categories of interest picked by a developer, max 3. Used to pick job ads and to match "추천" feed posts (POL-P-4); not shown on the profile | H-8, POL-H-8 |
 | recruiter_ads | 🟡 | A recruiter's job ad (one per recruiter) with the external posting URL | H-7, POL-H-7 |
 | ad_hides | 🟡 | A developer closed (7 days) / hid (permanent) an ad | H-9, POL-H-9 |
 | ad_daily_stats | 🟡 | Per-ad daily impression/click/close/hide counts (who saw it is not stored) | H-9, Privacy Policy art. 7 |

@@ -1,0 +1,34 @@
+/* 버튼s (Figma 785:1211): two white halves, 51 tall */
+.tabs {
+  display: flex;
+  width: 100%;
+  background-color: var(--color-canvas);
+}
+
+/* 팔로잉 (785:1214): 16 medium #98a3b4, 2px #f3f4f6 line under — drawn inside so it never moves the label */
+.tab {
+  flex: 1;
+  height: var(--control-height-feed-tab);
+  padding: 0;
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  color: var(--color-text-muted-cool);
+  cursor: pointer;
+  background-color: var(--color-canvas);
+  border: 0;
+  box-shadow: inset 0 -2px 0 var(--color-canvas-cool);
+}
+
+/* 추천 (785:1212), the current tab: 16 semibold #111827, 2px #4b5563 line */
+.tab[aria-selected='true'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-title-cool);
+  box-shadow: inset 0 -2px 0 var(--color-text-slate);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}

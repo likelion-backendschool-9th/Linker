@@ -24,6 +24,10 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 	@Query("select follow.following.id from Follow follow where follow.follower.id = :viewerId and follow.following.id in :userIds")
 	List<Long> findFollowedIds(long viewerId, Collection<Long> userIds);
 
+	/** Page 24 "팔로잉" tab: everyone the viewer follows. */
+	@Query("select follow.following.id from Follow follow where follow.follower.id = :viewerId")
+	List<Long> findAllFollowedIds(long viewerId);
+
 	@Query("""
 			select follow from Follow follow
 			join fetch follow.follower
