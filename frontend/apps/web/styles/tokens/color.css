@@ -22,7 +22,9 @@
   --color-header-stack-bg: rgb(
     255 255 255 / 0.9
   ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
-  --color-gnb-bg: rgb(243 243 243 / 0.8); /* bottom GNB pill frosted fill, with --blur-chrome */
+  --color-gnb-bg: rgb(
+    255 255 255 / 0.95
+  ); /* bottom GNB pill frosted fill, with --blur-chrome and --shadow-gnb (Figma 800:1299) */
   --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
   /* Border */

@@ -175,7 +175,9 @@
   --icon-size-lg: 26px; /* bottom GNB tab icon (bigger than the header's --icon-size) */
   --icon-stroke-width: 2; /* default Solar Icons stroke weight (header icons, Figma strokeWeight 2); bottom GNB scopes this back to 1.5 locally */
   --badge-dot-size: 6px; /* unread dot on the header 알람 button */
-  --chip-size: 14px; /* GNB unread-count chip diameter (Figma 455:316) */
+  --chip-size: 18px; /* GNB unread-count chip diameter (Figma 455:350) */
+  --size-gnb-avatar: 27px; /* GNB 프로필 tab avatar (Figma 455:347) */
+  --space-tab-avatar-gap: 5px; /* GNB 프로필 tab: avatar to label, so the label lines up with the icon tabs (Figma 455:346) */
   --tab-bar-gap-4: 36px; /* gap between bottom GNB tabs: 4 tabs, guest (Figma 453:227) */
   --tab-bar-gap-5: 20px; /* gap between bottom GNB tabs: 5 tabs, signed-in incl. profile (Figma 453:258/455:316) */
   --tab-bar-padding-wide: 80px; /* bottom GNB side padding at the 600px upper bound (Figma 476:563/593) */
@@ -229,6 +231,7 @@
   --space-plan-card: 20px; /* card padding, card sections, between cards, header to title */
   --space-plan-intro: 25px; /* subtitle to the 월간/연간 toggle */
   --space-plan-toggle: 30px; /* toggle to the first card, last card to the footer links */
+  --shadow-gnb: 0 2px 4px rgb(0 0 0 / 0.2); /* bottom GNB pill (Figma 800:1299, 455:316 exception) */
   --control-height-plan-toggle: 52px; /* 월간/연간 toggle (each side is the hit area) */
   --radius-plan-card: 14px;
   --icon-size-plan-check: 18px; /* benefit check */
