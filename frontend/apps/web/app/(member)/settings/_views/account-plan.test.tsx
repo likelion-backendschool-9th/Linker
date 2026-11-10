@@ -15,7 +15,7 @@ const settings: SettingsData = {
 it('links the current plan to subscription management', () => {
   renderWithProviders(<AccountPlan settings={settings} />);
 
-  expect(screen.getByRole('link', { name: '구독 관리' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: '구독과 결제' })).toHaveAttribute(
     'href',
     '/settings/subscription',
   );
