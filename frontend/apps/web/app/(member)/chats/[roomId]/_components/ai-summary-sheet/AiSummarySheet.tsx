@@ -37,6 +37,7 @@ export function AiSummarySheet({ overlay, summary, loadedIds, onJump, actions }:
       title="AI 요약"
       description="팀 채팅 회의록이에요."
       describeHidden
+      classNames={{ title: styles.title }}
     >
       {!summary || (own && own.status === 'PENDING') ? (
         <p role="status" className={styles.notice}>
@@ -63,11 +64,13 @@ export function AiSummarySheet({ overlay, summary, loadedIds, onJump, actions }:
               </section>
             ) : null,
           )}
-          <p className={styles.meta}>
-            최근 메시지 {summary.messageCount}개를 요약했어요
-            {own ? ` · 오늘 ${own.usedToday}/${own.limit}회 사용` : ''}
-          </p>
-          <p className={styles.disclaimer}>{summary.disclaimer}</p>
+          <div className={styles.footnotes}>
+            <p className={styles.meta}>
+              최근 메시지 {summary.messageCount}개를 요약했어요
+              {own ? ` · 오늘 ${own.usedToday}/${own.limit}회 사용` : ''}
+            </p>
+            <p className={styles.meta}>{summary.disclaimer}</p>
+          </div>
           {own && actions && (
             <div className={styles.actions}>
               {own.sharedMessageId ? (

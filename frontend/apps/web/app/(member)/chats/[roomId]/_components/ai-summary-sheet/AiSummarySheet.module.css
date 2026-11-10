@@ -1,4 +1,11 @@
-/* Figma 351:362 — title in OverlaySheet. Minutes sections (POL-C-5) follow the panel's prose style */
+/*
+ * Figma 351:362 panel. Type steps down title (20) → one line (18) → section heading (16) → line (14)
+ * → footnotes (13); the first three are bold (user request 2026-11-10).
+ */
+.title {
+  font-weight: var(--font-weight-bold);
+}
+
 .body {
   display: flex;
   flex-direction: column;
@@ -15,10 +22,10 @@
 
 .summary {
   margin: 0;
-  color: var(--color-text-body);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.5;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -26,21 +33,20 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-xxs);
 }
 
 .heading {
   margin: 0;
-  color: var(--color-text-meta);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
   line-height: normal;
 }
 
 .items {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xxs);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -48,18 +54,18 @@
 
 .item {
   margin: 0;
+  padding: var(--space-xxs) 0;
   color: var(--color-text-body);
-  font-size: var(--font-size-body);
-  line-height: 1.5;
+  font-size: var(--font-size-caption);
+  line-height: 1.4;
   word-break: break-word;
 }
 
-/* A line with a loaded source message: tap scrolls the timeline to it */
+/* A line with a loaded source message: tap scrolls the timeline to it. 24px is the WCAG 2.2 AA minimum */
 .jump {
   display: block;
   width: 100%;
-  min-height: var(--touch-target-min);
-  padding: 0;
+  min-height: var(--touch-target-icon);
   border: 0;
   background: none;
   text-align: left;
@@ -73,17 +79,17 @@
   outline-offset: 2px;
 }
 
+/* "최근 메시지 N개…" and the AI disclaimer read as one block */
+.footnotes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
 .meta {
   margin: 0;
   color: var(--color-text-meta);
-  font-size: var(--font-size-caption);
-  line-height: normal;
-}
-
-.disclaimer {
-  margin: 0;
-  color: var(--color-text-meta);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-meta);
   line-height: normal;
 }
 
