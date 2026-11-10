@@ -422,7 +422,7 @@
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role, 20/day, one re-apply; message unused / empty) | user · developers only |
 | 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants drawer (days left until 14-day expiry) | author |
 | 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | `[Included]` Application detail (profile is reviewed on 04 instead) | author |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Invite → team member + team chat + notification; org owner also sends GitHub org invite. Role full / team limit returned as codes | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Body optional `{ increaseHeadcount?: boolean }`. Invite → team member + team chat + notification. Role full → `ROLE_FULL`; `increaseHeadcount` on a free team → `PLAN_LIMIT`/`ROLE_HEADCOUNT` (Flex); free team at 6 members → `PLAN_LIMIT`/`TEAM_MEMBERS` | author |
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy) | author |
 
 ### 4-12. 작업물·피드·반응 — `PostController`

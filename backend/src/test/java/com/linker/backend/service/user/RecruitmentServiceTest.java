@@ -453,6 +453,27 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void acceptIncreaseRequiresFlex() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(100L);
+		RecruitRole role = post.getRoles().getFirst();
+		ReflectionTestUtils.setField(role, "acceptedCount", role.getHeadcount());
+		Application application = pendingOn(post, 20L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+		when(subscriptions.hasFlexBenefit(100L, NOW)).thenReturn(false);
+
+		assertThatThrownBy(() -> service.accept(developer, 3L, 7L, new AcceptApplicationRequest(true)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("PLAN_LIMIT");
+					assertThat(api.getDetail()).containsEntry("reason", "ROLE_HEADCOUNT");
+				});
+		verify(teamMembers, never()).saveAndFlush(any());
+	}
+
+	@Test
 	void acceptJoinsTeamAndChat() {
 		RecruitPost post = ownedPost();
 		post.assignTeam(100L);

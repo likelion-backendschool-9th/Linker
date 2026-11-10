@@ -115,8 +115,8 @@ export function applyToRecruit(recruitId: string, body: { roleId: number }) {
 
 /**
  * Accept → team member + team chat + notification. Fails with TEAM_REQUIRED or ROLE_FULL (409), or
- * PLAN_LIMIT for a free team at its member cap. `increaseHeadcount` ("인원 늘리고 수락") is a proposal
- * beyond WBS so the headcount and the acceptance change together.
+ * PLAN_LIMIT (`TEAM_MEMBERS` / `ROLE_HEADCOUNT`) when Flex payment is required. `increaseHeadcount`
+ * bumps the role cap by one only on Flex teams.
  */
 export function acceptApplication(
   recruitId: string,

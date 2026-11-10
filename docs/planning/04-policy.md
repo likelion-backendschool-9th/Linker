@@ -331,8 +331,8 @@ Pending applications stay when a recruit post closes; the author can still invit
 
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
-- **Inviting when that role is full** → pending Invite stays disabled until headcount increases. Optional "인원 늘리고 초대" (increase headcount and invite) may raise the role cap by one; no subscription/BM prompt on recruit detail.
-- **Free team member limit reached** (6) → can't invite; show the reason only on recruit detail. Flex upgrade is not required from this page (team/plan surfaces own that BM; Flex teams have no member limit).
+- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams are sent to the Flex checkout sheet from recruit detail.
+- **Free team member limit reached** (6) → can't invite; recruit detail returns `PLAN_LIMIT` / `TEAM_MEMBERS` and opens the Flex checkout sheet. Flex teams have no member limit.
 - **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
 - **Accepted applicant doesn't accept the GitHub org invite within 7 days** → stays in the Linker team and can chat, but doesn't appear as assignable for issues. Notify applicant and owner again.
 - **Fake recruitment reported** → follow report/sanction policy. If the author deletes the team within 7 days after accepting, auto-flag for fake-recruitment review.

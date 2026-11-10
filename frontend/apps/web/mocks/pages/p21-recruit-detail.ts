@@ -137,13 +137,21 @@ export const routes: MockRoute[] = [
       const role = item.roles.find((r) => r.id === application.roleId);
       if (!item.teamId) fail(409, 'TEAM_REQUIRED', '팀을 먼저 만들어야 수락할 수 있어요');
       if (role && role.filled >= role.headcount) {
-        // Proposal beyond WBS: "인원 늘리고 수락" (04 ch. 5 exceptions) in one call
-        if (body.increaseHeadcount === true && role.headcount < 10) role.headcount += 1;
-        else
+        if (body.increaseHeadcount === true && role.headcount < 10) {
+          // Flex-only: free teams hit PLAN_LIMIT → shared Flex sheet
+          const team = TEAMS.find((entry) => entry.id === item.teamId);
+          if (!team || team.plan !== 'FLEX') {
+            fail(403, 'PLAN_LIMIT', '역할 인원을 늘리려면 Flex 구독이 필요해요.', {
+              reason: 'ROLE_HEADCOUNT',
+            });
+          }
+          role.headcount += 1;
+        } else {
           fail(409, 'ROLE_FULL', '이 역할은 이미 다 찼어요', {
             roleId: role.id,
             headcount: role.headcount,
           });
+        }
       }
       application.status = 'ACCEPTED';
       if (role) role.filled += 1;

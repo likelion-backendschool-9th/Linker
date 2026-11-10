@@ -457,10 +457,7 @@ public class RecruitmentService {
 		RecruitRole role = application.getRecruitRole();
 		boolean increase = request != null && Boolean.TRUE.equals(request.increaseHeadcount());
 		if (role.isFull()) {
-			if (increase && role.getHeadcount() < PlanLimits.RECRUIT_HEADCOUNT_MAX) {
-				role.updateHeadcount(role.getHeadcount() + 1);
-			}
-			else {
+			if (!increase || role.getHeadcount() >= PlanLimits.RECRUIT_HEADCOUNT_MAX) {
 				throw new ApiException(
 						409,
 						"ROLE_FULL",
@@ -468,6 +465,16 @@ public class RecruitmentService {
 						Map.of("roleId", role.getId(), "headcount", role.getHeadcount())
 				);
 			}
+			// "인원 늘리고 수락" requires Flex (paid seats) — free teams cannot bump headcount here.
+			if (!subscriptions.hasFlexBenefit(teamId, clock.instant())) {
+				throw new ApiException(
+						403,
+						"PLAN_LIMIT",
+						"역할 인원을 늘리려면 Flex 구독이 필요해요.",
+						Map.of("reason", "ROLE_HEADCOUNT")
+				);
+			}
+			role.updateHeadcount(role.getHeadcount() + 1);
 		}
 
 		long applicantId = application.getApplicant().getId();
