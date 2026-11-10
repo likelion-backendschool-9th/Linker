@@ -129,10 +129,10 @@ export function DeveloperProfileForm({
     currentValues.name !== initial.name ||
     currentValues.bio !== initial.bio ||
     currentValues.blogUrl !== initial.blogUrl ||
-    hasStringArrayChanged(currentValues.techStack, initial.techStack) ||
+    hasStringArrayChanged(currentValues.techStack ?? initial.techStack, initial.techStack) ||
     currentValues.lookingForTeam !== initial.lookingForTeam ||
     currentValues.jobStatus !== initial.jobStatus ||
-    hasStringArrayChanged(currentValues.jobCategories, initial.jobCategories) ||
+    hasStringArrayChanged(currentValues.jobCategories ?? initial.jobCategories, initial.jobCategories) ||
     jobStatusChosen !== (initial.jobStatus !== 'OFF');
   const selectedTech = useWatch({ control: form.control, name: 'techStack' }) ?? [];
   const [selectedTechOccurrence, setSelectedTechOccurrence] = useState<Record<string, number>>(() => {
