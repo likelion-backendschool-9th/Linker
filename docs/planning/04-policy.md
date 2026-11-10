@@ -140,6 +140,7 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 - Failed chat messages get resend/delete buttons next to the bubble; auto-retry up to 3 times.
 - If GitHub doesn't respond, show screens from the Linker cache with a top banner "GitHub 연결이 불안정해 최신 정보가 아닐 수 있어요" (GitHub connection unstable; info may be outdated).
 - Light actions like likes/follows are applied on screen first; on failure, revert and notify briefly.
+- A request with no response within **10 seconds** fails as a timeout and is not retried automatically. An action (save, send, delete) shows the error toast "네트워크 연결 시간이 초과되었습니다." (network timed out); a screen still loading shows the load-failure screen with a retry button. While a request is in flight its button stays disabled so it can't be sent twice.
 
 ## 3. Account & profile
 

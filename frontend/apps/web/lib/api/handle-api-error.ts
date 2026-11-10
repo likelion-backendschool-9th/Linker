@@ -2,12 +2,18 @@ import { useAppSignalStore } from '@/stores/app-signal-store';
 import { toast } from '@/stores/toast-store';
 
 import { ApiError } from './api-error';
+import { isTimeoutError } from './fetch-with-timeout';
 
 /**
  * Shared handling of the common failure codes (blueprint §5-4, WBS §1-4). Browser only.
  * Anything else is left to the screen that made the call.
  */
 export function handleApiError(error: unknown) {
+  // No response in time (blueprint §5-5). One toast however many requests time out together.
+  if (isTimeoutError(error)) {
+    toast(error.message, { tone: 'error', key: 'request-timeout' });
+    return;
+  }
   if (!(error instanceof ApiError)) return;
   const signals = useAppSignalStore.setState;
 

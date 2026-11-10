@@ -263,6 +263,28 @@ A toast with an `action` (되돌리기, 채팅방으로 가기) has no dot, show
 | A failed read (GET) that fills the screen | none | Inline `ErrorState` with retry, not a toast |
 | Client-side notice with no request (cooldown left, 미구현 기능) | `info` | |
 | Client-side failure with no request (clipboard denied) | `error` | |
+| No response within the time limit (`RequestTimeoutError`) | `error` — "네트워크 연결 시간이 초과되었습니다." (one toast, key `request-timeout`) | Mutations always; queries only when data is already on screen (background refetch). A query with nothing on screen yet shows the load-failure screen with retry instead |
+
+#### Timeouts
+- Every request goes through `apiFetch` → `fetchWithTimeout` (`lib/api/fetch-with-timeout.ts`): an `AbortController` aborts it after `NETWORK.requestTimeoutMs` (10 s, `lib/policy.ts`) and it rejects with `RequestTimeoutError` (`name: 'TimeoutError'`). A slower endpoint passes its own limit: `apiFetch(url, { timeoutMs: 30_000 })`.
+- Identify it with `isTimeoutError(error)`, never `error.name === 'AbortError'`: TanStack Query aborts requests it no longer needs (unmount, key change) with an `AbortError`, and that must stay silent. The caller's own `signal` still cancels the request.
+- No automatic retry on a timeout (`retryOnce` in `query-client.ts`): a second 10 s wait is worse than the retry button. 5xx still gets one retry; 4xx none. Mutations never retry.
+- Shared handling in `handle-api-error.ts` (above table). Mock mode: `localStorage.setItem('linker_mock_delay_ms', '12000')` slows every mock response to try the timeout UI; remove the key afterwards.
+- While a mutation is in flight, its button is disabled (no double submit, no duplicate rows):
+
+```tsx
+'use client';
+
+export function SaveButton({ onSave }: { onSave: () => Promise<void> }) {
+  const save = useMutation({ mutationFn: onSave, onSuccess: () => toast('저장했어요.') });
+  return (
+    <Button disabled={save.isPending} aria-busy={save.isPending} onClick={() => save.mutate()}>
+      저장
+    </Button>
+  );
+}
+```
+
 
 ## 6. Accessibility, landmarks, semantic markup
 ### 6-1. Page skeleton (via `PageFrame`)

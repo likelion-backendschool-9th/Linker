@@ -22,6 +22,11 @@ export const IMAGE = {
   longSidePx: 2048,
 } as const;
 
+/** 04 ch. 2 "Network and failures": a request with no response by then fails as a timeout */
+export const NETWORK = {
+  requestTimeoutMs: 10_000,
+} as const;
+
 /** 04 ch. 2 "Network and failures" */
 export const DRAFT = {
   keepDays: 7,
