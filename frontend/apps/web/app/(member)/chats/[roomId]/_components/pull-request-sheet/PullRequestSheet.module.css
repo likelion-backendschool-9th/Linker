@@ -1,13 +1,6 @@
-/* Values not in shared tokens remain scoped to Figma 735:2891. */
+/* Figma 889:416 (기본) / 735:2891 (선택) */
+
 .screen {
-  --pr-content-top: 25px;
-  --pr-heading-gap: 22px;
-  --pr-card-gap: 15px;
-  --pr-card-inline: 15px;
-  --pr-card-top: 14px;
-  --pr-card-bottom: 15px;
-  --pr-event-gap: 23px;
-  --pr-share-text: #f6f6f6;
   position: fixed;
   inset: 0;
   z-index: var(--z-overlay);
@@ -19,89 +12,118 @@
   color: var(--color-text-title-cool);
   outline: none;
 }
+
 .header {
   display: flex;
   flex: none;
   align-items: center;
   gap: var(--space-xxs);
   height: calc(var(--header-height) + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) var(--space-sm) 0;
+  padding: env(safe-area-inset-top) var(--page-gutter) 0;
   background: var(--color-canvas);
   backdrop-filter: var(--blur-chrome);
 }
+
 .back {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex: none;
   width: var(--touch-target-min);
   height: var(--touch-target-min);
+  margin-left: calc(var(--space-xxs) * -1);
   color: var(--color-text-black);
 }
-.back svg {
+
+.backIcon {
   width: var(--icon-size);
   height: var(--icon-size);
 }
+
 .title {
   min-width: 0;
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-semibold);
   line-height: normal;
 }
+
 .tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   flex: none;
 }
-.tabs button {
-  min-height: var(--control-height-chat);
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 5px 33px;
   border-bottom: 1px solid var(--color-tab-divider);
   color: var(--color-text-muted-cool);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
+  line-height: 17px;
 }
-.tabs button[aria-pressed='true'] {
+
+.tab[aria-pressed='true'] {
   border-bottom: 2px solid var(--color-text-slate);
   color: var(--color-text-title-cool);
   font-weight: var(--font-weight-semibold);
 }
+
 .body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--pr-content-top) var(--page-gutter) 0;
+  padding: 25px var(--page-gutter) 0;
 }
+
 .count {
-  margin-bottom: var(--pr-heading-gap);
+  margin: 0 0 23px;
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-compact);
+  line-height: 21px;
+  color: var(--color-text-title-cool);
 }
+
 .list {
   display: grid;
-  gap: var(--pr-card-gap);
+  gap: 15px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
+
 .card {
   --pr-stroke: 1px;
+  box-sizing: border-box;
   min-width: 0;
-  padding: calc(var(--pr-card-top) - var(--pr-stroke))
-    calc(var(--pr-card-inline) - var(--pr-stroke)) calc(var(--pr-card-bottom) - var(--pr-stroke));
+  min-height: 174px;
+  padding: calc(14px - var(--pr-stroke)) calc(15px - var(--pr-stroke))
+    calc(15px - var(--pr-stroke));
   border: var(--pr-stroke) solid var(--color-hairline-cool);
   border-radius: var(--radius-xs);
+  background: var(--color-canvas);
 }
+
 .card[data-selected='true'] {
   --pr-stroke: 2px;
   border-color: var(--color-selection);
 }
+
 .card:has(input:focus-visible) {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
+
 .choice {
   position: relative;
   display: block;
   cursor: pointer;
 }
+
 .choice input {
   position: absolute;
   width: 1px;
@@ -110,44 +132,54 @@
   overflow: hidden;
   white-space: nowrap;
 }
+
 .cardTitle {
   display: block;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
   line-height: 19px;
+  color: var(--color-text-title-cool);
   overflow-wrap: anywhere;
 }
+
 .meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-row-block);
-  margin-top: var(--space-row-inline);
+  margin-top: 5px;
   color: var(--color-text-muted-cool);
   font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-compact);
+  line-height: 22px;
 }
+
 .meta > span:first-child {
   overflow-wrap: anywhere;
 }
+
 .dot {
   width: var(--separator-dot-size);
   height: var(--separator-dot-size);
   border-radius: var(--radius-full);
   background: currentColor;
 }
+
 .event {
   display: block;
-  margin-top: var(--pr-event-gap);
+  margin-top: 23px;
   font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
   line-height: 17px;
-  overflow-wrap: anywhere;
   color: var(--color-text-black);
+  overflow-wrap: anywhere;
 }
-.event > span {
+
+.eventAccent {
   color: var(--color-selection);
+  font-weight: var(--font-weight-medium);
 }
+
 .github {
   display: flex;
   align-items: center;
@@ -155,23 +187,27 @@
   gap: var(--space-row-inline);
   width: 100%;
   min-height: var(--touch-target-min);
-  margin-top: var(--pr-card-gap);
+  margin-top: 15px;
   border-radius: var(--radius-xs);
-  background: var(--color-canvas-cool);
-  color: var(--color-text-black);
+  background: var(--color-sheet-cta);
+  color: var(--color-on-primary);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
   line-height: 19px;
 }
-.github img {
+
+.githubIcon {
   flex: none;
+  filter: brightness(0) invert(1);
 }
+
 .footer {
   flex: none;
-  padding: var(--space-tab-icon-gap) var(--page-gutter)
-    calc(var(--space-lg) + env(safe-area-inset-bottom));
+  /* Figma 889:416 — CTA at y723 / height 53, home-indicator band below */
+  padding: 0 var(--page-gutter) calc(var(--space-lg) + env(safe-area-inset-bottom));
   background: var(--color-canvas);
 }
+
 .share {
   display: flex;
   align-items: center;
@@ -180,14 +216,18 @@
   min-height: var(--control-height-sheet);
   border-radius: var(--radius-control-md);
   background: var(--color-cta-cool);
-  color: var(--pr-share-text);
+  color: var(--color-on-primary);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
+  line-height: 19px;
 }
+
 .share:disabled {
-  background: var(--color-cta-cool-disabled);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-disabled-cool);
   cursor: not-allowed;
 }
+
 .error {
   margin-top: var(--space-sm);
   color: var(--color-status-error);

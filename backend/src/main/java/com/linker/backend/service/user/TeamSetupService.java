@@ -122,7 +122,7 @@ public class TeamSetupService {
   }
 
   public TeamSetupResponse.Repos repos(AuthenticatedUser user, long id) {
-    var team = authorized(user, id, TeamRole.Level.OWNER, false);
+    var team = authorized(user, id, TeamRole.Level.ADMIN, false);
     var repos = github.repositories(user.userId(), team.installationId(), team.orgId());
     // Installed-repo listing cannot establish how many org repos are inaccessible.
     return new TeamSetupResponse.Repos(

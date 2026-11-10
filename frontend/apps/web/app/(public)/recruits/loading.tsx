@@ -1,13 +1,6 @@
-import { PageFrame } from '@/components/layout/page-frame/PageFrame';
-import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { PageLoading } from '@/components/ui/page-loading';
 
+/** Full-screen loading (Figma 301:294) */
 export default function RecruitsLoading() {
-  return (
-    <PageFrame title="팀 찾기" hideTitle>
-      <div aria-busy="true">
-        <p role="status">모집 글을 불러오고 있어요.</p>
-        <Skeleton count={3} />
-      </div>
-    </PageFrame>
-  );
+  return <PageLoading />;
 }

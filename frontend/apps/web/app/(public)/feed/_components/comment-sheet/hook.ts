@@ -60,7 +60,7 @@ export function useCommentComposer(postId: string, onWritten: () => void) {
       ]);
       onWritten();
     },
-    onError: (failure) => toast(writeErrorMessage(failure), { tone: 'alert' }),
+    onError: (failure) => toast(writeErrorMessage(failure), { tone: 'error' }),
   });
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -70,12 +70,12 @@ export function useCommentComposer(postId: string, onWritten: () => void) {
     if (!requireLogin() || write.isPending) return;
     const count = countChars(text);
     if (count === 0) {
-      toast('댓글을 입력해 주세요.', { tone: 'alert' });
+      toast('댓글을 입력해 주세요.', { tone: 'error' });
       input.current?.focus();
       return;
     }
     if (count > POST.commentMax) {
-      toast(`댓글은 ${POST.commentMax}자까지 쓸 수 있어요.`, { tone: 'alert' });
+      toast(`댓글은 ${POST.commentMax}자까지 쓸 수 있어요.`, { tone: 'error' });
       return;
     }
     write.mutate();

@@ -28,11 +28,13 @@
 | 351:138 | 검색 프레임 — AI 무시 |
 | Flex·로딩·배너 | **Figma 화면 없음, 준호님 확인** |
 
-## Policy 합의 차이 (문서 미수정)
+## Policy 합의 차이
 
 - 범위: Policy 4종 선택 → **항상 최근 500**.
 - 출력: 회의록 → **본문 한 덩어리 `summary`** (`summary_line` 매핑).
 - share 엔드포인트·화면 미구현.
+
+**2026-11-10 c-role-audit #8:** 위 축소를 **지금 계약**으로 공식화. 범위4종·회의록·공유·이슈만들기는 **후속 `[Included]`** (Page TODO 17 / WBS P17 갱신). Policy 원문은 차이 표만 ([c-role-audit.md](c-role-audit.md)). 프롬프트 최소 격리는 PR3 (#9).
 
 ## 검증
 

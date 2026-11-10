@@ -76,7 +76,7 @@ export function useMessageActions({ room, messages, login, disabled }: Props) {
         toast('메시지를 복사했어요.');
         menu.close();
       } catch {
-        toast('복사하지 못했어요. 브라우저 권한을 확인해 주세요.');
+        toast('복사하지 못했어요. 브라우저 권한을 확인해 주세요.', { tone: 'error' });
       }
     },
     openEdit: () => {

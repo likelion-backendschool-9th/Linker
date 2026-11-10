@@ -93,10 +93,12 @@ export function WorkspaceView() {
               <h2 id="workspace-issues-title" className={styles.sectionTitle}>
                 내 {team.name} 팀의 이슈
               </h2>
-              <Link href={`/teams/${team.id}/issues/new` as Route} className={styles.addIssue}>
-                <Icon svg={AddBoldIcon} className={styles.addIssueIcon} />
-                <span className="sr-only">이슈 작성</span>
-              </Link>
+              {['ACTIVE', 'COMPLETED'].includes(team.status) && (
+                <Link href={`/teams/${team.id}/issues/new` as Route} className={styles.addIssue}>
+                  <Icon svg={AddBoldIcon} className={styles.addIssueIcon} />
+                  <span className="sr-only">이슈 작성</span>
+                </Link>
+              )}
             </div>
             {issues.isPending ? (
               <Skeleton count={3} />

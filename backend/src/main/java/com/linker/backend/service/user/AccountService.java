@@ -467,7 +467,8 @@ public class AccountService {
 		return email;
 	}
 
-	static String jobStatus(JobSeekingStatus status) {
+	/** Wire vocabulary for FE (SEEKING / OPEN / OFF), not the DB enum names. */
+	public static String jobStatus(JobSeekingStatus status) {
 		return switch (status) {
 			case OPEN -> "SEEKING";
 			case OFFERS_ONLY -> "OPEN";

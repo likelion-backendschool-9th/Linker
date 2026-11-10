@@ -46,6 +46,13 @@ public interface GithubTeamSource {
       Instant closedAt,
       Instant updatedAt) {}
 
+  boolean organizationOwner(long userId, long expectedOrgId, String login);
+
+  String organizationMemberState(
+      long userId, long expectedOrgId, String login, String memberLogin, long memberId);
+
+  long inviteOrganizationMember(long userId, long expectedOrgId, String login, long githubUserId);
+
   Organization organization(long userId, long expectedOrgId, String login);
 
   Installation installation(long installationId);

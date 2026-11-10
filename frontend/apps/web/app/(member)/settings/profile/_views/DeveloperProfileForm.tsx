@@ -23,9 +23,9 @@ import type { DeveloperProfileValues, JobCategory, TechTag } from '../_lib/form-
 import styles from '../_components/profile-edit-form.module.css';
 
 const JOB_STATUS = [
-  { value: 'SEEKING', label: '구인 중' },
-  { value: 'OPEN', label: '제안만 받기' },
-  { value: 'OFF', label: '끔' },
+  { value: 'SEEKING', label: '구직 중' },
+  { value: 'OPEN', label: '제안 받기' },
+  { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
 const JOB_CATEGORY_ORDER = [

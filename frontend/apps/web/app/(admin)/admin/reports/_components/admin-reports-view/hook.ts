@@ -20,6 +20,7 @@ import {
 } from './api';
 
 export const STATUSES = ['PENDING', 'HANDLED', 'APPEALED'] as const;
+/** Job-ad reports stay out of the admin UI until the ad design ships. */
 export const TARGET_TYPES = [
   'USER',
   'POST',
@@ -27,7 +28,6 @@ export const TARGET_TYPES = [
   'RECRUIT_POST',
   'TEAM_MESSAGE',
   'DIRECT_MESSAGE',
-  'RECRUITER_AD',
 ] as const;
 export const STATUS_LABEL: Record<ReportStatus, string> = {
   PENDING: '대기',
@@ -128,7 +128,7 @@ export function useAdminReportsView() {
     },
     onError: (error) =>
       toast(error instanceof Error ? error.message : '신고 처리를 저장하지 못했어요.', {
-        tone: 'alert',
+        tone: 'error',
       }),
   });
   const decideAppealMutation = useMutation({
@@ -144,7 +144,7 @@ export function useAdminReportsView() {
     },
     onError: (error) =>
       toast(error instanceof Error ? error.message : '이의 제기 결정을 저장하지 못했어요.', {
-        tone: 'alert',
+        tone: 'error',
       }),
   });
 

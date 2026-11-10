@@ -22,6 +22,18 @@ export function TeamSettingsActionSheet({
   members: Members['items'];
 }) {
   const {
+    handle,
+    setInviteHandle,
+    mutation,
+    supported,
+    canSubmit,
+    name,
+    setName,
+    description,
+    setDescription,
+    confirmName,
+    setConfirmName,
+    repoCandidates,
     overlay,
     kind,
     target,
@@ -60,7 +72,14 @@ export function TeamSettingsActionSheet({
           body: inviteStyles.inviteBody,
         }}
       >
-        <div className={inviteStyles.inviteStack}>
+        <form
+          className={inviteStyles.inviteStack}
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (canSubmit) mutation.mutate(overlay.id ?? '');
+          }}
+        >
           <div className={inviteStyles.inviteField}>
             <label className="sr-only" htmlFor="team-invite-handle">
               GitHub 로그인
@@ -70,15 +89,32 @@ export function TeamSettingsActionSheet({
               className={inviteStyles.inviteInput}
               type="text"
               placeholder="@JUNHORANG"
+              value={handle}
+              aria-invalid={mutation.isError && mutation.variables === overlay.id}
+              aria-describedby={
+                mutation.isError && mutation.variables === overlay.id
+                  ? `${kind}-invite-error`
+                  : undefined
+              }
+              disabled={mutation.isPending}
+              onChange={(event) => {
+                setInviteHandle(event.target.value);
+                if (mutation.isError) mutation.reset();
+              }}
               autoComplete="off"
               spellCheck={false}
             />
             <p className={inviteStyles.inviteHint}>팀 초대는 Linker 가입자를 팀으로 초대 합니다</p>
           </div>
-          <button type="button" className={inviteStyles.inviteSubmit}>
+          {mutation.isError && mutation.variables === overlay.id && (
+            <p id={`${kind}-invite-error`} role="alert">
+              {mutation.error.message}
+            </p>
+          )}
+          <button type="submit" className={inviteStyles.inviteSubmit} disabled={!canSubmit}>
             초대
           </button>
-        </div>
+        </form>
       </OverlaySheet>
     );
   }
@@ -99,7 +135,14 @@ export function TeamSettingsActionSheet({
           body: inviteStyles.inviteBody,
         }}
       >
-        <div className={inviteStyles.inviteStack}>
+        <form
+          className={inviteStyles.inviteStack}
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (canSubmit) mutation.mutate(overlay.id ?? '');
+          }}
+        >
           <div className={inviteStyles.inviteField}>
             <label className="sr-only" htmlFor="github-org-invite-handle">
               GitHub 로그인
@@ -109,15 +152,34 @@ export function TeamSettingsActionSheet({
               className={inviteStyles.inviteInput}
               type="text"
               placeholder="@JUNHORANG"
+              value={handle}
+              aria-invalid={mutation.isError && mutation.variables === overlay.id}
+              aria-describedby={
+                mutation.isError && mutation.variables === overlay.id
+                  ? `${kind}-invite-error`
+                  : undefined
+              }
+              disabled={mutation.isPending}
+              onChange={(event) => {
+                setInviteHandle(event.target.value);
+                if (mutation.isError) mutation.reset();
+              }}
               autoComplete="off"
               spellCheck={false}
             />
-            <p className={inviteStyles.inviteHint}>팀 초대는 Linker 가입자를 팀으로 초대 합니다</p>
+            <p className={inviteStyles.inviteHint}>
+              Github 조직 초대는 조직으로 사용자 초대를 보낼 수 있습니다
+            </p>
           </div>
-          <button type="button" className={inviteStyles.inviteSubmit}>
+          {mutation.isError && mutation.variables === overlay.id && (
+            <p id={`${kind}-invite-error`} role="alert">
+              {mutation.error.message}
+            </p>
+          )}
+          <button type="submit" className={inviteStyles.inviteSubmit} disabled={!canSubmit}>
             초대
           </button>
-        </div>
+        </form>
       </OverlaySheet>
     );
   }
@@ -126,21 +188,32 @@ export function TeamSettingsActionSheet({
     <OverlaySheet
       overlay={overlay}
       title={TITLES[kind] ?? '팀 설정'}
-      description="입력 화면을 미리 볼 수 있어요. 변경 내용은 아직 저장되지 않아요."
+      describeHidden={supported}
+      description={
+        supported
+          ? (TITLES[kind] ?? '팀 설정')
+          : '입력 화면을 미리 볼 수 있어요. 변경 내용은 아직 저장되지 않아요.'
+      }
     >
       <div className={styles.stack}>
         {kind === 'info' && (
           <>
             <div className={styles.field}>
               <label htmlFor="edit-team-name">팀 이름</label>
-              <input id="edit-team-name" className={styles.input} defaultValue={team.name} />
+              <input
+                id="edit-team-name"
+                className={styles.input}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
             </div>
             <div className={styles.field}>
               <label htmlFor="edit-team-intro">팀 소개</label>
               <textarea
                 id="edit-team-intro"
                 className={styles.textarea}
-                defaultValue={team.description}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
               />
             </div>
           </>
@@ -169,17 +242,31 @@ export function TeamSettingsActionSheet({
               </select>
             </div>
             <p className={styles.description}>
-              {member.inGithubOrg
+              {member.githubOrgStatus === 'MEMBER'
                 ? 'GitHub 조직에 참여한 멤버예요.'
-                : 'GitHub 조직 초대를 수락해야 이슈 담당자가 될 수 있어요.'}
+                : member.githubOrgStatus === 'INVITED'
+                  ? 'GitHub 조직 초대가 진행 중이에요. 수락해야 이슈 담당자가 될 수 있어요.'
+                  : 'GitHub 조직 초대를 수락해야 이슈 담당자가 될 수 있어요.'}
             </p>
-            <Button variant="outline" disabled>
+            <Button
+              variant="outline"
+              disabled={
+                team.myRole !== 'OWNER' ||
+                !team.githubOrgOwner ||
+                member.githubOrgStatus !== 'NOT_MEMBER'
+              }
+              onClick={() => overlay.open(`github:${target}`)}
+            >
               GitHub 조직 초대
             </Button>
             <p className={styles.description}>
               {team.githubInvitationBlockedReason ??
                 (team.githubOrgOwner
-                  ? 'GitHub 조직 초대는 아직 전송되지 않아요.'
+                  ? member.githubOrgStatus === 'INVITED'
+                    ? 'GitHub 조직 초대가 이미 진행 중이에요.'
+                    : member.githubOrgStatus === 'MEMBER'
+                      ? '이미 GitHub 조직에 참여한 멤버예요.'
+                      : 'GitHub 조직 초대는 아직 전송되지 않아요.'
                   : 'GitHub 조직 오너만 조직에 초대할 수 있어요.')}
             </p>
             {team.permissions.changeRoles && (
@@ -199,20 +286,25 @@ export function TeamSettingsActionSheet({
         )}
         {kind === 'repos' && (
           <div className={styles.section}>
-            <TeamRepoSelection
-              repos={team.availableRepos}
-              selected={selectedRepos}
-              onChange={setSelectedRepos}
-            />
+            {repoCandidates.isPending ? (
+              <Skeleton />
+            ) : repoCandidates.isError ? (
+              <ErrorState onRetry={() => void repoCandidates.refetch()} />
+            ) : (
+              <TeamRepoSelection
+                repos={repoCandidates.data.items}
+                selected={selectedRepos}
+                onChange={setSelectedRepos}
+              />
+            )}
             <p className={styles.description}>
-              선택을 해제하면 연결에서 제외돼요. GitHub의 레포와 이슈는 삭제되지 않아요. 변경 내용은
-              저장되지 않아요.
+              선택을 해제하면 연결에서 제외돼요. GitHub의 레포와 이슈는 삭제되지 않아요.
             </p>
           </div>
         )}
         {kind === 'board' && (
           <>
-            <p>현재 보드: {team.board.name}</p>
+            <p>현재 보드: {team.board?.name ?? '—'}</p>
             {boards.isPending ? (
               <Skeleton />
             ) : boards.isError ? (
@@ -257,7 +349,7 @@ export function TeamSettingsActionSheet({
           <p>
             {member.user.name}님의 역할을{' '}
             {(roleDrafts[target!] ?? member.role) === 'ADMIN' ? '관리자' : '멤버'}로 변경해요.
-            오너는 소유권 이전으로만 바꿀 수 있어요. 변경 내용은 아직 적용되지 않아요.
+            오너는 소유권 이전으로만 바꿀 수 있어요.
           </p>
         )}
         {kind === 'remove' && member && (
@@ -315,7 +407,7 @@ export function TeamSettingsActionSheet({
               완료일: {team.completedAt ? formatDate(team.completedAt) : '완료일을 확인하고 있어요'}
             </p>
             <p className={styles.description}>
-              {team.completion.finalized
+              {team.completion?.finalized
                 ? '완주 기록이 확정됐어요.'
                 : `완료 후 ${TEAM.completionUndoDays}일이 지나면 완주 기록이 확정돼요.`}{' '}
               완료 시점에 팀에 있고 소속 기간이 {TEAM.completionMembershipDays}일 이상인 멤버의
@@ -340,22 +432,30 @@ export function TeamSettingsActionSheet({
                 id="delete-team-name"
                 className={styles.input}
                 placeholder={team.name}
+                value={confirmName}
+                onChange={(event) => setConfirmName(event.target.value)}
                 autoComplete="off"
               />
             </div>
           </>
         )}
+        {kind === 'remove-repo' && <p>GitHub의 레포와 이슈는 삭제되지 않아요.</p>}
         {kind === 'leave' && (
           <p>팀을 나가면 새로운 채팅을 볼 수 없어요. 팀에 남은 메시지는 삭제되지 않아요.</p>
         )}
-        <p className={styles.description}>저장·초대·삭제 기능은 준비 중이에요.</p>
+        {!supported && <p className={styles.description}>저장·초대·삭제 기능은 준비 중이에요.</p>}
+        {mutation.isError && mutation.variables === overlay.id && (
+          <p role="alert" className={styles.danger}>
+            {mutation.error.message}
+          </p>
+        )}
         <div className={styles.actions}>
           <Button variant="outline" onClick={overlay.close}>
             닫기
           </Button>
           {!['completion', 'claim'].includes(kind) && (
-            <Button disabled>
-              {['delete', 'leave', 'archive', 'revoke'].includes(kind)
+            <Button disabled={!canSubmit} onClick={() => mutation.mutate(overlay.id ?? '')}>
+              {['delete', 'leave', 'archive', 'revoke', 'remove-repo'].includes(kind)
                 ? '확인'
                 : kind === 'accept-transfer'
                   ? '소유권 이전 수락'

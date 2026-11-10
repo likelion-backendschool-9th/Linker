@@ -35,6 +35,7 @@ export function FeedList() {
     viewer,
     recruiter,
     tab,
+    tabs,
     setTab,
     following,
     loginNeeded,
@@ -54,7 +55,7 @@ export function FeedList() {
       {/* Slot keeps in-flow height while the tabs pin to the viewport top when collapsed */}
       <div className={styles.chromeSlot}>
         <div className={styles.chromeSticky} data-tab-chrome>
-          <FeedTabs idBase={idBase} current={tab} onChange={setTab} />
+          <FeedTabs idBase={idBase} current={tab} onChange={setTab} available={tabs} />
         </div>
       </div>
 

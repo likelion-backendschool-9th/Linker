@@ -3,6 +3,7 @@ package com.linker.backend.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -125,7 +126,7 @@ class PostServiceTest {
 		when(views.findByPostIdAndViewerIdAndViewDate(eq(42L), eq(99L), any(LocalDate.class)))
 				.thenReturn(Optional.empty());
 		when(users.findById(99L)).thenReturn(Optional.of(viewer));
-		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF"));
+		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", false));
 		setViewer(99L, "viewer");
 
 		var response = service.detail(42L, "share");
@@ -143,7 +144,7 @@ class PostServiceTest {
 		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
 		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
 		when(likes.existsByPostIdAndUserId(42L, 10L)).thenReturn(false);
-		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF"));
+		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "author", "Author", "", "DEVELOPER", "OFF", false));
 		setViewer(10L, "author");
 
 		service.detail(42L, "feed");
@@ -315,8 +316,8 @@ class PostServiceTest {
 		ReflectionTestUtils.setField(author, "id", 7L);
 		when(users.findByUsername("octocat")).thenReturn(Optional.of(author));
 		when(posts.findVisibleByAuthorId(7L)).thenReturn(List.of(postWithId(5L, 7L, PostVisibility.VISIBLE, NOW)));
-		when(authors.toAuthor(any())).thenReturn(
-				new AuthorBriefResponse(7L, "octocat", "octocat", "", "DEVELOPER", "OFF"));
+		when(authors.toAuthor(any(), anyBoolean())).thenReturn(
+				new AuthorBriefResponse(7L, "octocat", "octocat", "", "DEVELOPER", "OFF", false));
 
 		assertThat(service.profilePosts("octocat").items()).extracting(item -> item.id()).containsExactly(5L);
 
@@ -344,7 +345,8 @@ class PostServiceTest {
 				com.linker.backend.entity.account.type.JobSeekingStatus.OPEN);
 		Post off = postWithId(2L, 11L, PostVisibility.VISIBLE, NOW);
 		when(posts.findVisibleForFeed()).thenReturn(List.of(open, off));
-		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "a", "a", "", "DEVELOPER", "OPEN"));
+		when(authors.toAuthor(any(), anyBoolean()))
+				.thenReturn(new AuthorBriefResponse(10L, "a", "a", "", "DEVELOPER", "OPEN", false));
 
 		var page = service.feed(null, null, true);
 
@@ -352,10 +354,13 @@ class PostServiceTest {
 		assertThat(page.items().getFirst().post().id()).isEqualTo(1L);
 	}
 
+	/** Feed cards call the two-arg mapper; detail/comments keep the one-arg form. */
 	private void stubAuthors() {
-		when(authors.toAuthor(any())).thenAnswer(invocation -> {
+		when(authors.toAuthor(any(), anyBoolean())).thenAnswer(invocation -> {
 			User author = invocation.getArgument(0);
-			return new AuthorBriefResponse(author.getId(), author.getUsername(), author.getUsername(), "", "DEVELOPER", "OFF");
+			boolean following = invocation.getArgument(1);
+			return new AuthorBriefResponse(
+					author.getId(), author.getUsername(), author.getUsername(), "", "DEVELOPER", "OFF", following);
 		});
 	}
 

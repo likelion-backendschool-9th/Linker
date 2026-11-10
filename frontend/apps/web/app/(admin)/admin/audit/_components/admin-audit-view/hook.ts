@@ -38,7 +38,6 @@ const TARGETS: Record<string, string> = {
   MESSAGE: '메시지',
   TEAM_MESSAGE: '팀 채팅',
   DIRECT_MESSAGE: '대화',
-  RECRUITER_AD: '채용 광고',
   PAYMENT: '결제',
 };
 export function targetLabel(log: AuditLog) {

@@ -1,10 +1,6 @@
-import { PageFrame } from '@/components/layout/page-frame/PageFrame';
-import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { PageLoading } from '@/components/ui/page-loading';
 
+/** Full-screen loading (Figma 301:294) */
 export default function Loading() {
-  return (
-    <PageFrame title="워크스페이스" hideTitle>
-      <Skeleton variant="card" count={3} />
-    </PageFrame>
-  );
+  return <PageLoading />;
 }

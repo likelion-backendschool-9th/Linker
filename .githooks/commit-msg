@@ -13,6 +13,8 @@ agents='(claude|anthropic|cursor|copilot|codex|gemini|chatgpt|openai|devin|aider
 tmp="$(mktemp)"
 # Keep human co-authors; drop agent trailers and "Generated with ..." lines only.
 grep -viE "^[[:space:]]*(co-authored-by:.*${agents}|made[- ]with:?[[:space:]]*${agents}|.*generated[[:space:]]+(with|by)[[:space:]]+\[?${agents}|made with ${agents})" "$msg_file" >"$tmp" || true
-# Trim trailing blank lines left behind by removed trailers.
-sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp"
-mv "$tmp" "$msg_file"
+# Trim trailing blank lines left behind by removed trailers (BSD/GNU portable).
+trimmed="$(mktemp)"
+awk 'BEGIN{n=0} {lines[++n]=$0} END{while(n>0 && lines[n]=="") n--; for(i=1;i<=n;i++) print lines[i]}' "$tmp" >"$trimmed"
+mv "$trimmed" "$msg_file"
+rm -f "$tmp"

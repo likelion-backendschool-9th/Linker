@@ -17,6 +17,10 @@
 
 칸 밀기 제거, 11·15, 토큰·Policy.
 
+## 문서 반영 (2026-11-10)
+
+Page TODO 14 / WBS P14: 「가로 스크롤」→ 칸 팬 유지 + **보이는 X 스크롤바만 숨김**. 상세 차이 표는 [c-role-audit.md](c-role-audit.md).
+
 ## 검증
 
 - Vitest BoardView / e2e `c-issue-board` (페이지 scrollWidth + columns pan·scrollbarWidth none)
