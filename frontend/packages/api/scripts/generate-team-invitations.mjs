@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -75,6 +75,14 @@ try {
   );
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Team invitation generation failed: ${result.status}`);
+  // Keep generated diffs clean without hand-editing generated source files.
+  const output = join(import.meta.dirname, '../src/team-invitations');
+  for (const file of await readdir(output, { recursive: true })) {
+    if (!file.endsWith('.ts')) continue;
+    const target = join(output, file);
+    const contents = await readFile(target, 'utf8');
+    await writeFile(target, `${contents.trimEnd()}\n`);
+  }
 } finally {
   await rm(directory, { recursive: true, force: true });
 }

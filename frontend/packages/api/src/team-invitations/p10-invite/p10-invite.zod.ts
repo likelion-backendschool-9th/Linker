@@ -31,4 +31,3 @@ export const GetTeamInviteResponse = zod.object({
   "state": zod.enum(['ELIGIBLE', 'ALREADY_MEMBER', 'TEAM_MEMBER_LIMIT', 'TEAM_COUNT_LIMIT', 'ACCEPTED', 'READ_ONLY', 'ARCHIVED'])
 })
 })
-

@@ -248,4 +248,3 @@ export interface TeamInviteLanding {
   team: TeamInviteTarget;
   participation: TeamInviteParticipation;
 }
-

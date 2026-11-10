@@ -276,9 +276,3 @@ export function useGetTeamInviteSuspense<TData = Awaited<ReturnType<typeof getTe
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-
