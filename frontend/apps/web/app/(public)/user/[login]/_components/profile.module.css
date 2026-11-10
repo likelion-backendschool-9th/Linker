@@ -223,6 +223,10 @@
   color: var(--color-text-secondary);
 }
 
+.emptyCentered {
+  text-align: center;
+}
+
 .span {
   grid-column: 1 / -1;
 }
