@@ -68,4 +68,13 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
 
 	@Query("select u.id from User u where u.status='SUSPENDED' and u.suspendedUntil<=:now order by u.id")
 	List<Long> findExpiredSuspensionIds(Instant now, Pageable page);
+  @Query("""
+      select u from User u where u.id in :reviewIds and
+        (lower(u.username) like :pattern escape '!' or lower(u.displayName) like :pattern escape '!')
+        and (:status is null or u.status=:status) and (:type is null or u.userType=:type)
+        and (:cursor is null or u.id<:cursor) order by u.id desc
+      """)
+  List<User> findAdministrationReviewPage(java.util.Set<Long> reviewIds,String pattern,UserStatus status,
+      com.linker.backend.entity.account.type.UserType type,Long cursor,Pageable page);
+
 }

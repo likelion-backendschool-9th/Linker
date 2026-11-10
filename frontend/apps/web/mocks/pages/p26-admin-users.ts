@@ -29,7 +29,7 @@ const sanctions: Record<number, Sanction[]> = {
     },
   ],
 };
-// Page-owned examples use the same response shape and unsupported review flag as Spring.
+// Page-owned examples mirror the supported daily-review filter.
 const suspended = new Set<number>([7]);
 const withdrawing = new Set<number>([8]);
 const userStatus = (id: number) =>
@@ -43,17 +43,17 @@ export const routes: MockRoute[] = [
     const status = query.get('status');
     const userType = query.get('userType');
     const review = query.get('needsReview');
-    if (review === 'true')
-      fail(503, 'SERVICE_UNAVAILABLE', '확인 필요 판정과 해제 기준은 팀 합의 후 제공해요');
+
     const items = ALL_USERS.filter((u) => !q || u.login.includes(q) || u.name.includes(q))
       .filter((u) => !userType || u.userType === userType)
       .filter((u) => !status || userStatus(u.id) === status)
+      .filter((u) => review !== 'true' || u.id === 6)
       .map((u) => ({
         ...brief(u),
         emailMasked: mask(u.email),
         status: userStatus(u.id),
         // 3× a daily limit (POL ch. 2 rate limits)
-        needsReview: null,
+        needsReview: u.id === 6,
         joinedAt: u.joinedAt,
       }));
     const start = query.get('cursor')
@@ -63,7 +63,7 @@ export const routes: MockRoute[] = [
     const page = items.slice(start, start + size);
     return {
       items: page,
-      reviewFilterSupported: false,
+      reviewFilterSupported: true,
       nextCursor: start + size < items.length ? String(page.at(-1)!.id) : null,
     };
   }),
