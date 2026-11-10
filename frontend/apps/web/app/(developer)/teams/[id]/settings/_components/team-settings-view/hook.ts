@@ -34,9 +34,15 @@ export function useTeamSettingsView(teamId: string) {
   const linkActions = useInviteLinkActions('');
   const client = useQueryClient();
   const copyInvite = useMutation({
-    mutationFn: () => getOrCreateTeamInvite(client, teamId, viewer.login),
-    onSuccess: async (link) => {
-      const copied = await linkActions.copy(link.code);
+    mutationFn: async () => {
+      // Start create/fetch and clipboard in the same click turn. Awaiting the
+      // network first drops user activation and makes navigator.clipboard fail.
+      const href = getOrCreateTeamInvite(client, teamId, viewer.login).then((link) =>
+        linkActions.inviteUrl(link.code),
+      );
+      return linkActions.copyDeferred(href);
+    },
+    onSuccess: (copied) => {
       toast(
         copied
           ? '초대 링크를 복사했어요.'
