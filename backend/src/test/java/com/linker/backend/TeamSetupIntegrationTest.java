@@ -338,18 +338,41 @@ class TeamSetupIntegrationTest {
   }
 
   @Test
+  void permissionCheckDocumentsAnExplicitUnknownAdvisoryValue() throws Exception {
+    var document =
+        mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+    var property =
+        json.readTree(document).path("components").path("schemas")
+            .path("TeamSetupPermission").path("properties").path("basePermission");
+    assertThat(property.path("enum").toString()).contains("\"UNKNOWN\"");
+  }
+
+  @Test
   void unknownOrganizationBasePermissionDoesNotPersistAnAssumedPermission() throws Exception {
     var owner = user("owner", UserType.DEVELOPER);
     var session = cookie(owner);
     long team = create(session);
+    var otherSession = cookie(user("other", UserType.DEVELOPER));
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(otherSession))
+        .andExpect(status().isForbidden());
     when(github.organization(anyLong(), eq(500L), eq("org")))
         .thenReturn(new Organization(500, "ORG_500", "org", "", ""));
 
     mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
-        .andExpect(status().isServiceUnavailable())
-        .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.basePermission").value("UNKNOWN"))
+        .andExpect(
+            jsonPath("$.settingsUrl")
+                .value("https://github.com/organizations/org/settings/member_privileges"));
     assertThat(jdbc.queryForObject("select org_base_permission from teams where id=?", String.class, team))
         .isNull();
+    link(session, team);
+    board(session, team);
+    complete(session, team)
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.state").value("QUEUED"));
 
     when(github.organization(anyLong(), eq(500L), eq("org")))
         .thenReturn(new Organization(500, "ORG_500", "org", "", "read"));
@@ -358,6 +381,34 @@ class TeamSetupIntegrationTest {
         .andExpect(jsonPath("$.basePermission").value("READ"));
     assertThat(jdbc.queryForObject("select org_base_permission from teams where id=?", String.class, team))
         .isEqualTo("read");
+
+    // Do not leave a previously known permission behind if GitHub stops exposing it.
+    when(github.organization(anyLong(), eq(500L), eq("org")))
+        .thenReturn(new Organization(500, "ORG_500", "org", "", null));
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.basePermission").value("UNKNOWN"));
+    assertThat(jdbc.queryForObject("select org_base_permission from teams where id=?", String.class, team))
+        .isNull();
+
+    when(github.organization(anyLong(), eq(500L), eq("org")))
+        .thenThrow(new ApiException(503, "SERVICE_UNAVAILABLE", "GitHub 조회 실패"));
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
+        .andExpect(status().isServiceUnavailable());
+  }
+
+  @Test
+  void unrecognizedOrganizationPermissionStillFailsWithoutPersistingIt() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    var session = cookie(owner);
+    long team = create(session);
+    when(github.organization(anyLong(), eq(500L), eq("org")))
+        .thenReturn(new Organization(500, "ORG_500", "org", "", "unexpected"));
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
+    assertThat(jdbc.queryForObject("select org_base_permission from teams where id=?", String.class, team))
+        .isNull();
   }
 
   @Test

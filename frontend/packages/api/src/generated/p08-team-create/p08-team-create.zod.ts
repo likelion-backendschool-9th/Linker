@@ -85,7 +85,11 @@ export const CheckSetupPermissionParams = zod.object({
 });
 
 export const CheckSetupPermissionResponse = zod.object({
-  basePermission: zod.enum(['NONE', 'READ', 'WRITE', 'ADMIN']),
+  basePermission: zod
+    .enum(['NONE', 'READ', 'WRITE', 'ADMIN', 'UNKNOWN'])
+    .describe(
+      'UNKNOWN when GitHub omits the organization default permission; show permission guidance',
+    ),
   settingsUrl: zod.string(),
 });
 

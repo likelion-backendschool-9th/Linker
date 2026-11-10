@@ -56,7 +56,7 @@ it('does not complete or show success from URL state alone, then replaces naviga
   expect(replace).toHaveBeenCalledWith('/workspace?teamId=77');
 });
 
-it.each(['READ', 'NONE'])(
+it.each(['READ', 'NONE', 'UNKNOWN'])(
   'shows the shared permission sheet before sending completion for %s',
   async (basePermission) => {
     vi.mocked(apiFetch).mockResolvedValue({
@@ -72,6 +72,40 @@ it.each(['READ', 'NONE'])(
     expect(screen.getByRole('button', { name: 'GitHub 권한 설정 보기' })).toBeVisible();
     expect(screen.getByRole('button', { name: '계속하기' })).toBeEnabled();
     expect(apiFetch).toHaveBeenCalledTimes(1);
+  },
+);
+
+it('requires explicit continuation for an unknown advisory permission before completing', async () => {
+  vi.mocked(apiFetch).mockImplementation(async (url) =>
+    url === permissionUrl
+      ? {
+          basePermission: 'UNKNOWN',
+          settingsUrl: 'https://github.com/organizations/test/settings/member_privileges',
+        }
+      : progress,
+  );
+  renderWithProviders(<TeamSetupCompletion teamId={77} />);
+  fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+  const proceed = await screen.findByRole('button', { name: '계속하기' });
+  expect(apiFetch).toHaveBeenCalledTimes(1);
+  // The nuqs memory adapter does not consume window.history.back().
+  resetOverlayHistory();
+  fireEvent.click(proceed);
+  expect(await screen.findByRole('heading', { name: '팀을 생성 하셨습니다!' })).toBeVisible();
+  expect(vi.mocked(apiFetch).mock.calls.filter(([url]) => url === completeUrl)).toHaveLength(1);
+});
+
+it.each([{}, { basePermission: null }, { basePermission: 'unexpected' }])(
+  'rejects a malformed permission response %j',
+  async (response) => {
+    vi.mocked(apiFetch).mockResolvedValue(response);
+    renderWithProviders(<TeamSetupCompletion teamId={77} />);
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('GitHub 조직 기본 권한을 확인해 주세요'),
+    );
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   },
 );
 

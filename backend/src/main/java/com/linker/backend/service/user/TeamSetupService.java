@@ -306,8 +306,13 @@ public class TeamSetupService {
   public TeamSetupResponse.Permission permission(AuthenticatedUser user, long id) {
     var team = authorized(user, id, TeamRole.Level.OWNER, false);
     var org = github.organization(user.userId(), team.orgId(), team.orgLogin());
-    String permission = org.basePermission().toLowerCase(Locale.ROOT);
-    if (!List.of("none", "read", "write", "admin").contains(permission))
+    // GitHub App responses may omit this owner-only advisory field. Unknown is not a
+    // write grant: preserve null in DB and show the existing permission guidance.
+    String permission =
+        org.basePermission() == null || org.basePermission().isBlank()
+            ? null
+            : org.basePermission().toLowerCase(Locale.ROOT);
+    if (permission != null && !List.of("none", "read", "write", "admin").contains(permission))
       throw new ApiException(503, "SERVICE_UNAVAILABLE", "GitHub 조직 기본 권한을 확인해 주세요");
     write.executeWithoutResult(
         status -> {
@@ -316,7 +321,7 @@ public class TeamSetupService {
           teams.saveBasePermission(id, permission, clock.instant());
         });
     return new TeamSetupResponse.Permission(
-        permission.toUpperCase(Locale.ROOT),
+        permission == null ? "UNKNOWN" : permission.toUpperCase(Locale.ROOT),
         "https://github.com/organizations/" + org.login() + "/settings/member_privileges");
   }
 
