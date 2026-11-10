@@ -15,7 +15,7 @@ export function TeamDeleteDialog({ team }: { team: TeamSettings }) {
     useTeamDeleteDialog(team);
   return (
     <AlertDialog.Root open={overlay.isOpen} onOpenChange={onOpenChange}>
-      {team.myRole === 'OWNER' && (
+      {(team.myRole === 'OWNER' || team.permissions.deleteTeam) && (
         <div className={viewStyles.deleteWrap}>
           <AlertDialog.Trigger asChild>
             <button type="button" className={viewStyles.delete} disabled={!canDelete}>

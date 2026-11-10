@@ -1,12 +1,13 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
-import { invitesOptions, membersOptions, settingsOptions } from './api';
+import { invitesOptions, membersOptions, settingsOptions, leaveTeam } from './api';
 import { getOrCreateTeamInvite } from '../../_lib/settings-queries';
 import { useInviteLinkActions } from '../invite-link-actions/hook';
 import { toast } from '@/stores/toast-store';
@@ -22,6 +23,8 @@ export function useTeamSettingsView(teamId: string) {
   const settings = useQuery(settingsOptions(teamId));
   const members = useQuery(membersOptions(teamId));
   const viewer = useViewer();
+  const router = useRouter();
+  const leaveConfirm = useOverlay('team-leave');
   const canManage = settings.data?.myRole !== 'MEMBER' && !!settings.data;
   // Invite-link list is unused until a revoke/list UI ships; keep the option for that handoff.
   const invites = useQuery({
@@ -54,6 +57,20 @@ export function useTeamSettingsView(teamId: string) {
   const team = settings.data;
   const editable =
     !!team && viewer.status !== 'SUSPENDED' && !['READ_ONLY', 'ARCHIVED'].includes(team.status);
+  const leave = useMutation({
+    mutationFn: () => {
+      if (!editable || team.myRole !== 'MEMBER' || !team.permissions.leave)
+        throw new Error('현재 역할이나 팀 상태에서는 변경할 수 없어요.');
+      return leaveTeam(team.id);
+    },
+    onSuccess: () => leaveConfirm.closeAnd(() => router.replace('/workspace')),
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['team-settings', teamId] }),
+        client.invalidateQueries({ queryKey: ['teams', 'mine'] }),
+        client.invalidateQueries({ queryKey: ['chat'] }),
+      ]),
+  });
 
   return {
     settings,
@@ -67,6 +84,7 @@ export function useTeamSettingsView(teamId: string) {
     team,
     editable,
     permissions: team?.permissions,
+    leave,
   };
 }
 
