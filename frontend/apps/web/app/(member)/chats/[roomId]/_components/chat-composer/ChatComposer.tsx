@@ -1,17 +1,15 @@
 'use client';
 
 import { FileImageLinearIcon } from '@solar-icons/static/linear/file-image';
-import { ArrowUp, ImagePlus } from 'lucide-react';
+import { ArrowUp, Plus } from 'lucide-react';
 
-import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
-import { Button } from '@/components/ui/button/Button';
 import { Icon } from '@/components/ui/icon/Icon';
-import { ImageUploader } from '@/features/image-upload/image-uploader/ImageUploader';
 import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { CHAT, IMAGE } from '@/lib/policy';
 
 import type { ChatReferences } from '../../_lib/chat-reference-types';
 import type { RoomInfo } from '../../_lib/room-api';
+import { ChatPhotoPanel } from '../chat-photo-panel';
 import { ChatReferenceTools } from '../chat-reference-tools';
 
 import styles from '../chat-room/ChatRoom.module.css';
@@ -27,7 +25,10 @@ type Props = {
 export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
   const {
     uploader,
-    attachments,
+    picker,
+    photoMode,
+    pickPhotos,
+    clearPhotos,
     text,
     setText,
     setCaret,
@@ -37,8 +38,6 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
     tooLong,
     canSubmit,
     submit,
-    canSendPhotos,
-    sendPhotos,
     onMention,
   } = useChatComposer({ disabled, onSend, room, login });
 
@@ -47,48 +46,44 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
       <label htmlFor="chat-message" className="sr-only">
         메시지
       </label>
+      {photoMode && <ChatPhotoPanel uploader={uploader} onClose={clearPhotos} />}
+      {/* Photos go straight from the system picker into the panel above (user design 2026-11-10) */}
+      <input
+        ref={picker}
+        type="file"
+        accept={IMAGE.mimeTypes.join(',')}
+        multiple
+        tabIndex={-1}
+        aria-label="채팅 사진"
+        className="sr-only"
+        onChange={(event) => {
+          if (event.target.files) uploader.add(event.target.files);
+          event.target.value = '';
+        }}
+      />
       <div className={styles.composerBar}>
-        <OverlaySheet
-          overlay={attachments}
-          title="사진 첨부"
-          description="사진을 고르고 전송을 누르면 바로 보내져요."
-          trigger={
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="사진 첨부"
-              className={styles.attachmentToggle}
-            >
-              <Icon svg={FileImageLinearIcon} />
-            </button>
-          }
+        <button
+          type="button"
+          disabled={disabled || uploader.items.length >= uploader.max}
+          className={styles.attachmentToggle}
+          onClick={pickPhotos}
         >
-          <fieldset disabled={disabled} className={styles.attachments}>
-            <legend className="sr-only">사진 첨부</legend>
-            <ImageUploader uploader={uploader} label="채팅 사진" />
-            <p className={styles.meta}>
-              사진은 {CHAT.imagesPerSend}장까지, 한 장에 {IMAGE.maxBytes / (1024 * 1024)}MB까지 보낼
-              수 있어요.
-            </p>
-            {!uploader.allDone && (
-              <p role="status">
-                사진을 모두 올린 뒤 보낼 수 있어요. 실패한 사진은 다시 올리거나 빼 주세요.
-              </p>
-            )}
-          </fieldset>
-          {/* Sends the photos right from the sheet (user request 2026-11-10) */}
-          <Button block disabled={!canSendPhotos} onClick={sendPhotos}>
-            전송
-          </Button>
-        </OverlaySheet>
+          {photoMode ? (
+            <Plus aria-hidden className={styles.addIcon} />
+          ) : (
+            <Icon svg={FileImageLinearIcon} />
+          )}
+          <span className="sr-only">{photoMode ? '사진 추가' : '사진 첨부'}</span>
+        </button>
         <textarea
           ref={input}
           id="chat-message"
-          value={text}
+          // The typed text waits while photos are picked; the placeholder says why it is locked
+          value={photoMode ? '' : text}
           rows={1}
-          disabled={disabled}
-          aria-invalid={tooLong}
-          aria-describedby={tooLong ? 'chat-character-count' : undefined}
+          disabled={disabled || photoMode}
+          aria-invalid={!photoMode && tooLong}
+          aria-describedby={!photoMode && tooLong ? 'chat-character-count' : undefined}
           onChange={(event) => {
             setText(event.target.value);
             setCaret(event.target.selectionStart);
@@ -121,7 +116,7 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
               }
             }
           }}
-          placeholder="채팅을 입력해 주세요."
+          placeholder={photoMode ? '사진 업로드시 채팅을 칠 수 없습니다' : '채팅을 입력해 주세요.'}
           className={styles.input}
         />
         <button type="submit" disabled={!canSubmit} className={styles.send}>
@@ -129,25 +124,11 @@ export function ChatComposer({ disabled, onSend, room, login = null }: Props) {
           <span className="sr-only">보내기</span>
         </button>
       </div>
-      {!!uploader.items.length && (
-        <button
-          type="button"
-          className={styles.attachmentSummary}
-          disabled={disabled}
-          onClick={() => attachments.open()}
-        >
-          <ImagePlus aria-hidden />
-          사진 {uploader.items.length}장 ·{' '}
-          {uploader.items.some((item) => item.status === 'failed')
-            ? '다시 올리기 필요'
-            : uploader.allDone
-              ? '전송 대기'
-              : '업로드 중'}
-        </button>
+      {!photoMode && references.team && (
+        <ChatReferenceTools control={references} onMention={onMention} />
       )}
-      {references.team && <ChatReferenceTools control={references} onMention={onMention} />}
       {/* Figma shows no counter; it appears only once the limit is passed */}
-      {tooLong && (
+      {!photoMode && tooLong && (
         <p id="chat-character-count" role="alert" className={styles.error}>
           글자 수를 줄여 주세요. ({count.toLocaleString('ko-KR')} /{' '}
           {CHAT.messageMax.toLocaleString('ko-KR')}자)

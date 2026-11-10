@@ -8,6 +8,27 @@ const labels = [
   'PR이 닫혔습니다',
 ] as const;
 
+/** A solid PNG drawn in the page, for the photo picker */
+async function png(page: Page, width: number, height: number, color: string) {
+  const base64 = await page.evaluate(
+    ([w, h, fill]) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const context = canvas.getContext('2d')!;
+      context.fillStyle = fill;
+      context.fillRect(0, 0, w, h);
+      return canvas.toDataURL('image/png').split(',')[1]!;
+    },
+    [width, height, color] as const,
+  );
+  return {
+    name: `${width}x${height}.png`,
+    mimeType: 'image/png',
+    buffer: Buffer.from(base64, 'base64'),
+  };
+}
+
 async function revealPrEvents(page: Page) {
   const timeline = page.getByRole('region', { name: '대화 내용' });
   await expect(timeline).toBeVisible();
@@ -216,14 +237,45 @@ test('17 floating summary keeps the existing result flow and leaves photo attach
   await result.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(result).toBeHidden();
   await expect(input).toHaveValue('작성 중인 메시지');
-  await page.getByRole('button', { name: '사진 첨부', exact: true }).click();
-  const photos = page.getByRole('dialog', { name: '사진 첨부', exact: true });
+  await page.getByLabel('채팅 사진').setInputFiles([await png(page, 400, 300, '#3b82f6')]);
+  const photos = page.getByRole('region', { name: '사진 업로드 1장', exact: true });
   await expect(photos).toBeVisible();
-  await photos.getByRole('button', { name: '닫기', exact: true }).click();
+  await photos.getByRole('button', { name: '사진 업로드 닫기', exact: true }).click();
   await expect(photos).toBeHidden();
+  await expect(input).toHaveValue('작성 중인 메시지');
   await page.goto('/chats/10');
   await expect(page.getByRole('textbox', { name: '메시지' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'AI 채팅 요약', exact: true })).toHaveCount(0);
+});
+
+test('17 picked photos lock the input and leave one per message within 220px', async ({ page }) => {
+  await page.goto('/chats/1');
+  const input = page.getByRole('textbox', { name: '메시지' });
+  await input.fill('사진과 같이 가면 안 되는 글');
+  const timeline = page.getByRole('region', { name: '대화 내용' });
+  const before = await timeline.getByRole('button', { name: /채팅 이미지 \d+ 크게 보기/ }).count();
+  const second = timeline.getByRole('button', { name: '채팅 이미지 2 크게 보기' });
+  const secondBefore = await second.count();
+  await page
+    .getByLabel('채팅 사진')
+    .setInputFiles([await png(page, 400, 300, '#3b82f6'), await png(page, 150, 400, '#f97316')]);
+  await expect(page.getByRole('heading', { name: '사진 업로드 2장', exact: true })).toBeVisible();
+  await expect(input).toBeDisabled();
+  await expect(input).toHaveAttribute('placeholder', '사진 업로드시 채팅을 칠 수 없습니다');
+  await page.getByRole('button', { name: '보내기', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /사진 업로드/ })).toHaveCount(0);
+  await expect(input).toBeEnabled();
+  await expect(input).toHaveValue('사진과 같이 가면 안 되는 글');
+  const sent = timeline.getByRole('button', { name: /채팅 이미지 \d+ 크게 보기/ });
+  await expect(sent).toHaveCount(before + 2);
+  // Each photo is its own message, so both are "채팅 이미지 1"
+  await expect(second).toHaveCount(secondBefore);
+  for (const photo of await sent.locator('img').all()) {
+    await expect(photo).toHaveJSProperty('complete', true);
+    const box = (await photo.boundingBox())!;
+    expect(box.width).toBeLessThanOrEqual(220);
+    expect(box.height).toBeLessThanOrEqual(220);
+  }
 });
 
 test('17 immutable PR cards open the existing GitHub confirmation without regular message menus', async ({

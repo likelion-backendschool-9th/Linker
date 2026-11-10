@@ -27,7 +27,7 @@ AGENTS.md, frontend/AGENTS.md, 관련 양쪽 blueprint와 아래 네 파일을 �
 | 실패한 일반 채팅 전송 자동 재시도 / 회 | CHAT.autoRetries | CHAT_AUTO_RETRIES | 3 |
 | 오프라인 복귀 메시지 불러오기 상한 / 개 | CHAT.catchUpMax | CHAT_CATCH_UP_MAX | 500 |
 | 일반 채팅 텍스트 길이 / 자 | CHAT.messageMax | CHAT_MESSAGE_MAX_CHARS | 2000 |
-| 한 번에 보내는 이미지 / 장 | CHAT.imagesPerSend | CHAT_IMAGES_PER_SEND | 10 |
+| 한 번에 보내는 이미지 / 장 | CHAT.imagesPerSend | CHAT_IMAGES_PER_SEND | 5 |
 | 본인 메시지 수정 기한 / 시간 | CHAT.editWithinHours | CHAT_EDIT_WITHIN_HOURS | 24 |
 | 채용 제안 첫 메시지 / 자 | CHAT.offerMessageMax | CHAT_OFFER_MESSAGE_MAX_CHARS | 1000 |
 | 무료 팀 채팅 조회·검색 / 일 | PLAN_LIMITS.teamChatHistoryDays.free | TEAM_CHAT_HISTORY_DAYS_FREE | 60 |

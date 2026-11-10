@@ -1,0 +1,149 @@
+/*
+ * User design 2026-11-10: full-bleed white panel with the request panel's top shadow, 100px tiles
+ * three to a row. Margins undo the composer's padding so the panel spans the room edge to edge.
+ */
+.panel {
+  margin: calc(-1 * var(--space-sm)) calc(-1 * (var(--space-sm) + var(--space-xxs))) 0
+    calc(-1 * var(--space-sm));
+  padding: var(--space-profile-block) var(--page-gutter) var(--space-sm);
+  background: var(--color-canvas);
+  box-shadow: var(--shadow-chat-request-panel);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-profile-block);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+}
+
+.count {
+  color: var(--color-chat-accent);
+}
+
+.close {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-title-cool);
+  cursor: pointer;
+}
+
+.close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  transform: translate(-50%, -50%);
+}
+
+.close svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  stroke-width: 1.5;
+}
+
+.grid {
+  display: grid;
+  /* Shrinks below 100px only when three tiles no longer fit (320px screens) */
+  grid-template-columns: repeat(3, minmax(0, var(--chat-photo-tile-size)));
+  gap: var(--space-row-block);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-xxs);
+  background: var(--color-chat-bubble-other);
+}
+
+.preview {
+  object-fit: cover;
+}
+
+.progress {
+  position: absolute;
+  right: var(--space-xs);
+  bottom: var(--space-xs);
+  left: var(--space-xs);
+  width: auto;
+  accent-color: var(--color-chat-send);
+}
+
+/* Failed photo: inverse surface so the retry label passes contrast over any preview */
+.retry {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  padding: 0;
+  border: 0;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+/* 24px circle at the tile's top right; the hit area stays 44px over the tile */
+.remove {
+  position: absolute;
+  top: var(--space-xxs);
+  right: var(--space-xxs);
+  display: grid;
+  place-items: center;
+  width: var(--chat-photo-remove-size);
+  height: var(--chat-photo-remove-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-chat-photo-remove-bg);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+}
+
+.remove::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  transform: translate(-50%, -50%);
+}
+
+.remove svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  stroke-width: 2;
+}
+
+.close:focus-visible,
+.remove:focus-visible,
+.retry:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
