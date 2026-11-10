@@ -9,7 +9,9 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon bootJar
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app
-RUN groupadd --gid 10001 linker && useradd --uid 10001 --gid linker linker
+RUN groupadd --gid 10001 linker && useradd --uid 10001 --gid linker linker \
+    && install -d -o linker -g linker /data/uploads
+# A new named volume copies this directory's owner, so the non-root backend can write uploads.
 COPY --from=build --chown=linker:linker /app/build/libs/*.jar ./app.jar
 USER linker
 EXPOSE 8080

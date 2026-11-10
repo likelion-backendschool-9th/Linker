@@ -23,11 +23,11 @@ type Props = {
   room?: RoomInfo;
   login?: string | null;
   onSend: (message: { text: string; images: UploadedImage[]; references?: ChatReferences }) => void;
-  /** Extra button between the input and send (the team room's "AI 채팅 요약") */
-  beforeSend?: ReactNode;
+  /** Button stacked right above send (the team room's "AI 채팅 요약"); the input grows to match */
+  aboveSend?: ReactNode;
 };
 
-export function ChatComposer({ disabled, onSend, room, login = null, beforeSend }: Props) {
+export function ChatComposer({ disabled, onSend, room, login = null, aboveSend }: Props) {
   const {
     uploader,
     attachments,
@@ -40,6 +40,8 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
     tooLong,
     canSubmit,
     submit,
+    canSendPhotos,
+    sendPhotos,
     onMention,
   } = useChatComposer({ disabled, onSend, room, login });
 
@@ -52,7 +54,7 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
         <OverlaySheet
           overlay={attachments}
           title="사진 첨부"
-          description="사진을 선택하고 업로드 상태를 확인해 주세요."
+          description="사진을 고르고 전송을 누르면 바로 보내져요."
           trigger={
             <button
               type="button"
@@ -77,8 +79,9 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
               </p>
             )}
           </fieldset>
-          <Button variant="outline" onClick={attachments.close}>
-            첨부 완료
+          {/* Sends the photos right from the sheet (user request 2026-11-10) */}
+          <Button block disabled={!canSendPhotos} onClick={sendPhotos}>
+            전송
           </Button>
         </OverlaySheet>
         <textarea
@@ -96,6 +99,21 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
           onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
           aria-controls={references.active ? 'chat-mention-suggestions' : undefined}
           onKeyDown={(event) => {
+            // Korean IME: the Enter that ends a composition must not send (keyCode 229 in Chrome)
+            const composing = event.nativeEvent.isComposing || event.keyCode === 229;
+            // Touch keyboards have no Shift+Enter, so their return key keeps breaking the line
+            const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+            // Enter sends, Shift+Enter breaks the line (user request 2026-11-10)
+            if (!composing && !touch && event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              const suggestion = references.active
+                ? document.querySelector<HTMLButtonElement>('#chat-mention-suggestions button')
+                : null;
+              // With mention suggestions open, Enter picks the first one instead of sending
+              if (suggestion) suggestion.click();
+              else event.currentTarget.form?.requestSubmit();
+              return;
+            }
             if (!event.nativeEvent.isComposing && event.key === 'ArrowDown' && references.active) {
               const first = document.querySelector<HTMLButtonElement>(
                 '#chat-mention-suggestions button',
@@ -109,11 +127,14 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
           placeholder="채팅을 입력해 주세요."
           className={styles.input}
         />
-        {beforeSend}
-        <button type="submit" disabled={!canSubmit} className={styles.send}>
-          <ArrowUp aria-hidden />
-          <span className="sr-only">보내기</span>
-        </button>
+        {/* AI 요약 sits on top of send inside the bar (user request 2026-11-10) */}
+        <div className={styles.sendColumn}>
+          {aboveSend}
+          <button type="submit" disabled={!canSubmit} className={styles.send}>
+            <ArrowUp aria-hidden />
+            <span className="sr-only">보내기</span>
+          </button>
+        </div>
       </div>
       {!!uploader.items.length && (
         <button
@@ -127,7 +148,7 @@ export function ChatComposer({ disabled, onSend, room, login = null, beforeSend 
           {uploader.items.some((item) => item.status === 'failed')
             ? '다시 올리기 필요'
             : uploader.allDone
-              ? '전송 준비 완료'
+              ? '전송 대기'
               : '업로드 중'}
         </button>
       )}

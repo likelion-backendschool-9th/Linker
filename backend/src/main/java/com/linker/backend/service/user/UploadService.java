@@ -55,7 +55,7 @@ public class UploadService {
 			throw new ApiException(400, "VALIDATION_ERROR", "사진은 한 장에 10MB까지 올릴 수 있어요.");
 		}
 		UploadPurpose resolved = purpose(type, purpose);
-		String key = "uploads/" + user.userId() + "/" + UUID.randomUUID();
+		String key = "uploads/" + user.userId() + "/" + UUID.randomUUID() + storedExtension(contentType);
 		UploadedFile file = files.save(UploadedFile.pending(user.userId(), resolved, key, contentType, size));
 		ObjectStorage.Presign presign = storage.presignPut(key, contentType, size);
 		String uploadUrl = storage instanceof LocalObjectStorage
@@ -170,6 +170,18 @@ public class UploadService {
 		catch (IllegalArgumentException exception) {
 			return null;
 		}
+	}
+
+	/**
+	 * Extension of the file {@link ImageInspection} will store: WebP is re-encoded as PNG, the rest keep
+	 * their type. Served files take their content type from it ({@code /files/{key}}).
+	 */
+	private static String storedExtension(String contentType) {
+		return switch (contentType) {
+			case "image/jpeg" -> ".jpg";
+			case "image/gif" -> ".gif";
+			default -> ".png";
+		};
 	}
 
 	public record CreatedUpload(String fileId, String uploadUrl) {
