@@ -15,7 +15,7 @@ function PullRequestLiveUpdates(props: Pick<PullRequestSheetProps, 'roomId' | 'l
   return null;
 }
 
-/** Figma 735:2891: full-screen PR picker inside the mobile app column. */
+/** Figma 889:416 / 735:2891 — full-screen PR picker in the mobile app column. */
 export function PullRequestSheet(props: PullRequestSheetProps) {
   const {
     overlay,
@@ -30,30 +30,40 @@ export function PullRequestSheet(props: PullRequestSheetProps) {
     share,
     shareError,
   } = usePullRequestSheet(props);
+
   return (
     <Dialog.Root open={overlay.isOpen} onOpenChange={overlay.onOpenChange}>
       <Dialog.Portal>
         <Dialog.Content className={styles.screen} aria-describedby={undefined}>
           <PullRequestLiveUpdates roomId={props.roomId} login={props.login} />
+
           <header className={styles.header}>
-            <Dialog.Close className={styles.back}>
-              <ArrowLeft aria-hidden />
+            <Dialog.Close type="button" className={styles.back}>
+              <ArrowLeft aria-hidden className={styles.backIcon} />
               <span className="sr-only">뒤로</span>
             </Dialog.Close>
             <Dialog.Title className={styles.title}>PR 목록</Dialog.Title>
           </header>
+
           <div className={styles.tabs} role="group" aria-label="PR 상태">
-            <button type="button" aria-pressed={state === 'open'} onClick={() => setState('open')}>
+            <button
+              type="button"
+              className={styles.tab}
+              aria-pressed={state === 'open'}
+              onClick={() => setState('open')}
+            >
               열린 PR
             </button>
             <button
               type="button"
+              className={styles.tab}
               aria-pressed={state === 'merged'}
               onClick={() => setState('merged')}
             >
               병합 된 PR
             </button>
           </div>
+
           <div className={styles.body}>
             {query.isPending ? (
               <Skeleton count={3} />
@@ -98,7 +108,9 @@ export function PullRequestSheet(props: PullRequestSheetProps) {
                             </span>
                             <span className={styles.event}>
                               담당자 {pr.author}님이{' '}
-                              <span>PR {pr.state === 'merged' ? '병합' : '생성'}</span>
+                              <span className={styles.eventAccent}>
+                                PR {pr.state === 'merged' ? '병합' : '생성'}
+                              </span>
                             </span>
                           </label>
                           <button
@@ -112,6 +124,7 @@ export function PullRequestSheet(props: PullRequestSheetProps) {
                               height={28}
                               alt=""
                               aria-hidden
+                              className={styles.githubIcon}
                             />
                             GitHub에서 열기
                             <span className="sr-only">
@@ -136,8 +149,14 @@ export function PullRequestSheet(props: PullRequestSheetProps) {
               </p>
             )}
           </div>
+
           <div className={styles.footer}>
-            <button className={styles.share} type="button" disabled={!canShare} onClick={share}>
+            <button
+              type="button"
+              className={styles.share}
+              disabled={!canShare}
+              onClick={share}
+            >
               팀에 공유 하기
             </button>
           </div>
