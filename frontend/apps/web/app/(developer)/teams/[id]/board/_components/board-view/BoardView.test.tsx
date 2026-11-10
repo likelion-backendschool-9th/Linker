@@ -42,9 +42,14 @@ const card = (id: number, title: string, status: keyof typeof COLORS, extra: obj
 
 const jun = { id: 1, login: 'jun', name: '이준호', avatarUrl: '/a.png', inTeam: true };
 
-function board(canWrite: boolean, other: ReturnType<typeof card>[] = []) {
+function board(
+  canWrite: boolean,
+  other: ReturnType<typeof card>[] = [],
+  writePermissionReason: string | null = canWrite ? null : 'NO_REPOSITORY_WRITE_PERMISSION',
+) {
   return {
     canWrite,
+    writePermissionReason,
     columns: [
       {
         status: 'TODO',
@@ -186,10 +191,34 @@ it('Escape closes a menu and returns focus to its button', async () => {
   expect(trigger).toHaveFocus();
 });
 
-it("moves a card from its status menu through 12's status API", async () => {
-  fetchMock.mockImplementation(async (_url, init) =>
-    init?.method === 'PUT' ? { status: 'DONE', state: 'CLOSED' } : board(true),
-  );
+it("moves a card from its status menu through 12's status API and keeps it after refetch", async () => {
+  let columns = board(true);
+  fetchMock.mockImplementation(async (_url, init) => {
+    if (init?.method === 'PUT') {
+      columns = {
+        ...columns,
+        columns: columns.columns.map((column) => ({
+          ...column,
+          cards:
+            column.status === 'DONE'
+              ? [
+                  ...column.cards.filter((item) => item.id !== 1018),
+                  {
+                    ...columns.columns
+                      .flatMap((item) => item.cards)
+                      .find((item) => item.id === 1018)!,
+                    status: 'DONE',
+                    statusColor: 'GREEN',
+                    state: 'CLOSED',
+                  },
+                ]
+              : column.cards.filter((item) => item.id !== 1018),
+        })),
+      };
+      return { status: 'DONE', statusColor: 'GREEN', state: 'CLOSED' };
+    }
+    return columns;
+  });
   renderWithProviders(<BoardView teamId="1" />, developer);
   await userEvent.click(
     await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' }),
@@ -202,6 +231,8 @@ it("moves a card from its status menu through 12's status API", async () => {
       body: JSON.stringify({ status: 'DONE' }),
     }),
   );
+  await waitFor(() => expect(titles(column('작업 완료'))).toContain('필터 시트 개선'));
+  expect(titles(column('작업 전'))).not.toContain('필터 시트 개선');
 });
 
 it('moves a card right away and back again when GitHub refuses (POL-I-4)', async () => {
@@ -239,5 +270,41 @@ it('without write permission the status menu does not open and explains why', as
   expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
     '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.',
+  );
+});
+
+it('still allows moves when GitHub permission lookup failed for the board', async () => {
+  fetchMock.mockResolvedValue(board(false, [], 'GITHUB_PERMISSION_UNAVAILABLE'));
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  const trigger = await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' });
+  expect(trigger).not.toHaveAttribute('aria-disabled', 'true');
+  await userEvent.click(trigger);
+  expect(screen.getByRole('menu')).toBeVisible();
+});
+
+it('reverts the card and shows the repo permission copy on 403 FORBIDDEN', async () => {
+  let release: (value: unknown) => void = () => undefined;
+  fetchMock.mockImplementation(async (_url, init) => {
+    if (init?.method === 'PUT') {
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+      throw new ApiError(403, {
+        code: 'FORBIDDEN',
+        message: '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.',
+      });
+    }
+    return board(true);
+  });
+  renderWithProviders(<BoardView teamId="1" />, developer);
+  await userEvent.click(
+    await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' }),
+  );
+  await userEvent.click(screen.getByRole('menuitemradio', { name: '작업 중' }));
+  await waitFor(() => expect(titles(column('작업 중'))).toEqual(['필터 시트 개선']));
+  release(undefined);
+  await waitFor(() => expect(titles(column('작업 전'))).toContain('필터 시트 개선'));
+  expect(useToastStore.getState().toasts.at(-1)?.message).toBe(
+    '이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. 카드를 원래 자리로 돌려놨어요.',
   );
 });
