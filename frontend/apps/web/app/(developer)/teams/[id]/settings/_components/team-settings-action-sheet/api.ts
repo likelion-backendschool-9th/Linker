@@ -1,6 +1,7 @@
 export { setupBoardsOptions, setupReposOptions } from '../../../../_lib/setup-queries';
 export type { Members, TeamSettings } from '../../_lib/settings-queries';
 export {
+  invitesOptions,
   getOrCreateTeamInvite,
   notifyTeamInvite,
   inviteGithubMember,
