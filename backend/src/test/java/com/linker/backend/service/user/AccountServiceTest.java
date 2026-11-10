@@ -94,6 +94,7 @@ class AccountServiceTest {
 
 	@Mock
 	private PostService posts;
+	@Mock private TeamManagementService teamMemberships;
 
 	@Mock
 	private GithubTokenRepository githubTokens;
@@ -277,13 +278,14 @@ class AccountServiceTest {
 		assertThat(user.getEmail()).isNull();
 		assertThat(user.getUsername()).isEqualTo("octocat");
 		verify(posts).deleteAuthoredContent(7L, NOW);
+		verify(teamMemberships).closeDeletedAccountMemberships(user, NOW);
 		verify(sessions).revokeActive(7L, NOW);
 	}
 
 	private AccountService service() {
 		return new AccountService(
 				users, agreements, techTags, selectedTags, jobCategories, legal, ownedTeams, sessions, follows, blocks, notifications, posts,
-				githubTokens, githubCipher, githubUsers, transactions, Clock.fixed(NOW, ZoneOffset.UTC));
+				githubTokens, githubCipher, githubUsers, transactions, Clock.fixed(NOW, ZoneOffset.UTC), teamMemberships);
 	}
 
 	@Test

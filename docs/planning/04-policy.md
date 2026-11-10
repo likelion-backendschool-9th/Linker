@@ -119,10 +119,10 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 
 | Action | Limit |
 | --- | --- |
-| Write post | 10/day |
+| Write post | 10/day (only published posts count; rejected attempts don't) |
 | Write comment | 10/min, 300/day |
 | Follow | 200/day |
-| Write recruit post | Max 3 open (Pro 10), 5/day |
+| Write recruit post | Max 3 open (Pro 10), 5/day (only published recruit posts count; rejected attempts don't) |
 | Apply | 20/day |
 | Chat message | 5/sec (beyond that, sending is delayed) |
 | Report | 20/day |
@@ -258,7 +258,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-1 Repo selection | Only **public** repos of the user's account or orgs they belong to. Private repos can't be selected. One post per repo (progress updates are phase 2) |
 | POL-P-1 Repo changes | If the repo becomes private or is deleted, keep the post, show the repo card as "레포를 볼 수 없음" (repo unavailable), hide the README toggle |
 | POL-P-2 Required fields | Repo, one-line intro (1–60 chars) |
-| POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links |
+| POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links. The one-line intro and body take no emoji: the input drops emoji as they are typed or pasted, with no error message |
 | POL-P-2 Photos | Free 5 / Pro 10, 10MB each, JPG/PNG/WebP/GIF. Resize long side to 2,048px and strip EXIF on upload. First photo is the cover |
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
@@ -290,8 +290,8 @@ Popularity score = likes × 1 + comments × 2 (excluding the author's own), deca
 ### Exceptions
 
 - **Repo renamed or transferred to another account** → tracked by GitHub repo id; card info refreshed once a day. Post author doesn't change.
-- **Forked repo** → can be posted, but the card shows "포크" (fork) and the original repo.
-- **Org repo with none of my commits** → can be posted, but the card shows "내 커밋 0개" (0 of my commits). Shows 0 also when the commit email isn't registered to GitHub, so commit counts are never used as evidence for plagiarism or sanctions. If 0 or low, show the author "커밋에 쓴 이메일이 GitHub 계정에 등록돼 있어야 숫자에 잡혀요" with a link to GitHub email settings.
+- **Forked repo** → can be posted. The 22 repo list shows a "포크" badge; the 23 post shows a "Fork" chip above the title, next to the role chip.
+- **Org repo with none of my commits** → can be posted, but the card shows "내 커밋 0개" (0 of my commits). Shows 0 also when the commit email isn't registered to GitHub, so commit counts are never used as evidence for plagiarism or sanctions.
 - **Several teammates post the same repo** → each can post; the detail page groups "이 레포의 다른 게시물" (other posts for this repo).
 - **Only some photos upload** → show retry on failed photos; publishing allowed only after all upload.
 - **Post hidden by reports** → author sees "검토 중" (under review); removed from others' feeds. Likes and comments blocked.
@@ -308,16 +308,16 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (today through 6 months from today) |
 | POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
-| POL-R-1 No emoji | Title, intro, region and expected duration take no emoji (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. Copy: "이모지는 입력할 수 없어요." |
+| POL-R-1 No emoji | Title, intro, region and expected duration take no emoji (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. The inputs drop emoji as they are typed or pasted, with no error message; the server still rejects them ("이모지는 입력할 수 없어요.") |
 | POL-R-1 Who can edit | The author, and only while they still own or admin the linked team. If they have lost that role, saving an edit shows "글을 수정할 권한이 없습니다." |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |
 | POL-R-2 Search (19) | Search box on 19's All tab. Case-insensitive match on part of the recruit post title only (not intro, roles or tech stack); leading/trailing spaces ignored, blank = no search. Max 40 characters, the title limit (longer is rejected). Combined with the filters and sort, kept in the URL (`q`) |
-| POL-R-3 Apply | Choose one role. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
+| POL-R-3 Apply | Choose one role that still has slots; a role filled in the meantime is rejected with "해당 역할은 마감됐어요." Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
 | POL-R-3 Application | Author opens the applicant's public profile to review (tech stack, graph, posts, completion record). No separate in-product application dossier sheet |
 | POL-R-4 Handling | Author invites or rejects from the applicants drawer. Auto-expires after 14 days unhandled, with notification to applicant |
-| POL-R-4 Invite | Invite adds the person as a team member, joins team chat, and when the author is the team owner and a GitHub org owner, sends the GitHub org invite notification to the applicant. If that role's headcount is already filled by invites, further Invite actions on pending applicants for the role are disabled |
-| POL-R-4 Reject | Rejection reason optional. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
+| POL-R-4 Invite | Invite adds the person as a team member, joins team chat, and when the author is the team owner and a GitHub org owner, sends the GitHub org invite notification to the applicant. If that role's headcount is already filled by invites, further Invite actions on pending applicants for the role are disabled. A failed invite shows "초대에 실패했어요." followed by the reason (free-team limits are shown as a reason only, with no Flex/BM upsell on 21). If only the GitHub org invite fails, the team invite stands: "팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요." |
+| POL-R-4 Reject | No rejection reason: the author only confirms in a modal. Applicant is only told "이번엔 함께하지 못하게 됐어요" (we couldn't team up this time) |
 
 ### Application status
 
@@ -336,10 +336,11 @@ Pending applications stay when a recruit post closes; the author can still invit
 - **Editing a recruit post that has applicants** → title, intro and deadline are editable, but roles with applicants can't be deleted and headcount can't go below current acceptances.
 - **Recruit post deleted** → pending applications become expired and applicants are notified. Accepted people stay in the team.
 - **Reopening a closed recruit post** → refused when every role is filled ("모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.") or the deadline has passed ("마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요."); the author edits the post first. Over the open-post cap → subscription prompt (POL-R-1).
-- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams are sent to the Flex checkout sheet from recruit detail.
+- **Inviting when that role is full** → pending Invite stays disabled until headcount increases (edit the post) or the author uses "인원 늘리고 초대". That action requires an active Flex subscription (`PLAN_LIMIT` / `ROLE_HEADCOUNT`); free teams only see the reason ("무료 팀은 역할 인원을 늘릴 수 없어요.") — recruit detail has no Flex/BM upsell.
 - **Free team member limit reached** (6) → can't invite; recruit detail returns `PLAN_LIMIT` / `TEAM_MEMBERS` and opens the Flex checkout sheet. Flex teams have no member limit.
 - **Applicant is already a member of that team** → hide the apply CTA (same as the author view: no apply action on that post).
 - **Accepted applicant doesn't accept the GitHub org invite within 7 days** → stays in the Linker team and can chat, but doesn't appear as assignable for issues. Notify applicant and owner again.
+- **Team owner is no longer a GitHub org owner** (owner rights removed on GitHub after the team was created; Linker isn't told) → the invite still adds the person to the team and team chat, but the automatic GitHub org invite fails: "팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요." Linker can't prevent this; detecting it is a follow-up (07 TODO 21).
 - **Fake recruitment reported** → follow report/sanction policy. If the author deletes the team within 7 days after accepting, auto-flag for fake-recruitment review.
 
 ## 6. Teams & permissions
@@ -367,7 +368,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | Leaving / removal | Members can leave anytime ("팀 나가기" on 09, confirm "팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"). Admins get no "팀 나가기". Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
 | App uninstall | If the Linker app is removed from the org, the team becomes read-only and the owner is told to reinstall. Archived after 30 days |
 | POL-T-4 Project completion | Owner/admin marks complete. Can be undone within 7 days; after that, completion records are finalized |
-| POL-T-4 Completion calculation | Members in the team at completion who belonged ≥ 14 days during the project get 1 completion. Members who left midway get 1 non-completion (reason not shown). Issue completion rate = share of assigned issues in done status |
+| POL-T-4 Completion calculation | Members in the team at completion whose continuous membership since the last join is ≥ 14 days get 1 completion (prior membership periods are not added; #384). Members who left midway get 1 non-completion (reason not shown). Issue completion rate = share of assigned issues in done status |
 
 ### Team status
 
@@ -511,7 +512,7 @@ In MVP a recruiting offer is not a separate offer form but a 1:1 chat request. I
 | Min / max | Fewer than 20 messages → "직접 읽는 게 더 빨라요" (faster to read yourself). At most the latest 200 are read, then trimmed to the input budget; one message counts up to 200 characters |
 | Count | 10/day per Flex team member (tentative). Resets at 00:00 KST. Failed summaries don't count (the use goes back to the day it was taken). "새로 요약 받기" (renew) spends one use |
 | Excluded | Deleted/hidden messages, images, messages from people I blocked. PR system messages contribute title and status only |
-| Output | One paragraph of 3–5 short sentences, at most 250 characters: what was discussed and decided, who does what, and anything still open (user decision 2026-11-11, replacing the minutes sections). No per-item jump to source messages |
+| Output | One paragraph of 3–5 short sentences, at most 250 characters: what was discussed and decided, who does what, and anything still open (user decision 2026-11-11, replacing the minutes sections). No per-item jump to source messages. The reply is checked before it is stored: a list, the model's own reasoning (e.g. "채팅 기록을 요약해 보자", message numbers like [1]) or more than 500 characters fails ("요약하지 못했어요", the use goes back); slightly over 250 keeps only the whole sentences within 250 (bug fix 2026-11-11) |
 | Visibility | Only the requester sees it. "채팅창에 공유하기" (share to chat) posts it as an "AI 채팅 요약" card in the bubble slot of a normal message (sharing again returns the same card); tapping the card opens the full summary for everyone in the room. Shared cards can be reported / deleted (by self) like normal messages |
 | Processing | Server generates only on button tap (no automatic summaries). The tap answers at once and one worker summarizes in order (one at a time; up to 16 waiting, more → "잠시 후 다시 시도해 주세요"). A second tap while one is running follows that one. A summary gives up after 5 minutes. Retry once only when the model cannot be reached; a slow model is not retried. Then "요약하지 못했어요" (couldn't summarize) |
 | Model | Ollama `qwen3:4b` self-hosted next to the backend on the demo server, capped at 2 CPUs / 4 GiB (decision 2026-11-10: free, conversations stay in-house, no extra load on the shared server). Thinking off, JSON-schema reply, output capped. If switched to a low-cost LLM API, send only under terms that it's not used for training and not stored after processing, and add the vendor to the Privacy Policy's processor table |
@@ -620,6 +621,7 @@ People whose copyright, reputation or privacy is infringed (including non-member
 - Permanent suspension and content deletion require a reason.
 - Email addresses are masked in the back office too (e.g. jun\*\*\*@gmail.com); viewing in full requires recording a reason.
 - Operators can't post on behalf of users or join teams.
+- Needs review (26): count daily-limit rejections separately for recruiting offers (Free 10 / Scout 50), AI summaries (10), and chat sharing (100) per account and KST date. Flag when a bucket exceeds 3 times its limit; exclude per-second/minute limits. Clear at the next KST midnight. This flag never sanctions an account automatically (#384).
 
 ## 11. Subscription
 

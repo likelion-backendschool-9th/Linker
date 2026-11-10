@@ -33,6 +33,8 @@ import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
+import com.linker.backend.integration.github.GithubRepoSource;
+import com.linker.backend.integration.github.GithubTeamSource;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.github.GithubRepoRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
@@ -53,6 +55,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @ExtendWith(MockitoExtension.class)
 class PostServiceTest {
@@ -90,6 +93,10 @@ class PostServiceTest {
 	RedisRateLimiter rateLimiter;
 	@Mock
 	TeamRepository teams;
+	@Mock
+	GithubRepoSource github;
+	@Mock
+	PlatformTransactionManager transactions;
 
 	PostService service;
 	AuthenticatedUser developer;
@@ -98,14 +105,39 @@ class PostServiceTest {
 	void setUp() {
 		service = new PostService(
 				repos, posts, users, techTags, uploads,
-				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, teams, CLOCK);
+				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, teams,
+				github, transactions, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
 	}
 
 	@Test
-	void listReposReturnsPersonalPublicReposWithAlreadyPosted() {
+	void listReposSyncsMyPublicReposFromGithubIncludingForks() {
+		var own = githubRepo(1100L, "dev/linker-web", false);
+		var fork = githubRepo(1200L, "dev/react", true);
+		when(github.ownedPublicRepositories(10L, "dev")).thenReturn(List.of(own, fork));
+		when(teams.cacheRepo(own, NOW)).thenReturn(11L);
+		when(teams.cacheRepo(fork, NOW)).thenReturn(12L);
+		GithubRepo forkRow = publicRepo(12L, "dev/react");
+		ReflectionTestUtils.setField(forkRow, "isFork", true);
+		when(repos.findAllById(List.of(11L, 12L)))
+				.thenReturn(List.of(forkRow, publicRepo(11L, "dev/linker-web")));
+		when(posts.findPostedRepoIds(10L, List.of(11L, 12L))).thenReturn(List.of(11L));
+
+		var response = service.listRepos(developer, " ", null);
+
+		assertThat(response.items()).extracting(item -> item.fullName())
+				.containsExactly("dev/linker-web", "dev/react");
+		assertThat(response.items().getFirst().alreadyPosted()).isTrue();
+		assertThat(response.items().get(1).isFork()).isTrue();
+		verify(repos, never()).findPublicByOwner(any());
+	}
+
+	@Test
+	void listReposFallsBackToCacheWhenGithubIsUnavailable() {
+		when(github.ownedPublicRepositories(10L, "dev"))
+				.thenThrow(new ApiException(503, "SERVICE_UNAVAILABLE", "GitHub에 연결하지 못했어요"));
 		GithubRepo repo = publicRepo(11L, "dev/linker-web");
 		when(repos.findPublicByOwner("dev")).thenReturn(List.of(repo));
 		when(posts.findPostedRepoIds(10L, List.of(11L))).thenReturn(List.of(11L));
@@ -115,6 +147,30 @@ class PostServiceTest {
 		assertThat(response.items()).hasSize(1);
 		assertThat(response.items().getFirst().repoId()).isEqualTo(11L);
 		assertThat(response.items().getFirst().alreadyPosted()).isTrue();
+		verify(teams, never()).cacheRepo(any(), any());
+	}
+
+	@Test
+	void listReposAsksToLogInAgainWhenTheGithubTokenIsGone() {
+		when(github.ownedPublicRepositories(10L, "dev"))
+				.thenThrow(new ApiException(401, "LOGIN_REQUIRED", "GitHub에 다시 로그인해 주세요"));
+
+		assertThatThrownBy(() -> service.listRepos(developer, null, null))
+				.isInstanceOf(ApiException.class)
+				.extracting("code")
+				.isEqualTo("LOGIN_REQUIRED");
+	}
+
+	@Test
+	void listReposSearchReadsTheCacheWithoutCallingGithub() {
+		GithubRepo repo = publicRepo(11L, "dev/linker-web");
+		when(repos.findPublicByOwnerAndQuery("dev", "web")).thenReturn(List.of(repo));
+		when(posts.findPostedRepoIds(10L, List.of(11L))).thenReturn(List.of());
+
+		var response = service.listRepos(developer, "web", null);
+
+		assertThat(response.items()).hasSize(1);
+		verify(github, never()).ownedPublicRepositories(anyLong(), any());
 	}
 
 	@Test
@@ -130,6 +186,7 @@ class PostServiceTest {
 		assertThat(response.items().getFirst().repoId()).isEqualTo(11L);
 		assertThat(response.items().getFirst().teamId()).isEqualTo(1L);
 		verify(repos, never()).findPublicByOwner(any());
+		verify(github, never()).ownedPublicRepositories(anyLong(), any());
 	}
 
 	@Test
@@ -139,7 +196,7 @@ class PostServiceTest {
 		ReflectionTestUtils.setField(author, "id", 10L);
 		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
 		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(false);
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(Post.class))).thenAnswer(invocation -> {
 			Post post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 42L);
@@ -152,6 +209,64 @@ class PostServiceTest {
 		ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
 		verify(posts).save(captor.capture());
 		assertThat(captor.getValue().getSummary()).isEqualTo("한 줄 소개입니다");
+	}
+
+	@Test
+	void createRejectsTheEleventhPublishedPostOfTheDay() {
+		GithubRepo repo = publicRepo(11L, "dev/linker-web");
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
+		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(false);
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
+		Instant oldest = NOW.minusSeconds(3_600);
+		List<Instant> ten = java.util.stream.IntStream.range(0, PlanLimits.POSTS_PER_DAY)
+				.mapToObj(i -> oldest.plusSeconds(i * 60L))
+				.toList();
+		when(posts.findCreatedAtSince(10L, NOW.minusSeconds(PlanLimits.POSTS_PER_DAY_WINDOW_SECONDS)))
+				.thenReturn(ten);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, List.of())))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getStatus()).isEqualTo(429);
+					assertThat(api.getCode()).isEqualTo("RATE_LIMITED");
+					// The oldest of the ten leaves the 24h window 23 hours from now
+					assertThat(api.getDetail()).containsEntry("retryAfterSeconds", 23L * 3_600);
+				});
+		verify(posts, never()).save(any());
+	}
+
+	@Test
+	void rejectedPublishesDoNotTouchTheDailyLimit() {
+		GithubRepo repo = publicRepo(11L, "dev/linker-web");
+		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
+		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(true);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, List.of())))
+				.isInstanceOf(ApiException.class);
+		verify(posts, never()).findCreatedAtSince(anyLong(), any());
+		verify(rateLimiter, never()).tryAcquire(any(), anyLong(), org.mockito.ArgumentMatchers.anyInt(),
+				org.mockito.ArgumentMatchers.anyInt());
+	}
+
+	@Test
+	void createRejectsEmojiInText() {
+		GithubRepo repo = publicRepo(11L, "dev/linker-web");
+		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
+		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(false);
+		var withEmoji = new PostWriteRequest(11L, "한 줄 소개 🚀", "본문", List.of(), null, List.of(), null, null,
+				List.of());
+
+		assertThatThrownBy(() -> service.create(developer, withEmoji))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("VALIDATION_ERROR");
+					assertThat(api.getMessage()).isEqualTo("이모지는 입력할 수 없어요.");
+				});
+		verify(posts, never()).save(any());
 	}
 
 	@Test
@@ -234,7 +349,7 @@ class PostServiceTest {
 		file.complete("https://cdn.example/7.png", "image/png", 10, 100, 100);
 		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
 		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(false);
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(uploads.requireReady(7L, 10L)).thenReturn(file);
 		when(posts.save(any(Post.class))).thenAnswer(invocation -> {
 			Post post = invocation.getArgument(0);
@@ -399,6 +514,12 @@ class PostServiceTest {
 		Post post = Post.publish(author, repo, null, "intro", "body", null, null, null, null, 0, 0);
 		ReflectionTestUtils.setField(post, "id", 42L);
 		return post;
+	}
+
+	private static GithubTeamSource.Repository githubRepo(long githubId, String fullName, boolean fork) {
+		String[] parts = fullName.split("/");
+		return new GithubTeamSource.Repository(githubId, parts[0], parts[1], fullName, null, "TypeScript",
+				3, 1, "https://github.com/" + fullName, false, fork, null, "main");
 	}
 
 	private static GithubRepo publicRepo(long id, String fullName) {

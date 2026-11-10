@@ -342,7 +342,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Change role, remove member (confirm sheet). Admins can remove members only
 - [ ] Leave team (owner can't until ownership is transferred)
 - [ ] Transfer ownership: (sheet) choose member → transfers only when they accept; old owner becomes admin
-- [ ] Project complete: confirm sheet → team status "완료", undo within 7 days, notify members "작업물 올리기" (post your project, links to 22)
+- [ ] Project complete: confirm sheet → team status "완료", undo within 7 days, notify members "프로젝트를 완주 하셨습니다! 수고 하셨습니다" (congratulation only, no link to 22: org repos are posted after forking to a personal account)
 - [ ] Server: completion record calculation (in team at completion and ≥ 14 days membership → 1 completion; left midway → 1 non-completion; issue completion rate), finalized after 7 days
 - [ ] `[Included]` Change board (reuse step 4 of 08, owner/admin)
 - [ ] Archive; delete (confirm by typing team name, notify members, delete chat after 30 days, don't touch GitHub)
@@ -579,8 +579,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (today through 6 months from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
 - [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay, but only while I still own or admin it — otherwise saving shows the error toast "글을 수정할 권한이 없습니다." (403 `TEAM_ROLE_REQUIRED`)
-- [ ] No emoji in title, intro, region or expected duration: "이모지는 입력할 수 없어요."
-- [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day → toast "하루 모집글의 최대 한도는 N번 입니다." (N = 5, no resend)
+- [ ] No emoji in title, intro, region or expected duration: the inputs drop them as typed or pasted (no error message)
+- [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day (only published recruit posts count) → toast "하루 모집글의 최대 한도는 N번 입니다." (N = 5, no resend)
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
 - [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification). Reopen refused: all roles filled → "모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요."; deadline passed → "마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요." (same toasts on 21's author menu)
 - [ ] Server: auto-close when deadline passes or all slots fill
@@ -593,7 +593,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말")
+- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말"). Server rejects a role that filled meanwhile (`ROLE_FULL`) → "해당 역할은 마감됐어요." on the role field
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
@@ -603,15 +603,16 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
 - [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
-- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant — automatically, after both "초대하기" and "인원 늘리고 초대" (the latter shows a "GitHub 조직 초대 다시 보내기" retry if it failed). Failure → toast "초대에 실패했어요." + reason; a failed GitHub org invite alone keeps the team invite ("팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.")
 - [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
-- [ ] Reject: row "거절" + (sheet) optional reason; applicant only sees the fixed copy
+- [ ] Reject: row "거절" → (modal) confirm only, no reason; applicant only sees the fixed copy
 - [ ] Invite/reject still possible after closing; edit / close / delete menu
 - [ ] `[Included]` Share button → 00 share sheet
 - [ ] `generateMetadata` (title, "remaining slots per role · closes D-n") + `opengraph-image.tsx` (title, remaining roles, D-n). Defaults if deleted or hidden
 - [ ] Server: auto-expire applications unhandled for 14 days + notify
 - [ ] `[Included]` Server: if the applicant hasn't accepted the GitHub org invite 7 days after invite, remind applicant and owner
 - [ ] `[Included]` Server: if the team is deleted within 7 days after invite, flag for fake-recruitment review
+- [ ] `[Included]` Follow-up: the team owner may lose GitHub org owner rights on GitHub after creating the team (owner transfer doesn't exist yet). The invite response's `needsGithubInvite` only checks the Linker team OWNER, so the automatic org invite then fails (team invite stays, failure copy shown). Later: check GitHub org owner when deciding `needsGithubInvite` (with 09's 2nd-pass owner transfer), and show the reason on 09
 
 ---
 
@@ -624,25 +625,24 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **Step 1: Choose repo**
 
 - [ ] Only public repos from my account and orgs I belong to, with search
-- [ ] Already-posted repos disabled; forks show "포크" + original
-- [ ] Coming from a project-completion notification (09) pre-selects the team repo
+- [ ] Already-posted repos disabled; forks show "포크"
+- [ ] Coming from a completed team's "작업물 올리기" (09 settings) pre-selects the team repo
 
 **Step 2: Content**
 
-- [ ] Repo card automatic (name, language, stars, URL); body pre-filled with repo description
-- [ ] Required: one-line intro (1–60 chars)
-- [ ] Body (2,000 chars, line breaks and links only)
+- [ ] Selected repo card (name, owner) with "변경 하기" sheet; body starts empty so the placeholder shows (Figma 274:339, 274:329)
+- [ ] Required: one-line intro (1–60 chars, emoji dropped as typed)
+- [ ] Body (2,000 chars, line breaks and links only, emoji dropped as typed)
 - [ ] Photos: Free 5 / Pro 10, reorder, first is the cover, retry partial failures, publish only after all uploaded, subscription prompt if over the limit
 - [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags (sheet)
-- [ ] Auto-shown: my commit count in this repo, issues handled in Linker. If 0 or low, commit email registration guidance + GitHub email settings link
-- [ ] Edited posts show "수정됨"; 10/day; leaving mid-writing → restore draft
+- [ ] Edited posts show "수정됨"; 10/day (only published posts count); leaving mid-writing → restore draft
 
 ### 23. Project post detail `[Required]` · `/posts/[id]`
 
 > Basis: P-3, P-5, P-7, S-4 · Needs first: 22
 
 - [ ] Author (→ 04), photo swipe + full-screen viewer
-- [ ] Repo card ("레포를 볼 수 없음" if made private/deleted), one-line intro, body, optional fields, commit and issue counts
+- [ ] Repo card ("레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields, commit and issue counts
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
@@ -712,7 +712,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 > Basis: O-3 · Needs first: 25 · Merged: user list + user detail + accounts needing review + subscription/payment history → filters and detail panel
 
 - [ ] Search (handle, name), status filter (active / suspended / pending deletion / needs review), member type filter (developer / recruiter)
-- [ ] "Needs review": accounts exceeding 3× a daily limit flagged automatically
+- [ ] "Needs review": follow Policy ch. 10; daily-limit rejections > 3× that limit flag the account until the next KST midnight (no automatic sanction)
 - [ ] Detail panel: basic info, sanction history, reports received, subscription status and payment history. For recruiters: company, email domain, job title, offers sent and accepted in the last 30 days
 - [ ] (sheet) Sanction: warning → 7 days → 30 days → permanent (lead operator only), reason required, notify the user
 - [ ] Lift sanction (lead operator, confirm sheet)
@@ -815,7 +815,7 @@ Recruiters get only three new pages: sign-up (31), login (32) and the sent offer
 
 - [ ] Email + password login; 5 wrong attempts → 10-min lock ("N분 뒤 다시 시도해 주세요")
 - [ ] Session uses the same cookie and 30-day rule as developers (reuse 00); suspended / pending-deletion handling same as 01 (pending deletion restores on login)
-- [ ] "비밀번호를 잊었어요" (forgot password) → enter email → reset link (30 min, single-use). Same message regardless of whether the email is registered (don't reveal registration)
+- [ ] `/recruiter/reset` password reset flow: enter email → reset link (30 min, single-use). Same message regardless of whether the email is registered (don't reveal registration); the login frame has no visible reset link per the 2026-11-11 UI update
 - [ ] `/recruiter/reset?token=` enter new password → changing it logs out all other devices
 - [ ] Recruiter section in 06 settings: change password, blocked users, terms, delete account (GitHub items hidden; subscription & billing is Scout only → 29)
 

@@ -15,6 +15,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+	/** 22 daily limit: when my posts in the window were published, oldest first; deleted ones count too */
+	@Query("""
+			select p.createdAt from Post p
+			where p.author.id = :authorId and p.createdAt > :since
+			order by p.createdAt asc
+			""")
+	List<Instant> findCreatedAtSince(@Param("authorId") long authorId, @Param("since") Instant since);
+
   /** Public sitemap projection only: no body, private account fields or collection loading. */
   @Query("""
       select new com.linker.backend.dto.sitemap.SitemapItem(

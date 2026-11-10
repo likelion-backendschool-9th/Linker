@@ -6,7 +6,7 @@ import { RequestTimeoutError } from './fetch-with-timeout';
 import { onMutationError, onQueryError } from './query-client';
 
 beforeEach(() => {
-  useAppSignalStore.setState({ loadTimedOutAt: 0, loadersMounted: 0 });
+  useAppSignalStore.setState({ loadTimedOutAt: 0, loadersMounted: 0, planLimit: null });
   useToastStore.setState({ toasts: [] });
 });
 
@@ -51,4 +51,16 @@ it('leaves codes a mutation handles itself (meta.handledCodes) to that mutation'
 it('still shows the shared toast for mutations that do not handle the code', () => {
   onMutationError(rateLimited(), undefined, undefined, {});
   expect(useToastStore.getState().toasts).toHaveLength(1);
+});
+
+it('skips the shared plan-limit sheet when the screen shows PLAN_LIMIT itself (21 invite)', () => {
+  const planLimit = new ApiError(403, {
+    code: 'PLAN_LIMIT',
+    message: '무료 팀은 멤버 6명까지예요.',
+    detail: { reason: 'TEAM_MEMBERS' },
+  });
+  onMutationError(planLimit, undefined, undefined, { meta: { handledCodes: ['PLAN_LIMIT'] } });
+  expect(useAppSignalStore.getState().planLimit).toBeNull();
+  onMutationError(planLimit, undefined, undefined, {});
+  expect(useAppSignalStore.getState().planLimit).toMatchObject({ reason: 'TEAM_MEMBERS' });
 });

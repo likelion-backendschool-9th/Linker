@@ -32,7 +32,13 @@ public record TeamSettingsResponse(
     @Schema(requiredMode = REQUIRED, nullable = true) Long memberLimit,
     @Schema(requiredMode = REQUIRED) Billing billing,
     @Schema(requiredMode = REQUIRED) boolean githubOrgOwner,
-    @Schema(requiredMode = REQUIRED, nullable = true) String githubInvitationBlockedReason) {
+    @Schema(requiredMode = REQUIRED, nullable = true) String githubInvitationBlockedReason,
+    @Schema(requiredMode=REQUIRED,nullable=true) OwnershipTransfer ownershipTransfer,
+    @Schema(requiredMode=REQUIRED,nullable=true) Instant completedAt,
+    @Schema(requiredMode=REQUIRED,nullable=true) Completion completion) {
+  public record OwnershipTransfer(@Schema(requiredMode=REQUIRED) long id, @Schema(requiredMode=REQUIRED) String fromName, @Schema(requiredMode=REQUIRED) String toName, @Schema(requiredMode=REQUIRED) boolean isRecipient) {}
+  public record Completion(@Schema(requiredMode=REQUIRED) boolean canUndo, @Schema(requiredMode=REQUIRED) boolean finalized, @Schema(requiredMode=REQUIRED) boolean canRestart) {}
+  public record TransferCreated(@Schema(requiredMode=REQUIRED) long transferId) {}
   public TeamSettingsResponse withGithubInvitation(boolean orgOwner, String reason) {
     return new TeamSettingsResponse(
         id,
@@ -50,7 +56,7 @@ public record TeamSettingsResponse(
         memberLimit,
         billing,
         orgOwner,
-        reason);
+        reason, ownershipTransfer, completedAt, completion);
   }
 
   @Schema(name = "TeamSettingsPermissions")

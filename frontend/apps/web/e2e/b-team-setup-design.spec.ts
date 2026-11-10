@@ -300,7 +300,7 @@ test('08-4 matches both board frames below the Figma back/title header at mobile
           expect((await page.getByRole('button', { name: '기본 값 사용' }).boundingBox())?.y).toBe(
             220,
           );
-          await expect(page.getByRole('button', { name: '역할 추가' })).toBeDisabled();
+          await expect(page.getByRole('button', { name: '저장소 추가' })).toBeDisabled();
           for (const label of ['작업 전', '작업 진행', '작업 완료', '작업 정지'])
             await expect(page.getByRole('button', { name: label + ' 삭제' })).toBeDisabled();
         }

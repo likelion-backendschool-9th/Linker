@@ -3,6 +3,7 @@ package com.linker.backend.service.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,7 +23,6 @@ import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
 import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitRoleWriteRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
-import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
@@ -185,7 +185,7 @@ class RecruitmentServiceTest {
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN))
 				.thenReturn((long) PlanLimits.OPEN_RECRUIT_POSTS_FREE);
 		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 43L);
@@ -203,7 +203,7 @@ class RecruitmentServiceTest {
 		ReflectionTestUtils.setField(author, "id", 10L);
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
 		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 42L);
@@ -219,6 +219,41 @@ class RecruitmentServiceTest {
 		assertThat(captor.getValue().getTitle()).isEqualTo("함께 만들어요");
 		assertThat(captor.getValue().getRoles()).hasSize(1);
 		assertThat(captor.getValue().getTeamId()).isEqualTo(7L);
+	}
+
+	@Test
+	void createRejectsTheSixthPublishedRecruitPostOfTheDay() {
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
+		Instant oldest = NOW.minusSeconds(3_600);
+		List<Instant> five = java.util.stream.IntStream.range(0, PlanLimits.RECRUIT_POSTS_PER_DAY)
+				.mapToObj(i -> oldest.plusSeconds(i * 60L))
+				.toList();
+		when(posts.findCreatedAtSince(10L, NOW.minusSeconds(PlanLimits.RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS)))
+				.thenReturn(five);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getStatus()).isEqualTo(429);
+					assertThat(api.getCode()).isEqualTo("RATE_LIMITED");
+					assertThat(api.getMessage()).isEqualTo("하루 모집글의 최대 한도는 5번 입니다.");
+					assertThat(api.getDetail()).containsEntry("retryAfterSeconds", 23L * 3_600);
+				});
+		verify(posts, never()).save(any());
+	}
+
+	@Test
+	void rejectedRecruitPublishesDoNotTouchTheDailyLimit() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(null, null)))
+				.isInstanceOf(ApiException.class);
+		verify(posts, never()).findCreatedAtSince(anyLong(), any());
 	}
 
 	@Test
@@ -263,7 +298,7 @@ class RecruitmentServiceTest {
 		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
 		User author = User.create("dev", UserType.DEVELOPER);
 		ReflectionTestUtils.setField(author, "id", 10L);
-		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
 		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
 			RecruitPost post = invocation.getArgument(0);
 			ReflectionTestUtils.setField(post, "id", 42L);
@@ -534,6 +569,24 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void applyRejectsFullRole() {
+		RecruitPost post = foreignPost();
+		RecruitRole role = post.getRoles().getFirst();
+		ReflectionTestUtils.setField(role, "acceptedCount", role.getHeadcount());
+		when(posts.findDetailedById(8L)).thenReturn(Optional.of(post));
+
+		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getStatus()).isEqualTo(409);
+					assertThat(api.getCode()).isEqualTo("ROLE_FULL");
+					assertThat(api.getMessage()).isEqualTo("해당 역할은 마감됐어요");
+				});
+		verify(applications, never()).save(any());
+	}
+
+	@Test
 	void acceptRequiresTeam() {
 		RecruitPost post = ownedPost();
 		Application application = pendingOn(post, 20L);
@@ -645,7 +698,7 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
-	void rejectMarksRejectedAndNotifiesWithoutExposingReasonToSheet() {
+	void rejectMarksRejectedAndNotifiesApplicant() {
 		RecruitPost post = ownedPost();
 		Application application = pendingOn(post, 20L);
 		User author = post.getAuthor();
@@ -653,10 +706,9 @@ class RecruitmentServiceTest {
 		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
 		when(users.findById(10L)).thenReturn(Optional.of(author));
 
-		service.reject(developer, 3L, 7L, new RejectApplicationRequest("내부 메모"));
+		service.reject(developer, 3L, 7L);
 
 		assertThat(application.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
-		assertThat(application.getRejectReason()).isEqualTo("내부 메모");
 		var sheet = service.applicationSheet(developer, 3L, 7L);
 		assertThat(sheet.status()).isEqualTo("REJECTED");
 		assertThat(sheet.applicant().id()).isEqualTo(20L);

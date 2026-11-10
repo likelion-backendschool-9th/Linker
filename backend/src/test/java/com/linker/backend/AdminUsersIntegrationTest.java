@@ -43,6 +43,15 @@ class AdminUsersIntegrationTest {
     r.add("linker.webhook.consumer-enabled",() -> "false");r.add("linker.issues.sync-enabled",() -> "false");
     r.add("linker.issues.webhook-enabled",() -> "false");r.add("spring.jpa.show-sql",() -> "false");
   }
+  @Autowired org.springframework.data.redis.core.StringRedisTemplate redis;
+  @Autowired org.springframework.context.ApplicationEventPublisher reviewEvents;
+  @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
+  @Autowired com.linker.backend.global.security.RedisRateLimiter limiter;
+  @Autowired com.linker.backend.service.user.AiSummaryService ai;
+  @Autowired com.linker.backend.repository.chat.ChatRoomMemberRepository chatMembers;
+  @Autowired com.linker.backend.repository.chat.ChatRoomRepository chatRooms;
+  @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+  com.linker.backend.repository.moderation.DailyLimitReviewRepository review;
   @Autowired MockMvc mvc; @Autowired JdbcTemplate jdbc; @Autowired UserRepository users;
   @Autowired AuthIdentityRepository identities; @Autowired AdminRepository admins;
   @Autowired SanctionRepository sanctions; @Autowired AuthService auth; @Autowired ObjectMapper json;
@@ -54,19 +63,91 @@ class AdminUsersIntegrationTest {
   @MockitoBean com.linker.backend.async.schedule.AccountSanctionExpiryJob expiry;
   Instant now; User operator,lead,target; Cookie op,root;
   @BeforeEach void setup() {
+    var keys=redis.keys("admin-review:*");if(keys!=null && !keys.isEmpty()) redis.delete(keys);
     now=Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
     when(clock.instant()).thenAnswer(i -> now); when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+    when(clock.withZone(org.mockito.ArgumentMatchers.any())).thenAnswer(i -> Clock.fixed(now,i.getArgument(0)));
     jdbc.execute("TRUNCATE users,github_repos,banned_github_ids RESTART IDENTITY CASCADE");
     operator=user("operator",UserType.DEVELOPER);lead=user("lead",UserType.DEVELOPER);target=user("target",UserType.DEVELOPER);
     admins.saveAndFlush(Admin.assign(operator,AdminRole.OPERATOR));admins.saveAndFlush(Admin.assign(lead,AdminRole.LEAD));
     op=verified(operator);root=verified(lead);
   }
+  @Test void dailyShareRejectionsFlagOnlyAboveThreeTimesAndExcludeMinuteLimits() throws Exception {
+    var day=java.time.LocalDate.ofInstant(now,com.linker.backend.global.config.PlanLimits.APP_ZONE);
+    org.mockito.Mockito.doAnswer(call -> {
+      assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+      return call.callRealMethod();
+    }).when(review).record(org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyInt(),org.mockito.ArgumentMatchers.any());
+    redis.opsForValue().set("rate:chat.share.day:"+day+":"+target.getId(),"100",java.time.Duration.ofHours(1));
+    for(int i=0;i<300;i++) assertThat(limiter.tryAcquire("chat.share.day:"+day,target.getId(),100,3600).allowed()).isFalse();
+    assertThat(review.flagged(day)).doesNotContain(target.getId());
+    limiter.tryAcquire("chat.share.day:"+day,target.getId(),100,3600);
+    mvc.perform(get("/api/v1/admin/users").cookie(op).param("needsReview","true"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].id").value(target.getId())).andExpect(jsonPath("$.items[0].needsReview").value(true));
+    redis.opsForValue().set("rate:chat.share:"+lead.getId(),"10",java.time.Duration.ofMinutes(1));
+    for(int i=0;i<160;i++) limiter.tryAcquire("chat.share",lead.getId(),10,60);
+    assertThat(review.flagged(day)).doesNotContain(lead.getId());
+    mvc.perform(get("/api/v1/admin/users").cookie(op).param("needsReview","true").param("q","no-match"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
+  }
+
+  @Test void deniedShareIsObservedAfterTheSqlTransactionRollsBack() {
+    var day=java.time.LocalDate.ofInstant(now,com.linker.backend.global.config.PlanLimits.APP_ZONE);
+    redis.opsForValue().set("rate:chat.share.day:"+day+":"+target.getId(),"100");
+    redis.opsForValue().set("admin-review:"+day+":CHAT_SHARE:"+target.getId(),"300");
+    org.mockito.Mockito.doAnswer(call -> {
+      assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+      return call.callRealMethod();
+    }).when(review).record(org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyInt(),org.mockito.ArgumentMatchers.any());
+    new org.springframework.transaction.support.TransactionTemplate(transactions).executeWithoutResult(tx -> {
+      users.findById(target.getId()).orElseThrow();
+      assertThat(limiter.tryAcquire("chat.share.day:"+day,target.getId(),100,3600).allowed()).isFalse();
+      assertThat(review.flagged(day)).doesNotContain(target.getId());
+      tx.setRollbackOnly();
+    });
+    assertThat(review.flagged(day)).contains(target.getId());
+  }
+
+  @Test void realAiQuotaRejectionsReachTheReviewCounter() throws Exception {
+    long team=com.linker.backend.support.TeamTestFixtures.team(jdbc,target.getId(),"AI 테스트","ACTIVE");
+    var room=chatRooms.saveAndFlush(com.linker.backend.entity.chat.ChatRoom.team(team));
+    chatMembers.saveAndFlush(com.linker.backend.entity.chat.ChatRoomMember.join(room,target.getId()));
+    subscriptions.saveAndFlush(com.linker.backend.entity.subscription.Subscription.paid(
+        com.linker.backend.entity.subscription.type.SubscriptionPlan.FLEX,null,team,target.getId(),
+        com.linker.backend.entity.subscription.type.BillingCycle.MONTHLY,6,now.minusSeconds(1),now.plusSeconds(86400)));
+    var day=java.time.LocalDate.ofInstant(now,com.linker.backend.global.config.PlanLimits.APP_ZONE);
+    redis.opsForValue().set("ai-summary:"+target.getId()+":"+day,"10");
+    var principal=new com.linker.backend.global.security.AuthenticatedUser(target.getId(),target.getUsername(),UserType.DEVELOPER,
+        UserStatus.ACTIVE,null,false,false,true,1);
+    for(int i=0;i<30;i++) assertThatThrownBy(() -> ai.create(principal,room.getId())).isInstanceOf(com.linker.backend.global.error.ApiException.class);
+    assertThat(review.flagged(day)).doesNotContain(target.getId());
+    assertThatThrownBy(() -> ai.create(principal,room.getId())).isInstanceOf(com.linker.backend.global.error.ApiException.class);
+    assertThat(review.flagged(day)).contains(target.getId());
+  }
+
+  @Test void reviewUsesTheAllowanceOfEachCategoryAndClearsNextKstDayWithoutLiftingSanctions() throws Exception {
+    var category=com.linker.backend.dto.moderation.request.DailyLimitRejected.Category.RECRUITING_OFFER;
+    for(int i=0;i<150;i++) reviewEvents.publishEvent(new com.linker.backend.dto.moderation.request.DailyLimitRejected(target.getId(),category,50,now));
+    var day=java.time.LocalDate.ofInstant(now,com.linker.backend.global.config.PlanLimits.APP_ZONE);
+    assertThat(review.flagged(day)).doesNotContain(target.getId());
+    reviewEvents.publishEvent(new com.linker.backend.dto.moderation.request.DailyLimitRejected(target.getId(),category,50,now));
+    assertThat(review.flagged(day)).contains(target.getId());
+    jdbc.update("update users set status='SUSPENDED',suspended_until=? where id=?",java.sql.Timestamp.from(now.plusSeconds(86400*7)),target.getId());
+    now=day.plusDays(1).atStartOfDay(com.linker.backend.global.config.PlanLimits.APP_ZONE).toInstant();op=verified(operator);
+    mvc.perform(get("/api/v1/admin/users").cookie(op).param("needsReview","true"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
+    assertThat(users.findById(target.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.SUSPENDED);
+  }
+
   @Test void listMasksEmailsSearchesAndPaginatesWithoutInventingReviewFlags() throws Exception {
     mvc.perform(get("/api/v1/admin/users").cookie(op).param("q","@TARGET").param("userType","DEVELOPER"))
         .andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
         .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].emailMasked").value("tar***@example.com"))
-        .andExpect(jsonPath("$.reviewFilterSupported").value(false)).andExpect(jsonPath("$.items[0].needsReview").doesNotExist());
-    mvc.perform(get("/api/v1/admin/users").cookie(op).param("needsReview","true")).andExpect(status().isServiceUnavailable());
+        .andExpect(jsonPath("$.reviewFilterSupported").value(true)).andExpect(jsonPath("$.items[0].needsReview").value(false));
+    mvc.perform(get("/api/v1/admin/users").cookie(op).param("needsReview","true")).andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
     var first=mvc.perform(get("/api/v1/admin/users").cookie(op).param("size","1")).andExpect(status().isOk()).andReturn();
     String cursor=json.readTree(first.getResponse().getContentAsString()).path("nextCursor").asText();
     mvc.perform(get("/api/v1/admin/users").cookie(op).param("size","1").param("cursor",cursor))

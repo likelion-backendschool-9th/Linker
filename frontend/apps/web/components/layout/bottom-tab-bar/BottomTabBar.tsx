@@ -4,6 +4,7 @@ import { ChatRoundLineLinearIcon } from '@solar-icons/static/linear/chat-round-l
 import { CodeScanLinearIcon } from '@solar-icons/static/linear/code-scan';
 import { HomeLinearIcon } from '@solar-icons/static/linear/home';
 import { Radar2LinearIcon } from '@solar-icons/static/linear/radar-2';
+import { UserCircleLinearIcon } from '@solar-icons/static/linear/user-circle';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,11 +17,13 @@ import { ChatUnreadBadge } from '@/features/chat/chat-unread-badge/ChatUnreadBad
 import type { TabItem, TabKey } from '../bottom-tabs.config';
 import styles from './BottomTabBar.module.css';
 
-const ICONS: Record<Exclude<TabKey, 'profile'>, string> = {
+const ICONS: Record<TabKey, string> = {
   home: HomeLinearIcon,
   recruits: Radar2LinearIcon,
   workspace: CodeScanLinearIcon,
   chats: ChatRoundLineLinearIcon,
+  // Profile shows the viewer's avatar; this icon is only for accounts without a photo.
+  profile: UserCircleLinearIcon,
 };
 
 function isCurrent(pathname: string, href: string) {
@@ -46,7 +49,7 @@ export function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
                 {tab.avatarUrl ? (
                   <Image src={tab.avatarUrl} alt="" width={27} height={27} className={styles.avatar} />
                 ) : (
-                  <Icon svg={ICONS[tab.key as Exclude<TabKey, 'profile'>]} className={styles.icon} />
+                  <Icon svg={ICONS[tab.key]} className={styles.icon} />
                 )}
                 {tab.key === 'chats' && !tab.requiresLogin && <ChatUnreadBadge />}
               </span>

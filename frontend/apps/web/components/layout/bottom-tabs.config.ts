@@ -10,7 +10,7 @@ export type TabItem = {
   href: string;
   /** Guest tabs that open the login-prompt sheet instead of navigating */
   requiresLogin: boolean;
-  /** Profile tab only: the viewer's own avatar, rendered instead of a Solar icon */
+  /** Profile tab only: the viewer's own avatar, rendered instead of a Solar icon (icon when absent) */
   avatarUrl?: string;
 };
 
@@ -46,16 +46,16 @@ function hrefFor(key: TabKey, login: string | null): string {
   }
 }
 
-/** `member` is null for guests; `userId` builds the GitHub avatar URL for the profile tab. */
-export function tabsFor(role: Role, member: { login: string; userId: number } | null = null): TabItem[] {
+/** `member` is null for guests; `avatarUrl` is the stored GitHub photo from `GET /user/me`. */
+export function tabsFor(
+  role: Role,
+  member: { login: string; avatarUrl: string | null } | null = null,
+): TabItem[] {
   return TABS_BY_ROLE[role].map((key) => ({
     key,
     label: LABELS[key],
     href: hrefFor(key, member?.login ?? null),
     requiresLogin: role === 'guest' && GUEST_LOGIN_TABS.includes(key),
-    avatarUrl:
-      key === 'profile' && member
-        ? `https://avatars.githubusercontent.com/u/${member.userId}`
-        : undefined,
+    avatarUrl: key === 'profile' ? (member?.avatarUrl ?? undefined) : undefined,
   }));
 }

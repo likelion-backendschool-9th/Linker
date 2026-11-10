@@ -403,7 +403,6 @@ erDiagram
     varchar message "300 chars"
     varchar status "PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELED"
     int attempt "1 or 2, one re-apply"
-    varchar reject_reason "optional, hidden from applicant"
     timestamptz expires_at "14 days"
     bigint decided_by FK
     timestamptz decided_at
@@ -1097,7 +1096,6 @@ erDiagram
 | --- | --- |
 | status | PENDING → ACCEPTED / REJECTED / EXPIRED (14 days, recruit post deleted) / CANCELED (only while PENDING) |
 | attempt | Re-applying to the same post after cancel is allowed once, so max 2 |
-| reject_reason | Author's note. The applicant only gets a fixed message |
 
 - Indexes: `(recruit_post_id, status)`, `(applicant_id, created_at desc)`, `expires_at` (expiry batch).
 - Accepting does, in one transaction: increment `recruit_roles.accepted_count`, add `team_members`, add team `chat_room_members`, create notification.

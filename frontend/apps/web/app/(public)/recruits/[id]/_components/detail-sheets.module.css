@@ -1,4 +1,4 @@
-/* Shared by the sheets of 21 (apply, application, reject, exceptions, menu) */
+/* Shared by the sheets of 21 (apply, accept exceptions, accepted panel) */
 
 .form,
 .body {
@@ -6,7 +6,6 @@
   gap: var(--space-lg);
 }
 
-.field,
 .fieldset {
   display: grid;
   gap: var(--space-xs);
@@ -14,37 +13,6 @@
   margin: 0;
   padding: 0;
   border: 0;
-}
-
-.label {
-  padding: 0;
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-heading);
-}
-
-.optional {
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
-}
-
-/* Text input look (guide ch. 5) */
-.textarea {
-  width: 100%;
-  min-height: var(--control-height);
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-  color: var(--color-text-body);
-  background-color: var(--color-field);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  resize: vertical;
-}
-
-.textarea[aria-invalid='true'] {
-  border-color: var(--color-status-error);
 }
 
 /* Role choices: outlined rows, chosen one tinted (the radio itself shows the state too) */

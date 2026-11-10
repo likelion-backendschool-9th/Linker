@@ -76,8 +76,6 @@ export function RecruiterSignupForm() {
               <Consent
                 name="ageConfirmed"
                 label="(필수) 만 19세 이상"
-                href="/legal/terms"
-                detailLabel="[ 자세히 보기 ]"
                 register={form.register('ageConfirmed')}
                 error={form.formState.errors.ageConfirmed?.message}
               />

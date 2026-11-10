@@ -954,6 +954,7 @@ export interface MeResponse {
   status?: string;
   onboarded?: boolean;
   suspendedUntil?: string;
+  avatarUrl?: string;
 }
 
 export type TeamItemStatus = typeof TeamItemStatus[keyof typeof TeamItemStatus];

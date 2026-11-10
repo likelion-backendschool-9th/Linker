@@ -39,6 +39,7 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
   page,
 }, info) => {
   await page.goto('/teams/1/settings');
+  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
   await page.getByRole('button', { name: '팀 정보 편집', exact: true }).click();
   await expect(page.getByLabel('팀 소개', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -157,4 +158,70 @@ test('09 member leave confirmation calls the existing flow and returns to worksp
   await dialog.getByRole('button', { name: '팀 나가기', exact: true }).click();
   await expect(page).toHaveURL('/workspace');
   await expect(dialog).toBeHidden();
+});
+
+
+test('09 ownership and AI sheets submit only explicit input', async ({page}, info) => {
+  await page.goto('/teams/1/settings?overlay=team-settings-action&oid=transfer');
+  await expect(page.getByRole('dialog', {name:'소유권 이전'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'이전 요청 보내기'})).toBeDisabled();
+  await page.getByLabel('새 오너').selectOption({index:1});
+  await page.screenshot({path:info.outputPath('p09-transfer.png'),animations:'disabled'});
+  await page.getByRole('button',{name:'이전 요청 보내기'}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.goto('/teams/1/settings?overlay=team-settings-action&oid=ai');
+  await expect(page.getByRole('checkbox',{name:'AI 요약 사용'})).toBeVisible();
+  await page.getByRole('checkbox',{name:'AI 요약 사용'}).uncheck();
+  await page.screenshot({path:info.outputPath('p09-ai.png'),animations:'disabled'});
+  await page.getByRole('button',{name:'저장',exact:true}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.evaluate(() => window.history.pushState(null, '', '?overlay=team-settings-action&oid=ai'));
+  await expect(page.getByRole('checkbox',{name:'AI 요약 사용'})).not.toBeChecked();
+});
+
+
+test('09 exposes required settings without changing the main page body', async ({page}, info) => {
+  await page.goto('/teams/1/settings');
+  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  const menu=page.getByRole('dialog',{name:'팀 설정',exact:true});
+  await expect(menu.getByRole('button',{name:'소유권 이전',exact:true})).toBeEnabled();
+  await expect(menu.getByRole('button',{name:'프로젝트 완료',exact:true})).toBeEnabled();
+  await expect(menu.getByRole('button',{name:'팀 보관',exact:true})).toBeEnabled();
+  await expect(menu.getByRole('button',{name:'구독 관리',exact:true})).toBeEnabled();
+  await expect(menu.getByRole('button',{name:'보드 변경',exact:true})).toHaveCount(0);
+  await expect(menu.getByRole('button',{name:'AI 요약 설정',exact:true})).toHaveCount(0);
+  await page.screenshot({path:info.outputPath('p09-settings-menu.png'),animations:'disabled'});
+  await menu.getByRole('button',{name:'플랜 보기',exact:true}).click();
+  await expect(page).toHaveURL('/subscribe?teamId=1');
+});
+
+test('09 manages invite metadata and shares only a newly available original code', async ({page}, info) => {
+  await page.goto('/teams/1/settings');
+  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  await page.getByRole('button',{name:'초대 링크 관리',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'초대 링크 관리',exact:true});
+  await expect(dialog.getByRole('button',{name:'초대 링크 폐기'}).first()).toBeVisible();
+  await expect(dialog.getByRole('button',{name:'공유',exact:true})).toHaveCount(0);
+  await dialog.getByRole('button',{name:'초대 링크 만들기',exact:true}).click();
+  await expect(dialog.getByRole('button',{name:'공유',exact:true})).toBeEnabled();
+  await page.screenshot({path:info.outputPath('p09-invite-management.png'),animations:'disabled'});
+  const before=await dialog.getByRole('button',{name:'초대 링크 폐기'}).count();
+  await dialog.getByRole('button',{name:'초대 링크 폐기'}).last().click();
+  await page.getByRole('dialog').getByRole('button',{name:'확인',exact:true}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  await page.getByRole('button',{name:'초대 링크 관리',exact:true}).click();
+  await expect(dialog.getByRole('button',{name:'초대 링크 폐기'})).toHaveCount(before-1);
+  await expect(dialog.getByRole('button',{name:'공유',exact:true})).toHaveCount(0);
+});
+
+test('09 lets a recipient open the existing incoming ownership request', async ({page}) => {
+  await page.goto('/teams/2/settings');
+  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  const menu=page.getByRole('dialog',{name:'팀 설정',exact:true});
+  await expect(menu.getByRole('button',{name:'소유권 이전',exact:true})).toHaveCount(0);
+  await menu.getByRole('button',{name:'소유권 이전 수락',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'소유권 이전을 수락할까요?'})).toBeVisible();
+  await page.getByRole('button',{name:'소유권 이전 수락',exact:true}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
 });

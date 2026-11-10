@@ -19,6 +19,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface RecruitPostRepository extends JpaRepository<RecruitPost, Long> {
 
+	/** 20 daily limit: when my recruit posts in the window were published, oldest first; deleted ones count too */
+	@Query("""
+			select p.createdAt from RecruitPost p
+			where p.author.id = :authorId and p.createdAt > :since
+			order by p.createdAt asc
+			""")
+	List<Instant> findCreatedAtSince(@Param("authorId") long authorId, @Param("since") Instant since);
+
   /** WBS S18: only open, visible recruitment posts by active developers are indexable. */
   @Query("""
       select new com.linker.backend.dto.sitemap.SitemapItem(
