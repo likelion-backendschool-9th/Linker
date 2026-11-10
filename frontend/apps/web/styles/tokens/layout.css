@@ -140,6 +140,11 @@
   --size-team-settings-skeleton-line-h: 18px;
   --size-issue-progress-skeleton-line-w: 114px; /* 11 skeleton progress card caption (Figma 982:1045) */
   --size-issue-progress-skeleton-line-h: 19px;
+  --size-issue-detail-skeleton-title-w: 132px; /* 12 skeleton title (Figma 982:1289) */
+  --size-issue-detail-skeleton-meta-w: 223px; /* 12 skeleton meta (Figma 982:1291) */
+  --size-issue-detail-skeleton-value-w: 97px; /* 12 skeleton status/label/dates (Figma 982:1293) */
+  --size-issue-detail-skeleton-assignee-w: 32px; /* 12 skeleton assignee (Figma 982:1297) */
+  --size-issue-detail-skeleton-line-h: 22px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
