@@ -38,8 +38,11 @@ const base = {
   movedToIssueId: null as number | null,
 };
 
-function params(issueId = '1015') {
-  return Promise.resolve({ id: '1', issueId });
+function pageProps(issueId = '1015') {
+  return {
+    params: Promise.resolve({ id: '1', issueId }),
+    searchParams: Promise.resolve({}),
+  };
 }
 
 beforeEach(() => {
@@ -58,7 +61,7 @@ it('calls notFound when the issue was moved and the destination is unknown', asy
     deletedOrMoved: 'MOVED',
     movedToIssueId: null,
   });
-  await expect(IssueDetailPage({ params: params() })).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
+  await expect(IssueDetailPage(pageProps())).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
   expect(notFound).toHaveBeenCalledOnce();
   expect(redirect).not.toHaveBeenCalled();
 });
@@ -69,7 +72,7 @@ it('redirects to the new issue when movedToIssueId is present', async () => {
     deletedOrMoved: 'MOVED',
     movedToIssueId: 2099,
   });
-  await expect(IssueDetailPage({ params: params() })).rejects.toThrow(
+  await expect(IssueDetailPage(pageProps())).rejects.toThrow(
     'NEXT_REDIRECT;/teams/1/issues/2099',
   );
   expect(redirect).toHaveBeenCalledWith('/teams/1/issues/2099');
@@ -82,7 +85,7 @@ it('calls notFound when deletedOrMoved is DELETED', async () => {
     deletedOrMoved: 'DELETED',
     movedToIssueId: null,
   });
-  await expect(IssueDetailPage({ params: params() })).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
+  await expect(IssueDetailPage(pageProps())).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
   expect(notFound).toHaveBeenCalledOnce();
   expect(redirect).not.toHaveBeenCalled();
 });
