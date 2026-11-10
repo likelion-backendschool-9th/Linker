@@ -2,6 +2,8 @@
 
 > 2026-11-09 · `feat/ai-chat-summary`
 
+> **2026-11-10 D 인계 후 확장:** 아래 축소 계약은 더 이상 현재 상태가 아니다. 회의록 형식, 진행 링·말풍선, 항상 202 + 진행률 폴링, 채팅에 공유, `AI_SUMMARY_DONE/FAILED` 알림, 입력 예산(약 1,500토큰)으로 바뀌었다. 현재 기준은 Policy POL-C-5, Page TODO 17, WBS 17이다.
+
 ## 범위
 
 - 팀 채팅 FAB → `POST/GET .../ai-summaries` → 결과 패널(Figma **351:362**).
