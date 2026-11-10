@@ -515,7 +515,7 @@ In MVP a recruiting offer is not a separate offer form but a 1:1 chat request. I
 | Model | Ollama `qwen3:4b` self-hosted next to the backend on the demo server, capped at 2 CPUs / 4 GiB (decision 2026-11-10: free, conversations stay in-house, no extra load on the shared server). Thinking off, JSON-schema reply, output capped. If switched to a low-cost LLM API, send only under terms that it's not used for training and not stored after processing, and add the vendor to the Privacy Policy's processor table |
 | Retention | Summary results 7 days. Shared cards live as long as team chat messages (while the team exists) |
 | Label | Always show "AI가 만든 요약이라 틀릴 수 있어요" (AI-generated, may be wrong) |
-| Button and progress | The "AI 채팅 요약" button carries a ring (decision 2026-11-10): a short spinning arc while waiting in line, blue filling clockwise from 12 o'clock while the model reads and writes, a full blue ring once done until the summary is shared or replaced by "새로 요약하기", and red after a failure until the next tap (which summarizes again). Tapping while it runs shows a bubble: "요약하는 중이에요 · N%", the stage, the time left and "끝나면 알려드릴게요". Percentages while reading are estimates and never show 100 before the result |
+| Button and progress | The "AI 채팅 요약" button carries a ring (decision 2026-11-10): a short spinning arc while waiting in line, blue filling clockwise from 12 o'clock while the model reads and writes, a full blue ring once done until the summary is shared or replaced by "새로 요약하기", and red after a failure until the next tap (which summarizes again). Tapping while it runs shows a one-line bubble with a thin gray border: the stage and progress, e.g. "요약 쓰는 중 64/100" (user request 2026-11-10). Percentages while reading are estimates and never show 100 before the result |
 | Done notice | In the room: toast "요약이 끝났어요" with "보기". Elsewhere: notification `AI_SUMMARY_DONE` (opens the minutes sheet) or `AI_SUMMARY_FAILED`. Opening a finished summary reads its notification |
 | Team setting | Owner can turn AI summary off per team. No banner in team chat (the "이 팀은 AI 요약을 사용해요" banner was dropped, team decision 2026-11-10) |
 | When subscription ends | Only new summaries blocked. Existing summaries viewable per the 7-day rule; shared cards remain in chat |
@@ -720,7 +720,7 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Job ad closed | 광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기 |
 | Job ad hidden | 이 광고는 다시 보이지 않아요. |
 | AI summary used up | 오늘은 AI 요약을 다 썼어요(10/10). 내일 다시 쓸 수 있어요. |
-| AI summary running (bubble) | 요약하는 중이에요 · {N}% / 앞에 {N}건이 기다리고 있어요 / 곧 시작해요 / 대화를 읽고 있어요 / 요약을 쓰고 있어요 / 약 {N}분 남았어요 / 끝나면 알려드릴게요 |
+| AI summary running (bubble) | 순서 기다리는 중 / 앞에 {N}건 기다리는 중 / 대화 읽는 중 {N}/100 / 요약 쓰는 중 {N}/100 |
 | AI summary done | 요약이 끝났어요 (toast, "보기") · notification: AI 요약이 끝났어요 / {team} 채팅 요약을 확인해 보세요 |
 | AI summary failed | 요약하지 못했어요 · notification: AI 요약을 만들지 못했어요 / 채팅방에서 다시 요약해 보세요 |
 | AI summary shared | 채팅에 공유했어요 |

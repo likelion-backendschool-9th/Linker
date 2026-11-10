@@ -81,14 +81,13 @@ export function AiSummaryFab({ roomId, initial, loadedIds, onJump }: Props) {
         )}
         {fab.bubbleOpen && (ring.state === 'queued' || ring.state === 'running') && (
           <div id={bubbleId} className={styles.bubble} role="group" aria-label="AI 요약 진행 상황">
-            <p className={styles.bubbleTitle}>
-              요약하는 중이에요{ring.state === 'running' ? ` · ${ring.progress}%` : ''}
+            {/* One line, e.g. "요약 쓰는 중 64/100" (user request 2026-11-10) */}
+            <p className={styles.bubbleText}>
+              {stageText(ring)}
+              {ring.state === 'running' && (
+                <span className={styles.bubbleProgress}> {ring.progress}/100</span>
+              )}
             </p>
-            <p className={styles.bubbleText}>{stageText(ring)}</p>
-            {ring.state === 'running' && ring.remainingSeconds !== null && (
-              <p className={styles.bubbleText}>{remainingText(ring.remainingSeconds)}</p>
-            )}
-            <p className={styles.bubbleText}>끝나면 알려드릴게요</p>
           </div>
         )}
         {/* Phase changes only, so the percentage does not chatter */}
@@ -165,12 +164,7 @@ function buttonName(ring: AiSummaryRing) {
 
 function stageText(ring: Extract<AiSummaryRing, { state: 'queued' | 'running' }>) {
   if (ring.state === 'queued') {
-    return ring.queueAhead > 0 ? `앞에 ${ring.queueAhead}건이 기다리고 있어요` : '곧 시작해요';
+    return ring.queueAhead > 0 ? `앞에 ${ring.queueAhead}건 기다리는 중` : '순서 기다리는 중';
   }
-  return ring.phase === 'READING' ? '대화를 읽고 있어요' : '요약을 쓰고 있어요';
-}
-
-function remainingText(seconds: number) {
-  if (seconds < 60) return `약 ${Math.max(1, seconds)}초 남았어요`;
-  return `약 ${Math.ceil(seconds / 60)}분 남았어요`;
+  return ring.phase === 'READING' ? '대화 읽는 중' : '요약 쓰는 중';
 }

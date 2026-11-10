@@ -514,7 +514,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **AI chat summary (Flex, after 28)** — D (taken over from C on 2026-11-10); Policy POL-C-5
 
 - [ ] Tap "AI 채팅 요약" → summary starts at once (latest messages within ~1,500 tokens, min 20「직접 읽는 게 더 빨라요」). Free → PlanLimitSheet. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
-- [ ] Button ring: short spinning arc while queued → blue filling clockwise from 12 o'clock while running → full blue until "채팅에 공유" or "새로 요약하기" → red after a failure (tap summarizes again). Tap while running → bubble (「요약하는 중이에요 · N%」, stage, time left, 「끝나면 알려드릴게요」). The ring resumes from room info `myAiSummary`
+- [ ] Button ring: short spinning arc while queued → blue filling clockwise from 12 o'clock while running → full blue until "채팅에 공유" or "새로 요약하기" → red after a failure (tap summarizes again). Tap while running → one-line bubble with a thin gray border (「대화 읽는 중 N/100」 / 「요약 쓰는 중 N/100」 / 「앞에 N건 기다리는 중」). The ring resumes from room info `myAiSummary`
 - [ ] Done → toast「요약이 끝났어요」+「보기」; away from the room → `AI_SUMMARY_DONE` / `AI_SUMMARY_FAILED` notification (18) opens `?overlay=ai-summary&oid={id}`
 - [ ] Minutes sheet: one line, 결정한 것 / 할 일 / 아직 정하지 못한 것 (≤3 each), tap a line → its source message when loaded, 「최근 메시지 N개를 요약했어요 · 오늘 N/10회 사용」, disclaimer, 「채팅에 공유」, 「새로 요약하기」 (confirm, spends one use)
 - [ ] Shared `AI_SUMMARY` card: one line + counts; tap → the full minutes (from the card's payload) for everyone in the room
