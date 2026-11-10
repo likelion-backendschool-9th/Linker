@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 
@@ -10,6 +10,8 @@ export type PostAuthor = {
   avatarUrl: string;
   /** Only SEEKING is shown to everyone (04 ch. 3 POL-H-4) */
   jobStatus: 'SEEKING' | 'OPEN' | 'OFF';
+  /** Whether I follow the author; false for guests, the author and recruiters */
+  isFollowing: boolean;
 };
 
 export type PostDetail = {
@@ -38,8 +40,11 @@ export type PostDetail = {
   tags: string[];
   likeCount: number;
   commentCount: number;
-  /** Hidden by reports: only the author gets it, as UNDER_REVIEW */
-  visibility: 'VISIBLE' | 'UNDER_REVIEW';
+  /**
+   * Only the author gets a hidden post: UNDER_REVIEW (5 reporters) or HIDDEN (operator). Both read as
+   * "검토 중" with likes and comments blocked (04 ch. 4 exceptions).
+   */
+  visibility: 'VISIBLE' | 'UNDER_REVIEW' | 'HIDDEN';
   createdAt: string;
   editedAt: string | null;
   isAuthor: boolean;
@@ -54,6 +59,19 @@ export type PostComment = {
   author: Pick<PostAuthor, 'id' | 'login' | 'name' | 'avatarUrl'>;
   text: string;
   createdAt: string;
+  editedAt: string | null;
+};
+
+export type Liker = { user: Pick<PostAuthor, 'id' | 'login' | 'name' | 'avatarUrl'> };
+
+/** "이 레포의 다른 게시물": teammates' posts for the same repo (04 ch. 4 exceptions) */
+export type SameRepoPost = {
+  id: number;
+  author: Pick<PostAuthor, 'id' | 'login' | 'name' | 'avatarUrl'>;
+  intro: string;
+  coverUrl: string | null;
+  likeCount: number;
+  commentCount: number;
 };
 
 const encode = (postId: string) => encodeURIComponent(postId);
@@ -63,6 +81,8 @@ export const postKeys = {
   detail: (login: string | null, postId: string) => ['posts', login, 'detail', postId] as const,
   comments: (postId: string) => ['posts', 'comments', postId] as const,
   likers: (login: string | null, postId: string) => ['posts', login, 'likers', postId] as const,
+  sameRepo: (login: string | null, postId: string) =>
+    ['posts', login, 'same-repo', postId] as const,
 };
 
 /**
@@ -94,14 +114,32 @@ export function commentsOptions(postId: string) {
   });
 }
 
-/** People list, so login only (POL-A-9) */
+/** People list, so login only (POL-A-9); 20 per page, the next one as the sheet scrolls */
 export function likersOptions(login: string | null, postId: string) {
-  return queryOptions({
+  return infiniteQueryOptions({
     queryKey: postKeys.likers(login, postId),
-    queryFn: ({ signal }) =>
-      apiFetch<{ items: { user: Pick<PostAuthor, 'id' | 'login' | 'name' | 'avatarUrl'> }[] }>(
-        `/api/v1/user/posts/${encode(postId)}/likes`,
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam, signal }) =>
+      apiFetch<{ items: Liker[]; nextCursor: string | null }>(
+        `/api/v1/user/posts/${encode(postId)}/likes${
+          pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''
+        }`,
         { signal },
+      ),
+    getNextPageParam: (page) => page.nextCursor,
+  });
+}
+
+/** Public, so guests see it too; blocked and reported authors' posts are left out by the server */
+export function sameRepoPostsOptions(login: string | null, postId: string) {
+  return queryOptions({
+    queryKey: postKeys.sameRepo(login, postId),
+    queryFn: ({ signal }) =>
+      apiFetch<{ items: SameRepoPost[] }>(
+        `/api/v1/public/posts/${encode(postId)}/same-repo-posts`,
+        {
+          signal,
+        },
       ),
   });
 }
@@ -122,6 +160,28 @@ export function writeComment(postId: string, body: { text: string }) {
   return apiFetch<PostComment>(`/api/v1/user/posts/${encode(postId)}/comments`, {
     method: 'POST',
     ...json(body),
+  });
+}
+
+/** Comment author only (POL-P-5) */
+export function updateComment(postId: string, commentId: number, body: { text: string }) {
+  return apiFetch<PostComment>(`/api/v1/user/posts/${encode(postId)}/comments/${commentId}`, {
+    method: 'PATCH',
+    ...json(body),
+  });
+}
+
+/** Comment author, or the post owner (delete only) (POL-P-5) */
+export function deleteComment(postId: string, commentId: number) {
+  return apiFetch<void>(`/api/v1/user/posts/${encode(postId)}/comments/${commentId}`, {
+    method: 'DELETE',
+  });
+}
+
+/** Borrowed from 04 (200/day, developers only) */
+export function setFollow(login: string, follow: boolean) {
+  return apiFetch<void>(`/api/v1/user/user/${encodeURIComponent(login)}/follow`, {
+    method: follow ? 'POST' : 'DELETE',
   });
 }
 

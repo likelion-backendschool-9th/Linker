@@ -64,6 +64,10 @@ class ModerationReportNotificationTest {
 
 	@Mock
 	com.linker.backend.repository.profile.FollowRepository follows;
+	@Mock
+	com.linker.backend.repository.post.PostRepository posts;
+	@Mock
+	com.linker.backend.repository.post.CommentRepository comments;
 
 	ModerationService service;
 
@@ -71,7 +75,7 @@ class ModerationReportNotificationTest {
 	void setUp() {
 		service = new ModerationService(
 				users, blocks, inserter, cases, caseOpener, reports, admins, adminNotifications, sanctions, null, follows,
-				null, null, null, null, null, Clock.systemUTC());
+				null, null, null, null, posts, comments, null, Clock.systemUTC());
 	}
 
 	@Test
@@ -191,6 +195,81 @@ class ModerationReportNotificationTest {
 		service.report(6L, "USER", targetUserId, "SPAM", null);
 
 		verify(adminNotifications, times(1)).create(any());
+	}
+
+	@Test
+	void fifthReporterOfAPostSendsItToReviewAndOperatorsAreTold() {
+		long caseId = 60L;
+		long authorId = 900L;
+		com.linker.backend.entity.post.Post post = visiblePost(77L, authorId);
+		when(posts.findDetailedById(77L)).thenReturn(Optional.of(post));
+		ReportCase reportCase = ReportCase.open(ReportTargetType.POST, 77L, authorId);
+		ReflectionTestUtils.setField(reportCase, "id", caseId);
+		when(caseOpener.openPending(ReportTargetType.POST, 77L, authorId)).thenReturn(caseId);
+		when(cases.lockById(caseId)).thenReturn(Optional.of(reportCase));
+		when(reports.existsByReportCase_IdAndReporterId(caseId, 5L)).thenReturn(false);
+		when(reports.countEligibleReporters(eq(caseId), any())).thenReturn((long) PlanLimits.REPORT_AUTO_HIDE_REPORTERS);
+		when(reports.findReporterIdsByReportCaseId(caseId)).thenReturn(List.of(1L, 2L, 3L, 4L, 5L));
+		when(admins.findActiveOperatorUserIds()).thenReturn(List.of(101L));
+
+		service.report(5L, "POST", 77L, "SPAM", null);
+
+		verify(posts).markUnderReview(77L);
+		verify(adminNotifications, times(1)).create(any());
+	}
+
+	@Test
+	void aPostTheReporterCannotSeeOrTheirOwnCannotBeReported() {
+		com.linker.backend.entity.post.Post hidden = visiblePost(78L, 900L);
+		org.mockito.Mockito.when(hidden.getVisibility())
+				.thenReturn(com.linker.backend.entity.post.type.PostVisibility.UNDER_REVIEW);
+		when(posts.findDetailedById(78L)).thenReturn(Optional.of(hidden));
+		com.linker.backend.entity.post.Post own = visiblePost(79L, 5L);
+		when(posts.findDetailedById(79L)).thenReturn(Optional.of(own));
+
+		assertThatThrownBy(() -> service.report(5L, "POST", 78L, "SPAM", null))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(404));
+		assertThatThrownBy(() -> service.report(5L, "POST", 79L, "SPAM", null))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("본인은 신고할 수 없어요");
+		verify(posts, never()).markUnderReview(any(Long.class));
+	}
+
+	@Test
+	void belowThresholdCommentReportLeavesTheCommentVisible() {
+		long caseId = 61L;
+		com.linker.backend.entity.post.Post post = visiblePost(77L, 900L);
+		com.linker.backend.entity.post.Comment comment =
+				org.mockito.Mockito.mock(com.linker.backend.entity.post.Comment.class);
+		User commenter = User.create("commenter", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(commenter, "id", 901L);
+		when(comment.getAuthor()).thenReturn(commenter);
+		when(comment.getPost()).thenReturn(post);
+		when(comment.getVisibility()).thenReturn(com.linker.backend.entity.post.type.PostVisibility.VISIBLE);
+		when(comments.findDetailedById(12L)).thenReturn(Optional.of(comment));
+		ReportCase reportCase = ReportCase.open(ReportTargetType.COMMENT, 12L, 901L);
+		ReflectionTestUtils.setField(reportCase, "id", caseId);
+		when(caseOpener.openPending(ReportTargetType.COMMENT, 12L, 901L)).thenReturn(caseId);
+		when(cases.lockById(caseId)).thenReturn(Optional.of(reportCase));
+		when(reports.countEligibleReporters(eq(caseId), any())).thenReturn(1L);
+
+		service.report(5L, "COMMENT", 12L, "ABUSE", null);
+
+		verify(comments, never()).markUnderReview(any(Long.class));
+	}
+
+	private static com.linker.backend.entity.post.Post visiblePost(long id, long authorId) {
+		com.linker.backend.entity.post.Post post = org.mockito.Mockito.mock(
+				com.linker.backend.entity.post.Post.class, org.mockito.Mockito.withSettings().strictness(
+						org.mockito.quality.Strictness.LENIENT));
+		User author = User.create("author-" + authorId, UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", authorId);
+		org.mockito.Mockito.when(post.getId()).thenReturn(id);
+		org.mockito.Mockito.when(post.getAuthor()).thenReturn(author);
+		org.mockito.Mockito.when(post.getVisibility())
+				.thenReturn(com.linker.backend.entity.post.type.PostVisibility.VISIBLE);
+		return post;
 	}
 
 	private void stubNewReport(long caseId, ReportCase reportCase, long reporterId, long countAfterSave) {

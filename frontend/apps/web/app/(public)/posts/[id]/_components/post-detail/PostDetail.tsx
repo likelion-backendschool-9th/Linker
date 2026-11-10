@@ -24,8 +24,9 @@ import { CommentSection } from '../comment-section';
 import { LikersSheet } from '../likers-sheet';
 import { PhotoCarousel } from '../photo-carousel';
 import { PostMenuSheet } from '../post-menu-sheet';
+import { SameRepoPosts } from '../same-repo-posts';
 import styles from './PostDetail.module.css';
-import { usePostDetail, useReactionBar } from './hook';
+import { useFollowAuthor, usePostDetail, useReactionBar } from './hook';
 
 /**
  * 23 Project post detail (Figma 285:154). Guests read everything but like / comment / more ask them
@@ -99,6 +100,7 @@ export function PostDetail({ postId }: { postId: string }) {
             </ul>
           )}
           <RepoCard post={post} owner={owner} repoName={repoName} />
+          {post.visibility === 'VISIBLE' && <SameRepoPosts postId={postId} />}
         </div>
 
         <hr className={styles.band} />
@@ -112,8 +114,9 @@ export function PostDetail({ postId }: { postId: string }) {
   );
 }
 
-/** Figma 287:329: photo, name, @login, follow (follow is visual only for now) */
+/** Figma 287:329: photo, name, @login, follow (borrowed from 04's follow API) */
 function AuthorRow({ post }: { post: Detail }) {
+  const follow = useFollowAuthor(post);
   return (
     <div className={styles.authorRow}>
       <Link href={`/user/${post.author.login}` as Route} className={styles.author}>
@@ -130,9 +133,15 @@ function AuthorRow({ post }: { post: Detail }) {
           <span className={styles.login}>@{post.author.login}</span>
         </span>
       </Link>
-      {!post.isAuthor && (
-        <button type="button" className={styles.follow}>
-          팔로우
+      {follow.visible && (
+        <button
+          type="button"
+          className={styles.follow}
+          aria-pressed={follow.following}
+          aria-disabled={follow.pending || undefined}
+          onClick={follow.toggle}
+        >
+          {follow.following ? '팔로잉' : '팔로우'}
         </button>
       )}
     </div>

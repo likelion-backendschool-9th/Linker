@@ -346,3 +346,8 @@
   font-size: var(--font-size-meta);
   color: var(--color-text-meta);
 }
+
+/* Likers sheet: the next page loads when this reaches the view */
+.sentinel {
+  height: 1px;
+}

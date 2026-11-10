@@ -1,0 +1,1 @@
+export { SameRepoPosts } from './SameRepoPosts';

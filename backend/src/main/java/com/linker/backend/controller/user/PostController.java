@@ -13,10 +13,8 @@ import com.linker.backend.dto.post.response.PostEditFormResponse;
 import com.linker.backend.dto.post.response.PostIdResponse;
 import com.linker.backend.dto.post.response.RecommendedUsersResponse;
 import com.linker.backend.dto.post.response.RepoSummaryResponse;
-import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.DeveloperOnly;
-import com.linker.backend.global.security.RateLimit;
 import com.linker.backend.service.user.PostService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -180,13 +178,9 @@ public class PostController {
 				.body(posts.likers(user, postId, cursor));
 	}
 
+	/** 10/min and 300/day count only written comments, so the limits are checked in the service */
 	@PostMapping("/posts/{postId}/comments")
 	@DeveloperOnly
-	@RateLimit(
-			key = "post.comment.minute",
-			permits = PlanLimits.POST_COMMENTS_PER_MINUTE,
-			windowSeconds = PlanLimits.POST_COMMENTS_PER_MINUTE_WINDOW_SECONDS
-	)
 	@Operation(tags = {"p23-post-detail"})
 	public ResponseEntity<CommentResponse> createComment(
 			@AuthenticationPrincipal AuthenticatedUser user,
