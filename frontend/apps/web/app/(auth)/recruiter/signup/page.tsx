@@ -9,7 +9,7 @@ export const metadata: Metadata = buildMetadata({ title: '채용 담당자 회�
 
 export default function RecruiterSignupPage() {
   return (
-    <PageFrame title="채용 담당자 회원가입" variant="stack" backHref="/recruiter/login" bottomTabs={false}>
+    <PageFrame title="기업 회원 가입" variant="stack" backHref="/recruiter/login" bottomTabs={false}>
       <RecruiterSignupForm />
     </PageFrame>
   );
