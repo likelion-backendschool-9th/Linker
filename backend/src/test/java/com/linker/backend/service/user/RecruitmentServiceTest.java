@@ -40,11 +40,18 @@ import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.chat.ChatRoomMemberRepository;
+import com.linker.backend.repository.chat.ChatRoomRepository;
 import com.linker.backend.repository.recruit.ApplicationRepository;
 import com.linker.backend.repository.recruit.RecruitPostRepository;
+import com.linker.backend.repository.subscription.SubscriptionRepository;
 import com.linker.backend.repository.team.TeamMemberRepository;
+import com.linker.backend.repository.team.TeamRepository;
+import com.linker.backend.dto.recruit.response.AcceptApplicationResponse;
 import com.linker.backend.dto.recruit.response.TeamOptionResponse;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
+import com.linker.backend.entity.chat.ChatRoom;
+import com.linker.backend.entity.team.TeamMember;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,6 +85,14 @@ class RecruitmentServiceTest {
 	ProMembership pro;
 	@Mock
 	TeamMemberRepository teamMembers;
+	@Mock
+	TeamRepository teams;
+	@Mock
+	ChatRoomRepository chatRooms;
+	@Mock
+	ChatRoomMemberRepository chatMembers;
+	@Mock
+	SubscriptionRepository subscriptions;
 
 	RecruitmentService service;
 	AuthenticatedUser developer;
@@ -85,7 +100,8 @@ class RecruitmentServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new RecruitmentService(
-				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, pro, teamMembers, CLOCK);
+				posts, applications, users, techTags, blocks, new RecruitCardMapper(), notifications, pro,
+				teamMembers, teams, chatRooms, chatMembers, subscriptions, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER,
 				UserStatus.ACTIVE,
@@ -378,7 +394,7 @@ class RecruitmentServiceTest {
 			return application;
 		});
 
-		var response = service.apply(developer, 8L, new ApplyRecruitRequest(5L, "참여하고 싶어요"));
+		var response = service.apply(developer, 8L, new ApplyRecruitRequest(5L));
 
 		assertThat(response.id()).isEqualTo(70L);
 		assertThat(response.status()).isEqualTo("PENDING");
@@ -389,7 +405,7 @@ class RecruitmentServiceTest {
 	void applyRejectsOwnPost() {
 		when(posts.findDetailedById(3L)).thenReturn(Optional.of(ownedPost()));
 
-		assertThatThrownBy(() -> service.apply(developer, 3L, new ApplyRecruitRequest(5L, "hi")))
+		assertThatThrownBy(() -> service.apply(developer, 3L, new ApplyRecruitRequest(5L)))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("FORBIDDEN"));
 	}
@@ -400,7 +416,7 @@ class RecruitmentServiceTest {
 		post.close(NOW);
 		when(posts.findDetailedById(8L)).thenReturn(Optional.of(post));
 
-		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L, "hi")))
+		assertThatThrownBy(() -> service.apply(developer, 8L, new ApplyRecruitRequest(5L)))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("RECRUIT_CLOSED"));
 	}
@@ -437,6 +453,86 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void acceptIncreaseRequiresFlex() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(100L);
+		RecruitRole role = post.getRoles().getFirst();
+		ReflectionTestUtils.setField(role, "acceptedCount", role.getHeadcount());
+		Application application = pendingOn(post, 20L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+		when(subscriptions.hasFlexBenefit(100L, NOW)).thenReturn(false);
+
+		assertThatThrownBy(() -> service.accept(developer, 3L, 7L, new AcceptApplicationRequest(true)))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("PLAN_LIMIT");
+					assertThat(api.getDetail()).containsEntry("reason", "ROLE_HEADCOUNT");
+				});
+		verify(teamMembers, never()).saveAndFlush(any());
+	}
+
+	@Test
+	void acceptJoinsTeamAndChat() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(100L);
+		Application application = pendingOn(post, 20L);
+		User author = post.getAuthor();
+		ChatRoom room = ChatRoom.team(100L);
+		ReflectionTestUtils.setField(room, "id", 55L);
+		TeamMember owner = TeamMember.owner(100L, 10L, NOW);
+
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+		when(teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(100L, 20L)).thenReturn(Optional.empty());
+		when(subscriptions.hasFlexBenefit(100L, NOW)).thenReturn(false);
+		when(teamMembers.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(100L)).thenReturn(List.of(owner));
+		when(teams.countedTeams(20L)).thenReturn(0L);
+		when(chatRooms.lockTeamRoom(100L)).thenReturn(Optional.of(room));
+		when(chatMembers.findAnyInRoom(55L, 20L)).thenReturn(Optional.empty());
+		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(100L, 10L)).thenReturn(Optional.of(owner));
+
+		AcceptApplicationResponse result = service.accept(developer, 3L, 7L, null);
+
+		assertThat(result.teamId()).isEqualTo(100L);
+		assertThat(result.chatRoomId()).isEqualTo(55L);
+		assertThat(result.needsGithubInvite()).isTrue();
+		assertThat(application.getStatus()).isEqualTo(ApplicationStatus.ACCEPTED);
+		assertThat(post.getRoles().getFirst().getAcceptedCount()).isEqualTo(1);
+		verify(teamMembers).saveAndFlush(any(TeamMember.class));
+		verify(chatMembers).saveAndFlush(any());
+		ArgumentCaptor<CreateNotificationCommand> captor =
+				ArgumentCaptor.forClass(CreateNotificationCommand.class);
+		verify(notifications).create(captor.capture());
+		assertThat(captor.getValue().notificationType()).isEqualTo(NotificationTypes.APPLICATION_ACCEPTED);
+		assertThat(captor.getValue().linkPath()).isEqualTo("/chats/55");
+	}
+
+	@Test
+	void acceptBlocksWhenFreeTeamMemberCapReached() {
+		RecruitPost post = ownedPost();
+		post.assignTeam(100L);
+		Application application = pendingOn(post, 20L);
+		when(posts.findDetailedById(3L)).thenReturn(Optional.of(post));
+		when(applications.findDetailedForPost(3L, 7L)).thenReturn(Optional.of(application));
+		when(teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(100L, 20L)).thenReturn(Optional.empty());
+		when(subscriptions.hasFlexBenefit(100L, NOW)).thenReturn(false);
+		when(teamMembers.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(100L))
+				.thenReturn(java.util.Collections.nCopies(PlanLimits.TEAM_MEMBERS_FREE, TeamMember.owner(100L, 1L, NOW)));
+
+		assertThatThrownBy(() -> service.accept(developer, 3L, 7L, null))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("PLAN_LIMIT");
+					assertThat(api.getDetail()).containsEntry("reason", "TEAM_MEMBERS");
+				});
+		verify(teamMembers, never()).saveAndFlush(any());
+	}
+
+	@Test
 	void rejectMarksRejectedAndNotifiesWithoutExposingReasonToSheet() {
 		RecruitPost post = ownedPost();
 		Application application = pendingOn(post, 20L);
@@ -451,7 +547,7 @@ class RecruitmentServiceTest {
 		assertThat(application.getRejectReason()).isEqualTo("내부 메모");
 		var sheet = service.applicationSheet(developer, 3L, 7L);
 		assertThat(sheet.status()).isEqualTo("REJECTED");
-		assertThat(sheet.message()).isEqualTo("hello");
+		assertThat(sheet.applicant().id()).isEqualTo(20L);
 		ArgumentCaptor<CreateNotificationCommand> captor =
 				ArgumentCaptor.forClass(CreateNotificationCommand.class);
 		verify(notifications).create(captor.capture());

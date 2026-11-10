@@ -57,7 +57,7 @@ public final class PlanLimits {
 	public static final int RECRUIT_HEADCOUNT_MAX = 10;
 	public static final int RECRUIT_TECH_TAGS_MAX = 10;
 	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
-	/** POL-R-3 — apply message and daily cap. */
+	/** Reject reason length (author-only). Apply has no free-text message (POL-R-3). */
 	public static final int APPLICATION_MESSAGE_MAX = 300;
 	public static final int APPLICATIONS_PER_DAY = 20;
 	public static final int APPLICATIONS_PER_DAY_WINDOW_SECONDS = 86_400;

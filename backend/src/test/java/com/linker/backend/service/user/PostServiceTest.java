@@ -42,7 +42,9 @@ import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
+import com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +88,8 @@ class PostServiceTest {
 	RecruitCardMapper authors;
 	@Mock
 	RedisRateLimiter rateLimiter;
+	@Mock
+	TeamRepository teams;
 
 	PostService service;
 	AuthenticatedUser developer;
@@ -94,7 +98,7 @@ class PostServiceTest {
 	void setUp() {
 		service = new PostService(
 				repos, posts, users, techTags, uploads,
-				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, CLOCK);
+				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, teams, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
@@ -114,10 +118,18 @@ class PostServiceTest {
 	}
 
 	@Test
-	void listReposReturnsEmptyWhenTeamIdPresent() {
-		assertThat(service.listRepos(developer, null, 1L).items()).isEmpty();
+	void listReposUsesLinkedTeamReposWhenTeamIdPresent() {
+		GithubRepo repo = publicRepo(11L, "org/linker-web");
+		when(teams.findLinkedRepos(1L)).thenReturn(List.of(new LinkedRepo(11L, 99L, "org", "linker-web")));
+		when(repos.findAllById(List.of(11L))).thenReturn(List.of(repo));
+		when(posts.findPostedRepoIds(10L, List.of(11L))).thenReturn(List.of());
+
+		var response = service.listRepos(developer, null, 1L);
+
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.items().getFirst().repoId()).isEqualTo(11L);
+		assertThat(response.items().getFirst().teamId()).isEqualTo(1L);
 		verify(repos, never()).findPublicByOwner(any());
-		verify(repos, never()).findPublicByOwnerAndQuery(any(), any());
 	}
 
 	@Test
@@ -300,7 +312,7 @@ class PostServiceTest {
 		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
 		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
 
-		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ", null)))
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ")))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("EMPTY"));
 	}
@@ -336,28 +348,17 @@ class PostServiceTest {
 		Post other = otherAuthorsPost();
 		ReflectionTestUtils.setField(other, "id", 77L);
 		other.increaseCommentCount();
-		other.increaseCommentCount();
-		User someone = User.create("other", UserType.DEVELOPER);
-		ReflectionTestUtils.setField(someone, "id", 99L);
-		Comment parent = Comment.write(other, someone, null, "원댓글");
-		ReflectionTestUtils.setField(parent, "id", 2L);
 		Comment mine = Comment.write(other, member, null, "다른 글의 댓글");
 		ReflectionTestUtils.setField(mine, "id", 3L);
-		Comment threaded = Comment.write(other, member, parent, "답글");
-		ReflectionTestUtils.setField(threaded, "id", 4L);
 
-		when(comments.findByAuthorId(10L)).thenReturn(List.of(onOwn, mine, threaded));
-		when(comments.countByParentId(3L)).thenReturn(0L);
-		when(comments.countByParentId(4L)).thenReturn(1L);
+		when(comments.findByAuthorId(10L)).thenReturn(List.of(onOwn, mine));
 		when(posts.findByAuthor_Id(10L)).thenReturn(List.of(own));
 		when(comments.findByPostIdOrderByIdAsc(42L)).thenReturn(List.of(onOwn));
 
 		service.deleteAuthoredContent(10L, NOW);
 
 		verify(comments).delete(mine);
-		assertThat(threaded.isDeleted()).isTrue();
-		assertThat(threaded.getBody()).isEmpty();
-		assertThat(other.getCommentCount()).isZero();
+		assertThat(other.getCommentCount()).isEqualTo(0);
 		assertThat(onOwn.isDeleted()).isTrue();
 		assertThat(own.getDeletedAt()).isEqualTo(NOW);
 		verify(likes).deleteByPostId(42L);

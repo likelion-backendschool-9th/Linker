@@ -17,7 +17,6 @@ import { formatDeadlineDate } from '@/lib/format/time';
 import type { RecruitDetail as Detail, RecruitTeamMember } from '../../_lib/detail-queries';
 import { AcceptExceptionSheets } from '../accept-exception-sheets';
 import { ApplicantsSheet } from '../applicant-list';
-import { ApplicationSheet } from '../application-sheet';
 import { RecruitApplySheet } from '../recruit-apply-sheet';
 import { RecruitMenuSheet } from '../recruit-menu-sheet';
 import { RejectSheet } from '../reject-sheet';
@@ -58,7 +57,6 @@ export function RecruitDetail({ recruitId }: { recruitId: string }) {
       {author && (
         <>
           <ApplicantsSheet recruit={recruit} />
-          <ApplicationSheet recruit={recruit} />
           <RejectSheet recruitId={recruitId} />
           <AcceptExceptionSheets recruit={recruit} />
         </>

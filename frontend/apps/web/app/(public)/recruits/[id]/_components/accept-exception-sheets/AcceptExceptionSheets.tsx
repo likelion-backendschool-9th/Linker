@@ -1,7 +1,7 @@
 'use client';
 
-// Overlays: the acceptance exceptions with their own sheet (04 ch. 5). A free team at its member cap
-// comes back as PLAN_LIMIT and opens the shared limit sheet with the Flex prompt.
+// Overlays: the acceptance exceptions with their own sheet (04 ch. 5). Free-team member/role caps
+// come back as PLAN_LIMIT and open the shared Flex checkout sheet.
 import type { Route } from 'next';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
@@ -38,7 +38,7 @@ export function AcceptExceptionSheets({ recruit }: { recruit: RecruitDetail }) {
       <OverlaySheet
         overlay={roleFull}
         title="이 역할은 자리가 다 찼어요"
-        description="인원을 1명 늘리면 바로 초대할 수 있어요."
+        description="Flex 구독 팀이면 인원을 1명 늘리고 바로 초대할 수 있어요."
       >
         {roleFull.isOpen && roleFull.id && (
           <RoleFullBody
@@ -55,7 +55,7 @@ export function AcceptExceptionSheets({ recruit }: { recruit: RecruitDetail }) {
 
 type RoleFullBodyProps = { recruit: RecruitDetail; applicationId: string; overlay: OverlayControl };
 
-/** "인원 늘리고 초대": one call, so headcount and invite change together */
+/** "인원 늘리고 초대": Flex teams bump headcount + accept; free teams get PLAN_LIMIT → Flex sheet */
 function RoleFullBody({ recruit, applicationId, overlay }: RoleFullBodyProps) {
   const { row, role, atMax, accepted, accept, headcountMax, close, acceptWithIncrease } =
     useRoleFullBody({ recruit, applicationId, overlay });
