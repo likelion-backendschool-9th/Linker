@@ -209,7 +209,7 @@ test('17 system cards cap wide screens and contain long titles and repository na
 
 test('17 floating summary keeps the existing result flow and leaves photo attachment available', async ({
   page,
-}) => {
+}, info) => {
   await page.goto('/chats/1');
   const summary = page.getByRole('button', { name: 'AI 채팅 요약', exact: true });
   await expect(summary).toBeVisible();
@@ -237,8 +237,10 @@ test('17 floating summary keeps the existing result flow and leaves photo attach
   const result = page.getByRole('dialog', { name: 'AI 요약', exact: true });
   await expect(result).toBeVisible();
   await expect(
-    result.getByText('AI가 만든 요약이라 틀릴 수 있어요', { exact: true }),
+    result.getByText('팀 채팅 요약이에요.', { exact: true }),
   ).toBeVisible();
+  await expect(result.getByRole('button', { name: '채팅창에 공유하기', exact: true })).toBeEnabled();
+  await page.screenshot({ path: info.outputPath('p17-current-summary-qa.png'), animations: 'disabled' });
   await result.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(result).toBeHidden();
   await expect(input).toHaveValue('작성 중인 메시지');
