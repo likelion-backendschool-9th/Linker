@@ -14,6 +14,9 @@
   --summary-title-from: #0e00a5;
   --summary-title-to: #a100af;
   --summary-cta-height: 46px;
+  /* "새로 요약 받기" icon: Figma 20px, set to 14px with 2px after the label (user request 2026-11-11) */
+  --summary-renew-icon: 14px;
+  --summary-renew-gap: 2px;
   padding-top: var(--space-md);
   border-radius: 0;
   box-shadow: var(--shadow-ai-summary-sheet);
@@ -37,6 +40,7 @@
 .renew {
   display: inline-flex;
   align-items: center;
+  gap: var(--summary-renew-gap);
   min-height: var(--touch-target-icon);
   padding: 0;
   border: 0;
@@ -49,10 +53,9 @@
   cursor: pointer;
 }
 
-/* Figma 20px, 10% smaller on request (user request 2026-11-11) */
 .renewIcon {
-  width: 18px;
-  height: 18px;
+  width: var(--summary-renew-icon);
+  height: var(--summary-renew-icon);
 }
 
 .renew:focus-visible,
