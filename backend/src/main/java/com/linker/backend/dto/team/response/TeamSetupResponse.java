@@ -68,7 +68,10 @@ public final class TeamSetupResponse {
       name = "TeamSetupPermission",
       requiredProperties = {"basePermission", "settingsUrl"})
   public record Permission(
-      @Schema(allowableValues = {"NONE", "READ", "WRITE", "ADMIN"}) String basePermission,
+      @Schema(
+              allowableValues = {"NONE", "READ", "WRITE", "ADMIN", "UNKNOWN"},
+              description = "UNKNOWN when GitHub omits the organization default permission; show permission guidance")
+          String basePermission,
       String settingsUrl) {}
 
   @Schema(
