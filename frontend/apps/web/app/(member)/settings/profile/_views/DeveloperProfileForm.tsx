@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Route } from 'next';
@@ -110,6 +111,7 @@ export function DeveloperProfileForm({
   techTags: TechTag[];
   jobCategories: JobCategory[];
 }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const techSheet = useOverlay('profile-edit-tech');
   const jobSheet = useOverlay('profile-edit-job');
@@ -122,6 +124,16 @@ export function DeveloperProfileForm({
     mode: 'onChange',
     defaultValues: initial,
   });
+  const currentValues = useWatch({ control: form.control, defaultValue: initial });
+  const hasProfileChanges =
+    currentValues.name !== initial.name ||
+    currentValues.bio !== initial.bio ||
+    currentValues.blogUrl !== initial.blogUrl ||
+    hasStringArrayChanged(currentValues.techStack ?? initial.techStack, initial.techStack) ||
+    currentValues.lookingForTeam !== initial.lookingForTeam ||
+    currentValues.jobStatus !== initial.jobStatus ||
+    hasStringArrayChanged(currentValues.jobCategories ?? initial.jobCategories, initial.jobCategories) ||
+    jobStatusChosen !== (initial.jobStatus !== 'OFF');
   const selectedTech = useWatch({ control: form.control, name: 'techStack' }) ?? [];
   const [selectedTechOccurrence, setSelectedTechOccurrence] = useState<Record<string, number>>(() => {
     const occurrences: Record<string, number> = {};
@@ -146,19 +158,19 @@ export function DeveloperProfileForm({
     .map((category) => JOB_CATEGORY_LABELS[category.key] ?? category.label);
 
   useEffect(() => {
-    useUnsavedChangesStore.getState().setDirty(form.formState.isDirty);
+    useUnsavedChangesStore.getState().setDirty(hasProfileChanges);
     return () => useUnsavedChangesStore.getState().setDirty(false);
-  }, [form.formState.isDirty]);
+  }, [hasProfileChanges]);
 
   useEffect(() => {
-    if (!form.formState.isDirty) return;
+    if (!hasProfileChanges) return;
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [form.formState.isDirty]);
+  }, [hasProfileChanges]);
 
   const save = useMutation({
     mutationFn: (values: DeveloperProfileValues) =>
@@ -175,9 +187,10 @@ export function DeveloperProfileForm({
           jobCategories: values.jobCategories,
         }),
       }),
-    onSuccess: async (saved) => {
+    onSuccess: (saved) => {
       form.reset({ ...saved, kind: 'DEVELOPER' });
-      await queryClient.invalidateQueries({ queryKey: profileQueryKey(login) });
+      useUnsavedChangesStore.getState().setDirty(false);
+      void queryClient.invalidateQueries({ queryKey: profileQueryKey(login) });
       toast('프로필을 저장했어요.');
     },
     onError: (cause) =>
@@ -258,9 +271,14 @@ export function DeveloperProfileForm({
       <form
         className={`${styles.sheetForm} ${styles.profileForm}`}
         noValidate
-        onSubmit={form.handleSubmit((values) => {
+        onSubmit={form.handleSubmit(async (values) => {
           setError(null);
-          save.mutate(values);
+          try {
+            await save.mutateAsync(values);
+            router.replace(`/user/${encodeURIComponent(login)}` as Route);
+          } catch {
+            // The mutation's onError handler displays the save failure.
+          }
         })}
       >
         <fieldset className={styles.fields} aria-label="프로필 정보" disabled={pending}>
@@ -362,10 +380,10 @@ export function DeveloperProfileForm({
           <button
             type="submit"
             className={styles.profileNextButton}
-            disabled={!form.formState.isDirty || !form.formState.isValid || save.isPending}
+            disabled={!hasProfileChanges || save.isPending}
             aria-busy={save.isPending}
           >
-            다음
+            저장
           </button>
           {error && (
             <p className={styles.error} role="alert">
@@ -441,16 +459,13 @@ export function DeveloperProfileForm({
         }}
       >
         <div className={styles.techStackChipRows}>
-          {TECH_STACK_ROWS.map((row, rowIndex) => (
-            <ul key={rowIndex} className={styles.techStackChipRow}>
-              {row.map((name, columnIndex) => {
-                const tag = techTags.find((option) => option.name === name);
-                if (!tag) return null;
-                const optionIndex = rowIndex * 5 + columnIndex;
-                return renderTechChip(tag, optionIndex);
-              })}
-            </ul>
-          ))}
+          <ul className={styles.techStackChipRow}>
+            {TECH_STACK_OPTIONS.map((name, optionIndex) => {
+              const tag = techTags.find((option) => option.name === name);
+              if (!tag) return null;
+              return renderTechChip(tag, optionIndex);
+            })}
+          </ul>
         </div>
         <button
           type="button"
@@ -515,6 +530,10 @@ export function DeveloperProfileForm({
       />
     </>
   );
+}
+
+function hasStringArrayChanged(current: string[], initial: string[]) {
+  return current.length !== initial.length || current.some((value, index) => value !== initial[index]);
 }
 
 function Field({

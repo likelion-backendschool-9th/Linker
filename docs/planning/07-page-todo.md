@@ -134,7 +134,6 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Start screen**
 
-- [ ] Service intro in 3 blocks (find a team · work together · show your work)
 - [ ] "GitHub로 시작" button (web: same window; WebView app: system browser)
 - [ ] `[Included]` Small link at the bottom "채용 담당자이신가요?" (are you a recruiter?) → 31 sign-up / 32 login (after 31)
 - [ ] "둘러보기" (browse) button → `/feed` (no login)
@@ -209,7 +208,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Post list (my post cards)
 - [ ] `[Included]` Pin featured posts: (sheet) choose posts, reorder, Free 1 / Pro 5, subscription prompt if over
 - [ ] "메시지" (message) button → 17 1:1 chat (direct if mutual follow / same team, otherwise message request)
-- [ ] Teams (active / completed)
+- [ ] Teams (active / completed); empty states: "진행중인 프로젝트가 없어요" / "완성된 프로젝트가 없어요"
 - [ ] Server: record recruiter profile views (once per recruiter per day, after 31) → for 30 view count and the Pro weekly notice
 - [ ] `[Included]` Share button → 00 share sheet (profile URL)
 - [ ] `generateMetadata` + `opengraph-image.tsx` (avatar, name, tech stack). Developer profiles only; recruiter profiles use the default (blueprint 8-3)
@@ -252,7 +251,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Logout is needed for testing right away, so it goes in on day 1; other sections are filled in as features arrive.
 
 - [ ] Logout (confirm modal) ← first
-- [ ] Account: linked GitHub (@handle), view/change notification email
+- [ ] Account: linked GitHub (@handle), view notification email
 - [ ] Notifications: "푸시 알림" (Push notifications) on/off switch. Off stops push only; the in-app list keeps filling. In a web browser, show "푸시는 Android 앱에서만 받아요" (Push is only received in the Android app)
 - [ ] Subscription & billing → 29
 - [ ] Blocked users → (sheet) list of active blocks, unblock; server closes the blocking period instead of deleting it (ERD `user_blocks`)
@@ -511,13 +510,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
-**AI chat summary (Flex, after 28)** — current shrink + `[Included]` follow-ups (c-role-audit #8, `c-page17-ai-chat-summary`)
+**AI chat summary (Flex, after 28)** — D (taken over from C on 2026-11-10); Policy POL-C-5
 
-- [ ] **Now:** "AI 요약" → always latest 500 messages (no range picker UI). Result = one `summary` body + disclaimer + N/10. Free → PlanLimitSheet. Loading「요약하는 중이에요」/ fail「요약하지 못했어요」. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
-- [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); min-20「직접 읽는 게 더 빨라요」copy path if still required
-- [ ] `[Included]` follow-up: minutes sections (decisions / to-dos / open questions) + tap-to-scroll originals; "채팅에 공유"; per to-do "이슈 만들기" → 13
-- [ ] Over 30 seconds → loading + done toast (push notify type still open); Free Flex prompt copy as Policy when implementing full sheet
-- [ ] Server (now): latest ≤500 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) → `LlmClient` → 7-day retention, 10/day Redis, Flex via `PlanLimits`. Prompt isolation minimum in PR3 (c-role-audit #9)
+- [ ] Tap "AI 채팅 요약" → summary starts at once (latest messages within ~1,500 tokens, min 20「직접 읽는 게 더 빨라요」). Free → PlanLimitSheet. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
+- [ ] Button ring: short spinning arc while queued → blue filling clockwise from 12 o'clock while running → full blue until "채팅에 공유" or "새로 요약하기" → red after a failure (tap summarizes again). Tap while running → one-line bubble with a thin gray border (「대화 읽는 중 · N/100」 / 「요약 쓰는 중 · N/100」, number three digits wide / 「앞에 N건 기다리는 중」). The ring resumes from room info `myAiSummary`
+- [ ] Done → toast「요약이 끝났어요」+「보기」; away from the room → `AI_SUMMARY_DONE` / `AI_SUMMARY_FAILED` notification (18) opens `?overlay=ai-summary&oid={id}`
+- [ ] Minutes sheet: one line, 결정한 것 / 할 일 / 아직 정하지 못한 것 (≤3 each), tap a line → its source message when loaded, 「최근 메시지 N개를 요약했어요 · 오늘 N/10회 사용」, disclaimer, 「채팅에 공유」, 「새로 요약하기」 (confirm, spends one use)
+- [ ] Shared `AI_SUMMARY` card: centered full-width card like the PR cards (not a bubble), "{name}님이 AI 요약을 공유했어요 · time" above, one line (2 lines max) + counts + 「회의록 보기」; tap → the full minutes (from the card's payload) for everyone in the room; long press / right click → message menu (report, delete)
+- [ ] Server: latest ≤200 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) trimmed to the budget → `LlmClient` (Ollama `qwen3:4b`, thinking off, JSON schema, output cap) on one worker; progress in Redis; 7-day retention, 10/day Redis (refund on failure), Flex via `PlanLimits`. Chat text is passed as data, not instructions (prompt isolation)
+- [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); per to-do "이슈 만들기" → 13; failure retry/cancel choices
 
 **1:1 chat only (with 22–24)**
 
@@ -545,12 +546,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: N-1, POL-N-1 · Needs first: 12, 17 (destination screens must exist) · Marked "not in docs" on the screen map, but the web demo needs this list before push, so Required
 
-- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions
+- [ ] Notification list: chat, issue assignment, 1 day before due, application received/accepted/rejected, comments, follows, message requests, **team invite (`TEAM_INVITE`)**, sanctions, AI summary done/failed (`AI_SUMMARY_DONE` → 17 minutes sheet, `AI_SUMMARY_FAILED` → 17 room)
 - [ ] Tabs: 전체 (all) / 읽지 않음 (unread, server `unread=true`; empty → "읽지 않은 알림이 없어요."), kept in the URL (nuqs). Rows grouped by day ("11월 5일" + "오늘" / "N일 전"); each row is a dot (unread dark, read muted) + the title only (Figma 248:1243)
 - [ ] Tap → navigate to the screen + mark read; "전체 읽기" (mark all read). Team invite → `/invite/[code]` (10)
 - [ ] Header bell badge updates in realtime
 - [ ] Sanction notification → (sheet) one-time appeal (replaces the screen map's appeal page)
-- [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning
+- [ ] Server: bundle per room; 10 PM–8 AM hold non-chat notifications and send in the morning (AI summary results go out at once, POL-N-1)
 - [ ] Push (Android app only): register Expo push tokens and send; tapping opens the app at that URL. iOS push needs a paid Apple developer account, so it is out of the MVP. Not sent while the "푸시 알림" switch in 06 is off
 - [ ] Push permission prompt sheet on first launch (Android app)
 
@@ -564,6 +565,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Tabs: 전체 (all) / 내 모집 글 (my posts) / 내 지원 (my applications) (guests: All tab only; other tabs and "모집 글 쓰기" show login prompt)
 - [ ] Recruit card: title, remaining slots per role, tech stack, format, deadline D-day
+- [ ] Title search box (All tab, POL-R-2): part of the title, case-insensitive, max 40 chars; combined with filters and sort, stored in URL `q` (nuqs)
 - [ ] (sheet) Filters: role, tech stack, online/offline. Stored in URL (nuqs)
 - [ ] Sort: newest / closing soon; infinite scroll; open posts only
 - [ ] My applications tab: 검토 중 (under review) / accepted ("팀 채팅 바로가기") / rejected ("이번엔 함께하지 못하게 됐어요") / expired ("모집이 끝났어요"); cancel while under review
@@ -574,12 +576,13 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: R-1, S-5 · Needs first: 19
 
-- [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (within 60 days from today)
+- [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (today through 6 months from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
-- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay
-- [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day
+- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay, but only while I still own or admin it — otherwise saving shows the error toast "글을 수정할 권한이 없습니다." (403 `TEAM_ROLE_REQUIRED`)
+- [ ] No emoji in title, intro, region or expected duration: "이모지는 입력할 수 없어요."
+- [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day → toast "하루 모집글의 최대 한도는 N번 입니다." (N = 5, no resend)
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
-- [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification)
+- [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification). Reopen refused: all roles filled → "모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요."; deadline passed → "마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요." (same toasts on 21's author menu)
 - [ ] Server: auto-close when deadline passes or all slots fill
 - [ ] Leaving mid-writing → restore draft
 
@@ -838,8 +841,8 @@ Assumes each of the 5 people owns both frontend and server for their pages. If r
 | --- | --- | --- |
 | A. Account & recruiting | 00 auth, access table, page frame; 01, 02, 03, 04 (pass 1), 06 | 05, 25, 31, 04 (pass 2), 32, 33, `[Included]` job ad server, 04 job ad sheet, 05 job categories |
 | B. GitHub, teams, ops | 00 GitHub App, webhooks, app bridge; 07, 08, 09 (pass 1), 10 | 09 (pass 2: completion, ownership transfer), 17 PR posting, 26, 27, 30, sync hardening |
-| C. Issues | 00 Projects spike, policy numbers, SEO, test setup; 11, 12 | 13, 14, 15, 07 my issues, 17 AI summary (Flex), 11 progress card (Flex) |
-| D. Chat & notifications | 00 STOMP, notification service, STOMP client; 16, 17 (team chat) | 18, 17 (1:1 chat, share cards, link cards), 00 share sheet, 28, 29 (incl. Scout plan) |
+| C. Issues | 00 Projects spike, policy numbers, SEO, test setup; 11, 12 | 13, 14, 15, 07 my issues, 11 progress card (Flex) |
+| D. Chat & notifications | 00 STOMP, notification service, STOMP client; 16, 17 (team chat) | 18, 17 (1:1 chat, share cards, link cards, AI summary (Flex), taken over from C 2026-11-10), 00 share sheet, 28, 29 (incl. Scout plan) |
 | E. Find Team & posts | 00 monorepo, API calls, sheet open/close, common sheets, image uploader; 19, 20, 21 | 21 wrap-up, 22, 23, 24, `[Included]` 24 job ad card |
 
 | Days | Goal |

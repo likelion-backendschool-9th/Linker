@@ -37,7 +37,7 @@ it('retains the full-list handoff and retry when the team service fails without 
   vi.mocked(apiFetch).mockRejectedValue(new Error('unavailable'));
   renderWithProviders(<WorkspaceView />);
   await screen.findByRole('alert');
-  expect(screen.getByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
     'href',
     '/workspace/issues',
   );
@@ -117,7 +117,7 @@ it('shows the policy Free cap without treating Flex as capped', async () => {
 it('preserves an explicit valid team when handing off to C', async () => {
   stubTeams([team(42, 'ACTIVE')]);
   renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=42' });
-  expect(await screen.findByRole('link', { name: /내 이슈 전체 보기/ })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: '내 이슈 전체 보기' })).toHaveAttribute(
     'href',
     '/workspace/issues?teamId=42',
   );

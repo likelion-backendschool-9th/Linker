@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 
 import { apiFetch } from '@/lib/api/api-fetch';
 import { renderWithProviders } from '@/test/render-with-providers';
@@ -17,28 +17,18 @@ const settings: SettingsData = {
 
 describe('settings email row', () => {
   beforeEach(() => {
-    vi.mocked(apiFetch).mockReset().mockResolvedValue({ notificationEmail: 'alerts@example.com' });
+    vi.mocked(apiFetch).mockReset();
   });
 
-  it('opens the inline editor and saves the changed notification email', async () => {
+  it('shows the email as read-only information', () => {
     renderWithProviders(<SettingsCommon login="test" settings={settings} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '알림 이메일 test@example.com' }));
-    fireEvent.change(screen.getByLabelText('알림 이메일'), { target: { value: 'alerts@example.com' } });
-    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+    expect(screen.getByText('이메일')).toBeVisible();
+    const email = screen.getByText('test@example.com');
+    expect(email).toBeVisible();
 
-    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/api/v1/user/me/email', expect.anything()));
-    await waitFor(() => expect(screen.getByRole('button', { name: '알림 이메일 alerts@example.com' })).toBeVisible());
-  });
-
-  it('shows email validation before sending a request', async () => {
-    renderWithProviders(<SettingsCommon login="test" settings={settings} />);
-
-    fireEvent.click(screen.getByRole('button', { name: '알림 이메일 test@example.com' }));
-    fireEvent.change(screen.getByLabelText('알림 이메일'), { target: { value: 'invalid-email' } });
-    fireEvent.click(screen.getByRole('button', { name: '저장' }));
-
-    expect(await screen.findByText('올바른 이메일 주소를 입력해 주세요.')).toBeVisible();
-    expect(apiFetch).not.toHaveBeenCalled();
+    fireEvent.click(email);
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(apiFetch).not.toHaveBeenCalledWith('/api/v1/user/me/email', expect.anything());
   });
 });

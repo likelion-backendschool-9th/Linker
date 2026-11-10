@@ -44,6 +44,7 @@ import com.linker.backend.dto.chat.response.ChatMentionCandidatesResponse;
 import com.linker.backend.dto.chat.response.ChatRoomMemberResponse;
 import com.linker.backend.dto.chat.response.ChatMessagePageResponse;
 import com.linker.backend.dto.chat.response.ChatMessageResponse;
+import com.linker.backend.dto.chat.response.ChatRoomAiSummaryResponse;
 import com.linker.backend.dto.chat.response.ChatRoomInfoResponse;
 import com.linker.backend.dto.chat.response.ChatRoomItemResponse;
 import com.linker.backend.dto.chat.response.ChatRoomPageResponse;
@@ -76,6 +77,7 @@ import com.linker.backend.global.realtime.TeamChatAccess;
 import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.repository.account.UserRepository;
+import com.linker.backend.repository.chat.AiChatSummaryRepository;
 import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListRow;
 import com.linker.backend.repository.chat.ChatRoomRepositoryCustom.ChatListSummary;
 import com.linker.backend.repository.chat.ChatMessageImageRepository;
@@ -145,6 +147,7 @@ public class ChatService {
 	private final ChatMessageMentionRepository mentions;
 	private final FollowRepository follows;
 	private final TeamMemberRepository teamMembers;
+	private final AiChatSummaryRepository aiSummaries;
 	private final Set<String> linkerOrigins;
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final Pattern LINK_URL = Pattern.compile("https?://[^\\s<>\"']+", Pattern.CASE_INSENSITIVE);
@@ -168,6 +171,7 @@ public class ChatService {
 			ChatMessageMentionRepository mentions,
 			FollowRepository follows,
 			TeamMemberRepository teamMembers,
+			AiChatSummaryRepository aiSummaries,
 			@Value("${linker.chat.public-origins:http://localhost:3000}") String publicOrigins
 	) {
 		this.chatRooms = chatRooms;
@@ -187,6 +191,7 @@ public class ChatService {
 		this.mentions = mentions;
 		this.follows = follows;
 		this.teamMembers = teamMembers;
+		this.aiSummaries = aiSummaries;
 		this.linkerOrigins = Arrays.stream(publicOrigins.split(",")).map(String::strip).filter(s -> !s.isEmpty())
 				.map(s -> origin(URI.create(s))).filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
 	}
@@ -314,7 +319,8 @@ public class ChatService {
 							team.role(),
 							team.avatarUrl(),
 							team.aiSummaryEnabled()),
-					PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE);
+					PlanLimits.TEAM_CHAT_HISTORY_DAYS_FREE,
+					myAiSummary(roomId, user.userId()));
 		}
 		String kind;
 		String direction;
@@ -362,8 +368,18 @@ public class ChatService {
 				membership.isMuted(),
 				people,
 				null,
+				null,
 				null
 		);
+	}
+
+	/** The ring on "AI 채팅 요약" stays until the latest summary is shared or replaced (POL-C-5). */
+	private ChatRoomAiSummaryResponse myAiSummary(long roomId, long userId) {
+		return aiSummaries.findFirstByRoomIdAndRequesterIdOrderByIdDesc(roomId, userId)
+				.filter(summary -> summary.getSharedMessageId() == null)
+				.filter(summary -> summary.getExpiresAt().isAfter(clock.instant()))
+				.map(summary -> new ChatRoomAiSummaryResponse(summary.getId(), summary.getStatus().name()))
+				.orElse(null);
 	}
 
 	@Transactional(readOnly = true)
@@ -673,6 +689,28 @@ public class ChatService {
 		message.alignCreatedAt(createdAt);
 		room.markLastMessage(message.getId(), createdAt);
 		ChatMessageResponse response = present(message, account.getId());
+		events.publishEvent(new ChatMessageReady(roomId, response));
+		for (Long userId : members.findActiveUserIds(roomId)) events.publishEvent(new ChatRoomsChanged(userId, roomId));
+		return response;
+	}
+
+	/**
+	 * Posts an {@code AI_SUMMARY} card for {@link AiSummaryService#share}. The caller already checked the
+	 * requester, the summary state and the lock; this only checks that the sender can still write here.
+	 */
+	@Transactional
+	public ChatMessageResponse postAiSummaryCard(long senderId, long roomId, String body, String payload) {
+		ChatRoom room = rooms.lockById(roomId).orElseThrow(() -> new ApiException(404, "NOT_FOUND", "채팅방을 찾지 못했어요"));
+		if (members.findActive(roomId, senderId).isEmpty() || room.getTeamId() == null
+				|| !teamChat.writableBy(senderId, room.getTeamId())) {
+			throw new ApiException(403, "FORBIDDEN", "이 채팅방에 공유할 수 없어요");
+		}
+		Instant createdAt = DatabaseInstant.now(clock);
+		ChatMessage message = messages.saveAndFlush(ChatMessage.aiSummary(room, senderId, body, payload));
+		messages.assignCreatedAt(message.getId(), createdAt);
+		message.alignCreatedAt(createdAt);
+		room.markLastMessage(message.getId(), createdAt);
+		ChatMessageResponse response = present(message, senderId);
 		events.publishEvent(new ChatMessageReady(roomId, response));
 		for (Long userId : members.findActiveUserIds(roomId)) events.publishEvent(new ChatRoomsChanged(userId, roomId));
 		return response;

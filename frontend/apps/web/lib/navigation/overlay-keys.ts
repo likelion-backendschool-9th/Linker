@@ -59,6 +59,8 @@ export const OVERLAY_KEYS = [
   'admin-user-action',
   'chat-pull-requests',
   'ai-summary',
+  'ai-summary-renew',
+  'ai-summary-card',
   'stats-featured',
   'recruit-filter',
   'recruit-role',

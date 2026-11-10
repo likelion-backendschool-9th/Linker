@@ -56,17 +56,13 @@ test('pick repo + template → create → detail shows title (not unavailable)',
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
 });
 
-test('요청 (이슈 폼) uses markdown body UI like bug templates', async ({ page }) => {
+test('요청 (이슈 폼) shows FORM fields and sends answers', async ({ page }) => {
   await pickRepoAndTemplate(page, '요청 (이슈 폼)');
   await expect(page.getByLabel(/이슈 제목/)).toHaveValue('[요청] ');
-  await expect(page.getByRole('button', { name: '마크다운 입력' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '미리보기' })).toBeVisible();
-  const body = page.getByRole('textbox', { name: /이슈 본문/ });
-  await expect(body).toBeVisible();
-  await expect(body).toHaveValue(/## 요약[\s\S]*## 자세한 내용[\s\S]*## 확인 사항/);
-  await expect(page.getByText(/0\/2000|\/2000/)).toBeVisible();
-  await expect(page.getByLabel(/^요약/)).toHaveCount(0);
-  await expect(page.getByRole('combobox')).toHaveCount(0);
+  await expect(page.getByLabel(/^요약/)).toBeVisible();
+  await expect(page.getByLabel(/자세한 내용/)).toBeVisible();
+  await expect(page.getByText('첨부는 GitHub에서 할 수 있어요.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: /이슈 본문/ })).toHaveCount(0);
 });
 
 test('failed create keeps the draft and "다시 보내기" works', async ({ page }) => {
@@ -109,11 +105,20 @@ test('restores a device draft via the modal', async ({ page }) => {
   await expect(page.getByLabel(/이슈 제목/)).toHaveValue('복구된 제목', { timeout: 10_000 });
 });
 
-test('hides writable repos for a team without write access', async ({ page }) => {
+test('create on a read-only team is rejected by the server', async ({ page }) => {
   await openCreate(page, 2);
   await page.getByRole('button', { name: /저장소 선택/ }).click();
   const repoSheet = page.getByRole('dialog', { name: '저장소 변경' });
-  await expect(repoSheet.getByText('쓸 수 있는 저장소가 없어요.')).toBeVisible();
+  await expect(repoSheet.locator('label').first()).toBeVisible();
+  await repoSheet.locator('label').first().click();
+  await repoSheet.getByRole('button', { name: '변경' }).click();
+  await page.getByRole('button', { name: /이슈 템플릿/ }).click();
+  const tplSheet = page.getByRole('dialog', { name: '템플릿 선택' });
+  await tplSheet.locator('label').first().click();
+  await tplSheet.getByRole('button', { name: '변경' }).click();
+  await page.getByLabel(/이슈 제목/).fill('권한 없는 작성');
+  await page.getByRole('button', { name: 'GitHub에 이슈 작성하기' }).click();
+  await expect(page.getByRole('alert')).toContainText('쓸 권한이 없어요');
 });
 
 test('an 이슈 양식 row opens its sheet', async ({ page }) => {

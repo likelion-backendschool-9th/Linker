@@ -32,6 +32,7 @@ export function RecruitList() {
     loginNeeded,
     promptLogin,
     filterOverlay,
+    search,
     selectedFilters,
     chipFilters,
     handleSelect,
@@ -57,7 +58,11 @@ export function RecruitList() {
         <div className={styles.chromeSticky} data-tab-chrome>
           <RecruitTabs tab={tab} onSelect={selectTab} />
           {tab === 'all' && (
-            <RecruitSearchPanel filterOverlay={filterOverlay} selectedFilters={chipFilters} />
+            <RecruitSearchPanel
+              filterOverlay={filterOverlay}
+              search={search}
+              selectedFilters={chipFilters}
+            />
           )}
         </div>
       </div>

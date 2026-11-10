@@ -20,6 +20,10 @@ spring:
   flyway:
     enabled: true
 
+  # Rolling deployment stops the old container with a 40s grace period (deploy/apply.sh).
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   jackson:
     default-property-inclusion: always
 
@@ -51,6 +55,8 @@ springdoc:
     - /api/v1/**
 
 server:
+  # Finish in-flight requests on SIGTERM instead of dropping them during deployment.
+  shutdown: graceful
   error:
     include-stacktrace: never
     include-message: never
@@ -120,6 +126,9 @@ linker:
     model: ${OLLAMA_MODEL:qwen3:4b}
     connect-timeout: ${OLLAMA_CONNECT_TIMEOUT:5s}
     read-timeout: ${OLLAMA_READ_TIMEOUT:120s}
+    # Match the container CPU cap (deploy/ollama OLLAMA_CPUS=2.0); 4096 fits its 4 GiB memory cap.
+    num-thread: ${OLLAMA_NUM_THREAD:2}
+    num-ctx: ${OLLAMA_NUM_CTX:4096}
   # SMTP only. Leave host empty until a relay is chosen. Dev compose points host at Mailpit.
   mail:
     host: ${MAIL_HOST:}

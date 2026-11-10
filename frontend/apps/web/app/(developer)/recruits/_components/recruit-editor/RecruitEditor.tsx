@@ -239,6 +239,7 @@ function EditorForm(
               id={field('region')}
               className={styles.input}
               placeholder="예: 서울 강남"
+              maxLength={RECRUIT.regionMax}
               aria-invalid={errors.region ? true : undefined}
               {...form.register('region')}
             />

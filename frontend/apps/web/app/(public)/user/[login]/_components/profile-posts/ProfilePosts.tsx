@@ -27,7 +27,9 @@ export function ProfilePosts({ login, embedded = false }: { login: string; embed
           </Button>
         </div>
       ) : posts.data.items.length === 0 ? (
-        <p className={styles.empty}>아직 올린 작업물이 없어요</p>
+        <p className={embedded ? `${styles.empty} ${styles.emptyCentered}` : styles.empty}>
+          완성된 프로젝트가 없어요
+        </p>
       ) : (
         <ul className={embedded ? styles.workGrid : styles.postList}>
           {posts.data.items.map((post) => (

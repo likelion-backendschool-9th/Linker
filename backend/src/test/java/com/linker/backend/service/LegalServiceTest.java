@@ -31,7 +31,8 @@ class LegalServiceTest {
 
 		assertThat(document.title()).isEqualTo("이용 약관");
 		assertThat(document.body()).startsWith("# 이용 약관");
-		assertThat(document.body()).contains("## 제1조 (목적)", "## 제5조 (계정 관리)");
+		assertThat(document.body()).contains(
+				"## 제1조 (목적)", "## 제17조 (회사의 의무)", "## 제22조 (준거법과 관할)");
 		assertThat(document.body()).doesNotContain("title:");
 	}
 

@@ -52,11 +52,16 @@ public final class PlanLimits {
 	public static final int RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
 	/** POL-R-1 field bounds. */
 	public static final int RECRUIT_TITLE_MAX = 40;
+	/** POL-R-2: 19 title search, no longer than a title. */
+	public static final int RECRUIT_SEARCH_MAX = RECRUIT_TITLE_MAX;
 	public static final int RECRUIT_INTRO_MAX = 1000;
 	public static final int RECRUIT_HEADCOUNT_MIN = 1;
 	public static final int RECRUIT_HEADCOUNT_MAX = 10;
 	public static final int RECRUIT_TECH_TAGS_MAX = 10;
-	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
+	/** POL-R-1: the deadline is today through today + 6 calendar months (KST). */
+	public static final int RECRUIT_DEADLINE_WITHIN_MONTHS = 6;
+	/** Not a Policy rule: `recruit_posts.region` column length, checked so long input isn't a DB error. */
+	public static final int RECRUIT_REGION_MAX = 100;
 	/** Reject reason length (author-only). Apply has no free-text message (POL-R-3). */
 	public static final int APPLICATION_MESSAGE_MAX = 300;
 	public static final int APPLICATIONS_PER_DAY = 20;
@@ -180,12 +185,25 @@ public final class PlanLimits {
 	public static final int AI_SUMMARY_RETENTION_DAYS = 7;
 	/** Policy ch. 8 — fewer than this → "직접 읽는 게 더 빨라요". */
 	public static final int AI_SUMMARY_MIN_MESSAGES = 20;
-	/** Policy ch. 8 — summarize the latest N only when more exist. */
-	public static final int AI_SUMMARY_MAX_MESSAGES = 500;
-	/** Policy ch. 8 — sync wait before 202 + background finish. */
-	public static final int AI_SUMMARY_SYNC_SECONDS = 30;
-	/** Background Ollama wait after the client already got 202. */
-	public static final int AI_SUMMARY_ASYNC_SECONDS = 120;
+	/** Most recent eligible messages read from the room; the token budget trims them further. */
+	public static final int AI_SUMMARY_MAX_MESSAGES = 200;
+	/**
+	 * Policy ch. 8 — input budget (~1,500 tokens ≈ the latest 50–70 short messages). The demo server's
+	 * Ollama reads about 20 tokens/s and writes about 4 tokens/s on 2 CPUs: one summary takes 2–3 minutes.
+	 */
+	public static final int AI_SUMMARY_INPUT_TOKEN_BUDGET = 1500;
+	/** One message contributes at most this many characters to the prompt. */
+	public static final int AI_SUMMARY_MESSAGE_MAX_CHARS = 200;
+	/** Policy ch. 8 — at most this many decisions, to-dos and open questions each. */
+	public static final int AI_SUMMARY_ITEMS_MAX = 3;
+	/** Hard cap on the model reply (tokens); a schema-bound reply never stops without one. */
+	public static final int AI_SUMMARY_MAX_OUTPUT_TOKENS = 512;
+	/** Policy ch. 8 — one summary job gives up after this long, then shows "요약하지 못했어요". */
+	public static final int AI_SUMMARY_JOB_SECONDS = 300;
+	/** Summaries waiting for the single worker; more than this answers "잠시 후 다시 시도해 주세요". */
+	public static final int AI_SUMMARY_QUEUE_CAPACITY = 16;
+	/** A PENDING row older than this was lost (restart, deploy) and is marked FAILED. */
+	public static final int AI_SUMMARY_STALE_MINUTES = 15;
 
 	/** POL-N-1 quiet hours (KST). Non-chat held from start hour until end hour. */
 	public static final int QUIET_HOURS_START_HOUR = 22;

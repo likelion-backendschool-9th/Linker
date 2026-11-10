@@ -178,7 +178,7 @@ public class RecruitmentService {
 	public RecruitEditorOptionsResponse editorOptions(AuthenticatedUser user) {
 		int openCount = (int) posts.countByAuthorIdAndStatusAndDeletedAtIsNull(
 				user.userId(), RecruitStatus.OPEN);
-		LocalDate maxDeadline = today().plusDays(PlanLimits.RECRUIT_DEADLINE_WITHIN_DAYS);
+		LocalDate maxDeadline = maxDeadline(today());
 		return new RecruitEditorOptionsResponse(
 				teamMembers.findRecruitLinkableTeams(user.userId()),
 				openCount,
@@ -255,6 +255,7 @@ public class RecruitmentService {
 	@Transactional
 	public RecruitIdResponse update(AuthenticatedUser user, long recruitId, RecruitWriteRequest request) {
 		RecruitPost post = requireOwnedPost(user.userId(), recruitId);
+		requireLinkedTeamManager(user.userId(), post.getTeamId());
 		post.getTags().size();
 		ValidatedWrite validated = validateWrite(request);
 		requireLinkableTeam(user.userId(), validated.teamId(), post.getTeamId());
@@ -294,10 +295,10 @@ public class RecruitmentService {
 			return;
 		}
 		if (post.allRolesFull()) {
-			throw new ApiException(409, "ROLES_FULL", "모집 인원이 모두 찼어요");
+			throw new ApiException(409, "ROLES_FULL", "모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.");
 		}
 		if (post.getDeadline().isBefore(today())) {
-			throw new ApiException(409, "DEADLINE_PASSED", "마감일이 지나 다시 열 수 없어요");
+			throw new ApiException(409, "DEADLINE_PASSED", "마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요.");
 		}
 		assertOpenSlotAvailable(user.userId());
 		post.reopen();
@@ -694,8 +695,26 @@ public class RecruitmentService {
 	}
 
 	/**
+	 * POL-R-1: editing needs the author to still own or admin the linked team (invites on 21 add
+	 * people to it). A post saved before a team became required has none and skips this.
+	 */
+	private void requireLinkedTeamManager(long userId, Long teamId) {
+		if (teamId == null) {
+			return;
+		}
+		boolean manager = teamMembers.findByTeamIdAndUserIdAndLeftAtIsNull(teamId, userId)
+				.map(TeamMember::getRole)
+				.filter(role -> role == TeamRole.OWNER || role == TeamRole.ADMIN)
+				.isPresent();
+		if (!manager) {
+			throw new ApiException(403, "TEAM_ROLE_REQUIRED", "글을 수정할 권한이 없습니다.");
+		}
+	}
+
+	/**
 	 * POL-R-1: every post links a team the author owns or admins, since invites on 21 add people
-	 * to it. On edit the team already linked may stay even if the author has since lost the role.
+	 * to it. On edit the team already linked may stay ({@link #requireLinkedTeamManager} already
+	 * checked the author still owns or admins it).
 	 */
 	private void requireLinkableTeam(long userId, Long teamId, Long currentTeamId) {
 		if (teamId == null) {
@@ -722,11 +741,17 @@ public class RecruitmentService {
 		if (workMode == WorkMode.OFFLINE && (region == null || region.isBlank())) {
 			throw new ApiException(400, "VALIDATION_ERROR", "오프라인 모집은 지역이 필요해요");
 		}
+		// Column length guard, counted like PostgreSQL varchar (code points)
+		if (region != null && region.codePointCount(0, region.length()) > PlanLimits.RECRUIT_REGION_MAX) {
+			throw new ApiException(400, "VALIDATION_ERROR",
+					"지역은 " + PlanLimits.RECRUIT_REGION_MAX + "자까지 쓸 수 있어요");
+		}
 		RecruitGoal goal = parseGoal(request.goal());
 		String duration = blankToNull(request.duration());
 		if (duration != null && duration.length() > 40) {
 			throw new ApiException(400, "VALIDATION_ERROR", "예상 기간을 확인해 주세요");
 		}
+		rejectEmoji(title, intro, region, duration);
 		LocalDate deadline = parseDeadline(request.deadline());
 		List<RecruitRoleWriteRequest> roles = normalizeRoles(request.roles());
 		List<String> tags = normalizeTechTags(request.techTags());
@@ -804,11 +829,16 @@ public class RecruitmentService {
 			throw new ApiException(400, "VALIDATION_ERROR", "마감일을 확인해 주세요");
 		}
 		LocalDate today = today();
-		LocalDate max = today.plusDays(PlanLimits.RECRUIT_DEADLINE_WITHIN_DAYS);
-		if (deadline.isBefore(today) || deadline.isAfter(max)) {
-			throw new ApiException(400, "VALIDATION_ERROR", "마감일은 오늘부터 60일 이내여야 해요");
+		if (deadline.isBefore(today) || deadline.isAfter(maxDeadline(today))) {
+			throw new ApiException(400, "VALIDATION_ERROR",
+					"마감일은 오늘부터 " + PlanLimits.RECRUIT_DEADLINE_WITHIN_MONTHS + "개월 이내여야 해요");
 		}
 		return deadline;
+	}
+
+	/** POL-R-1: last allowed deadline, same calendar day 6 months on (month end clamps, e.g. 8/31 → 2/28). */
+	private static LocalDate maxDeadline(LocalDate today) {
+		return today.plusMonths(PlanLimits.RECRUIT_DEADLINE_WITHIN_MONTHS);
 	}
 
 	private static WorkMode parseWorkMode(String raw) {
@@ -845,6 +875,23 @@ public class RecruitmentService {
 		catch (IllegalArgumentException exception) {
 			throw new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요");
 		}
+	}
+
+	/** POL-R-1: recruit post text takes no emoji (FE `hasEmoji` uses the same code points). */
+	private static void rejectEmoji(String... values) {
+		for (String value : values) {
+			if (value != null && value.codePoints().anyMatch(RecruitmentService::isEmojiCodePoint)) {
+				throw new ApiException(400, "VALIDATION_ERROR", "이모지는 입력할 수 없어요.");
+			}
+		}
+	}
+
+	/** Emoji shown as pictures by default, flag letters, and the emoji-style / keycap marks */
+	private static boolean isEmojiCodePoint(int codePoint) {
+		return Character.isEmojiPresentation(codePoint)
+				|| (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF)
+				|| codePoint == 0xFE0F
+				|| codePoint == 0x20E3;
 	}
 
 	private static String requireText(String raw, int min, int max, String message) {

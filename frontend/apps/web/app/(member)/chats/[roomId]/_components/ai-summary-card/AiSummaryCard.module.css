@@ -1,0 +1,81 @@
+/*
+ * Shared minutes: centered across the timeline like the PR cards (user decision 2026-11-10), the same
+ * light card for everyone so it never nests inside a dark bubble.
+ */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xxs);
+  width: 100%;
+}
+
+.byline {
+  margin: 0;
+  color: var(--color-text-meta);
+  font-size: var(--font-size-micro);
+  line-height: normal;
+  text-align: center;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+  background: var(--color-canvas-cool);
+  color: var(--color-text-body);
+  text-align: left;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.label {
+  color: var(--color-chat-accent);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  line-height: normal;
+}
+
+/* Two lines at most; the full text is in the sheet */
+.line {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--color-text-heading);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.counts,
+.more {
+  color: var(--color-text-body);
+  font-size: var(--font-size-caption);
+  line-height: normal;
+}
+
+.more {
+  flex: none;
+  font-weight: var(--font-weight-semibold);
+}

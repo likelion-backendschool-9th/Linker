@@ -1,6 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Search, X } from 'lucide-react';
 import Image from 'next/image';
@@ -9,9 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { AlertDialog } from 'radix-ui';
 import type { Route } from 'next';
-import { useForm } from 'react-hook-form';
 import type { ReactNode } from 'react';
-import { z } from 'zod';
 
 import {
   getGetWithdrawalCheckQueryKey,
@@ -30,9 +27,6 @@ import { toast } from '@/stores/toast-store';
 
 import type { SettingsData } from '../_lib/settings-types';
 import styles from './settings-view.module.css';
-
-const emailSchema = z.object({ email: z.string().trim().email('올바른 이메일 주소를 입력해 주세요.') });
-type EmailValues = z.infer<typeof emailSchema>;
 
 export function SettingsCommon({
   login,
@@ -62,32 +56,8 @@ export function SettingsCommon({
   const ownedTeams = withdrawalCheck.data?.ownedTeams ?? [];
   const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
   const [showOwnedTeamGuard, setShowOwnedTeamGuard] = useState(false);
-  const [editingEmail, setEditingEmail] = useState(false);
-  const [notificationEmail, setNotificationEmail] = useState(settings.notificationEmail);
   const [blockQuery, setBlockQuery] = useState('');
   const logoutCancelRef = useRef<HTMLButtonElement>(null);
-  const form = useForm<EmailValues>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: { email: settings.notificationEmail },
-  });
-
-  const emailSave = useMutation({
-    mutationFn: (values: EmailValues) =>
-      apiFetch<{ email?: string; notificationEmail?: string }>('/api/v1/user/me/email', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email.trim() }),
-      }),
-    onSuccess: (saved, values) => {
-      const nextEmail = saved.notificationEmail ?? saved.email ?? values.email.trim();
-      form.reset({ email: nextEmail });
-      setNotificationEmail(nextEmail);
-      setEditingEmail(false);
-      toast('알림 이메일을 저장했어요.');
-      router.refresh();
-    },
-    onError: (error) => form.setError('root', { message: errorMessage(error, '알림 이메일을 저장하지 못했어요.') }),
-  });
 
   const logout = useMutation({
     mutationFn: async () => {
@@ -157,20 +127,10 @@ export function SettingsCommon({
         <h2 id="account-heading" className={styles.groupTitle}>계정 및 연결</h2>
         <div className={styles.card}>
           {accountStart}
-          {editingEmail ? (
-            <form noValidate className={styles.emailRow} onSubmit={form.handleSubmit((values) => emailSave.mutate(values))}>
-              <label htmlFor="notification-email">알림 이메일</label>
-              <input id="notification-email" type="email" autoComplete="email" {...form.register('email')} aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} />
-              <button type="submit" className={styles.save} disabled={emailSave.isPending || !form.formState.isDirty}>{emailSave.isPending ? '저장 중…' : '저장'}</button>
-            </form>
-          ) : (
-            <button type="button" className={`${styles.row} ${styles.emailDisplay}`} aria-label={`알림 이메일 ${notificationEmail}`} onClick={() => setEditingEmail(true)}>
-              <span>알림 이메일</span>
-              <span className={styles.emailValue}>{notificationEmail}</span>
-            </button>
-          )}
-          {form.formState.errors.email && <span id="email-error" className={styles.error}>{form.formState.errors.email.message}</span>}
-          {form.formState.errors.root && <p className={styles.error} role="alert">{form.formState.errors.root.message}</p>}
+          <div className={styles.row}>
+            <span>이메일</span>
+            <span className={styles.emailValue}>{settings.notificationEmail}</span>
+          </div>
           <AccountPlan settings={settings} />
           <button type="button" className={styles.row} onClick={() => logoutOverlay.open()}>
             <span>로그아웃</span>
@@ -246,7 +206,7 @@ export function SettingsCommon({
         title="차단한 사용자"
         description="차단을 해제할 사용자를 선택해 주세요."
         describeHidden
-        closeIcon={<ArrowLeft aria-hidden size={16} />}
+        closeIcon={<ArrowLeft aria-hidden size={24} />}
         closeLabel="뒤로가기"
         classNames={{ sheet: styles.blockSheet, header: styles.blockHeader, body: styles.blockBody, title: styles.blockTitle, close: styles.blockClose }}
       >
@@ -272,7 +232,7 @@ export function SettingsCommon({
               </button>
             </li>
           ))}</ul>
-        ) : <p>{blockRows.length ? '검색 결과가 없어요.' : '차단한 사용자가 없어요.'}</p>}
+        ) : <p className={blockRows.length ? undefined : styles.blockEmpty}>{blockRows.length ? '검색 결과가 없어요.' : '차단한 사용자가 없어요.'}</p>}
       </OverlaySheet>
       <AlertDialog.Root open={withdrawalSheet.isOpen} onOpenChange={withdrawalSheet.onOpenChange}>
         <AlertDialog.Portal>
