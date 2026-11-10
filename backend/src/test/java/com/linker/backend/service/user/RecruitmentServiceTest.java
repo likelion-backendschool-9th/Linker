@@ -157,7 +157,7 @@ class RecruitmentServiceTest {
 		assertThat(options.teams()).containsExactly(LINKABLE_TEAM);
 		assertThat(options.openCount()).isEqualTo(1);
 		assertThat(options.openLimit()).isEqualTo(PlanLimits.OPEN_RECRUIT_POSTS_FREE);
-		assertThat(options.maxDeadlineDate()).isEqualTo(LocalDate.of(2026, 11, 5).plusDays(60).toString());
+		assertThat(options.maxDeadlineDate()).isEqualTo("2027-05-05");
 	}
 
 	@Test
@@ -255,6 +255,36 @@ class RecruitmentServiceTest {
 					assertThat(api.getDetail()).containsEntry("reason", "RECRUIT_POSTS");
 				});
 		verify(posts, never()).save(any());
+	}
+
+	@Test
+	void createAcceptsDeadlineSixMonthsOutAndRejectsTheDayAfter() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+		when(teamMembers.findRecruitLinkableTeams(10L)).thenReturn(List.of(LINKABLE_TEAM));
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(users.findById(10L)).thenReturn(Optional.of(author));
+		when(posts.save(any(RecruitPost.class))).thenAnswer(invocation -> {
+			RecruitPost post = invocation.getArgument(0);
+			ReflectionTestUtils.setField(post, "id", 42L);
+			return post;
+		});
+
+		// NOW is 2026-11-05: 6 calendar months on is 2027-05-05
+		assertThat(service.create(developer, writeRequest("ONLINE", null, "2027-05-05")).id()).isEqualTo(42L);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest("ONLINE", null, "2027-05-06")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(error.getMessage()).isEqualTo("마감일은 오늘부터 6개월 이내여야 해요"));
+	}
+
+	@Test
+	void createRejectsRegionLongerThanTheColumn() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest("OFFLINE", "가".repeat(101), "2026-11-12")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(error.getMessage()).isEqualTo("지역은 100자까지 쓸 수 있어요"));
 	}
 
 	@Test
@@ -609,6 +639,21 @@ class RecruitmentServiceTest {
 				LocalDate.of(2026, 11, 12).toString(),
 				List.of(),
 				teamId
+		);
+	}
+
+	private RecruitWriteRequest writeRequest(String format, String region, String deadline) {
+		return new RecruitWriteRequest(
+				"함께 만들어요",
+				"소개입니다",
+				List.of(new RecruitRoleWriteRequest(null, "BACKEND", 2)),
+				format,
+				region,
+				null,
+				null,
+				deadline,
+				List.of(),
+				LINKABLE_TEAM.id()
 		);
 	}
 

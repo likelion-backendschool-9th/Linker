@@ -10,6 +10,17 @@ import { brief, ME } from '../fixtures/users';
 
 const OPEN_LIMIT = 3; // Pro 10 (04 POL-R-1)
 
+/** Last allowed deadline: today + 6 calendar months, like the server's `plusMonths` (month end clamps) */
+function sixMonthsOn(): string {
+  const [year, month, day] = dateOnly(0).split('-').map(Number) as [number, number, number];
+  const target = new Date(Date.UTC(year, month - 1 + RECRUIT.deadlineWithinMonths, 1));
+  const lastDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target.toISOString().slice(0, 10);
+}
+
 /** Create attempts since the mock started (stands in for the server's daily window) */
 let createAttempts = 0;
 
@@ -61,7 +72,7 @@ export const routes: MockRoute[] = [
       ),
       openCount: openCount(),
       openLimit: OPEN_LIMIT,
-      maxDeadlineDate: dateOnly(60),
+      maxDeadlineDate: sixMonthsOn(),
     }),
     { only: 'developer' },
   ),

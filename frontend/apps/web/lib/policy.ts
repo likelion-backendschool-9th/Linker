@@ -86,7 +86,10 @@ export const RECRUIT = {
   searchMaxLength: 40,
   introMax: 1000,
   headcountPerRole: { min: 1, max: 10 },
-  deadlineWithinDays: 60,
+  /** Deadline: today through today + 6 calendar months (the server sends the exact last date) */
+  deadlineWithinMonths: 6,
+  /** Not a Policy rule: `recruit_posts.region` column length (backend `PlanLimits.RECRUIT_REGION_MAX`) */
+  regionMax: 100,
   techTagsMax: 10,
   /** 04 ch. 2 rate limits: new recruit posts per day (backend `PlanLimits.RECRUIT_POSTS_PER_DAY`) */
   createPerDay: 5,

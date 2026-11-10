@@ -111,7 +111,13 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
           });
         }),
       format: z.enum(RECRUIT_FORMATS),
-      region: z.string(),
+      // `length` (UTF-16) is never below the server's code-point count, so this never lets too much through
+      region: z
+        .string()
+        .refine(
+          (value) => value.trim().length <= RECRUIT.regionMax,
+          `지역은 ${limit(RECRUIT.regionMax)}자까지 쓸 수 있어요.`,
+        ),
       goal: z.union([z.enum(RECRUIT_GOALS), z.literal('')]),
       duration: z.string(),
       deadline: z
@@ -119,7 +125,7 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
         .min(1, '마감일을 골라 주세요.')
         .refine(
           (value) => value >= today && value <= maxDeadline,
-          `마감일은 오늘부터 ${RECRUIT.deadlineWithinDays}일 안으로 골라 주세요.`,
+          `마감일은 오늘부터 ${RECRUIT.deadlineWithinMonths}개월 안으로 골라 주세요.`,
         ),
       techTags: z
         .array(z.string())

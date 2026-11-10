@@ -58,7 +58,10 @@ public final class PlanLimits {
 	public static final int RECRUIT_HEADCOUNT_MIN = 1;
 	public static final int RECRUIT_HEADCOUNT_MAX = 10;
 	public static final int RECRUIT_TECH_TAGS_MAX = 10;
-	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
+	/** POL-R-1: the deadline is today through today + 6 calendar months (KST). */
+	public static final int RECRUIT_DEADLINE_WITHIN_MONTHS = 6;
+	/** Not a Policy rule: `recruit_posts.region` column length, checked so long input isn't a DB error. */
+	public static final int RECRUIT_REGION_MAX = 100;
 	/** Reject reason length (author-only). Apply has no free-text message (POL-R-3). */
 	public static final int APPLICATION_MESSAGE_MAX = 300;
 	public static final int APPLICATIONS_PER_DAY = 20;

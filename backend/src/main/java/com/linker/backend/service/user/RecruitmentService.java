@@ -178,7 +178,7 @@ public class RecruitmentService {
 	public RecruitEditorOptionsResponse editorOptions(AuthenticatedUser user) {
 		int openCount = (int) posts.countByAuthorIdAndStatusAndDeletedAtIsNull(
 				user.userId(), RecruitStatus.OPEN);
-		LocalDate maxDeadline = today().plusDays(PlanLimits.RECRUIT_DEADLINE_WITHIN_DAYS);
+		LocalDate maxDeadline = maxDeadline(today());
 		return new RecruitEditorOptionsResponse(
 				teamMembers.findRecruitLinkableTeams(user.userId()),
 				openCount,
@@ -722,6 +722,11 @@ public class RecruitmentService {
 		if (workMode == WorkMode.OFFLINE && (region == null || region.isBlank())) {
 			throw new ApiException(400, "VALIDATION_ERROR", "오프라인 모집은 지역이 필요해요");
 		}
+		// Column length guard, counted like PostgreSQL varchar (code points)
+		if (region != null && region.codePointCount(0, region.length()) > PlanLimits.RECRUIT_REGION_MAX) {
+			throw new ApiException(400, "VALIDATION_ERROR",
+					"지역은 " + PlanLimits.RECRUIT_REGION_MAX + "자까지 쓸 수 있어요");
+		}
 		RecruitGoal goal = parseGoal(request.goal());
 		String duration = blankToNull(request.duration());
 		if (duration != null && duration.length() > 40) {
@@ -804,11 +809,16 @@ public class RecruitmentService {
 			throw new ApiException(400, "VALIDATION_ERROR", "마감일을 확인해 주세요");
 		}
 		LocalDate today = today();
-		LocalDate max = today.plusDays(PlanLimits.RECRUIT_DEADLINE_WITHIN_DAYS);
-		if (deadline.isBefore(today) || deadline.isAfter(max)) {
-			throw new ApiException(400, "VALIDATION_ERROR", "마감일은 오늘부터 60일 이내여야 해요");
+		if (deadline.isBefore(today) || deadline.isAfter(maxDeadline(today))) {
+			throw new ApiException(400, "VALIDATION_ERROR",
+					"마감일은 오늘부터 " + PlanLimits.RECRUIT_DEADLINE_WITHIN_MONTHS + "개월 이내여야 해요");
 		}
 		return deadline;
+	}
+
+	/** POL-R-1: last allowed deadline, same calendar day 6 months on (month end clamps, e.g. 8/31 → 2/28). */
+	private static LocalDate maxDeadline(LocalDate today) {
+		return today.plusMonths(PlanLimits.RECRUIT_DEADLINE_WITHIN_MONTHS);
 	}
 
 	private static WorkMode parseWorkMode(String raw) {

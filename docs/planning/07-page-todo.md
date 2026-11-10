@@ -575,7 +575,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: R-1, S-5 · Needs first: 19
 
-- [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (within 60 days from today)
+- [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (today through 6 months from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
 - [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay
 - [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day → toast "하루 모집글의 최대 한도는 N번 입니다." (N = 5, no resend)
