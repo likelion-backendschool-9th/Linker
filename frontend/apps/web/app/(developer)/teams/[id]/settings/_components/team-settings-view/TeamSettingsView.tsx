@@ -19,7 +19,8 @@ import styles from './TeamSettingsView.module.css';
  * Team settings body.
  * Base: Figma 368:387. Owner deltas: Figma 368:1563 (member chevrons, red repo remove, 팀 삭제).
  * Delete confirm modal: Figma 695:1527 / 695:1640 (same chrome as login prompt ConfirmDialog).
- * "팀 나가기" is an explicit extra for non-owners (not on frame 9); its confirm reuses the 팀 삭제 modal.
+ * "팀 나가기" is an explicit extra for members only — owners see 팀 삭제, admins see neither (not on
+ * frame 9); its confirm reuses the 팀 삭제 modal.
  */
 export function TeamSettingsView({ teamId }: { teamId: string }) {
   const { settings, members, action, team, permissions } = useTeamSettingsView(teamId);
@@ -158,13 +159,13 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
             팀 삭제
           </button>
         </div>
-      ) : (
+      ) : team.myRole === 'MEMBER' && permissions.leave ? (
         <div className={styles.leaveWrap}>
           <button type="button" className={styles.leave} onClick={() => leaveConfirm.open()}>
             팀 나가기
           </button>
         </div>
-      )}
+      ) : null}
 
       <TeamSettingsActionSheet team={team} members={members.data.items} />
       {/* Figma 695:1640 — markup only; delete API/policy later */}
