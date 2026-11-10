@@ -42,15 +42,18 @@ async function pickRepoAndTemplate(page: Page, template = '버그 제보') {
   await expect(page.getByLabel(/이슈 제목/)).toBeVisible();
 }
 
-test('pick repo + template → create → leaves the editor with an issue URL', async ({ page }) => {
+test('pick repo + template → create → detail shows title (not unavailable)', async ({ page }) => {
   await pickRepoAndTemplate(page);
-  await page.getByLabel(/이슈 제목/).fill(`e2e 작성 ${Date.now()}`);
+  const title = `e2e 작성 ${Date.now()}`;
+  await page.getByLabel(/이슈 제목/).fill(title);
   await page.getByRole('button', { name: 'GitHub에 이슈 작성하기' }).click();
   await expect(page.getByText('이슈를 만들었어요.', { exact: true })).toBeVisible({
     timeout: 30_000,
   });
   await expect(page).toHaveURL(/\/teams\/1\/issues\/\d+/, { timeout: 30_000 });
   await expect(page).not.toHaveURL(/\/issues\/new/);
+  await expect(page.getByText('볼 수 없는 콘텐츠')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
 });
 
 test('요청 (이슈 폼) uses markdown body UI like bug templates', async ({ page }) => {
