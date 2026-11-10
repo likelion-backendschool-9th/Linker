@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const labels = [
   'PR이 생성 되었습니다',
@@ -7,6 +7,17 @@ const labels = [
   'PR이 병합 되었습니다',
   'PR이 닫혔습니다',
 ] as const;
+
+async function revealPrEvents(page: Page) {
+  const timeline = page.getByRole('region', { name: '대화 내용' });
+  await expect(timeline).toBeVisible();
+  // The latest composer is taller; scroll the virtual timeline before finding older PR rows.
+  await timeline.evaluate((node) => {
+    node.scrollTop = 0;
+    node.dispatchEvent(new Event('scroll'));
+  });
+  await expect(page.getByRole('article', { name: labels[0], exact: true })).toBeAttached();
+}
 
 test.beforeEach(async ({ page }) => {
   await page
@@ -19,6 +30,7 @@ test('17 PR system messages match the four Figma states and organization groupin
   page,
 }, info) => {
   await page.goto('/chats/1');
+  await revealPrEvents(page);
   const opened = page.getByRole('article', { name: labels[0], exact: true });
   await opened.scrollIntoViewIfNeeded();
   await expect(opened.getByText('linker-hack', { exact: true })).toBeVisible();
@@ -42,13 +54,16 @@ test('17 PR system messages match the four Figma states and organization groupin
       if (label !== labels[0]) expect(await article.locator('p').count()).toBe(0);
       cards.push((await card.boundingBox())!);
     }
+    for (const box of cards)
+      expect(box.width).toBeLessThanOrEqual(Math.min(320, Math.min(width, 600) - 87));
     if (width === 375) {
       for (const box of cards) {
         expect(box.x).toBe(67);
-        expect(box.width).toBe(288);
+        expect(box.width).toBeLessThan(288);
         expect(box.height).toBe(106);
       }
       for (let i = 1; i < cards.length; i++) expect(cards[i]!.y - cards[i - 1]!.y).toBe(113);
+      expect(cards[0]!.width).toBeLessThan(cards[1]!.width);
       expect(
         await opened.locator('[data-event]').evaluate((node) => getComputedStyle(node).color),
       ).toBe('rgb(21, 128, 0)');
@@ -104,6 +119,72 @@ test('17 PR system messages match the four Figma states and organization groupin
   expect(report.violations).toEqual([]);
 });
 
+test('17 system cards cap wide screens and contain long titles and repository names', async ({
+  page,
+}, info) => {
+  const longTitle =
+    '#31 로그인 실패와 조직 권한 예외를 함께 처리하고 재접속 시 중복 알림과 잘못된 상태 갱신을 방지하는 시스템 메시지 개선';
+  const longRepository = 'repository-without-spaces-'.repeat(12);
+  for (const width of [320, 360, 375, 414, 600, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/chats/1');
+    await revealPrEvents(page);
+    await page.getByRole('article', { name: labels[0], exact: true }).scrollIntoViewIfNeeded();
+    for (const label of labels) {
+      const card = page
+        .getByRole('article', { name: label, exact: true })
+        .getByRole('button', { name: /GitHub에서 열기/ });
+      // Stress the rendered CSS without changing shared mock fixtures or message contracts.
+      const title = card.getByTitle('#31 feat: 로그인 시트', { exact: true });
+      await title.evaluate(
+        (node, text) => {
+          node.textContent = text;
+        },
+        width === 320 ? `#31 ${'VeryLongUnbrokenPullRequestTitle'.repeat(10)}` : longTitle,
+      );
+      const repository = card.getByTitle('linker-hack/linker-web', { exact: true });
+      await repository.evaluate((node, text) => {
+        node.textContent = text;
+      }, longRepository);
+      const metrics = await title.evaluate((node) => ({
+        height: node.getBoundingClientRect().height,
+        line: Number.parseFloat(getComputedStyle(node).lineHeight),
+        full: node.scrollHeight,
+      }));
+      expect(metrics.height).toBe(metrics.line * 2);
+      expect(metrics.full).toBeGreaterThan(metrics.height);
+      expect(await card.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+      expect(await repository.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+      expect((await card.boundingBox())!.width).toBe(Math.min(320, Math.min(width, 600) - 87));
+      const repoBox = (await repository.boundingBox())!;
+      const timeBox = (await card.locator('time').boundingBox())!;
+      expect(timeBox.x).toBeGreaterThan(repoBox.x + repoBox.width);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({
+      path: info.outputPath(`pr-system-long-${width}.png`),
+      fullPage: true,
+      scale: 'css',
+      style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
+    });
+    const opened = page
+      .getByRole('article', { name: labels[0], exact: true })
+      .getByRole('button', { name: /GitHub에서 열기/ });
+    const expanded = (await opened.boundingBox())!;
+    await opened.getByTitle('#31 feat: 로그인 시트', { exact: true }).evaluate((node) => {
+      node.textContent = '#1 a';
+    });
+    await opened.getByTitle('linker-hack/linker-web', { exact: true }).evaluate((node) => {
+      node.textContent = 'r';
+    });
+    const compact = (await opened.boundingBox())!;
+    expect(compact.width).toBeLessThan(expanded.width);
+    expect(compact.height).toBeLessThan(expanded.height);
+  }
+});
+
 test('17 floating summary keeps the existing result flow and leaves photo attachment available', async ({
   page,
 }) => {
@@ -141,6 +222,7 @@ test('17 immutable PR cards open the existing GitHub confirmation without regula
   page,
 }) => {
   await page.goto('/chats/1');
+  await revealPrEvents(page);
   for (const label of labels) {
     const article = page.getByRole('article', { name: label, exact: true });
     const card = article.getByRole('button', { name: /GitHub에서 열기/ });
