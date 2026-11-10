@@ -15,9 +15,9 @@ import { toast } from '@/stores/toast-store';
 
 import { type IssueStatus } from '../../../../../../_lib/issue-status';
 import {
-  buildFormBody,
   emptyAnswers,
   formSchema,
+  toApiAnswers,
   type FormAnswers,
 } from '../../_lib/form-body';
 import { issueDraftKey, type IssueDraft } from '../../_lib/issue-draft';
@@ -27,8 +27,8 @@ import {
   createLabelOptions,
   getSyncJob,
   templateOptions,
+  type CreateProgress,
   type ParsedTemplate,
-  type SyncJob,
 } from './api';
 
 export type IssueContentStepProps = {
@@ -73,6 +73,25 @@ function sendErrorMessage(error: unknown): string {
     return `${error.message} 작성한 내용은 저장해 두었어요.`;
   }
   return 'GitHub에 연결하지 못했어요. 작성한 내용은 저장해 두었어요.';
+}
+
+function newRequestId() {
+  return crypto.randomUUID();
+}
+
+function payloadFingerprint(parts: {
+  repoId: number;
+  templateKey: string;
+  title: string;
+  body: string;
+  answers: Record<string, string[]>;
+  assigneeIds: number[];
+  labels: string[];
+  startDate: string | null;
+  dueDate: string | null;
+  status: IssueStatus;
+}) {
+  return JSON.stringify(parts);
 }
 
 export function useIssueContentTemplate(
@@ -140,9 +159,11 @@ export function useIssueContentForm({
   const [status, setStatus] = useState<IssueStatus>(initial?.status ?? 'TODO');
   const [touched, setTouched] = useState(initial !== null);
   const [phase, setPhase] = useState<'idle' | 'sending' | 'syncing'>('idle');
-  const [progress, setProgress] = useState<SyncJob['steps']>([]);
+  const [progressStep, setProgressStep] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const done = useRef(false);
+  const requestIdRef = useRef(initial?.requestId ?? newRequestId());
+  const lastFingerprintRef = useRef<string | null>(null);
 
   const people = candidates.data?.items ?? [];
   const effectiveAssigneeIds =
@@ -158,6 +179,7 @@ export function useIssueContentForm({
 
   const watched = useWatch({ control: form.control });
   const snapshot = (): IssueDraft => ({
+    requestId: requestIdRef.current,
     repoId: effectiveRepoId,
     templateKey: effectiveTemplateKey,
     title: form.getValues('title'),
@@ -185,21 +207,43 @@ export function useIssueContentForm({
     if (phase !== 'idle' || repoId === null) return;
     setFailure(null);
     setPhase('sending');
-    const body =
-      template.kind === 'FORM' ? buildFormBody(fields, values.answers) : values.body.slice(0, ISSUE.bodyMax);
-    let created: { jobId: string; issueId: number };
+    setProgressStep(null);
+
+    const answers =
+      template.kind === 'FORM' ? toApiAnswers(fields, values.answers) : {};
+    const body = template.kind === 'MARKDOWN' ? values.body.slice(0, ISSUE.bodyMax) : undefined;
+    const fingerprint = payloadFingerprint({
+      repoId,
+      templateKey: effectiveTemplateKey,
+      title: values.title.trim(),
+      body: body ?? '',
+      answers,
+      assigneeIds: effectiveAssigneeIds,
+      labels: labelNames,
+      startDate: schedule.startDate,
+      dueDate: schedule.dueDate,
+      status,
+    });
+    if (lastFingerprintRef.current !== null && lastFingerprintRef.current !== fingerprint) {
+      requestIdRef.current = newRequestId();
+    }
+
+    let created: CreateProgress;
     try {
       created = await createIssue(teamId, {
+        requestId: requestIdRef.current,
         repoId,
         templateKey: effectiveTemplateKey,
         title: values.title.trim(),
-        body,
+        ...(body !== undefined ? { body } : {}),
+        answers,
         assigneeIds: effectiveAssigneeIds,
         labels: labelNames,
-        startDate: schedule.startDate,
-        dueDate: schedule.dueDate,
+        ...(schedule.startDate ? { startDate: schedule.startDate } : {}),
+        ...(schedule.dueDate ? { dueDate: schedule.dueDate } : {}),
         status,
       });
+      lastFingerprintRef.current = fingerprint;
     } catch (error) {
       draft.save(latestSnapshot.current());
       setFailure(sendErrorMessage(error));
@@ -207,26 +251,56 @@ export function useIssueContentForm({
       return;
     }
 
-    done.current = true;
-    draft.clear();
+    const jobId = created.jobId;
+    if (jobId == null) {
+      draft.save(latestSnapshot.current());
+      setFailure('이슈를 만들지 못했어요. 작성한 내용은 저장해 두었어요.');
+      setPhase('idle');
+      return;
+    }
+
     setPhase('syncing');
-    const detail = `/teams/${teamId}/issues/${created.issueId}` as Route;
+    if (created.step) setProgressStep(created.step);
+
+    let job = created;
     try {
       for (let tries = 0; tries < POLL_TRIES; tries += 1) {
+        if (job.status === 'DONE' || job.status === 'FAILED') break;
         await sleep(POLL_MS);
-        const job = await getSyncJob(teamId, created.jobId);
-        setProgress(job.steps);
-        if (job.status === 'FAILED') {
-          toast('일정이 GitHub에 반영되지 않았어요', { tone: 'error' });
-          break;
-        }
-        if (job.status === 'DONE') break;
+        job = await getSyncJob(teamId, jobId);
+        if (job.step) setProgressStep(job.step);
       }
     } catch {
-      // detail page shows how it ended
+      draft.save(latestSnapshot.current());
+      setFailure('진행 상태를 확인하지 못했어요. 작성한 내용은 저장해 두었어요.');
+      setPhase('idle');
+      return;
     }
-    toast('이슈를 만들었어요.');
-    onCreated(detail);
+
+    if (job.status === 'FAILED') {
+      draft.save(latestSnapshot.current());
+      setFailure(
+        job.errorCode
+          ? `${job.errorCode} 작성한 내용은 저장해 두었어요.`
+          : '이슈를 만들지 못했어요. 작성한 내용은 저장해 두었어요.',
+      );
+      setPhase('idle');
+      return;
+    }
+
+    if (job.status === 'DONE' && job.issueId != null) {
+      done.current = true;
+      draft.clear();
+      toast('이슈를 만들었어요.');
+      const detail = (job.detailPath ??
+        `/teams/${teamId}/issues/${job.issueId}`) as Route;
+      onCreated(detail);
+      return;
+    }
+
+    draft.save(latestSnapshot.current());
+    setFailure('이슈를 만들지 못했어요. 작성한 내용은 저장해 두었어요.');
+    setPhase('idle');
   }
 
   const busy = phase !== 'idle';
@@ -246,7 +320,7 @@ export function useIssueContentForm({
     schedule,
     status,
     phase,
-    progress,
+    progressStep,
     failure,
     busy,
     open,

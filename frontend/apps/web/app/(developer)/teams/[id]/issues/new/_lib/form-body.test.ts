@@ -1,4 +1,4 @@
-import { buildFormBody, emptyAnswers, formSchema } from './form-body';
+import { buildFormBody, emptyAnswers, formSchema, toApiAnswers } from './form-body';
 import type { FormField } from './create-queries';
 
 const fields: FormField[] = [
@@ -36,6 +36,24 @@ it('writes the body in GitHub issue form format (POL-I-1)', () => {
       '### 날짜\n\n_No response_',
     ].join('\n\n'),
   );
+});
+
+it('maps UI answers to OpenAPI string arrays', () => {
+  expect(
+    toApiAnswers(fields, {
+      ...emptyAnswers(fields),
+      summary: '다크 모드',
+      kind: '기능',
+      os: ['iOS'],
+      checks: [true, false],
+    }),
+  ).toEqual({
+    summary: ['다크 모드'],
+    detail: [],
+    kind: ['기능'],
+    os: ['iOS'],
+    checks: ['중복 확인'],
+  });
 });
 
 it('requires required inputs, dropdowns and checkbox options', () => {

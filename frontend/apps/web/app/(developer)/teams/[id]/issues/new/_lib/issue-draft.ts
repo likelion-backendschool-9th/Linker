@@ -6,6 +6,8 @@ import type { FormAnswers } from './form-body';
  * 7 days). `null` assignees/labels = still the template's defaults.
  */
 export type IssueDraft = {
+  /** Same UUID while this draft is resent unchanged; new value when the draft changes. */
+  requestId: string;
   repoId: number;
   templateKey: string;
   title: string;

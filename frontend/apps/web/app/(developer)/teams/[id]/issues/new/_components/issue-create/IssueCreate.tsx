@@ -28,7 +28,7 @@ export function IssueCreate({ teamId }: { teamId: string }) {
   const templateSheet = useOverlay('issue-create-template');
 
   const repos = useQuery(createReposOptions(teamId));
-  const writable = repos.data?.items.filter((repo) => repo.canWrite) ?? [];
+  const repoItems = repos.data?.items ?? [];
   const repoId = nav.repo;
   const templates = useQuery({
     ...templatesOptions(teamId, repoId ?? 0),
@@ -45,7 +45,7 @@ export function IssueCreate({ teamId }: { teamId: string }) {
     );
   }
 
-  const repoLabel = writable.find((repo) => repo.id === repoId)?.name ?? null;
+  const repoLabel = repoItems.find((repo) => repo.id === repoId)?.name ?? null;
   const templateLabel = templateItems.find((item) => item.key === nav.template)?.name ?? null;
 
   return (
@@ -73,8 +73,8 @@ export function IssueCreate({ teamId }: { teamId: string }) {
         overlayKey="issue-create-repo"
         title="저장소 변경"
         value={repoId !== null ? String(repoId) : null}
-        options={writable.map((repo) => ({ value: String(repo.id), label: repo.name }))}
-        empty="쓸 수 있는 저장소가 없어요."
+        options={repoItems.map((repo) => ({ value: String(repo.id), label: repo.name }))}
+        empty="저장소가 없어요."
         onChange={(value) => setRepo(Number(value))}
       />
       <CreatePickSheet

@@ -23,10 +23,10 @@ export function useRepoTemplateStep({
   onNext,
 }: RepoTemplateStepProps) {
   const repos = useQuery(createReposOptions(teamId));
-  const writable = repos.data?.items.filter((repo) => repo.canWrite) ?? [];
+  const repoItems = repos.data?.items ?? [];
   const [picked, setRepo] = useState<number | null>(repoId);
-  // With one writable repo it's chosen already, also when the list arrives after the first render
-  const repo = picked ?? (writable.length === 1 ? writable[0]!.id : null);
+  // With one repo it's chosen already, also when the list arrives after the first render
+  const repo = picked ?? (repoItems.length === 1 ? repoItems[0]!.id : null);
   const [template, setTemplate] = useState<string | null>(templateKey);
   const [missing, setMissing] = useState<'repo' | 'template' | null>(null);
   const templates = useQuery({ ...templatesOptions(teamId, repo ?? 0), enabled: repo !== null });
@@ -61,7 +61,7 @@ export function useRepoTemplateStep({
 
   return {
     repos,
-    writable,
+    writable: repoItems,
     repo,
     template,
     missing,
