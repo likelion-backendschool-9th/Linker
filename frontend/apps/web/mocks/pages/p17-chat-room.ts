@@ -8,6 +8,7 @@ import {
   del,
   fail,
   get,
+  hoursAgo,
   newId,
   patch,
   post,
@@ -176,10 +177,30 @@ export const routes: MockRoute[] = [
       (m) => m.imageUrls.map((url) => ({ messageId: m.id, url, createdAt: m.createdAt })),
     ),
   })),
-  get('/api/v1/user/chat-rooms/:roomId/pull-requests', ({ query }) => {
+  // B-owned PR list: same identifiers and GitHub update timestamp as the server DTO.
+  get('/api/v1/user/chat-rooms/:roomId/pull-requests', ({ params, query, viewer }) => {
+    const room = roomOr404(params.roomId);
+    if (
+      !room.teamId ||
+      room.kind !== 'TEAM' ||
+      !(TEAM_MEMBERS[room.teamId] ?? []).some((member) => member.user.id === viewer.me?.id)
+    )
+      fail(404, 'NOT_FOUND', '팀 채팅방을 찾지 못했어요');
     const state = query.get('state') ?? 'open';
+    if (!['open', 'merged'].includes(state))
+      fail(400, 'VALIDATION_ERROR', 'PR 상태를 확인해 주세요');
+    const common = {
+      repoId: 1,
+      githubRepoId: 901,
+      draft: false,
+      repo: 'linker-hack/linker-web',
+      githubUpdatedAt: hoursAgo(2),
+    };
     const all = [
       {
+        ...common,
+        id: 31,
+        githubPrId: 1031,
         number: 31,
         title: 'feat: 로그인 시트',
         state: 'open',
@@ -187,6 +208,9 @@ export const routes: MockRoute[] = [
         url: 'https://github.com/linker-hack/linker-web/pull/31',
       },
       {
+        ...common,
+        id: 29,
+        githubPrId: 1029,
         number: 29,
         title: 'fix: 피드 스켈레톤 높이',
         state: 'open',
@@ -194,6 +218,22 @@ export const routes: MockRoute[] = [
         url: 'https://github.com/linker-hack/linker-web/pull/29',
       },
       {
+        ...common,
+        id: 28,
+        githubPrId: 1028,
+        number: 28,
+        title: '로그인 5회 실패 시 임시 잠금',
+        state: 'open',
+        author: '김주은',
+        url: 'https://github.com/linker-hack/linker-web/pull/28',
+      },
+      {
+        ...common,
+        id: 26,
+        repoId: 2,
+        githubRepoId: 902,
+        githubPrId: 1026,
+        repo: 'linker-hack/linker-api',
         number: 26,
         title: 'chore: eslint 규칙 정리',
         state: 'merged',

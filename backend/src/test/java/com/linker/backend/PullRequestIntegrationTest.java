@@ -174,8 +174,20 @@ class PullRequestIntegrationTest {
         .andExpect(jsonPath("$.items[0].title").value("최신 PR"))
         .andExpect(jsonPath("$.items[0].author").value("developer"))
         .andExpect(jsonPath("$.items[0].url").value(live.url()))
-        .andExpect(jsonPath("$.items[0].state").value("merged"));
+        .andExpect(jsonPath("$.items[0].state").value("merged"))
+        .andExpect(jsonPath("$.items[0].githubUpdatedAt").value(REV.plusSeconds(30).toString()));
     assertThat(jdbc.queryForObject("select count(*) from chat_messages where room_id=?", Long.class, room)).isEqualTo(2);
+  }
+
+  @Test void openApiDocumentsGithubUpdateTimeWithoutChangingTheListRoute() throws Exception {
+    var response = mvc.perform(get("/v3/api-docs"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.components.schemas.ChatPullRequest.properties.githubUpdatedAt.format").value("date-time"))
+        .andExpect(jsonPath("$.paths['/api/v1/user/chat-rooms/{roomId}/pull-requests'].get.operationId").value("listChatPullRequests"))
+        .andReturn();
+    var output = java.nio.file.Path.of("build/openapi/p17-pull-requests.json");
+    java.nio.file.Files.createDirectories(output.getParent());
+    java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
   }
 
   @Test void editedAndPeriodicRefreshUpdateCacheWithoutInventingSystemEvents() throws Exception {
