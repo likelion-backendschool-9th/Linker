@@ -46,7 +46,6 @@
   /* Figma 22 post editor (265:142) */
   --space-post-intro: 10px; /* step-1 title to hint */
   --space-post-search: 25px; /* hint to search field */
-  --space-post-repo: 13px; /* gap between repo rows */
   --stepper-height: 4px; /* top progress bar */
   --space-field-gap: 20px; /* 20 recruit editor: gap between fields (Figma itemSpacing) */
   --space-recruit-field-inline: 15px; /* 20 field text / select option inset (Figma 600:645, 629:508) */
