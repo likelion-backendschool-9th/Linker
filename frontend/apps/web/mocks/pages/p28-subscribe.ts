@@ -12,7 +12,7 @@ import { TEAMS } from '../fixtures/teams';
 
 /**
  * 28 Plans & checkout: `SubscriptionController`. Toss test mode only; the mock confirms every order.
- * Recruiters get no plans until Scout ([Included]) opens, as on the server.
+ * Recruiters see only the Scout card; its checkout is [Included] and refused, as on the server.
  */
 
 const developerPlans = [
@@ -42,7 +42,7 @@ const developerPlans = [
     key: 'FLEX',
     name: 'Flex',
     monthly: SUBSCRIPTION_PRICE.flexMonthly,
-    yearly: null,
+    yearly: SUBSCRIPTION_PRICE.flexYearly,
     benefits: [
       '팀 인원 무제한',
       '팀 채팅 검색 및 스크롤 백 무제한',
@@ -52,6 +52,18 @@ const developerPlans = [
     ],
     trialAvailable: false,
     perExtraMember: SUBSCRIPTION_PRICE.flexExtraMember,
+    perExtraMemberYearly: SUBSCRIPTION_PRICE.flexExtraMemberYearly,
+  },
+];
+
+const recruiterPlans = [
+  {
+    key: 'SCOUT',
+    name: 'Scout',
+    monthly: SUBSCRIPTION_PRICE.scoutMonthly,
+    yearly: null,
+    benefits: ['피드 채용 광고 1건', '채용 제안 일 10회에서 일 50회'],
+    trialAvailable: false,
   },
 ];
 
@@ -62,6 +74,7 @@ function candidates() {
       name: team.name,
       memberCount: teamSeats(team.id),
       amount: flexAmount(teamSeats(team.id)),
+      yearlyAmount: flexAmount(teamSeats(team.id)) * 10,
       currentPlan: team.plan,
     }),
   );
@@ -70,7 +83,7 @@ function candidates() {
 export const routes: MockRoute[] = [
   get('/api/v1/user/plans', ({ query, viewer }) => ({
     reason: query.get('reason'),
-    plans: viewer.role === 'recruiter' ? [] : developerPlans,
+    plans: viewer.role === 'recruiter' ? recruiterPlans : developerPlans,
     currentPlan: personalPlan(viewer) ?? 'FREE',
   })),
   get('/api/v1/user/plans/team-candidates', () => ({ items: candidates() }), { only: 'developer' }),
@@ -83,14 +96,15 @@ export const routes: MockRoute[] = [
       fail(403, 'PLAN_MISMATCH', '선택할 수 없는 요금제예요.');
     if (body.billing !== 'MONTHLY' && body.billing !== 'YEARLY')
       fail(400, 'INVALID_BILLING', '결제 기간을 확인해 주세요.');
-    if (body.billing === 'YEARLY' && planKey !== 'PRO')
-      fail(400, 'INVALID_BILLING', '이 요금제는 월간 결제만 가능해요.');
+
     const candidate =
       planKey === 'FLEX' ? candidates().find((team) => team.teamId === Number(body.teamId)) : null;
     if (planKey === 'FLEX' && !candidate)
       fail(403, 'TEAM_PERMISSION', '결제할 팀을 다시 선택해 주세요.');
     const amount = candidate
-      ? candidate.amount
+      ? body.billing === 'YEARLY'
+        ? candidate.yearlyAmount
+        : candidate.amount
       : body.billing === 'YEARLY'
         ? SUBSCRIPTION_PRICE.proYearly
         : SUBSCRIPTION_PRICE.proMonthly;
@@ -102,7 +116,7 @@ export const routes: MockRoute[] = [
       billing: body.billing,
       teamId: candidate?.teamId ?? null,
       orderName: candidate
-        ? `Flex · ${candidate.name} 구독`
+        ? `Flex · ${candidate.name} ${body.billing === 'YEARLY' ? '연간 구독' : '구독'}`
         : body.billing === 'YEARLY'
           ? 'Pro 연간 구독'
           : 'Pro 월간 구독',

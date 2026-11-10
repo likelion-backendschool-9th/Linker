@@ -22,10 +22,11 @@ const plans = [
     key: 'FLEX',
     name: 'Flex',
     monthly: 7900,
-    yearly: null,
+    yearly: 79000,
     benefits: ['팀 혜택'],
     trialAvailable: true,
     perExtraMember: 1900,
+    perExtraMemberYearly: 19000,
   },
   {
     key: 'SCOUT',
@@ -40,23 +41,39 @@ beforeEach(() => {
   fetchMock.mockReset();
   fetchMock.mockImplementation(async (url) =>
     url.includes('team-candidates')
-      ? { items: [{ teamId: 1, name: '내 팀', memberCount: 7, amount: 9800, currentPlan: 'FREE' }] }
+      ? {
+          items: [
+            {
+              teamId: 1,
+              name: '내 팀',
+              memberCount: 7,
+              amount: 9800,
+              yearlyAmount: 98000,
+              currentPlan: 'FREE',
+            },
+          ],
+        }
       : { plans, currentPlan: 'FREE', reason: null },
   );
 });
-it('uses annual pricing only for Pro and picks the Flex team in a sheet before checkout', async () => {
+it('shows yearly prices and the saving for Pro and Flex, and checks out the Flex team yearly', async () => {
   renderWithProviders(<PlanSelector reason="" />, {
     viewer: { role: 'developer', login: 'developer' },
   });
   await screen.findByRole('heading', { name: 'Pro' });
-  await userEvent.click(screen.getByRole('button', { name: '연간 결제' }));
+  expect(screen.getByText('월간 청구, 7명 이상 인당 + ₩1,900')).toBeVisible();
+  expect(screen.queryByText(/절약/)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '연간 결제 2개월 무료' }));
   expect(screen.getByText('₩29,000')).toBeVisible();
   expect(screen.getByText('연간 청구')).toBeVisible();
-  expect(screen.getByText('월간 청구, 7명 이상 인당 + ₩1,900')).toBeVisible();
+  expect(screen.getByText('월간 결제보다 ₩5,800 절약 (2개월 무료)')).toBeVisible();
+  expect(screen.getByText('₩79,000')).toBeVisible();
+  expect(screen.getByText('연간 청구, 7명 이상 인당 + ₩19,000')).toBeVisible();
+  expect(screen.getByText('월간 결제보다 ₩15,800 절약 (2개월 무료)')).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: 'Flex 플랜 구독하기' }));
   const sheet = await screen.findByRole('dialog', { name: '결제할 팀 선택' });
   expect(within(sheet).getByRole('button', { name: 'Flex 결제 준비' })).toBeDisabled();
-  await userEvent.click(within(sheet).getByRole('radio', { name: /내 팀/ }));
+  await userEvent.click(within(sheet).getByRole('radio', { name: /내 팀.*₩98,000 \/ 년/ }));
   fetchMock.mockResolvedValue({
     orderId: 'order-1',
     amount: 9800,
@@ -71,7 +88,7 @@ it('uses annual pricing only for Pro and picks the Flex team in a sheet before c
   const call = fetchMock.mock.calls.find(([url]) => url.endsWith('/checkout'))!;
   expect(JSON.parse(String(call[1]?.body))).toEqual({
     planKey: 'FLEX',
-    billing: 'MONTHLY',
+    billing: 'YEARLY',
     teamId: 1,
   });
 });
@@ -92,15 +109,24 @@ it('shows the Figma title, emphasised benefits, terms links and the trial note',
   expect(screen.getByText('계정 당 Pro, Flex의 무료 체험은 1회만 제공 됩니다')).toBeVisible();
 });
 
-it('shows recruiters an empty plan list until Scout opens, without querying team candidates', async () => {
-  fetchMock.mockImplementation(async () => ({ plans: [], currentPlan: 'FREE', reason: null }));
+it('shows recruiters a display-only Scout card, without querying team candidates', async () => {
+  fetchMock.mockImplementation(async () => ({
+    plans: plans.filter((plan) => plan.key === 'SCOUT'),
+    currentPlan: 'FREE',
+    reason: null,
+  }));
   renderWithProviders(<PlanSelector reason="" />, {
     viewer: { role: 'recruiter', login: 'recruiter' },
   });
-  expect(await screen.findByText('지금 결제할 수 있는 요금제가 없어요.')).toBeVisible();
+  expect(await screen.findByRole('heading', { name: 'Scout' })).toBeVisible();
+  expect(screen.getByText('₩14,900')).toBeVisible();
+  expect(screen.getByText('월간 청구')).toBeVisible();
+  // Scout checkout is [Included]: the server refuses it, so the button stays off.
+  expect(screen.getByRole('button', { name: 'Scout 플랜 준비 중' })).toBeDisabled();
+  expect(screen.getByText('결제는 곧 열릴 예정이에요.')).toBeVisible();
   expect(screen.getByText('원하시는 인재를 더 빠르게 채용해 보세요')).toBeVisible();
   expect(screen.queryByRole('heading', { name: 'Pro' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: '연간 결제' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /연간 결제/ })).not.toBeInTheDocument();
   expect(screen.queryByText(/무료 체험은 1회만/)).not.toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([url]) => url.includes('team-candidates'))).toBe(false);
 });

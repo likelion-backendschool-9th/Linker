@@ -158,6 +158,10 @@ export const SUBSCRIPTION_PRICE = {
   proYearly: 29000,
   flexMonthly: 7900,
   flexExtraMember: 1900,
+  /** Yearly = 10 months of the monthly price ("2개월 무료"), Pro and Flex alike; Scout is monthly only */
+  flexYearly: 79000,
+  flexExtraMemberYearly: 19000,
+  yearlyFreeMonths: 2,
   /** Billing inclusion, independent of the free-team member cap. */
   flexIncludedSeats: 6,
   scoutMonthly: 14900,

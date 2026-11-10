@@ -23,9 +23,20 @@ const TAGLINES: Record<string, string> = {
 };
 
 function billingLine(plan: Plan, yearly: boolean) {
-  if (plan.key === 'FLEX' && plan.perExtraMember != null)
-    return `월간 청구, ${SUBSCRIPTION_PRICE.flexIncludedSeats + 1}명 이상 인당 + ${formatWon(plan.perExtraMember)}`;
-  return yearly ? '연간 청구' : '월간 청구';
+  const cycle = yearly ? '연간 청구' : '월간 청구';
+  const extra = yearly ? plan.perExtraMemberYearly : plan.perExtraMember;
+  if (plan.key === 'FLEX' && extra != null)
+    return `${cycle}, ${SUBSCRIPTION_PRICE.flexIncludedSeats + 1}명 이상 인당 + ${formatWon(extra)}`;
+  return cycle;
+}
+
+/** Yearly discount line: what twelve monthly payments would cost minus the yearly price */
+function savingLine(plan: Plan) {
+  if (plan.yearly == null) return null;
+  const saved = plan.monthly * 12 - plan.yearly;
+  return saved > 0
+    ? `월간 결제보다 ${formatWon(saved)} 절약 (${SUBSCRIPTION_PRICE.yearlyFreeMonths}개월 무료)`
+    : null;
 }
 
 /**
@@ -105,7 +116,7 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
         )}
       </div>
       {!recruiter && (
-        <div className={styles.toggle} role="group" aria-label="Pro 결제 기간">
+        <div className={styles.toggle} role="group" aria-label="결제 기간">
           {(['MONTHLY', 'YEARLY'] as const).map((value) => (
             <button
               key={value}
@@ -117,7 +128,16 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
                 void setBilling(value);
               }}
             >
-              {value === 'MONTHLY' ? '월간 결제' : '연간 결제'}
+              {value === 'MONTHLY' ? (
+                '월간 결제'
+              ) : (
+                <>
+                  연간 결제{' '}
+                  <span className={styles.toggleNote}>
+                    {SUBSCRIPTION_PRICE.yearlyFreeMonths}개월 무료
+                  </span>
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -128,8 +148,12 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
       {visiblePlans.length ? (
         <ul className={styles.plans}>
           {visiblePlans.map((plan) => {
-            const yearly = plan.key === 'PRO' && billing === 'YEARLY';
+            // Scout is monthly only (yearly null), so it keeps its monthly price on the yearly tab.
+            const yearly = billing === 'YEARLY' && plan.yearly != null;
             const amount = yearly ? plan.yearly : plan.monthly;
+            const saving = yearly ? savingLine(plan) : null;
+            // Scout's checkout is [Included]: the server still refuses it, so the card is display-only.
+            const forSale = plan.key !== 'SCOUT';
             return (
               <li key={plan.key}>
                 <article className={styles.card}>
@@ -148,11 +172,14 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
                         {amount == null ? '결제 기간을 확인해 주세요' : formatWon(amount)}
                       </span>
                       <span className={styles.billing}>{billingLine(plan, yearly)}</span>
+                      {saving && <span className={styles.saving}>{saving}</span>}
                     </p>
                     <button
                       type="button"
                       className={styles.cta}
-                      disabled={status === 'SUSPENDED' || checkout.isPending || amount == null}
+                      disabled={
+                        !forSale || status === 'SUSPENDED' || checkout.isPending || amount == null
+                      }
                       onClick={() => {
                         if (plan.key === 'FLEX') flexTeam.open();
                         else
@@ -162,10 +189,13 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
                           });
                       }}
                     >
-                      {checkout.isPending && checkout.variables?.planKey === plan.key
-                        ? '주문 준비 중…'
-                        : `${plan.name} 플랜 구독하기`}
+                      {!forSale
+                        ? `${plan.name} 플랜 준비 중`
+                        : checkout.isPending && checkout.variables?.planKey === plan.key
+                          ? '주문 준비 중…'
+                          : `${plan.name} 플랜 구독하기`}
                     </button>
+                    {!forSale && <p className={styles.soon}>결제는 곧 열릴 예정이에요.</p>}
                   </div>
                   <BenefitList className={styles.benefits} benefits={plan.benefits} />
                 </article>
@@ -192,7 +222,8 @@ export function PlanSelector({ reason, returnTo }: { reason: string; returnTo?: 
           pending={checkout.isPending}
           error={flexError ? checkoutError : null}
           disabled={status === 'SUSPENDED'}
-          onSubmit={(id) => checkout.mutate({ planKey: 'FLEX', billing: 'MONTHLY', teamId: id })}
+          yearly={billing === 'YEARLY'}
+          onSubmit={(id) => checkout.mutate({ planKey: 'FLEX', billing, teamId: id })}
         />
       )}
     </div>
