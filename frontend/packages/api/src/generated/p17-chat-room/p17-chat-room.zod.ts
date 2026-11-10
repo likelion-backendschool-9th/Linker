@@ -168,7 +168,8 @@ export const ListChatPullRequestsResponse = zod.object({
   "state": zod.string(),
   "draft": zod.boolean(),
   "author": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "githubUpdatedAt": zod.iso.datetime({"offset":true}).describe('Last update time reported by GitHub; not the local cache creation time')
 }))
 })
 
