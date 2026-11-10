@@ -503,7 +503,7 @@ In MVP a recruiting offer is not a separate offer form but a 1:1 chat request. I
 | --- | --- |
 | Eligible teams | On a Flex subscription (incl. trial and payment-failure grace) and not turned off by the owner in team settings. 1:1 chats are never summarized |
 | Free teams | Button is visible; tapping shows the "Flex 구독 팀만 쓸 수 있어요" (Flex only) sheet. Owner/billing manager get "Flex 알아보기" (→ plans & checkout; "7일 무료 체험" if no trial yet); other members get "오너에게 Flex를 요청해 보세요" (ask your owner for Flex) |
-| Range | The latest messages that fit the input budget (about 1,500 tokens ≈ 70 short messages; decision 2026-11-10, demo server is 2 CPUs without GPU). Range choice (since my last read / today / last 24 hours / since last summary) is a later `[Included]` item |
+| Range | The latest messages that fit the input budget (about 1,500 tokens ≈ 50–70 short messages, 2–3 minutes per summary; decision 2026-11-10, demo server is 2 CPUs without GPU). Range choice (since my last read / today / last 24 hours / since last summary) is a later `[Included]` item |
 | Min / max | Fewer than 20 messages → "직접 읽는 게 더 빨라요" (faster to read yourself). At most the latest 200 are read, then trimmed to the input budget; one message counts up to 200 characters. The sheet says how many were summarized ("최근 메시지 N개를 요약했어요") |
 | Count | 10/day per Flex team member (tentative). Resets at 00:00 KST. Failed summaries don't count (the use goes back to the day it was taken). "새로 요약하기" spends one use |
 | Excluded | Deleted/hidden messages, images, messages from people I blocked. PR system messages contribute title and status only |

@@ -183,8 +183,8 @@ public final class PlanLimits {
 	/** Most recent eligible messages read from the room; the token budget trims them further. */
 	public static final int AI_SUMMARY_MAX_MESSAGES = 200;
 	/**
-	 * Policy ch. 8 — input budget (~1,500 tokens ≈ the latest 70 short messages). The demo server's
-	 * Ollama reads about 20 tokens/s on 2 CPUs, so this keeps one summary near 2 minutes.
+	 * Policy ch. 8 — input budget (~1,500 tokens ≈ the latest 50–70 short messages). The demo server's
+	 * Ollama reads about 20 tokens/s and writes about 4 tokens/s on 2 CPUs: one summary takes 2–3 minutes.
 	 */
 	public static final int AI_SUMMARY_INPUT_TOKEN_BUDGET = 1500;
 	/** One message contributes at most this many characters to the prompt. */
