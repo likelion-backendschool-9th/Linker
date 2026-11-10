@@ -165,6 +165,10 @@
   --size-recruit-list-skeleton-title-h: 24px;
   --size-recruit-list-skeleton-body-w: 340px; /* 19 skeleton description (Figma 1025:1429) */
   --size-recruit-list-skeleton-body-h: 43px;
+  --size-recruit-detail-skeleton-meta-w: 81px; /* 21 skeleton deadline (Figma 1025:1435) */
+  --size-recruit-detail-skeleton-meta-h: 16px;
+  --size-recruit-detail-skeleton-body-w: 342px; /* 21 skeleton intro (Figma 1025:1437) */
+  --size-recruit-detail-skeleton-body-h: 44px;
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
