@@ -34,6 +34,30 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 			""")
 	Optional<Comment> findDetailedById(@Param("id") long id);
 
+	/** 23 comment limits: when my comments in the window were written, oldest first; deleted ones count too */
+	@Query("""
+			select c.createdAt from Comment c
+			where c.author.id = :authorId and c.createdAt > :since
+			order by c.createdAt asc
+			""")
+	List<Instant> findCreatedAtSince(@Param("authorId") long authorId, @Param("since") Instant since);
+
+	/** Auto temporary hide at 5 reporters (Policy ch. 9): only a visible comment moves to review */
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update Comment c set c.visibility = com.linker.backend.entity.post.type.PostVisibility.UNDER_REVIEW
+			where c.id = :id and c.visibility = com.linker.backend.entity.post.type.PostVisibility.VISIBLE
+			""")
+	int markUnderReview(@Param("id") long id);
+
+	/** An operator dismissing an auto-hidden case shows the comment again; operator hides stay */
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update Comment c set c.visibility = com.linker.backend.entity.post.type.PostVisibility.VISIBLE
+			where c.id = :id and c.visibility = com.linker.backend.entity.post.type.PostVisibility.UNDER_REVIEW
+			""")
+	int clearUnderReview(@Param("id") long id);
+
 	boolean existsByParentIdAndDeletedAtIsNull(long parentId);
 
 	long countByParentId(long parentId);

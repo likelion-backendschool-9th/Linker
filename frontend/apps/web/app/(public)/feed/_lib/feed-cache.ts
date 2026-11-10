@@ -34,3 +34,31 @@ export function patchCards(
     },
   );
 }
+
+/** Patch every cached card by one author (follow state shows on each of their cards) */
+export function patchAuthorCards(
+  client: QueryClient,
+  authorId: number,
+  patch: (author: FeedPost['author']) => FeedPost['author'],
+) {
+  client.setQueriesData<InfiniteData<FeedPage> | { items: FeedPost[] }>(
+    { predicate: isCardQuery },
+    (data) => {
+      if (!data) return data;
+      const fix = (post: FeedPost) =>
+        post.author.id === authorId ? { ...post, author: patch(post.author) } : post;
+      if ('pages' in data) {
+        return {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) =>
+              item.type === 'POST' ? { ...item, post: fix(item.post) } : item,
+            ),
+          })),
+        };
+      }
+      return { ...data, items: data.items.map(fix) };
+    },
+  );
+}

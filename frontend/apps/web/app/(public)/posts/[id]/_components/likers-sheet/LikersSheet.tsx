@@ -28,37 +28,41 @@ export function LikersSheet({ postId }: { postId: string }) {
 }
 
 function Likers({ postId, overlay }: { postId: string; overlay: OverlayControl }) {
-  const likers = useLikers(postId);
+  const { likers, items, sentinel } = useLikers(postId);
 
   if (likers.isPending) return <Skeleton count={3} />;
   if (likers.isError) return <ErrorState onRetry={() => void likers.refetch()} />;
-  if (likers.data.items.length === 0) return <EmptyState title="아직 좋아요가 없어요." />;
+  if (items.length === 0) return <EmptyState title="아직 좋아요가 없어요." />;
 
   return (
-    <ul className={styles.people}>
-      {likers.data.items.map(({ user }) => (
-        <li key={user.id}>
-          {/* Leaving from inside the sheet: close first, then navigate (blueprint §7-2) */}
-          <button
-            type="button"
-            className={styles.person}
-            onClick={() => void overlay.closeThen(`/user/${user.login}` as Route)}
-          >
-            <Image
-              src={user.avatarUrl}
-              alt=""
-              width={40}
-              height={40}
-              sizes="40px"
-              className={styles.personAvatar}
-            />
-            <span className={styles.personText}>
-              <span className={styles.personName}>{user.name}</span>
-              <span className={styles.personLogin}>@{user.login}</span>
-            </span>
-          </button>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className={styles.people}>
+        {items.map(({ user }) => (
+          <li key={user.id}>
+            {/* Leaving from inside the sheet: close first, then navigate (blueprint §7-2) */}
+            <button
+              type="button"
+              className={styles.person}
+              onClick={() => void overlay.closeThen(`/user/${user.login}` as Route)}
+            >
+              <Image
+                src={user.avatarUrl}
+                alt=""
+                width={40}
+                height={40}
+                sizes="40px"
+                className={styles.personAvatar}
+              />
+              <span className={styles.personText}>
+                <span className={styles.personName}>{user.name}</span>
+                <span className={styles.personLogin}>@{user.login}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {likers.isFetchingNextPage && <Skeleton count={1} />}
+      {likers.hasNextPage && <div ref={sentinel} className={styles.sentinel} aria-hidden />}
+    </>
   );
 }

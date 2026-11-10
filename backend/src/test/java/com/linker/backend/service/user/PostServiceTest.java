@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,7 +31,6 @@ import com.linker.backend.entity.post.PostLike;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.integration.github.GithubRepoSource;
 import com.linker.backend.integration.github.GithubTeamSource;
 import com.linker.backend.repository.account.UserRepository;
@@ -90,13 +88,15 @@ class PostServiceTest {
 	@Mock
 	RecruitCardMapper authors;
 	@Mock
-	RedisRateLimiter rateLimiter;
-	@Mock
 	TeamRepository teams;
 	@Mock
 	GithubRepoSource github;
 	@Mock
 	PlatformTransactionManager transactions;
+	@Mock
+	com.linker.backend.repository.profile.UserTechTagRepository userTechTags;
+	@Mock
+	com.linker.backend.repository.profile.FollowRepository follows;
 
 	PostService service;
 	AuthenticatedUser developer;
@@ -105,8 +105,8 @@ class PostServiceTest {
 	void setUp() {
 		service = new PostService(
 				repos, posts, users, techTags, uploads,
-				likes, comments, seenPosts, pins, blocks, notifications, authors, rateLimiter, pro, teams,
-				github, transactions, CLOCK);
+				likes, comments, seenPosts, pins, blocks, notifications, authors, pro, teams,
+				github, userTechTags, follows, transactions, CLOCK);
 		developer = new AuthenticatedUser(
 				10L, "dev", UserType.DEVELOPER, UserStatus.ACTIVE,
 				null, false, false, true, 1L);
@@ -203,7 +203,7 @@ class PostServiceTest {
 			return post;
 		});
 
-		var response = service.create(developer, writeRequest(11L, List.of()));
+		var response = service.create(developer, writeRequest(11L, readyPhoto()));
 
 		assertThat(response.id()).isEqualTo(42L);
 		ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
@@ -226,7 +226,8 @@ class PostServiceTest {
 		when(posts.findCreatedAtSince(10L, NOW.minusSeconds(PlanLimits.POSTS_PER_DAY_WINDOW_SECONDS)))
 				.thenReturn(ten);
 
-		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, List.of())))
+		List<PostPhotoRequest> photo = readyPhoto();
+		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, photo)))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> {
 					ApiException api = (ApiException) error;
@@ -247,8 +248,22 @@ class PostServiceTest {
 		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, List.of())))
 				.isInstanceOf(ApiException.class);
 		verify(posts, never()).findCreatedAtSince(anyLong(), any());
-		verify(rateLimiter, never()).tryAcquire(any(), anyLong(), org.mockito.ArgumentMatchers.anyInt(),
-				org.mockito.ArgumentMatchers.anyInt());
+	}
+
+	@Test
+	void createRequiresAtLeastOnePhoto() {
+		GithubRepo repo = publicRepo(11L, "dev/linker-web");
+		when(repos.findActiveById(11L)).thenReturn(Optional.of(repo));
+		when(posts.existsByAuthorIdAndRepoIdAndDeletedAtIsNull(10L, 11L)).thenReturn(false);
+
+		assertThatThrownBy(() -> service.create(developer, writeRequest(11L, List.of())))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("VALIDATION_ERROR");
+					assertThat(api.getMessage()).isEqualTo("사진을 1장 이상 올려 주세요.");
+				});
+		verify(posts, never()).save(any());
 	}
 
 	@Test
@@ -380,7 +395,7 @@ class PostServiceTest {
 		Post post = ownedPost();
 		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
 
-		service.update(developer, 42L, writeRequest(null, List.of()));
+		service.update(developer, 42L, writeRequest(null, readyPhoto()));
 
 		assertThat(post.getEditedAt()).isEqualTo(NOW);
 		assertThat(post.getSummary()).isEqualTo("한 줄 소개입니다");
@@ -419,10 +434,7 @@ class PostServiceTest {
 	}
 
 	@Test
-	void createCommentRejectsEmpty() {
-		when(rateLimiter.tryAcquire(eq("post.comment.day"), eq(10L), eq(PlanLimits.POST_COMMENTS_PER_DAY),
-				eq(PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS)))
-				.thenReturn(new RedisRateLimiter.Decision(true, 0));
+	void createCommentRejectsEmptyWithoutTouchingTheLimits() {
 		Post post = ownedPost();
 		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
 		when(blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(anyLong(), anyLong())).thenReturn(false);
@@ -430,6 +442,84 @@ class PostServiceTest {
 		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("  ")))
 				.isInstanceOf(ApiException.class)
 				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("EMPTY"));
+		verify(comments, never()).findCreatedAtSince(anyLong(), any());
+	}
+
+	@Test
+	void commentsCountGraphemesSoEmojiAreOneCharacterEach() {
+		Post post = ownedPost();
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
+		when(comments.save(any(Comment.class))).thenAnswer(invocation -> {
+			Comment comment = invocation.getArgument(0);
+			ReflectionTestUtils.setField(comment, "id", 5L);
+			ReflectionTestUtils.setField(comment, "createdAt", NOW);
+			return comment;
+		});
+		// 500 family emoji: 500 characters on screen, 4,000 UTF-16 units
+		String family = "👨‍👩‍👧".repeat(PlanLimits.POST_COMMENT_MAX);
+
+		service.createComment(developer, 42L, new CommentWriteRequest(family));
+
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest(family + "a")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("TOO_LONG"));
+	}
+
+	@Test
+	void theEleventhCommentInAMinuteAndThe301stInADayAreRejected() {
+		Post post = ownedPost();
+		User author = User.create("dev", UserType.DEVELOPER);
+		ReflectionTestUtils.setField(author, "id", 10L);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		when(users.lockById(10L)).thenReturn(Optional.of(author));
+		Instant since = NOW.minusSeconds(PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS);
+		List<Instant> lastMinute = java.util.stream.IntStream.range(0, PlanLimits.POST_COMMENTS_PER_MINUTE)
+				.mapToObj(i -> NOW.minusSeconds(50 - i))
+				.toList();
+		List<Instant> fullDay = java.util.stream.IntStream.range(0, PlanLimits.POST_COMMENTS_PER_DAY)
+				.mapToObj(i -> NOW.minusSeconds(80_000 - i * 60L))
+				.toList();
+		when(comments.findCreatedAtSince(10L, since)).thenReturn(lastMinute, fullDay);
+
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("좋아요")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> {
+					ApiException api = (ApiException) error;
+					assertThat(api.getCode()).isEqualTo("RATE_LIMITED");
+					assertThat(api.getMessage()).isEqualTo("잠시 후 다시 시도해 주세요.");
+					assertThat(api.getDetail()).containsEntry("retryAfterSeconds", 10L);
+				});
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("좋아요")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(error.getMessage())
+						.isEqualTo("오늘은 더 할 수 없어요. 내일 다시 시도해 주세요."));
+		verify(comments, never()).save(any());
+	}
+
+	@Test
+	void aPostUnderReviewTakesNoLikesOrCommentsEvenFromItsAuthor() {
+		Post post = ownedPost();
+		ReflectionTestUtils.setField(post, "visibility", com.linker.backend.entity.post.type.PostVisibility.UNDER_REVIEW);
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+
+		assertThatThrownBy(() -> service.like(developer, 42L))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("STATE_CONFLICT"));
+		assertThatThrownBy(() -> service.createComment(developer, 42L, new CommentWriteRequest("확인")))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("STATE_CONFLICT"));
+	}
+
+	/** One finished upload (id 7) owned by the developer, since every post needs a photo */
+	private List<PostPhotoRequest> readyPhoto() {
+		UploadedFile file = UploadedFile.pending(10L, UploadPurpose.POST, "k", "image/png", 10);
+		ReflectionTestUtils.setField(file, "id", 7L);
+		file.complete("https://cdn.example/7.png", "image/png", 10, 100, 100);
+		when(uploads.requireReady(7L, 10L)).thenReturn(file);
+		return List.of(new PostPhotoRequest("7", file.getUrl()));
 	}
 
 	@Test
@@ -482,6 +572,39 @@ class PostServiceTest {
 	@Test
 	void recommendedUsersEmptyWithoutTechTags() {
 		assertThat(service.recommendedUsers(developer).items()).isEmpty();
+		verify(userTechTags, never()).findDevelopersSharingTags(anyLong(), any());
+	}
+
+	@Test
+	void recommendedUsersAreUpToFiveStackMatesIFollowNorBlock() {
+		com.linker.backend.entity.profile.UserTechTag react = org.mockito.Mockito.mock(
+				com.linker.backend.entity.profile.UserTechTag.class);
+		when(react.tagName()).thenReturn("React");
+		when(userTechTags.findSelected(10L)).thenReturn(List.of(react));
+		// 20 already followed, 21 blocked me, 22..27 are free: only the first five of those are kept
+		when(userTechTags.findDevelopersSharingTags(10L, List.of("React")))
+				.thenReturn(List.of(20L, 21L, 22L, 23L, 24L, 25L, 26L, 27L));
+		when(follows.findAllFollowedIds(10L)).thenReturn(List.of(20L));
+		when(blocks.findActiveBlockerIds(10L)).thenReturn(List.of(21L));
+		List<User> people = java.util.stream.LongStream.rangeClosed(22, 26).mapToObj(id -> {
+			User person = User.create("dev" + id, UserType.DEVELOPER);
+			ReflectionTestUtils.setField(person, "id", id);
+			return person;
+		}).toList();
+		when(users.findAllById(List.of(22L, 23L, 24L, 25L, 26L))).thenReturn(people);
+		when(userTechTags.findTagNamesByUserIds(List.of(22L, 23L, 24L, 25L, 26L)))
+				.thenReturn(List.<Object[]>of(new Object[] {22L, "React"}, new Object[] {22L, "Next.js"}));
+		when(authors.toAuthor(any(User.class))).thenAnswer(invocation -> {
+			User person = invocation.getArgument(0);
+			return new com.linker.backend.dto.recruit.response.AuthorBriefResponse(
+					person.getId(), person.getUsername(), person.getUsername(), "", "DEVELOPER", "OFF", false);
+		});
+
+		var items = service.recommendedUsers(developer).items();
+
+		assertThat(items).extracting(item -> item.user().id()).containsExactly(22L, 23L, 24L, 25L, 26L);
+		assertThat(items.getFirst().techStack()).containsExactly("React", "Next.js");
+		assertThat(items.get(1).techStack()).isEmpty();
 	}
 
 	private PostWriteRequest writeRequest(Long repoId, List<PostPhotoRequest> photos) {

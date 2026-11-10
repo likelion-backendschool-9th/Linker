@@ -15,6 +15,22 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+	/** Auto temporary hide at 5 reporters (Policy ch. 9): only a visible post moves to review */
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update Post p set p.visibility = com.linker.backend.entity.post.type.PostVisibility.UNDER_REVIEW
+			where p.id = :id and p.visibility = com.linker.backend.entity.post.type.PostVisibility.VISIBLE
+			""")
+	int markUnderReview(@Param("id") long id);
+
+	/** An operator dismissing an auto-hidden case shows the post again; operator hides stay */
+	@Modifying(flushAutomatically = true)
+	@Query("""
+			update Post p set p.visibility = com.linker.backend.entity.post.type.PostVisibility.VISIBLE
+			where p.id = :id and p.visibility = com.linker.backend.entity.post.type.PostVisibility.UNDER_REVIEW
+			""")
+	int clearUnderReview(@Param("id") long id);
+
 	/** 22 daily limit: when my posts in the window were published, oldest first; deleted ones count too */
 	@Query("""
 			select p.createdAt from Post p

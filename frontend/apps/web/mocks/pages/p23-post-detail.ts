@@ -23,6 +23,7 @@ type Comment = {
   author: ReturnType<typeof brief>;
   text: string;
   createdAt: string;
+  editedAt?: string | null;
 };
 
 const comments: Comment[] = [
@@ -139,6 +140,7 @@ export const routes: MockRoute[] = [
     const comment = comments.find((c) => c.id === Number(params.commentId));
     if (!comment) fail(404, 'NOT_FOUND', '댓글을 찾지 못했어요');
     comment.text = String(body.text ?? comment.text);
+    comment.editedAt = new Date().toISOString();
     return comment;
   }),
   del('/api/v1/user/posts/:postId/comments/:commentId', ({ params }) => {

@@ -439,23 +439,23 @@
 | 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: replace featured posts and order (free 1, Pro 5; saved pins stay after Pro ends) | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
-| 22 | E | POST | `/api/v1/user/posts` | Publish (10/day counting published posts only, photos 5 / Pro 10, no emoji in intro/body) | user · developers only |
+| 22 | E | POST | `/api/v1/user/posts` | Publish (10/day counting published posts only, photos 1–5 / Pro 10 required, no emoji in intro/body) | user · developers only |
 | 22 | E | GET | `/api/v1/user/posts/{postId}/edit-form` | Edit form values | author |
 | 22 | E | PUT | `/api/v1/user/posts/{postId}` | Edit ("수정됨" (Edited)) | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}?from=` | Post (repo state, commit/issue counts, like count, "검토 중" (Under review) to the author if hidden). If logged in: my like, view logging (traffic source: feed, profile, recruit post, chat share, external link `from=share`) | public |
 | 23 | E | GET | `/api/v1/public/posts/{postId}/readme` | `[Included]` README (1-hour cache, sanitized), expand logged if logged in | public |
 | 23 | E | POST | `/api/v1/user/posts/{postId}/likes` | Like (notification) | user · developers only |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}/likes` | Unlike | user · developers only |
-| 23 | E | GET | `/api/v1/user/posts/{postId}/likes` | Likers sheet (people list, so login only) | user |
+| 23 | E | GET | `/api/v1/user/posts/{postId}/likes` | Likers sheet (people list, so login only; `?cursor=`, 20 per page, infinite scroll) | user |
 | 23 | E | GET | `/api/v1/public/posts/{postId}/comments` | Flat comments (no replies) | public |
-| 23 | E | POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars, 10/min and 300/day, notification; no parentId) | user · developers only |
+| 23 | E | POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars counted as graphemes, 10/min and 300/day counting written comments only, notification; no parentId; post under review → 409) | user · developers only |
 | 23 | E | PATCH | `/api/v1/user/posts/{postId}/comments/{commentId}` | Edit comment | comment author |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment | comment author / post owner |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}` | Delete post | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}/same-repo-posts` | Other posts for this repo | public |
 | 24 | E | GET | `/api/v1/public/feed?tab=&cursor=&offersOnly=` | `tab` omitted or `recommended` = "추천": developers and operators get posts matching their tech stack or job categories first (by popularity, one-line "why shown"), then the rest in random order, posts seen on an earlier visit last; guests and recruiters get every post in random order with no "why shown"; max 2 in a row from the same author. `tab=following` = "팔로잉": posts by people I follow, newest first, no ads (empty for guests and recruiters; the web never calls it for either: guests see a login notice, recruiters have no "팔로잉" tab). `cursor` = opaque `<visit start ms>.<offset>`: fixes the shuffle and drops posts written later, so pages never repeat or skip. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers), "추천" only | public |
 | 24 | E | POST | `/api/v1/user/feed/seen` | Log posts shown on screen (to exclude from recommendations) | user |
-| 24 | E | GET | `/api/v1/user/feed/recommended-users` | Empty feed: 5 developers by my tech stack | user |
+| 24 | E | GET | `/api/v1/user/feed/recommended-users` | Empty feed: up to 5 active developers sharing my tech stack (most shared tags first, minus people I follow or have a block with), each with their tech stack | user |
 
 ### 4-13. 신고·차단·이의 제기 — `ModerationController`
 
@@ -467,7 +467,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 00 | E | POST | `/api/v1/user/reports` | Report (target type, id, reason; for chat, copy 10 before/after) | user |
+| 00 | E | POST | `/api/v1/user/reports` | Report (target type, id, reason; for chat, copy 10 before/after). Users, chat messages, posts and comments today; 5 reporters auto-hide a post/comment as UNDER_REVIEW, and what I reported leaves my view | user |
 | 00 | E | GET | `/api/v1/user/me/blocks` | Blocked users list (06) | user |
 | 00 | E | POST | `/api/v1/user/blocks` | Open a blocking period (idempotent while active) | user |
 | 00 | E | DELETE | `/api/v1/user/blocks/{userId}` | Close the active blocking period; retain history for DM filtering | user |
@@ -995,7 +995,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: report (00), "채용 제안 보내기" (Send recruiting offer) → 17's `POST /api/v1/recruiter/chat-requests`, edit → 22
 - Tables: new post_likes, comments, 🟡 post_views · shared posts, post_images, github_repos, users, notifications, reports, user_blocks
-- [ ] Frontend: photo swipe and viewer, README toggle, guests tapping like / comment input / more → login prompt, optimistic like, flat comments (no replies), more sheet, for recruiters hide input + offer menu (after 31), `[Included]` share button (00 share sheet), `generateMetadata` + OG image (cover photo, otherwise `opengraph-image.tsx` repo card; strip `?from=share` from canonical, blueprint 8-3)
+- [ ] Frontend: photo swipe and viewer, README toggle, guests tapping like / comment input / more → login prompt, optimistic like, flat comments (no replies), more sheet, for recruiters hide input + offer menu (after 31), `[Included]` share button (00 share sheet), `generateMetadata` + OG image (cover photo, required on 22; strip `?from=share` from canonical, blueprint 8-3)
 
 </details>
 

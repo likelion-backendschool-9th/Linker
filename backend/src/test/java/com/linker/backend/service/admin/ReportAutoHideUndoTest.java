@@ -62,9 +62,21 @@ class ReportAutoHideUndoTest {
 		ReportContentEffects effects = effects();
 
 		effects.undoAutoHide(ReportTargetType.USER, 8L);
-		effects.undoAutoHide(ReportTargetType.POST, 8L);
+		effects.undoAutoHide(ReportTargetType.RECRUIT_POST, 8L);
 
 		verifyNoInteractions(messages, posts, comments, recruitPosts, ads, events);
+	}
+
+	@Test
+	void undoAutoHideTakesPostsAndCommentsOutOfReview() {
+		ReportContentEffects effects = effects();
+
+		effects.undoAutoHide(ReportTargetType.POST, 8L);
+		effects.undoAutoHide(ReportTargetType.COMMENT, 9L);
+
+		verify(posts).clearUnderReview(8L);
+		verify(comments).clearUnderReview(9L);
+		verifyNoInteractions(messages, recruitPosts, ads, events);
 	}
 
 	@Test
