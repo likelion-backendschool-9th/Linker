@@ -5,5 +5,4 @@ export {
   calendarRange,
   anchorOf,
 } from '../../_lib/calendar-queries';
-export { issueFilterOptions } from '../../../_lib/issue-queries';
 export { issueFilterParsers } from '../../../_lib/issue-filters';

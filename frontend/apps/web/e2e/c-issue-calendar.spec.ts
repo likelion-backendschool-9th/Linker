@@ -27,7 +27,7 @@ test('header, tabs, month title, status chips, weekdays and the "?" note', async
     ).toBeVisible();
   }
   await expect(page.getByRole('main').locator('ol[aria-hidden]')).toHaveText('월화수목금토일');
-  await expect(page.getByRole('button', { name: /^필터/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: '팀 변경', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: /팀 채팅으로 가기/ })).toBeVisible();
 
   await page.getByRole('button', { name: '캘린더 안내' }).click();

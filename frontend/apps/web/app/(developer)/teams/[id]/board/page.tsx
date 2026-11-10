@@ -3,8 +3,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/api/query-client';
 import { buildMetadata } from '@/lib/seo/metadata';
 
-import { IssueFilterButton } from '../_components/issue-filter-button';
-import { IssueFilterSheet } from '../_components/issue-filter-sheet/IssueFilterSheet';
+import { TeamChangeIconButton } from '../_components/team-change-icon-button';
 import { TeamFrame } from '../_components/team-frame/TeamFrame';
 import { loadIssueFilters } from '../_lib/issue-filters';
 import { BoardView } from './_components/board-view';
@@ -20,11 +19,9 @@ export default async function BoardPage({ params, searchParams }: PageProps<'/te
   await client.prefetchQuery(boardOptions(id, loadIssueFilters(query)));
 
   return (
-    <TeamFrame teamId={id} title="상태 보드" actions={<IssueFilterButton appearance="icon" />}>
+    <TeamFrame teamId={id} title="상태 보드" actions={<TeamChangeIconButton />}>
       <HydrationBoundary state={dehydrate(client)}>
         <BoardView teamId={id} />
-        {/* Repo, assignee, label, open only: the "필터" menu on the board picks the status column */}
-        <IssueFilterSheet teamId={id} showStatus={false} />
       </HydrationBoundary>
     </TeamFrame>
   );
