@@ -84,7 +84,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
     schedule,
     status,
     phase,
-    progress,
+    progressStep,
     failure,
     busy,
     open,
@@ -402,13 +402,7 @@ function ContentForm(props: IssueContentStepProps & { template: ParsedTemplate }
         {phase === 'syncing' && (
           <div role="status" className={styles.progress}>
             <p className={styles.progressTitle}>GitHub에 반영하고 있어요</p>
-            <ol className={styles.progressSteps}>
-              {progress.map((item) => (
-                <li key={item.name} data-done={item.done}>
-                  {item.name} {item.done ? '완료' : '진행 중'}
-                </li>
-              ))}
-            </ol>
+            {progressStep ? <p className={styles.progressSteps}>{progressStep}</p> : null}
           </div>
         )}
 

@@ -18,15 +18,37 @@ const formTemplate = {
   source: 'REPO',
   name: '요청',
   description: '',
-  kind: 'FORM',
-  defaultTitle: '[요청] ',
-  defaultLabels: ['help wanted'],
-  defaultAssignees: ['me'],
+  format: 'FORM',
+  title: '[요청] ',
+  body: '',
+  labels: ['help wanted'],
+  assignees: ['me'],
   fallback: false,
   fields: [
-    { id: 'summary', type: 'input', label: '요약', required: true },
-    { id: 'shot', type: 'upload', label: '스크린샷' },
+    {
+      id: 'summary',
+      type: 'input',
+      label: '요약',
+      required: true,
+      options: [],
+      requiredOptions: [],
+    },
+    { id: 'shot', type: 'upload', label: '스크린샷', options: [], requiredOptions: [] },
   ],
+};
+
+const templateList = {
+  templates: [{ key: 'form:request', source: 'REPO', name: '요청', description: '', format: 'FORM' }],
+  assigneeCandidates: [
+    {
+      id: 1,
+      login: 'me',
+      name: '한서준',
+      avatarUrl: 'https://avatars.githubusercontent.com/u/1',
+    },
+  ],
+  labelOptions: [{ name: 'help wanted', color: '008672' }],
+  maxAssignees: 10,
 };
 
 type Route = { match: (url: string, init?: RequestInit) => boolean; reply: () => unknown };
@@ -34,38 +56,25 @@ type Route = { match: (url: string, init?: RequestInit) => boolean; reply: () =>
 function serve(...extra: Route[]) {
   const routes: Route[] = [
     ...extra,
-    { match: (url) => url.includes('/issue-templates/'), reply: () => formTemplate },
     {
-      match: (url) => url.endsWith('/issue-create/repos'),
-      reply: () => ({
-        items: [{ id: 11, name: 'linker-web', fullName: 'a/linker-web', canWrite: true }],
-      }),
+      match: (url) => /\/issue-templates\/[^?]+/.test(url),
+      reply: () => formTemplate,
     },
     {
-      match: (url) => url.includes('/assignee-candidates'),
-      reply: () => ({
-        items: [
-          {
-            id: 1,
-            login: 'me',
-            name: '한서준',
-            avatarUrl: 'https://avatars.githubusercontent.com/u/1',
-          },
-        ],
-        max: 10,
-      }),
-    },
-    {
-      match: (url) => url.includes('/label-options'),
-      reply: () => ({ items: [{ name: 'help wanted', color: '008672' }] }),
+      match: (url) => url.includes('/issue-templates?'),
+      reply: () => templateList,
     },
     {
       match: (url) => url.includes('/issue-sync-jobs/'),
       reply: () => ({
+        jobId: 7,
         status: 'DONE',
-        steps: [{ name: '이슈 만들기', done: true }],
+        step: 'DONE',
         issueId: 1120,
-        failedStep: null,
+        detailPath: '/teams/1/issues/1120',
+        errorCode: null,
+        retryScheduled: false,
+        retryAfterSeconds: null,
       }),
     },
   ];
@@ -78,7 +87,16 @@ function serve(...extra: Route[]) {
 
 const created = {
   match: (url: string, init?: RequestInit) => url.endsWith('/issues') && init?.method === 'POST',
-  reply: () => ({ jobId: '7', issueId: 1120 }),
+  reply: () => ({
+    jobId: 7,
+    status: 'DONE',
+    step: 'DONE',
+    issueId: 1120,
+    detailPath: '/teams/1/issues/1120',
+    errorCode: null,
+    retryScheduled: false,
+    retryAfterSeconds: null,
+  }),
 };
 
 const submitName = 'GitHub에 이슈 작성하기';
@@ -114,7 +132,7 @@ it('starts from the form template defaults, accessibly', async () => {
   expect(await axe(container)).toHaveNoViolations();
 });
 
-it('sends the GitHub-format body with the template defaults, then leaves for the detail', async () => {
+it('sends answers (not a rendered body) with requestId, then leaves for the detail', async () => {
   serve(created);
   const onCreated = vi.fn();
   renderStep(onCreated);
@@ -125,17 +143,18 @@ it('sends the GitHub-format body with the template defaults, then leaves for the
     timeout: 3000,
   });
   const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
-  expect(JSON.parse(String(post?.[1]?.body))).toEqual({
+  const body = JSON.parse(String(post?.[1]?.body)) as Record<string, unknown>;
+  expect(body).toMatchObject({
     repoId: 11,
     templateKey: 'form:request',
     title: '[요청]',
-    body: '### 요약\n\n다크 모드',
+    answers: { summary: ['다크 모드'] },
     assigneeIds: [1],
     labels: ['help wanted'],
-    startDate: null,
-    dueDate: null,
     status: 'TODO',
   });
+  expect(body).not.toHaveProperty('body');
+  expect(typeof body.requestId).toBe('string');
   expect(safeStorage.get(issueDraftKey('1'))).toBeNull();
 });
 
@@ -145,7 +164,16 @@ it('keeps the content on the device and offers "다시 보내기" when GitHub fa
     match: (url, init) => url.endsWith('/issues') && init?.method === 'POST',
     reply: () => {
       if (fail) throw new ApiError(503, { code: 'GITHUB_UNAVAILABLE', message: 'GitHub 오류' });
-      return { jobId: '7', issueId: 1120 };
+      return {
+        jobId: 7,
+        status: 'DONE',
+        step: 'DONE',
+        issueId: 1120,
+        detailPath: '/teams/1/issues/1120',
+        errorCode: null,
+        retryScheduled: false,
+        retryAfterSeconds: null,
+      };
     },
   });
   const onCreated = vi.fn();
@@ -178,17 +206,17 @@ it('blocks the CTA when the title is empty', async () => {
 
 it('toggles markdown preview in the same body field (Figma 200:806)', async () => {
   serve({
-    match: (url) => url.includes('/issue-templates/'),
+    match: (url) => /\/issue-templates\/[^?]+/.test(url),
     reply: () => ({
       key: 'repo:bug',
       source: 'REPO',
       name: '버그 제보',
       description: '',
-      kind: 'MARKDOWN',
-      defaultTitle: '',
+      format: 'MARKDOWN',
+      title: '',
       body: '## 현상\n\n- 항목 **굵게**\n\n`code`',
-      defaultLabels: [],
-      defaultAssignees: [],
+      labels: [],
+      assignees: [],
       fallback: false,
       fields: [],
     }),
