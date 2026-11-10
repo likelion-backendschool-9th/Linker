@@ -1,12 +1,9 @@
 'use client';
 
 import { CheckCircleLinearIcon } from '@solar-icons/static/linear/check-circle';
-import { EyeClosedLinearIcon } from '@solar-icons/static/linear/eye-closed';
-import { EyeLinearIcon } from '@solar-icons/static/linear/eye';
 import type { Route } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button/Button';
@@ -33,7 +30,6 @@ export function RecruiterSignupForm() {
     signupPending,
     handlers,
   } = useRecruiterSignupForm();
-  const [businessRegistrationVisible, setBusinessRegistrationVisible] = useState(false);
 
   const requiredConsentsReady = Boolean(
     checked.ageConfirmed && checked.termsAccepted && checked.businessTermsAccepted,
@@ -100,9 +96,7 @@ export function RecruiterSignupForm() {
                 detailLabel="[ 자세히 보기 ]"
                 register={form.register('businessTermsAccepted', {
                   onChange: (event) => {
-                    form.setValue('personalDataAccepted', event.target.checked, {
-                      shouldValidate: true,
-                    });
+                    form.setValue('personalDataAccepted', event.target.checked);
                   },
                 })}
                 error={form.formState.errors.businessTermsAccepted?.message}
@@ -153,7 +147,7 @@ export function RecruiterSignupForm() {
         <div className={pageStyles.content}>
           <div className={pageStyles.intro}>
             <h2>사업자 인증하기</h2>
-            <p>사업자 등록 번호를 인증해 주세요</p>
+            <p>사업자 등록 번호를 인증해 주세요.</p>
           </div>
 
           <div className={pageStyles.businessField}>
@@ -161,7 +155,7 @@ export function RecruiterSignupForm() {
             <div className={pageStyles.businessInput}>
               <input
                 id="business-registration-number"
-                type={businessRegistrationVisible ? 'text' : 'password'}
+                type="text"
                 inputMode="numeric"
                 autoComplete="off"
                 maxLength={10}
@@ -170,36 +164,18 @@ export function RecruiterSignupForm() {
                 onChange={handlers.updateBusinessRegistrationNumber}
                 aria-label="사업자 등록 번호"
               />
-              <button
-                type="button"
-                className={pageStyles.visibilityButton}
-                onClick={() => setBusinessRegistrationVisible((visible) => !visible)}
-                aria-label={businessRegistrationVisible ? '사업자 등록 번호 숨기기' : '사업자 등록 번호 표시'}
-                aria-pressed={businessRegistrationVisible}
-              >
-                <Icon svg={businessRegistrationVisible ? EyeClosedLinearIcon : EyeLinearIcon} />
-              </button>
             </div>
           </div>
         </div>
 
-        <div className={pageStyles.actions}>
-          <button
-            type="button"
-            className={pageStyles.previous}
-            onClick={() => handlers.goToStep(1)}
-          >
-            이전
-          </button>
-          <button
-            type="button"
-            className={pageStyles.next}
-            disabled={businessRegistrationNumber.length !== 10}
-            onClick={handlers.proceedFromBusinessRegistration}
-          >
-            다음
-          </button>
-        </div>
+        <button
+          type="button"
+          className={pageStyles.next}
+          disabled={businessRegistrationNumber.length !== 10}
+          onClick={handlers.proceedFromBusinessRegistration}
+        >
+          다음
+        </button>
       </section>
     );
   }

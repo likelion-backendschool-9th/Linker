@@ -116,6 +116,10 @@ export function useRecruiterSignupForm() {
   const checked = useWatch({ control: form.control });
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
+
+  useEffect(() => {
     if (resendSeconds <= 0) return;
     const timer = window.setTimeout(
       () => setResendSeconds((seconds) => Math.max(0, seconds - 1)),
@@ -234,7 +238,7 @@ export function useRecruiterSignupForm() {
       'personalDataAccepted',
       'marketingAccepted',
     ] as const) {
-      form.setValue(field, checkedValue, { shouldValidate: true });
+      form.setValue(field, checkedValue);
     }
   }
 
