@@ -1,4 +1,4 @@
-/* Sits above the bottom tab bar; inverse surface like the footer band (guide ch. 4) */
+/* Sits above the bottom tab bar; toasts hug their text and stack centered (Figma 877:415) */
 .viewport {
   position: fixed;
   right: 0;
@@ -7,6 +7,7 @@
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-xs);
   max-width: var(--sheet-max-width);
   margin: 0 auto;
@@ -14,9 +15,12 @@
   outline: none;
 }
 
-/* Top placement: just under the stack header (and the notch), dropping down instead of rising */
+/* Top placement (the default): just under the header and the notch, at eye level, dropping down.
+   Clears the taller tab header too, so it never sits on the header on any screen */
 .viewportTop {
-  top: calc(env(safe-area-inset-top) + var(--header-height) + var(--space-xs));
+  top: calc(
+    env(safe-area-inset-top) + max(var(--header-height), var(--header-height-tab)) + var(--space-xs)
+  );
   bottom: auto;
 }
 
@@ -24,36 +28,62 @@
   animation-name: drop;
 }
 
+/* Figma 877:415 — 33 high, 18 side padding, r5, white (solid, not Figma's 20%) with a 0 4 12 shadow; dot 8 then the text */
 .toast {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-sm);
-  min-height: var(--control-height);
-  padding: var(--space-sm) var(--space-md);
-  color: var(--color-text-inverse);
-  background-color: var(--color-primary);
-  border-radius: var(--radius-sm);
+  gap: var(--space-xs);
+  max-width: 100%;
+  min-height: var(--control-height-toast);
+  padding: var(--space-xs) var(--space-toast-inline);
+  color: var(--color-text-title-cool);
+  background-color: var(--color-toast-bg);
+  border-radius: var(--radius-toast);
+  box-shadow: var(--shadow-toast);
   animation: rise var(--duration-overlay) var(--ease-standard);
 }
 
-.toast :focus-visible {
-  outline-color: var(--color-focus-ring-on-dark);
+/* Success #2563eb · error #ed0004 · persistent #ed8e00; info has none */
+.dot {
+  flex-shrink: 0;
+  width: var(--toast-dot-size);
+  height: var(--toast-dot-size);
+  border-radius: var(--radius-full);
 }
 
+.dotSuccess {
+  background-color: var(--color-cta-cool);
+}
+
+.dotError {
+  background-color: var(--color-toast-error);
+}
+
+.dotPersistent {
+  background-color: var(--color-toast-persistent);
+}
+
+/* 14 medium #111827 */
 .message {
-  flex: 1;
   font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+/* Action toasts (되돌리기, 채팅방으로 가기): no dot, the label in blue after the message; the whole toast is
+   the tap target */
+.actionable {
+  cursor: pointer;
 }
 
 .action {
   flex-shrink: 0;
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-xs);
+  padding: 0;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-inverse);
-  text-decoration: underline;
+  color: var(--color-cta-cool);
+  background: none;
+  border: 0;
 }
 
 @keyframes drop {

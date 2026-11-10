@@ -1,0 +1,1 @@
+export { ProfileTechStack } from './ProfileTechStack';

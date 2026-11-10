@@ -21,7 +21,7 @@ export function useRecommendedPerson(item: RecommendedUser) {
     onMutate: (next) => setFollowing(next),
     onError: (_error, next) => {
       setFollowing(!next);
-      toast('팔로우를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' });
+      toast('팔로우를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' });
     },
   });
 

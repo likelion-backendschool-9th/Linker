@@ -45,7 +45,7 @@ export function useAppealSheet(notification: NotificationItem | null) {
     onError: (error, { sanctionId }) => {
       if (error instanceof ApiError && error.code === 'ALREADY_APPEALED') {
         recordSubmitted(sanctionId);
-        toast('이미 이의 제기를 접수했어요.');
+        toast('이미 이의 제기를 접수했어요.', { tone: 'info' });
       }
     },
   });

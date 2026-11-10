@@ -67,7 +67,8 @@ export const ME = developer(1, 'seojun-han', 'JUNHORANG', {
   avatarUrl: '/mock/seojun-han.svg',
   bio: '안녕하세요. 좋은 개발자가 되고 싶습니다.\n프론트 엔드 중심으로 사용자 경험을 살리는 것을 좋아합니다',
   blogUrl: null,
-  techStack: ['Java', 'Next.js', 'TypeScript', 'Figma', 'Spring'],
+  // Figma 121:1188: five chips where the last (Docker) doesn't fit at 375 and folds into "+1"
+  techStack: ['Java', 'Next.js', 'TypeScript', 'JavaScript', 'Docker'],
   lookingForTeam: false,
   jobStatus: 'SEEKING',
   jobCategories: ['FRONTEND', 'FULLSTACK'],

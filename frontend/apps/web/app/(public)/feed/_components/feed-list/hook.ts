@@ -8,9 +8,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { useViewer } from '@/lib/auth/viewer-context';
 
-import { FEED_TABS, feedOptions, sendSeen, type FeedItem } from '../../_lib/feed-queries';
+import { FEED_TABS, feedOptions, sendSeen, type FeedItem, type FeedTab } from '../../_lib/feed-queries';
 
 const offersOnlyParser = parseAsBoolean.withDefault(false).withOptions({ history: 'replace' });
+const RECRUITER_TABS: readonly FeedTab[] = ['recommended'];
 const tabParser = parseAsStringLiteral(FEED_TABS)
   .withDefault('recommended')
   .withOptions({ history: 'replace' });
@@ -22,7 +23,10 @@ export function useFeedList() {
   const viewer = useViewer();
   const recruiter = viewer.role === 'recruiter';
   const requireLogin = useRequireLogin();
-  const [tab, setTab] = useQueryState('tab', tabParser);
+  const [tabParam, setTab] = useQueryState('tab', tabParser);
+  // Recruiters can't follow: they only get "추천", even with ?tab=following in the URL
+  const tab = recruiter ? 'recommended' : tabParam;
+  const tabs = recruiter ? RECRUITER_TABS : FEED_TABS;
   const [offersOnly, setOffersOnly] = useQueryState('offersOnly', offersOnlyParser);
   const following = tab === 'following';
   const filter = recruiter && offersOnly && !following;
@@ -48,6 +52,7 @@ export function useFeedList() {
     viewer,
     recruiter,
     tab,
+    tabs,
     setTab: (next: typeof tab) => void setTab(next),
     following,
     loginNeeded,

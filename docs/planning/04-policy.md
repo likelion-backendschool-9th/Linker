@@ -82,7 +82,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 21 | Recruit post detail | View; apply = prompt | ○ apply; author manages applicants | View | Same as developer |
 | 22 | Write/edit project post | Prompt | ○ | × | Same as developer |
 | 23 | Project post detail | View (except list of likers) | ○ | View + "Send recruiting offer" to author | Same as developer |
-| 24 | Home feed | View ("추천" in random order; "팔로잉" shows the login notice; no job ads) | ○ "추천" by my tech stack and job categories + job-category job ads; "팔로잉" | View ("추천" in random order with the "only developers open to offers" toggle; "팔로잉" always empty; no job ads) | Same as developer |
+| 24 | Home feed | View ("추천" in random order; "팔로잉" shows the login notice; no job ads) | ○ "추천" by my tech stack and job categories + job-category job ads; "팔로잉" | View ("추천" only, in random order with the "only developers open to offers" toggle; no "팔로잉" tab; no job ads) | Same as developer |
 | 25–27 | Ops: reports, users, action log | × | × | × | ○ (permanent suspension, lifting sanctions, reviewing appeals = lead operator) |
 | 28·29 | Plans & checkout, manage subscription | Prompt | ○ Pro/Flex | ○ Scout only | Same as developer |
 | 30 | My stats | Prompt | ○ free scope; Pro adds traffic sources and recruiter view counts | × | Same as developer |
@@ -140,6 +140,7 @@ Limits to prevent spam and abuse. On hitting a limit show "잠시 후 다시 시
 - Failed chat messages get resend/delete buttons next to the bubble; auto-retry up to 3 times.
 - If GitHub doesn't respond, show screens from the Linker cache with a top banner "GitHub 연결이 불안정해 최신 정보가 아닐 수 있어요" (GitHub connection unstable; info may be outdated).
 - Light actions like likes/follows are applied on screen first; on failure, revert and notify briefly.
+- A request with no response within **10 seconds** fails as a timeout and is not retried automatically. An action (save, send, delete) shows the error toast "네트워크 연결 시간이 초과되었습니다." (network timed out); a screen still loading shows the load-failure screen with a retry button. While a request is in flight its button stays disabled so it can't be sent twice.
 
 ## 3. Account & profile
 
@@ -186,8 +187,8 @@ In MVP, sign-up completes with company email verification alone and the account 
 | Value | Who sees it | Recruiter messages |
 | --- | --- | --- |
 | Seeking (구직 중) | Everyone. "구직 중" badge on profile header and above the author's login on feed cards | Receives |
-| Open to offers (제안만 받기) | Profile: recruiters only. Feed cards (24, also profile post cards): everyone, as "제안 받기" above the login | Receives |
-| Off (끔, default) | Profile: not shown. Feed cards: everyone, as "구직 안 함" above the login in gray | Doesn't receive. No "Send recruiting offer" button on profile |
+| Open to offers (제안 받기) | Profile: recruiters only. Feed cards (24, also profile post cards): everyone, above the login | Receives |
+| Off (구직 안 함, default) | Profile: not shown. Feed cards: everyone, above the login in gray | Doesn't receive. No "Send recruiting offer" button on profile |
 
 - Turning job-seeking off blocks only new offers. Already accepted conversations and pending requests stay.
 - After 90 days without login, set to Off and send a "구직 상태를 껐어요" (we turned off your job-seeking status) notification on next login.
@@ -262,7 +263,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
-| POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so their "팔로잉" is always empty. The "제안 받는 개발자만" toggle is on "추천" only |
+| POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so they get only "추천" (no "팔로잉" tab, even with `?tab=following`) and no "팔로우" chip on feed cards. The "제안 받는 개발자만" toggle is on "추천" only |
 | POL-P-4 "추천" by role | **Developers and operators**: posts that share a tag with my tech stack, or whose author picked one of my job categories of interest (POL-H-8), come first, ordered by popularity score; after them, every other post in random order. Job ads 1 per 10 posts (POL-H-9). **Guests and recruiters**: every post in random order, no "why shown", no job ads |
 | POL-P-4 "추천" rules | Exclude my own posts, posts by users in a block relation (either direction) and hidden posts. For developers and operators, posts already seen on an earlier visit go to the very end. The random order is fixed for one visit, so infinite scroll never repeats or skips a post; posts written during the visit appear on the next visit, and coming back or refreshing reshuffles. At most 2 consecutive posts from the same author |
 | POL-P-5 Likes | Once per post, can undo. List of who liked is public |
@@ -359,7 +360,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | POL-T-1 Create team | 1 GitHub org = 1 Linker team. "Create team" goes to the GitHub App install screen to choose an org and install; back in Linker, the server must re-verify the installation with the user token before creation completes (the installation id in the return URL can be forged, so it's never trusted as-is). If no org, send to GitHub's create-org page and back (orgs can't be created via API). If not the org owner, guide to "request install from owner" (GitHub emails the owner). If the org's default repo permission is read, tell the owner "팀원이 이슈에 담당자·라벨을 정하려면 쓰기 권한이 필요해요" (members need write permission to set assignees/labels) with a GitHub settings link. Team size: Free 6, Flex no limit |
 | POL-T-2 Invites | Linker invite links valid 7 days, revocable by owner/admin. GitHub org invites follow GitHub rules (accepted on GitHub, daily send limit). **Entry**: external open of `/invite/[code]` always shows the slim accept landing (10). **In-app**: when owner/admin notifies a Linker developer of an invite, create a `TEAM_INVITE` notification (18) whose tap opens the same `/invite/[code]`. Accept landing is slim: Linker logo, "팀에 합류하기", "GitHub로 빠르게 시작하기" only — no team detail preview and no dedicated status screens. Expired/revoked, already a member, free-team member limit, and over-10-teams failures use toast or one-line copy from API error codes |
 | Org member sync | People removed from the GitHub org are detected via the organization webhook (member_removed), automatically removed from the Linker team, and they and the owner are notified. Removing someone in Linker does not remove them from the GitHub org; the owner is only informed |
-| Leaving / removal | Members can leave anytime. Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
+| Leaving / removal | Members can leave anytime ("팀 나가기" on 09, confirm "팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"). Admins get no "팀 나가기". Owner can't leave before transferring ownership. After leaving, team chat history stays but new messages aren't visible |
 | App uninstall | If the Linker app is removed from the org, the team becomes read-only and the owner is told to reinstall. Archived after 30 days |
 | POL-T-4 Project completion | Owner/admin marks complete. Can be undone within 7 days; after that, completion records are finalized |
 | POL-T-4 Completion calculation | Members in the team at completion who belonged ≥ 14 days during the project get 1 completion. Members who left midway get 1 non-completion (reason not shown). Issue completion rate = share of assigned issues in done status |

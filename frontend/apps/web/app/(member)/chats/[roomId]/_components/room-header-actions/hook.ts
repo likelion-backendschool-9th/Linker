@@ -10,6 +10,6 @@ export function useRoomHeaderActions(roomId: number) {
   return {
     openInfo: () => info.open(String(roomId)),
     // Team chat search is [Included]: the Figma icon stays and says so (user decision 2026-11-09)
-    onSearch: () => toast(NOT_IMPLEMENTED),
+    onSearch: () => toast(NOT_IMPLEMENTED, { tone: 'info' }),
   };
 }

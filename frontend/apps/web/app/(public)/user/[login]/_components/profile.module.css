@@ -319,24 +319,25 @@
   overflow-wrap: anywhere;
 }
 
+/* Figma 116:427 (my profile) / 301:572 (someone else's): the gray feed runs to the screen bottom */
 .stage {
   display: flex;
   flex-direction: column;
+  min-height: calc(100dvh - var(--header-height));
   gap: var(--space-profile-block);
   margin: calc(var(--space-md) * -1) calc(var(--page-gutter) * -1)
     calc((var(--space-xxl) + env(safe-area-inset-bottom)) * -1);
-  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
 }
 
 .intro {
   display: grid;
   gap: var(--space-md);
-  padding: var(--space-md) var(--page-gutter) 0;
+  padding: var(--space-profile-top) var(--page-gutter) 0;
 }
 
 .identityRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-profile-identity);
   width: min(100%, var(--profile-identity-width));
@@ -352,21 +353,21 @@
   width: var(--avatar-size-profile);
 }
 
+/* Name line over the follow line, 8 apart, centered on the 60 avatar (Figma 116:515) */
 .stage .identityText {
-  position: relative;
-  display: block;
+  display: flex;
   flex: 1;
-  height: var(--avatar-size-profile);
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-width: 0;
 }
 
 .nameLine {
-  position: absolute;
-  top: var(--space-xs);
-  left: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-xxs);
+  gap: var(--space-profile-badge);
 }
 
 .displayName {
@@ -374,37 +375,36 @@
   color: var(--color-text-title-cool);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: normal;
 }
 
+/* Status badge — Figma 123:1410: 12 medium #2563eb on its 10% tint, 2/4 padding, r2 */
 .statusBadge {
-  padding: var(--space-chip-block) var(--space-xxs);
-  color: var(--color-accent);
-  font-size: var(--font-size-meta);
+  padding: var(--space-profile-badge-block) var(--space-xxs);
+  color: var(--color-cta-cool);
+  font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
-  line-height: 1;
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  border-radius: var(--radius-xxs);
+  line-height: normal;
+  background: color-mix(in srgb, var(--color-cta-cool) 10%, transparent);
+  border-radius: var(--radius-profile-badge);
 }
 
+/* "팔로워 120  팔로잉 31" — Figma 116:518: 14 medium #4b5563, groups 8 apart, label to count 2 */
 .followLine {
-  position: absolute;
-  top: calc(var(--space-xl) - var(--space-xxs));
-  left: 0;
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  min-height: var(--touch-target-min);
   padding: 0;
-  color: var(--color-text-body);
+  color: var(--color-text-slate);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
+  line-height: normal;
 }
 
 .followLine button {
   display: inline-flex;
   align-items: center;
-  min-height: var(--touch-target-min);
+  gap: var(--space-profile-count);
   padding: 0;
   border: 0;
   background: transparent;
@@ -413,50 +413,65 @@
   cursor: pointer;
 }
 
+/* Settings — Figma 785:766: Solar settings 24 at stroke 1.5, 4 in from the row's right edge */
 .profileSettings {
   display: inline-flex;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-  margin-top: var(--space-xs);
-  color: var(--color-text-title-cool);
+  margin-right: var(--space-xxs);
+  color: var(--color-profile-settings);
+  --icon-stroke-width: 1.5;
 }
 
-.profileSettings svg {
-  width: var(--icon-size);
-  height: var(--icon-size);
-}
-
+/* Bio — Figma 118:617: 14 medium #4b5563, auto line height */
 .bio {
   margin: var(--space-xxs) 0 0;
-  color: var(--color-text-body);
+  color: var(--color-text-slate);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-caption);
+  line-height: normal;
   white-space: pre-wrap;
+}
+
+/* One line only: chips that don't fit collapse into "+N" (ProfileTechStack) */
+.stackWrap {
+  position: relative;
+  min-width: 0;
+  margin-top: var(--space-xxs);
 }
 
 .stackRow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-xs);
-  margin: var(--space-xxs) 0 0;
+  margin: 0;
   padding: 0;
+  overflow: hidden;
   list-style: none;
 }
 
+/* Hidden copy of every chip, only for measuring widths */
+.stackMeasure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Tech stack chip — Figma 121:1189: 28 high, 3/8 padding, r4, 14 regular #4b5563 on #f3f4f6 */
 .stackRow li {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   justify-content: center;
   width: auto;
   min-height: var(--control-height-chip-sm);
+  white-space: nowrap;
   padding: var(--space-chip-block) var(--space-xs);
-  color: var(--color-text-body);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-medium);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
   background: var(--color-canvas-cool);
   border-radius: var(--radius-xxs);
 }
@@ -482,9 +497,26 @@
   background: var(--color-primary);
 }
 
+/* My "GitHub" — Figma 708:2430: 42 high, #121212 with a 1px #e5e7eb rim, 16 medium white */
+.githubButton {
+  min-height: var(--control-height-profile-github);
+  background: var(--color-github-mark);
+  border: 1px solid var(--color-hairline-cool);
+}
+
+/* Someone else's "GitHub" — Figma 301:629: 42 high, #f2f3f8, 16 medium #111827 */
 .githubButtonQuiet {
-  color: var(--color-text-heading);
-  background: var(--color-canvas-soft);
+  min-height: var(--control-height-profile-github);
+  color: var(--color-text-title-cool);
+  background: var(--color-profile-github-quiet);
+}
+
+/* "팔로우" / "팔로잉" — Figma 301:1033: 42 high, #121212, r5, 16 semibold white */
+.followButton {
+  min-height: var(--control-height-profile-github);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-sheet-cta);
+  border-radius: var(--radius-profile-follow);
 }
 
 .compactCalendar {
@@ -520,11 +552,14 @@
   background: var(--color-status-success);
 }
 
+/* Feed — Figma 142:72: gray to the screen bottom, cards 15 under the tabs and 15 apart */
 .feed {
   display: grid;
+  flex: 1 0 auto;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-md);
-  padding: 0 var(--page-gutter) var(--space-lg);
+  align-content: start;
+  gap: var(--space-profile-work);
+  padding: 0 var(--page-gutter) calc(var(--space-lg) + env(safe-area-inset-bottom));
   background: var(--color-canvas-cool);
 }
 
@@ -534,32 +569,29 @@
   grid-template-columns: 1fr 1fr;
   height: var(--profile-project-tabs-height);
   margin-inline: calc(var(--page-gutter) * -1);
-  border-top: 1px solid var(--color-hairline-soft);
+  border-top: var(--border-width-profile-tabs) solid var(--color-canvas-cool);
   background: var(--color-canvas);
 }
 
+/* Count over label, 2 apart, both 14 medium (Figma 121:1202): current #4b5563 / #111827, other #b2b7c3 */
 .projectTabs button {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: calc(var(--space-xxs) / 2);
+  gap: var(--space-profile-count);
   min-height: var(--touch-target-min);
-  color: var(--color-text-meta);
+  color: var(--color-text-disabled-cool);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
 }
 
 .projectTabs button[aria-selected='true'] {
-  color: var(--color-text-heading);
+  color: var(--color-text-title-cool);
 }
 
-.projectTabs button span {
-  color: var(--color-text-body);
-  font-weight: var(--font-weight-medium);
-}
-
-.projectTabs button[aria-selected='false'] span {
-  color: var(--color-text-meta);
+.projectTabs button[aria-selected='true'] span {
+  color: var(--color-text-slate);
 }
 
 .embeddedWork,
@@ -577,10 +609,11 @@
   grid-column: 1 / -1;
 }
 
+/* Work card — Figma 123:1406: 8 padding, r8; cover 148x123 (r5), then the title. Height follows the
+   content (no fixed square), so every side keeps the same 8 padding at any column width */
 .workCard {
-  display: grid;
-  gap: var(--space-xs);
-  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-xs);
   color: var(--color-text-heading);
   text-decoration: none;
@@ -592,40 +625,47 @@
 .workCover {
   position: relative;
   display: block;
+  flex-shrink: 0;
+  /* Same as the card padding, so the title sits as far below the cover as the card edge */
+  margin-bottom: var(--space-xs);
   aspect-ratio: 148 / 123;
   overflow: hidden;
-  background: var(--color-field);
-  border-radius: var(--radius-xxs);
+  background: var(--color-profile-work-cover);
+  border-radius: var(--radius-profile-work-cover);
 }
 
 .workCover img {
   object-fit: cover;
 }
 
+/* Title — Figma 123:1417: 12 medium black */
 .workTitle {
   overflow: hidden;
-  font-size: var(--font-size-meta);
+  color: var(--color-text-black);
+  font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
+  line-height: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Chat FAB — Figma 365:246: 40 circle #2e2e2e with a #383838 rim and soft glow, white Solar
+   chat-round-add 24; 16 from the right, on the home-indicator line at the bottom */
 .fab {
   position: fixed;
   right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
-  bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
+  bottom: max(var(--space-profile-fab-bottom), env(safe-area-inset-bottom));
   z-index: var(--z-chrome);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-xl);
-  height: var(--space-xl);
-  color: var(--color-on-primary);
-  background: var(--color-primary);
+  width: var(--fab-size);
+  height: var(--fab-size);
+  padding: 0;
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  background: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
   border-radius: var(--radius-full);
-}
-
-.fab svg {
-  width: var(--space-md);
-  height: var(--space-md);
+  box-shadow: var(--shadow-fab);
 }

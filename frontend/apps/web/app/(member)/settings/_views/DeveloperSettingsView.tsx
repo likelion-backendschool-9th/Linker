@@ -13,7 +13,7 @@ import type { SettingsData } from '../_lib/settings-types';
 import { SettingsCommon } from './SettingsCommon';
 import styles from './settings-view.module.css';
 
-const JOB_STATUS_LABEL = { SEEKING: '구직 중', OPEN: '제안만 받기', OFF: '끔' } as const;
+const JOB_STATUS_LABEL = { SEEKING: '구직 중', OPEN: '제안 받기', OFF: '구직 안 함' } as const;
 
 export function DeveloperSettingsView({
   login,
@@ -35,7 +35,7 @@ export function DeveloperSettingsView({
       jobStatusOverlay.close();
       router.refresh();
     },
-    onError: () => toast('구직 상태를 저장하지 못했어요. 다시 시도해 주세요.', { tone: 'alert' }),
+    onError: () => toast('구직 상태를 저장하지 못했어요. 다시 시도해 주세요.', { tone: 'error' }),
   });
 
   function openJobStatus() {
@@ -112,8 +112,8 @@ export function DeveloperSettingsView({
 
 const JOB_STATUS_OPTIONS = [
   { value: 'SEEKING', label: '구직 진행 중' },
-  { value: 'OPEN', label: '제안만 받기' },
-  { value: 'OFF', label: '끔' },
+  { value: 'OPEN', label: '제안 받기' },
+  { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
 function Chevron() {

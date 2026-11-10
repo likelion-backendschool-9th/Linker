@@ -13,7 +13,7 @@ import { closeRecruit, deleteRecruit, reopenRecruit } from './api';
 /** Same top error toast as the editor form above it */
 function showFailure() {
   toast('처리하지 못했어요. 잠시 후 다시 시도해 주세요.', {
-    tone: 'alert',
+    tone: 'error',
     placement: 'top',
     key: 'recruit-editor-error',
   });

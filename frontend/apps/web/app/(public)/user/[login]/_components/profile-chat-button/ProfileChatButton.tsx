@@ -1,10 +1,11 @@
 'use client';
 
+import { ChatRoundAddOutlineIcon } from '@solar-icons/static/outline/chat-round-add';
 import type { Route } from 'next';
-import { CirclePlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { Icon } from '@/components/ui/icon';
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { ApiError } from '@/lib/api/api-error';
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -78,7 +79,7 @@ export function ProfileChatButton({
         aria-busy={pending}
         onClick={() => void openChat()}
       >
-        <CirclePlus aria-hidden />
+        <Icon svg={ChatRoundAddOutlineIcon} />
       </button>
     </>
   );

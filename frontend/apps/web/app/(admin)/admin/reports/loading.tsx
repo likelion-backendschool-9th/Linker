@@ -1,12 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { PageLoading } from '@/components/ui/page-loading';
 
-import styles from './_components/admin-reports.module.css';
-
+/** Full-screen loading (Figma 301:294) */
 export default function LoadingAdminReports() {
-  return (
-    <div className={styles.page} role="status" aria-label="신고 목록 불러오는 중">
-      <Skeleton variant="line" count={3} />
-      <Skeleton variant="card" count={4} />
-    </div>
-  );
+  return <PageLoading />;
 }

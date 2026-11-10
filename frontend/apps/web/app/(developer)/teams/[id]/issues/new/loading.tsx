@@ -1,13 +1,6 @@
-import { PageFrame } from '@/components/layout/page-frame/PageFrame';
-import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { PageLoading } from '@/components/ui/page-loading';
 
+/** Full-screen loading (Figma 301:294) */
 export default function IssueCreateLoading() {
-  return (
-    <PageFrame title="이슈 작성" variant="stack" bottomTabs={false}>
-      <div aria-busy="true">
-        <p role="status">이슈 작성 화면을 불러오고 있어요.</p>
-        <Skeleton count={2} />
-      </div>
-    </PageFrame>
-  );
+  return <PageLoading />;
 }

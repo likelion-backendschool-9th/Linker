@@ -16,30 +16,34 @@ export const feedPanelId = (idBase: string) => `${idBase}-panel`;
 /**
  * 24 "추천" / "팔로잉" (Figma 785:1211): two halves under the header, 2px line under each — slate
  * for the current one, light gray for the other. They pin to the top with the header collapse (19).
+ * Recruiters can't follow, so they get "추천" alone (`available`), spanning the row.
  */
 export function FeedTabs({
   idBase,
   current,
   onChange,
+  available = ['recommended', 'following'],
 }: {
   idBase: string;
   current: FeedTab;
   onChange: (tab: FeedTab) => void;
+  available?: readonly FeedTab[];
 }) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabs = TABS.filter((tab) => available.includes(tab.key));
 
-  // ← / → move between the two tabs (WAI-ARIA tabs pattern)
+  // ← / → move between the tabs (WAI-ARIA tabs pattern)
   function onKeyDown(event: KeyboardEvent, index: number) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
-    const next = (index + (event.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
-    onChange(TABS[next]!.key);
+    const next = (index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+    onChange(tabs[next]!.key);
     buttons.current[next]?.focus();
   }
 
   return (
     <div role="tablist" aria-label="피드 종류" className={styles.tabs}>
-      {TABS.map((tab, index) => (
+      {tabs.map((tab, index) => (
         <button
           key={tab.key}
           ref={(node) => {

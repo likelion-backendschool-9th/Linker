@@ -13,7 +13,8 @@ export function ChatUnreadBadge() {
   const { login, role } = useViewer();
   const enabled = role !== 'guest' && login !== null;
   const client = useQueryClient();
-  const summary = useQuery({ ...unreadSummaryOptions(login), enabled });
+  // Chrome badge: a slow count must never take over the screen (blueprint §5-5)
+  const summary = useQuery({ ...unreadSummaryOptions(login), enabled, meta: { background: true } });
   const refresh = () => {
     void client.invalidateQueries({ queryKey: chatKeys.account(login) });
   };

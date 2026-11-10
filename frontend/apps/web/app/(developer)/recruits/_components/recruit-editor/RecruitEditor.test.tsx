@@ -67,7 +67,7 @@ it('shows the first required error as one top toast, not under the fields', asyn
 
   await user.click(screen.getByRole('button', { name: '모집 글 작성' }));
   await waitFor(() => expect(toastMessages()).toEqual(['제목을 입력해 주세요.']));
-  expect(useToastStore.getState().toasts[0]).toMatchObject({ tone: 'alert', placement: 'top' });
+  expect(useToastStore.getState().toasts[0]).toMatchObject({ tone: 'error', placement: 'top' });
   expect(screen.queryByText('제목을 입력해 주세요.')).not.toBeInTheDocument();
   expect(screen.getByLabelText(/^프로젝트 제목/)).toHaveAttribute('aria-invalid', 'true');
 
