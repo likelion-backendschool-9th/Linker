@@ -190,7 +190,7 @@ export function TeamSetupBoards({
               ))}
             </ul>
             <button type="button" className={styles.add} disabled>
-              역할 추가
+              저장소 추가
               <Icon svg={AddBoldIcon} />
             </button>
           </div>
