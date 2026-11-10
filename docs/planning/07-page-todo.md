@@ -474,6 +474,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge
 - [ ] Requests tab: accept / delete; disappears after 30 days
+- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API)
 - [ ] `[Included]` Recruiting offer requests show a "채용 제안" label + company name (after 31). Recruiters see their sent offers as "대기 중" (pending) in the 1:1 tab
 - [ ] Rooms with blocked people hidden; after unblocking, messages from blocked periods stay invisible. Use retained `user_blocks` intervals for DM history, catch-up, previews and unread counts; team chat is exempt (Policy ch. 9, ERD ch. 4-8)
 - [ ] Empty-state copy
