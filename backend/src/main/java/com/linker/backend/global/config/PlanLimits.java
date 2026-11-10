@@ -52,6 +52,8 @@ public final class PlanLimits {
 	public static final int RECRUIT_POSTS_PER_DAY_WINDOW_SECONDS = 86_400;
 	/** POL-R-1 field bounds. */
 	public static final int RECRUIT_TITLE_MAX = 40;
+	/** POL-R-2: 19 title search, no longer than a title. */
+	public static final int RECRUIT_SEARCH_MAX = RECRUIT_TITLE_MAX;
 	public static final int RECRUIT_INTRO_MAX = 1000;
 	public static final int RECRUIT_HEADCOUNT_MIN = 1;
 	public static final int RECRUIT_HEADCOUNT_MAX = 10;

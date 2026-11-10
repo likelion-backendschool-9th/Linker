@@ -374,7 +374,7 @@ erDiagram
     text description "1,000 chars"
     varchar work_mode "ONLINE, OFFLINE, HYBRID"
     varchar region "required if offline"
-    varchar goal "CONTEST, HACKATHON, LAUNCH, STUDY"
+    varchar goal "CONTEST, HACKATHON, LAUNCH, LEARNING"
     varchar expected_period
     date deadline "within 60 days"
     varchar status "OPEN, CLOSED"

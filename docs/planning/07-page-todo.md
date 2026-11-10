@@ -566,6 +566,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Tabs: 전체 (all) / 내 모집 글 (my posts) / 내 지원 (my applications) (guests: All tab only; other tabs and "모집 글 쓰기" show login prompt)
 - [ ] Recruit card: title, remaining slots per role, tech stack, format, deadline D-day
+- [ ] Title search box (All tab, POL-R-2): part of the title, case-insensitive, max 40 chars; combined with filters and sort, stored in URL `q` (nuqs)
 - [ ] (sheet) Filters: role, tech stack, online/offline. Stored in URL (nuqs)
 - [ ] Sort: newest / closing soon; infinite scroll; open posts only
 - [ ] My applications tab: 검토 중 (under review) / accepted ("팀 채팅 바로가기") / rejected ("이번엔 함께하지 못하게 됐어요") / expired ("모집이 끝났어요"); cancel while under review

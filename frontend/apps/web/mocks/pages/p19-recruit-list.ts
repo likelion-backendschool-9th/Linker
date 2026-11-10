@@ -5,13 +5,16 @@ import { ME } from '../fixtures/users';
 /** 19 Recruit post list: `RecruitmentController` */
 
 export const routes: MockRoute[] = [
-  // Open posts only; filters role (RecruitRoleKey) / tech / mode (online, offline, hybrid) / sort (NEWEST, DEADLINE)
+  // Open posts only; q = title search (POL-R-2) / filters role (RecruitRoleKey) / tech / mode (online, offline, hybrid) / sort (NEWEST, DEADLINE)
   get('/api/v1/public/recruits', ({ query }) => {
+    const q = query.get('q')?.trim().toLowerCase() ?? '';
+    if (q.length > 40) fail(400, 'VALIDATION_ERROR', '검색어는 40자까지 입력할 수 있어요');
     const role = query.get('role');
     const tech = query.get('tech');
     const mode = query.get('mode');
     const sort = query.get('sort') ?? 'NEWEST';
     const items = RECRUITS.filter((item) => item.status === 'OPEN')
+      .filter((item) => !q || item.title.toLowerCase().includes(q))
       .filter((item) => !role || item.roles.some((r) => r.role === role))
       .filter((item) => !tech || item.techTags.includes(tech))
       .filter((item) => !mode || item.format === mode)

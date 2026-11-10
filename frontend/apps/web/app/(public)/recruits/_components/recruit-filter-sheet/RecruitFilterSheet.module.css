@@ -40,3 +40,10 @@
   border: none;
   border-radius: var(--radius-control-md);
 }
+
+.status {
+  margin: 0;
+  padding: var(--space-md) var(--space-xs);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted-cool);
+}

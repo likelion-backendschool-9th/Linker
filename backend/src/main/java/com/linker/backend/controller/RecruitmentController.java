@@ -6,7 +6,6 @@ import com.linker.backend.dto.recruit.response.RecruitDetailResponse;
 import com.linker.backend.service.RecruitmentService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/public")
-@Tag(name = "p19-recruit-list")
-@Tag(name = "p21-recruit-detail")
 public class RecruitmentController {
 
 	private final RecruitmentService recruitment;
@@ -30,6 +27,7 @@ public class RecruitmentController {
 	@GetMapping("/recruits")
 	@Operation(tags = {"p19-recruit-list"})
 	public ResponseEntity<CursorPage<RecruitCardResponse>> list(
+			@RequestParam(required = false) String q,
 			@RequestParam(required = false) String role,
 			@RequestParam(required = false) String tech,
 			@RequestParam(required = false) String mode,
@@ -38,7 +36,7 @@ public class RecruitmentController {
 	) {
 		return ResponseEntity.ok()
 				.cacheControl(CacheControl.noStore())
-				.body(recruitment.listOpen(role, tech, mode, sort, cursor));
+				.body(recruitment.listOpen(q, role, tech, mode, sort, cursor));
 	}
 
 	@GetMapping("/recruits/{recruitId}")

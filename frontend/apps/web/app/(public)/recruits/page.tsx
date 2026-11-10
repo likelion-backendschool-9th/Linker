@@ -10,6 +10,7 @@ import { RecruitList } from './_components/recruit-list';
 import {
   myApplicationsOptions,
   myRecruitsOptions,
+  parseRecruitSearch,
   publicRecruitsOptions,
   RECRUIT_LIST_TABS,
   RECRUIT_SORTS,
@@ -46,6 +47,7 @@ export default async function RecruitsPage({ searchParams }: PageProps<'/recruit
   const login = session?.login ?? null;
   const tab = parseTab(query.tab);
   const filters = {
+    q: parseRecruitSearch(query.q),
     role: parseLiteral(query.role, RECRUIT_ROLES) as RecruitRoleKey | null,
     tech: typeof query.tech === 'string' && query.tech ? query.tech : null,
     mode: parseLiteral(query.mode, RECRUIT_FORMATS) as RecruitFormat | null,
