@@ -15,6 +15,7 @@ export * from './p15-calendar/p15-calendar.zod';
 export * from './p16-chat-list/p16-chat-list.zod';
 export * from './p17-chat-room/p17-chat-room.zod';
 export * from './p18-notifications/p18-notifications.zod';
+export * from './p19-recruit-list/p19-recruit-list.zod';
 export * from './p25-admin-reports/p25-admin-reports.zod';
 export * from './p28-subscribe/p28-subscribe.zod';
 export * from './p29-subscription-manage/p29-subscription-manage.zod';

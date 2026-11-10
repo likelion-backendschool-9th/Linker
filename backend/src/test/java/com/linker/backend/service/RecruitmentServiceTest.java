@@ -20,6 +20,7 @@ import com.linker.backend.entity.recruit.type.RecruitRoleType;
 import com.linker.backend.entity.recruit.type.RecruitStatus;
 import com.linker.backend.entity.recruit.type.RecruitVisibility;
 import com.linker.backend.entity.recruit.type.WorkMode;
+import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.repository.account.UserRepository;
 import com.linker.backend.repository.chat.ChatRoomRepository;
@@ -74,17 +75,54 @@ class RecruitmentServiceTest {
 				eq(null),
 				eq(null),
 				eq(null),
+				eq(null),
 				eq(true),
 				eq(List.of(-1L)),
 				any(Pageable.class)
 		)).thenReturn(List.of(post));
 
-		var page = service.listOpen(null, null, null, "NEWEST", null);
+		var page = service.listOpen(null, null, null, null, "NEWEST", null);
 
 		assertThat(page.items()).hasSize(1);
 		assertThat(page.items().getFirst().title()).isEqualTo("Linker 모집");
 		assertThat(page.items().getFirst().roles()).hasSize(1);
 		assertThat(page.nextCursor()).isNull();
+	}
+
+	@Test
+	void listOpenSearchesTitleWithTrimmedLowercasePattern() {
+		RecruitPost post = openPost(2L, "React 해커톤 팀원 모집");
+		when(posts.findOpenByDeadline(
+				eq(RecruitStatus.OPEN),
+				eq(RecruitVisibility.VISIBLE),
+				eq("%react 해커톤%"),
+				eq(null),
+				eq(null),
+				eq(null),
+				eq(true),
+				eq(List.of(-1L)),
+				any(Pageable.class)
+		)).thenReturn(List.of(post));
+
+		var page = service.listOpen("  React 해커톤 ", null, null, null, "DEADLINE", null);
+
+		assertThat(page.items()).extracting(card -> card.title()).containsExactly("React 해커톤 팀원 모집");
+	}
+
+	@Test
+	void titleSearchPatternEscapesWildcardsAndSkipsBlank() {
+		assertThat(RecruitmentService.titleSearchPattern("   ")).isNull();
+		assertThat(RecruitmentService.titleSearchPattern(null)).isNull();
+		assertThat(RecruitmentService.titleSearchPattern("50%_!")).isEqualTo("%50!%!_!!%");
+	}
+
+	@Test
+	void listOpenRejectsSearchLongerThanTitle() {
+		String tooLong = "가".repeat(PlanLimits.RECRUIT_SEARCH_MAX + 1);
+
+		assertThatThrownBy(() -> service.listOpen(tooLong, null, null, null, null, null))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(((ApiException) error).getCode()).isEqualTo("VALIDATION_ERROR"));
 	}
 
 	@Test
