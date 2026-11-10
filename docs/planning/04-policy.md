@@ -310,6 +310,7 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |
+| POL-R-2 Search (19) | Search box on 19's All tab. Case-insensitive match on part of the recruit post title only (not intro, roles or tech stack); leading/trailing spaces ignored, blank = no search. Max 40 characters, the title limit (longer is rejected). Combined with the filters and sort, kept in the URL (`q`) |
 | POL-R-3 Apply | Choose one role. Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
 | POL-R-3 Application | Author opens the applicant's public profile to review (tech stack, graph, posts, completion record). No separate in-product application dossier sheet |
 | POL-R-4 Handling | Author invites or rejects from the applicants drawer. Auto-expires after 14 days unhandled, with notification to applicant |

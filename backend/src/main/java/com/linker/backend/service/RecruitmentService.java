@@ -75,7 +75,9 @@ public class RecruitmentService {
 	}
 
 	@Transactional(readOnly = true)
-	public CursorPage<RecruitCardResponse> listOpen(String role, String tech, String mode, String sort, String cursor) {
+	public CursorPage<RecruitCardResponse> listOpen(
+			String q, String role, String tech, String mode, String sort, String cursor) {
+		String titlePattern = titleSearchPattern(q);
 		RecruitRoleType roleType = parseRole(role);
 		WorkMode workMode = parseMode(mode);
 		String normalizedTech = blankToNull(tech);
@@ -89,7 +91,7 @@ public class RecruitmentService {
 		List<Long> excludedIds = excludeEmpty ? List.of(-1L) : List.copyOf(excluded);
 		int offset = parseOffset(cursor);
 
-		List<RecruitPost> rows = loadOpen(normalizedSort, roleType, workMode, normalizedTech, excludeEmpty, excludedIds);
+		List<RecruitPost> rows = loadOpen(normalizedSort, titlePattern, roleType, workMode, normalizedTech, excludeEmpty, excludedIds);
 		int from = Math.min(offset, rows.size());
 		int to = Math.min(from + PlanLimits.RECRUIT_PAGE_SIZE, rows.size());
 		List<RecruitCardResponse> items = rows.subList(from, to).stream().map(cards::toCard).toList();
@@ -215,6 +217,7 @@ public class RecruitmentService {
 
 	private List<RecruitPost> loadOpen(
 			String sort,
+			String titlePattern,
 			RecruitRoleType role,
 			WorkMode mode,
 			String tech,
@@ -226,6 +229,7 @@ public class RecruitmentService {
 			return posts.findOpenByDeadline(
 					RecruitStatus.OPEN,
 					RecruitVisibility.VISIBLE,
+					titlePattern,
 					role,
 					mode,
 					tech,
@@ -237,6 +241,7 @@ public class RecruitmentService {
 		return posts.findOpenNewest(
 				RecruitStatus.OPEN,
 				RecruitVisibility.VISIBLE,
+				titlePattern,
 				role,
 				mode,
 				tech,
@@ -270,6 +275,26 @@ public class RecruitmentService {
 		catch (NumberFormatException ex) {
 			throw new ApiException(400, "VALIDATION_ERROR", "커서를 확인해 주세요");
 		}
+	}
+
+	/**
+	 * POL-R-2 title search: trimmed, blank = no search, longer than a title is rejected. Lowercased
+	 * LIKE pattern; '!' escapes the wildcards a user types so they match literally.
+	 */
+	static String titleSearchPattern(String q) {
+		String search = blankToNull(q);
+		if (search == null) {
+			return null;
+		}
+		if (search.length() > PlanLimits.RECRUIT_SEARCH_MAX) {
+			throw new ApiException(400, "VALIDATION_ERROR", "검색어는 %d자까지 입력할 수 있어요"
+					.formatted(PlanLimits.RECRUIT_SEARCH_MAX));
+		}
+		String escaped = search.toLowerCase(Locale.ROOT)
+				.replace("!", "!!")
+				.replace("%", "!%")
+				.replace("_", "!_");
+		return "%" + escaped + "%";
 	}
 
 	private static RecruitRoleType parseRole(String role) {
