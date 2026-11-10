@@ -32,6 +32,7 @@ export const routes: MockRoute[] = [
       status: 'ACTIVE',
       onboarded: viewer.onboarded,
       suspendedUntil: null,
+      avatarUrl: me.avatarUrl ?? null,
     };
   }),
   post('/api/v1/public/auth/refresh', () => undefined),
