@@ -1,28 +1,31 @@
+import type {
+  IssueCreateRequest,
+  IssueCreateResponse,
+  IssueDetailPerson,
+  IssueTemplateResponse,
+  ListResponse,
+} from '@linker/api/openAPIDefinition.schemas';
 import { queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/api-fetch';
+import { ISSUE } from '@/lib/policy';
 
 import type { AssigneeCandidates } from '../../../_lib/issue-detail-queries';
-import type { IssueLabel } from '../../../_lib/issue-queries';
-import type { IssueStatus } from '../../../../../_lib/issue-status';
+import type { IssueLabel, IssueUser } from '../../../_lib/issue-queries';
 
-/**
- * Provisional 13 `IssueController` contract (WBS 13). Hand-written until it's in OpenAPI.
- * `issue-create/repos` and the two `repos/{repoId}/…` options are a proposal beyond WBS: 12's options
- * need an issue id that doesn't exist yet, and GitHub takes assignees and labels per repo (POL-I-2).
- */
+/** Repo row from `GET .../issue-filters` (no write flag — server enforces on create). */
+export type CreateRepo = { id: number; name: string };
 
-export type CreateRepo = { id: number; name: string; fullName: string; canWrite: boolean };
-
-/** REPO = the repo's .github/ISSUE_TEMPLATE, ORG = the org's public .github repo, DEFAULT = 버그/기능/작업 */
+/** REPO / ORG / DEFAULT — `Choice` from template list. */
 export type TemplateSummary = {
   key: string;
-  source: 'REPO' | 'ORG' | 'DEFAULT';
+  source: string;
   name: string;
   description: string;
+  format?: string;
 };
 
-/** One issue form (YAML) item. `markdown` is help text; `upload` is phase 2 (POL-I-1). */
+/** One issue-form field after mapping OpenAPI `Field` for the screen. */
 export type FormField =
   | { id: string; type: 'markdown'; value: string }
   | {
@@ -50,16 +53,12 @@ export type FormField =
       options: { label: string; required?: boolean }[];
     }
   | { id: string; type: 'upload'; label: string }
-  /** Anything else GitHub may add: only its label goes into the body (04 ch. 7 exceptions) */
   | { id: string; type: string; label?: string };
 
 type TemplateBase = TemplateSummary & {
   defaultTitle?: string;
-  /** Applied by Linker as starting values (POL-I-1) */
   defaultLabels: string[];
-  /** GitHub logins */
   defaultAssignees: string[];
-  /** The repo template couldn't be parsed, so this is the default template instead */
   fallback: boolean;
 };
 
@@ -67,26 +66,93 @@ export type ParsedTemplate =
   | (TemplateBase & { kind: 'MARKDOWN'; body: string })
   | (TemplateBase & { kind: 'FORM'; fields: FormField[] });
 
-export type CreateIssueRequest = {
-  repoId: number;
-  templateKey: string;
-  title: string;
-  body: string;
-  assigneeIds: number[];
-  labels: string[];
-  startDate: string | null;
-  dueDate: string | null;
-  status: IssueStatus;
-};
+export type CreateIssueBody = IssueCreateRequest;
 
-export type SyncJob = {
-  status: 'RUNNING' | 'DONE' | 'FAILED';
-  steps: { name: string; done: boolean }[];
-  issueId: number;
-  failedStep: string | null;
-};
+export type CreateProgress = IssueCreateResponse;
 
 const team = (teamId: string) => `/api/v1/user/teams/${encodeURIComponent(teamId)}`;
+
+function personToUser(person: IssueDetailPerson & { jobRole?: string }): IssueUser {
+  return {
+    id: person.id ?? 0,
+    login: person.login,
+    name: person.name,
+    avatarUrl: person.avatarUrl ?? '',
+    ...(person.jobRole ? { jobRole: person.jobRole } : {}),
+  };
+}
+
+function mapField(field: NonNullable<IssueTemplateResponse['fields']>[number]): FormField {
+  const id = field.id ?? '';
+  const type = field.type ?? '';
+  if (type === 'markdown') {
+    return { id, type: 'markdown', value: field.value ?? '' };
+  }
+  if (type === 'upload') {
+    return { id, type: 'upload', label: field.label ?? '' };
+  }
+  if (type === 'checkboxes') {
+    const requiredOptions = new Set(field.requiredOptions ?? []);
+    return {
+      id,
+      type: 'checkboxes',
+      label: field.label ?? '',
+      description: field.description,
+      options: (field.options ?? []).map((label, index) => ({
+        label,
+        required: requiredOptions.has(index),
+      })),
+    };
+  }
+  if (type === 'dropdown') {
+    return {
+      id,
+      type: 'dropdown',
+      label: field.label ?? '',
+      description: field.description,
+      options: field.options ?? [],
+      multiple: field.multiple,
+      required: field.required,
+    };
+  }
+  if (type === 'input' || type === 'textarea') {
+    return {
+      id,
+      type,
+      label: field.label ?? '',
+      description: field.description,
+      placeholder: field.placeholder,
+      required: field.required,
+    };
+  }
+  return { id, type, label: field.label };
+}
+
+function mapTemplate(raw: IssueTemplateResponse): ParsedTemplate {
+  const base = {
+    key: raw.key ?? '',
+    source: raw.source ?? 'DEFAULT',
+    name: raw.name ?? '',
+    description: raw.description ?? '',
+    format: raw.format,
+    defaultTitle: raw.title ?? '',
+    defaultLabels: raw.labels ?? [],
+    defaultAssignees: raw.assignees ?? [],
+    fallback: Boolean(raw.fallback),
+  };
+  if (raw.format === 'FORM') {
+    return { ...base, kind: 'FORM', fields: (raw.fields ?? []).map(mapField) };
+  }
+  return { ...base, kind: 'MARKDOWN', body: raw.body ?? '' };
+}
+
+async function fetchTemplateList(
+  teamId: string,
+  repoId: number,
+  signal?: AbortSignal,
+): Promise<ListResponse> {
+  return apiFetch<ListResponse>(`${team(teamId)}/issue-templates?repoId=${repoId}`, { signal });
+}
 
 export const createKeys = {
   repos: (teamId: string) => ['issues', teamId, 'create', 'repos'] as const,
@@ -103,18 +169,30 @@ export const createKeys = {
 export function createReposOptions(teamId: string) {
   return queryOptions({
     queryKey: createKeys.repos(teamId),
-    queryFn: ({ signal }) =>
-      apiFetch<{ items: CreateRepo[] }>(`${team(teamId)}/issue-create/repos`, { signal }),
+    queryFn: async ({ signal }) => {
+      const data = await apiFetch<{ repos: CreateRepo[] }>(`${team(teamId)}/issue-filters`, {
+        signal,
+      });
+      return { items: data.repos ?? [] };
+    },
   });
 }
 
 export function templatesOptions(teamId: string, repoId: number) {
   return queryOptions({
     queryKey: createKeys.templates(teamId, repoId),
-    queryFn: ({ signal }) =>
-      apiFetch<{ items: TemplateSummary[] }>(`${team(teamId)}/issue-templates?repoId=${repoId}`, {
-        signal,
-      }),
+    queryFn: async ({ signal }): Promise<{ items: TemplateSummary[] }> => {
+      const data = await fetchTemplateList(teamId, repoId, signal);
+      return {
+        items: (data.templates ?? []).map((item) => ({
+          key: item.key ?? '',
+          name: item.name ?? '',
+          description: item.description ?? '',
+          source: item.source ?? 'DEFAULT',
+          format: item.format,
+        })),
+      };
+    },
   });
 }
 
@@ -122,21 +200,27 @@ export function templateOptions(teamId: string, repoId: number, key: string) {
   return queryOptions({
     queryKey: createKeys.template(teamId, repoId, key),
     staleTime: Infinity,
-    queryFn: ({ signal }) =>
-      apiFetch<ParsedTemplate>(
+    queryFn: async ({ signal }) => {
+      const raw = await apiFetch<IssueTemplateResponse>(
         `${team(teamId)}/issue-templates/${encodeURIComponent(key)}?repoId=${repoId}`,
         { signal },
-      ),
+      );
+      return mapTemplate(raw);
+    },
   });
 }
 
+/** Assignees/labels/max from `GET .../issue-templates?repoId=` (same payload as the template list). */
 export function createAssigneeOptions(teamId: string, repoId: number) {
   return queryOptions({
     queryKey: createKeys.assignees(teamId, repoId),
-    queryFn: ({ signal }) =>
-      apiFetch<AssigneeCandidates>(`${team(teamId)}/repos/${repoId}/assignee-candidates`, {
-        signal,
-      }),
+    queryFn: async ({ signal }): Promise<AssigneeCandidates> => {
+      const data = await fetchTemplateList(teamId, repoId, signal);
+      return {
+        items: (data.assigneeCandidates ?? []).map(personToUser),
+        max: data.maxAssignees ?? ISSUE.assigneesMax,
+      };
+    },
   });
 }
 
@@ -144,22 +228,26 @@ export function createLabelOptions(teamId: string, repoId: number) {
   return queryOptions({
     queryKey: createKeys.labels(teamId, repoId),
     staleTime: 5 * 60_000,
-    queryFn: ({ signal }) =>
-      apiFetch<{ items: IssueLabel[] }>(`${team(teamId)}/repos/${repoId}/label-options`, {
-        signal,
-      }),
+    queryFn: async ({ signal }): Promise<{ items: IssueLabel[] }> => {
+      const data = await fetchTemplateList(teamId, repoId, signal);
+      return {
+        items: (data.labelOptions ?? []).map((label) => ({
+          name: label.name ?? '',
+          color: label.color ?? '',
+        })),
+      };
+    },
   });
 }
 
-/** 202 + jobId: the server then adds it to the project and sets dates and status (POL-I sync) */
-export function createIssue(teamId: string, request: CreateIssueRequest) {
-  return apiFetch<{ jobId: string; issueId: number }>(`${team(teamId)}/issues`, {
+export function createIssue(teamId: string, request: CreateIssueBody) {
+  return apiFetch<CreateProgress>(`${team(teamId)}/issues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
 }
 
-export function getSyncJob(teamId: string, jobId: string) {
-  return apiFetch<SyncJob>(`${team(teamId)}/issue-sync-jobs/${encodeURIComponent(jobId)}`);
+export function getSyncJob(teamId: string, jobId: number) {
+  return apiFetch<CreateProgress>(`${team(teamId)}/issue-sync-jobs/${jobId}`);
 }
