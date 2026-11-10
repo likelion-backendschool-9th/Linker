@@ -19,7 +19,7 @@ import { AcceptExceptionSheets } from '../accept-exception-sheets';
 import { ApplicantsSheet } from '../applicant-list';
 import { RecruitApplySheet } from '../recruit-apply-sheet';
 import { RecruitMenuSheet } from '../recruit-menu-sheet';
-import { RejectSheet } from '../reject-sheet';
+import { RejectDialog } from '../reject-dialog';
 import styles from './RecruitDetail.module.css';
 import { useActionPanel, usePostView, useRecruitDetail } from './hook';
 
@@ -57,7 +57,7 @@ export function RecruitDetail({ recruitId }: { recruitId: string }) {
       {author && (
         <>
           <ApplicantsSheet recruit={recruit} />
-          <RejectSheet recruitId={recruitId} />
+          <RejectDialog recruitId={recruitId} />
           <AcceptExceptionSheets recruit={recruit} />
         </>
       )}

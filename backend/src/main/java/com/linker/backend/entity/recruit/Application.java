@@ -49,9 +49,6 @@ public class Application {
 	@Column(nullable = false)
 	private int attempt;
 
-	@Column(length = 300)
-	private String rejectReason;
-
 	@Column(nullable = false)
 	private Instant expiresAt;
 
@@ -105,9 +102,8 @@ public class Application {
 		this.decidedAt = decidedAt;
 	}
 
-	public void reject(String reason, User decidedBy, Instant decidedAt) {
+	public void reject(User decidedBy, Instant decidedAt) {
 		this.status = ApplicationStatus.REJECTED;
-		this.rejectReason = reason;
 		this.decidedBy = decidedBy;
 		this.decidedAt = decidedAt;
 	}
@@ -144,9 +140,6 @@ public class Application {
 		return expiresAt;
 	}
 
-	public String getRejectReason() {
-		return rejectReason;
-	}
 
 	public Instant getCreatedAt() {
 		return createdAt;

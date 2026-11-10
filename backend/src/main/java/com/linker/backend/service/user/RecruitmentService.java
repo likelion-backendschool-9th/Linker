@@ -19,7 +19,6 @@ import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
 import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitRoleWriteRequest;
 import com.linker.backend.dto.recruit.request.RecruitWriteRequest;
-import com.linker.backend.dto.recruit.request.RejectApplicationRequest;
 import com.linker.backend.dto.recruit.response.AcceptApplicationResponse;
 import com.linker.backend.dto.recruit.response.ApplicantListItemResponse;
 import com.linker.backend.dto.recruit.response.ApplicantListResponse;
@@ -368,6 +367,10 @@ public class RecruitmentService {
 				.filter(item -> item.getId().equals(request.roleId()))
 				.findFirst()
 				.orElseThrow(() -> new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요"));
+		// 07 TODO 21: only a role with slots left can be chosen (a full role may still show in a stale sheet)
+		if (role.isFull()) {
+			throw new ApiException(409, "ROLE_FULL", "해당 역할은 마감됐어요", Map.of("roleId", role.getId()));
+		}
 		List<Application> history = applications.findByRecruitPostIdAndApplicantId(post.getId(), user.userId());
 		if (history.stream().anyMatch(item -> item.getStatus() == ApplicationStatus.PENDING)) {
 			throw new ApiException(409, "ALREADY_APPLIED", "이미 지원한 모집 글이에요");
@@ -479,12 +482,12 @@ public class RecruitmentService {
 						Map.of("roleId", role.getId(), "headcount", role.getHeadcount())
 				);
 			}
-			// "인원 늘리고 수락" requires Flex (paid seats) — free teams cannot bump headcount here.
+			// "인원 늘리고 초대" requires Flex (paid seats). 21 shows the reason only, no Flex/BM upsell (07 TODO 21).
 			if (!subscriptions.hasFlexBenefit(teamId, clock.instant())) {
 				throw new ApiException(
 						403,
 						"PLAN_LIMIT",
-						"역할 인원을 늘리려면 Flex 구독이 필요해요.",
+						"무료 팀은 역할 인원을 늘릴 수 없어요.",
 						Map.of("reason", "ROLE_HEADCOUNT")
 				);
 			}
@@ -528,7 +531,7 @@ public class RecruitmentService {
 		return new AcceptApplicationResponse(teamId, room.getId(), needsGithubInvite);
 	}
 
-	/** Free teams stop at 6; Flex has no member cap. Applicant also respects the personal 10-team cap. */
+	/** Free teams stop at 6; Flex has no member cap. Applicant also respects the personal 10-team cap. Reason-only copy (21 has no upsell). */
 	private void assertTeamCanAcceptMember(long teamId, long applicantId) {
 		boolean flex = subscriptions.hasFlexBenefit(teamId, clock.instant());
 		int current = teamMembers.findByTeamIdAndLeftAtIsNullOrderByJoinedAtAscIdAsc(teamId).size();
@@ -536,7 +539,7 @@ public class RecruitmentService {
 			throw new ApiException(
 					403,
 					"PLAN_LIMIT",
-					"무료 팀은 멤버 " + PlanLimits.TEAM_MEMBERS_FREE + "명까지예요. Flex로 더 초대할 수 있어요.",
+					"무료 팀은 멤버 " + PlanLimits.TEAM_MEMBERS_FREE + "명까지예요.",
 					Map.of("reason", "TEAM_MEMBERS")
 			);
 		}
@@ -544,7 +547,7 @@ public class RecruitmentService {
 			throw new ApiException(
 					403,
 					"PLAN_LIMIT",
-					"팀은 " + PlanLimits.TEAMS_PER_USER_MAX + "개까지 참여할 수 있어요",
+					"지원자가 이미 팀 " + PlanLimits.TEAMS_PER_USER_MAX + "개에 참여하고 있어요.",
 					Map.of("reason", "TEAMS_PER_USER")
 			);
 		}
@@ -562,12 +565,7 @@ public class RecruitmentService {
 	}
 
 	@Transactional
-	public void reject(
-			AuthenticatedUser user,
-			long recruitId,
-			long applicationId,
-			RejectApplicationRequest request
-	) {
+	public void reject(AuthenticatedUser user, long recruitId, long applicationId) {
 		requireOwnedPost(user.userId(), recruitId);
 		Application application = applications.findDetailedForPost(recruitId, applicationId)
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "지원 내역을 찾지 못했어요"));
@@ -576,11 +574,7 @@ public class RecruitmentService {
 		}
 		User author = users.findById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
-		String reason = request == null ? null : blankToNull(request.reason());
-		if (reason != null && reason.length() > PlanLimits.APPLICATION_MESSAGE_MAX) {
-			throw new ApiException(400, "VALIDATION_ERROR", "거절 사유를 확인해 주세요");
-		}
-		application.reject(reason, author, clock.instant());
+		application.reject(author, clock.instant());
 		notifications.create(new CreateNotificationCommand(
 				application.getApplicant().getId(),
 				NotificationTypes.APPLICATION_REJECTED,

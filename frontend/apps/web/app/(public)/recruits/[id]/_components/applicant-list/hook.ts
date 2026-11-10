@@ -4,14 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsInteger, useQueryState } from 'nuqs';
 
 import { ApiError } from '@/lib/api/api-error';
+import { isTimeoutError } from '@/lib/api/fetch-with-timeout';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
 import {
-  acceptApplication,
   applicantsOptions,
-  sendGithubInvite,
+  inviteApplicant,
   type ApplicantRow,
   type ApplicationStatus,
   type RecruitDetail,
@@ -56,6 +56,13 @@ export function useApplicantList(recruit: RecruitDetail) {
   };
 }
 
+/** "초대에 실패했어요." plus the server's reason for a 4xx (PLAN_LIMIT copy is reason-only) */
+export function inviteFailureMessage(error: unknown) {
+  return error instanceof ApiError && error.status < 500
+    ? `초대에 실패했어요. ${error.message}`
+    : '초대에 실패했어요.';
+}
+
 export function isInviteable(recruit: RecruitDetail, item: ApplicantRow | null) {
   if (!item || item.status !== 'PENDING') return false;
   const role = recruit.roles.find((entry) => entry.id === item.roleId);
@@ -70,25 +77,24 @@ export function useApplicantActions(recruit: RecruitDetail) {
   const rejectSheet = useOverlay('recruit-reject');
 
   const invite = useMutation({
-    mutationFn: async (item: ApplicantRow) => {
-      const result = await acceptApplication(recruitId, item.id);
-      if (result.needsGithubInvite) {
-        await sendGithubInvite(result.teamId, item.applicant.id);
-      }
-      return result;
-    },
+    // PLAN_LIMIT shows its reason here, without the shared Flex sheet (07 TODO 21)
+    meta: { handledCodes: ['PLAN_LIMIT'] },
+    mutationFn: (item: ApplicantRow) => inviteApplicant(recruitId, item.id, item.applicant.id),
     onSuccess: async (result) => {
-      toast(
-        result.needsGithubInvite
-          ? '조직 초대를 보냈어요.'
-          : '팀으로 초대했어요. 팀 채팅에 들어갔어요.',
-      );
+      if (!result.needsGithubInvite) toast('팀으로 초대했어요. 팀 채팅에 들어갔어요.');
+      else if (result.githubSent) toast('팀으로 초대하고 GitHub 조직 초대를 보냈어요.');
+      else toast('팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.', { tone: 'error' });
       await client.invalidateQueries({ queryKey: ['recruits'] });
     },
-    onError: (error, item) => {
+    onError: async (error, item) => {
       if (error instanceof ApiError && error.code === 'ROLE_FULL') {
         roleFull.open(String(item.id));
+        return;
       }
+      // A timeout already has the shared toast
+      if (!isTimeoutError(error)) toast(inviteFailureMessage(error), { tone: 'error' });
+      // e.g. NOT_PENDING: the row changed meanwhile, so refresh the drawer
+      await client.invalidateQueries({ queryKey: ['recruits'] });
     },
   });
 
