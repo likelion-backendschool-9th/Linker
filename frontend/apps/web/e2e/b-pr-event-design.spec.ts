@@ -65,7 +65,9 @@ test('17 PR system messages match the four Figma states and organization groupin
       true,
     );
     const input = await page.getByRole('textbox', { name: '메시지' }).boundingBox();
-    const attach = await page.getByRole('button', { name: '사진 첨부', exact: true }).boundingBox();
+    const attach = await page
+      .getByRole('button', { name: '사진 보내기', exact: true })
+      .boundingBox();
     const send = await page.getByRole('button', { name: '보내기', exact: true }).boundingBox();
     const summary = await page
       .getByRole('button', { name: 'AI 채팅 요약', exact: true })
@@ -123,11 +125,8 @@ test('17 floating summary keeps the existing result flow and leaves photo attach
   await result.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(result).toBeHidden();
   await expect(input).toHaveValue('작성 중인 메시지');
-  await page.getByRole('button', { name: '사진 첨부', exact: true }).click();
-  const photos = page.getByRole('dialog', { name: '사진 첨부', exact: true });
-  await expect(photos).toBeVisible();
-  await photos.getByRole('button', { name: '닫기', exact: true }).click();
-  await expect(photos).toBeHidden();
+  // Photos send as soon as they are picked: the button opens the file picker, no attach sheet.
+  await expect(page.getByLabel(/보낼 사진 선택/)).toHaveAttribute('multiple', '');
   await page.goto('/chats/10');
   await expect(page.getByRole('textbox', { name: '메시지' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'AI 채팅 요약', exact: true })).toHaveCount(0);

@@ -395,31 +395,11 @@
   color: var(--color-text-placeholder-cool);
 }
 
-.attachments {
-  min-width: 0;
-  max-height: calc(var(--control-height) * 5);
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.attachmentSummary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-target-min);
+/* "사진 N장 보내는 중…" under the bar while picked photos upload */
+.photoStatus {
   padding: 0 var(--space-xs);
-  border: 0;
-  background: none;
   color: var(--color-text-slate);
   font-size: var(--font-size-caption);
-  text-align: left;
-}
-
-.attachmentSummary:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
 }
 
 .referenceTools {
