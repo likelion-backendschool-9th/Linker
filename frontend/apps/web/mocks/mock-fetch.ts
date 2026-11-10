@@ -4,12 +4,12 @@ import { ADMIN } from '@/lib/policy';
 
 import { fail, type MockContext, type MockRoute, type ParamName } from './core/define';
 import { buildViewer } from './core/viewer';
+import { persistCreatedIssues, syncCreatedIssues } from './fixtures/issues';
 import { routes } from './routes';
 
 /**
  * Stands in for Spring while mocks are on (blueprint §1-2). Called by `apiFetch` on the server and in
- * the browser. Server and browser keep separate in-memory state: a write made in the browser is
- * gone on the next full page load, and server renders never see it.
+ * the browser. Most fixtures stay process-local; created issues sync via cookie (see `syncCreatedIssues`).
  */
 
 const BROWSER_DELAY_MS = 150;
@@ -132,7 +132,9 @@ export async function mockFetch<T>(url: string, init: RequestInit = {}): Promise
   };
   authorize(entry, ctx);
 
+  await syncCreatedIssues();
   const result = await entry.route.handle(ctx);
+  persistCreatedIssues();
   if (entry.route.path === '/api/v1/admin/otp/verify' && otpVerified(result)) {
     adminOtpLastActiveAt = Date.now();
   }
