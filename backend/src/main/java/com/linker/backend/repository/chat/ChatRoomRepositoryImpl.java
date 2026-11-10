@@ -156,6 +156,7 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 			  counterpart.display_name,
 			  counterpart.username,
 			  counterpart.status AS counterpart_status,
+			  team.id AS team_id,
 			  team.name AS team_name,
 			  team.avatar_url AS team_avatar_url
 			%s
@@ -358,6 +359,7 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 				(String) row.get("request_kind"),
 				(Boolean) row.get("muted"),
 				instant(row.get("sort_at")),
+				hasPreview ? number(row, "preview_id") : null,
 				hasPreview ? (String) row.get("preview_body") : null,
 				hasPreview ? (String) row.get("preview_visibility") : null,
 				hasPreview ? instant(row.get("preview_deleted_at")) : null,
@@ -367,6 +369,7 @@ class ChatRoomRepositoryImpl implements ChatRoomRepositoryCustom {
 				(String) row.get("display_name"),
 				(String) row.get("username"),
 				(String) row.get("counterpart_status"),
+				row.get("team_id") == null ? null : number(row, "team_id"),
 				(String) row.get("team_name"),
 				(String) row.get("team_avatar_url")
 		);

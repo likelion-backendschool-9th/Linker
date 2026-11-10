@@ -136,7 +136,7 @@ class SubscriptionPaymentIntegrationTest {
 	}
 
 	@Test
-	void plansArePersonalAndRecruitersSeeNoPlanBeforeScout() throws Exception {
+	void plansArePersonalAndRecruitersSeeOnlyScout() throws Exception {
 		User developer = user("plans", UserType.DEVELOPER);
 		mockMvc.perform(get("/api/v1/user/plans").param("reason", "photo-limit").cookie(cookie(developer)))
 				.andExpect(status().isOk())
@@ -145,18 +145,22 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(jsonPath("$.currentPlan").value("FREE"))
 				.andExpect(jsonPath("$.plans[*].key").value(org.hamcrest.Matchers.contains("FREE", "PRO", "FLEX")))
 				.andExpect(jsonPath("$.plans[1].monthly").value(2_900))
-				.andExpect(jsonPath("$.plans[1].yearly").value(29_000))
+				.andExpect(jsonPath("$.plans[1].yearly").value(31_320))
 				.andExpect(jsonPath("$.plans[1].trialAvailable").value(false))
 				.andExpect(jsonPath("$.plans[1].perExtraMember").doesNotExist())
-				.andExpect(jsonPath("$.plans[2].yearly").value(nullValue()))
-				.andExpect(jsonPath("$.plans[2].perExtraMember").value(1_900));
+				.andExpect(jsonPath("$.plans[1].perExtraMemberYearly").doesNotExist())
+				.andExpect(jsonPath("$.plans[2].yearly").value(85_320))
+				.andExpect(jsonPath("$.plans[2].perExtraMember").value(1_900))
+				.andExpect(jsonPath("$.plans[2].perExtraMemberYearly").value(20_520));
 		mockMvc.perform(get("/api/v1/user/plans").param("reason", "<script>").cookie(cookie(developer)))
 				.andExpect(jsonPath("$.reason").value(nullValue()));
 
 		User recruiter = user("plans-recruiter", UserType.RECRUITER);
 		mockMvc.perform(get("/api/v1/user/plans").cookie(cookie(recruiter)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.plans", hasSize(0)))
+				.andExpect(jsonPath("$.plans[*].key").value(org.hamcrest.Matchers.contains("SCOUT")))
+				.andExpect(jsonPath("$.plans[0].monthly").value(14_900))
+				.andExpect(jsonPath("$.plans[0].yearly").value(nullValue()))
 				.andExpect(jsonPath("$.currentPlan").value("FREE"));
 		mockMvc.perform(get("/api/v1/user/plans/team-candidates").cookie(cookie(recruiter)))
 				.andExpect(status().isForbidden())
@@ -185,7 +189,14 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(jsonPath("$.items[0].teamId").value(big))
 				.andExpect(jsonPath("$.items[0].memberCount").value(7))
 				.andExpect(jsonPath("$.items[0].amount").value(9_800))
+				.andExpect(jsonPath("$.items[0].yearlyAmount").value(105_840))
 				.andExpect(jsonPath("$.items[0].currentPlan").value("FREE"));
+		// Flex yearly: 10 months of the monthly price for the same headcount (Policy ch. 11)
+		mockMvc.perform(checkout(owner, "FLEX", "YEARLY", big))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.amount").value(105_840))
+				.andExpect(jsonPath("$.billing").value("YEARLY"))
+				.andExpect(jsonPath("$.orderName").value("Flex · Big 연간 구독"));
 		mockMvc.perform(get("/api/v1/user/plans/team-candidates").cookie(cookie(admin)))
 				.andExpect(jsonPath("$.items", hasSize(0)));
 		mockMvc.perform(checkout(admin, "FLEX", "MONTHLY", big))
@@ -211,14 +222,14 @@ class SubscriptionPaymentIntegrationTest {
 				.andReturn());
 		assertThat(monthly.get("customerKey").asString()).startsWith("lnk_c_").doesNotContain(String.valueOf(developer.getId()));
 		JsonNode again = body(mockMvc.perform(checkout(developer, "PRO", "YEARLY", null))
-				.andExpect(jsonPath("$.amount").value(29_000))
+				.andExpect(jsonPath("$.amount").value(31_320))
 				.andReturn());
 		assertThat(again.get("customerKey").asString()).isEqualTo(monthly.get("customerKey").asString());
 		assertThat(paymentStatus(monthly.get("orderId").asString())).isEqualTo("READY");
 
 		mockMvc.perform(checkout(developer, "FLEX", "YEARLY", 1L))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("INVALID_BILLING"));
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("TEAM_PERMISSION"));
 		mockMvc.perform(checkout(developer, "PRO", "WEEKLY", null))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("INVALID_BILLING"));
@@ -304,7 +315,7 @@ class SubscriptionPaymentIntegrationTest {
 
 		// A second one-time payment extends the same live row from the old period end.
 		String yearly = order(developer, "PRO", "YEARLY", null);
-		mockMvc.perform(confirm(developer, yearly, "pay_" + yearly, 29_000))
+		mockMvc.perform(confirm(developer, yearly, "pay_" + yearly, 31_320))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.expiresOn").value("2027-12-05"));
 		assertThat(liveRows(developer)).isEqualTo(1);
@@ -659,7 +670,7 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("REFUND_BENEFITS_USED"));
 
-		String yearly = pay(developer, "PRO", "YEARLY", null, 29_000);
+		String yearly = pay(developer, "PRO", "YEARLY", null, 31_320);
 		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2027-12-05T14:30:00Z"));
 		mockMvc.perform(refund(developer, paymentId(first)))
 				.andExpect(status().isConflict())
@@ -678,7 +689,7 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(header().string("Cache-Control", "no-store, private"))
 				.andExpect(jsonPath("$.status").value("CANCELED"))
-				.andExpect(jsonPath("$.refundedAmount").value(29_000))
+				.andExpect(jsonPath("$.refundedAmount").value(31_320))
 				.andExpect(jsonPath("$.canceledAt").value("2026-11-05T15:00:00Z"))
 				.andExpect(jsonPath("$.refundable").value(false));
 		assertThat(GATEWAY.cancels).singleElement().satisfies(call -> {
@@ -695,7 +706,7 @@ class SubscriptionPaymentIntegrationTest {
 		assertThat(jdbc.queryForMap("""
 				select status, cancel_reason, refunded_amount, raw_response::text as raw from payments where order_id = ?
 				""", yearly))
-				.containsEntry("status", "CANCELED").containsEntry("refunded_amount", 29_000)
+				.containsEntry("status", "CANCELED").containsEntry("refunded_amount", 31_320)
 				.containsEntry("cancel_reason", "7일 이내 혜택 시작 전 환불")
 				.hasEntrySatisfying("raw", raw -> assertThat((String) raw).contains("CANCELED"));
 
@@ -704,7 +715,7 @@ class SubscriptionPaymentIntegrationTest {
 				.andExpect(jsonPath("$.status").value("CANCELED"));
 		assertThat(GATEWAY.cancels).hasSize(1);
 		// A refunded order cannot be confirmed again to win the period back.
-		mockMvc.perform(confirm(developer, yearly, "pay_" + yearly, 29_000))
+		mockMvc.perform(confirm(developer, yearly, "pay_" + yearly, 31_320))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("ORDER_FAILED"));
 		assertThat(periodEnd(developer)).isEqualTo(Instant.parse("2026-12-05T14:30:00Z"));

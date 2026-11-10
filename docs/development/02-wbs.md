@@ -344,7 +344,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 16 | D | GET | `/api/v1/user/chat-rooms?tab=TEAM\|DIRECT\|REQUEST` | Room list (last message, unread count, muted), excluding blocked users | user |
+| 16 | D | GET | `/api/v1/user/chat-rooms?tab=TEAM\|DIRECT\|REQUEST` | Room list (last message with its id for 읽음 처리, unread count, muted, TEAM `teamId` for 팀 나가기 → 09), excluding blocked users | user |
 | 16 | D | GET | `/api/v1/user/chat-rooms/unread-summary` | Unread count per tab, received request count (bottom tab badge) | user |
 | 16 | D | POST | `/api/v1/user/chat-requests/{roomId}/accept` | Accept message request — also borrowed by the top of 17 | user |
 | 16 | D | DELETE | `/api/v1/user/chat-requests/{roomId}` | Delete request (reject, sender not notified, blocks re-request for 30 days) | user |
@@ -508,8 +508,8 @@
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
 | 26 | B | POST | `/api/v1/admin/payments/{paymentId}/refund` | `[Included]` Refund (Toss payment cancel) | admin |
-| 28 | D | GET | `/api/v1/user/plans?reason=` | Developers: Free / Pro / Flex; recruiters: `[Included]` Scout only. Monthly and yearly prices (Flex and Scout monthly only), entry reason, free trial eligibility. Personalized response: `Cache-Control: private, no-store`; frontend server `no-store`, no shared Next cache | user |
-| 28 | D | GET | `/api/v1/user/plans/team-candidates` | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price (₩7,900 up to 6, ₩1,900 per member from the 7th) | user · developers only |
+| 28 | D | GET | `/api/v1/user/plans?reason=` | Developers: Free / Pro / Flex; recruiters: Scout only (display; Scout checkout `[Included]`). Monthly and yearly prices (Scout monthly only; Flex also `perExtraMemberYearly`), entry reason, free trial eligibility. Personalized response: `Cache-Control: private, no-store`; frontend server `no-store`, no shared Next cache | user |
+| 28 | D | GET | `/api/v1/user/plans/team-candidates` | My teams that can upgrade to Flex (owner / billing owner) with current headcount and price: `amount` monthly (₩7,900 up to 6, ₩1,900 per member from the 7th), `yearlyAmount` (10% off: ₩85,320 up to 6, ₩20,520 per member from the 7th) | user · developers only |
 | 28 | D | POST | `/api/v1/user/payments/checkout` | Create order (orderId, amount, customerKey). Checks plan matches member type | user |
 | 28 | D | POST | `/api/v1/user/payments/confirm` | Success return: activate subscription + apply `PlanLimits` only after Toss confirm API verification (Scout = one job ad, 50 offers per day) | user |
 | 28 | D | POST | `/api/v1/user/payments/{orderId}/fail` | Record failure return | user |

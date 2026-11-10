@@ -17,6 +17,8 @@ public record PlanResponse(
 		@Schema(requiredMode = REQUIRED) List<String> benefits,
 		@Schema(requiredMode = REQUIRED, description = "Free trial is [Included] and not offered yet, so always false") boolean trialAvailable,
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		@Schema(requiredMode = NOT_REQUIRED, description = "FLEX only: KRW per member from the 7th") Integer perExtraMember
+		@Schema(requiredMode = NOT_REQUIRED, description = "FLEX only: KRW per member from the 7th") Integer perExtraMember,
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@Schema(requiredMode = NOT_REQUIRED, description = "FLEX only: KRW per member from the 7th, per year") Integer perExtraMemberYearly
 ) {
 }

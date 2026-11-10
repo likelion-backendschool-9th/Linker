@@ -39,6 +39,7 @@ public interface ChatRoomRepositoryCustom {
 			String requestKind,
 			boolean muted,
 			Instant sortAt,
+			Long previewId,
 			String previewBody,
 			String previewVisibility,
 			Instant previewDeletedAt,
@@ -48,6 +49,7 @@ public interface ChatRoomRepositoryCustom {
 			String displayName,
 			String username,
 			String counterpartStatus,
+			Long teamId,
 			String teamName,
 			String teamAvatarUrl
 	) {
