@@ -15,6 +15,7 @@ import { IssueMessageCards } from '../issue-message-cards';
 import { PrEventCard } from '../pr-event-card';
 import { SharedContentCard } from '../shared-content-card';
 import { ExternalLinkPreview } from '../external-link-preview';
+import { AiSummaryCard } from '../ai-summary-card';
 
 type Props = {
   message: RoomMessage;
@@ -78,7 +79,10 @@ export function ChatMessage({
         <p>운영 정책에 따라 숨겨진 메시지예요</p>
       ) : (
         <>
-          {message.text && <p className={styles.text}>{message.text}</p>}
+          {/* AI_SUMMARY text is the list preview ("AI 요약 · …"); the card shows it instead */}
+          {message.text && message.type !== 'AI_SUMMARY' && (
+            <p className={styles.text}>{message.text}</p>
+          )}
           {!!message.imageUrls.length && (
             <div className={styles.images}>
               {message.imageUrls.map((url, index) => (
@@ -101,12 +105,13 @@ export function ChatMessage({
           )}
           {!system &&
             kind !== 'REQUEST' &&
+            message.type !== 'AI_SUMMARY' &&
             message.text &&
             messageUrls(message.text).length > 0 && (
               <ExternalLinkPreview roomId={message.roomId} text={message.text} />
             )}
           {message.type === 'AI_SUMMARY' && (
-            <p className={styles.card}>AI 요약 · {String(message.payload?.oneLine ?? '')}</p>
+            <AiSummaryCard messageId={message.id} payload={message.payload} />
           )}
         </>
       )}
