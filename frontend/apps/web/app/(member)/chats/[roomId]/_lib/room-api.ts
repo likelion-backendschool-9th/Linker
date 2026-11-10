@@ -22,7 +22,6 @@ export type ChatMember = ChatMemberResponse;
 /** `team` carries the caller's `myRole`; it drives other-message delete and @all. */
 export type RoomTeam = NonNullable<ChatRoomInfoResponse['team']> & {
   aiSummaryEnabled?: boolean;
-  aiSummaryBanner?: boolean;
 };
 export type RoomInfo = Omit<ChatRoomInfoResponse, 'team'> & { team: RoomTeam | null };
 /** `updatedAt` is the row version: every edit, delete, hide and restore moves it forward. */

@@ -54,6 +54,9 @@ public class SecurityConfig {
 						.requestMatchers(ApiPaths.PUBLIC + "/**").permitAll()
 						.requestMatchers(ApiPaths.WEBHOOK + "/**").permitAll()
 						.requestMatchers("/ws", "/ws/**").permitAll()
+						// Uploaded images (local storage), public by unguessable key like a bucket URL
+						.requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+						.requestMatchers(HttpMethod.HEAD, "/files/**").permitAll()
 						.requestMatchers(ApiPaths.USER + "/**").authenticated()
 						.requestMatchers(ApiPaths.RECRUITER + "/**").hasRole("RECRUITER")
 						.requestMatchers(HttpMethod.POST, ApiPaths.ADMIN_OTP_VERIFY).authenticated()

@@ -37,6 +37,8 @@ public final class PlanLimits {
 	public static final int SITEMAP_PAGE_SIZE = 50_000;
 	/** Policy ch. 6 — archived teams do not consume this personal membership cap. */
 	public static final int TEAMS_PER_USER_MAX = 10;
+	/** POL-T-2 — Linker invite link validity. */
+	public static final int TEAM_INVITE_VALID_DAYS = 7;
 	/** Policy ch. 6 — archive after this many days in read-only following App removal. */
 	public static final int TEAM_READ_ONLY_ARCHIVE_DAYS = 30;
 	public static final int REPORT_AUTO_HIDE_REPORTERS = 5;
@@ -55,7 +57,7 @@ public final class PlanLimits {
 	public static final int RECRUIT_HEADCOUNT_MAX = 10;
 	public static final int RECRUIT_TECH_TAGS_MAX = 10;
 	public static final int RECRUIT_DEADLINE_WITHIN_DAYS = 60;
-	/** POL-R-3 — apply message and daily cap. */
+	/** Reject reason length (author-only). Apply has no free-text message (POL-R-3). */
 	public static final int APPLICATION_MESSAGE_MAX = 300;
 	public static final int APPLICATIONS_PER_DAY = 20;
 	public static final int APPLICATIONS_PER_DAY_WINDOW_SECONDS = 86_400;
@@ -111,7 +113,8 @@ public final class PlanLimits {
 	/** Policy ch. 2 / ch. 8 — chat send rate and message shape. */
 	public static final int CHAT_SENDS_PER_SECOND = 5;
 	public static final int CHAT_MESSAGE_MAX_CHARS = 2_000;
-	public static final int CHAT_IMAGES_PER_SEND = 10;
+	/** Policy ch. 8: 5 photos at once. The web client sends each as its own message. */
+	public static final int CHAT_IMAGES_PER_SEND = 5;
 	public static final int CHAT_EDIT_WITHIN_HOURS = 24;
 	public static final int CHAT_OFFER_MESSAGE_MAX_CHARS = 1_000;
 	public static final int CHAT_CATCH_UP_MAX = 500;

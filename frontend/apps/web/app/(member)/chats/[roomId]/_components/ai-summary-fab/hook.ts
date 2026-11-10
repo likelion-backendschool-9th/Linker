@@ -17,7 +17,7 @@ export function useAiSummaryFab(roomId: number) {
 
   const run = useMutation({
     mutationFn: async () => {
-      toast('요약하는 중이에요', { key: TOAST_KEY });
+      toast('요약하는 중이에요', { tone: 'persistent', key: TOAST_KEY });
       const created = await createAiSummary(roomId);
       if (created.status === 'PENDING') {
         return waitForAiSummary(roomId, created.summaryId);
@@ -31,12 +31,12 @@ export function useAiSummaryFab(roomId: number) {
         panel.open();
         return;
       }
-      toast('요약하지 못했어요', { tone: 'alert', key: TOAST_KEY });
+      toast('요약하지 못했어요', { tone: 'error', key: TOAST_KEY });
     },
     onError: (error) => {
       dismissToast(TOAST_KEY);
       if (error instanceof ApiError && error.code === 'VALIDATION_ERROR') {
-        toast(error.message, { tone: 'alert', key: TOAST_KEY });
+        toast(error.message, { tone: 'error', key: TOAST_KEY });
       }
       // PLAN_LIMIT / RATE_LIMITED / LOGIN_REQUIRED: shared mutation cache handler
     },

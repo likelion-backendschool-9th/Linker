@@ -154,6 +154,9 @@
   --color-chat-bubble-other: #f3f4f6; /* others' bubble, request panel buttons and divider */
   --color-chat-send: #2563eb; /* send button fill, white arrow 5.17:1 */
   --color-chat-accent: #2563eb; /* PR card event line, request panel guide, team owner label: 5.17:1 */
+  --color-chat-photo-remove-bg: rgb(
+    0 0 0 / 0.53
+  ); /* × circle on a composer photo tile: white × 5.6:1 over a white photo */
   --color-chat-danger: #e00000; /* request panel 거절/차단 text: 4.6:1 on --color-chat-bubble-other */
 
   /* Figma 15 values (calendar, 234:219 and the 368:2753/368:3024 sheets) */
@@ -174,9 +177,16 @@
   --color-photo-count-bg: rgb(255 255 255 / 0.7); /* "1/5" pill over the photo */
   --color-photo-count: #121212; /* "1/5" text: 14:1 on the pill over white */
   --color-post-author-divider: #eaeaea; /* author row bottom line */
-  --color-github-mark: #121212; /* repo card GitHub mark */
+  --color-github-mark: #121212; /* repo card GitHub mark; also the 04 "GitHub" button fill */
+  --color-profile-settings: #414141; /* 04 settings icon (Figma 785:766) */
+  --color-on-load-timeout: #f6f6f6; /* load timeout "돌아가기" label on --color-cta-cool (Figma 301:335) */
+  --color-toast-bg: #ffffff; /* toast fill (Figma 877:415 is white 20%; solid so it reads over photos) */
+  --color-toast-error: #ed0004; /* error toast dot (Figma 841:382) */
+  --color-toast-persistent: #ed8e00; /* persistent toast dot (Figma 877:408) */
+  --color-profile-github-quiet: #f2f3f8; /* 04 "GitHub" button on someone else's profile (Figma 301:629) */
+  --color-profile-work-cover: #f4f4f4; /* 04 work card cover before its image loads (Figma 123:1415) */
   --color-github-mark-original: #24292f; /* 09 Social Icons Github Original fill */
-  --color-team-delete-fill: #e000001a; /* 09 owner "팀 삭제" CTA fill (Figma 695:1525) */
+  --color-team-delete-fill: #fce6e6; /* 09 owner "팀 삭제" CTA fill: Figma 695:1525 #e000001a over white, opaque because the CTA is pinned over scrolling content */
   --color-comment-placeholder: #aab0ba; /* comment input placeholder. Low contrast: 2.0:1 on #f3f4f6 */
 
   /* Figma 16 chat list (247:1019, 321:2336, 321:2417) */

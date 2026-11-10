@@ -21,8 +21,7 @@ export function useApplyForm(recruit: RecruitDetail, overlay: OverlayControl) {
   const [error, setError] = useState<{ field: 'role' | null; text: string } | null>(null);
 
   const apply = useMutation({
-    mutationFn: (body: { roleId: number; message: string }) =>
-      applyToRecruit(String(recruit.id), body),
+    mutationFn: (body: { roleId: number }) => applyToRecruit(String(recruit.id), body),
     onSuccess: async () => {
       overlay.close();
       toast('지원했어요. 결과는 알림으로 알려 드릴게요.');
@@ -48,7 +47,7 @@ export function useApplyForm(recruit: RecruitDetail, overlay: OverlayControl) {
       return;
     }
     setError(null);
-    apply.mutate({ roleId, message: '' });
+    apply.mutate({ roleId });
   };
 
   return {

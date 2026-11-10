@@ -1,11 +1,12 @@
 'use client';
 
+import { SettingsLinearIcon } from '@solar-icons/static/linear/settings';
 import { useQuery } from '@tanstack/react-query';
-import { Settings } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { Icon } from '@/components/ui/icon';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
 import { ProfileInteractions } from '@/features/profile/profile-interactions/ProfileInteractions';
 import { apiFetch } from '@/lib/api/api-fetch';
@@ -16,6 +17,7 @@ import { profileQueryKey } from '@/features/profile/profile-types';
 import { ProfileChatButton } from '../_components/profile-chat-button/ProfileChatButton';
 import { ProfilePosts } from '../_components/profile-posts/ProfilePosts';
 import { ProfileTeams } from '../_components/profile-teams/ProfileTeams';
+import { ProfileTechStack } from '../_components/profile-tech-stack';
 import { useProfileTeams } from '../_components/profile-teams/hook';
 import styles from '../_components/profile.module.css';
 
@@ -34,7 +36,8 @@ export function DeveloperProfileView({
     initialData: initialProfile,
   });
   const teams = useProfileTeams(profile.login);
-  const completedCount = teams.data?.items.filter((team) => team.status === 'COMPLETED').length ?? 0;
+  const completedCount =
+    teams.data?.items.filter((team) => team.status === 'COMPLETED').length ?? 0;
   const activeCount = teams.data?.items.filter((team) => team.status === 'ACTIVE').length ?? 0;
   return (
     <ProfileInteractions profile={profile} viewerRole={viewerRole}>
@@ -57,41 +60,46 @@ export function DeveloperProfileView({
                 <div className={styles.nameLine}>
                   <h2 className={styles.displayName}>{profile.name}</h2>
                   {profile.lookingForTeam && <span className={styles.statusBadge}>팀 찾는 중</span>}
-                  {profile.jobStatus === 'SEEKING' && <span className={styles.statusBadge}>구직 중</span>}
+                  {profile.jobStatus === 'SEEKING' && (
+                    <span className={styles.statusBadge}>구직 중</span>
+                  )}
                   {viewerRole === 'recruiter' && profile.jobStatus === 'OPEN' && (
                     <span className={styles.statusBadge}>제안 받는 중</span>
                   )}
                 </div>
                 <div className={styles.followLine}>
                   <button type="button" onClick={() => openPeople('followers')}>
-                    팔로워 {profile.followerCount}
+                    <span>팔로워</span> <span>{profile.followerCount}</span>
                   </button>
                   <button type="button" onClick={() => openPeople('followings')}>
-                    팔로잉 {profile.followingCount}
+                    <span>팔로잉</span> <span>{profile.followingCount}</span>
                   </button>
                 </div>
               </div>
               {profile.isMe ? (
-                <Link className={styles.profileSettings} href="/settings" aria-label="설정">
-                  <Settings aria-hidden />
+                <Link
+                  className={styles.profileSettings}
+                  href="/settings/profile"
+                  aria-label="프로필 수정"
+                >
+                  <Icon svg={SettingsLinearIcon} />
                 </Link>
               ) : null}
             </div>
 
             {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
             {safeBlog(profile.blogUrl) && (
-              <a className={styles.blog} href={safeBlog(profile.blogUrl)!} target="_blank" rel="noreferrer">
+              <a
+                className={styles.blog}
+                href={safeBlog(profile.blogUrl)!}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {profile.blogUrl}
               </a>
             )}
 
-            {profile.techStack.length > 0 && (
-              <ul className={styles.stackRow} aria-label="기술 스택">
-                {profile.techStack.map((tag) => (
-                  <li key={tag}>{tag}</li>
-                ))}
-              </ul>
-            )}
+            {profile.techStack.length > 0 && <ProfileTechStack tags={profile.techStack} />}
 
             <a
               className={profile.isMe ? styles.githubButton : styles.githubButtonQuiet}

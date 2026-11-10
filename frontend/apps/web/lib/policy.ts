@@ -22,6 +22,11 @@ export const IMAGE = {
   longSidePx: 2048,
 } as const;
 
+/** 04 ch. 2 "Network and failures": a request with no response by then fails as a timeout */
+export const NETWORK = {
+  requestTimeoutMs: 10_000,
+} as const;
+
 /** 04 ch. 2 "Network and failures" */
 export const DRAFT = {
   keepDays: 7,
@@ -74,14 +79,13 @@ export const POST = {
   commentMax: 500,
 } as const;
 
-/** 04 ch. 5 POL-R-1, POL-R-3 */
+/** 04 ch. 5 POL-R-1, POL-R-3 — apply has no free-text message; author reviews the profile. */
 export const RECRUIT = {
   titleMax: 40,
   introMax: 1000,
   headcountPerRole: { min: 1, max: 10 },
   deadlineWithinDays: 60,
   techTagsMax: 10,
-  applyMessageMax: 300,
 } as const;
 
 /** 04 ch. 6 */
@@ -118,7 +122,8 @@ export const CHAT = {
   autoRetries: 3,
   catchUpMax: 500,
   messageMax: 2000,
-  imagesPerSend: 10,
+  /** Photos picked at once; each leaves as its own message (user request 2026-11-10) */
+  imagesPerSend: 5,
   editWithinHours: 24,
   offerMessageMax: 1000,
   teamImageOriginalRetentionDaysFree: 90,

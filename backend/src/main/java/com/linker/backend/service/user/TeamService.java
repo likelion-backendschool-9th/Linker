@@ -17,6 +17,8 @@ public class TeamService {
   private final TeamRepository teams;
   private final TeamSetupService setup;
   private final TeamManagementService management;
+  private final TeamInvitationService invitations;
+  private final GithubInvitationService githubInvitations;
   private final com.linker.backend.repository.subscription.SubscriptionRepository subscriptions;
   private final java.time.Clock clock;
 
@@ -24,11 +26,15 @@ public class TeamService {
       TeamRepository teams,
       TeamSetupService setup,
       TeamManagementService management,
+      TeamInvitationService invitations,
+      GithubInvitationService githubInvitations,
       com.linker.backend.repository.subscription.SubscriptionRepository subscriptions,
       java.time.Clock clock) {
     this.teams = teams;
     this.setup = setup;
     this.management = management;
+    this.invitations = invitations;
+    this.githubInvitations = githubInvitations;
     this.subscriptions = subscriptions;
     this.clock = clock;
   }
@@ -103,7 +109,15 @@ public class TeamService {
   }
 
   public com.linker.backend.dto.team.response.TeamSettingsResponse settings(AuthenticatedUser user, long id) {
-    return management.settings(user, id);
+    var response = management.settings(user, id);
+    if (!"OWNER".equals(response.myRole()) || !response.permissions().editInfo()) return response;
+    // The read transaction has ended before asking GitHub; an outage must not hide DB settings.
+    try {
+      boolean owner = githubInvitations.canInvite(user, id);
+      return response.withGithubInvitation(owner, owner ? null : "GitHub 조직 오너만 조직에 초대할 수 있어요");
+    } catch (ApiException failure) {
+      return response.withGithubInvitation(false, failure.getMessage());
+    }
   }
 
   public com.linker.backend.dto.team.response.TeamSettingsResponse.Members members(AuthenticatedUser user, long id) {
@@ -140,5 +154,29 @@ public class TeamService {
 
   public void removeRepo(AuthenticatedUser user, long id, long repoId) {
     management.removeRepo(user, id, repoId);
+  }
+
+  public com.linker.backend.dto.team.response.TeamInviteResponse.Links inviteLinks(
+      AuthenticatedUser user, long teamId) {
+    return invitations.list(user, teamId);
+  }
+
+  public com.linker.backend.dto.team.response.TeamInviteResponse.Created createInvite(
+      AuthenticatedUser user, long teamId) {
+    return invitations.create(user, teamId);
+  }
+
+  public void notifyInvite(
+      AuthenticatedUser user, long teamId, long linkId, NotifyTeamInviteRequest request) {
+    invitations.notify(user, teamId, linkId, request);
+  }
+
+  public void revokeInvite(AuthenticatedUser user, long teamId, long linkId) {
+    invitations.revoke(user, teamId, linkId);
+  }
+
+  public com.linker.backend.dto.team.response.TeamInviteResponse.Accepted acceptInvite(
+      AuthenticatedUser user, String code) {
+    return invitations.accept(user, code);
   }
 }

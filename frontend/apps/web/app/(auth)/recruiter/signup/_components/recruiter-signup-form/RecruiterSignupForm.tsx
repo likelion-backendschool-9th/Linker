@@ -1,109 +1,211 @@
 'use client';
 
+import { CheckCircleLinearIcon } from '@solar-icons/static/linear/check-circle';
 import type { Route } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button/Button';
+import { Icon } from '@/components/ui/icon';
 import { RECRUITER } from '@/lib/policy';
-import styles from '@/features/auth/recruiter-auth.module.css';
+import authStyles from '@/features/auth/recruiter-auth.module.css';
 
 import { type FormValues, useRecruiterSignupForm } from './hook';
+import pageStyles from './RecruiterSignupForm.module.css';
 
 export function RecruiterSignupForm() {
   const {
     form,
     step,
     email,
+    businessRegistrationNumber,
     codeSent,
     validMinutes,
     resendSeconds,
     apiError,
+    checked,
     requestCodePending,
     verifyCodePending,
     signupPending,
     handlers,
   } = useRecruiterSignupForm();
 
+  const requiredConsentsReady = Boolean(
+    checked.ageConfirmed && checked.termsAccepted && checked.businessTermsAccepted,
+  );
+  const allConsentsChecked = Boolean(
+    checked.ageConfirmed &&
+      checked.termsAccepted &&
+      checked.businessTermsAccepted &&
+      checked.marketingAccepted,
+  );
+
+  if (step === 1) {
+    return (
+      <section className={pageStyles.screen} aria-label="채용 담당자 회원가입">
+        <div className={pageStyles.stepper} role="progressbar" aria-valuemin={1} aria-valuemax={6} aria-valuenow={1} aria-label="회원가입 진행 단계">
+          {Array.from({ length: 6 }, (_, index) => (
+            <span
+              key={index}
+              className={index === 0 ? pageStyles.activeSegment : undefined}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+
+        <div className={pageStyles.content}>
+          <div className={pageStyles.intro}>
+            <h2>리크루터로 가입하기</h2>
+            <p>개발자들의 작업물을 확인하고 채용으로 이어가세요</p>
+          </div>
+
+          <fieldset className={pageStyles.consents}>
+            <legend className="sr-only">회원가입 약관 동의</legend>
+            <label className={pageStyles.allConsent}>
+              <input
+                type="checkbox"
+                checked={allConsentsChecked}
+                onChange={(event) => handlers.setAllConsents(event.target.checked)}
+              />
+              <Icon svg={CheckCircleLinearIcon} />
+              <span>약관 전체 동의</span>
+            </label>
+
+            <div className={pageStyles.consentList}>
+              <Consent
+                name="ageConfirmed"
+                label="(필수) 만 19세 이상"
+                href="/legal/terms"
+                detailLabel="[ 자세히 보기 ]"
+                register={form.register('ageConfirmed')}
+                error={form.formState.errors.ageConfirmed?.message}
+              />
+              <Consent
+                name="termsAccepted"
+                label="(필수) 이용 약관"
+                href="/legal/terms"
+                detailLabel="[ 자세히 보기 ]"
+                register={form.register('termsAccepted')}
+                error={form.formState.errors.termsAccepted?.message}
+              />
+              <Consent
+                name="businessTermsAccepted"
+                label="(필수) 사업자 회원 약관 동의"
+                href="/legal/recruiter-terms"
+                detailLabel="[ 자세히 보기 ]"
+                register={form.register('businessTermsAccepted', {
+                  onChange: (event) => {
+                    form.setValue('personalDataAccepted', event.target.checked);
+                  },
+                })}
+                error={form.formState.errors.businessTermsAccepted?.message}
+              />
+              <Consent
+                name="marketingAccepted"
+                label="(선택) 마케팅 수신 동의"
+                href="/legal/privacy"
+                detailLabel="[ 자세히 보기 ]"
+                register={form.register('marketingAccepted')}
+              />
+            </div>
+          </fieldset>
+        </div>
+
+        <button
+          type="button"
+          className={pageStyles.next}
+          disabled={!requiredConsentsReady}
+          onClick={handlers.proceedFromConsents}
+        >
+          다음
+        </button>
+      </section>
+    );
+  }
+
+  if (step === 2) {
+    return (
+      <section className={pageStyles.screen} aria-label="사업자 인증하기">
+        <div
+          className={pageStyles.stepper}
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={6}
+          aria-valuenow={2}
+          aria-label="회원가입 진행 단계"
+        >
+          {Array.from({ length: 6 }, (_, index) => (
+            <span
+              key={index}
+              className={index < 2 ? pageStyles.activeSegment : undefined}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+
+        <div className={pageStyles.content}>
+          <div className={pageStyles.intro}>
+            <h2>사업자 인증하기</h2>
+            <p>사업자 등록 번호를 인증해 주세요.</p>
+          </div>
+
+          <div className={pageStyles.businessField}>
+            <label htmlFor="business-registration-number">사업자 등록 번호</label>
+            <div className={pageStyles.businessInput}>
+              <input
+                id="business-registration-number"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={10}
+                placeholder="사업자 등록번호 10자리를 작성해 주세요"
+                value={businessRegistrationNumber}
+                onChange={handlers.updateBusinessRegistrationNumber}
+                aria-label="사업자 등록 번호"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className={pageStyles.next}
+          disabled={businessRegistrationNumber.length !== 10}
+          onClick={handlers.proceedFromBusinessRegistration}
+        >
+          다음
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <section className={styles.container} aria-label="채용 담당자 회원가입">
-      <ol className={styles.steps} aria-label="회원가입 단계">
+    <section className={authStyles.container} aria-label="채용 담당자 회원가입">
+      <ol className={authStyles.steps} aria-label="회원가입 단계">
         {(
           [
-            ['약관 동의', 1],
-            ['회사 이메일 인증', 2],
-            ['계정 정보', 3],
+            ['사업자 등록 번호', 2],
+            ['회사 이메일 인증', 3],
+            ['계정 정보', 4],
           ] as const
         ).map(([label, number]) => (
           <li
             key={number}
             aria-current={step === number ? 'step' : undefined}
-            className={step === number ? styles.currentStep : undefined}
+            className={step === number ? authStyles.currentStep : undefined}
           >
             {label}
           </li>
         ))}
       </ol>
-
-      {step === 1 && (
-        <div className={styles.form}>
-          <h2 className={styles.heading}>기업회원 가입 동의</h2>
-          <p className={styles.description}>
-            채용 담당자 계정은 회사 이메일 인증 후 사용할 수 있어요.
-          </p>
-          <Button variant="outline" onClick={handlers.toggleAllConsents}>
-            전체 동의 (선택 항목 포함)
-          </Button>
-          <Consent
-            name="ageConfirmed"
-            label="(필수) 만 19세 이상입니다"
-            register={form.register('ageConfirmed')}
-            error={form.formState.errors.ageConfirmed?.message}
-          />
-          <Consent
-            name="termsAccepted"
-            label="(필수) 서비스 이용약관 동의"
-            href="/legal/terms"
-            register={form.register('termsAccepted')}
-            error={form.formState.errors.termsAccepted?.message}
-          />
-          <Consent
-            name="businessTermsAccepted"
-            label="(필수) 기업회원(채용 담당자) 추가약관 동의"
-            href="/legal/recruiter-terms"
-            register={form.register('businessTermsAccepted')}
-            error={form.formState.errors.businessTermsAccepted?.message}
-          />
-          <Consent
-            name="personalDataAccepted"
-            label="(필수) 기업회원 개인정보 수집·이용 동의"
-            href="/legal/privacy"
-            register={form.register('personalDataAccepted')}
-            error={form.formState.errors.personalDataAccepted?.message}
-          />
-          <Consent
-            name="marketingAccepted"
-            label="(선택) 마케팅 정보 수신 동의"
-            register={form.register('marketingAccepted')}
-          />
-          <p className={styles.description}>
-            개인정보 처리방침은 동의 항목이 아닌 안내 문서입니다.{' '}
-            <Link href="/legal/privacy">개인정보 처리방침 보기</Link>
-          </p>
-          <Button block onClick={handlers.proceedFromConsents}>
-            다음
-          </Button>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className={styles.form}>
-          <h2 className={styles.heading}>회사 이메일 인증</h2>
-          <p className={styles.description}>
+      {step === 3 && (
+        <div className={authStyles.form}>
+          <h2 className={authStyles.heading}>회사 이메일 인증</h2>
+          <p className={authStyles.description}>
             회사 도메인의 이메일로 인증 코드를 보낼게요. 개인 메일은 사용할 수 없어요.
           </p>
-          <Field id="company-email" label="회사 이메일" error={form.formState.errors.email?.message}>
+          <Field id="company-email" label="회사 이메일" error={form.formState.errors.email?.message} styles={authStyles}>
             <input
               id="company-email"
               type="email"
@@ -113,7 +215,7 @@ export function RecruiterSignupForm() {
               aria-describedby={form.formState.errors.email ? 'company-email-error' : undefined}
             />
           </Field>
-          <div className={styles.actionRow}>
+          <div className={authStyles.actionRow}>
             <Button
               variant="outline"
               onClick={handlers.sendCode}
@@ -130,11 +232,12 @@ export function RecruiterSignupForm() {
           </div>
           {codeSent && (
             <>
-              <p className={styles.description}>인증 코드는 {validMinutes}분 동안 유효해요.</p>
+              <p className={authStyles.description}>인증 코드는 {validMinutes}분 동안 유효해요.</p>
               <Field
                 id="verification-code"
                 label="인증 코드"
                 error={form.formState.errors.code?.message}
+                styles={authStyles}
               >
                 <input
                   id="verification-code"
@@ -153,17 +256,15 @@ export function RecruiterSignupForm() {
               </Button>
             </>
           )}
-          <Button variant="soft" onClick={() => handlers.goToStep(1)}>
-            이전
-          </Button>
+          <Button variant="soft" onClick={() => handlers.goToStep(2)}>이전</Button>
         </div>
       )}
 
-      {step === 3 && (
-        <form className={styles.form} noValidate onSubmit={form.handleSubmit(handlers.submit)}>
-          <h2 className={styles.heading}>담당자 및 회사 정보</h2>
-          <p className={styles.description}>인증한 회사 이메일: {email}</p>
-          <Field id="name" label="담당자 이름" error={form.formState.errors.name?.message}>
+      {step === 4 && (
+        <form className={authStyles.form} noValidate onSubmit={form.handleSubmit(handlers.submit)}>
+          <h2 className={authStyles.heading}>담당자 및 회사 정보</h2>
+          <p className={authStyles.description}>인증한 회사 이메일: {email}</p>
+          <Field id="name" label="담당자 이름" error={form.formState.errors.name?.message} styles={authStyles}>
             <input
               id="name"
               autoComplete="name"
@@ -173,7 +274,7 @@ export function RecruiterSignupForm() {
               aria-describedby={form.formState.errors.name ? 'name-error' : undefined}
             />
           </Field>
-          <Field id="company" label="회사명" error={form.formState.errors.company?.message}>
+          <Field id="company" label="회사명" error={form.formState.errors.company?.message} styles={authStyles}>
             <input
               id="company"
               autoComplete="organization"
@@ -183,7 +284,7 @@ export function RecruiterSignupForm() {
               aria-describedby={form.formState.errors.company ? 'company-error' : undefined}
             />
           </Field>
-          <Field id="job-title" label="직책" error={form.formState.errors.jobTitle?.message}>
+          <Field id="job-title" label="직책" error={form.formState.errors.jobTitle?.message} styles={authStyles}>
             <input
               id="job-title"
               autoComplete="organization-title"
@@ -197,6 +298,7 @@ export function RecruiterSignupForm() {
             id="website"
             label="회사 웹사이트 (선택)"
             error={form.formState.errors.websiteUrl?.message}
+            styles={authStyles}
           >
             <input
               id="website"
@@ -213,6 +315,7 @@ export function RecruiterSignupForm() {
             label="비밀번호"
             hint={`영문과 숫자를 포함해 ${RECRUITER.password.min}~${RECRUITER.password.max}자로 입력해 주세요.`}
             error={form.formState.errors.password?.message}
+            styles={authStyles}
           >
             <input
               id="password"
@@ -231,6 +334,7 @@ export function RecruiterSignupForm() {
             id="password-confirm"
             label="비밀번호 확인"
             error={form.formState.errors.passwordConfirm?.message}
+            styles={authStyles}
           >
             <input
               id="password-confirm"
@@ -243,9 +347,9 @@ export function RecruiterSignupForm() {
               }
             />
           </Field>
-          {apiError && <ApiErrorNotice error={apiError} />}
-          <div className={styles.actionRow}>
-            <Button type="button" variant="soft" onClick={() => handlers.goToStep(2)}>
+          {apiError && <ApiErrorNotice error={apiError} styles={authStyles} />}
+          <div className={authStyles.actionRow}>
+            <Button type="button" variant="soft" onClick={() => handlers.goToStep(3)}>
               이전
             </Button>
             <Button type="submit" disabled={signupPending} aria-busy={signupPending}>
@@ -255,8 +359,8 @@ export function RecruiterSignupForm() {
         </form>
       )}
 
-      {step !== 3 && apiError && <ApiErrorNotice error={apiError} />}
-      <p className={styles.footer}>
+      {apiError && <ApiErrorNotice error={apiError} styles={authStyles} />}
+      <p className={authStyles.footer}>
         이미 가입하셨나요? <Link href="/recruiter/login">로그인</Link>
       </p>
     </section>
@@ -267,29 +371,40 @@ function Consent({
   name,
   label,
   href,
+  detailLabel = '보기',
   register,
   error,
 }: {
   name: keyof FormValues;
   label: string;
   href?: string;
+  detailLabel?: string;
   register: ReturnType<ReturnType<typeof useForm<FormValues>>['register']>;
   error?: string;
 }) {
   return (
-    <div className={styles.consent}>
-      <label>
+    <div className={pageStyles.consent}>
+      <label className={pageStyles.consentLabel}>
         <input
           type="checkbox"
           {...register}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${name}-error` : undefined}
         />
+        <Icon svg={CheckCircleLinearIcon} />
         <span>{label}</span>
       </label>
-      {href && <Link href={href as Route}>보기</Link>}
+      {href && (
+        <Link
+          href={href as Route}
+          className={pageStyles.detail}
+          aria-label={`${label} 자세히 보기`}
+        >
+          {detailLabel}
+        </Link>
+      )}
       {error && (
-        <span id={`${name}-error`} className={styles.error}>
+        <span id={`${name}-error`} className={pageStyles.error}>
           {error}
         </span>
       )}
@@ -303,12 +418,14 @@ function Field({
   hint,
   error,
   children,
+  styles,
 }: {
   id: string;
   label: string;
   hint?: string;
   error?: string;
   children: ReactNode;
+  styles: typeof authStyles;
 }) {
   return (
     <div className={styles.field}>
@@ -328,7 +445,7 @@ function Field({
   );
 }
 
-function ApiErrorNotice({ error }: { error: { message: string; code?: string } }) {
+function ApiErrorNotice({ error, styles }: { error: { message: string; code?: string }; styles: typeof authStyles }) {
   return (
     <div className={styles.errorBox} role="alert">
       <p>{error.message}</p>

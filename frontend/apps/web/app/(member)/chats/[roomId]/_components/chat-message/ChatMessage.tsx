@@ -89,12 +89,7 @@ export function ChatMessage({
                   aria-label={`채팅 이미지 ${index + 1} 크게 보기`}
                   onClick={() => onPhoto?.(message.id, index)}
                 >
-                  <Image
-                    src={url}
-                    alt={`채팅 이미지 ${index + 1}`}
-                    fill
-                    sizes="(max-width: 600px) 50vw, 320px"
-                  />
+                  <Image src={url} alt={`채팅 이미지 ${index + 1}`} width={220} height={220} />
                 </button>
               ))}
             </div>

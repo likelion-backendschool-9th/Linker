@@ -18,11 +18,13 @@
   min-height: 0;
 }
 
-/* Figma 750:3125: keep the summary above the composer, outside the scrolling messages. */
-.aiSummary {
-  position: absolute;
-  right: calc(var(--space-row-inline) - (67px - var(--fab-size)) / 2);
-  bottom: var(--space-sm);
+/*
+ * Team rooms float "AI 채팅 요약" over the bottom-right corner. The space below the last row lets the
+ * latest message end at the button's top edge, overlapping it only a little (user request
+ * 2026-11-10): last row's 20px gap + this = the button's 48px (40px + 8px offset) − 8px overlap.
+ */
+.withSummaryFab .viewport {
+  padding-bottom: calc(var(--fab-size) - var(--space-chat-row));
 }
 
 .viewport {
@@ -274,19 +276,33 @@
 
 .images {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
   gap: var(--space-xs);
 }
 
+.mine .images {
+  justify-items: end;
+}
+
+/* A photo-only message shows the photo itself, without the bubble around it */
+.bubble:has(> .images:only-child) {
+  padding: 0;
+  background: none;
+}
+
+/* Each photo keeps its own shape within 220 × 220 (user request 2026-11-10) */
 .image {
-  position: relative;
-  width: calc(var(--control-height) * 5);
+  display: block;
   max-width: 100%;
-  aspect-ratio: 4 / 3;
+  line-height: 0;
 }
 
 .image img {
-  object-fit: cover;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, var(--chat-image-max-size));
+  max-height: var(--chat-image-max-size);
   border-radius: var(--radius-card-compact);
 }
 
@@ -322,8 +338,9 @@
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-xs);
   flex-shrink: 0;
-  padding: var(--space-xs) var(--space-xxs)
-    max(var(--space-home-indicator), env(safe-area-inset-bottom)) 0;
+  /* 4px more above and below than the Figma bar (user request 2026-11-10: it sat too tight) */
+  padding: var(--space-sm) var(--space-xxs)
+    calc(max(var(--space-home-indicator), env(safe-area-inset-bottom)) + var(--space-xxs)) 0;
   background: var(--color-canvas);
 }
 
@@ -347,6 +364,8 @@
 }
 
 .attachmentToggle {
+  /* Centered on the bar as the input grows (user request 2026-11-10) */
+  align-self: center;
   background: none;
   color: var(--color-text-title-cool);
   --icon-box-size: var(--icon-size-chat-attach);
@@ -361,6 +380,13 @@
 .send:disabled,
 .attachmentToggle:disabled {
   cursor: default;
+}
+
+/* "+" while photos are picked (user design 2026-11-10) */
+.addIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  stroke-width: 1.5;
 }
 
 .attachmentToggle:focus-visible,
@@ -392,33 +418,6 @@
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-placeholder-cool);
-}
-
-.attachments {
-  min-width: 0;
-  max-height: calc(var(--control-height) * 5);
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.attachmentSummary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-xs);
-  border: 0;
-  background: none;
-  color: var(--color-text-slate);
-  font-size: var(--font-size-caption);
-  text-align: left;
-}
-
-.attachmentSummary:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
 }
 
 .referenceTools {

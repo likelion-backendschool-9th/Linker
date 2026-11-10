@@ -7,10 +7,10 @@ const form = {
   name: ME.name,
   bio: ME.bio,
   blogUrl: ME.blogUrl,
-  techStack: [...ME.techStack],
+  techStack: ['Java', 'Next.js', 'TypeScript', 'React', 'Spring Boot'],
   lookingForTeam: ME.lookingForTeam,
   jobStatus: ME.jobStatus,
-  jobCategories: [...ME.jobCategories],
+  jobCategories: ['FRONTEND'],
 };
 
 const recruiterForm = {

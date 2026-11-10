@@ -108,7 +108,7 @@ export function useBoardView(teamId: string) {
         error instanceof ApiError && error.code === 'GITHUB_PERMISSION'
           ? NO_PERMISSION
           : 'GitHub에 반영하지 못했어요.';
-      toast(`${reason} 카드를 원래 자리로 돌려놨어요.`, { tone: 'alert' });
+      toast(`${reason} 카드를 원래 자리로 돌려놨어요.`, { tone: 'error' });
     } finally {
       setMoves((current) => {
         const next = { ...current };
@@ -175,6 +175,6 @@ export function useBoardView(teamId: string) {
     onDragStart,
     onDragEnd,
     onDragCancel: () => setDragging(null),
-    onBlocked: () => toast(NO_PERMISSION, { tone: 'alert' }),
+    onBlocked: () => toast(NO_PERMISSION, { tone: 'error' }),
   };
 }

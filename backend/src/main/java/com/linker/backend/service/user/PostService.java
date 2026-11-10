@@ -62,6 +62,7 @@ import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.TechTagRepository;
+import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
 import org.springframework.data.domain.PageRequest;
@@ -88,6 +89,7 @@ public class PostService {
 	private final RecruitCardMapper authors;
 	private final RedisRateLimiter rateLimiter;
 	private final ProMembership pro;
+	private final TeamRepository teams;
 	private final Clock clock;
 
 	public PostService(
@@ -105,6 +107,7 @@ public class PostService {
 			RecruitCardMapper authors,
 			RedisRateLimiter rateLimiter,
 			ProMembership pro,
+			TeamRepository teams,
 			Clock clock
 	) {
 		this.repos = repos;
@@ -121,6 +124,7 @@ public class PostService {
 		this.authors = authors;
 		this.rateLimiter = rateLimiter;
 		this.pro = pro;
+		this.teams = teams;
 		this.clock = clock;
 	}
 
@@ -189,15 +193,29 @@ public class PostService {
 
 	@Transactional(readOnly = true)
 	public EditorRepoListResponse listRepos(AuthenticatedUser user, String q, Long teamId) {
-		// team_repos / org membership sync is B-owned; until then team filter yields empty.
-		if (teamId != null) {
-			return new EditorRepoListResponse(List.of());
-		}
 		String query = blankToNull(q);
-		// Split null-q vs search-q: Postgres + Hibernate bind null string params as bytea in `lower(:q)`.
-		List<GithubRepo> rows = query == null
-				? repos.findPublicByOwner(user.login())
-				: repos.findPublicByOwnerAndQuery(user.login(), query);
+		List<GithubRepo> rows;
+		if (teamId != null) {
+			// Linked team repos (POL-P-1 / WBS 441). Caller must be able to open the team elsewhere.
+			List<Long> linkedIds = teams.findLinkedRepos(teamId).stream()
+					.map(com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo::repoId)
+					.toList();
+			if (linkedIds.isEmpty()) {
+				return new EditorRepoListResponse(List.of());
+			}
+			rows = repos.findAllById(linkedIds).stream()
+					.filter(repo -> repo.getDeletedAt() == null && !repo.isPrivate())
+					.filter(repo -> query == null || repo.getFullName().toLowerCase(Locale.ROOT)
+							.contains(query.toLowerCase(Locale.ROOT)))
+					.sorted(Comparator.comparing(GithubRepo::getFullName, String.CASE_INSENSITIVE_ORDER))
+					.toList();
+		}
+		else {
+			// Split null-q vs search-q: Postgres + Hibernate bind null string params as bytea in `lower(:q)`.
+			rows = query == null
+					? repos.findPublicByOwner(user.login())
+					: repos.findPublicByOwnerAndQuery(user.login(), query);
+		}
 		if (rows.isEmpty()) {
 			return new EditorRepoListResponse(List.of());
 		}
@@ -211,7 +229,7 @@ public class PostService {
 						repo.getStargazersCount(),
 						repo.isFork(),
 						repo.getParentFullName(),
-						null,
+						teamId,
 						posted.contains(repo.getId())
 				))
 				.toList();
@@ -375,20 +393,11 @@ public class PostService {
 		enforceCommentDayLimit(user.userId());
 		Post post = requireReadablePost(user, postId);
 		String text = requireCommentText(request == null ? null : request.text());
-		Comment parent = null;
-		Long parentId = request == null ? null : request.parentId();
-		if (parentId != null) {
-			parent = comments.findDetailedById(parentId)
-					.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "댓글을 찾지 못했어요"));
-			if (parent.getPost().getId() != postId || parent.getParent() != null || parent.isDeleted()) {
-				throw new ApiException(400, "VALIDATION_ERROR", "답글 대상을 확인해 주세요");
-			}
-		}
 		User author = users.findById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
-		Comment comment = comments.save(Comment.write(post, author, parent, text));
+		Comment comment = comments.save(Comment.write(post, author, null, text));
 		post.increaseCommentCount();
-		notifyComment(post, parent, user.userId(), comment.getId());
+		notifyComment(post, null, user.userId(), comment.getId());
 		return toCommentResponse(comment);
 	}
 
@@ -424,14 +433,10 @@ public class PostService {
 		eraseComment(comment, post, clock.instant());
 	}
 
-	/**
-	 * Page 06 withdrawal batch. Deletes this member's posts and comments.
-	 * A comment that still has replies stays as a deleted placeholder.
-	 */
+	/** Page 06 withdrawal batch. Deletes this member's posts and comments. */
 	@Transactional
 	public void deleteAuthoredContent(long userId, Instant now) {
 		List<Comment> authored = new ArrayList<>(comments.findByAuthorId(userId));
-		authored.sort(Comparator.comparing(comment -> comment.getParent() == null));
 		for (Comment comment : authored) {
 			Post post = comment.getPost();
 			if (comment.isDeleted() || post.getAuthor().getId() == userId) {
@@ -454,12 +459,7 @@ public class PostService {
 	}
 
 	private void eraseComment(Comment comment, Post post, Instant now) {
-		if (comments.countByParentId(comment.getId()) > 0) {
-			comment.softDelete(now);
-		}
-		else {
-			comments.delete(comment);
-		}
+		comments.delete(comment);
 		post.decreaseCommentCount();
 	}
 

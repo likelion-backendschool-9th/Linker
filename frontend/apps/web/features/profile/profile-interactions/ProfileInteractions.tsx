@@ -225,6 +225,7 @@ function ProfilePeopleSheet({
       closeIcon={<ArrowLeft aria-hidden />}
       closeLabel="뒤로"
       classNames={{
+        scrim: styles.peopleScrim,
         sheet: styles.peopleSheet,
         header: styles.peopleHeader,
         title: styles.peopleTitle,

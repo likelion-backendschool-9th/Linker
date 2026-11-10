@@ -17,6 +17,25 @@
   --space-section-lg: 80px; /* gap between major blocks */
   --space-profile-identity: 10px; /* P04 profile avatar-to-info and name-to-meta gap (Figma 301:572) */
   --space-profile-block: 20px; /* P04 profile header-to-feed gap (Figma 301:572) */
+  --space-profile-top: 15px; /* P04 header to the identity row (Figma 116:427) */
+  --space-team-settings-top: 20px; /* 09 tabs to "팀원 프로필" (Figma 368:387) */
+  --control-height-toast: 33px; /* toast (Figma 877:415) */
+  --space-load-timeout-bottom: 24px; /* load timeout "돌아가기" from the screen bottom, on the home indicator (Figma 301:334) */
+  --space-toast-inline: 18px; /* toast side padding (Figma 877:415) */
+  --toast-dot-size: 8px; /* toast kind dot (Figma 877:415) */
+  --radius-toast: 5px; /* toast (Figma 877:415) */
+  --space-team-member-name: 3px; /* 09 member role line to the name (Figma 368:387) */
+  --space-team-invite: 11px; /* 09 between invite buttons, and buttons to the hints (Figma 368:387) */
+  --space-team-settings-band: 30px; /* 09 invite hints to the gray band (Figma 368:387) */
+  --space-team-repos-top: 22px; /* 09 gray band to "GitHub 저장소" (Figma 368:387) */
+  --space-team-cta-bottom: 28px; /* 09 pinned 팀 삭제 / 팀 나가기 from the screen bottom: 4 above the 24 home indicator (Figma 368:1563) */
+  --space-team-cta-gap: 25px; /* 09 last repo row to the pinned CTA (Figma 368:1563) */
+  --control-height-team-delete: 45px; /* 09 "팀 삭제" (Figma 695:1525) */
+  --space-profile-fab-bottom: 24px; /* P04 chat FAB from the screen bottom, incl. home indicator (Figma 365:246) */
+  --space-profile-badge: 6px; /* P04 name to its status badge (Figma 116:427) */
+  --space-profile-badge-block: 2px; /* P04 status badge vertical padding (Figma 116:427) */
+  --space-profile-count: 2px; /* P04 "팔로워" / "팔로잉" label to its count (Figma 116:519) */
+  --space-profile-work: 15px; /* P04 feed: tabs to the first work card and between cards (Figma 116:427) */
   --space-tab-icon-gap: 6px; /* bottom GNB: gap between a tab's icon and its label (Figma itemSpacing) */
   /* Figma 07 values off the 4px grid */
   --space-row-inline: 5px; /* compact list row side padding, title to meta */
@@ -95,6 +114,11 @@
   --avatar-size-team: 50px; /* 07 selected-team image */
   --avatar-size-profile: 60px; /* 04 developer profile image (Figma 301:572) */
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
+  --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
+  --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */
+  --border-width-profile-tabs: 2px; /* 04 line above the project tabs (Figma 121:1185) */
+  --radius-profile-badge: 2px; /* 04 status badge (Figma 123:1410) */
+  --radius-profile-work-cover: 5px; /* 04 work card cover (Figma 123:1415) */
   --avatar-size-block-user: 40px; /* 06 settings blocked-user row */
   --icon-size-block-remove: 22px; /* 06 settings blocked-user removal control */
   --radio-size: 20px;
@@ -141,7 +165,10 @@
   --icon-size-chat-attach: 32px; /* composer photo icon (solar file-image) */
   --icon-size-chat-event: 32px; /* GitHub mark on the PR card */
   --icon-size-chat-search: 23px; /* header search icon (solar magnifier frame) */
-  --chat-ai-logo-size: 33px; /* logo inside the "AI 채팅 요약" button (--control-height-chat circle) */
+  --chat-photo-tile-size: 100px; /* composer photo panel tile (user design 2026-11-10) */
+  --chat-photo-remove-size: 24px; /* its × circle */
+  --chat-image-max-size: 220px; /* a photo in a message: max width and max height (user request 2026-11-10) */
+  --chat-ai-logo-size: 32px; /* animated orb inside the "AI 채팅 요약" button: ThinkingOrb's 32px size preset (Figma logo 33px) */
   --space-chat-card: 14px; /* PR card padding */
   --chat-request-panel-height: 140px; /* request panel replacing the composer */
   --space-chat-request-title: 19px; /* request panel top to its title */
@@ -233,11 +260,12 @@
   --shadow-compact-link: 0 0 4px rgb(0 0 0 / 0.12);
   /* Exception: 11 team-chat shortcut and 19 write-recruit FAB (same Figma value) */
   --shadow-fab: 0 0 2px rgb(222 222 222 / 0.25);
+  --shadow-toast: 0 4px 12px rgb(0 0 0 / 0.25); /* toast (Figma 877:415) */
   --shadow-board-column: 0 4px 10px rgb(0 0 0 / 0.15); /* 14 status column (Figma exception) */
-  --shadow-profile-work-card: 0 2px 12px rgb(18 18 18 / 0.10); /* 04 work card, Figma 301:572 drop shadow */
+  --shadow-profile-work-card: 0 2px 10px rgb(18 18 18 / 0.10); /* 04 work card, Figma 116:427 / 301:572 drop shadow (blur 10) */
   --shadow-board-menu: 0 2px 4px rgb(0 0 0 / 0.15); /* 14 dropdown menus (Figma exception) */
   --shadow-settings-modal: 0 0 1px rgb(0 0 0 / 0.25); /* 06 confirm modal (Figma #00000040, blur 1) */
-  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) */
+  --shadow-chat-request-panel: 0 -2px 10px rgb(0 0 0 / 0.1); /* 17 request panel (Figma exception) and photo panel (user design 2026-11-10) */
   --shadow-gnb: 0 2px 4px rgb(0 0 0 / 0.2); /* bottom GNB pill (Figma 800:1299, 455:316 exception) */
 
   /* Figma 15 values (calendar) */
@@ -307,7 +335,6 @@
   --space-chat-list-top: 15px; /* tabs to the first room */
   --chat-list-avatar-size: 50px; /* room photo */
   --chat-list-badge-size: 18px; /* unread count circle */
-  --chat-list-delete-size: 23px; /* request "삭제" red circle (hit area stays --touch-target-min) */
 
   /* Figma 13 create (200:806) */
   --issue-create-body-min-height: 163px; /* markdown / preview field */

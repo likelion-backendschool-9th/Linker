@@ -14,7 +14,6 @@ import { MessageTimeline } from '../message-timeline';
 import { RequestRoomBar } from '../request-room-bar';
 import { RoomInfoSheet } from '../room-info-sheet';
 import { PullRequestSheet } from '../pull-request-sheet';
-import { AiSummaryBanner } from '../ai-summary-banner';
 import { AiSummaryFab } from '../ai-summary-fab';
 import styles from './ChatRoom.module.css';
 import { CONNECTION, useChatRoom } from './hook';
@@ -89,9 +88,6 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           }
         />
       )}
-      {room.team && (
-        <AiSummaryBanner teamId={room.team.id} visible={Boolean(room.team.aiSummaryBanner)} />
-      )}
       {largeGap && <p role="status">안 읽은 메시지 {CHAT.catchUpMax}개+</p>}
       {catchUpError && (
         <ErrorState
@@ -114,7 +110,11 @@ export function ChatRoom({ roomId }: { roomId: number }) {
           이전 대화를 불러오는 중이에요.
         </p>
       )}
-      <div className={styles.timelineArea}>
+      <div
+        className={
+          room.team ? `${styles.timelineArea} ${styles.withSummaryFab}` : styles.timelineArea
+        }
+      >
         <MessageTimeline
           kind={room.kind}
           onUnread={(id) => unreadMembers.open(String(id))}
@@ -128,11 +128,7 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}
         />
-        {room.team && room.kind !== 'REQUEST' && (
-          <div className={styles.aiSummary}>
-            <AiSummaryFab roomId={roomId} />
-          </div>
-        )}
+        {room.team && <AiSummaryFab roomId={roomId} />}
       </div>
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />

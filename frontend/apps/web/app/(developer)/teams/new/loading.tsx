@@ -1,10 +1,6 @@
-import { TeamSetupFrame } from './_components/team-setup-frame/TeamSetupFrame';
-import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { PageLoading } from '@/components/ui/page-loading';
 
+/** Full-screen loading (Figma 301:294) */
 export default function Loading() {
-  return (
-    <TeamSetupFrame>
-      <Skeleton variant="card" />
-    </TeamSetupFrame>
-  );
+  return <PageLoading />;
 }

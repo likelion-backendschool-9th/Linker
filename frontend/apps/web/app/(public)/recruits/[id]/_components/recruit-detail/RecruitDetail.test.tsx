@@ -7,11 +7,7 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import { todayKst } from '@/lib/format/time';
 import { renderWithProviders } from '@/test/render-with-providers';
 
-import type {
-  ApplicantRow,
-  ApplicationDetail,
-  RecruitDetail as Detail,
-} from '../../_lib/detail-queries';
+import type { ApplicantRow, RecruitDetail as Detail } from '../../_lib/detail-queries';
 import { recruitSummary } from '../../_lib/recruit-summary';
 import { RecruitDetail } from './RecruitDetail';
 
@@ -55,26 +51,10 @@ const applicant: ApplicantRow = {
   daysLeft: 12,
 };
 
-const application: ApplicationDetail = {
-  id: 9,
-  status: 'PENDING',
-  message: '디자인 시스템을 만들어 봤어요.',
-  appliedAt: '2026-10-30T00:00:00Z',
-  applicant: applicant.applicant,
-  techStack: ['Figma'],
-  completion: { projectCount: 2, issueCompletionRate: 0.82 },
-  contributions: [
-    { date: '2026-11-01', count: 3 },
-    { date: '2026-11-02', count: 0 },
-  ],
-  posts: [],
-};
-
 function serve(detail: Detail, accept?: () => unknown) {
   fetchMock.mockImplementation(async (url) => {
     if (url === '/api/v1/public/recruits/1') return detail;
     if (url.endsWith('/applications')) return { items: [applicant] };
-    if (url.endsWith('/applications/9')) return application;
     if (url.endsWith('/accept')) return accept?.();
     return { id: 99, status: 'PENDING' };
   });
@@ -125,7 +105,7 @@ it('lets a developer apply with one open role', async () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/recruits/1/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roleId: 11, message: '' }),
+      body: JSON.stringify({ roleId: 11 }),
     }),
   );
 });

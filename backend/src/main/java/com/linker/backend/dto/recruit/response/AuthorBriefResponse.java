@@ -6,6 +6,8 @@ public record AuthorBriefResponse(
 		String name,
 		String avatarUrl,
 		String userType,
-		String jobStatus
+		String jobStatus,
+		/** Feed cards only; false elsewhere / for guests. */
+		boolean isFollowing
 ) {
 }

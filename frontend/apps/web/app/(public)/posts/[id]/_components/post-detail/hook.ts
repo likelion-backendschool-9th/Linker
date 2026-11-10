@@ -48,7 +48,7 @@ export function useReactionBar(post: Detail, canReact: boolean) {
     },
     onError: (_error, _next, context) => {
       if (context?.previous) client.setQueryData(key, context.previous);
-      toast('좋아요를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'alert' });
+      toast('좋아요를 반영하지 못했어요. 잠시 후 다시 시도해 주세요.', { tone: 'error' });
     },
     onSuccess: ({ likeCount }) =>
       client.setQueryData<Detail>(key, (current) =>

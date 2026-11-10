@@ -133,7 +133,7 @@ export function usePostContentForm({
             message: `사진은 ${photoLimit}장까지 올릴 수 있어요. Pro로 ${pro}장까지 늘릴 수 있어요.`,
           },
         });
-      } else toast(`사진은 ${photoLimit}장까지 올릴 수 있어요.`, { tone: 'alert' });
+      } else toast(`사진은 ${photoLimit}장까지 올릴 수 있어요.`, { tone: 'error' });
     },
   });
 

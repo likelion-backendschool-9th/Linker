@@ -272,7 +272,7 @@
 | 04 | A | GET | `/api/v1/public/user/{login}/teams` | 2nd pass: teams (active, completed) | public |
 | 07 | B | GET | `/api/v1/user/me/teams` | My teams (grouped active / completed / read-only / archived), includes `joinedAt` for default team pick; also used by the team switcher sheet and 07 my-issues team picker | user · developers only |
 | 08 | B | POST | `/api/v1/user/teams` | Create team + team chat room + register owner | user · developers only |
-| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on | team OWNER |
+| 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/repos` | Repos the app is installed on (also reused by 09 linked-repo management) | team ADMIN |
 | 08 | B | PUT | `/api/v1/user/teams/{teamId}/setup/repos` | Set initial linked repos | team OWNER |
 | 08 | B | GET | `/api/v1/user/teams/{teamId}/setup/boards` | `[Included]` Preview existing org boards (name, card count, status columns, Status option `id`/`name`/`color` enum) | team OWNER/ADMIN |
 | 08 | B | POST | `/api/v1/user/teams/{teamId}/setup/board` | Create new "Linker" board (4 statuses + date fields; fixed colors Todo=GRAY / In Progress=BLUE / Blocked=RED / Done=GREEN) or use existing board + status mapping; persist each option's GitHub `color` on `board_status_mappings` | team OWNER/ADMIN |
@@ -422,7 +422,7 @@
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications` | Apply (1 role, 20/day, one re-apply; message unused / empty) | user · developers only |
 | 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications?roleId=` | Applicants drawer (days left until 14-day expiry) | author |
 | 21 | E | GET | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}` | `[Included]` Application detail (profile is reviewed on 04 instead) | author |
-| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Invite → team member + team chat + notification; org owner also sends GitHub org invite. Role full / team limit returned as codes | author |
+| 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/accept` | Body optional `{ increaseHeadcount?: boolean }`. Invite → team member + team chat + notification. Role full → `ROLE_FULL`; `increaseHeadcount` on a free team → `PLAN_LIMIT`/`ROLE_HEADCOUNT` (Flex); free team at 6 members → `PLAN_LIMIT`/`TEAM_MEMBERS` | author |
 | 21 | E | POST | `/api/v1/user/recruits/{recruitId}/applications/{applicationId}/reject` | Reject (reason internal; applicant gets fixed copy) | author |
 
 ### 4-12. 작업물·피드·반응 — `PostController`
@@ -447,13 +447,13 @@
 | 23 | E | POST | `/api/v1/user/posts/{postId}/likes` | Like (notification) | user · developers only |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}/likes` | Unlike | user · developers only |
 | 23 | E | GET | `/api/v1/user/posts/{postId}/likes` | Likers sheet (people list, so login only) | user |
-| 23 | E | GET | `/api/v1/public/posts/{postId}/comments` | Comments and one-level replies | public |
-| 23 | E | POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars, 10/min and 300/day, notification) | user · developers only |
+| 23 | E | GET | `/api/v1/public/posts/{postId}/comments` | Flat comments (no replies) | public |
+| 23 | E | POST | `/api/v1/user/posts/{postId}/comments` | Write comment (500 chars, 10/min and 300/day, notification; no parentId) | user · developers only |
 | 23 | E | PATCH | `/api/v1/user/posts/{postId}/comments/{commentId}` | Edit comment | comment author |
-| 23 | E | DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment ("삭제된 댓글입니다" if it has replies) | comment author / post owner |
+| 23 | E | DELETE | `/api/v1/user/posts/{postId}/comments/{commentId}` | Delete comment | comment author / post owner |
 | 23 | E | DELETE | `/api/v1/user/posts/{postId}` | Delete post | author |
 | 23 | E | GET | `/api/v1/public/posts/{postId}/same-repo-posts` | Other posts for this repo | public |
-| 24 | E | GET | `/api/v1/public/feed?tab=&cursor=&offersOnly=` | `tab` omitted or `recommended` = "추천": developers and operators get posts matching their tech stack or job categories first (by popularity, one-line "why shown"), then the rest in random order, posts seen on an earlier visit last; guests and recruiters get every post in random order with no "why shown"; max 2 in a row from the same author. `tab=following` = "팔로잉": posts by people I follow, newest first, no ads (empty for guests and recruiters; the web never calls it for guests). `cursor` = opaque `<visit start ms>.<offset>`: fixes the shuffle and drops posts written later, so pages never repeat or skip. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers), "추천" only | public |
+| 24 | E | GET | `/api/v1/public/feed?tab=&cursor=&offersOnly=` | `tab` omitted or `recommended` = "추천": developers and operators get posts matching their tech stack or job categories first (by popularity, one-line "why shown"), then the rest in random order, posts seen on an earlier visit last; guests and recruiters get every post in random order with no "why shown"; max 2 in a row from the same author. `tab=following` = "팔로잉": posts by people I follow, newest first, no ads (empty for guests and recruiters; the web never calls it for either: guests see a login notice, recruiters have no "팔로잉" tab). `cursor` = opaque `<visit start ms>.<offset>`: fixes the shuffle and drops posts written later, so pages never repeat or skip. `offersOnly` = recruiter "제안 받는 개발자만" (Only developers open to offers), "추천" only | public |
 | 24 | E | POST | `/api/v1/user/feed/seen` | Log posts shown on screen (to exclude from recommendations) | user |
 | 24 | E | GET | `/api/v1/user/feed/recommended-users` | Empty feed: 5 developers by my tech stack | user |
 
@@ -483,8 +483,8 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 25 | A | GET | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (`[Included]` incl. RECRUITER_AD), flag over 2 business days | admin |
-| 25 | A | GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat. A job ad adds `jobAd` (company, title, job category, closing date, URL host) | admin |
+| 25 | A | GET | `/api/v1/admin/report-cases?status=&targetType=&overdue=` | Pending / handled / appealed, target type (user/post/comment/recruit/chat). **`RECRUITER_AD` filter deferred** — admin UI hides it until ad design ships (user decision 2026-11-10; see page-todo 24 Job ads) | admin |
+| 25 | A | GET | `/api/v1/admin/report-cases/{caseId}` | Report reasons, content, the copied 10 before/after for chat. **`jobAd` payload / admin ad detail deferred** with the same decision (BE may keep the field; FE does not surface it yet) | admin |
 | 25 | A | POST | `/api/v1/admin/report-cases/{caseId}/actions` | Hide / delete (reason required) / dismiss / restore → notify author and reporters | admin |
 | 25 | A | GET | `/api/v1/admin/appeals?status=` | Appeals list | admin |
 | 25 | A | POST | `/api/v1/admin/appeals/{appealId}/decision` | Accept (restore + delete record) / reject. Only an operator other than the original handler | admin |
@@ -886,7 +886,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - [ ] Server (B): `pull_request` webhook → system messages (undeletable) only for opened, review requested, merged, closed
 - [ ] Server (C, reviewed by D): `LlmClient` interface + Ollama implementation (JSON-format response, max 500 messages, excluding deleted, hidden, images and blocked users), 7-day retention batch. B runs Ollama in Docker next to the backend server (D9)
 - [ ] Server (D) `[Included]`: share cards and Linker link cards are filled from the original in the message list response (deleted, hidden or blocked → "볼 수 없는 게시물이에요"); post views via a card are logged in 23 with `source = CHAT_SHARE`
-- [ ] Frontend (C) **now** (shrink; c-role-audit #8): AI summary → latest 500, one `summary` + N/10 + disclaimer, Free PlanLimitSheet, banner (team createdAt 7d). `[Included]` follow-up: range picker, minutes sections, share to chat, to-do → 13. Prompt isolation minimum **PR3** (#9)
+- [ ] Frontend (C) **now** (shrink; c-role-audit #8): AI summary → latest 500, one `summary` + N/10 + disclaimer, Free PlanLimitSheet. The "이 팀은 AI 요약을 사용해요" banner was dropped (team decision 2026-11-10, #356). `[Included]` follow-up: range picker, minutes sections, share to chat, to-do → 13. Prompt isolation minimum **PR3** (#9)
 - [ ] Frontend: STOMP reconnect, TanStack Virtual list, sending/failed/retry, photo viewer, message menu sheet, room info sheet, PR sheet, mentions and #issue cards, request status bar (sender and receiver sides), sender card for recruiting offers
 - Share wiring: connects the shared share sheet / room picker on 04, 21 and 23 to 17's share-target list and card send. The list is `{items:[{roomId,kind:TEAM|DIRECT,title,avatarUrl}]}` (`avatarUrl`: team photo for TEAM, the other person's photo for DIRECT, null when none), searched by partial name (case-insensitive; `%` and `_` match literally), ordered by the latest visible message. It excludes read-only, archived and deleted teams, teams or rooms the caller left, pending requests and blocked counterparts. Completed teams are included; recruiters get only open 1:1 rooms. Eligibility is checked again on send. Limits are 10 per minute and 100 per KST day. A retry with the same sender, `clientMessageId`, room and target returns the existing message; reusing the id for other content is 409 `STATE_CONFLICT`.
 - `SHARE_CARD` and the first Linker URL in a message store only the source type and id. A profile URL handle is converted to the user id when saved, and the reference is rebuilt on edit. Both REST and per-subscriber realtime delivery check the source's current visibility and block state. The card response is `{targetType,targetId,title,summary,imageUrl,linkPath,available}`: posts carry repo, intro and author; recruit posts carry remaining roles and deadline; profiles carry handle and tech stack. A private or deleted repo name shows as `레포를 볼 수 없음`; an inaccessible source shows `볼 수 없는 게시물이에요`. Profile paths are `/user/{login}`; post links carry `from=chat_share`.
@@ -995,7 +995,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 
 - Borrowed: report (00), "채용 제안 보내기" (Send recruiting offer) → 17's `POST /api/v1/recruiter/chat-requests`, edit → 22
 - Tables: new post_likes, comments, 🟡 post_views · shared posts, post_images, github_repos, users, notifications, reports, user_blocks
-- [ ] Frontend: photo swipe and viewer, README toggle, guests tapping like / comment input / more → login prompt, optimistic like, comments and replies, more sheet, for recruiters hide input + offer menu (after 31), `[Included]` share button (00 share sheet), `generateMetadata` + OG image (cover photo, otherwise `opengraph-image.tsx` repo card; strip `?from=share` from canonical, blueprint 8-3)
+- [ ] Frontend: photo swipe and viewer, README toggle, guests tapping like / comment input / more → login prompt, optimistic like, flat comments (no replies), more sheet, for recruiters hide input + offer menu (after 31), `[Included]` share button (00 share sheet), `generateMetadata` + OG image (cover photo, otherwise `opengraph-image.tsx` repo card; strip `?from=share` from canonical, blueprint 8-3)
 
 </details>
 
@@ -1195,7 +1195,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 | 공통 파일 충돌·로직 중복 | 시스템 주담당 검토, 공통 서비스 재사용, API 소유 중복 금지 |
 | 일정 지연 | Included 순서 조정. 필수 기능·출시 조건 변경은 별도 합의 |
 
-기존 Included 후순위 순서: **광고 → 30 통계 → 공유 시트/카드·링크 카드 → 11 진행 현황 → 17 AI → 31~33 → 기존 보드 선택 → 운영 OTP → 피드 2차 관계 추천 → 기여 그래프**. 개발자 구직 상태는 유지한다.
+기존 Included 후순위 순서: **광고 → 30 통계 → 공유 시트/카드·링크 카드 → 11 진행 현황 → 17 AI → 31~33 → 기존 보드 선택 → 운영 OTP → 피드 2차 관계 추천 → 기여 그래프**. 개발자 구직 상태는 유지한다. **광고 안에서도 운영(25) 채용 광고 신고 필터·상세는 더 후순위** — 관리자 광고 디자인 미출시 (user decision 2026-11-10).
 
 ## 7. 적용·이행 범위
 

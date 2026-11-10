@@ -169,7 +169,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Display name (required, 1–20 characters) and bio (optional, up to 160 characters); start with empty fields
 - [ ] Tech stack picker sheet (predefined tags, max 5) → reused in 05
-- [ ] Choose job-seeking status (구직 중 / 제안만 받기 / 끔, default 끔) in the picker → reused in 05
+- [ ] Choose job-seeking status (구직 중 / 제안 받기 / 구직 안 함, default 구직 안 함) in the picker → reused in 05
 - [ ] Done → `/feed` (starts with an empty feed)
 
 **Policy & exceptions**
@@ -194,7 +194,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Pass 1**
 
-- [ ] Header: avatar, display name, @handle, bio, blog, GitHub link, tech stack chips, "팀 찾는 중" badge, "구직 중" badge ("제안만 받기" shows as "제안 받는 중" only when a recruiter views)
+- [ ] Header: avatar, display name, @handle, bio, blog, GitHub link, tech stack chips, "팀 찾는 중" badge, "구직 중" badge ("제안 받기" shows as "제안 받는 중" only when a recruiter views)
 - [ ] Follower/following counts → (sheet) two-tab list (guests see counts only; tapping opens login prompt)
 - [ ] Own profile: "프로필 편집" (edit profile), "설정" (settings) buttons
 - [ ] Others' profile: follow/unfollow (applied on screen first, reverted on failure), more → (sheet) block/report
@@ -471,12 +471,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: C-1, C-4 · Needs first: 08 (team chat room data) · Merged: message requests → third tab
 
-- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with a red "삭제" circle and no time. Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
+- [ ] Figma 16 (247:1019 팀, 321:2336 개인, 321:2417 요청): underline tabs "팀 / 개인 / 요청 N", 75px rows (50px photo, name, time, last message, blue unread count), request rows with no time and no row button (the red "삭제" circle was dropped in the latest design, user 2026-11-10; delete a request from the row menu). Accepting a request happens in 17's request panel (the list has no 수락 button, Figma has none; user request 2026-11-09). Not in the frame but kept small: the muted bell-off after the name, "대기 중" on a sent request.
 - [ ] Tabs: 팀 (team) / 개인 (1:1) / 요청 (requests, with count)
 - [ ] Room row: name/photo, last message, time, unread count, muted icon
 - [ ] Realtime updates (STOMP user queue), bottom tab badge
 - [ ] Requests tab: accept / delete; disappears after 30 days
-- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API)
+- [ ] Row menu sheet (right-click, keyboard menu key or long press; user reference 2026-11-10, same look as the 19 select sheet): title "{팀}의 채팅방" / "{이름}님과의 채팅방", "완료". 팀 → "팀 나가기" (to 09 team settings, Policy ch. 6 leaving), 개인 → "방 나가기" (17's leave confirm), received request → "방 나가기" (= delete request), all → "읽음 처리" (read up to the row's last message). Sent requests have no menu. No "상단 고정" (pinning has no policy or API). After a touch long press opens the sheet, the browser's own long-press menu (which lands on the sheet) is cancelled until shortly after the finger lifts; same for 17's message menu
 - [ ] `[Included]` Recruiting offer requests show a "채용 제안" label + company name (after 31). Recruiters see their sent offers as "대기 중" (pending) in the 1:1 tab
 - [ ] Rooms with blocked people hidden; after unblocking, messages from blocked periods stay invisible. Use retained `user_blocks` intervals for DM history, catch-up, previews and unread counts; team chat is exempt (Policy ch. 9, ERD ch. 4-8)
 - [ ] Empty-state copy
@@ -491,7 +491,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] STOMP connection; on disconnect auto-reconnect and load missed messages; over 500 → "안 읽은 메시지 500개+" and jump to last read position
 - [ ] Virtualized message list (TanStack Virtual), infinite load upward, date dividers
 - [ ] Sending = dimmed; on failure resend/delete buttons; auto-retry 3 times; over 5/sec → send delayed
-- [ ] Text 2,000 chars, photo attachments (10 at once, 10MB each) + full-screen photo viewer
+- [ ] With a mouse/keyboard (not `pointer: coarse`), Enter sends and Shift+Enter adds a line break; the Enter that ends a Korean IME composition never sends, and with mention suggestions open Enter picks the first one. Touch keyboards have no Shift+Enter, so there the return key keeps adding a line break and the send button sends (user request 2026-11-10)
+- [ ] Text 2,000 chars, photos (5 at once, 10MB each) + full-screen photo viewer. The photo button opens the system picker; picked photos fill the "사진 업로드 N장" panel above the composer (100px tiles, × per photo, retry on failure, × in the header drops them all) and the photo button becomes "+" to add more. While photos are picked the input is locked with the placeholder "사진 업로드시 채팅을 칠 수 없습니다" (the typed text comes back afterwards); send, enabled once every photo has uploaded, sends each photo as its own message. Photos in messages keep their shape within 220 × 220px, without a bubble around a photo-only message (user request 2026-11-10).
 - [ ] Read: only when actually visible. Team: unread count (tap → unread-members sheet); 1:1: read/unread
 - [ ] (sheet) Message menu: copy, edit (within 24h, "수정됨"), delete ("삭제된 메시지입니다"), report. Team owner/admin can delete others' messages
 - [ ] Display states: left member, deleted user, "운영 정책에 따라 숨겨진 메시지예요"
@@ -507,12 +508,12 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] #issue-number → converted to a card; repo picker sheet if multiple repos
 - [ ] `[Included]` Send issue cards: show latest status, tap → 12, title only for repos without permission
 - [ ] `[Included]` Long-press a message → "이슈로 만들기" (make an issue) → open 13 with body pre-filled
-- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; between the input and the send button) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
+- [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; stacked right above the send button with its label, all inside the composer, the input growing to that column's height; user request 2026-11-10) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
 **AI chat summary (Flex, after 28)** — current shrink + `[Included]` follow-ups (c-role-audit #8, `c-page17-ai-chat-summary`)
 
-- [ ] **Now:** "AI 요약" → always latest 500 messages (no range picker UI). Result = one `summary` body + disclaimer + N/10. Free → PlanLimitSheet. Loading「요약하는 중이에요」/ fail「요약하지 못했어요」. Banner「이 팀은 AI 요약을 사용해요」(team createdAt first 7 days + dismiss)
+- [ ] **Now:** "AI 요약" → always latest 500 messages (no range picker UI). Result = one `summary` body + disclaimer + N/10. Free → PlanLimitSheet. Loading「요약하는 중이에요」/ fail「요약하지 못했어요」. The "이 팀은 AI 요약을 사용해요" banner was dropped (#356)
 - [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); min-20「직접 읽는 게 더 빨라요」copy path if still required
 - [ ] `[Included]` follow-up: minutes sections (decisions / to-dos / open questions) + tap-to-scroll originals; "채팅에 공유"; per to-do "이슈 만들기" → 13
 - [ ] Over 30 seconds → loading + done toast (push notify type still open); Free Flex prompt copy as Policy when implementing full sheet
@@ -589,7 +590,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 **What applicants see**
 
 - [ ] Body, remaining slots per role, author profile card (visible to guests; "지원하기" shows login prompt)
-- [ ] (sheet) Apply: choose one open role only (no "하고 싶은 말")
+- [x] (sheet) Apply: choose one open role only (no "하고 싶은 말")
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
 - [ ] Show my application status + cancel; more → report
@@ -642,7 +643,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
-- [ ] Comments with one level of replies (500 chars); author can edit/delete, post owner can delete only; deleting a comment with replies shows "삭제된 댓글입니다"
+- [ ] Flat comments only (500 chars, no replies); author can edit/delete, post owner can delete only
 - [ ] (sheet) Post more: edit/delete (own), report (others'). (sheet) Comment more works the same way
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)
@@ -669,14 +670,16 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Server: exclusions (own posts, blocked people, hidden posts)
 - [ ] Server: popularity score (like 1, comment by others 2, decays with age, likes from accounts < 7 days old excluded)
 - [ ] "Why shown" copy (one, by priority): "React를 쓰는 사람들의 인기 글" > "프론트엔드 직군의 인기 글"
-- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); "팔로잉" always empty
+- [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); only the "추천" tab (no "팔로잉") and no follow chip on cards
 
 **Job ads (after the 04 job ad sheet)** `[Included]`
+
+> **User decision 2026-11-10:** Ops-side job-ad handling (25 filter `RECRUITER_AD` + job-ad report detail) is deferred further — Figma for admin ads is not out yet. Admin UI no longer exposes the job-ad target filter; keep feed/recruiter ad APIs as `[Included]` but treat **admin ads after the rest of the ad work**.
 
 - [ ] Ad card: "광고" (Ad) label at top, company, posting title, job category, closing date, "외부 공고 보기" (view external posting), X at top right, more (⋯). Different background from regular posts. Screen readers read "광고" first
 - [ ] Tapping the card → click API → returned URL opens via 00's external link sheet (confirm on first-time domain) → external browser
 - [ ] X close: collapse the card and toast "광고를 닫았어요. 7일 동안 보이지 않아요. · 되돌리기" (undo cancels the close)
-- [ ] More → (sheet) "이 광고 숨기기" (hide this ad, never shown again, toast "이 광고는 다시 보이지 않아요."), "신고" (00 report sheet, target type job ad)
+- [ ] More → (sheet) "이 광고 숨기기" (hide this ad, never shown again, toast "이 광고는 다시 보이지 않아요."), "신고" (00 report sheet, target type job ad; **admin processing of that report is deferred — see 25**)
 - [ ] No ad slot at all for guests, recruiters, and developers with empty job categories
 - [ ] Server: mix ad items into the feed response (1 per 10 posts, not on the first screen, 3 per person per day and same ad once per day via Redis counters). Eligible = job category matches, showing, not closed within 7 days, not hidden, no block relation. Rotate among multiple matches
 - [ ] Server: collect impressions/clicks in Redis, write `ad_daily_stats` once a day (who saw it is not stored)
@@ -693,8 +696,8 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 - [ ] Entry: only Linker accounts with operator permission; logged out after 30 min of inactivity. `/admin` goes to this page
 - [ ] `[Included]` OTP 2FA on every entry. If the schedule slips, permission check only and OTP right after launch
-- [ ] List filters: pending / handled / appealed; target type (user, post, comment, recruit post, team chat, 1:1 chat, job ad); grouping by target; flag items past the handling target (2 business days)
-- [ ] `[Included]` Job ad report detail: company, posting title, job category, closing date, posting URL (tap → external confirm), advertising recruiter → 26. Action = hide the ad (notify the recruiter with the reason)
+- [ ] List filters: pending / handled / appealed; target type (user, post, comment, recruit post, team chat, 1:1 chat); grouping by target; flag items past the handling target (2 business days). **`job ad` / `RECRUITER_AD` filter deferred** (user decision 2026-11-10 — no admin ad design yet; see 24 Job ads note)
+- [ ] `[Included]` `[deferred after ads]` Job ad report detail: company, posting title, job category, closing date, posting URL (tap → external confirm), advertising recruiter → 26. Action = hide the ad (notify the recruiter with the reason). **Out of admin UI until the ad design ships** (user decision 2026-11-10)
 - [ ] Detail panel: report reasons, reported content; chat reports show only the 10 messages before/after copied at report time
 - [ ] Actions: hide, delete (reason required), dismiss, restore handled content, "이 사용자 제재하기" (sanction this user) → 26
 - [ ] Notify the author with the reason; notify reporters of the result only
@@ -772,7 +775,7 @@ Operations screens are desktop-oriented and use a list-left + detail-panel-right
 
 ## 10. Recruiting (minimal)
 
-Recruiters get only three new pages: sign-up (31), login (32) and the sent offers list (33). After entering, they share feed (24), posts (23), profiles (04) and chat (16, 17) with developers; only the buttons on screen change. All three are `[Included]`, so they're deferred first if the schedule slips; job-seeking status (02, 04, 05) remains even then. Feed job ads (the `[Included]` items on 04, 05, 24, 25, 28, 29) are deferred before recruiting offers.
+Recruiters get only three new pages: sign-up (31), login (32) and the sent offers list (33). After entering, they share feed (24), posts (23), profiles (04) and chat (16, 17) with developers; only the buttons on screen change. All three are `[Included]`, so they're deferred first if the schedule slips; job-seeking status (02, 04, 05) remains even then. Feed job ads (the `[Included]` items on 04, 05, 24, 28, 29) are deferred before recruiting offers. **Within ads, admin job-ad handling on 25 is deferred further** (no Figma yet; user decision 2026-11-10).
 
 ### 31. Recruiter sign-up `[Included]` · `/recruiter/signup`
 
