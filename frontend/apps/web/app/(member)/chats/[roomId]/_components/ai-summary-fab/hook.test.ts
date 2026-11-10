@@ -9,10 +9,7 @@ const BASE: AiChatSummary = {
   progress: 0,
   queueAhead: 2,
   remainingSeconds: null,
-  oneLine: null,
-  decisions: [],
-  actionItems: [],
-  openQuestions: [],
+  summary: null,
   messageCount: 70,
   sharedMessageId: null,
   usedToday: 1,
@@ -39,21 +36,10 @@ it('maps a summary to the button ring (POL-C-5)', () => {
   });
 });
 
-it('reads a shared card payload defensively', () => {
+it('reads a shared card payload defensively, including cards shared as minutes', () => {
   expect(sharedSummary(null)).toBeNull();
-  expect(sharedSummary({ oneLine: '' })).toBeNull();
-  expect(
-    sharedSummary({
-      oneLine: '요약',
-      decisions: [{ text: '결정', messageId: 3 }, { text: 5 }, null],
-      actionItems: 'nope',
-    }),
-  ).toEqual({
-    oneLine: '요약',
-    decisions: [{ text: '결정', messageId: 3 }],
-    actionItems: [],
-    openQuestions: [],
-    messageCount: 0,
-    disclaimer: 'AI가 만든 요약이라 틀릴 수 있어요',
-  });
+  expect(sharedSummary({ summary: '' })).toBeNull();
+  expect(sharedSummary({ summary: 5 })).toBeNull();
+  expect(sharedSummary({ summary: '한 문단 요약' })).toEqual({ summary: '한 문단 요약' });
+  expect(sharedSummary({ oneLine: '예전 요약', decisions: [] })).toEqual({ summary: '예전 요약' });
 });

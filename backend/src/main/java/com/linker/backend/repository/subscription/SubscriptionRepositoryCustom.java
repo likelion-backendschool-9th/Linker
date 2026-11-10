@@ -23,6 +23,8 @@ public interface SubscriptionRepositoryCustom {
 	/** Preserve each consumer's existing predicate; these are not one newly unified policy. */
 	boolean hasProBenefit(long userId, java.time.Instant now, boolean graceAvailable);
 	boolean hasFlexBenefit(long teamId, java.time.Instant now);
+	/** Full chat history remains available for 30 days after the latest Flex period ends. */
+	boolean hasFlexChatHistoryBenefit(long teamId, java.time.Instant graceCutoff);
 	boolean hasScoutBenefit(long userId, java.time.Instant now, boolean graceAvailable);
 
 	record FlexTeam(long teamId, String name, long memberCount) {

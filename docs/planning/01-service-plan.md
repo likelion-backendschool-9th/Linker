@@ -273,8 +273,8 @@ Ads are chosen only by the job categories the developer picked; behavioral data 
 Summarizes existing team chat like meeting notes, with no recording or transcription. Rules are in [Policy POL-C-5](04-policy.md#ai-chat-summary-pol-c-5).
 
 1. Tap the "AI summary" button at the top of a team chat room and choose a range (since last read, today, last 24 hours, since last summary).
-2. For Flex teams (including the 7-day free trial), the server sends messages in that range to the LLM to produce a one-line summary, decisions, to-dos and open questions, shown in a summary sheet. Tapping an item jumps to the original message.
-3. The summary is visible only to the requester; "Share to chat" posts it to team chat as a minutes card.
+2. For Flex teams (including the 7-day free trial), the server sends messages in that range to the LLM to produce one short paragraph, shown in a summary sheet.
+3. The summary is visible only to the requester; "Share to chat" posts it to team chat as a summary card.
 4. "Create issue" on each to-do opens the issue form pre-filled; it is created on GitHub only after the user reviews and saves (5-4).
 5. When a free team taps the button, a "Only Flex teams can use this" sheet appears; owners/billing managers get a button to Flex checkout.
 

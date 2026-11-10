@@ -147,6 +147,7 @@
   --color-board-control-active: #2563eb; /* 14 button while its menu is open or a value is set: white text 5.17:1 */
   --color-board-menu-border: #e4e4e4; /* 14 menu outline and row dividers */
   --color-board-label-blue: #ebf7ff; /* 14 label fill, odd labels */
+  --color-search-mark: #fff200; /* 17 chat search: matched keyword fill; --color-text-heading on it in both bubbles (17.3:1) */
   --color-board-label-purple: #f4ebff; /* 14 label fill, even labels */
 
   /* Figma 17 chat room (92:768, 346:243, 351:580) */
