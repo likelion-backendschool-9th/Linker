@@ -125,6 +125,19 @@ for (const width of [360, 375, 600]) {
     await page.goto('/teams/1/board');
     await expect(column(page, '작업 전').getByRole('article').first()).toBeVisible();
     expect(await page.evaluate((w) => document.documentElement.scrollWidth <= w, width)).toBe(true);
+    // Columns pan (overflow auto) with scrollbar hidden; page itself does not grow
+    expect(
+      await page.evaluate(() => {
+        const column = document.querySelector('main section[aria-labelledby^="board-column-"]');
+        const row = column?.parentElement;
+        if (!row) return false;
+        const style = getComputedStyle(row);
+        row.scrollLeft = 9999;
+        const canPan = row.scrollLeft > 0;
+        row.scrollLeft = 0;
+        return style.overflowX === 'auto' && style.scrollbarWidth === 'none' && canPan;
+      }),
+    ).toBe(true);
     const { violations } = await new AxeBuilder({ page }).analyze();
     // Low-contrast Figma colors are kept on purpose (work log); everything else must pass
     expect(violations.filter((v) => v.id !== 'color-contrast')).toEqual([]);

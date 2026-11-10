@@ -30,7 +30,7 @@ const SORT_ITEMS = BOARD_SORTS.map((sort) => ({ value: sort, label: BOARD_SORT_L
 
 /**
  * 14 Status board (07 TODO 14, POL-I-4), Figma 14 (200:1028): "필터" (one status column, 368:3562) and
- * "최신순 / 오래 된 순" (368:3414) menus, then the status columns side by side, scrolled sideways.
+ * "최신순 / 오래 된 순" (368:3414) menus, then the status columns side by side (pan, no scrollbar).
  * Cards move by dragging (write permission only) or by their status menu (368:3741).
  */
 export function BoardView({ teamId }: { teamId: string }) {
