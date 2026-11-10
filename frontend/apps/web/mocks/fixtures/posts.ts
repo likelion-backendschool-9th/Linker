@@ -230,3 +230,6 @@ export function postCard(post: MockPost) {
     repoAvailable: post.repo.state === 'PUBLIC',
   };
 }
+
+/** Posts the mock viewer has liked: shared by 23 (like / unlike) and 24 (card heart) */
+export const LIKED_POST_IDS = new Set<number>([2, 5]);

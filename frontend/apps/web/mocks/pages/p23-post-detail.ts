@@ -9,13 +9,13 @@ import {
   post,
   type MockRoute,
 } from '../core/define';
-import { findPost, POSTS, postCard } from '../fixtures/posts';
+import { findPost, LIKED_POST_IDS, POSTS, postCard } from '../fixtures/posts';
 import { brief, DEVELOPERS, ME, OTHERS } from '../fixtures/users';
 
 /** 23 Project post detail: `PostController` */
 
 const [, doyun, seoyeon, , hayun] = DEVELOPERS;
-const liked = new Set<number>([2]);
+const liked = LIKED_POST_IDS;
 
 type Comment = {
   id: number;

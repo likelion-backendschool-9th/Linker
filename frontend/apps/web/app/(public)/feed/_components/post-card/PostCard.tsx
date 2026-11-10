@@ -1,15 +1,16 @@
-import { ChatRoundLinearIcon } from '@solar-icons/static/linear/chat-round';
-import { HeartOutlineIcon } from '@solar-icons/static/outline/heart';
-import { Plane3OutlineIcon } from '@solar-icons/static/outline/plane-3';
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { Icon } from '@/components/ui/icon';
 import { RelativeTime } from '@/components/ui/relative-time/RelativeTime';
 
 import type { FeedPost } from '../../_lib/feed-queries';
 import styles from './PostCard.module.css';
+import { PostComments } from './PostComments';
+import { PostExcerpt } from './PostExcerpt';
+import { PostFollow } from './PostFollow';
+import { PostLike } from './PostLike';
+import { PostShare } from './PostShare';
 
 type PostCardProps = {
   post: FeedPost;
@@ -19,23 +20,40 @@ type PostCardProps = {
   from?: 'feed' | 'profile';
   /** Profile sections already use h2, so their cards drop to h3. */
   titleLevel?: 2 | 3;
+  /** Feed only: the comment and share icons open the sheet / drawer that FeedList mounts */
+  feedOverlays?: boolean;
 };
 
+/** Job status above the login (Figma 785:778), shown for all three states: 구직 중 blue, 제안 받기 accent, 구직 안 함 gray */
+const JOB_STATUS = {
+  SEEKING: { label: '구직 중', tone: 'seeking' },
+  OPEN: { label: '제안 받기', tone: 'open' },
+  OFF: { label: '구직 안 함', tone: 'off' },
+} as const satisfies Record<FeedPost['author']['jobStatus'], { label: string; tone: string }>;
+
 /**
- * Feed card (Figma 92:249). Markup only: like / comment / share are static counts — no toggle,
- * comment panel, or share sheet yet.
+ * Feed card (Figma 92:249). The heart toggles a like (optimistic); on the feed the comment icon opens
+ * the comment sheet and the paper plane the share drawer. Guests get the login prompt on follow, like,
+ * comment send and share; follow itself only shows state for now.
  */
-export function PostCard({ post, whyShown, from = 'feed', titleLevel = 2 }: PostCardProps) {
+export function PostCard({
+  post,
+  whyShown,
+  from = 'feed',
+  titleLevel = 2,
+  feedOverlays = false,
+}: PostCardProps) {
   const titleId = `feed-post-${post.id}-title`;
-  const repoName = post.repoFullName.split('/')[1] ?? post.repoFullName;
   const Title = titleLevel === 3 ? 'h3' : 'h2';
   const detailHref = `/posts/${post.id}?from=${from}` as Route;
-  const seeking = post.author.jobStatus === 'SEEKING';
+  const jobStatus = JOB_STATUS[post.author.jobStatus];
+  const following = post.author.isFollowing === true;
 
   return (
     <article aria-labelledby={titleId} className={styles.card} data-post-id={post.id}>
       {whyShown && <p className="sr-only">{whyShown}</p>}
 
+      {/* Author + cover shell — Figma 92:181 */}
       <div className={styles.shell}>
         <div className={styles.authorRow}>
           <Link href={`/user/${post.author.login}` as Route} className={styles.author}>
@@ -48,14 +66,11 @@ export function PostCard({ post, whyShown, from = 'feed', titleLevel = 2 }: Post
               className={styles.avatar}
             />
             <span className={styles.authorText}>
-              {seeking && <span className={styles.seeking}>구직 중</span>}
+              {jobStatus && <span className={styles[jobStatus.tone]}>{jobStatus.label}</span>}
               <span className={styles.login}>{post.author.login}</span>
             </span>
           </Link>
-          {/* Visual only for now — follow mutation not wired on the feed card */}
-          <button type="button" className={styles.follow}>
-            팔로우
-          </button>
+          <PostFollow following={following} />
         </div>
 
         <Link href={detailHref} className={styles.cover} tabIndex={-1} aria-hidden>
@@ -64,7 +79,7 @@ export function PostCard({ post, whyShown, from = 'feed', titleLevel = 2 }: Post
               src={post.coverUrl}
               alt=""
               fill
-              sizes="(min-width: 600px) 568px, 100vw"
+              sizes="(min-width: 600px) 536px, calc(100vw - 64px)"
               className={styles.image}
             />
           ) : (
@@ -76,47 +91,26 @@ export function PostCard({ post, whyShown, from = 'feed', titleLevel = 2 }: Post
         </Link>
       </div>
 
+      {/* Reactions + time — Figma 92:248 */}
       <div className={styles.meta}>
-        {/* Figma 92:225: groups gap 10, icon↔count gap 4, icons 20, stroke 1.5 */}
         <div className={styles.reactions}>
-          <span className={styles.stat}>
-            <Icon svg={HeartOutlineIcon} className={styles.statIcon} />
-            <span className={styles.statCount}>
-              <span className="sr-only">좋아요 </span>
-              {post.likeCount.toLocaleString('ko-KR')}
-            </span>
-          </span>
-          <span className={styles.stat}>
-            <Icon svg={ChatRoundLinearIcon} className={styles.statIcon} />
-            <span className={styles.statCount}>
-              <span className="sr-only">댓글 </span>
-              {post.commentCount.toLocaleString('ko-KR')}
-            </span>
-          </span>
-          <span className={styles.stat}>
-            <Icon svg={Plane3OutlineIcon} className={styles.statIcon} />
-            <span className="sr-only">공유</span>
-          </span>
+          <PostLike post={post} />
+          <PostComments postId={post.id} count={post.commentCount} sheet={feedOverlays} />
+          <PostShare postId={post.id} drawer={feedOverlays} />
         </div>
         <span className={styles.time}>
           <RelativeTime value={post.createdAt} />
         </span>
       </div>
 
+      {/* Title + excerpt — Figma 92:219 */}
       <div className={styles.copy}>
         <Title id={titleId} className={styles.title}>
           <Link href={detailHref} className={styles.titleLink}>
             {post.intro}
           </Link>
         </Title>
-        {post.excerpt && (
-          <p className={styles.excerpt}>
-            <span className={styles.excerptText}>{post.excerpt}</span>{' '}
-            <Link href={detailHref} className={styles.more}>
-              더 보기
-            </Link>
-          </p>
-        )}
+        {post.excerpt && <PostExcerpt text={post.excerpt} href={detailHref} />}
       </div>
     </article>
   );

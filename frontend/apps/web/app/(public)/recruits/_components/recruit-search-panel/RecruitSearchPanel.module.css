@@ -7,7 +7,7 @@
   transition: max-height var(--duration-chrome-collapse) var(--ease-standard);
 }
 
-:global(html.recruit-header-collapsed) .panel {
+:global(html.tab-chrome-collapsed) .panel {
   max-height: var(--recruit-search-panel-height);
 }
 
@@ -25,7 +25,7 @@
     transform var(--duration-chrome-collapse) var(--ease-standard);
 }
 
-:global(html.recruit-header-collapsed) .inner {
+:global(html.tab-chrome-collapsed) .inner {
   opacity: 1;
   transform: translateY(0);
 }

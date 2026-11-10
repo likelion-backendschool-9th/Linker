@@ -1,6 +1,57 @@
-/* Cancel PageFrame main top padding so the first card sits under the tab header */
+/* Cancel PageFrame main top padding so the tabs sit right under the header */
 .feed {
   margin-top: calc(-1 * var(--space-md));
+}
+
+/*
+ * Tab chrome latch — same rules as 19 (`useTabChromeCollapse`, `tab-chrome-collapsed` on <html>):
+ * - At scrollY === 0 the tabs sit in normal flow under the header.
+ * - As soon as scroll leaves the top, the header hides and the tabs pin to the viewport top
+ *   (`position: fixed`), easing up from their pre-pin Y (`--tab-chrome-pin-from`).
+ * `.chromeSlot` keeps the in-flow height so the list doesn't jump under the fixed tabs, and runs
+ * edge to edge past the main gutter (Figma 785:1211 is the full 375 width).
+ */
+.chromeSlot {
+  margin-inline: calc(-1 * var(--page-gutter));
+  background-color: var(--color-canvas);
+}
+
+:global(html.tab-chrome-collapsed) .chromeSlot {
+  height: calc(env(safe-area-inset-top) + var(--control-height-feed-tab));
+}
+
+.chromeSticky {
+  position: relative;
+  z-index: var(--z-chrome);
+  background-color: var(--color-canvas);
+}
+
+:global(html.tab-chrome-collapsed) .chromeSticky {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-chrome);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding-top: env(safe-area-inset-top);
+  animation: tab-chrome-pin var(--duration-chrome-collapse) var(--ease-standard) forwards;
+}
+
+@keyframes tab-chrome-pin {
+  from {
+    transform: translateY(var(--tab-chrome-pin-from, 0px));
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Tabs to the first card: 25 (Figma 785:1211 → 785:772) */
+.panel {
+  padding-top: var(--space-feed-top);
 }
 
 .toolbar {
@@ -65,14 +116,15 @@
   position: absolute;
   top: 0;
   /* Space between stacked cards (Figma 92:249 → 92:251) */
-  padding-bottom: 40px;
+  padding-bottom: var(--space-feed-card);
 }
 
-/* Write FAB (Figma 92:289): 40 visual / 44 hit, above GNB — same pattern as recruit list */
+/* Write FAB — Figma 92:289: 40 circle 16 from the right, 20 above the GNB pill;
+   #2e2e2e fill, #383838 rule, faint glow; 22 pen in #e7e7e7 at stroke 1.5 */
 .fabLayer {
   position: fixed;
   right: 0;
-  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-xs));
+  bottom: calc(var(--tab-bar-pill-top) + var(--space-feed-fab) + env(safe-area-inset-bottom));
   left: 0;
   z-index: var(--z-chrome);
   display: flex;
@@ -85,11 +137,8 @@
 
 .fab {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
   pointer-events: auto;
+  border-radius: var(--radius-full);
 }
 
 .fabVisual {
@@ -105,8 +154,9 @@
 }
 
 .fabIcon {
-  --icon-box-size: 22px;
-  color: var(--color-text-inverse);
+  --icon-box-size: var(--icon-size-feed-fab);
+  --icon-stroke-width: 1.5;
+  color: var(--color-fab-icon);
 }
 
 /* Empty feed: recommended developers */

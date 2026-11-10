@@ -14,7 +14,7 @@ type TeamFrameProps = {
   teamId: string;
   /** The page's name: "이슈", "상태 보드", "캘린더" (read with the team name in the h1) */
   title: string;
-  /** Header actions of the page, e.g. 11's filter icon */
+  /** Header actions of the page, e.g. 11/14/15 team-change icon */
   actions?: ReactNode;
   children: ReactNode;
 };

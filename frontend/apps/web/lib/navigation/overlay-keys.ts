@@ -41,7 +41,6 @@ export const OVERLAY_KEYS = [
   'subscribe-flex-team',
   'subscription-cancel',
   'payment-refund',
-  'issue-filter',
   'issue-assignees',
   'issue-labels',
   'issue-schedule',
@@ -74,6 +73,8 @@ export const OVERLAY_KEYS = [
   'recruit-role-full',
   'photo-viewer',
   'post-likers',
+  'feed-comments',
+  'feed-share',
   'ad-menu',
   'recruiter-ad',
 ] as const;

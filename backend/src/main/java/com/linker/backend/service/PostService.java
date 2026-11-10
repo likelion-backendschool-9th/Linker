@@ -8,11 +8,15 @@ import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.ToLongFunction;
 
@@ -37,6 +41,8 @@ import com.linker.backend.entity.post.PostTag;
 import com.linker.backend.entity.post.PostView;
 import com.linker.backend.entity.post.type.PostViewSource;
 import com.linker.backend.entity.post.type.PostVisibility;
+import com.linker.backend.entity.profile.UserTechTag;
+import com.linker.backend.entity.profile.type.JobCategory;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -49,6 +55,9 @@ import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.post.PostViewRepository;
+import com.linker.backend.repository.profile.FollowRepository;
+import com.linker.backend.repository.profile.UserJobCategoryRepository;
+import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 
 import org.springframework.stereotype.Service;
@@ -59,8 +68,14 @@ public class PostService {
 
 	private static final String UNAVAILABLE = "삭제되었거나 볼 수 없는 콘텐츠예요";
 	private static final String DELETED_COMMENT = "삭제된 댓글입니다";
-	private static final String WHY_POPULAR = "이번 주 인기";
-	private static final String WHY_NEW = "새로 올라온 작업물";
+	private static final String TAB_RECOMMENDED = "recommended";
+	private static final String TAB_FOLLOWING = "following";
+	private static final String WHY_TECH_STACK = " 쓰는 사람들의 인기 글";
+	private static final String WHY_JOB_CATEGORY = " 직군의 인기 글";
+	private static final Comparator<ScoredPost> BY_POPULARITY = Comparator
+			.comparingDouble(ScoredPost::score).reversed()
+			.thenComparing(row -> row.post().getCreatedAt(), Comparator.reverseOrder())
+			.thenComparing(row -> row.post().getId(), Comparator.reverseOrder());
 
 	private final PostRepository posts;
 	private final CommentRepository comments;
@@ -71,6 +86,9 @@ public class PostService {
 	private final UserRepository users;
 	private final UserBlockRepository blocks;
 	private final RecruitCardMapper authors;
+	private final FollowRepository follows;
+	private final UserTechTagRepository techTags;
+	private final UserJobCategoryRepository jobCategories;
 	private final Clock clock;
 
 	public PostService(
@@ -83,6 +101,9 @@ public class PostService {
 			UserRepository users,
 			UserBlockRepository blocks,
 			RecruitCardMapper authors,
+			FollowRepository follows,
+			UserTechTagRepository techTags,
+			UserJobCategoryRepository jobCategories,
 			Clock clock
 	) {
 		this.posts = posts;
@@ -94,30 +115,43 @@ public class PostService {
 		this.users = users;
 		this.blocks = blocks;
 		this.authors = authors;
+		this.follows = follows;
+		this.techTags = techTags;
+		this.jobCategories = jobCategories;
 		this.clock = clock;
 	}
 
+	/**
+	 * Page 24 home feed (POL-P-4). {@code tab=following} lists posts by people the viewer follows,
+	 * newest first. Otherwise "추천": developers and operators get posts matching their tech stack or
+	 * job categories first, then the rest shuffled; guests and recruiters get a shuffled list.
+	 * The cursor is {@code <sessionStartMillis>.<offset>}: the session start seeds the shuffle and
+	 * drops posts written or first seen after it, so scrolling neither repeats nor skips a post.
+	 */
 	@Transactional(readOnly = true)
-	public CursorPage<FeedPostItemResponse> feed(String cursor, Boolean offersOnly) {
+	public CursorPage<FeedPostItemResponse> feed(String tab, String cursor, Boolean offersOnly) {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
-		boolean onlyOffers = Boolean.TRUE.equals(offersOnly);
-		Instant now = clock.instant();
-		Instant weekAgo = now.minus(PlanLimits.FEED_RECOMMENDATION_DAYS, ChronoUnit.DAYS);
-		Instant matureBefore = now.minus(PlanLimits.FEED_NEW_ACCOUNT_LIKE_EXCLUSION_DAYS, ChronoUnit.DAYS);
+		boolean followingTab = isFollowingTab(tab);
+		FeedCursor position = FeedCursor.parse(cursor, clock.instant());
+		boolean onlyOffers = !followingTab && Boolean.TRUE.equals(offersOnly);
 
-		List<Post> candidates = filterCandidates(posts.findVisibleForFeed(), viewer, onlyOffers);
-		Map<Long, Double> scores = popularityScores(candidates, matureBefore, now);
+		List<Post> candidates = new ArrayList<>();
+		for (Post post : filterCandidates(posts.findVisibleForFeed(), viewer, onlyOffers)) {
+			if (!post.getCreatedAt().isAfter(position.startedAt())) {
+				candidates.add(post);
+			}
+		}
 
 		List<ScoredPost> ordered;
-		if (viewer == null) {
-			ordered = guestFeed(candidates, scores, weekAgo);
+		if (followingTab) {
+			ordered = followingFeed(viewer, candidates);
+		} else if (viewer == null || viewer.userType() == UserType.RECRUITER) {
+			ordered = limitConsecutiveAuthors(shuffled(candidates, position.seed()));
 		} else {
-			ordered = loggedInFeed(viewer, candidates, scores, weekAgo);
+			ordered = limitConsecutiveAuthors(matchedFeed(viewer, candidates, position));
 		}
-		ordered = limitConsecutiveAuthors(ordered);
 
-		int offset = parseOffset(cursor);
-		int from = Math.min(offset, ordered.size());
+		int from = Math.min(position.offset(), ordered.size());
 		int to = Math.min(from + PlanLimits.FEED_PAGE_SIZE, ordered.size());
 		List<FeedPostItemResponse> items = new ArrayList<>(to - from);
 		for (ScoredPost row : ordered.subList(from, to)) {
@@ -126,7 +160,7 @@ public class PostService {
 			post.getTags().size();
 			items.add(FeedPostItemResponse.of(toCard(post), row.whyShown()));
 		}
-		String next = to < ordered.size() ? Integer.toString(to) : null;
+		String next = to < ordered.size() ? position.at(to) : null;
 		return new CursorPage<>(items, next);
 	}
 
@@ -280,86 +314,150 @@ public class PostService {
 		return blocked;
 	}
 
-	private List<ScoredPost> guestFeed(List<Post> candidates, Map<Long, Double> scores, Instant weekAgo) {
-		List<ScoredPost> rows = new ArrayList<>(candidates.size());
-		for (Post post : candidates) {
-			double score = scores.getOrDefault(post.getId(), 0.0);
-			boolean popularWeek = !post.getCreatedAt().isBefore(weekAgo) && score > 0;
-			rows.add(new ScoredPost(post, score, popularWeek ? WHY_POPULAR : WHY_NEW));
+	private static boolean isFollowingTab(String tab) {
+		if (tab == null || tab.isBlank() || TAB_RECOMMENDED.equals(tab.trim())) {
+			return false;
 		}
-		rows.sort(Comparator
-				.comparingDouble(ScoredPost::score).reversed()
-				.thenComparing(row -> row.post().getCreatedAt(), Comparator.reverseOrder())
-				.thenComparing(row -> row.post().getId(), Comparator.reverseOrder()));
+		if (TAB_FOLLOWING.equals(tab.trim())) {
+			return true;
+		}
+		throw new ApiException(400, "VALIDATION_ERROR", "탭을 확인해 주세요");
+	}
+
+	/** "팔로잉": followed authors only, newest first (query order). Guests and recruiters follow nobody. */
+	private List<ScoredPost> followingFeed(AuthenticatedUser viewer, List<Post> candidates) {
+		if (viewer == null) {
+			return List.of();
+		}
+		Set<Long> followed = new HashSet<>(follows.findAllFollowedIds(viewer.userId()));
+		if (followed.isEmpty()) {
+			return List.of();
+		}
+		List<ScoredPost> rows = new ArrayList<>();
+		for (Post post : candidates) {
+			if (followed.contains(post.getAuthor().getId())) {
+				rows.add(new ScoredPost(post, 0, null));
+			}
+		}
 		return rows;
 	}
 
 	/**
-	 * follows / user_tech_tags are owned by A/04 and not present yet → following stream empty,
-	 * so the feed is recommendation-only; whyShown skips follow-like / 2nd-degree / stack reasons.
+	 * "추천" for developers and operators: unseen posts that share my tech stack tag or whose author picked
+	 * one of my job categories, by popularity; then the other unseen posts shuffled; then posts already
+	 * seen before this session, shuffled. Own posts are left out.
 	 */
-	private List<ScoredPost> loggedInFeed(
-			AuthenticatedUser viewer,
-			List<Post> candidates,
-			Map<Long, Double> scores,
-			Instant weekAgo
-	) {
-		Set<Long> seen = new HashSet<>(seenPosts.findPostIdsByUserId(viewer.userId()));
-		List<Post> following = List.of(); // no follows table yet
-		List<ScoredPost> recommended = new ArrayList<>();
+	private List<ScoredPost> matchedFeed(AuthenticatedUser viewer, List<Post> candidates, FeedCursor position) {
+		List<Post> pool = new ArrayList<>();
 		for (Post post : candidates) {
-			long authorId = post.getAuthor().getId();
-			if (authorId == viewer.userId()) {
-				continue;
+			if (post.getAuthor().getId() != viewer.userId()) {
+				pool.add(post);
 			}
-			if (seen.contains(post.getId())) {
-				continue;
-			}
-			if (post.getCreatedAt().isBefore(weekAgo)) {
-				continue;
-			}
-			double score = scores.getOrDefault(post.getId(), 0.0);
-			recommended.add(new ScoredPost(post, score, whyShownForRecommendation(post, score, weekAgo)));
 		}
-		recommended.sort(Comparator
-				.comparingDouble(ScoredPost::score).reversed()
-				.thenComparing(row -> row.post().getCreatedAt(), Comparator.reverseOrder())
-				.thenComparing(row -> row.post().getId(), Comparator.reverseOrder()));
-
-		if (following.isEmpty()) {
-			return recommended;
-		}
-
-		List<ScoredPost> followingRows = following.stream()
-				.map(post -> new ScoredPost(post, scores.getOrDefault(post.getId(), 0.0), WHY_NEW))
+		Set<Long> seen = new HashSet<>(seenPosts.findPostIdsSeenBefore(viewer.userId(), position.startedAt()));
+		List<String> myTags = techTags.findSelected(viewer.userId()).stream().map(UserTechTag::tagName).toList();
+		List<JobCategory> myCategories = jobCategories.findByUser_IdOrderByIdAsc(viewer.userId()).stream()
+				.map(row -> JobCategory.valueOf(row.key()))
 				.toList();
-		return interleaveFollowingAndRecommended(followingRows, recommended);
+		Map<Long, Set<JobCategory>> authorCategories = myCategories.isEmpty() ? Map.of() : authorCategories(pool);
+		Instant now = position.startedAt();
+		Instant matureBefore = now.minus(PlanLimits.FEED_NEW_ACCOUNT_LIKE_EXCLUSION_DAYS, ChronoUnit.DAYS);
+		Map<Long, Double> scores = popularityScores(pool, matureBefore, now);
+
+		List<ScoredPost> matched = new ArrayList<>();
+		List<Post> unmatched = new ArrayList<>();
+		List<Post> alreadySeen = new ArrayList<>();
+		for (Post post : pool) {
+			if (seen.contains(post.getId())) {
+				alreadySeen.add(post);
+				continue;
+			}
+			String why = matchReason(post, myTags, myCategories, authorCategories);
+			if (why == null) {
+				unmatched.add(post);
+			} else {
+				matched.add(new ScoredPost(post, scores.getOrDefault(post.getId(), 0.0), why));
+			}
+		}
+		matched.sort(BY_POPULARITY);
+		List<ScoredPost> ordered = new ArrayList<>(pool.size());
+		ordered.addAll(matched);
+		ordered.addAll(shuffled(unmatched, position.seed()));
+		ordered.addAll(shuffled(alreadySeen, position.seed()));
+		return ordered;
 	}
 
-	private static List<ScoredPost> interleaveFollowingAndRecommended(
-			List<ScoredPost> following,
-			List<ScoredPost> recommended
+	/** "Why shown": a shared tech stack tag (in my order) beats a shared job category. */
+	private static String matchReason(
+			Post post,
+			List<String> myTags,
+			List<JobCategory> myCategories,
+			Map<Long, Set<JobCategory>> authorCategories
 	) {
-		List<ScoredPost> mixed = new ArrayList<>(following.size() + recommended.size());
-		int fi = 0;
-		int ri = 0;
-		while (fi < following.size() || ri < recommended.size()) {
-			for (int i = 0; i < PlanLimits.FEED_FOLLOWING_PER_RECOMMENDATION && fi < following.size(); i++) {
-				mixed.add(following.get(fi++));
+		if (!myTags.isEmpty()) {
+			Set<String> postTags = new HashSet<>();
+			for (PostTag tag : post.getTags()) {
+				postTags.add(tag.getTag().getName());
 			}
-			if (ri < recommended.size()) {
-				mixed.add(recommended.get(ri++));
+			for (String tag : myTags) {
+				if (postTags.contains(tag)) {
+					return withObjectParticle(tag) + WHY_TECH_STACK;
+				}
 			}
 		}
-		return mixed;
+		Set<JobCategory> theirs = authorCategories.getOrDefault(post.getAuthor().getId(), Set.of());
+		for (JobCategory category : myCategories) {
+			if (theirs.contains(category)) {
+				return category.label() + WHY_JOB_CATEGORY;
+			}
+		}
+		return null;
 	}
 
-	private static String whyShownForRecommendation(Post post, double score, Instant weekAgo) {
-		// Priority 1–3 need follows / 2nd-degree / user_tech_tags — deferred.
-		if (!post.getCreatedAt().isBefore(weekAgo) && score > 0) {
-			return WHY_POPULAR;
+	private Map<Long, Set<JobCategory>> authorCategories(List<Post> pool) {
+		Set<Long> authorIds = new HashSet<>();
+		for (Post post : pool) {
+			authorIds.add(post.getAuthor().getId());
 		}
-		return WHY_NEW;
+		if (authorIds.isEmpty()) {
+			return Map.of();
+		}
+		Map<Long, Set<JobCategory>> out = new HashMap<>();
+		for (Object[] row : jobCategories.findCategoryRowsByUserIds(authorIds)) {
+			out.computeIfAbsent(((Number) row[0]).longValue(), id -> EnumSet.noneOf(JobCategory.class))
+					.add((JobCategory) row[1]);
+		}
+		return out;
+	}
+
+	/** "React를" / "Spring을": 을 after a final consonant (Hangul batchim, Latin l/m/n/ng, digits 0 1 3 6 7 8). */
+	static String withObjectParticle(String word) {
+		if (word == null || word.isEmpty()) {
+			return "";
+		}
+		char last = word.charAt(word.length() - 1);
+		boolean batchim;
+		if (last >= '가' && last <= '힣') {
+			batchim = (last - '가') % 28 != 0;
+		} else if (Character.isDigit(last)) {
+			batchim = "013678".indexOf(last) >= 0;
+		} else {
+			String lower = word.toLowerCase(Locale.ROOT);
+			batchim = lower.endsWith("l") || lower.endsWith("m") || lower.endsWith("n") || lower.endsWith("ng");
+		}
+		return word + (batchim ? "을" : "를");
+	}
+
+	/** Same seed, same order: rows are sorted by id first so the input order doesn't matter. */
+	private static List<ScoredPost> shuffled(List<Post> rows, long seed) {
+		List<Post> sorted = new ArrayList<>(rows);
+		sorted.sort(Comparator.comparingLong(Post::getId));
+		Collections.shuffle(sorted, new Random(seed));
+		List<ScoredPost> out = new ArrayList<>(sorted.size());
+		for (Post post : sorted) {
+			out.add(new ScoredPost(post, 0, null));
+		}
+		return out;
 	}
 
 	private Map<Long, Double> popularityScores(List<Post> candidates, Instant matureBefore, Instant now) {
@@ -430,15 +528,34 @@ public class PostService {
 		return true;
 	}
 
-	private static int parseOffset(String cursor) {
-		if (cursor == null || cursor.isBlank()) {
-			return 0;
-		}
-		try {
-			int offset = Integer.parseInt(cursor.trim());
-			return Math.max(0, offset);
-		} catch (NumberFormatException ex) {
+	/** Feed cursor {@code <sessionStartMillis>.<offset>}; no cursor starts a new session now. */
+	private record FeedCursor(Instant startedAt, int offset) {
+
+		static FeedCursor parse(String cursor, Instant now) {
+			if (cursor == null || cursor.isBlank()) {
+				return new FeedCursor(now.truncatedTo(ChronoUnit.MILLIS), 0);
+			}
+			String[] parts = cursor.trim().split("\\.", -1);
+			if (parts.length == 2) {
+				try {
+					long startedAt = Long.parseLong(parts[0]);
+					int offset = Integer.parseInt(parts[1]);
+					if (startedAt > 0 && offset >= 0) {
+						return new FeedCursor(Instant.ofEpochMilli(startedAt), offset);
+					}
+				} catch (NumberFormatException ignored) {
+					// falls through to the validation error
+				}
+			}
 			throw new ApiException(400, "VALIDATION_ERROR", "커서를 확인해 주세요");
+		}
+
+		long seed() {
+			return startedAt.toEpochMilli();
+		}
+
+		String at(int nextOffset) {
+			return startedAt.toEpochMilli() + "." + nextOffset;
 		}
 	}
 

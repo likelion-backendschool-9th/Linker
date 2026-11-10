@@ -6,10 +6,10 @@
 }
 
 /*
- * Scenario 2 chrome latch (same `recruit-header-collapsed` class as the header):
+ * Scenario 2 chrome latch (same `tab-chrome-collapsed` class as the header):
  * - At scrollY === 0 the tabs sit in normal flow under the header.
  * - As soon as scroll leaves the top, the chrome pins to the viewport top (`position: fixed`)
- *   and eases up from its pre-pin Y (`--recruit-chrome-pin-from`, set by the collapse hook) so
+ *   and eases up from its pre-pin Y (`--tab-chrome-pin-from`, set by the collapse hook) so
  *   the latch reads as a soft slide instead of a hard snap.
  * `.chromeSlot` keeps the in-flow height so the list doesn't jump under the fixed chrome.
  */
@@ -17,7 +17,7 @@
   background-color: var(--color-canvas);
 }
 
-:global(html.recruit-header-collapsed) .chromeSlot {
+:global(html.tab-chrome-collapsed) .chromeSlot {
   height: calc(
     env(safe-area-inset-top) + var(--tabs-row-height) + var(--recruit-search-panel-height)
   );
@@ -29,7 +29,7 @@
   background-color: var(--color-canvas);
 }
 
-:global(html.recruit-header-collapsed) .chromeSticky {
+:global(html.tab-chrome-collapsed) .chromeSticky {
   position: fixed;
   top: 0;
   right: 0;
@@ -39,12 +39,12 @@
   max-width: var(--content-max-width);
   margin-inline: auto;
   padding-top: env(safe-area-inset-top);
-  animation: recruit-chrome-pin var(--duration-chrome-collapse) var(--ease-standard) forwards;
+  animation: tab-chrome-pin var(--duration-chrome-collapse) var(--ease-standard) forwards;
 }
 
-@keyframes recruit-chrome-pin {
+@keyframes tab-chrome-pin {
   from {
-    transform: translateY(var(--recruit-chrome-pin-from, 0px));
+    transform: translateY(var(--tab-chrome-pin-from, 0px));
   }
 
   to {

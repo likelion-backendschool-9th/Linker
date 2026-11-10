@@ -295,7 +295,14 @@ export const routes: MockRoute[] = [
             lastMessage(a.id)?.createdAt ?? a.createdAt,
           ),
         )
-        .map(({ id, kind, title }) => ({ roomId: id, kind, title })),
+        .map(({ id, kind, title, teamId, counterpart }) => ({
+          roomId: id,
+          kind,
+          title,
+          avatarUrl: teamId
+            ? (findTeam(teamId)?.orgAvatarUrl ?? null)
+            : (counterpart?.avatarUrl ?? null),
+        })),
     };
   }),
   post('/api/v1/user/chat-rooms/:roomId/share-cards', ({ params, body, viewer }) => {

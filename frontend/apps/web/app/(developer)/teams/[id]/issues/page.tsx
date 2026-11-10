@@ -3,8 +3,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/api/query-client';
 import { buildMetadata } from '@/lib/seo/metadata';
 
-import { IssueFilterButton } from '../_components/issue-filter-button';
-import { IssueFilterSheet } from '../_components/issue-filter-sheet/IssueFilterSheet';
+import { TeamChangeIconButton } from '../_components/team-change-icon-button';
 import { TeamFrame } from '../_components/team-frame/TeamFrame';
 import { getTeam } from '../_lib/get-team';
 import { loadIssueFilters } from '../_lib/issue-filters';
@@ -32,13 +31,12 @@ export default async function IssueListPage({
   ]);
 
   return (
-    <TeamFrame teamId={id} title="이슈" actions={<IssueFilterButton appearance="icon" />}>
+    <TeamFrame teamId={id} title="이슈" actions={<TeamChangeIconButton />}>
       <HydrationBoundary state={dehydrate(getQueryClient())}>
         <div className={styles.page}>
           <IssueProgress teamId={id} flex={team.plan === 'FLEX'} />
           <IssueList teamId={id} />
         </div>
-        <IssueFilterSheet teamId={id} />
       </HydrationBoundary>
     </TeamFrame>
   );

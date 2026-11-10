@@ -17,7 +17,6 @@
   --font-size-legal: 0.875rem; /* 14px, page 03 legal document body */
   --font-size-placeholder: 0.875rem; /* 14px, input placeholders (20); the typed text stays 16px so iOS never zooms */
   --font-size-meta: 0.8125rem; /* 13px, time, view count */
-  --font-size-badge: 0.5rem; /* 8px, numeral inside a small count chip only (e.g. GNB unread chip) */
   --font-size-micro: 0.75rem; /* 12px, 07 issue row meta (Figma) */
   --font-size-board-control: 0.9375rem; /* 15px, 14 buttons and card status field (Figma) */
   --font-size-chat-time: 0.625rem; /* 10px, 17 message time and read count (Figma) */
@@ -37,5 +36,9 @@
   --line-height-compact: 22px; /* 07 issue row lines (Figma) */
   --line-height-card-desc: 20px; /* 19 recruit card description (Figma) */
   --line-height-board-control: 1.2; /* 14 buttons, menus, column names (Figma text boxes) */
+  --line-height-feed: 19px; /* 24 feed card name, counts, time, title and excerpt (Figma) */
   --line-height-chat: 18px; /* 17 bubble text (Figma) */
+
+  /* Letter spacing */
+  --letter-spacing-tight: -0.03em; /* Figma -3%: 24 share drawer search placeholder */
 }

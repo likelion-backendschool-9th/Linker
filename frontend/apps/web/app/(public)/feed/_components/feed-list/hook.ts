@@ -2,15 +2,18 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { parseAsBoolean, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
 import { useViewer } from '@/lib/auth/viewer-context';
 
-import { feedOptions, sendSeen, type FeedItem } from '../../_lib/feed-queries';
+import { FEED_TABS, feedOptions, sendSeen, type FeedItem } from '../../_lib/feed-queries';
 
 const offersOnlyParser = parseAsBoolean.withDefault(false).withOptions({ history: 'replace' });
+const tabParser = parseAsStringLiteral(FEED_TABS)
+  .withDefault('recommended')
+  .withOptions({ history: 'replace' });
 export const feedItemKey = (item: FeedItem) =>
   item.type === 'AD' ? `ad-${item.adId}` : `post-${item.post.id}`;
 const SEEN_FLUSH_MS = 1000;
@@ -18,9 +21,17 @@ const SEEN_FLUSH_MS = 1000;
 export function useFeedList() {
   const viewer = useViewer();
   const recruiter = viewer.role === 'recruiter';
+  const requireLogin = useRequireLogin();
+  const [tab, setTab] = useQueryState('tab', tabParser);
   const [offersOnly, setOffersOnly] = useQueryState('offersOnly', offersOnlyParser);
-  const filter = recruiter && offersOnly;
-  const feed = useInfiniteQuery(feedOptions(viewer.login, filter));
+  const following = tab === 'following';
+  const filter = recruiter && offersOnly && !following;
+  // Guests follow nobody: "팔로잉" shows a login notice instead of asking the server
+  const loginNeeded = following && viewer.role === 'guest';
+  const feed = useInfiniteQuery({
+    ...feedOptions(viewer.login, filter, tab),
+    enabled: !loginNeeded,
+  });
   const [hiddenAds, setHiddenAds] = useState<ReadonlySet<number>>(new Set());
   const items = (feed.data?.pages.flatMap((page) => page.items) ?? []).filter(
     (item) => item.type !== 'AD' || !hiddenAds.has(item.adId),
@@ -36,6 +47,11 @@ export function useFeedList() {
   return {
     viewer,
     recruiter,
+    tab,
+    setTab: (next: typeof tab) => void setTab(next),
+    following,
+    loginNeeded,
+    promptLogin: () => void requireLogin(),
     offersOnly,
     toggleOffersOnly: () => void setOffersOnly(!offersOnly),
     filter,

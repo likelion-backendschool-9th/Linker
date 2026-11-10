@@ -14,7 +14,8 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Frosted pill: gap is a fixed per-item value (not space-around), centered within the bar */
+/* Frosted white pill with a soft drop shadow (Figma 800:1299, 455:316): gap is a fixed per-item
+   value (not space-around), centered within the bar */
 .list {
   display: flex;
   justify-content: center;
@@ -27,6 +28,7 @@
   -webkit-backdrop-filter: var(--blur-chrome);
   backdrop-filter: var(--blur-chrome);
   border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-gnb);
 }
 
 /* Signed-in members: 5 tabs (incl. 프로필) use a tighter gap than guests' 4 (Figma 453:258/455:316) */
@@ -69,7 +71,12 @@
   --icon-stroke-width: 1.5;
 }
 
+/* 프로필 tab avatar — Figma 455:347: 27 circle; 5 to the label (not 6) so 27 + 5 = 26 + 6 and every
+   label sits on one line */
 .avatar {
+  width: var(--size-gnb-avatar);
+  height: var(--size-gnb-avatar);
+  margin-bottom: calc(var(--space-tab-avatar-gap) - var(--space-tab-icon-gap));
   border: 1px solid var(--color-hairline-soft);
   border-radius: var(--radius-full);
   object-fit: cover;
@@ -81,7 +88,7 @@
   line-height: var(--line-height-caption);
 }
 
-/* Active tab: accessible blue on the gray pill, plus a heavier label (not color alone). */
+/* Active tab: accessible blue on the white pill, plus a heavier label (not color alone). */
 .tab[aria-current='page'] {
   color: var(--color-gnb-current);
 }
