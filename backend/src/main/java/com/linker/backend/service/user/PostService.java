@@ -1,5 +1,6 @@
 package com.linker.backend.service.user;
 
+import java.text.BreakIterator;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,7 +54,6 @@ import com.linker.backend.entity.profile.TechTag;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
-import com.linker.backend.global.security.RedisRateLimiter;
 import com.linker.backend.integration.github.GithubRepoSource;
 import com.linker.backend.integration.github.GithubTeamSource;
 import com.linker.backend.repository.account.UserRepository;
@@ -97,7 +97,6 @@ public class PostService {
 	private final UserBlockRepository blocks;
 	private final NotificationService notifications;
 	private final RecruitCardMapper authors;
-	private final RedisRateLimiter rateLimiter;
 	private final ProMembership pro;
 	private final TeamRepository teams;
 	/** GitHub HTTP runs outside DB transactions, so the repo list uses explicit templates */
@@ -121,7 +120,6 @@ public class PostService {
 			UserBlockRepository blocks,
 			NotificationService notifications,
 			RecruitCardMapper authors,
-			RedisRateLimiter rateLimiter,
 			ProMembership pro,
 			TeamRepository teams,
 			GithubRepoSource github,
@@ -142,7 +140,6 @@ public class PostService {
 		this.blocks = blocks;
 		this.notifications = notifications;
 		this.authors = authors;
-		this.rateLimiter = rateLimiter;
 		this.pro = pro;
 		this.teams = teams;
 		this.github = github;
@@ -445,6 +442,7 @@ public class PostService {
 	@Transactional
 	public LikeCountResponse like(AuthenticatedUser user, long postId) {
 		Post post = requireReadablePost(user, postId);
+		rejectUnlessVisible(post);
 		if (likes.existsByPostIdAndUserId(postId, user.userId())) {
 			return new LikeCountResponse(post.getLikeCount());
 		}
@@ -503,11 +501,13 @@ public class PostService {
 
 	@Transactional
 	public CommentResponse createComment(AuthenticatedUser user, long postId, CommentWriteRequest request) {
-		enforceCommentDayLimit(user.userId());
 		Post post = requireReadablePost(user, postId);
+		rejectUnlessVisible(post);
 		String text = requireCommentText(request == null ? null : request.text());
-		User author = users.findById(user.userId())
+		// Row lock: comments sent at once can't both slip under the limits
+		User author = users.lockById(user.userId())
 				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "사용자를 찾을 수 없어요"));
+		enforceCommentLimits(user.userId());
 		Comment comment = comments.save(Comment.write(post, author, null, text));
 		post.increaseCommentCount();
 		notifyComment(post, null, user.userId(), comment.getId());
@@ -639,8 +639,9 @@ public class PostService {
 	}
 
 	private List<PostImage> toPostImages(List<PostPhotoRequest> photos, long userId) {
+		// POL-P-2: at least one photo; the first is the cover (and the OG image on 23)
 		if (photos == null || photos.isEmpty()) {
-			return List.of();
+			throw new ApiException(400, "VALIDATION_ERROR", "사진을 1장 이상 올려 주세요.");
 		}
 		int cap = photoCap(userId);
 		if (photos.size() > cap) {
@@ -801,20 +802,37 @@ public class PostService {
 				|| blocks.existsByBlockerIdAndBlockedIdAndUnblockedAtIsNull(b, a);
 	}
 
-	private void enforceCommentDayLimit(long userId) {
-		RedisRateLimiter.Decision decision = rateLimiter.tryAcquire(
-				"post.comment.day",
-				userId,
-				PlanLimits.POST_COMMENTS_PER_DAY,
-				PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS
-		);
-		if (!decision.allowed()) {
-			throw new ApiException(
-					429,
-					"RATE_LIMITED",
-					"요청이 너무 많아요. 잠시 후 다시 시도해 주세요",
-					Map.of("retryAfterSeconds", decision.retryAfterSeconds())
-			);
+	/**
+	 * Policy ch. 2 "Write comment 10/min, 300/day": only comments actually written count, so a rejected
+	 * request (empty, too long, hidden post, …) leaves the quota alone. Deleted comments still count.
+	 */
+	private void enforceCommentLimits(long userId) {
+		Instant now = clock.instant();
+		List<Instant> today = comments.findCreatedAtSince(
+				userId, now.minusSeconds(PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS));
+		if (today.size() >= PlanLimits.POST_COMMENTS_PER_DAY) {
+			throw commentLimit(today, PlanLimits.POST_COMMENTS_PER_DAY,
+					PlanLimits.POST_COMMENTS_PER_DAY_WINDOW_SECONDS, now, "오늘은 더 할 수 없어요. 내일 다시 시도해 주세요.");
+		}
+		Instant minuteStart = now.minusSeconds(PlanLimits.POST_COMMENTS_PER_MINUTE_WINDOW_SECONDS);
+		List<Instant> lastMinute = today.stream().filter(at -> at.isAfter(minuteStart)).toList();
+		if (lastMinute.size() >= PlanLimits.POST_COMMENTS_PER_MINUTE) {
+			throw commentLimit(lastMinute, PlanLimits.POST_COMMENTS_PER_MINUTE,
+					PlanLimits.POST_COMMENTS_PER_MINUTE_WINDOW_SECONDS, now, "잠시 후 다시 시도해 주세요.");
+		}
+	}
+
+	private static ApiException commentLimit(List<Instant> recent, int permits, int windowSeconds, Instant now,
+			String message) {
+		Instant freed = recent.get(recent.size() - permits).plusSeconds(windowSeconds);
+		return new ApiException(429, "RATE_LIMITED", message,
+				Map.of("retryAfterSeconds", Math.max(1, freed.getEpochSecond() - now.getEpochSecond())));
+	}
+
+	/** Policy ch. 4 exceptions: a post hidden by reports takes no new likes or comments, even from its author */
+	private static void rejectUnlessVisible(Post post) {
+		if (post.getVisibility() != PostVisibility.VISIBLE) {
+			throw new ApiException(409, "STATE_CONFLICT", "검토 중인 게시물에는 좋아요와 댓글을 남길 수 없어요.");
 		}
 	}
 
@@ -823,10 +841,24 @@ public class PostService {
 			throw new ApiException(400, "EMPTY", "내용을 입력해 주세요");
 		}
 		String text = raw.trim();
-		if (text.length() > PlanLimits.POST_COMMENT_MAX) {
+		if (graphemes(text) > PlanLimits.POST_COMMENT_MAX) {
 			throw new ApiException(400, "TOO_LONG", "500자까지 쓸 수 있어요");
 		}
 		return text;
+	}
+
+	/**
+	 * Policy ch. 2: every character as the reader sees it is 1, emoji included (FE `countChars` uses
+	 * `Intl.Segmenter` graphemes). Comments take emoji, so code points alone would over-count them.
+	 */
+	private static int graphemes(String text) {
+		BreakIterator characters = BreakIterator.getCharacterInstance(Locale.ROOT);
+		characters.setText(text);
+		int count = 0;
+		while (characters.next() != BreakIterator.DONE) {
+			count++;
+		}
+		return count;
 	}
 
 	private void notifyComment(Post post, Comment parent, long actorId, long commentId) {

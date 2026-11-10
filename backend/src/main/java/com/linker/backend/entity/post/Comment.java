@@ -113,6 +113,10 @@ public class Comment {
 		return deletedAt != null;
 	}
 
+	public PostVisibility getVisibility() {
+		return visibility;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}

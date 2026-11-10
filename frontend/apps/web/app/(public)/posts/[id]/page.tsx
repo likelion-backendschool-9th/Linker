@@ -42,7 +42,7 @@ export async function generateMetadata({
   return buildMetadata({
     title: post.intro,
     description: post.body.replace(/\s+/g, ' ').trim().slice(0, DESCRIPTION_LENGTH) || undefined,
-    // Cover photo; the repo-card `opengraph-image.tsx` for posts without photos is still to come
+    // Cover photo: every post has one (POL-P-2 photos are required), older posts fall back to defaults
     image: post.photos[0],
     // `?from=share` and other params never reach canonical / og:url
     path: `/posts/${id}`,

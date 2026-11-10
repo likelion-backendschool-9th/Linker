@@ -633,7 +633,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Selected repo card (name, owner) with "변경 하기" sheet; body starts empty so the placeholder shows (Figma 274:339, 274:329)
 - [ ] Required: one-line intro (1–60 chars, emoji dropped as typed)
 - [ ] Body (2,000 chars, line breaks and links only, emoji dropped as typed)
-- [ ] Photos: Free 5 / Pro 10, reorder, first is the cover, retry partial failures, publish only after all uploaded, subscription prompt if over the limit
+- [ ] Photos (required, at least 1): Free 5 / Pro 10, reorder, first is the cover, retry partial failures, publish only after all uploaded, subscription prompt if over the limit
 - [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags (sheet)
 - [ ] Edited posts show "수정됨"; 10/day (only published posts count); leaving mid-writing → restore draft
 
@@ -641,18 +641,18 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: P-3, P-5, P-7, S-4 · Needs first: 22
 
-- [ ] Author (→ 04), photo swipe + full-screen viewer
-- [ ] Repo card ("레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields, commit and issue counts
+- [ ] Author (→ 04) with "팔로우"/"팔로잉" (04 follow API; hidden for the author and recruiters, guests get the login prompt), photo swipe + full-screen viewer
+- [ ] Repo card ("레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields. Commit and issue counts: follow-up work
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
-- [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only)
+- [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only, 20 at a time with infinite scroll)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
 - [ ] Flat comments only (500 chars, no replies); author can edit/delete, post owner can delete only
-- [ ] (sheet) Post more: edit/delete (own), report (others'). (sheet) Comment more works the same way
+- [ ] (sheet) Post more: edit/delete (own), report (others'). (sheet) Comment more works the same way: own comment edit (inline, "수정됨") / delete, post owner delete, others' report
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)
 - [ ] Hidden by reports → author sees "검토 중", others see unavailable content
 - [ ] `[Included]` Share button → 00 share sheet (share to chat room after 17)
-- [ ] `generateMetadata` (summary line, first 120 chars of body) + OG image (cover photo, otherwise `opengraph-image.tsx` repo card). Default when deleted/hidden; strip `?from=share` from canonical (blueprint 8-3)
+- [ ] `generateMetadata` (summary line, first 120 chars of body) + OG image (cover photo; every post has one since photos are required). Default when deleted/hidden; strip `?from=share` from canonical (blueprint 8-3)
 - [ ] Server: comment and like notifications, view logging with traffic source (feed, profile, recruit post, chat share, external link `?from=share`) → for 30 stats; start collecting early
 - [ ] Do 04 profile pass 2 (post list, pinned posts) now
 

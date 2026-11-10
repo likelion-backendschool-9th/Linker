@@ -39,6 +39,7 @@ import com.linker.backend.entity.post.Post;
 import com.linker.backend.entity.post.PostDemoLink;
 import com.linker.backend.entity.post.PostTag;
 import com.linker.backend.entity.post.PostView;
+import com.linker.backend.entity.moderation.type.ReportTargetType;
 import com.linker.backend.entity.post.type.PostViewSource;
 import com.linker.backend.entity.post.type.PostVisibility;
 import com.linker.backend.entity.profile.UserTechTag;
@@ -53,6 +54,7 @@ import com.linker.backend.repository.post.CommentRepository;
 import com.linker.backend.repository.post.FeedSeenPostRepository;
 import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
+import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.post.PostViewRepository;
 import com.linker.backend.repository.profile.FollowRepository;
@@ -89,6 +91,7 @@ public class PostService {
 	private final FollowRepository follows;
 	private final UserTechTagRepository techTags;
 	private final UserJobCategoryRepository jobCategories;
+	private final ReportRepository reports;
 	private final Clock clock;
 
 	public PostService(
@@ -104,6 +107,7 @@ public class PostService {
 			FollowRepository follows,
 			UserTechTagRepository techTags,
 			UserJobCategoryRepository jobCategories,
+			ReportRepository reports,
 			Clock clock
 	) {
 		this.posts = posts;
@@ -118,6 +122,7 @@ public class PostService {
 		this.follows = follows;
 		this.techTags = techTags;
 		this.jobCategories = jobCategories;
+		this.reports = reports;
 		this.clock = clock;
 	}
 
@@ -183,9 +188,11 @@ public class PostService {
 				&& viewer.userType() == UserType.RECRUITER
 				&& post.getAuthor().getJobSeekingStatus() != JobSeekingStatus.OFF;
 		boolean repoAvailable = isRepoAvailable(post);
+		boolean following = viewer != null && !isAuthor
+				&& follows.existsByFollower_IdAndFollowing_Id(viewer.userId(), post.getAuthor().getId());
 		return new PostDetailResponse(
 				post.getId(),
-				authors.toAuthor(post.getAuthor()),
+				authors.toAuthor(post.getAuthor(), following),
 				post.getSummary(),
 				post.getBody(),
 				toRepoCard(post, repoAvailable),
@@ -213,8 +220,16 @@ public class PostService {
 	public CommentListResponse comments(long postId) {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
 		loadReadable(postId, viewer);
+		Set<Long> reported = reportedBy(viewer, ReportTargetType.COMMENT);
+		Set<Long> blockedAuthors = blockedAuthorIds(viewer);
 		List<CommentResponse> items = comments.findByPostIdOrderByIdAsc(postId).stream()
 				.filter(row -> !row.isDeleted())
+				// Hidden by reports: only its own author still sees it (Policy ch. 4 exceptions)
+				.filter(row -> row.getVisibility() == PostVisibility.VISIBLE
+						|| (viewer != null && viewer.userId() == row.getAuthor().getId()))
+				// What I reported or wrote by someone in a block relation leaves my view (Policy ch. 9)
+				.filter(row -> !reported.contains(row.getId()))
+				.filter(row -> !blockedAuthors.contains(row.getAuthor().getId()))
 				.map(this::toComment)
 				.toList();
 		return new CommentListResponse(items);
@@ -237,7 +252,11 @@ public class PostService {
 			return new PostCardListResponse(List.of());
 		}
 		List<PostCardResponse> items = new ArrayList<>();
+		Set<Long> reported = reportedBy(viewer, ReportTargetType.POST);
 		for (Post post : posts.findVisibleByAuthorId(author.getId())) {
+			if (reported.contains(post.getId())) {
+				continue;
+			}
 			post.getImages().size();
 			post.getTags().size();
 			items.add(toCard(post));
@@ -256,8 +275,10 @@ public class PostService {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
 		Post post = loadReadable(postId, viewer);
 		List<PostCardResponse> items = new ArrayList<>();
+		Set<Long> reported = reportedBy(viewer, ReportTargetType.POST);
 		for (Post other : posts.findSameRepoVisible(post.getRepo().getId(), postId)) {
-			if (viewer != null && blocked(viewer.userId(), other.getAuthor().getId())) {
+			if (reported.contains(other.getId())
+					|| (viewer != null && blocked(viewer.userId(), other.getAuthor().getId()))) {
 				continue;
 			}
 			other.getImages().size();
@@ -282,10 +303,11 @@ public class PostService {
 
 	private List<Post> filterCandidates(List<Post> rows, AuthenticatedUser viewer, boolean offersOnly) {
 		Set<Long> blocked = blockedAuthorIds(viewer);
+		Set<Long> reported = reportedBy(viewer, ReportTargetType.POST);
 		List<Post> out = new ArrayList<>();
 		for (Post post : rows) {
 			long authorId = post.getAuthor().getId();
-			if (blocked.contains(authorId)) {
+			if (blocked.contains(authorId) || reported.contains(post.getId())) {
 				continue;
 			}
 			if (offersOnly && post.getAuthor().getJobSeekingStatus() == JobSeekingStatus.OFF) {
@@ -565,7 +587,18 @@ public class PostService {
 		if (post.getVisibility() != PostVisibility.VISIBLE && !isAuthor) {
 			throw new ApiException(404, "NOT_FOUND", UNAVAILABLE);
 		}
+		if (!isAuthor && reportedBy(viewer, ReportTargetType.POST).contains(postId)) {
+			throw new ApiException(404, "NOT_FOUND", UNAVAILABLE);
+		}
 		return post;
+	}
+
+	/** Policy ch. 9 "Reported targets are hidden from the reporter immediately"; empty for guests */
+	private Set<Long> reportedBy(AuthenticatedUser viewer, ReportTargetType type) {
+		if (viewer == null) {
+			return Set.of();
+		}
+		return new HashSet<>(reports.findTargetIdsReportedBy(viewer.userId(), type));
 	}
 
 	private void recordView(Post post, long viewerId, PostViewSource source) {

@@ -27,6 +27,9 @@ import com.linker.backend.entity.moderation.type.ReportReason;
 import com.linker.backend.entity.moderation.type.ReportTargetType;
 import com.linker.backend.entity.moderation.UserBlock;
 import com.linker.backend.entity.notification.type.NotificationTypes;
+import com.linker.backend.entity.post.Comment;
+import com.linker.backend.entity.post.Post;
+import com.linker.backend.entity.post.type.PostVisibility;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.time.DatabaseInstant;
@@ -45,6 +48,8 @@ import com.linker.backend.repository.moderation.ReportMessageSnapshotRepository;
 import com.linker.backend.repository.moderation.ReportRepository;
 import com.linker.backend.repository.moderation.SanctionRepository;
 import com.linker.backend.repository.moderation.UserBlockRepository;
+import com.linker.backend.repository.post.CommentRepository;
+import com.linker.backend.repository.post.PostRepository;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -74,6 +79,8 @@ public class ModerationService {
 	private final ChatRoomMemberRepository roomMembers;
 	private final ChatRoomRepository rooms;
 	private final ReportMessageSnapshotRepository snapshots;
+	private final PostRepository posts;
+	private final CommentRepository comments;
 	private final ApplicationEventPublisher events;
 	private final Clock clock;
 
@@ -93,6 +100,8 @@ public class ModerationService {
 			ChatRoomMemberRepository roomMembers,
 			ChatRoomRepository rooms,
 			ReportMessageSnapshotRepository snapshots,
+			PostRepository posts,
+			CommentRepository comments,
 			ApplicationEventPublisher events,
 			Clock clock
 	) {
@@ -111,6 +120,8 @@ public class ModerationService {
 		this.roomMembers = roomMembers;
 		this.rooms = rooms;
 		this.snapshots = snapshots;
+		this.posts = posts;
+		this.comments = comments;
 		this.events = events;
 		this.clock = clock;
 	}
@@ -227,7 +238,7 @@ public class ModerationService {
 		ChatMessage reportedMessage = isChatTarget(type) ? resolveReportableMessage(type, parsedTargetId, reporterId) : null;
 		long targetUserId = reportedMessage != null
 				? reportedMessage.getSenderId()
-				: resolveTargetUserId(type, parsedTargetId);
+				: resolveTargetUserId(type, parsedTargetId, reporterId);
 		if (targetUserId == reporterId) {
 			throw new ApiException(400, "VALIDATION_ERROR", "본인은 신고할 수 없어요");
 		}
@@ -249,8 +260,10 @@ public class ModerationService {
 			if (reportedMessage != null) {
 				hideReportedMessage(reportedMessage);
 			}
+			else {
+				autoHideContent(type, parsedTargetId);
+			}
 			notifyOperatorsOfAutoHide(reportCase);
-			// Posts, comments and recruit posts are not reportable yet; their auto-hide lands with those paths.
 		}
 		// Reporter outcome / sanction alerts are page 25.
 	}
@@ -391,16 +404,60 @@ public class ModerationService {
 		}
 	}
 
-	private long resolveTargetUserId(ReportTargetType type, long targetId) {
-		// Chat messages resolve in resolveReportableMessage. Posts, comments, recruit posts and ads
-		// resolve once their report paths are wired.
-		if (type != ReportTargetType.USER) {
-			throw new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요");
+	private long resolveTargetUserId(ReportTargetType type, long targetId, long reporterId) {
+		// Chat messages resolve in resolveReportableMessage. Recruit posts and ads resolve once their
+		// report paths are wired.
+		return switch (type) {
+			case USER -> users.findById(targetId)
+					.filter(user -> user.getStatus() != UserStatus.DELETED && user.getDeletedAt() == null)
+					.map(User::getId)
+					.orElseThrow(ModerationService::missingTarget);
+			case POST -> reportablePost(posts.findDetailedById(targetId).orElseThrow(ModerationService::missingTarget),
+					reporterId).getAuthor().getId();
+			case COMMENT -> reportableComment(targetId, reporterId).getAuthor().getId();
+			default -> throw missingTarget();
+		};
+	}
+
+	/**
+	 * 23: a post the reporter can read right now (not deleted, visible, no block either way). Anything
+	 * else is 404 so a report does not reveal posts outside the reporter's view.
+	 */
+	private Post reportablePost(Post post, long reporterId) {
+		if (post.getDeletedAt() != null || post.getVisibility() != PostVisibility.VISIBLE
+				|| blockedEitherWay(reporterId, post.getAuthor().getId())) {
+			throw missingTarget();
 		}
-		return users.findById(targetId)
-				.filter(user -> user.getStatus() != UserStatus.DELETED && user.getDeletedAt() == null)
-				.map(User::getId)
-				.orElseThrow(() -> new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요"));
+		return post;
+	}
+
+	/** 23: a visible comment on a post the reporter can read */
+	private Comment reportableComment(long commentId, long reporterId) {
+		Comment comment = comments.findDetailedById(commentId).orElseThrow(ModerationService::missingTarget);
+		if (comment.isDeleted() || comment.getVisibility() != PostVisibility.VISIBLE
+				|| blockedEitherWay(reporterId, comment.getAuthor().getId())) {
+			throw missingTarget();
+		}
+		reportablePost(comment.getPost(), reporterId);
+		return comment;
+	}
+
+	/**
+	 * Auto temporary hide (Policy ch. 9): a post or comment goes to UNDER_REVIEW, so its author sees
+	 * "검토 중" and everyone else loses it. Dismissing the case undoes it
+	 * ({@code admin.ReportContentEffects#undoAutoHide}).
+	 */
+	private void autoHideContent(ReportTargetType type, long targetId) {
+		switch (type) {
+			case POST -> posts.markUnderReview(targetId);
+			case COMMENT -> comments.markUnderReview(targetId);
+			default -> {
+			}
+		}
+	}
+
+	private static ApiException missingTarget() {
+		return new ApiException(404, "NOT_FOUND", "신고할 대상을 찾을 수 없어요");
 	}
 
 	private String normalizeDetail(ReportReason reason, String detail) {

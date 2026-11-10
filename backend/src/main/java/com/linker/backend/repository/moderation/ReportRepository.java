@@ -13,6 +13,15 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
 	boolean existsByReportCase_IdAndReporterId(long caseId, long reporterId);
 
+	/** Policy ch. 9 "Reported targets are hidden from the reporter immediately": what I reported, by type */
+	@Query("""
+			select c.targetId from Report r join r.reportCase c
+			where r.reporterId = :reporterId and c.targetType = :type
+			""")
+	List<Long> findTargetIdsReportedBy(
+			@Param("reporterId") long reporterId,
+			@Param("type") com.linker.backend.entity.moderation.type.ReportTargetType type);
+
 	long countByReportCase_Id(long caseId);
 
 	@Query("select r.reporterId from Report r where r.reportCase.id = :caseId")

@@ -65,9 +65,18 @@ public class ReportContentEffects {
 	/**
 	 * Dismissing a case that was auto-hidden at {@code PlanLimits.REPORT_AUTO_HIDE_REPORTERS} reporters
 	 * shows the content again. Only the hide is undone; a sender's own deletion stays.
-	 * Only chat messages are auto-hidden today; other targets join when their report paths are wired.
+	 * Chat messages, posts and comments are auto-hidden today; recruit posts and ads join when their
+	 * report paths are wired. A post or comment leaves review only if it is still there (operator hides stay).
 	 */
 	public void undoAutoHide(ReportTargetType type, long targetId) {
+		if (type == ReportTargetType.POST) {
+			posts.clearUnderReview(targetId);
+			return;
+		}
+		if (type == ReportTargetType.COMMENT) {
+			comments.clearUnderReview(targetId);
+			return;
+		}
 		if (type != ReportTargetType.TEAM_MESSAGE && type != ReportTargetType.DM_MESSAGE) {
 			return;
 		}

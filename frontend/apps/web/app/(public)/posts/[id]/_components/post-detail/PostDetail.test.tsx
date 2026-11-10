@@ -20,6 +20,7 @@ const author = {
   name: '김링커',
   avatarUrl: '/mock/avatar.png',
   jobStatus: 'SEEKING' as const,
+  isFollowing: false,
 };
 const base: Detail = {
   id: 1,
@@ -58,18 +59,23 @@ const comments: PostComment[] = [
     author: { id: 4, login: 'doyun', name: '이도윤', avatarUrl: '/mock/avatar.png' },
     text: '데모가 깔끔해요.',
     createdAt: '2026-10-31T00:00:00Z',
+    editedAt: null,
   },
   {
     id: 5,
     author: { id: 7, login: 'taeyang', name: '정태양', avatarUrl: '/mock/avatar.png' },
     text: '구조가 깔끔해요!',
     createdAt: '2026-10-31T02:00:00Z',
+    editedAt: null,
   },
 ];
+
+let sameRepo: unknown[] = [];
 
 function serve(detail: Detail, like?: () => unknown) {
   fetchMock.mockImplementation(async (url) => {
     if (url.startsWith('/api/v1/public/posts/1/comments')) return { items: comments };
+    if (url.startsWith('/api/v1/public/posts/1/same-repo-posts')) return { items: sameRepo };
     if (url.startsWith('/api/v1/public/posts/1')) return detail;
     if (url.endsWith('/likes')) return like?.();
     if (url.endsWith('/comments')) return comments[1];
@@ -79,6 +85,7 @@ function serve(detail: Detail, like?: () => unknown) {
 
 beforeEach(() => {
   fetchMock.mockReset();
+  sameRepo = [];
 });
 
 it('shows a guest the whole post and sends reactions to the login prompt', async () => {
@@ -184,4 +191,86 @@ it('hides reactions from recruiters and marks a hidden post for its author', asy
   expect(await screen.findByText('검토 중')).toBeVisible();
   expect(screen.queryByRole('button', { name: '좋아요' })).not.toBeInTheDocument();
   expect(screen.getByText('레포를 볼 수 없음')).toBeVisible();
+});
+
+it('treats a post an operator hid like one under review for its author', async () => {
+  serve({ ...base, isAuthor: true, visibility: 'HIDDEN' });
+  renderWithProviders(<PostDetail postId="1" />, {
+    viewer: { role: 'developer', login: 'linker' },
+  });
+  expect(await screen.findByText('검토 중')).toBeVisible();
+  expect(screen.queryByRole('button', { name: '좋아요' })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('댓글')).not.toBeInTheDocument();
+});
+
+it('follows the author from the author row and hides the button from recruiters', async () => {
+  serve(base);
+  const user = userEvent.setup();
+  const { unmount } = renderWithProviders(<PostDetail postId="1" />, {
+    viewer: { role: 'developer', login: 'developer' },
+  });
+  const follow = await screen.findByRole('button', { name: '팔로우' });
+  await user.click(follow);
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/user/linker/follow', { method: 'POST' }),
+  );
+  expect(screen.getByRole('button', { name: '팔로잉' })).toHaveAttribute('aria-pressed', 'true');
+  unmount();
+
+  serve(base);
+  renderWithProviders(<PostDetail postId="1" />, {
+    viewer: { role: 'recruiter', login: 'recruiter' },
+  });
+  expect(await screen.findByRole('heading', { name: base.intro })).toBeVisible();
+  expect(screen.queryByRole('button', { name: '팔로우' })).not.toBeInTheDocument();
+});
+
+it('edits my own comment and only offers a report on others', async () => {
+  serve(base);
+  const user = userEvent.setup();
+  renderWithProviders(<PostDetail postId="1" />, {
+    viewer: { role: 'developer', login: 'doyun' },
+  });
+  const menus = await screen.findAllByRole('button', { name: '댓글 더보기' });
+
+  // 정태양's comment: report only
+  await user.click(menus[1]!);
+  expect(await screen.findByRole('menuitem', { name: '신고 하기' })).toBeVisible();
+  expect(screen.queryByRole('menuitem', { name: '수정하기' })).not.toBeInTheDocument();
+  await user.keyboard('{Escape}');
+
+  // My comment: edit in place
+  await user.click(menus[0]!);
+  await user.click(await screen.findByRole('menuitem', { name: '수정하기' }));
+  const field = screen.getByLabelText('댓글 수정');
+  await user.clear(field);
+  await user.type(field, '데모가 정말 깔끔해요.');
+  await user.click(screen.getByRole('button', { name: '저장' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/posts/1/comments/3', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: '데모가 정말 깔끔해요.' }),
+    }),
+  );
+});
+
+it('lists other posts for the same repo when there are any', async () => {
+  serve(base);
+  sameRepo = [
+    {
+      id: 9,
+      author: { id: 4, login: 'doyun', name: '이도윤', avatarUrl: '/mock/avatar.png' },
+      intro: '같은 해커톤 백엔드',
+      coverUrl: null,
+      likeCount: 1,
+      commentCount: 0,
+    },
+  ];
+  renderWithProviders(<PostDetail postId="1" />);
+  expect(await screen.findByRole('heading', { name: '이 레포의 다른 게시물' })).toBeVisible();
+  expect(screen.getByRole('link', { name: /같은 해커톤 백엔드/ })).toHaveAttribute(
+    'href',
+    '/posts/9',
+  );
 });

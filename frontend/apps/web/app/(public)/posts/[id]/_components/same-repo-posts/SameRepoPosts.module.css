@@ -1,0 +1,52 @@
+/* No Figma frame yet: same rhythm and type as the repo card and the likers list on this page */
+.section {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.title {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.list {
+  display: grid;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  padding: var(--space-xs) 0;
+}
+
+.cover {
+  flex-shrink: 0;
+  width: calc(var(--control-height) - var(--space-xs));
+  height: calc(var(--control-height) - var(--space-xs));
+  background-color: var(--color-canvas-cool);
+  border-radius: var(--radius-card-compact);
+  object-fit: cover;
+}
+
+.text {
+  display: grid;
+  min-width: 0;
+}
+
+.intro {
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-title);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author {
+  font-size: var(--font-size-meta);
+  color: var(--color-text-meta);
+}
