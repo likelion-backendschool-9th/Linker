@@ -67,7 +67,16 @@ function saveErrorMessage(error: unknown): string {
 }
 
 /** Fields in on-screen order, so the toast names the first problem the user would meet */
-const FIELD_ORDER = ['title', 'intro', 'teamId', 'roles', 'format', 'region', 'deadline'] as const;
+const FIELD_ORDER = [
+  'title',
+  'intro',
+  'teamId',
+  'roles',
+  'format',
+  'region',
+  'deadline',
+  'duration',
+] as const;
 
 /** First validation message for the error toast; role rows carry theirs per row and field */
 function firstErrorMessage(errors: FieldErrors<RecruitFormValues>): string {

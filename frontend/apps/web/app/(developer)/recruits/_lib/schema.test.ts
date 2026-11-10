@@ -34,3 +34,11 @@ it('caps the region at the 100-character column length', () => {
     '지역은 100자까지 쓸 수 있어요.',
   ]);
 });
+
+it('rejects emoji in title, intro, region and duration', () => {
+  for (const field of ['title', 'intro', 'region', 'duration'] as const) {
+    expect(messages({ ...valid, [field]: `${valid[field] || '기간'} 🚀` })).toEqual([
+      '이모지는 입력할 수 없어요.',
+    ]);
+  }
+});

@@ -8,7 +8,7 @@ import {
   type RecruitGoal,
   type RecruitRoleKey,
 } from '@/features/recruit/recruit-labels';
-import { countChars, normalizeLineBreaks } from '@/lib/format/text';
+import { countChars, hasEmoji, normalizeLineBreaks } from '@/lib/format/text';
 import { RECRUIT } from '@/lib/policy';
 
 import type { RecruitRequest } from './editor-queries';
@@ -59,6 +59,10 @@ type SchemaContext = {
 const { min: HEADCOUNT_MIN, max: HEADCOUNT_MAX } = RECRUIT.headcountPerRole;
 const limit = (max: number) => max.toLocaleString('ko-KR');
 
+/** POL-R-1: recruit post text takes no emoji */
+const NO_EMOJI = '이모지는 입력할 수 없어요.';
+const noEmoji = (value: string) => !hasEmoji(value);
+
 export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} }: SchemaContext) {
   return z
     .object({
@@ -68,14 +72,16 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
         .refine(
           (value) => countChars(value) <= RECRUIT.titleMax,
           `제목은 ${limit(RECRUIT.titleMax)}자까지 쓸 수 있어요.`,
-        ),
+        )
+        .refine(noEmoji, NO_EMOJI),
       intro: z
         .string()
         .refine((value) => countChars(value) > 0, '소개를 입력해 주세요.')
         .refine(
           (value) => countChars(value) <= RECRUIT.introMax,
           `소개는 ${limit(RECRUIT.introMax)}자까지 쓸 수 있어요.`,
-        ),
+        )
+        .refine(noEmoji, NO_EMOJI),
       roles: z
         .array(
           z.object({
@@ -117,9 +123,10 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
         .refine(
           (value) => value.trim().length <= RECRUIT.regionMax,
           `지역은 ${limit(RECRUIT.regionMax)}자까지 쓸 수 있어요.`,
-        ),
+        )
+        .refine(noEmoji, NO_EMOJI),
       goal: z.union([z.enum(RECRUIT_GOALS), z.literal('')]),
-      duration: z.string(),
+      duration: z.string().refine(noEmoji, NO_EMOJI),
       deadline: z
         .string()
         .min(1, '마감일을 골라 주세요.')

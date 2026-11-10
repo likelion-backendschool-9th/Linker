@@ -751,6 +751,7 @@ public class RecruitmentService {
 		if (duration != null && duration.length() > 40) {
 			throw new ApiException(400, "VALIDATION_ERROR", "예상 기간을 확인해 주세요");
 		}
+		rejectEmoji(title, intro, region, duration);
 		LocalDate deadline = parseDeadline(request.deadline());
 		List<RecruitRoleWriteRequest> roles = normalizeRoles(request.roles());
 		List<String> tags = normalizeTechTags(request.techTags());
@@ -874,6 +875,23 @@ public class RecruitmentService {
 		catch (IllegalArgumentException exception) {
 			throw new ApiException(400, "VALIDATION_ERROR", "역할을 확인해 주세요");
 		}
+	}
+
+	/** POL-R-1: recruit post text takes no emoji (FE `hasEmoji` uses the same code points). */
+	private static void rejectEmoji(String... values) {
+		for (String value : values) {
+			if (value != null && value.codePoints().anyMatch(RecruitmentService::isEmojiCodePoint)) {
+				throw new ApiException(400, "VALIDATION_ERROR", "이모지는 입력할 수 없어요.");
+			}
+		}
+	}
+
+	/** Emoji shown as pictures by default, flag letters, and the emoji-style / keycap marks */
+	private static boolean isEmojiCodePoint(int codePoint) {
+		return Character.isEmojiPresentation(codePoint)
+				|| (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF)
+				|| codePoint == 0xFE0F
+				|| codePoint == 0x20E3;
 	}
 
 	private static String requireText(String raw, int min, int max, String message) {

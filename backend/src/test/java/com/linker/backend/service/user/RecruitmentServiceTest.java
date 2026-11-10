@@ -321,6 +321,28 @@ class RecruitmentServiceTest {
 	}
 
 	@Test
+	void createRejectsEmojiInText() {
+		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
+		RecruitWriteRequest request = new RecruitWriteRequest(
+				"함께 만들어요 🚀",
+				"소개입니다",
+				List.of(new RecruitRoleWriteRequest(null, "BACKEND", 2)),
+				"ONLINE",
+				null,
+				null,
+				null,
+				LocalDate.of(2026, 11, 12).toString(),
+				List.of(),
+				LINKABLE_TEAM.id()
+		);
+
+		assertThatThrownBy(() -> service.create(developer, request))
+				.isInstanceOf(ApiException.class)
+				.satisfies(error -> assertThat(error.getMessage()).isEqualTo("이모지는 입력할 수 없어요."));
+		verify(posts, never()).save(any());
+	}
+
+	@Test
 	void createRejectsOfflineWithoutRegion() {
 		when(posts.countByAuthorIdAndStatusAndDeletedAtIsNull(10L, RecruitStatus.OPEN)).thenReturn(0L);
 		RecruitWriteRequest request = new RecruitWriteRequest(
