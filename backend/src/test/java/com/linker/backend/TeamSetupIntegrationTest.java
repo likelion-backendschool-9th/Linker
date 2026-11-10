@@ -359,6 +359,10 @@ class TeamSetupIntegrationTest {
         .andExpect(status().isForbidden());
     when(github.organization(anyLong(), eq(500L), eq("org")))
         .thenReturn(new Organization(500, "ORG_500", "org", "", ""));
+    when(github.organizationOwner(owner.getId(), 500, "org")).thenReturn(false);
+    mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
+        .andExpect(status().isForbidden());
+    when(github.organizationOwner(owner.getId(), 500, "org")).thenReturn(true);
 
     mvc.perform(get("/api/v1/user/teams/{id}/setup/permission-check", team).cookie(session))
         .andExpect(status().isOk())

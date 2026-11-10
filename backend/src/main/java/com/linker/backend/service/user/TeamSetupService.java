@@ -314,6 +314,11 @@ public class TeamSetupService {
             : org.basePermission().toLowerCase(Locale.ROOT);
     if (permission != null && !List.of("none", "read", "write", "admin").contains(permission))
       throw new ApiException(503, "SERVICE_UNAVAILABLE", "GitHub 조직 기본 권한을 확인해 주세요");
+    // This field is normally owner-only. Do not let its absence turn a non-owner's
+    // limited organization response into a successful setup permission check.
+    if (permission == null
+        && !github.organizationOwner(user.userId(), team.orgId(), team.orgLogin()))
+      throw new ApiException(403, "FORBIDDEN", "GitHub 조직 소유자 권한을 확인해 주세요");
     write.executeWithoutResult(
         status -> {
           authorized(user, id, TeamRole.Level.OWNER, false);
