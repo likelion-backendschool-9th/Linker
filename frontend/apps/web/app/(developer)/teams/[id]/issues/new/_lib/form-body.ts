@@ -29,6 +29,29 @@ export function emptyAnswers(fields: FormField[]): FormAnswers {
   return answers;
 }
 
+/** UI answers → OpenAPI `answers` (field id → string[]). Checkboxes send checked option labels. */
+export function toApiAnswers(fields: FormField[], answers: FormAnswers): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const field of fields) {
+    if (!isInputField(field)) continue;
+    const answer = answers[field.id];
+    if (field.type === 'checkboxes') {
+      const checked = Array.isArray(answer) ? (answer as boolean[]) : [];
+      out[field.id] = field.options
+        .filter((_, index) => checked[index])
+        .map((option) => option.label);
+      continue;
+    }
+    if (Array.isArray(answer)) {
+      out[field.id] = (answer as string[]).map(String);
+      continue;
+    }
+    const text = String(answer ?? '').trim();
+    out[field.id] = text ? [text] : [];
+  }
+  return out;
+}
+
 export function buildFormBody(fields: FormField[], answers: FormAnswers): string {
   const sections: string[] = [];
   for (const field of fields) {

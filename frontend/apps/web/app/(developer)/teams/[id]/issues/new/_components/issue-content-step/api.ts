@@ -6,7 +6,7 @@ export {
   createReposOptions,
   getSyncJob,
   templateOptions,
+  type CreateProgress,
   type FormField,
   type ParsedTemplate,
-  type SyncJob,
 } from '../../_lib/create-queries';
