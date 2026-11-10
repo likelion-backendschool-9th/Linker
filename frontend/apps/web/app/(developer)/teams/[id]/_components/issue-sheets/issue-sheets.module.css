@@ -105,22 +105,39 @@
   opacity: 0;
 }
 
-/* 708:1814 radio look — CreatePickSheet (repo/template) only */
+/*
+ * 708:1814 picker radio.
+ * Unselected 3 layers: #eaeaea stroke → #f6f7fb ring → white filled disc 12.5.
+ * Selected: blue stroke → white gap → blue dot.
+ */
 .radioMark {
+  display: grid;
   flex: none;
+  place-items: center;
   box-sizing: border-box;
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: var(--radio-size);
+  height: var(--radio-size);
   pointer-events: none;
-  background-color: transparent;
-  border: 2px solid var(--color-text-muted-cool);
+  background-color: var(--color-radio-surface);
+  border: 1px solid var(--color-radio-border);
+  border-radius: var(--radius-full);
+}
+
+.radioMark::after {
+  width: var(--radio-dot-size);
+  height: var(--radio-dot-size);
+  content: '';
+  background-color: var(--color-canvas);
   border-radius: var(--radius-full);
 }
 
 .option:has(:checked) .radioMark {
-  background-color: var(--color-selection);
+  background-color: var(--color-canvas);
   border-color: var(--color-selection);
-  box-shadow: inset 0 0 0 3px var(--color-canvas);
+}
+
+.option:has(:checked) .radioMark::after {
+  background-color: var(--color-selection);
 }
 
 /* 368:2186 / 368:2309 — selected dark text, unselected muted; no check/radio chrome */
@@ -135,6 +152,16 @@
 .option:has(:checked) .person {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-slate);
+}
+
+/* 708:1814 pick labels — selected #111827 / unselected #b0b8c1 */
+.optionPick .statusName {
+  color: var(--color-text-unselected);
+}
+
+.optionPick:has(:checked) .statusName {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-sheet-title);
 }
 
 .jobRole {
