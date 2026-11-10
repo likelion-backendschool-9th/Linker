@@ -1,4 +1,5 @@
 import { RECRUIT_ROLE_LABELS, type RecruitRoleKey } from '@/features/recruit/recruit-labels';
+import { RECRUIT } from '@/lib/policy';
 
 import { dateOnly, del, fail, get, newId, post, put, type MockRoute } from '../core/define';
 import { RECRUITS, type MockRecruit } from '../fixtures/recruits';
@@ -8,6 +9,20 @@ import { brief, ME } from '../fixtures/users';
 /** 20 Write/edit recruit post: `RecruitmentController` */
 
 const OPEN_LIMIT = 3; // Pro 10 (04 POL-R-1)
+
+/** Last allowed deadline: today + 6 calendar months, like the server's `plusMonths` (month end clamps) */
+function sixMonthsOn(): string {
+  const [year, month, day] = dateOnly(0).split('-').map(Number) as [number, number, number];
+  const target = new Date(Date.UTC(year, month - 1 + RECRUIT.deadlineWithinMonths, 1));
+  const lastDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target.toISOString().slice(0, 10);
+}
+
+/** Create attempts since the mock started (stands in for the server's daily window) */
+let createAttempts = 0;
 
 const openCount = () =>
   RECRUITS.filter((item) => item.author.id === ME.id && item.status === 'OPEN').length;
@@ -57,13 +72,20 @@ export const routes: MockRoute[] = [
       ),
       openCount: openCount(),
       openLimit: OPEN_LIMIT,
-      maxDeadlineDate: dateOnly(60),
+      maxDeadlineDate: sixMonthsOn(),
     }),
     { only: 'developer' },
   ),
   post(
     '/api/v1/user/recruits',
     ({ body }) => {
+      // `@RateLimit` runs before anything else and counts every attempt (04 ch. 2: 5/day)
+      createAttempts += 1;
+      if (createAttempts > RECRUIT.createPerDay) {
+        fail(429, 'RATE_LIMITED', '요청이 너무 많아요. 잠시 후 다시 시도해 주세요', {
+          retryAfterSeconds: 86_400,
+        });
+      }
       if (openCount() >= OPEN_LIMIT) {
         fail(
           403,
@@ -106,19 +128,34 @@ export const routes: MockRoute[] = [
     };
   }),
   put('/api/v1/user/recruits/:recruitId', ({ params, body }) => {
-    applyForm(ownRecruit(params.recruitId!), body);
+    const item = ownRecruit(params.recruitId!);
+    // Editing needs the author to still own or admin the linked team (POL-R-1)
+    const team = TEAMS.find((t) => t.id === item.teamId);
+    if (team && team.myRole === 'MEMBER') {
+      fail(403, 'TEAM_ROLE_REQUIRED', '글을 수정할 권한이 없습니다.');
+    }
+    applyForm(item, body);
     return { id: Number(params.recruitId) };
   }),
   post('/api/v1/user/recruits/:recruitId/close', ({ params }) => {
     ownRecruit(params.recruitId!).status = 'CLOSED';
     return undefined;
   }),
+  // Same order as the server: author → already open → ROLES_FULL → DEADLINE_PASSED → open cap
   post('/api/v1/user/recruits/:recruitId/reopen', ({ params }) => {
+    const item = ownRecruit(params.recruitId!);
+    if (item.status === 'OPEN') return undefined;
+    if (item.roles.length > 0 && item.roles.every((role) => role.filled >= role.headcount)) {
+      fail(409, 'ROLES_FULL', '모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요.');
+    }
+    if (item.deadline < dateOnly(0)) {
+      fail(409, 'DEADLINE_PASSED', '마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요.');
+    }
     if (openCount() >= OPEN_LIMIT)
       fail(403, 'PLAN_LIMIT', '동시에 모집할 수 있는 글은 3개까지예요.', {
         reason: 'RECRUIT_POSTS',
       });
-    ownRecruit(params.recruitId!).status = 'OPEN';
+    item.status = 'OPEN';
     return undefined;
   }),
   del('/api/v1/user/recruits/:recruitId', ({ params }) => {

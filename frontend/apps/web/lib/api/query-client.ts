@@ -32,10 +32,25 @@ export function onQueryError(error: Error, query: { meta?: Record<string, unknow
   handleApiError(error);
 }
 
+/**
+ * A mutation that shows its own copy for some codes lists them in `meta.handledCodes`, so the shared
+ * toast doesn't stack on top of it (e.g. 20's daily recruit-post limit). Everything else as before.
+ */
+export function onMutationError(
+  error: Error,
+  _variables: unknown,
+  _onMutateResult: unknown,
+  mutation: { meta?: Record<string, unknown> },
+) {
+  const handled = mutation.meta?.handledCodes;
+  if (error instanceof ApiError && Array.isArray(handled) && handled.includes(error.code)) return;
+  handleApiError(error);
+}
+
 function makeQueryClient(withErrorHandling: boolean) {
   return new QueryClient({
     queryCache: withErrorHandling ? new QueryCache({ onError: onQueryError }) : undefined,
-    mutationCache: withErrorHandling ? new MutationCache({ onError: handleApiError }) : undefined,
+    mutationCache: withErrorHandling ? new MutationCache({ onError: onMutationError }) : undefined,
     defaultOptions: {
       queries: {
         staleTime: 30_000,

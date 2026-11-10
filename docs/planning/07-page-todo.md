@@ -576,12 +576,13 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 > Basis: R-1, S-5 · Needs first: 19
 
-- [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (within 60 days from today)
+- [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (today through 6 months from today)
 - [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
-- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay
-- [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day
+- [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay, but only while I still own or admin it — otherwise saving shows the error toast "글을 수정할 권한이 없습니다." (403 `TEAM_ROLE_REQUIRED`)
+- [ ] No emoji in title, intro, region or expected duration: "이모지는 입력할 수 없어요."
+- [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day → toast "하루 모집글의 최대 한도는 N번 입니다." (N = 5, no resend)
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
-- [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification)
+- [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification). Reopen refused: all roles filled → "모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요."; deadline passed → "마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요." (same toasts on 21's author menu)
 - [ ] Server: auto-close when deadline passes or all slots fill
 - [ ] Leaving mid-writing → restore draft
 

@@ -376,7 +376,7 @@ erDiagram
     varchar region "required if offline"
     varchar goal "CONTEST, HACKATHON, LAUNCH, LEARNING"
     varchar expected_period
-    date deadline "within 60 days"
+    date deadline "within 6 months"
     varchar status "OPEN, CLOSED"
     varchar visibility
     timestamptz sort_at "newest-first key"
