@@ -629,24 +629,42 @@ public class PostService {
 	}
 
 	private PostCardResponse toCard(Post post) {
+		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
 		boolean available = isRepoAvailable(post);
 		String cover = post.getImages().isEmpty()
 				? null
 				: (post.getImages().getFirst().getFile().getUrl());
+		boolean likedByMe = viewer != null && likes.existsByPostIdAndUserId(post.getId(), viewer.userId());
+		boolean following = viewer != null
+				&& follows.existsByFollower_IdAndFollowing_Id(viewer.userId(), post.getAuthor().getId());
+		String excerpt = blankToNull(post.getBody());
+		if (excerpt != null && excerpt.length() > 160) {
+			excerpt = excerpt.substring(0, 160);
+		}
 		return new PostCardResponse(
 				post.getId(),
-				authors.toAuthor(post.getAuthor()),
+				authors.toAuthor(post.getAuthor(), following),
 				post.getSummary(),
+				excerpt,
 				cover,
 				available ? post.getRepo().getFullName() : "",
 				available ? post.getRepo().getPrimaryLanguage() : null,
 				post.getTags().stream().map(PostTag::getTag).map(tag -> tag.getName()).toList(),
 				post.getLikeCount(),
+				likedByMe,
 				post.getCommentCount(),
 				iso(post.getCreatedAt()),
 				post.getEditedAt() == null ? null : iso(post.getEditedAt()),
 				available
 		);
+	}
+
+	private static String blankToNull(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	private CommentResponse toComment(Comment comment) {

@@ -48,13 +48,18 @@ public class RecruitCardMapper {
 	}
 
 	public AuthorBriefResponse toAuthor(User author) {
+		return toAuthor(author, false);
+	}
+
+	public AuthorBriefResponse toAuthor(User author, boolean isFollowing) {
 		return new AuthorBriefResponse(
 				author.getId(),
 				author.getUsername(),
 				author.visibleName(),
 				author.getAvatarUrl() == null ? "" : author.getAvatarUrl(),
 				author.getUserType().name(),
-				author.getJobSeekingStatus().name()
+				author.getJobSeekingStatus().name(),
+				isFollowing
 		);
 	}
 
