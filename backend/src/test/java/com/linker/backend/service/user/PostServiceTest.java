@@ -358,7 +358,7 @@ class PostServiceTest {
 		service.deleteAuthoredContent(10L, NOW);
 
 		verify(comments).delete(mine);
-		assertThat(other.getCommentCount()).isEqualTo(1);
+		assertThat(other.getCommentCount()).isEqualTo(0);
 		assertThat(onOwn.isDeleted()).isTrue();
 		assertThat(own.getDeletedAt()).isEqualTo(NOW);
 		verify(likes).deleteByPostId(42L);

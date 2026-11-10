@@ -316,7 +316,7 @@ class PostServiceTest {
 		ReflectionTestUtils.setField(author, "id", 7L);
 		when(users.findByUsername("octocat")).thenReturn(Optional.of(author));
 		when(posts.findVisibleByAuthorId(7L)).thenReturn(List.of(postWithId(5L, 7L, PostVisibility.VISIBLE, NOW)));
-		when(authors.toAuthor(any())).thenReturn(
+		when(authors.toAuthor(any(), anyBoolean())).thenReturn(
 				new AuthorBriefResponse(7L, "octocat", "octocat", "", "DEVELOPER", "OFF", false));
 
 		assertThat(service.profilePosts("octocat").items()).extracting(item -> item.id()).containsExactly(5L);
@@ -345,7 +345,8 @@ class PostServiceTest {
 				com.linker.backend.entity.account.type.JobSeekingStatus.OPEN);
 		Post off = postWithId(2L, 11L, PostVisibility.VISIBLE, NOW);
 		when(posts.findVisibleForFeed()).thenReturn(List.of(open, off));
-		when(authors.toAuthor(any())).thenReturn(new AuthorBriefResponse(10L, "a", "a", "", "DEVELOPER", "OPEN", false));
+		when(authors.toAuthor(any(), anyBoolean()))
+				.thenReturn(new AuthorBriefResponse(10L, "a", "a", "", "DEVELOPER", "OPEN", false));
 
 		var page = service.feed(null, null, true);
 
@@ -353,12 +354,8 @@ class PostServiceTest {
 		assertThat(page.items().getFirst().post().id()).isEqualTo(1L);
 	}
 
+	/** Feed cards call the two-arg mapper; detail/comments keep the one-arg form. */
 	private void stubAuthors() {
-		when(authors.toAuthor(any())).thenAnswer(invocation -> {
-			User author = invocation.getArgument(0);
-			return new AuthorBriefResponse(
-					author.getId(), author.getUsername(), author.getUsername(), "", "DEVELOPER", "OFF", false);
-		});
 		when(authors.toAuthor(any(), anyBoolean())).thenAnswer(invocation -> {
 			User author = invocation.getArgument(0);
 			boolean following = invocation.getArgument(1);
