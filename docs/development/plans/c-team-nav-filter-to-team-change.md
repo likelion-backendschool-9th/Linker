@@ -14,7 +14,7 @@
 
 ## 참고 (Policy)
 
-Policy/Page TODO에 이슈 필터 시트가 남아 있으면 PR 리뷰에만 명시. 이 작업에서 Policy는 수정하지 않음.
+Policy 원문은 수정하지 않음. **2026-11-10 c-role-audit #3:** Page TODO / WBS는 헤더=팀변경·필터 시트 삭제로 갱신. 보드「상태 필터」메뉴는 유지.
 
 ## 검증
 

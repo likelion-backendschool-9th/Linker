@@ -276,7 +276,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] No teams: "팀 만들기" + "팀 찾으러 가기" (go find a team, 19)
 - [ ] `[Included]` My issues on `/workspace` (preview): team picker; changing the team reloads the preview. Short preview of open issues assigned to me in the selected team (UI-limited; not a hard N). Sort by due urgency: overdue first (oldest due first), then soonest due date, then no due date last. Overdue in red. Tap → 12. Empty: "배정된 이슈가 없어요"
 - [ ] Default selected team = the one I joined most recently (`team_members.joined_at` desc). Prefer non-archived; if every membership is archived, fall back to the newest archived. Keep the choice in the URL (`teamId`, nuqs) so back/refresh keeps it
-- [ ] “내 이슈 전체 보기” → `/workspace/issues?teamId=` (same team; **full** list of my assigned issues in that team, same sort, no preview cap); back fallback `/workspace`. B owns the entry link; C owns preview, full list, team picker and data query
+- [ ] “내 이슈 전체 보기” → `/workspace/issues?teamId=` (same team; **full** list of my assigned issues in that team, same sort, no preview cap); back fallback `/workspace`. B owns the entry link; C owns preview, full list, team picker and data query. **Visible copy is exactly「내 이슈 전체 보기」(not「더 보기」; c-role-audit #6)**
+- [ ] Create-issue `+` on 07/11: hide for read-only and archived teams (c-role-audit #7; code PR3)
 - [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15). Distinct from the 07 my-issues team picker: switcher navigates into a team; the picker only filters the my-issues list
 
 **Policy & exceptions**
@@ -387,16 +388,16 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Team layout and tabs
 - [ ] Issue row: repo, number, title, status (+ shared `statusColor` from board mapping, with the name), assignee avatars, due date, labels, overdue in red
-- [ ] (sheet) Filters: repo, status, assignee, label, open/closed. Filters stored in URL (nuqs) → reused in 14, 15
+- [ ] Header right icon opens **team change** sheet only (same as team name). Issue filter sheet removed from 11/14/15 (QA; c-role-audit #3). Board keeps its own「상태 필터」menu
 - [ ] Title search box (11 only, POL-I-6), stored in URL as `q`; status chips 전체 / 작업 전 / 진행 / 정지 / 완료 with counts (Figma 11)
-- [ ] "일정 없음" (no schedule) tab: issues not on the board or without a due date + "프로젝트에 추가" (add to project)
+- [ ] "일정 없음": **no chip/tab on 11** (intentional shrink). Enter via 15 `?` → `?view=unscheduled` list + "프로젝트에 추가" when writable
 - [ ] Pull to refresh (that screen's issues only, once per minute)
-- [ ] "이슈 작성" (create issue) button (hidden for read-only teams / no write permission)
+- [ ] "이슈 작성" (create issue) button (hidden for read-only / archived / no write permission; c-role-audit #7)
 - [ ] Server: issue cache table, first full sync with installation token
 - [ ] Server: refresh cache from `issues` and `projects_v2_item` webhooks; full sync every 15 min for active teams, otherwise daily
 - [ ] Server: if the same value changes concurrently, the later arrival wins
 - [ ] Server: daily 00:00 KST per-team progress snapshot (counts of the 4 status columns, all teams), delete rows older than 1 year. Start collecting before the progress graph exists
-- [ ] `[Included]` Progress card (Flex, after 28): top of the issue list. Completion ring + "12개 중 7개 완료, 58%", bars for the 4 status columns (column names written out), last 14 days trend, open issues per assignee (no ranking), overdue and due-within-3-days counts (tap to filter). Each chart has a summary sentence + "표로 보기" (blueprint ch. 6). Free teams see a Flex prompt in the card's place (owner/billing manager: "Flex 알아보기", members: "오너에게 요청")
+- [ ] Progress (intentional shrink vs POL-T-7; c-role-audit #2): status cards 4 for all teams + Flex 14-day trend only. No completion ring / assignee bars / overdue taps / "표로 보기" button / Free「Flex 알아보기·오너에게 요청」prompt. Full POL-T-7 UI stays deferred, not restored
 
 ### 12. Issue detail `[Required]` · `/teams/[id]/issues/[issueId]`
 
@@ -446,19 +447,20 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Drag to change status (dnd-kit; long-press drag on mobile) + card menu "상태 바꾸기" (12's sheet)
 - [ ] Move first; if writing to GitHub fails, move back to the original column and notify
 - [ ] No drag without write permission
-- [ ] Horizontal scroll of columns on mobile; reuse 11's filters
+- [ ] Columns pan horizontally on mobile; **hide the visible X scrollbar** (QA; `c-page14-board-no-horizontal-scroll`). Header = team change (not issue filter sheet). Board「상태 필터」menu kept
 
 ### 15. Calendar `[Required]` · `/teams/[id]/calendar`
 
 > Basis: I-4, N-1 (due reminders) · Needs first: 12
+> Intentional shrink (`c-page15-calendar-screen`, c-role-audit): month only; bars for due-only too; no overdue red UI; header = team change
 
-- [ ] Month/week toggle, KST
-- [ ] Period bar from start to due date; dot if only a due date
-- [ ] Assignee filter, overdue in red
+- [ ] Month view, KST (week toggle deferred; `view=week` ignored)
+- [ ] Period/due bars (due-only as bars, not dots)
+- [ ] Status chips + `?` popover → unscheduled list on 11; header team-change icon
 - [ ] Tapping a date opens a sheet listing that day's issues → 12
-- [ ] Issues without a due date don't appear (point to 11's "일정 없음" tab)
+- [ ] Issues without a due date don't appear (point via `?` to 11 `?view=unscheduled`)
 - [ ] No drag-to-reschedule (phase 2 I-7)
-- [ ] Server: notify assignees at 9 AM one day before due (scheduler)
+- [ ] Server: notify assignees at 9 AM one day before due (scheduler; needs `ISSUE_SYNC_ENABLED=true` in staging/prod)
 - [ ] Fill 07's "My issues" section now
 
 ---
@@ -508,15 +510,13 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Header search icon and "AI 채팅 요약" button (Figma 92:768; between the input and the send button) are shown before their features exist; tapping says "미구현 기능입니다." (user decision 2026-11-09)
 - [ ] `[Included]` Team chat search & scroll-back: keyword; free teams last 60 days, Flex all history; deleted/hidden excluded. Free teams don't load messages older than 60 days when scrolling up and see "무료 팀은 최근 60일 대화만 볼 수 있어요" + Flex prompt (nothing deleted)
 
-**AI chat summary (Flex, after 28)** `[Included]`
+**AI chat summary (Flex, after 28)** — current shrink + `[Included]` follow-ups (c-role-audit #8, `c-page17-ai-chat-summary`)
 
-- [ ] "AI 요약" button at the top of team chat rooms; range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후). Fewer than 20 messages → "직접 읽는 게 더 빨라요"; over 500 → summarize the latest 500 and say so
-- [ ] Free teams: tap → (sheet) "Flex 구독 팀만 쓸 수 있어요". Owner/billing manager get "Flex 알아보기" (7-day free trial if not used yet) → 28; members get "오너에게 Flex를 요청해 보세요"
-- [ ] (sheet) Summary result: one-line summary, decisions, to-dos, open questions; tap an item to scroll to the original message; "AI가 만든 요약이라 틀릴 수 있어요"; remaining N/10
-- [ ] "채팅에 공유" → minutes card message; "이슈 만들기" per to-do → 13 with title/body pre-filled
-- [ ] Over 30 seconds → "요약하는 중이에요" + notify when done; on failure "요약하지 못했어요"
-- [ ] While a team has AI summary on, top banner "이 팀은 AI 요약을 사용해요" (first 7 days)
-- [ ] Server: messages in range (excluding deleted, hidden, images, blocked users; max 500) → `LlmClient` (default Ollama, JSON response) → keep result 7 days, 10/day per person (Redis), Flex check via `PlanLimits`
+- [ ] **Now:** "AI 요약" → always latest 500 messages (no range picker UI). Result = one `summary` body + disclaimer + N/10. Free → PlanLimitSheet. Loading「요약하는 중이에요」/ fail「요약하지 못했어요」. Banner「이 팀은 AI 요약을 사용해요」(team createdAt first 7 days + dismiss)
+- [ ] `[Included]` follow-up: range choice (마지막으로 읽은 뒤 / 오늘 / 최근 24시간 / 마지막 요약 이후); min-20「직접 읽는 게 더 빨라요」copy path if still required
+- [ ] `[Included]` follow-up: minutes sections (decisions / to-dos / open questions) + tap-to-scroll originals; "채팅에 공유"; per to-do "이슈 만들기" → 13
+- [ ] Over 30 seconds → loading + done toast (push notify type still open); Free Flex prompt copy as Policy when implementing full sheet
+- [ ] Server (now): latest ≤500 VISIBLE text/PR_EVENT (excl. deleted/hidden/images/blocked) → `LlmClient` → 7-day retention, 10/day Redis, Flex via `PlanLimits`. Prompt isolation minimum in PR3 (c-role-audit #9)
 
 **1:1 chat only (with 22–24)**
 
