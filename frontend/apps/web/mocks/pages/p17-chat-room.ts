@@ -49,7 +49,6 @@ function aiSummaryView(summary: MockAiSummary) {
   const elapsed = (Date.now() - summary.startedAt) / 1000;
   const done = elapsed >= 14;
   const phase = done ? 'DONE' : elapsed < 2 ? 'QUEUED' : elapsed < 8 ? 'READING' : 'WRITING';
-  const firstId = MESSAGES.find((m) => m.roomId === summary.roomId)?.id ?? null;
   return {
     summaryId: summary.id,
     status: done ? 'DONE' : 'PENDING',
@@ -61,15 +60,9 @@ function aiSummaryView(summary: MockAiSummary) {
         : Math.min(99, Math.floor(((elapsed - 2) / 12) * 100)),
     queueAhead: phase === 'QUEUED' ? 1 : 0,
     remainingSeconds: done || phase === 'QUEUED' ? null : Math.ceil(14 - elapsed),
-    oneLine: done ? '로그인 시트를 오늘 끝내고 내일 저녁에 회의하기로 했어요.' : null,
-    decisions: done ? [{ text: '내일 저녁 8시에 회의해요', messageId: firstId }] : [],
-    actionItems: done
-      ? [
-          { text: '민수: 로그인 시트 구현 마무리', messageId: firstId },
-          { text: '지현: 웹훅 서명 검증 리뷰', messageId: null },
-        ]
-      : [],
-    openQuestions: done ? [{ text: '피드 카드 디자인은 누가 볼까요?', messageId: null }] : [],
+    summary: done
+      ? '로그인 시트와 웹훅 검증 작업 상황을 이야기했어요. 로그인 시트는 오늘 끝내고 내일 저녁 8시에 회의하기로 했어요. 민수님은 로그인 시트를 마무리하고 지현님은 웹훅 서명 검증을 리뷰하기로 했어요. 피드 카드 디자인은 누가 볼지 아직 정하지 못했어요.'
+      : null,
     messageCount: 42,
     sharedMessageId: summary.sharedMessageId,
     usedToday: 3,
@@ -484,16 +477,12 @@ export const routes: MockRoute[] = [
       roomId: summary.roomId,
       sender: brief(viewer.me!),
       type: 'AI_SUMMARY' as const,
-      text: `AI 요약 · ${view.oneLine}`,
+      text: `AI 요약 · ${view.summary}`,
       imageUrls: [],
       payload: {
         summaryId: summary.id,
-        oneLine: view.oneLine,
-        decisions: view.decisions,
-        actionItems: view.actionItems,
-        openQuestions: view.openQuestions,
+        summary: view.summary,
         messageCount: view.messageCount,
-        disclaimer: view.disclaimer,
       },
       createdAt: new Date().toISOString(),
       editedAt: null,

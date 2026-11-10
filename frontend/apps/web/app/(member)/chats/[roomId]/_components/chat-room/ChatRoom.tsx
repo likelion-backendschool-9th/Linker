@@ -57,10 +57,6 @@ export function ChatRoom({ roomId }: { roomId: number }) {
     setSearchKeyword(message ? keyword : '');
     setJumpTo(message ? { id: message.id } : null);
   }, []);
-  const loadedIds = useMemo(
-    () => new Set(displayedMessages.map((message) => message.id)),
-    [displayedMessages],
-  );
 
   if (info.isPending || history.isPending)
     return (
@@ -152,22 +148,9 @@ export function ChatRoom({ roomId }: { roomId: number }) {
             if (history.hasNextPage && !history.isFetchingNextPage) void history.fetchNextPage();
           }}
         />
-        {room.team && (
-          <AiSummaryFab
-            roomId={roomId}
-            initial={room.myAiSummary}
-            loadedIds={loadedIds}
-            onJump={(id) => setJumpTo({ id })}
-          />
-        )}
+        {room.team && <AiSummaryFab roomId={roomId} initial={room.myAiSummary} />}
       </div>
-      {room.team && (
-        <SharedAiSummarySheet
-          messages={messages}
-          loadedIds={loadedIds}
-          onJump={(id) => setJumpTo({ id })}
-        />
-      )}
+      {room.team && <SharedAiSummarySheet messages={messages} />}
       <UnreadMembersSheet room={room} messages={messages} login={viewer.login} />
       <ChatPhotoViewer messages={messages} />
       <MessageActions room={room} messages={messages} login={viewer.login} disabled={readOnly} />

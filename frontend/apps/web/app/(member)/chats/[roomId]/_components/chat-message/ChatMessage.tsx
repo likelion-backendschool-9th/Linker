@@ -68,18 +68,23 @@ export function ChatMessage({
   highlight,
 }: Props) {
   const system = message.type === 'SYSTEM' || message.type === 'PR_EVENT';
-  const payload = messagePayload(message.payload);
   const hidden = message.visibility === 'HIDDEN';
+  // A visible shared summary takes the bubble slot with its own card and menu handling
+  const summaryCard = message.type === 'AI_SUMMARY' && !hidden && !message.deletedAt;
+  const payload = messagePayload(message.payload);
   const issueCards = Array.isArray(payload?.issueCards)
     ? (payload.issueCards as ChatIssueCard[])
     : [];
   const canMenu = !system && !hidden && !message.deletedAt && !!onMenu;
-  const menu = useMessageMenu(canMenu, () => onMenu?.(message.id));
+  // The summary card wires the menu itself; the plain bubble hook stays off for it
+  const menu = useMessageMenu(canMenu && !summaryCard, () => onMenu?.(message.id));
   const senderName = message.sender?.name ?? '탈퇴한 사용자';
   // Figma 17: "오명석 님"; the withdrawn placeholder keeps no honorific
   const authorLabel = message.sender ? `${senderName} 님` : senderName;
 
-  const bubble = (
+  const bubble = summaryCard ? (
+    <AiSummaryCard message={message} canMenu={canMenu} onMenu={onMenu} />
+  ) : (
     <div
       className={`${styles.bubble} ${canMenu ? styles.menuBubble : ''}`}
       role="group"
@@ -140,12 +145,6 @@ export function ChatMessage({
       </p>
     </div>
   );
-
-  // Shared AI minutes sit centered across the timeline like PR cards, not inside a bubble.
-  if (message.type === 'AI_SUMMARY' && !hidden && !message.deletedAt)
-    return (
-      <AiSummaryCard message={message} senderName={senderName} canMenu={canMenu} onMenu={onMenu} />
-    );
 
   // B's PR view owns its organization identity and card; regular D message rendering stays below.
   if (message.type === 'PR_EVENT' && !hidden && !message.deletedAt)
