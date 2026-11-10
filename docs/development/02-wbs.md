@@ -159,7 +159,7 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 00 | A | GET | `/api/v1/user/me` | Session member (type, status, onboarding step, suspension info) | user |
+| 00 | A | GET | `/api/v1/user/me` | Session member (type, status, onboarding step, suspension info, own avatar URL for the bottom 프로필 tab) | user |
 | 00 | A | POST | `/api/v1/public/auth/refresh` | Extend session cookie | public |
 | 01 | A | GET | `/api/v1/public/auth/github/authorize-url` | GitHub authorize URL + issue `state` (`client=web\|app`, `returnTo`) | public |
 | 01 | A | POST | `/api/v1/public/auth/github/callback` | Exchange code → find/create member, refresh username → cookie. Response `{ isNew, restored, returnTo }` | public |

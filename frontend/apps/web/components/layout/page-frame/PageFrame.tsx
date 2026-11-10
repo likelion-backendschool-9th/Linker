@@ -78,7 +78,7 @@ export async function PageFrame({
       </main>
       {showTabs && (
         <BottomTabBar
-          tabs={tabsFor(role, session ? { login: session.login, userId: session.userId } : null)}
+          tabs={tabsFor(role, session ? { login: session.login, avatarUrl: session.avatarUrl } : null)}
         />
       )}
     </>
