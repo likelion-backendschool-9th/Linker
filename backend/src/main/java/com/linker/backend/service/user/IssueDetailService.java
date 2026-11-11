@@ -129,28 +129,43 @@ public class IssueDetailService {
     return new ReadDetail(new Selected(s.context, target.repo(), s.row), live, null, s.row.id());
   }
 
+  private ReadDetail openDetail(Selected original, String token) {
+    try {
+      return readDetail(original, token);
+    } catch (ApiException failure) {
+      if (failure.getStatus() != 503) throw failure;
+      return new ReadDetail(
+          original, new GithubIssueClient.Detail(null, "", null, null, null, 0), null, null);
+    }
+  }
+
   public IssueDetailResponse detail(AuthenticatedUser user, long team, long issue) {
     return issueRepository.withTeamLock(
         team,
         () -> {
           var original = select(user, team, issue, false);
           String token = app.installationReadToken(original.context.installationId());
-          var view = readDetail(original, token);
+          var view = openDetail(original, token);
           var s = view.selected();
           var live = view.live();
           if (live.issue() != null) {
             identity(s, live.issue());
-            if (live.issue().updated().isBefore(s.row.updated()))
-              throw verifying("이슈 최신 내용을 다시 확인하고 있어요");
-            var project = github.project(s.context, token);
-            access.member(user, team);
-            issueRepository.apply(
-                s.context,
-                new IssueSource.Snapshot(
-                    List.of(new IssueSource.RepositoryIssues(s.repo, List.of(live.issue()))),
-                    project),
-                false,
-                clock.instant());
+            // A newer cached copy stays. A failed board refresh must not hide the issue.
+            if (!live.issue().updated().isBefore(s.row.updated())) {
+              try {
+                var project = github.project(s.context, token);
+                access.member(user, team);
+                issueRepository.apply(
+                    s.context,
+                    new IssueSource.Snapshot(
+                        List.of(new IssueSource.RepositoryIssues(s.repo, List.of(live.issue()))),
+                        project),
+                    false,
+                    clock.instant());
+              } catch (ApiException ignored) {
+                // Saved title, dates, and status still render.
+              }
+            }
           }
           var row = issueRepository.detail(team, issue);
           boolean canWrite = false;
