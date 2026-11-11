@@ -99,6 +99,7 @@
   /* Size */
   --touch-target-min: 44px; /* CTA, list rows, tabs, form controls */
   --border-width-recruiter-login-focus: 2px; /* Page 32 focused login inputs (Figma 364:2013) */
+  --border-width-field: 2px; /* 20 text fields and dropdowns: --color-hairline-cool at rest, --color-focus-ring-input on focus */
   --touch-target-icon: 24px; /* dense header/toolbar icon-cluster hit area (WCAG 2.2 AA) */
   --control-height: 48px; /* pill buttons and inputs */
   --control-height-compact: 37px; /* 07 compact link visual height; hit area stays --touch-target-min */

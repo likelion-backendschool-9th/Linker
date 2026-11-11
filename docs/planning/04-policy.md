@@ -307,8 +307,9 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-1 Who can write | Any logged-in developer who can link an active team they own or admin (POL-T-1); completed, read-only, archived and deleted teams can't be linked. The team is a required field because invites (POL-R-4) add people to it — writing without a team is not allowed. Under the field: "팀이 없으면 모집글을 작성할 수 없습니다." |
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (today through 6 months from today) |
-| POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
-| POL-R-1 No emoji | Title, intro, region and expected duration take no emoji (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. The inputs drop emoji as they are typed or pasted, with no error message; the server still rejects them ("이모지는 입력할 수 없어요.") |
+| POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration (whole months, 1–99: the field takes digits only and the unit is fixed to 개월; saved as "N개월"), region (required if offline), goal (contest/hackathon/launch/learning) |
+| POL-R-1 Free team headcount | When the linked team isn't on Flex, all roles together recruit at most 5 people (free team size 6 − the owner). At 5, the editor turns off each role's "+" and "역할 추가" and shows "Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요." Flex teams have no total cap (still 1–10 per role) |
+| POL-R-1 No emoji | Title, intro and region take no emoji (expected duration takes digits only) (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. The inputs drop emoji as they are typed or pasted, with no error message; the server still rejects them ("이모지는 입력할 수 없어요.") |
 | POL-R-1 Who can edit | The author, and only while they still own or admin the linked team. If they have lost that role, saving an edit shows "글을 수정할 권한이 없습니다." |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
 | POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL. Each card shows the project intro under the title: the first 200 characters (line breaks as spaces), then "...자세히 보기" linking to the post when it is longer |
@@ -704,6 +705,7 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | --- | --- |
 | Rate limit reached | 오늘은 더 할 수 없어요. 내일 다시 시도해 주세요. |
 | Recruit post daily limit (ch. 2) | 하루 모집글의 최대 한도는 N번 입니다. (N = 5) |
+| Recruit headcount on a non-Flex team (POL-R-1) | Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요. |
 | No GitHub permission | 이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. |
 | GitHub connection failed | GitHub에 연결하지 못했어요. 작성한 내용은 저장해 두었어요. |
 | Not org owner | GitHub 조직 오너만 앱을 설치할 수 있어요. 오너에게 설치를 요청할까요? |

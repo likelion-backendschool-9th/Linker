@@ -15,21 +15,23 @@
   color: var(--color-text-title-cool);
   text-align: left;
   background-color: var(--color-canvas-cool);
-  border: 0;
+  border: var(--border-width-field) solid var(--color-hairline-cool);
   border-radius: var(--radius-control-md);
   box-shadow: none;
   outline: none;
   cursor: pointer;
 }
 
+/* Open: trigger and option box share one blue outline; the line between them is dropped */
 .trigger.open {
+  border-color: var(--color-focus-ring-input);
+  border-bottom-color: transparent;
   border-radius: var(--radius-control-md) var(--radius-control-md) 0 0;
 }
 
-/* Same focus line as the text fields (Figma 364:2098), drawn inside */
+/* Same 2px border as the text fields, blue on focus */
 .trigger:focus-visible {
-  outline: 2px solid var(--color-selection);
-  outline-offset: -2px;
+  border-color: var(--color-focus-ring-input);
 }
 
 .trigger.placeholder {
@@ -37,8 +39,7 @@
 }
 
 .trigger.invalid {
-  outline: 2px solid var(--color-status-error);
-  outline-offset: -2px;
+  border-color: var(--color-status-error);
 }
 
 .trigger:disabled {
@@ -63,6 +64,8 @@
   display: grid;
   padding: 0 var(--space-row-block);
   background-color: var(--color-canvas-cool);
+  border: var(--border-width-field) solid var(--color-focus-ring-input);
+  border-top: 0;
   border-radius: 0 0 var(--radius-control-md) var(--radius-control-md);
 }
 

@@ -32,6 +32,7 @@ import com.linker.backend.dto.recruit.response.RecruitEditFormResponse;
 import com.linker.backend.dto.recruit.response.RecruitEditRoleResponse;
 import com.linker.backend.dto.recruit.response.RecruitEditorOptionsResponse;
 import com.linker.backend.dto.recruit.response.RecruitIdResponse;
+import com.linker.backend.dto.recruit.response.TeamOptionResponse;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.chat.ChatRoom;
 import com.linker.backend.entity.chat.ChatRoomMember;
@@ -178,8 +179,14 @@ public class RecruitmentService {
 		int openCount = (int) posts.countByAuthorIdAndStatusAndDeletedAtIsNull(
 				user.userId(), RecruitStatus.OPEN);
 		LocalDate maxDeadline = maxDeadline(today());
+		Instant now = clock.instant();
+		// Non-Flex teams cap the post's total headcount at the free team size in the editor (POL-R-1)
+		List<TeamOptionResponse> teams = teamMembers.findRecruitLinkableTeams(user.userId()).stream()
+				.map(team -> new TeamOptionResponse(
+						team.id(), team.name(), subscriptions.hasFlexBenefit(team.id(), now)))
+				.toList();
 		return new RecruitEditorOptionsResponse(
-				teamMembers.findRecruitLinkableTeams(user.userId()),
+				teams,
 				openCount,
 				openCap(user.userId()),
 				maxDeadline.toString()

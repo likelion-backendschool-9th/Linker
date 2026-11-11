@@ -88,6 +88,10 @@ export const RECRUIT = {
   /** POL-R-2 19 list card: the intro's first N characters, then "...자세히 보기" to the post */
   cardIntroPreview: 200,
   headcountPerRole: { min: 1, max: 10 },
+  /** POL-R-1: a non-Flex team recruits at most 5 people across all roles (free team size 6 − the owner) */
+  freeTeamHeadcountTotal: 5,
+  /** POL-R-1: expected duration is a whole number of months (the input takes digits only) */
+  durationMonths: { min: 1, max: 99 },
   /** Deadline: today through today + 6 calendar months (the server sends the exact last date) */
   deadlineWithinMonths: 6,
   /** Not a Policy rule: `recruit_posts.region` column length (backend `PlanLimits.RECRUIT_REGION_MAX`) */
