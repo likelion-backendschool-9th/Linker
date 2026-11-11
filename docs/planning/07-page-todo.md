@@ -598,14 +598,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [x] (sheet) Apply: choose one open role only (no "하고 싶은 말"). Server rejects a role that filled meanwhile (`ROLE_FULL`) → "해당 역할은 마감됐어요." on the role field
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
-- [ ] Show my application status + cancel; more → report
+- [ ] Applied (pending) → the bottom CTA becomes a red "지원 취소 하기" (Figma 1095:391), confirmed in the login-prompt modal layout: title "지원 취소", "지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?", buttons "취소하기" / "지원 유지". App-bar "더보기" → report / share
+- [ ] Layout (Figma 92:578): "더보기" sits in the app bar (not beside the title); the deadline ("YYYY.M.D 마감") sits to the right of the format/goal chips, title below them
 - [ ] Server: application-received notification
 
 **What the author sees**
 
 - [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
-- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
-- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant — automatically, after both "초대하기" and "인원 늘리고 초대" (the latter shows a "GitHub 조직 초대 다시 보내기" retry if it failed). Failure → toast "초대에 실패했어요." + reason; a failed GitHub org invite alone keeps the team invite ("팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.")
+- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "수락하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant — automatically, after both "수락하기" and "인원 늘리고 초대" (the latter shows a "GitHub 조직 초대 다시 보내기" retry if it failed). Failure → toast "초대에 실패했어요." + reason; a failed GitHub org invite alone keeps the team invite ("팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.")
 - [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
 - [ ] Reject: row "거절" → (modal) confirm only, no reason; applicant only sees the fixed copy
 - [ ] Invite/reject still possible after closing; edit / close / delete menu

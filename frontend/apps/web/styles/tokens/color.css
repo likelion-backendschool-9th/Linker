@@ -113,6 +113,10 @@
   --color-cta-bottom-disabled: #d3e0fb; /* disabled fill */
   --color-on-cta-bottom-disabled: #ffffff; /* disabled label */
 
+  /* Danger page bottom CTA (21 "지원 취소 하기", Figma 1095:391): white label 4.6:1 */
+  --color-cta-danger: #ed0004;
+  --color-on-cta-danger: #ffffff;
+
   /* 20 recruit editor */
   --color-role-remove: #ed0004; /* role row delete icon (Figma 1085:316, Solar forbidden-circle-linear): 4.6:1 on white */
 

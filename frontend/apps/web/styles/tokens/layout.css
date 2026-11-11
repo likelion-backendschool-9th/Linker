@@ -81,6 +81,10 @@
   --space-home-indicator: 24px; /* Figma bottom indicator area (인디케이션 영역); real devices use the larger of this and the safe area */
   --sheet-header-height-tech: 60px; /* 20 tech stack sheet title row (Figma 301:1551) */
   --sheet-header-height-onboarding-status: 54px; /* 02 onboarding job-status sheet */
+  --space-recruit-detail-section: 30px; /* 21 section padding above/below the 6px bands (Figma 92:578 93:299) */
+  --space-recruit-detail-box: 15px; /* 21 roles / team member box padding (Figma 93:300, 93:358) */
+  --space-recruit-member-text: 7px; /* 21 member avatar to its text (Figma 93:359) */
+  --space-recruit-member-lines: 6px; /* 21 member role line to name (Figma 93:393) */
   --space-recruit-field-block: 17px; /* 20 intro textarea: text top and counter bottom (Figma 600:659) */
 
   /* Radius */

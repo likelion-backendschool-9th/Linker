@@ -705,6 +705,7 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | --- | --- |
 | Rate limit reached | 오늘은 더 할 수 없어요. 내일 다시 시도해 주세요. |
 | Recruit post daily limit (ch. 2) | 하루 모집글의 최대 한도는 N번 입니다. (N = 5) |
+| Cancel application (21, POL-R-3) | Title "지원 취소" · "지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?" · buttons "취소하기" / "지원 유지" |
 | Recruit headcount on a non-Flex team (POL-R-1) | Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요. |
 | No GitHub permission | 이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. |
 | GitHub connection failed | GitHub에 연결하지 못했어요. 작성한 내용은 저장해 두었어요. |
