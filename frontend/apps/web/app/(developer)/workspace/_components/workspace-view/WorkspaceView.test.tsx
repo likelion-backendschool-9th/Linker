@@ -60,7 +60,7 @@ it('keeps the documented empty-team destinations without the retired prose or st
 });
 
 it('uses server membership count for the creation limit even when the selected status has no rows', async () => {
-  stubTeams([team(1, 'ACTIVE')], 10);
+  stubTeams([team(1, 'COMPLETED')], 10);
   renderWithProviders(<WorkspaceView />);
   await screen.findByText('이 상태의 팀이 없어요.');
   expect(screen.queryByRole('link', { name: '팀 만들기' })).not.toBeInTheDocument();
@@ -72,14 +72,14 @@ it('shows the four design tabs and switches only the rows, leaving the chosen is
   renderWithProviders(<WorkspaceView />, { searchParams: '?teamId=1' });
   const tabs = await screen.findByRole('group', { name: '팀 상태 필터' });
   expect(within(tabs).getAllByRole('button')).toHaveLength(4);
-  expect(within(tabs).getByRole('button', { name: '완료 1' })).toHaveAttribute(
+  expect(within(tabs).getByRole('button', { name: '활성 1' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
-  expect(screen.getByRole('article', { name: '프로젝트 2' })).toBeVisible();
+  expect(screen.getByRole('article', { name: '프로젝트 1' })).toBeVisible();
   fireEvent.click(within(tabs).getByRole('button', { name: '읽기 전용 1' }));
   expect(await screen.findByRole('article', { name: '프로젝트 3' })).toBeVisible();
-  expect(screen.queryByRole('article', { name: '프로젝트 2' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('article', { name: '프로젝트 1' })).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { name: '내 프로젝트 1 팀의 이슈' })).toBeVisible();
 });
 
@@ -106,7 +106,7 @@ it('never invents avatars, Free plan limits, dates or chat links for missing ser
 });
 
 it('shows the policy Free cap without treating Flex as capped', async () => {
-  stubTeams([team(1, 'COMPLETED'), { ...team(2, 'COMPLETED'), plan: 'FLEX' }]);
+  stubTeams([team(1, 'ACTIVE'), { ...team(2, 'ACTIVE'), plan: 'FLEX' }]);
   renderWithProviders(<WorkspaceView />);
   expect(await screen.findByRole('article', { name: '프로젝트 1' })).toHaveTextContent('멤버 3/6');
   const flex = screen.getByRole('article', { name: '프로젝트 2' });
