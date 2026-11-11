@@ -351,7 +351,13 @@ export function SettingsArrowButton({ label, onClick }: { label: string; onClick
   );
 }
 
-export function SettingsArrowLink({ label, href }: { label: string; href: Route }) {
+export function SettingsArrowLink<RouteType extends string>({
+  label,
+  href,
+}: {
+  label: string;
+  href: Route<RouteType>;
+}) {
   return (
     <Link className={styles.arrowButton} href={href} aria-label={label}>
       <span className={styles.chevron} aria-hidden="true" />
