@@ -11,7 +11,7 @@ const [, doyun, , minjae, , , , serin] = DEVELOPERS;
 
 export type OfferStatus = 'TALKING' | 'WAITING' | 'NO_RESPONSE';
 
-type Offer = {
+export type Offer = {
   roomId: number;
   developer: ReturnType<typeof brief> | null;
   status: OfferStatus;

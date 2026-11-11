@@ -164,10 +164,7 @@ test('07 reuses the shared header and signed-in five-tab menu used by other page
     ),
   }));
   expect(headerStyles.height).toBe(56);
-  await page.getByRole('button', { name: '검색', exact: true }).click();
-  await expect(page.getByRole('searchbox')).toBeVisible();
-  await page.getByRole('button', { name: '검색창 닫기' }).click();
-  await expect(page.getByRole('searchbox')).toBeHidden();
+  await expect(header.getByRole('button', { name: '검색', exact: true })).toHaveCount(0);
   for (const path of ['/feed', '/recruits']) {
     await page.goto(path);
     await expect(page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link')).toHaveCount(
