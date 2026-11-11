@@ -1,12 +1,20 @@
-/* Figma title-row icon is 24×24 — match visual size, not the 44 touch target */
+/* App-bar "더보기" (Figma 262:88, lucide ellipsis-vertical): dense header icon, 24×24 hit area
+   like 23's (design guide ch. 3-3) */
 .trigger {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  padding: 0;
+  color: var(--color-text-black);
+  border-radius: var(--radius-full);
+}
+
+.triggerIcon {
   width: var(--icon-size);
   height: var(--icon-size);
-  padding: 0;
-  color: var(--color-text-title-cool);
-  border-radius: var(--radius-full);
 }
 
 .panel {

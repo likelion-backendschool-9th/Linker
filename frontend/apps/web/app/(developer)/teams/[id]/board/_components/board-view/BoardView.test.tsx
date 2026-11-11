@@ -264,8 +264,52 @@ it('moves a card right away and back again when GitHub refuses (POL-I-4)', async
   );
 });
 
-it('without write permission the status menu does not open and explains why', async () => {
-  fetchMock.mockResolvedValue(board(false));
+it('a member without repo write can move a card from the status menu', async () => {
+  let columns = board(false);
+  fetchMock.mockImplementation(async (_url, init) => {
+    if (init?.method === 'PUT') {
+      columns = {
+        ...columns,
+        columns: columns.columns.map((column) => ({
+          ...column,
+          cards:
+            column.status === 'IN_PROGRESS'
+              ? [
+                  ...column.cards.filter((item) => item.id !== 1018),
+                  {
+                    ...columns.columns
+                      .flatMap((item) => item.cards)
+                      .find((item) => item.id === 1018)!,
+                    status: 'IN_PROGRESS',
+                    statusColor: 'BLUE',
+                    state: 'OPEN',
+                  },
+                ]
+              : column.cards.filter((item) => item.id !== 1018),
+        })),
+      };
+      return { status: 'IN_PROGRESS', statusColor: 'BLUE', state: 'OPEN' };
+    }
+    return columns;
+  });
+  renderWithProviders(<BoardView teamId="2" />, developer);
+  const trigger = await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' });
+  expect(trigger).not.toHaveAttribute('aria-disabled', 'true');
+  expect(screen.queryByRole('link', { name: '이슈 작성' })).not.toBeInTheDocument();
+  await userEvent.click(trigger);
+  await userEvent.click(screen.getByRole('menuitemradio', { name: '작업 중' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/teams/2/issues/1018/status', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'IN_PROGRESS' }),
+    }),
+  );
+  await waitFor(() => expect(titles(column('작업 중'))).toContain('필터 시트 개선'));
+});
+
+it('a read-only team cannot open the status menu', async () => {
+  fetchMock.mockResolvedValue(board(false, [], 'READ_ONLY_TEAM'));
   renderWithProviders(<BoardView teamId="2" />, developer);
   const trigger = await screen.findByRole('button', { name: '상태 작업 전, 필터 시트 개선' });
   expect(trigger).toHaveAttribute('aria-disabled', 'true');

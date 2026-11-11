@@ -13,6 +13,8 @@ type ConfirmDialogProps = {
   title: string;
   description: string;
   confirmLabel: string;
+  /** The dismiss button; most prompts say "취소하기" */
+  cancelLabel?: string;
   /** Delete, leave, block: error-colored confirm text */
   destructive?: boolean;
   pending?: boolean;
@@ -29,6 +31,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel = '취소하기',
   destructive = false,
   pending = false,
   error = null,
@@ -46,7 +49,9 @@ export function ConfirmDialog({
               <span className="sr-only">닫기</span>
             </AlertDialog.Cancel>
           </div>
-          <AlertDialog.Description className={styles.description}>{description}</AlertDialog.Description>
+          <AlertDialog.Description className={styles.description}>
+            {description}
+          </AlertDialog.Description>
           {error && (
             <p role="alert" className={styles.error}>
               {error}
@@ -62,7 +67,7 @@ export function ConfirmDialog({
               {confirmLabel}
             </button>
             <AlertDialog.Cancel type="button" className={styles.cancel}>
-              취소하기
+              {cancelLabel}
             </AlertDialog.Cancel>
           </div>
         </AlertDialog.Content>

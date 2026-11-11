@@ -82,6 +82,13 @@ export function TeamSettingsMenu({
           <h3 className={styles.title}>GitHub 조직</h3>
           <p>{team.orgLogin}</p>
           {team.githubInvitationBlockedReason && <p>{team.githubInvitationBlockedReason}</p>}
+          {team.status === 'READ_ONLY' &&
+            team.myRole === 'OWNER' &&
+            viewer.status !== 'SUSPENDED' && (
+              <Button variant="outline" onClick={() => void overlay.closeThen('/teams/new')}>
+                GitHub로 시작하기
+              </Button>
+            )}
         </section>
       </div>
     </OverlaySheet>

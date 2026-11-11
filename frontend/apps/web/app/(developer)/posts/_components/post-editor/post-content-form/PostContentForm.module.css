@@ -4,7 +4,11 @@
   display: grid;
   gap: var(--space-group); /* Figma content itemSpacing 20 */
   min-width: 0;
-  padding-bottom: calc(var(--control-height-sheet) + var(--space-md) + env(safe-area-inset-bottom));
+  /* Room for the fixed CTA, same bottom offset as .submitBar */
+  padding-bottom: calc(
+    var(--control-height-sheet) + max(var(--space-home-indicator), env(safe-area-inset-bottom)) +
+      var(--space-md)
+  );
 }
 
 .block {
@@ -232,8 +236,8 @@
 }
 
 /*
- * Fields — Figma 274:302 (48h, r14, #f3f4f6, text at x15). At rest the 2px border is transparent
- * (no shadow); focus colors it blue, so the content never shifts. Inline padding = 15 − border.
+ * Fields — Figma 274:302 (48h, r14, #f3f4f6, text at x15). A 2px #e5e7eb border at rest (no shadow)
+ * that turns blue on focus, so the content never shifts. Inline padding = 15 − border.
  */
 .input,
 .textarea,
@@ -241,12 +245,12 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 0 calc(var(--space-list-action) - 2px);
+  padding: 0 calc(var(--space-list-action) - var(--border-width-field));
   font-size: var(--font-size-body);
   font-family: var(--font-sans);
   color: var(--color-text-body);
   background-color: var(--color-canvas-cool);
-  border: 2px solid transparent;
+  border: var(--border-width-field) solid var(--color-hairline-cool);
   border-radius: var(--radius-control-md);
   box-shadow: none;
   appearance: none;
@@ -288,7 +292,7 @@
 .textarea {
   display: block;
   min-height: 120px;
-  padding-top: calc(var(--space-list-action) - 2px);
+  padding-top: calc(var(--space-list-action) - var(--border-width-field));
   padding-bottom: calc(var(--space-xl) + var(--space-xxs));
   overflow: hidden;
   line-height: var(--line-height-body);
@@ -314,7 +318,7 @@
 
 .selectField .input,
 .selectField .periodTrigger {
-  padding-right: calc(var(--touch-target-min) - 2px);
+  padding-right: calc(var(--touch-target-min) - var(--border-width-field));
 }
 
 /* Chevron — Figma 276:426: a 44 frame flush right, glyph centered (so 20px from the edge) */
@@ -440,7 +444,8 @@
   border-radius: var(--radius-full);
 }
 
-/* Viewport-fixed publish CTA (Figma 287:271) */
+/* Viewport-fixed publish CTA (Figma 287:271), one indicator area (24) above the edge — or the safe
+   area where that is larger — like step 1 */
 .submitBar {
   position: fixed;
   inset-inline: 0;
@@ -449,7 +454,7 @@
   width: 100%;
   max-width: var(--content-max-width);
   margin-inline: auto;
-  padding: var(--space-sm) var(--page-gutter) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  padding: 0 var(--page-gutter) max(var(--space-home-indicator), env(safe-area-inset-bottom));
   background-color: transparent;
 }
 
@@ -460,14 +465,16 @@
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-title);
-  color: var(--color-on-primary);
-  background-color: var(--color-cta-cool);
+  color: var(--color-on-cta-bottom);
+  background-color: var(--color-cta-bottom);
   border: 0;
   border-radius: var(--radius-control-md);
 }
 
+/* Until the required inputs are in: shared page bottom-CTA disabled pair (#d3e0fb, white label) */
 .cta:disabled,
 .cta[aria-disabled='true'] {
   cursor: not-allowed;
-  opacity: 0.7;
+  color: var(--color-on-cta-bottom-disabled);
+  background-color: var(--color-cta-bottom-disabled);
 }

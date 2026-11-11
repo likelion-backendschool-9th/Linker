@@ -8,6 +8,16 @@ export function countChars(value: string): number {
 }
 
 /**
+ * The first `max` characters as the policy counts them (04 ch. 2), never cutting an emoji or a
+ * Hangul syllable in half. `truncated` tells the caller to add its own "더 보기"-style marker.
+ */
+export function truncateChars(value: string, max: number): { text: string; truncated: boolean } {
+  const chars = Array.from(segmenter.segment(value.trim()), (part) => part.segment);
+  if (chars.length <= max) return { text: chars.join(''), truncated: false };
+  return { text: chars.slice(0, max).join('').trimEnd(), truncated: true };
+}
+
+/**
  * Emoji (POL-R-1 recruit post text takes none): pictures by default, flag letters, and the
  * emoji-style / keycap marks. The backend's `RecruitmentService.isEmojiCodePoint` matches the same set.
  */

@@ -95,6 +95,9 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .fabLayer {
@@ -138,6 +141,16 @@
   color: var(--color-text-inverse);
 }
 
+/* "내 모집 글" / "내 지원" with nothing yet: one quiet centered line (writing is the FAB's job) */
+.emptyNotice {
+  margin: var(--space-empty-notice-top) 0 0;
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted-cool);
+  text-align: center;
+}
+
 .empty {
   display: grid;
   gap: var(--space-md);
@@ -153,23 +166,3 @@
   height: 1px;
 }
 
-.application {
-  display: grid;
-  gap: var(--space-sm);
-  padding-bottom: var(--space-lg);
-}
-
-.applicationActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: 0 var(--space-md);
-}
-
-.applicationStatus {
-  margin: 0;
-  font-size: var(--font-size-caption);
-  color: var(--color-text-slate);
-}

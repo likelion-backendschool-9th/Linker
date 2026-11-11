@@ -46,6 +46,9 @@ const isHttps = (value: string) => {
 };
 
 const { min: TEAM_MIN, max: TEAM_MAX } = POST.teamSize;
+
+/** POL-P-2 / 04 ch. 12: shown as soon as the team size goes past the cap */
+export const TEAM_SIZE_OVER_MESSAGE = `${TEAM_MAX}명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다`;
 const limit = (max: number) => max.toLocaleString('ko-KR');
 
 /** POL-P-2: post text takes no emoji (same rule and copy as 20, backend `PostService.rejectEmoji`) */
@@ -90,11 +93,13 @@ export const postFormSchema = z
       .max(POST.demoLinksMax),
     periodStart: z.string(),
     periodEnd: z.string(),
-    teamSize: z.string().refine((value) => {
-      if (!value) return true;
-      const size = Number(value);
-      return Number.isInteger(size) && size >= TEAM_MIN && size <= TEAM_MAX;
-    }, `팀 규모는 ${TEAM_MIN}~${TEAM_MAX}명으로 입력해 주세요.`),
+    teamSize: z
+      .string()
+      .refine(
+        (value) => !value || (Number.isInteger(Number(value)) && Number(value) >= TEAM_MIN),
+        `팀 규모는 ${TEAM_MIN}명 이상으로 입력해 주세요.`,
+      )
+      .refine((value) => !value || Number(value) <= TEAM_MAX, TEAM_SIZE_OVER_MESSAGE),
     tags: z.array(z.string()).max(POST.tagsMax),
   })
   .superRefine((values, ctx) => {

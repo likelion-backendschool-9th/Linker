@@ -11,18 +11,19 @@
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: 0 var(--space-md);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Frosted white pill with a soft drop shadow (Figma 800:1299, 455:316): gap is a fixed per-item
-   value (not space-around), centered within the bar */
+/* Frosted #f5f5f5 pill with a soft drop shadow (Figma 1083:280): gap is a fixed per-item value
+   (not space-around), centered within the bar */
 .list {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: var(--tab-bar-gap-4);
   width: 100%;
-  margin-bottom: var(--space-xs);
+  /* 26 above the screen edge (Figma 254:2124). With a home indicator the pill sits 8 above the
+     indicator instead, whichever is higher, so the two never add up into a tall gap */
+  margin-bottom: max(var(--space-gnb-bottom), calc(env(safe-area-inset-bottom) + var(--space-xs)));
   padding: var(--space-xs) 0;
   background-color: var(--color-gnb-bg);
   -webkit-backdrop-filter: var(--blur-chrome);
@@ -57,7 +58,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-tab-icon-gap);
-  color: var(--color-gnb-inactive);
+  color: var(--color-gnb-idle);
 }
 
 .iconSlot {
@@ -77,22 +78,17 @@
   width: var(--size-gnb-avatar);
   height: var(--size-gnb-avatar);
   margin-bottom: calc(var(--space-tab-avatar-gap) - var(--space-tab-icon-gap));
-  border: 1px solid var(--color-hairline-soft);
   border-radius: var(--radius-full);
   object-fit: cover;
 }
 
+/* Figma 1083:280: every label is SemiBold; only the color tells the current tab */
 .label {
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-caption);
 }
 
-/* Active tab: accessible blue on the white pill, plus a heavier label (not color alone). */
 .tab[aria-current='page'] {
   color: var(--color-gnb-current);
-}
-
-.tab[aria-current='page'] .label {
-  font-weight: var(--font-weight-semibold);
 }

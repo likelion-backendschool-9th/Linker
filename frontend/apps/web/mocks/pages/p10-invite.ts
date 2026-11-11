@@ -11,14 +11,16 @@ import { TEAMS } from '../fixtures/teams';
 const team = TEAMS[1]!;
 
 function status(code: string) {
-  if (code === 'demo-expired') return 'EXPIRED' as const;
-  if (code === 'demo-revoked') return 'REVOKED' as const;
+  if (['demo-expired', 'demo-expired-member'].includes(code)) return 'EXPIRED' as const;
+  if (['demo-revoked', 'demo-revoked-member'].includes(code)) return 'REVOKED' as const;
   return 'VALID' as const;
 }
 
 function participation(code: string) {
   const states = {
     'demo-member': 'ALREADY_MEMBER',
+    'demo-expired-member': 'ALREADY_MEMBER',
+    'demo-revoked-member': 'ALREADY_MEMBER',
     'demo-full': 'TEAM_MEMBER_LIMIT',
     'demo-limit': 'TEAM_COUNT_LIMIT',
     'demo-accepted': 'ACCEPTED',

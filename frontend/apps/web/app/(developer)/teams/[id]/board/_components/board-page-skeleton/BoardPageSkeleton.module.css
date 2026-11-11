@@ -1,0 +1,193 @@
+/* Figma 982:1449 "14-스켈레톤" — filter chrome + two status columns with card bones */
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--board-column-gap);
+  min-width: 0;
+  margin-top: calc(-1 * var(--space-md));
+  padding-top: var(--board-column-gap);
+  overflow-x: clip;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-board-control-gap);
+}
+
+.control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-board-control-icon);
+  height: var(--control-height-board);
+  padding: var(--space-board-control-block) var(--space-board-control-inline);
+  color: var(--color-text-black);
+  font-size: var(--font-size-board-control);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  pointer-events: none;
+  background-color: var(--color-board-control);
+  border: 0;
+  border-radius: var(--radius-xxs);
+}
+
+.chevron {
+  display: block;
+  width: var(--icon-size-board-chevron);
+  height: var(--icon-size-board-chevron);
+  color: var(--color-text-title-cool);
+}
+
+.chevron > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.columns {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--board-column-gap);
+  min-width: 0;
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding: 0 var(--page-gutter) var(--space-board-column);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.columns::-webkit-scrollbar {
+  display: none;
+}
+
+.column {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-board-column);
+  width: var(--board-column-width);
+  padding: var(--space-board-column);
+  background-color: var(--color-board-column);
+  border-top: var(--board-column-line) solid var(--column-status-color);
+  box-shadow: var(--shadow-board-column);
+}
+
+.columnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.create {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.createIcon {
+  display: block;
+  width: var(--icon-size-add);
+  height: var(--icon-size-add);
+}
+
+.createIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.title {
+  width: var(--size-board-skeleton-title-w);
+  height: var(--size-board-skeleton-title-h);
+}
+
+.card {
+  width: var(--size-board-skeleton-card-w);
+  max-width: 100%;
+  height: var(--size-board-skeleton-card-h);
+  border: 1px solid var(--color-board-card-border);
+  border-radius: var(--radius-board-card);
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  color: var(--color-text-black);
+  background: transparent;
+  border: 0;
+}
+
+.headerIcon:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.chat {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: max(
+    var(--space-fab-bottom),
+    calc(env(safe-area-inset-bottom) + var(--space-row-block))
+  );
+  z-index: var(--z-chrome);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-text-inverse);
+  pointer-events: none;
+  background-color: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.chatIcon {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.chatIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

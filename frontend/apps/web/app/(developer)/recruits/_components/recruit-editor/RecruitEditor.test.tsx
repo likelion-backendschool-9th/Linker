@@ -16,7 +16,7 @@ const fetchMock = vi.mocked(apiFetch);
 const replace = vi.fn();
 
 const options: EditorOptions = {
-  teams: [{ id: 1, name: 'Linker' }],
+  teams: [{ id: 1, name: 'Linker', flex: false }],
   openCount: 1,
   openLimit: 3,
   maxDeadlineDate: '2099-12-31',
@@ -184,4 +184,58 @@ it('keeps roles with applicants locked when editing', async () => {
   const status = screen.getByRole('region', { name: '모집 관리' });
   expect(within(status).getByRole('button', { name: '모집 마감하기' })).toBeVisible();
   expect(within(status).getByRole('button', { name: '모집 글 삭제' })).toBeVisible();
+});
+
+describe('free team headcount cap (POL-R-1)', () => {
+  const fiveAcrossRoles: RecruitEditForm = {
+    ...editForm,
+    duration: '3개월',
+    roles: [
+      { id: 11, role: 'BACKEND', name: '백엔드', headcount: 3, filled: 0 },
+      { id: 12, role: 'FRONTEND', name: '프론트엔드', headcount: 2, filled: 0 },
+    ],
+    lockedRoleIds: [],
+    minHeadcountByRole: {},
+  };
+
+  function serve(flex: boolean) {
+    fetchMock.mockImplementation(async (url) => {
+      if (url === '/api/v1/user/recruit-editor/options') {
+        return { ...options, teams: [{ id: 1, name: 'Linker', flex }] };
+      }
+      if (url.endsWith('/edit-form')) return fiveAcrossRoles;
+      return undefined;
+    });
+  }
+
+  it('turns off "+" and "역할 추가" at 5 people on a non-Flex team, and says why', async () => {
+    serve(false);
+    renderWithProviders(<RecruitEditor mode="edit" recruitId="7" />, developer);
+    const plus = await screen.findByRole('button', { name: '백엔드 인원 늘리기' });
+    const cap = 'Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요.';
+    expect(plus).toBeDisabled();
+    expect(screen.getByRole('button', { name: '프론트엔드 인원 늘리기' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '역할 추가' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '역할 추가' })).toHaveAccessibleDescription(cap);
+    // Going down still works
+    expect(screen.getByRole('button', { name: '백엔드 인원 줄이기' })).toBeEnabled();
+    // Saved "3개월" shows as the number, with the unit fixed beside it
+    expect(screen.getByLabelText(/^예상 기간/)).toHaveValue('3');
+    expect(screen.getByLabelText(/^예상 기간/)).toHaveAccessibleDescription('개월');
+  });
+
+  it('has no total cap on a Flex team', async () => {
+    serve(true);
+    renderWithProviders(<RecruitEditor mode="edit" recruitId="7" />, developer);
+    expect(await screen.findByRole('button', { name: '백엔드 인원 늘리기' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '역할 추가' })).toBeEnabled();
+  });
+});
+
+it('takes only digits for 예상 기간', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<RecruitEditor mode="create" />, developer);
+  const duration = await screen.findByLabelText(/^예상 기간/);
+  await user.type(duration, '0a1개2월3');
+  expect(duration).toHaveValue('12');
 });

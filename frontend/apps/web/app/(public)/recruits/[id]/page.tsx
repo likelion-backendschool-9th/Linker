@@ -10,6 +10,7 @@ import { JsonLd } from '@/lib/seo/json-ld';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 import { RecruitDetail } from './_components/recruit-detail/RecruitDetail';
+import { RecruitHeaderMenu } from './_components/recruit-menu-sheet';
 import { recruitDetailOptions } from './_lib/detail-queries';
 import { recruitSummary } from './_lib/recruit-summary';
 
@@ -43,27 +44,33 @@ export default async function RecruitDetailPage({ params }: PageProps<'/recruits
   const { id } = await params;
   const { recruit } = await loadRecruit(id);
 
+  // The boundary wraps the frame too: the header "더보기" reads the same cached post
   return (
-    <PageFrame title="모집 글 상세" variant="stack" backHref="/recruits">
-      {/* Recruit posts are not job postings (blueprint §8-3) */}
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'CreativeWork',
-          name: recruit.title,
-          description: recruitSummary(recruit),
-          dateCreated: recruit.createdAt,
-          keywords: recruit.techTags.join(', '),
-          author: {
-            '@type': 'Person',
-            name: recruit.author.name,
-            url: `/user/${recruit.author.login}`,
-          },
-        }}
-      />
-      <HydrationBoundary state={dehydrate(getQueryClient())}>
+    <HydrationBoundary state={dehydrate(getQueryClient())}>
+      <PageFrame
+        title="모집 글 상세"
+        variant="stack"
+        backHref="/recruits"
+        actions={<RecruitHeaderMenu recruitId={id} />}
+      >
+        {/* Recruit posts are not job postings (blueprint §8-3) */}
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'CreativeWork',
+            name: recruit.title,
+            description: recruitSummary(recruit),
+            dateCreated: recruit.createdAt,
+            keywords: recruit.techTags.join(', '),
+            author: {
+              '@type': 'Person',
+              name: recruit.author.name,
+              url: `/user/${recruit.author.login}`,
+            },
+          }}
+        />
         <RecruitDetail recruitId={id} />
-      </HydrationBoundary>
-    </PageFrame>
+      </PageFrame>
+    </HydrationBoundary>
   );
 }

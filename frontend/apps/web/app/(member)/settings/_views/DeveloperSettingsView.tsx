@@ -1,16 +1,15 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { updateMyProfile } from '@linker/api/p05-profile-edit/p05-profile-edit';
+import { getMyProfile, updateMyProfile } from '@linker/api/p05-profile-edit/p05-profile-edit';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
 import type { SettingsData } from '../_lib/settings-types';
-import { SettingsCommon } from './SettingsCommon';
+import { SettingsArrowButton, SettingsCommon } from './SettingsCommon';
 import styles from './settings-view.module.css';
 
 const JOB_STATUS_LABEL = { SEEKING: '구직 중', OPEN: '제안 받기', OFF: '구직 안 함' } as const;
@@ -26,20 +25,31 @@ export function DeveloperSettingsView({
   jobStatus: keyof typeof JOB_STATUS_LABEL;
   blockCount: number;
 }) {
-  const router = useRouter();
   const jobStatusOverlay = useOverlay('profile-edit-job');
+  const [appliedJobStatus, setAppliedJobStatus] = useState(jobStatus);
   const [selectedJobStatus, setSelectedJobStatus] = useState(jobStatus);
   const saveJobStatus = useMutation({
-    mutationFn: () => updateMyProfile({ jobStatus: selectedJobStatus }),
-    onSuccess: () => {
+    mutationFn: async (next: keyof typeof JOB_STATUS_LABEL) => {
+      const profile = await getMyProfile();
+      return updateMyProfile({
+        name: profile.name,
+        bio: profile.bio,
+        blogUrl: profile.blogUrl,
+        techStack: profile.techStack,
+        lookingForTeam: profile.lookingForTeam,
+        jobStatus: next,
+        jobCategories: profile.jobCategories,
+      });
+    },
+    onSuccess: (saved, next) => {
+      setAppliedJobStatus(isJobStatus(saved.jobStatus) ? saved.jobStatus : next);
       jobStatusOverlay.close();
-      router.refresh();
     },
     onError: () => toast('구직 상태를 저장하지 못했어요. 다시 시도해 주세요.', { tone: 'error' }),
   });
 
   function openJobStatus() {
-    setSelectedJobStatus(jobStatus);
+    setSelectedJobStatus(appliedJobStatus);
     jobStatusOverlay.open();
   }
 
@@ -58,15 +68,17 @@ export function DeveloperSettingsView({
               ) : (
                 <span className={styles.value}>연결 안 됨</span>
               )}
-              <span className={styles.chevron} aria-hidden="true" />
             </span>
           </div>
         }
         personal={
-          <button type="button" className={styles.row} onClick={openJobStatus}>
+          <div className={styles.row}>
             <span>구직 상태</span>
-            <span className={styles.trailing}><span className={jobStatus === 'SEEKING' ? styles.connected : styles.value}>{JOB_STATUS_LABEL[jobStatus]}</span><Chevron /></span>
-          </button>
+            <span className={styles.trailing}>
+              <span className={appliedJobStatus === 'SEEKING' ? styles.connected : styles.value}>{JOB_STATUS_LABEL[appliedJobStatus]}</span>
+              <SettingsArrowButton label="구직 상태" onClick={openJobStatus} />
+            </span>
+          </div>
         }
       />
       <OverlaySheet
@@ -100,7 +112,7 @@ export function DeveloperSettingsView({
             type="button"
             className={styles.jobStatusDone}
             disabled={saveJobStatus.isPending}
-            onClick={() => saveJobStatus.mutate()}
+            onClick={() => saveJobStatus.mutate(selectedJobStatus)}
           >
             {saveJobStatus.isPending ? '저장 중…' : '완료'}
           </button>
@@ -110,12 +122,13 @@ export function DeveloperSettingsView({
   );
 }
 
+function isJobStatus(value: string | undefined): value is keyof typeof JOB_STATUS_LABEL {
+  return value === 'SEEKING' || value === 'OPEN' || value === 'OFF';
+}
+
 const JOB_STATUS_OPTIONS = [
-  { value: 'SEEKING', label: '구직 진행 중' },
+  { value: 'SEEKING', label: '구직 중' },
   { value: 'OPEN', label: '제안 받기' },
   { value: 'OFF', label: '구직 안 함' },
 ] as const;
 
-function Chevron() {
-  return <span className={styles.chevron} aria-hidden="true" />;
-}

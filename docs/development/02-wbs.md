@@ -322,7 +322,7 @@
 | 12 | C | GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/label-options` | Label sheet | team MEMBER |
 | 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/labels` | Labels | team MEMBER + repo write |
 | 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/schedule` | Start and due date (start ≤ due) | team MEMBER + repo write |
-| 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/status` | Todo / In Progress / Blocked / Done (Done = close; reverting reopens) — borrowed by 14 | team MEMBER + repo write |
+| 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/status` | Todo / In Progress / Blocked / Done (Done = close; reverting reopens) — borrowed by 14 | team MEMBER of a writable team. Repo write is not required; the member token is used when they have it, otherwise the installation token |
 | 12 | C | GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/sub-issues` | `[Included]` Sub-issue progress | team MEMBER |
 | 13 | C | GET | `/api/v1/user/teams/{teamId}/issue-templates?repoId=` | Repo templates → org `.github` templates → 3 defaults | team MEMBER |
 | 13 | C | GET | `/api/v1/user/teams/{teamId}/issue-templates/{templateKey}?repoId=` | Parsed template (Markdown body or issue form field list + default labels/assignees); falls back to default template on failure | team MEMBER |
@@ -407,11 +407,11 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 19 | E | GET | `/api/v1/public/recruits?q=&role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; `q` = title search (POL-R-2); excludes blocked relations if logged in | public |
+| 19 | E | GET | `/api/v1/public/recruits?q=&role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; `q` = title search (POL-R-2); excludes blocked relations if logged in. Each card carries `intro` (the list shows its first 200 characters) | public |
 | 19 | E | GET | `/api/v1/user/me/recruits` | My recruit posts tab | user · developers only |
-| 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
-| 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
-| 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
+| 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired): 19 shows only the post cards | user · developers only |
+| 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — used on 21 (19's applications tab no longer has the button) | user · developers only |
+| 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin) with each team's `flex` (non-Flex → 5-person total headcount cap in the editor), remaining concurrent posts (3/10) | user · developers only |
 | 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day counting published posts only → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
 | 20 | E | PUT | `/api/v1/user/recruits/{recruitId}` | Edit. Author no longer owner/admin of the linked team → 403 `TEAM_ROLE_REQUIRED`; emoji in text → 400 `VALIDATION_ERROR` | author |
@@ -437,7 +437,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 04 | A | GET | `/api/v1/public/user/{login}/posts` | 2nd pass: project posts (pinned first) | public |
 | 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: replace featured posts and order (free 1, Pro 5; saved pins stay after Pro ends) | user · developers only |
-| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
+| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos on my own profile (no org repos; forks included), marking already-posted and forks; a team's repos with `teamId`; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
 | 22 | E | POST | `/api/v1/user/posts` | Publish (10/day counting published posts only, photos 1–5 / Pro 10 required, no emoji in intro/body) | user · developers only |
 | 22 | E | GET | `/api/v1/user/posts/{postId}/edit-form` | Edit form values | author |

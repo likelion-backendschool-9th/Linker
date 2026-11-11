@@ -1,0 +1,106 @@
+/* Figma 999:1090 "23-스켈레톤" — photo + author row bones */
+
+.photo {
+  width: calc(100% + 2 * var(--page-gutter));
+  height: var(--post-photo-height);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) 0;
+}
+
+.authorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block: var(--space-post-author);
+  border-bottom: 1px solid var(--color-post-author-divider);
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.authorText {
+  display: grid;
+  gap: var(--space-row-inline);
+  min-width: 0;
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--avatar-size-post);
+  height: var(--avatar-size-post);
+  border-radius: var(--radius-full);
+}
+
+.name {
+  width: var(--size-post-detail-skeleton-name-w);
+  height: var(--size-post-detail-skeleton-name-h);
+}
+
+.login {
+  width: var(--size-post-detail-skeleton-login-w);
+  height: var(--size-post-detail-skeleton-login-h);
+}
+
+.follow {
+  flex-shrink: 0;
+  width: var(--size-post-detail-skeleton-follow-w);
+  height: var(--size-post-detail-skeleton-follow-h);
+}
+
+.headerIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-icon);
+  height: var(--touch-target-icon);
+  padding: 0;
+  color: var(--color-text-black);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-full);
+}
+
+.headerIcon:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.headerIconSvg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

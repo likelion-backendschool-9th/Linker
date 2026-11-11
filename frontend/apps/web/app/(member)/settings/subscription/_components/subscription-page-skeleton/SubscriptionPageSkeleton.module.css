@@ -1,0 +1,47 @@
+/* Figma 999:1350 "29-스켈레톤" — plan card + two info-row bones */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-manage-block);
+  padding-bottom: var(--space-lg);
+}
+
+.bone {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.card {
+  height: var(--size-subscription-skeleton-card-h);
+}
+
+.line {
+  height: var(--size-subscription-skeleton-line-h);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

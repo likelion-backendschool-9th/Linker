@@ -1,3 +1,12 @@
+/* A long tech stack list still scrolls inside the sheet, without a visible scrollbar */
+.sheet {
+  scrollbar-width: none;
+}
+
+.sheet::-webkit-scrollbar {
+  display: none;
+}
+
 /* Figma 18px SemiBold; OverlaySheet's shared default is 20px (design guide §7-3 escape hatch) */
 .title {
   font-size: var(--font-size-card-title);
@@ -27,6 +36,30 @@
 .option[data-selected='true'] {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-slate);
+}
+
+/* Tech stack (Figma 301:1914): rows 10 apart, chips 8 apart */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-row-block) var(--space-xs);
+}
+
+/* Same gray chip as 20's tech stack sheet; picked = selection blue, white text */
+.chip {
+  padding: var(--space-chip-block) var(--space-xs);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
+  background-color: var(--color-canvas-cool);
+  border: none;
+  border-radius: var(--radius-xxs);
+}
+
+.chip[data-selected='true'] {
+  color: var(--color-text-inverse);
+  background-color: var(--color-selection);
 }
 
 .cta {

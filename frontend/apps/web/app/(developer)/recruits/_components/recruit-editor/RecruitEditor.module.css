@@ -82,10 +82,12 @@
   border-radius: var(--radius-full);
 }
 
-/* Field look (Figma 600:625): filled gray, 14 radius, no border and no shadow at rest */
+/* Field look (Figma 600:625): filled gray, 14 radius, no shadow; a 2px #e5e7eb border at rest
+   that turns #2563eb on focus. border-box keeps single-line fields at 48 either way */
 .input,
 .textarea,
 .dropdownTrigger {
+  box-sizing: border-box;
   width: 100%;
   min-height: var(--control-height);
   padding: var(--space-sm) var(--space-recruit-field-inline);
@@ -94,7 +96,7 @@
   font-family: var(--font-sans);
   color: var(--color-text-title-cool);
   background-color: var(--color-canvas-cool);
-  border: 0;
+  border: var(--border-width-field) solid var(--color-hairline-cool);
   border-radius: var(--radius-control-md);
   box-shadow: none;
   outline: none;
@@ -107,15 +109,15 @@
   padding-block: 0;
 }
 
-/* Focus only (Figma 364:2098): a 2px #2563eb line drawn inside, so nothing in the field moves */
+/* Focus: the same 2px border turns blue, so nothing in the field moves */
 .input:focus,
 .textarea:focus,
 .dropdownTrigger:focus-visible {
-  outline: 2px solid var(--color-selection);
-  outline-offset: -2px;
+  border-color: var(--color-focus-ring-input);
 }
 
-/* Grows with its content instead of scrolling (height set from scrollHeight in RecruitEditor);
+/* Grows with its content instead of scrolling (height set from scrollHeight in RecruitEditor, which
+   includes padding but not the border, hence the inline border added there);
    the bottom padding keeps the last line clear of the overlaid "0/500" counter */
 .textarea {
   display: block;
@@ -150,8 +152,26 @@
 .input[aria-invalid='true'],
 .textarea[aria-invalid='true'],
 .dropdownTrigger.invalid {
-  outline: 2px solid var(--color-status-error);
-  outline-offset: -2px;
+  border-color: var(--color-status-error);
+}
+
+/* 예상 기간: digits only, with the fixed "개월" unit inside the field's right edge */
+.unitField {
+  position: relative;
+}
+
+.unitInput {
+  padding-right: calc(var(--space-recruit-field-inline) * 2 + 2em);
+}
+
+.unit {
+  position: absolute;
+  top: 50%;
+  right: var(--space-recruit-field-inline);
+  font-size: var(--font-size-body);
+  color: var(--color-text-title-cool);
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .stepValue[aria-invalid='true'] {
@@ -380,9 +400,13 @@
   margin: calc((var(--touch-target-min) - 24px) / -2);
 }
 
+/* Disabled keeps the gray box; only the icon goes pale (#b2b7c3) */
 .stepButton:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+}
+
+.stepButton:disabled .stepIcon {
+  color: var(--color-text-disabled-cool);
 }
 
 .stepButtonBox {
@@ -399,23 +423,11 @@
   color: var(--color-text-slate);
 }
 
-.removeButtonBox {
-  width: 24px;
-  height: 24px;
-  background-color: var(--color-required-dot);
-  border-radius: var(--radius-full);
-  position: relative;
-}
-
-.removeButtonBox::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 12px;
-  height: 1px;
-  content: '';
-  background-color: var(--color-on-primary);
-  transform: translate(-50%, -50%);
+/* Delete (Figma 1085:316): Solar forbidden-circle-linear, 24, red 2px stroke, no box */
+.removeIcon {
+  /* Default --icon-size (24) */
+  --icon-stroke-width: 2;
+  color: var(--color-role-remove);
 }
 
 .stepValue {
@@ -458,9 +470,10 @@
   --icon-size: var(--icon-size-sm);
 }
 
+/* Disabled keeps the white box and border; only the label and icon go pale (#b2b7c3) */
 .addRoleButton:disabled {
+  color: var(--color-text-disabled-cool);
   cursor: not-allowed;
-  opacity: 0.5;
 }
 
 /* CTA pinned to the bottom of the app column, floating one indicator area (Figma 인디케이션 영역,
@@ -475,8 +488,8 @@
   background-color: transparent;
 }
 
-/* CTA (Figma 600:729): 53 high, 14 radius, 18px semibold. Figma only draws the disabled look
-   (#f2f4f6 fill, #b0b8c1 label); the enabled fill stays the page's blue */
+/* CTA (Figma 600:729): 53 high, 14 radius, 18px semibold. Shared page bottom-CTA colors:
+   blue once every required field is filled, pale blue with a white label until then */
 .submitButton {
   display: flex;
   align-items: center;
@@ -486,14 +499,14 @@
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-board-control);
-  color: var(--color-on-primary);
-  background-color: var(--color-selection);
+  color: var(--color-on-cta-bottom);
+  background-color: var(--color-cta-bottom);
   border-radius: var(--radius-control-md);
 }
 
 .submitButton[aria-disabled='true'] {
-  color: var(--color-text-unselected);
-  background-color: var(--color-canvas-cool);
+  color: var(--color-on-cta-bottom-disabled);
+  background-color: var(--color-cta-bottom-disabled);
 }
 
 .statusSection {

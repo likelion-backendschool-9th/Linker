@@ -18,7 +18,7 @@ function retryOnce(failureCount: number, error: Error) {
 }
 
 /**
- * Timeouts (blueprint §5-5): if a loading orb is on screen right now (`PageLoading` / `Skeleton`), the
+ * Timeouts (blueprint §5-5): if any loader registered via `useLoaderPresence` is on screen, the
  * screen failed to load, so the loading turns into the timeout screen (Figma 301:326) instead of a toast.
  * Otherwise (a background refetch, a side query with no loader) it is the shared timeout toast.
  * App-chrome queries (badge counts) mark `meta: { background: true }` and stay silent. Other codes as before.

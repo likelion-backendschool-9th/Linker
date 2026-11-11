@@ -1,4 +1,10 @@
-import { EMPTY_RECRUIT_FORM, recruitFormSchema, type RecruitFormValues } from './schema';
+import {
+  durationMonthsFromText,
+  EMPTY_RECRUIT_FORM,
+  recruitFormSchema,
+  toRecruitRequest,
+  type RecruitFormValues,
+} from './schema';
 
 const schema = recruitFormSchema({ today: '2026-11-05', maxDeadline: '2027-05-05' });
 
@@ -35,10 +41,59 @@ it('caps the region at the 100-character column length', () => {
   ]);
 });
 
-it('rejects emoji in title, intro, region and duration', () => {
-  for (const field of ['title', 'intro', 'region', 'duration'] as const) {
-    expect(messages({ ...valid, [field]: `${valid[field] || '기간'} 🚀` })).toEqual([
+it('rejects emoji in title, intro and region', () => {
+  for (const field of ['title', 'intro', 'region'] as const) {
+    expect(messages({ ...valid, [field]: `${valid[field]} 🚀` })).toEqual([
       '이모지는 입력할 수 없어요.',
     ]);
   }
+});
+
+it('takes the expected duration as whole months and sends it as "N개월"', () => {
+  expect(messages({ ...valid, duration: '3' })).toEqual([]);
+  expect(messages({ ...valid, duration: '99' })).toEqual([]);
+  for (const duration of ['0', '100', '3개월', '2주']) {
+    expect(messages({ ...valid, duration })).toEqual(['예상 기간은 1~99개월로 입력해 주세요.']);
+  }
+  expect(toRecruitRequest({ ...valid, duration: '3' }).duration).toBe('3개월');
+  expect(toRecruitRequest({ ...valid, duration: '' }).duration).toBeNull();
+});
+
+it('reads saved duration text back as months, dropping what is not months', () => {
+  expect(durationMonthsFromText('3개월')).toBe('3');
+  expect(durationMonthsFromText('12')).toBe('12');
+  expect(durationMonthsFromText('2주')).toBe('');
+  expect(durationMonthsFromText(null)).toBe('');
+});
+
+describe('free team headcount cap (POL-R-1)', () => {
+  const capped = {
+    ...valid,
+    roles: [
+      { id: null, role: 'BACKEND', headcount: 3 },
+      { id: null, role: 'FRONTEND', headcount: 3 },
+    ],
+  } satisfies RecruitFormValues;
+  const capMessage = 'Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요.';
+
+  it('allows 5 people across roles on a non-Flex team and rejects 6', () => {
+    const atCap: RecruitFormValues = {
+      ...capped,
+      roles: [
+        { id: null, role: 'BACKEND', headcount: 3 },
+        { id: null, role: 'FRONTEND', headcount: 2 },
+      ],
+    };
+    expect(messages(atCap)).toEqual([]);
+    expect(messages(capped)).toEqual([capMessage]);
+  });
+
+  it('has no total cap on a Flex team', () => {
+    const flexSchema = recruitFormSchema({
+      today: '2026-11-05',
+      maxDeadline: '2027-05-05',
+      flexTeamIds: [1],
+    });
+    expect(flexSchema.safeParse(capped).success).toBe(true);
+  });
 });

@@ -18,6 +18,7 @@ import { dismissToast, toast } from '@/stores/toast-store';
 
 import {
   createRecruit,
+  durationMonthsFromText,
   editFormOptions,
   editorOptions,
   EMPTY_RECRUIT_FORM,
@@ -40,7 +41,7 @@ function fromEditForm(form: RecruitEditForm): RecruitFormValues {
     format: form.format,
     region: form.region ?? '',
     goal: form.goal ?? '',
-    duration: form.duration ?? '',
+    duration: durationMonthsFromText(form.duration),
     deadline: form.deadline,
     techTags: form.techTags,
     teamId: form.teamId === null ? '' : String(form.teamId),
@@ -136,6 +137,7 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
   const [today] = useState(() => todayKst());
   const atLimit = creating && options.openCount >= options.openLimit;
   const done = useRef(false);
+  const flexTeamIds = options.teams.filter((team) => team.flex).map((team) => team.id);
 
   const form = useForm<RecruitFormValues, unknown, RecruitFormValues>({
     resolver: zodResolver(
@@ -143,6 +145,7 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
         today,
         maxDeadline: options.maxDeadlineDate,
         minHeadcountByRole: editForm?.minHeadcountByRole,
+        flexTeamIds,
       }),
     ),
     defaultValues: editForm ? fromEditForm(editForm) : EMPTY_RECRUIT_FORM,
@@ -236,7 +239,13 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
 
   function restoreDraft() {
     const value = draft.load();
-    if (value) form.reset(value, { keepDefaultValues: true });
+    // Drafts saved before the field took months only may hold free text such as "3개월"
+    if (value) {
+      form.reset(
+        { ...value, duration: durationMonthsFromText(value.duration) },
+        { keepDefaultValues: true },
+      );
+    }
   }
 
   function discardDraft() {
@@ -270,5 +279,6 @@ export function useRecruitEditorForm({ options, editForm, ...props }: EditorForm
     markDeleted,
     editForm,
     options,
+    flexTeamIds,
   };
 }

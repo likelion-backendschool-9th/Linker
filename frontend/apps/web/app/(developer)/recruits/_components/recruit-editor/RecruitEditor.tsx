@@ -26,6 +26,7 @@ import { DatePickerSheet } from '../../../_components/date-picker-sheet';
 import { Dropdown } from './dropdown/Dropdown';
 import { RecruitStatusSection } from './recruit-status-section';
 import styles from './RecruitEditor.module.css';
+import { headcountTotalMax } from './api';
 import { RoleFields } from './role-fields';
 import {
   useRecruitEditor,
@@ -85,7 +86,13 @@ function EditorForm(
     markDeleted,
     editForm,
     options,
+    flexTeamIds,
   } = useRecruitEditorForm(props);
+  const totalMax = headcountTotalMax(watched.teamId ?? '', flexTeamIds);
+  const headcountTotal = (watched.roles ?? []).reduce(
+    (sum, role) => sum + (Number(role?.headcount) || 0),
+    0,
+  );
 
   // Figma shows a red dot for required fields and no marker at all for optional ones; the
   // sr-only text keeps both states announced to screen readers without relying on color alone.
@@ -108,7 +115,8 @@ function EditorForm(
     const element = introRef.current;
     if (!element) return;
     element.style.height = 'auto';
-    element.style.height = `${element.scrollHeight}px`;
+    // border-box: scrollHeight leaves out the 2px border on each side, so add it back
+    element.style.height = `${element.scrollHeight + element.offsetHeight - element.clientHeight}px`;
   }, [watched.intro]);
 
   const canSubmit = Boolean(
@@ -117,8 +125,12 @@ function EditorForm(
       (watched.roles?.length ?? 0) > 0 &&
       watched.deadline &&
       watched.teamId &&
+      (totalMax === null || headcountTotal <= totalMax) &&
       (watched.format !== 'OFFLINE' || watched.region?.trim()),
   );
+
+  // 예상 기간 takes whole months only: keep digits, no leading zero, at most 2 digits
+  const durationField = form.register('duration');
 
   return (
     <div className={styles.editor}>
@@ -207,6 +219,7 @@ function EditorForm(
           lockedRoleIds={editForm?.lockedRoleIds ?? []}
           minHeadcountByRole={editForm?.minHeadcountByRole ?? {}}
           requiredDot={requiredDot}
+          headcountTotalMax={totalMax}
         />
 
         <fieldset className={styles.fieldset}>
@@ -291,12 +304,31 @@ function EditorForm(
             </label>
             {optionalHint}
           </div>
-          <input
-            id={field('duration')}
-            className={styles.input}
-            placeholder="예: 2주, 3개월"
-            {...noEmojiField(form.register('duration'))}
-          />
+          <div className={styles.unitField}>
+            <input
+              id={field('duration')}
+              className={`${styles.input} ${styles.unitInput}`}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              maxLength={String(RECRUIT.durationMonths.max).length}
+              placeholder="예: 3"
+              aria-invalid={errors.duration ? true : undefined}
+              aria-describedby={field('duration-unit')}
+              {...durationField}
+              onChange={(event) => {
+                event.target.value = event.target.value
+                  .replace(/\D/g, '')
+                  .replace(/^0+/, '')
+                  .slice(0, String(RECRUIT.durationMonths.max).length);
+                return durationField.onChange(event);
+              }}
+            />
+            <span id={field('duration-unit')} className={styles.unit}>
+              개월
+            </span>
+          </div>
         </div>
 
         <div className={styles.field}>

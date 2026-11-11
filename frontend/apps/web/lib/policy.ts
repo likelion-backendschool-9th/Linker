@@ -74,8 +74,11 @@ export const POST = {
   roleMax: 40,
   rolePickMax: 4, // 22 "내 역할" sheet: up to 4 roles, saved joined into roleMax (Figma 666:611)
   demoLinksMax: 3,
-  teamSize: { min: 1, max: 50 },
+  /** POL-P-2: above 5, people come from building a team and paying (Flex) */
+  teamSize: { min: 1, max: 5 },
   tagsMax: 5,
+  /** POL-P-2: one free-text tag, the same length as a tech stack name (backend `POST_TAG_MAX_LENGTH`) */
+  tagMaxLength: 40,
   commentMax: 500,
 } as const;
 
@@ -85,7 +88,13 @@ export const RECRUIT = {
   /** POL-R-2 19 title search, no longer than a title */
   searchMaxLength: 40,
   introMax: 1000,
+  /** POL-R-2 19 list card: the intro's first N characters, then "...자세히 보기" to the post */
+  cardIntroPreview: 200,
   headcountPerRole: { min: 1, max: 10 },
+  /** POL-R-1: a non-Flex team recruits at most 5 people across all roles (free team size 6 − the owner) */
+  freeTeamHeadcountTotal: 5,
+  /** POL-R-1: expected duration is a whole number of months (the input takes digits only) */
+  durationMonths: { min: 1, max: 99 },
   /** Deadline: today through today + 6 calendar months (the server sends the exact last date) */
   deadlineWithinMonths: 6,
   /** Not a Policy rule: `recruit_posts.region` column length (backend `PlanLimits.RECRUIT_REGION_MAX`) */

@@ -1,0 +1,136 @@
+/* Figma 999:1219 "24-스켈레톤" — tabs chrome, card/meta bones, write FAB */
+
+.feed {
+  margin-top: calc(-1 * var(--space-md));
+}
+
+.chromeSlot {
+  margin-inline: calc(-1 * var(--page-gutter));
+  background-color: var(--color-canvas);
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  background-color: var(--color-canvas);
+}
+
+.tab {
+  flex: 1;
+  height: var(--control-height-feed-tab);
+  padding: 0;
+  color: var(--color-text-muted-cool);
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+  pointer-events: none;
+  background-color: var(--color-canvas);
+  border: 0;
+  box-shadow: inset 0 -2px 0 var(--color-canvas-cool);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--color-text-title-cool);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: inset 0 -2px 0 var(--color-text-slate);
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-md);
+  padding-top: var(--space-feed-top);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.card {
+  width: 100%;
+  height: var(--size-feed-skeleton-card-h);
+}
+
+.meta {
+  width: var(--size-feed-skeleton-meta-w);
+  max-width: 100%;
+  height: var(--size-feed-skeleton-meta-h);
+}
+
+.time {
+  flex-shrink: 0;
+  width: var(--size-feed-skeleton-time-w);
+  height: var(--size-feed-skeleton-meta-h);
+}
+
+.fabLayer {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-bar-pill-top) + var(--space-feed-fab) + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: var(--z-chrome);
+  display: flex;
+  justify-content: flex-end;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  pointer-events: none;
+}
+
+.fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-fab-icon);
+  background-color: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.fabIcon {
+  display: block;
+  width: var(--icon-size-feed-fab);
+  height: var(--icon-size-feed-fab);
+}
+
+.fabIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}
