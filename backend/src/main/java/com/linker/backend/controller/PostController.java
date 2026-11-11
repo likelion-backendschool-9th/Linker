@@ -35,11 +35,12 @@ public class PostController {
 	public ResponseEntity<CursorPage<FeedPostItemResponse>> feed(
 			@RequestParam(required = false) String tab,
 			@RequestParam(required = false) String cursor,
-			@RequestParam(required = false) Boolean offersOnly
+			@RequestParam(required = false) Boolean offersOnly,
+			@RequestParam(required = false) String q
 	) {
 		return ResponseEntity.ok()
 				.cacheControl(CacheControl.noStore())
-				.body(posts.feed(tab, cursor, offersOnly));
+				.body(posts.feed(tab, cursor, offersOnly, q));
 	}
 
 	@GetMapping("/user/{login}/posts")

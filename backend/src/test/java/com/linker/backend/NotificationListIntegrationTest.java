@@ -522,6 +522,10 @@ class NotificationListIntegrationTest {
 		accounts.follow(principal, target.getUsername());
 
 		assertThat(typeCount(target, NotificationTypes.FOLLOW)).isEqualTo(1);
+		String payload = jdbc.queryForObject(
+				"select payload->>'title' from notifications where user_id = ? and notification_type = ?",
+				String.class, target.getId(), NotificationTypes.FOLLOW);
+		assertThat(payload).isEqualTo(follower.visibleName() + "님이 회원님을 팔로우했어요.");
 	}
 
 	private long typeCount(User recipient, String type) {

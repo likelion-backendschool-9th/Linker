@@ -2,7 +2,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { parseAsBoolean, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
@@ -24,6 +24,7 @@ export function useFeedList() {
   const recruiter = viewer.role === 'recruiter';
   const requireLogin = useRequireLogin();
   const [tabParam, setTab] = useQueryState('tab', tabParser);
+  const [query] = useQueryState('q', parseAsString.withDefault(''));
   // Recruiters can't follow: they only get "추천", even with ?tab=following in the URL
   const tab = recruiter ? 'recommended' : tabParam;
   const tabs = recruiter ? RECRUITER_TABS : FEED_TABS;
@@ -33,7 +34,7 @@ export function useFeedList() {
   // Guests follow nobody: "팔로잉" shows a login notice instead of asking the server
   const loginNeeded = following && viewer.role === 'guest';
   const feed = useInfiniteQuery({
-    ...feedOptions(viewer.login, filter, tab),
+    ...feedOptions(viewer.login, filter, tab, query),
     enabled: !loginNeeded,
   });
   const [hiddenAds, setHiddenAds] = useState<ReadonlySet<number>>(new Set());
@@ -50,6 +51,7 @@ export function useFeedList() {
 
   return {
     viewer,
+    query,
     recruiter,
     tab,
     tabs,

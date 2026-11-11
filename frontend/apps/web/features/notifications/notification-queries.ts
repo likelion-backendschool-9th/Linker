@@ -16,6 +16,8 @@ export type NotificationItem = NotificationItemResponse;
 export type NotificationPage = NotificationPageResponse;
 /** 18 list tab: every visible notification, or only unread ones (server `unread=true`). */
 export type NotificationFilter = 'all' | 'unread';
+// Foreground REST recovery also catches quiet-hour rows becoming visible without a new socket event.
+const NOTIFICATION_REFRESH_MS = 30_000;
 export const notificationKeys = {
   account: (login: string | null) => ['notifications', login] as const,
   /** Prefix of both tab lists; use with `setQueriesData` / `invalidateQueries`. */
@@ -28,6 +30,7 @@ export function notificationListOptions(login: string | null, filter: Notificati
   return infiniteQueryOptions({
     queryKey: notificationKeys.list(login, filter),
     refetchOnMount: 'always',
+    refetchInterval: NOTIFICATION_REFRESH_MS,
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       listNotifications(
@@ -44,6 +47,7 @@ export function notificationCountOptions(login: string | null) {
   return queryOptions({
     queryKey: notificationKeys.count(login),
     refetchOnMount: 'always',
+    refetchInterval: NOTIFICATION_REFRESH_MS,
     queryFn: ({ signal }) => getUnreadNotificationCount({ signal }),
   });
 }

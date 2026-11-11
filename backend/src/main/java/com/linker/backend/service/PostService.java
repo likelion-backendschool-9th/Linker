@@ -135,14 +135,21 @@ public class PostService {
 	 */
 	@Transactional(readOnly = true)
 	public CursorPage<FeedPostItemResponse> feed(String tab, String cursor, Boolean offersOnly) {
+		return feed(tab, cursor, offersOnly, null);
+	}
+
+	@Transactional(readOnly = true)
+	public CursorPage<FeedPostItemResponse> feed(String tab, String cursor, Boolean offersOnly, String q) {
 		AuthenticatedUser viewer = CurrentUser.optional().orElse(null);
+		String title = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
 		boolean followingTab = isFollowingTab(tab);
 		FeedCursor position = FeedCursor.parse(cursor, clock.instant());
 		boolean onlyOffers = !followingTab && Boolean.TRUE.equals(offersOnly);
 
 		List<Post> candidates = new ArrayList<>();
 		for (Post post : filterCandidates(posts.findVisibleForFeed(), viewer, onlyOffers)) {
-			if (!post.getCreatedAt().isAfter(position.startedAt())) {
+			if (!post.getCreatedAt().isAfter(position.startedAt())
+					&& (title.isEmpty() || post.getSummary().toLowerCase(Locale.ROOT).contains(title))) {
 				candidates.add(post);
 			}
 		}
@@ -150,6 +157,9 @@ public class PostService {
 		List<ScoredPost> ordered;
 		if (followingTab) {
 			ordered = followingFeed(viewer, candidates);
+		} else if (!title.isEmpty()) {
+			// Search covers every readable title, including own/seen posts, before cursor pagination.
+			ordered = candidates.stream().map(post -> new ScoredPost(post, 0, null)).toList();
 		} else if (viewer == null || viewer.userType() == UserType.RECRUITER) {
 			ordered = limitConsecutiveAuthors(shuffled(candidates, position.seed()));
 		} else {

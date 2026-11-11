@@ -226,6 +226,46 @@ class PostServiceTest {
 	}
 
 	@Test
+	void titleSearchFiltersBeforePaginationAndIncludesOwnSeenPosts() {
+		List<Post> rows = new ArrayList<>();
+		for (long id = 1; id <= 12; id++) {
+			Post row = postWithId(id, id == 1 ? 77L : 100L + id, PostVisibility.VISIBLE, NOW.minusSeconds(id));
+			ReflectionTestUtils.setField(row, "summary", "React 프로젝트 " + id);
+			rows.add(row);
+		}
+		Post bodyOnly = postWithId(13L, 113L, PostVisibility.VISIBLE, NOW.minusSeconds(13));
+		ReflectionTestUtils.setField(bodyOnly, "body", "React는 본문에만 있어요");
+		rows.add(bodyOnly);
+		Post blocked = postWithId(14L, 114L, PostVisibility.VISIBLE, NOW.minusSeconds(14));
+		ReflectionTestUtils.setField(blocked, "summary", "React 차단된 글");
+		rows.add(blocked);
+		when(posts.findVisibleForFeed()).thenReturn(rows);
+		when(blocks.findActiveBlockedIds(77L)).thenReturn(List.of(114L));
+		stubAuthors();
+		setViewer(77L, "me");
+
+		var first = service.feed(null, null, false, "  REACT  ");
+		var next = service.feed(null, first.nextCursor(), false, "react");
+
+		assertThat(first.items()).extracting(item -> item.post().id())
+				.containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
+		assertThat(next.items()).extracting(item -> item.post().id()).containsExactly(11L, 12L);
+		assertThat(next.nextCursor()).isNull();
+		verify(seenPosts, never()).findPostIdsSeenBefore(anyLong(), any());
+	}
+
+	@Test
+	void titleSearchTreatsWildcardCharactersAsLiteralText() {
+		Post match = postWithId(1L, 10L, PostVisibility.VISIBLE, NOW);
+		ReflectionTestUtils.setField(match, "summary", "진행률 100%_완료");
+		when(posts.findVisibleForFeed()).thenReturn(List.of(match, postWithId(2L, 11L, PostVisibility.VISIBLE, NOW)));
+		stubAuthors();
+		assertThat(service.feed(null, null, null, "%_").items())
+				.extracting(item -> item.post().id()).containsExactly(1L);
+		assertThat(service.feed(null, null, null, "없는 제목").items()).isEmpty();
+	}
+
+	@Test
 	void guestRecommendedFeedIsShuffledOncePerSessionWithoutWhyShown() {
 		List<Post> rows = new ArrayList<>();
 		for (long id = 1; id <= 12; id++) {

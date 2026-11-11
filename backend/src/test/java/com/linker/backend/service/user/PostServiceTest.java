@@ -418,7 +418,12 @@ class PostServiceTest {
 		var second = service.like(developer, 42L);
 		assertThat(second.likeCount()).isEqualTo(1);
 		verify(likes, org.mockito.Mockito.times(1)).save(any(PostLike.class));
-		verify(notifications).create(any());
+		var notice = ArgumentCaptor.forClass(com.linker.backend.dto.notification.request.CreateNotificationCommand.class);
+		verify(notifications).create(notice.capture());
+		var payload = tools.jackson.databind.json.JsonMapper.builder().build().readTree(notice.getValue().payloadJson());
+		assertThat(notice.getValue().linkPath()).isEqualTo("/posts/42");
+		assertThat(payload.path("title").asString()).isEqualTo("dev님이 회원님의 게시물을 좋아했어요.");
+		assertThat(payload.path("body").asString()).isEqualTo(post.getSummary());
 	}
 
 	@Test
