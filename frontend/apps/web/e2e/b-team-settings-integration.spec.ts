@@ -195,6 +195,33 @@ test('09 exposes required settings without changing the main page body', async (
   await expect(page).toHaveURL('/subscribe?teamId=1');
 });
 
+test('09 read-only owner can return to setup without exposing team mutations', async ({
+  page,
+}, info) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem('linker_mock_readonly_team', '1');
+  });
+  await page.goto('/teams/1/settings');
+  // SSR data is fresh for 30 seconds. Revalidate against the page-local readonly fixture.
+  await page.clock.install();
+  await page.clock.fastForward(31_000);
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+  await expect(page.getByRole('button', { name: '초대 링크 복사', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '저장소 추가', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
+  const menu = page.getByRole('dialog', { name: '팀 설정', exact: true });
+  await expect(menu.getByRole('button', { name: '팀 정보 편집' })).toHaveCount(0);
+  await expect(menu.getByRole('button', { name: 'GitHub로 시작하기' })).toBeEnabled();
+  await page.screenshot({
+    path: info.outputPath('p09-read-only-reconnect.png'),
+    animations: 'disabled',
+    scale: 'css',
+  });
+  await menu.getByRole('button', { name: 'GitHub로 시작하기' }).click();
+  await expect(page).toHaveURL('/teams/new');
+  await expect(page.getByRole('dialog')).toBeHidden();
+});
+
 test('09 manages invite metadata and shares only a newly available original code', async ({page}, info) => {
   await page.goto('/teams/1/settings');
   await page.getByRole('button',{name:'팀 설정',exact:true}).click();
