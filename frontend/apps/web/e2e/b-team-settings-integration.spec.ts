@@ -64,6 +64,9 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
   });
   await page.goto('/teams/2/settings');
   await expect(page.getByRole('button', { name: / 관리$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '초대 링크 복사', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '팀 초대', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Github 조직 초대', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '저장소 추가', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: /연결 해제$/ })).toBeDisabled();
   await expect(page.getByRole('button', { name: '팀 나가기', exact: true })).toBeEnabled();
@@ -146,7 +149,7 @@ test('09 member leave confirmation calls the existing flow and returns to worksp
   await page.getByRole('button', { name: '팀 나가기', exact: true }).click();
   const dialog = page.getByRole('alertdialog', { name: '팀 나가기' });
   await expect(
-    dialog.getByText('팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?'),
+    dialog.getByText('팀을 나가시겠습니까?'),
   ).toBeVisible();
   await page.screenshot({
     path: info.outputPath('p09-leave-qa.png'),

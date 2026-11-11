@@ -57,6 +57,7 @@ test('main screen keeps Figma geometry and the centered mobile column at each su
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/workspace');
   await expect(page.getByRole('article', { name: '졸업작품 TF' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '내 이슈 전체 보기' })).toHaveText('더 보기');
   for (const width of [375, 360, 600, 1440]) {
     await page.setViewportSize({ width, height: 800 });
     await page.evaluate(() => document.fonts.ready);
