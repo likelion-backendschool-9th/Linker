@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.FeedSeenRequest;
 import com.linker.backend.dto.post.request.PinPostsRequest;
@@ -516,7 +517,7 @@ public class PostService {
 		enforceCommentLimits(user.userId());
 		Comment comment = comments.save(Comment.write(post, author, null, text));
 		post.increaseCommentCount();
-		notifyComment(post, null, user.userId(), comment.getId());
+		notifyComment(post, null, author, comment);
 		return toCommentResponse(comment);
 	}
 
@@ -859,7 +860,10 @@ public class PostService {
 		return count;
 	}
 
-	private void notifyComment(Post post, Comment parent, long actorId, long commentId) {
+	private void notifyComment(Post post, Comment parent, User actor, Comment comment) {
+		long actorId = actor.getId();
+		long commentId = comment.getId();
+		String preview = NotificationText.preview(comment.getBody());
 		long postAuthorId = post.getAuthor().getId();
 		if (postAuthorId != actorId) {
 			notifications.create(new CreateNotificationCommand(
@@ -869,7 +873,7 @@ public class PostService {
 					"COMMENT",
 					commentId,
 					"/posts/" + post.getId(),
-					null,
+					NotificationText.json(actor.visibleName() + "님이 회원님의 게시물에 댓글을 남겼어요.", preview),
 					"post-comment:" + post.getId() + ":" + commentId
 			));
 		}
@@ -883,7 +887,7 @@ public class PostService {
 						"COMMENT",
 						commentId,
 						"/posts/" + post.getId(),
-						null,
+						NotificationText.json(actor.visibleName() + "님이 회원님의 댓글에 답글을 남겼어요.", preview),
 						"comment-reply:" + parent.getId() + ":" + commentId
 				));
 			}

@@ -109,7 +109,8 @@ class ModerationReportNotificationTest {
 			assertThat(command.targetType()).isNull();
 			assertThat(command.targetId()).isNull();
 			assertThat(command.linkPath()).isEqualTo("/admin/reports");
-			assertThat(command.payloadJson()).isNull();
+			assertThat(command.payloadJson()).isEqualTo(
+					"{\"title\":\"신고가 쌓여 프로필이 자동으로 숨겨졌어요.\",\"body\":\"신고 관리에서 확인해 주세요\"}");
 			assertThat(command.groupKey()).isEqualTo("report-auto-hidden:" + caseId);
 		});
 	}
