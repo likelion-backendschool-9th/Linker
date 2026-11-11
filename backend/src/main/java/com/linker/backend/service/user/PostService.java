@@ -50,7 +50,6 @@ import com.linker.backend.entity.post.PostImage;
 import com.linker.backend.entity.post.PostLike;
 import com.linker.backend.entity.post.PostTag;
 import com.linker.backend.entity.post.type.PostVisibility;
-import com.linker.backend.entity.profile.TechTag;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -65,7 +64,6 @@ import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
 import com.linker.backend.repository.profile.FollowRepository;
-import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.profile.UserTechTagRepository;
 import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
@@ -88,7 +86,6 @@ public class PostService {
 	private final GithubRepoRepository repos;
 	private final PostRepository posts;
 	private final UserRepository users;
-	private final TechTagRepository techTags;
 	private final UploadService uploads;
 	private final PostLikeRepository likes;
 	private final CommentRepository comments;
@@ -111,7 +108,6 @@ public class PostService {
 			GithubRepoRepository repos,
 			PostRepository posts,
 			UserRepository users,
-			TechTagRepository techTags,
 			UploadService uploads,
 			PostLikeRepository likes,
 			CommentRepository comments,
@@ -131,7 +127,6 @@ public class PostService {
 		this.repos = repos;
 		this.posts = posts;
 		this.users = users;
-		this.techTags = techTags;
 		this.uploads = uploads;
 		this.likes = likes;
 		this.seenPosts = seenPosts;
@@ -398,7 +393,7 @@ public class PostService {
 				))
 				.toList();
 		List<String> demos = post.getDemoLinks().stream().map(PostDemoLink::getUrl).toList();
-		List<String> tags = post.getTags().stream().map(tag -> tag.getTag().getName()).toList();
+		List<String> tags = post.getTags().stream().map(PostTag::getName).toList();
 		return new PostEditFormResponse(
 				post.getId(),
 				post.getSummary(),
@@ -433,6 +428,13 @@ public class PostService {
 				content.teamSize(),
 				clock.instant()
 		);
+		// An edit sends the kept photos and tags back as-is. Hibernate flushes new child rows before
+		// it deletes the orphaned old ones, so re-adding the same file or tag would hit
+		// post_images_post_file_uk / post_tags_post_tag_uk. Delete the old rows first, then add.
+		post.replaceImages(List.of());
+		post.replaceDemoLinks(List.of());
+		post.replaceTags(List.of());
+		posts.flush();
 		post.replaceImages(content.images());
 		post.replaceDemoLinks(content.demoLinks());
 		post.replaceTags(content.tags());
@@ -716,27 +718,16 @@ public class PostService {
 		if (normalized.size() > PlanLimits.POST_TAGS_MAX) {
 			throw new ApiException(400, "VALIDATION_ERROR", "태그는 최대 5개예요");
 		}
+		if (normalized.stream().anyMatch(tag -> chars(tag) > PlanLimits.POST_TAG_MAX_LENGTH)) {
+			throw new ApiException(400, "VALIDATION_ERROR",
+					"태그는 " + PlanLimits.POST_TAG_MAX_LENGTH + "자까지 쓸 수 있어요");
+		}
 		return normalized;
 	}
 
+	/** POL-P-2: post tags are free text, kept as typed (already trimmed, deduplicated and capped) */
 	private List<PostTag> toPostTags(List<String> names) {
-		if (names.isEmpty()) {
-			return List.of();
-		}
-		List<TechTag> found = techTags.findByNameIn(names);
-		Map<String, TechTag> byName = new HashMap<>();
-		for (TechTag tag : found) {
-			byName.put(tag.getName(), tag);
-		}
-		List<PostTag> tags = new ArrayList<>();
-		for (String name : names) {
-			TechTag tag = byName.get(name);
-			if (tag == null) {
-				throw new ApiException(400, "VALIDATION_ERROR", "태그를 확인해 주세요");
-			}
-			tags.add(PostTag.of(tag));
-		}
-		return tags;
+		return names.stream().map(PostTag::of).toList();
 	}
 
 	/**

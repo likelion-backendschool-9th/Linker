@@ -84,6 +84,8 @@ public final class PlanLimits {
 	public static final int POST_ROLE_MAX = 40;
 	public static final int POST_DEMO_LINKS_MAX = 3;
 	public static final int POST_TAGS_MAX = 5;
+	/** Policy POL-P-2: one free-text post tag, the same length as a tech stack name */
+	public static final int POST_TAG_MAX_LENGTH = 40;
 	public static final int POST_TEAM_SIZE_MIN = 1;
 	/** Policy POL-P-2: a post's team size stops at 5; more people come from building a team and paying */
 	public static final int POST_TEAM_SIZE_MAX = 5;

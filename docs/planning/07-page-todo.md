@@ -637,7 +637,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Required: one-line intro (1–60 chars, emoji dropped as typed)
 - [ ] Body (2,000 chars, line breaks and links only, emoji dropped as typed)
 - [ ] Photos (required, at least 1): Free 5 / Pro 10, reorder, first is the cover, retry partial failures, publish only after all uploaded, subscription prompt if over the limit
-- [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–5; above 5 → "5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다" right away), up to 5 tags (sheet)
+- [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–5; above 5 → "5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다" right away), up to 5 tags (free text split at "#", each ≤ 40 chars → longer shows "태그는 40자까지 쓸 수 있어요.")
 - [ ] Step 2 fields: 2px `#E5E7EB` border at rest, blue on focus. "게시하기" uses the shared bottom-CTA colors: `#D3E0FB` until the one-line intro and all photos are in, then `#2563EB`
 - [ ] Edited posts show "수정됨"; 10/day (only published posts count); leaving mid-writing → restore draft
 

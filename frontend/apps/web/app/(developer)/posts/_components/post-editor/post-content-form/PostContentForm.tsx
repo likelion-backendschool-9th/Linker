@@ -100,6 +100,7 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
     registerIntro,
     registerBody,
     registerTeamSize,
+    tagTooLong,
     teamSizeOver,
     canSubmit,
     save,
@@ -468,8 +469,15 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
             placeholder="#을 기준으로 태그를 나눠주세요"
             autoComplete="off"
             enterKeyHint="done"
+            aria-invalid={tagTooLong || undefined}
+            aria-describedby={tagTooLong ? errorId('tags') : undefined}
             {...tagInput}
           />
+          {tagTooLong && (
+            <p id={errorId('tags')} className={styles.error}>
+              태그는 {POST.tagMaxLength}자까지 쓸 수 있어요.
+            </p>
+          )}
           {/* Chips — Figma 666:825 */}
           {tags.length > 0 && (
             <ul className={styles.tags} aria-label="저장소 태그">

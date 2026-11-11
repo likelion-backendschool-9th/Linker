@@ -21,6 +21,7 @@ import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { useImageUpload } from '@/features/image-upload/use-image-upload';
 import { ApiError } from '@/lib/api/api-error';
 import { noEmojiField } from '@/lib/format/no-emoji-field';
+import { countChars } from '@/lib/format/text';
 import { PLAN_LIMITS, POST } from '@/lib/policy';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 import { toast } from '@/stores/toast-store';
@@ -256,13 +257,20 @@ export function usePostContentForm({
     );
   }
 
-  /** Adds typed tags (trimmed, no repeats) up to POST.tagsMax */
+  /** Adds typed tags (trimmed, no repeats) up to POST.tagsMax; longer than POST.tagMaxLength is refused */
+  const [tagTooLong, setTagTooLong] = useState(false);
   function addTags(names: string[]) {
     const next = [...tags];
+    let tooLong = false;
     for (const raw of names) {
       const name = raw.trim();
+      if (countChars(name) > POST.tagMaxLength) {
+        tooLong = true;
+        continue;
+      }
       if (name && !next.includes(name) && next.length < POST.tagsMax) next.push(name);
     }
+    setTagTooLong(tooLong);
     if (next.length !== tags.length) form.setValue('tags', next, { shouldDirty: true });
   }
 
@@ -314,6 +322,7 @@ export function usePostContentForm({
     registerIntro,
     registerBody,
     registerTeamSize,
+    tagTooLong,
     teamSizeOver,
     canSubmit,
     save,

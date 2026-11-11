@@ -258,3 +258,27 @@ it('fills the edit screen with the saved post and its photos', async () => {
   expect(screen.getByText('대표 이미지')).toBeVisible();
   expect(screen.getByRole('button', { name: '수정 완료' })).toBeVisible();
 });
+
+it('keeps free-text tags as chips and refuses one longer than 40 characters (POL-P-2)', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(
+    <PostContentForm
+      target={{ mode: 'create', repoId: 12 }}
+      repo={summary}
+      photoLimit={summary.photoLimit}
+      initial={{ values: emptyPostForm(), photos: [] }}
+      draftKey="draft:post:tags"
+      onSaved={vi.fn()}
+    />,
+    developer,
+  );
+  const field = screen.getByLabelText(/저장소 태그/);
+  await user.type(field, '#주니어 개발자#ci/cd{Enter}');
+  expect(screen.getByRole('button', { name: '주니어 개발자 빼기' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'ci/cd 빼기' })).toBeVisible();
+
+  await user.type(field, `#${'가'.repeat(41)}{Enter}`);
+  expect(screen.getByText('태그는 40자까지 쓸 수 있어요.')).toBeVisible();
+  expect(field).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getAllByRole('button', { name: / 빼기$/ })).toHaveLength(2);
+});

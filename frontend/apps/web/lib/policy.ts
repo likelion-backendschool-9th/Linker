@@ -77,6 +77,8 @@ export const POST = {
   /** POL-P-2: above 5, people come from building a team and paying (Flex) */
   teamSize: { min: 1, max: 5 },
   tagsMax: 5,
+  /** POL-P-2: one free-text tag, the same length as a tech stack name (backend `POST_TAG_MAX_LENGTH`) */
+  tagMaxLength: 40,
   commentMax: 500,
 } as const;
 
