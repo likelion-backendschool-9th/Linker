@@ -1,6 +1,7 @@
 package com.linker.backend.service.user;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.dto.team.response.TeamSetupResponse.Complete;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.TeamAccess;
@@ -222,6 +223,7 @@ public class TeamSyncService {
     teams.closeChatMembership(teamId, userId, now);
     var recipients = new HashSet<>(teams.currentOwnerIds(teamId, false));
     recipients.add(userId);
+    String team = teamPrefix(teamId);
     for (long recipient : recipients)
       if (teams.canReceiveNotification(recipient))
         notifications.create(
@@ -232,7 +234,11 @@ public class TeamSyncService {
                 "TEAM",
                 teamId,
                 "/workspace",
-                null,
+                recipient == userId
+                    ? NotificationText.json(
+                        team + "팀에서 제외됐어요.", "GitHub 조직에서 빠져 팀에서도 제외됐어요")
+                    : NotificationText.json(
+                        team + "팀에서 팀원이 제외됐어요.", "GitHub 조직에서 빠진 팀원이 있어요"),
                 "org-member-removed:" + teamId + ":" + userId));
   }
 
@@ -382,6 +388,11 @@ public class TeamSyncService {
         });
   }
 
+  /** "{team name} " for notification titles, or empty when the row is gone. */
+  private String teamPrefix(long teamId) {
+    return teams.findById(teamId).map(team -> team.getName() + " ").orElse("");
+  }
+
   private static String lifecycleKey(long id) {
     return "linker:team-setup:last-lifecycle-sync:" + id;
   }
@@ -397,7 +408,9 @@ public class TeamSyncService {
                 "TEAM",
                 teamId,
                 "/teams/" + teamId + "/settings",
-                null,
+                NotificationText.json(
+                    teamPrefix(teamId) + "팀의 GitHub 앱 연결이 끊겼어요.",
+                    "팀이 읽기 전용이 됐어요. 설정에서 다시 연결해 주세요"),
                 "team-app-unavailable:" + teamId));
   }
 

@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.dto.recruit.request.AcceptApplicationRequest;
 import com.linker.backend.dto.recruit.request.ApplyRecruitRequest;
 import com.linker.backend.dto.recruit.request.RecruitRoleWriteRequest;
@@ -326,7 +327,7 @@ public class RecruitmentService {
 					"RECRUIT_POST",
 					post.getId(),
 					"/recruits/" + post.getId(),
-					null,
+					NotificationText.json("모집글이 삭제돼 지원이 종료됐어요.", post.getTitle()),
 					"application-expired:" + application.getId()
 			));
 		}
@@ -414,7 +415,9 @@ public class RecruitmentService {
 				"RECRUIT_POST",
 				post.getId(),
 				"/recruits/" + post.getId(),
-				null,
+				NotificationText.json(
+						applicant.visibleName() + "님이 회원님의 모집글에 지원했어요.",
+						post.getTitle() + " · " + role.getRole().label()),
 				"application-received:" + application.getId()
 		));
 		return new ApplicationCreateResponse(application.getId(), application.getStatus().name());
@@ -529,7 +532,10 @@ public class RecruitmentService {
 				"RECRUIT_POST",
 				recruitId,
 				"/chats/" + room.getId(),
-				null,
+				NotificationText.json(
+						teams.findById(teamId).map(team -> team.getName() + " 팀 지원이 수락됐어요.")
+								.orElse("지원이 수락됐어요."),
+						"팀 채팅방에서 인사해 보세요"),
 				"application-accepted:" + application.getId()
 		));
 
@@ -591,7 +597,7 @@ public class RecruitmentService {
 				"RECRUIT_POST",
 				recruitId,
 				"/recruits/" + recruitId,
-				null,
+				NotificationText.json("지원이 거절됐어요.", application.getRecruitPost().getTitle()),
 				"application-rejected:" + application.getId()
 		));
 	}
@@ -609,7 +615,7 @@ public class RecruitmentService {
 					"RECRUIT_POST",
 					application.getRecruitPost().getId(),
 					"/recruits/" + application.getRecruitPost().getId(),
-					null,
+					NotificationText.json("지원이 만료됐어요.", application.getRecruitPost().getTitle()),
 					"application-expired:" + application.getId()
 			));
 		}

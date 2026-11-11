@@ -3,6 +3,7 @@ package com.linker.backend.service.user;
 import com.linker.backend.dto.issue.request.IssueCreateRequest;
 import com.linker.backend.dto.issue.response.*;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.notification.type.NotificationTypes;
 import com.linker.backend.global.config.PlanLimits;
@@ -408,7 +409,9 @@ public class IssueCreateService {
                           "ISSUE",
                           id,
                           "/teams/" + s.context().teamId() + "/issues/" + id,
-                          null,
+                          NotificationText.json(
+                              IssueDetailService.assignedTitle(u.login()),
+                              s.repo().fullName() + " #" + issue.number() + " · " + issue.title()),
                           "issue-create:" + job + ":" + recipient));
             }
             syncJobs.finishCreation(job, id);

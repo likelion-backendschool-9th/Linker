@@ -1,4 +1,5 @@
-/* Figma 248:1387 notification row: 8px dot, 13px gap, 14px Medium text, 10px vertical padding */
+/* Figma 248:1387 notification row: 8px dot, 13px gap, 14px Medium title, 10px vertical padding.
+   The body line below the title has no Figma frame; it uses the meta size in the row color. */
 .row {
   display: flex;
   align-items: center;
@@ -37,6 +38,21 @@ button.row:disabled {
 .text {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.title {
+  display: block;
+}
+
+.body {
+  display: -webkit-box;
+  margin-top: var(--space-xxs);
+  overflow: hidden;
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-regular);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .appeal {
