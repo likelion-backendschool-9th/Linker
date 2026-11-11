@@ -8,8 +8,11 @@
 }
 
 .layout {
-  /* Room for the viewport-fixed action bar */
-  padding-bottom: calc(var(--control-height-sheet) + var(--space-xl) + env(safe-area-inset-bottom));
+  /* Room for the viewport-fixed action bar, same bottom offset as .actionBar */
+  padding-bottom: calc(
+    var(--control-height-sheet) + max(var(--space-home-indicator), env(safe-area-inset-bottom)) +
+      var(--space-xl)
+  );
 }
 
 .layoutNoCta {
@@ -22,38 +25,45 @@
   min-width: 0;
 }
 
-/* Figma 본문: title block → intro/tags gap ~30 */
+/* Figma 본문 262:106: 25 under the app bar (main already pads 16), then chips/title → intro →
+   tech stack, 25 apart; 30 above the first band */
 .head {
   display: grid;
   gap: var(--space-card-info); /* 25px */
-  padding-inline: var(--page-gutter);
-  padding-bottom: var(--space-lg);
+  padding: calc(var(--space-card-info) - var(--space-md)) var(--page-gutter)
+    var(--space-recruit-detail-section);
 }
 
-/* Figma 262:105 — title lead → deadline = 8 */
+/* Figma 262:105: chip row → title = 15 */
 .titleBlock {
   display: grid;
-  gap: var(--space-xs);
+  gap: var(--space-card-head);
 }
 
-/* Figma 262:113 — chips → title = 10 */
-.titleLead {
-  display: grid;
-  gap: var(--space-row-block);
+/* Figma 1093:328: chips on the left, "2026.11.16 마감" on the right */
+.chipRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
+/* Figma 262:108: 27 high, 5/10 padding, 14px regular */
 .formatChip,
 .goalChip {
   padding: var(--space-row-inline) var(--space-row-block);
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
   color: var(--color-text-title-cool);
+  white-space: nowrap;
   border-radius: var(--radius-full);
 }
 
@@ -65,43 +75,30 @@
   background-color: var(--color-chip-goal-bg);
 }
 
-/* Figma 262:101 — 24px row, icon centered with title */
-.titleRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-height: var(--icon-size);
+.deadline {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
+  white-space: nowrap;
 }
 
 .title {
   margin: 0;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-board-control);
   color: var(--color-text-title-cool);
   overflow-wrap: anywhere;
-}
-
-.titleActions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-}
-
-.deadline {
-  margin: 0;
-  font-size: var(--font-size-micro);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-caption);
-  color: var(--color-text-muted-cool);
 }
 
 .intro {
   margin: 0;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-card-desc);
+  line-height: var(--line-height-recruit-detail);
   color: var(--color-text-slate);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -116,22 +113,24 @@
   list-style: none;
 }
 
+/* Figma 93:281: 28 high, 3/8 padding, 4 radius, 12px medium on a 22 line */
 .tag {
   padding: var(--space-chip-block) var(--space-xs);
   font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-card-desc);
+  line-height: var(--line-height-recruit-detail);
   color: var(--color-text-slate);
   background-color: var(--color-canvas-cool);
   border-radius: var(--radius-xxs);
 }
 
-/* 6px cool divider bands between major blocks (Figma 93:299 top/bottom strokes) */
+/* 6px cool divider bands between major blocks (Figma 93:299 top/bottom strokes); 30 inside each
+   band, section title 12 above its box */
 .rolesSection,
 .teamSection {
   display: grid;
   gap: var(--space-sm);
-  padding: var(--space-lg) var(--page-gutter);
+  padding: var(--space-recruit-detail-section) var(--page-gutter);
 }
 
 .rolesSection {
@@ -148,14 +147,14 @@
 
 .sectionHeadInline {
   justify-content: flex-start;
-  gap: var(--space-xxs);
+  gap: var(--space-row-inline);
 }
 
 .sectionTitle {
   margin: 0;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-board-control);
   color: var(--color-text-title-cool);
 }
 
@@ -166,10 +165,16 @@
   color: var(--color-gnb-inactive);
 }
 
+/* Figma 93:335: "N명 모집 완료" in blue after the gray "전체 N명 중" */
+.sectionMetaStrong {
+  color: var(--color-cta-cool);
+}
+
+/* Figma 93:300 / 93:358: white box, 1px line, 14 radius, 15 padding, rows 10 apart */
 .roles,
 .members {
   margin: 0;
-  padding: var(--space-md);
+  padding: var(--space-recruit-detail-box);
   list-style: none;
   background-color: var(--color-canvas);
   border: 1px solid var(--color-hairline-cool);
@@ -178,7 +183,7 @@
 
 .roles {
   display: grid;
-  gap: var(--space-sm);
+  gap: var(--space-row-block);
 }
 
 .role {
@@ -186,7 +191,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  padding-bottom: var(--space-sm);
+  padding-bottom: var(--space-row-block);
+  line-height: var(--line-height-board-control);
   border-bottom: 1px solid var(--color-hairline-cool);
 }
 
@@ -204,7 +210,7 @@
 .roleStatus {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xxs);
+  gap: var(--space-row-block);
   font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
 }
@@ -223,17 +229,17 @@
 
 .members {
   display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-md);
+  gap: var(--space-row-block);
 }
 
+/* Figma 93:359: 40 avatar, text 7 after it, chevron at the right; 10 under the row to its line */
 .memberRow {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-sm);
+  column-gap: var(--space-recruit-member-text);
   align-items: center;
   min-height: var(--touch-target-min);
-  padding-bottom: var(--space-sm);
+  padding-bottom: var(--space-row-block);
   border-bottom: 1px solid var(--color-hairline-cool);
 }
 
@@ -251,14 +257,15 @@
 
 .memberText {
   display: grid;
-  gap: var(--space-xxs);
+  gap: var(--space-recruit-member-lines);
   min-width: 0;
+  line-height: var(--line-height-board-control);
 }
 
 .memberBadges {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xxs);
+  gap: var(--space-row-inline);
   align-items: center;
 }
 
@@ -289,7 +296,8 @@
   color: var(--color-text-muted-cool);
 }
 
-/* Viewport-fixed bottom CTA (Figma "지원하기"); bar fill is transparent */
+/* Viewport-fixed bottom CTA (Figma 93:73), floating one indicator area (24) above the edge — or the
+   safe area where that is larger — like 20's; the bar itself is see-through */
 .actionBar {
   position: fixed;
   inset-inline: 0;
@@ -298,42 +306,13 @@
   width: 100%;
   max-width: var(--content-max-width);
   margin-inline: auto;
-  padding: var(--space-sm) var(--page-gutter) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  padding: 0 var(--page-gutter) max(var(--space-home-indicator), env(safe-area-inset-bottom));
   background-color: transparent;
-}
-
-.actionRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-.actionMain {
-  flex: 1;
 }
 
 .actionStack {
   display: grid;
   gap: var(--space-xs);
-}
-
-.actionStatus {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  min-width: 0;
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
-}
-
-.pendingBadge {
-  padding: 0 var(--space-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-subtle-on-tint);
-  background-color: var(--color-canvas-soft);
-  border-radius: var(--radius-full);
 }
 
 .acceptedText {
@@ -353,9 +332,23 @@
   border-radius: var(--radius-control-md);
 }
 
-.applyCta {
+/* "지원하기" / "지원자 N명 보기" (Figma 93:73): 53 high, 14 radius, 16px semibold on the shared
+   page bottom-CTA blue */
+.applyCta,
+.cancelCta {
   min-height: var(--control-height-sheet);
-  color: var(--color-on-primary);
-  background-color: var(--color-cta-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-control-md);
+}
+
+.applyCta {
+  color: var(--color-on-cta-bottom);
+  background-color: var(--color-cta-bottom);
+}
+
+/* "지원 취소 하기" (Figma 1095:391): same box on the danger red */
+.cancelCta {
+  color: var(--color-on-cta-danger);
+  background-color: var(--color-cta-danger);
 }

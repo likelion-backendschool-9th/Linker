@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useRequireLogin } from '@/features/auth/use-require-login';
+import { shareRoomsOptions } from '@/features/share/share-api';
 import { ApiError } from '@/lib/api/api-error';
 import { useViewer } from '@/lib/auth/viewer-context';
 import { useOverlay } from '@/lib/navigation/use-overlay';
@@ -34,6 +35,8 @@ export function useReactionBar(post: Detail, canReact: boolean) {
   const requireLogin = useRequireLogin();
   const client = useQueryClient();
   const likers = useOverlay('post-likers');
+  // 24's share board, opened here too (one key so the drawer reads the post id from the URL)
+  const share = useOverlay('feed-share');
   const postId = String(post.id);
   const key = postKeys.detail(viewer.login, postId);
 
@@ -69,6 +72,14 @@ export function useReactionBar(post: Detail, canReact: boolean) {
     },
     openLikers: () => {
       if (requireLogin()) likers.open();
+    },
+    // Load my rooms on press, so the board usually opens with its list there (as on 24)
+    prefetchRooms: () => {
+      if (viewer.role !== 'guest') void client.prefetchQuery(shareRoomsOptions(viewer.login, ''));
+    },
+    // Guests get the login prompt first (POL-P-7)
+    openShare: () => {
+      if (requireLogin()) share.open(postId);
     },
   };
 }

@@ -21,11 +21,11 @@ const developer = { viewer: { role: 'developer' as const, login: 'developer' } }
 const repos: EditorRepo[] = [
   {
     repoId: 11,
-    fullName: 'linker-hack/linker-web',
+    fullName: 'seojun-han/linker-web',
     language: 'TypeScript',
     stars: 28,
     isFork: false,
-    teamId: 1,
+    teamId: null,
     alreadyPosted: true,
   },
   {
@@ -84,7 +84,8 @@ it('lists repos with forks and already-posted ones disabled', async () => {
   const { container } = renderWithProviders(<Harness />, developer);
   expect(await screen.findByText('저장소를 선택해 주세요')).toBeVisible();
   expect(screen.getByPlaceholderText('저장소 검색하기')).toBeVisible();
-  expect(await screen.findByText('포크')).toBeVisible();
+  // Fork chip right of the name (Figma 276:377)
+  expect(await screen.findByText('Fork')).toBeVisible();
   expect(screen.getByRole('radio', { name: /linker-web/ })).toBeDisabled();
   expect(screen.getByText('(이미 피드에 올린 레포)')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
@@ -95,6 +96,23 @@ it('lists repos with forks and already-posted ones disabled', async () => {
   expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
   await user.click(screen.getByRole('button', { name: '다음' }));
   expect(onNext).toHaveBeenCalledWith(42);
+});
+
+it('shows the Figma notice when my profile has no public repo', async () => {
+  fetchMock.mockImplementation(async (url) => {
+    if (url.startsWith('/api/v1/user/post-editor/repos')) return { items: [] };
+    return undefined;
+  });
+  const { container } = renderWithProviders(
+    <RepoStep teamId={null} repoId={null} onSelect={vi.fn()} onNext={vi.fn()} />,
+    developer,
+  );
+  expect(await screen.findByRole('heading', { name: '저장소를 선택할 수 없습니다' })).toBeVisible();
+  expect(screen.getByText('사용자 프로필에 공개 된 저장소가 없습니다')).toBeVisible();
+  // Nothing to search or pick: the heading and search give way to the notice (Figma 1100:562)
+  expect(screen.queryByPlaceholderText('저장소 검색하기')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+  expect(await axe(container)).toHaveNoViolations();
 });
 
 const cover = { fileId: 'a', url: '/mock/cover-1.svg' };
@@ -239,4 +257,28 @@ it('fills the edit screen with the saved post and its photos', async () => {
   expect(screen.getByText('사진 추가').closest('label')).toHaveTextContent('(2/5)');
   expect(screen.getByText('대표 이미지')).toBeVisible();
   expect(screen.getByRole('button', { name: '수정 완료' })).toBeVisible();
+});
+
+it('keeps free-text tags as chips and refuses one longer than 40 characters (POL-P-2)', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(
+    <PostContentForm
+      target={{ mode: 'create', repoId: 12 }}
+      repo={summary}
+      photoLimit={summary.photoLimit}
+      initial={{ values: emptyPostForm(), photos: [] }}
+      draftKey="draft:post:tags"
+      onSaved={vi.fn()}
+    />,
+    developer,
+  );
+  const field = screen.getByLabelText(/저장소 태그/);
+  await user.type(field, '#주니어 개발자#ci/cd{Enter}');
+  expect(screen.getByRole('button', { name: '주니어 개발자 빼기' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'ci/cd 빼기' })).toBeVisible();
+
+  await user.type(field, `#${'가'.repeat(41)}{Enter}`);
+  expect(screen.getByText('태그는 40자까지 쓸 수 있어요.')).toBeVisible();
+  expect(field).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getAllByRole('button', { name: / 빼기$/ })).toHaveLength(2);
 });

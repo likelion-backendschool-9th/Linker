@@ -564,11 +564,11 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: R-2, R-3 · Needs first: 04 · Merged: my applications → tab
 
 - [ ] Tabs: 전체 (all) / 내 모집 글 (my posts) / 내 지원 (my applications) (guests: All tab only; other tabs and "모집 글 쓰기" show login prompt)
-- [ ] Recruit card: title, remaining slots per role, tech stack, format, deadline D-day
-- [ ] Title search box (All tab, POL-R-2): part of the title, case-insensitive, max 40 chars; combined with filters and sort, stored in URL `q` (nuqs)
-- [ ] (sheet) Filters: role, tech stack, online/offline. Stored in URL (nuqs)
+- [ ] Recruit card: title, project intro (first 200 characters, longer → "...자세히 보기" to 21), remaining slots per role, tech stack, format, deadline D-day; "자세히 보기 ∨" opens the detail rows 10px apart (Figma 254:2255, 361:981)
+- [ ] Title search box (All tab, POL-R-2): part of the title, case-insensitive, max 40 chars; combined with filters and sort, stored in URL `q` (nuqs); runs on Enter or the magnifier only. The search + filter area (Figma 253:2122) shows once scrolled, and also at the top while `q` or a filter is set
+- [ ] (sheet) Filters: role, tech stack, online/offline. Stored in URL (nuqs). Picking only marks the option; "완료" applies it, and the chip then shows the picked value instead of its name (역할 → 프론트엔드). Long lists scroll in the sheet without a visible scrollbar. Tech stack is one pick from gray chips, the picked one blue (Figma 301:1914). A last "초기화" chip clears the search, the filters and the sort (Figma 248:1531)
 - [ ] Sort: newest / closing soon; infinite scroll; open posts only
-- [ ] My applications tab: 검토 중 (under review) / accepted ("팀 채팅 바로가기") / rejected ("이번엔 함께하지 못하게 됐어요") / expired ("모집이 끝났어요"); cancel while under review
+- [ ] My applications tab: the recruit posts I applied to, as plain list cards (no role/status line or actions). The status, cancel while under review and the team chat shortcut are on 21. Empty "내 지원" → "지원한 게시물이 없습니다", empty "내 모집 글" → "팀을 모으고 있지 않아요": one 14px Medium #98a3b4 line, centered, 200px below the list top (writing stays on the FAB)
 - [ ] "모집 글 쓰기" (write recruit post) button → 20
 - [ ] Exclude posts by blocked people; no results → "필터를 줄여 보세요"
 
@@ -577,9 +577,11 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: R-1, S-5 · Needs first: 19
 
 - [ ] Required: title (40 chars), intro (1,000), headcount per role (1–10 per role), format (online / offline / hybrid), deadline (today through 6 months from today)
-- [ ] Optional: tech stack (max 10), expected duration, region (required if offline), goal (contest / hackathon / launch / learning)
+- [ ] Optional: tech stack (max 10), expected duration (digits only, unit fixed to 개월, 1–99), region (required if offline), goal (contest / hackathon / launch / learning)
+- [ ] Non-Flex linked team: all roles together at most 5 people — at 5, "+" on each role and "역할 추가" are disabled (icon/label `#B2B7C3`, box unchanged) with the POL-R-1 copy under the button. Role row delete is Solar forbidden-circle-linear (Figma 361:1113)
+- [ ] Every text field and select: 2px `#E5E7EB` border, `#2563EB` on focus. Bottom CTA uses the shared bottom-CTA tokens: `#D3E0FB` fill / white label until required fields are filled, then `#2563EB`
 - [ ] "팀 선택" (required; active teams where I'm owner/admin only — cannot publish without a team), placed right under 프로젝트 소개 (Figma 600:715). Notice always shown under the field: "팀이 없으면 모집글을 작성할 수 없습니다."; with no linkable team the select is disabled ("연결할 수 있는 팀이 없어요") and the post can't be saved. Server rejects a missing team (400) or one I can't link (403); on edit, the already-linked team may stay, but only while I still own or admin it — otherwise saving shows the error toast "글을 수정할 권한이 없습니다." (403 `TEAM_ROLE_REQUIRED`)
-- [ ] No emoji in title, intro, region or expected duration: the inputs drop them as typed or pasted (no error message)
+- [ ] No emoji in title, intro or region: the inputs drop them as typed or pasted (no error message)
 - [ ] Over 3 concurrent (Pro 10) → subscription prompt; 5/day (only published recruit posts count) → toast "하루 모집글의 최대 한도는 N번 입니다." (N = 5, no resend)
 - [ ] Edit limits: roles with applicants can't be deleted, headcount can't go below current acceptances
 - [ ] Close / reopen (confirm sheet), delete (pending applications become expired with notification). Reopen refused: all roles filled → "모집 인원이 모두 찼어요. 인원을 늘린 뒤 다시 열어 주세요."; deadline passed → "마감일이 지났어요. 마감일을 바꾼 뒤 다시 열어 주세요." (same toasts on 21's author menu)
@@ -596,14 +598,15 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [x] (sheet) Apply: choose one open role only (no "하고 싶은 말"). Server rejects a role that filled meanwhile (`ROLE_FULL`) → "해당 역할은 마감됐어요." on the role field
 - [ ] Once per post (one re-apply after cancelling); not on own post or with block relationship
 - [ ] Already a member of that team → hide apply CTA (same as author)
-- [ ] Show my application status + cancel; more → report
+- [ ] Applied (pending) → the bottom CTA becomes a red "지원 취소 하기" (Figma 1095:391), confirmed in the login-prompt modal layout: title "지원 취소", "지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?", buttons "취소하기" / "지원 유지". App-bar "더보기" → report / share
+- [ ] Layout (Figma 92:578): "더보기" sits in the app bar (not beside the title); the deadline ("YYYY.M.D 마감") sits to the right of the format/goal chips, title below them
 - [ ] Server: application-received notification
 
 **What the author sees**
 
 - [ ] Bottom CTA "지원자 N명 보기" → applicants drawer (filter by role; days left until 14-day auto-expiry)
-- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "초대하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
-- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant — automatically, after both "초대하기" and "인원 늘리고 초대" (the latter shows a "GitHub 조직 초대 다시 보내기" retry if it failed). Failure → toast "초대에 실패했어요." + reason; a failed GitHub org invite alone keeps the team invite ("팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.")
+- [ ] Row: radio (pending only) + avatar/name → public profile (04); pending → row "거절"; after invite → "대기" (stays in list). Rejected/expired leave the list (done). Bottom "수락하기" for the selected inviteable pending applicant. Role remaining 0 → invite disabled
+- [ ] Invite: add team member + team chat + notification; when author is team owner and GitHub org owner, also send the GitHub org invite to the applicant — automatically, after both "수락하기" and "인원 늘리고 초대" (the latter shows a "GitHub 조직 초대 다시 보내기" retry if it failed). Failure → toast "초대에 실패했어요." + reason; a failed GitHub org invite alone keeps the team invite ("팀으로 초대했어요. GitHub 조직 초대는 보내지 못했어요.")
 - [ ] Capacity: role full → disable invite (optional "인원 늘리고 초대"); free team at member limit (6) → reason only — no Flex/BM upsell from recruit detail (upgrade lives on team/plan surfaces). No "팀 없음" path — posts require a linked team on 20
 - [ ] Reject: row "거절" → (modal) confirm only, no reason; applicant only sees the fixed copy
 - [ ] Invite/reject still possible after closing; edit / close / delete menu
@@ -624,8 +627,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 1: Choose repo**
 
-- [ ] Only public repos from my account and orgs I belong to, with search
-- [ ] Already-posted repos disabled; forks show "포크"
+- [ ] Only public repos on my own profile (forks included; no org repos), with search. None at all → centered "저장소를 선택할 수 없습니다" / "사용자 프로필에 공개 된 저장소가 없습니다" with "다음" disabled (Figma 1100:562)
+- [ ] Already-posted repos disabled; forks show "Fork"
 - [ ] Coming from a completed team's "작업물 올리기" (09 settings) pre-selects the team repo
 
 **Step 2: Content**
@@ -634,7 +637,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Required: one-line intro (1–60 chars, emoji dropped as typed)
 - [ ] Body (2,000 chars, line breaks and links only, emoji dropped as typed)
 - [ ] Photos (required, at least 1): Free 5 / Pro 10, reorder, first is the cover, retry partial failures, publish only after all uploaded, subscription prompt if over the limit
-- [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags (sheet)
+- [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–5; above 5 → "5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다" right away), up to 5 tags (free text split at "#", each ≤ 40 chars → longer shows "태그는 40자까지 쓸 수 있어요.")
+- [ ] Step 2 fields: 2px `#E5E7EB` border at rest, blue on focus. "게시하기" uses the shared bottom-CTA colors: `#D3E0FB` until the one-line intro and all photos are in, then `#2563EB`
 - [ ] Edited posts show "수정됨"; 10/day (only published posts count); leaving mid-writing → restore draft
 
 ### 23. Project post detail `[Required]` · `/posts/[id]`
@@ -642,7 +646,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: P-3, P-5, P-7, S-4 · Needs first: 22
 
 - [ ] Author (→ 04) with "팔로우"/"팔로잉" (04 follow API; hidden for the author and recruiters, guests get the login prompt), photo swipe + full-screen viewer
-- [ ] Repo card ("레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields. Commit and issue counts: follow-up work
+- [ ] Repo card (tap opens the GitHub repo straight away, no "외부 사이트로 이동합니다" sheet; "레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields. Commit and issue counts: follow-up work
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only, 20 at a time with infinite scroll)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
@@ -651,7 +655,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)
 - [ ] Hidden by reports → author sees "검토 중", others see unavailable content
-- [ ] `[Included]` Share button → 00 share sheet (share to chat room after 17)
+- [ ] `[Included]` Share button → the same "공유하기" board as 24's feed cards (Figma 780:584: room search, per-room "공유하기", "링크 복사하기"); guests get the login prompt first
 - [ ] `generateMetadata` (summary line, first 120 chars of body) + OG image (cover photo; every post has one since photos are required). Default when deleted/hidden; strip `?from=share` from canonical (blueprint 8-3)
 - [ ] Server: comment and like notifications, view logging with traffic source (feed, profile, recruit post, chat share, external link `?from=share`) → for 30 stats; start collecting early
 - [ ] Do 04 profile pass 2 (post list, pinned posts) now
@@ -665,7 +669,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Infinite scroll + virtualization
 - [ ] Write button → 22
 - [ ] Card comment icon → comment sheet (Figma 374:3944)
-- [ ] Card paper-plane icon → feed share drawer (Figma 780:584, POL-P-7 feed share drawer): centered card, max 600px tall (only the room list scrolls, scrollbar hidden); title "공유하기" + ×, room search (blue border on focus), one room list (photo + name, blue "팀" after team rooms, per-row "공유하기" sends the card), "링크 복사하기" at the bottom. Recruiters: 1:1 rooms only. Guests get the login prompt. Feed only; 23, 21, 04 keep the 00 share sheet
+- [ ] Card paper-plane icon → feed share drawer (Figma 780:584, POL-P-7 feed share drawer): centered card, max 600px tall (only the room list scrolls, scrollbar hidden); title "공유하기" + ×, room search (blue border on focus), one room list (photo + name, blue "팀" after team rooms, per-row "공유하기" sends the card), "링크 복사하기" at the bottom. Recruiters: 1:1 rooms only. Guests get the login prompt. Also used by 23's share icon; 21 and 04 keep the 00 share sheet
 - [ ] Empty "추천" (no visible posts at all): up to 5 developers recommended by my tech stack, most shared tags first, excluding people I follow or have a block with (with follow buttons)
 - [ ] Guest feed: "추천" in random order with no "why shown", write button shows login prompt, seen posts not recorded
 - [ ] Server "추천" for developers and operators: posts sharing a tag with my tech stack or whose author picked one of my job categories first (by popularity score), then the rest in random order; posts seen on an earlier visit last; max 2 consecutive by the same author

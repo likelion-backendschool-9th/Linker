@@ -19,7 +19,7 @@ import styles from './FeedList.module.css';
 import { useFeedList, useVirtualFeedLanes, useVirtualLanes, useWriteButton } from './hook';
 import { CommentSheet } from '../comment-sheet';
 import { FeedTabs, feedPanelId, feedTabId } from '../feed-tabs';
-import { ShareDrawer } from '../share-drawer';
+import { ShareDrawer } from '../../../_components/share-drawer';
 import { PostCard } from '../post-card';
 import { RecommendedUsers } from '../recommended-users';
 

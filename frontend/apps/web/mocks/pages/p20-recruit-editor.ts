@@ -68,7 +68,7 @@ export const routes: MockRoute[] = [
     () => ({
       // Teams I can link: owner / admin (POL-R-1)
       teams: TEAMS.filter((t) => t.myRole !== 'MEMBER' && t.status === 'ACTIVE').map(
-        ({ id, name }) => ({ id, name }),
+        ({ id, name, plan }) => ({ id, name, flex: plan === 'FLEX' }),
       ),
       openCount: openCount(),
       openLimit: OPEN_LIMIT,

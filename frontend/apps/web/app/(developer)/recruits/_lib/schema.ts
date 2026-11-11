@@ -25,6 +25,7 @@ export type RecruitFormValues = {
   format: RecruitFormat;
   region: string;
   goal: RecruitGoal | '';
+  /** Expected duration in months as typed digits (`''` = none); sent as "N개월" */
   duration: string;
   /** `yyyy-MM-dd` (KST) */
   deadline: string;
@@ -54,16 +55,40 @@ type SchemaContext = {
   maxDeadline: string;
   /** Edit: accepted headcount per existing role id; headcount can't go below it */
   minHeadcountByRole?: Record<string, number>;
+  /** Linkable teams on Flex; any other team caps the total headcount (POL-R-1) */
+  flexTeamIds?: number[];
 };
 
 const { min: HEADCOUNT_MIN, max: HEADCOUNT_MAX } = RECRUIT.headcountPerRole;
+const { min: DURATION_MIN, max: DURATION_MAX } = RECRUIT.durationMonths;
 const limit = (max: number) => max.toLocaleString('ko-KR');
 
 /** POL-R-1: recruit post text takes no emoji */
 const NO_EMOJI = '이모지는 입력할 수 없어요.';
 const noEmoji = (value: string) => !hasEmoji(value);
 
-export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} }: SchemaContext) {
+/** Total headcount a post may ask for with this team: capped unless the team is on Flex (POL-R-1) */
+export function headcountTotalMax(teamId: string, flexTeamIds: readonly number[]): number | null {
+  return teamId !== '' && flexTeamIds.includes(Number(teamId)) ? null : RECRUIT.freeTeamHeadcountTotal;
+}
+
+export const FREE_TEAM_HEADCOUNT_MESSAGE = `Flex를 구독하지 않은 팀은 모든 역할을 합쳐 ${RECRUIT.freeTeamHeadcountTotal}명까지 모집할 수 있어요.`;
+
+/**
+ * Saved text → the digits the duration field holds: "3개월" or "3" → "3". Anything else (older
+ * free text such as "2주") can't be shown as months and starts empty.
+ */
+export function durationMonthsFromText(text: string | null | undefined): string {
+  const match = /^\s*(\d{1,2})\s*(개월)?\s*$/.exec(text ?? '');
+  return match?.[1] ? String(Number(match[1])) : '';
+}
+
+export function recruitFormSchema({
+  today,
+  maxDeadline,
+  minHeadcountByRole = {},
+  flexTeamIds = [],
+}: SchemaContext) {
   return z
     .object({
       title: z
@@ -126,7 +151,14 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
         )
         .refine(noEmoji, NO_EMOJI),
       goal: z.union([z.enum(RECRUIT_GOALS), z.literal('')]),
-      duration: z.string().refine(noEmoji, NO_EMOJI),
+      duration: z
+        .string()
+        .refine(
+          (value) =>
+            value === '' ||
+            (/^\d+$/.test(value) && Number(value) >= DURATION_MIN && Number(value) <= DURATION_MAX),
+          `예상 기간은 ${DURATION_MIN}~${DURATION_MAX}개월로 입력해 주세요.`,
+        ),
       deadline: z
         .string()
         .min(1, '마감일을 골라 주세요.')
@@ -147,6 +179,11 @@ export function recruitFormSchema({ today, maxDeadline, minHeadcountByRole = {} 
           message: '오프라인 모집은 지역을 입력해 주세요.',
         });
       }
+      const totalMax = headcountTotalMax(values.teamId, flexTeamIds);
+      const total = values.roles.reduce((sum, role) => sum + role.headcount, 0);
+      if (totalMax !== null && total > totalMax) {
+        ctx.addIssue({ code: 'custom', path: ['roles'], message: FREE_TEAM_HEADCOUNT_MESSAGE });
+      }
     });
 }
 
@@ -162,7 +199,7 @@ export function toRecruitRequest(values: RecruitFormValues): RecruitRequest {
     format: values.format,
     region: values.format === 'ONLINE' || !region ? null : region,
     goal: values.goal || null,
-    duration: values.duration.trim() || null,
+    duration: values.duration ? `${Number(values.duration)}개월` : null,
     deadline: values.deadline,
     techTags: values.techTags,
     teamId: Number(values.teamId),

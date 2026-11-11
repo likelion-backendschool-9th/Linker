@@ -39,22 +39,25 @@ export function withTimeout<T>(
   if (signal?.aborted) onCallerAbort();
   else signal?.addEventListener('abort', onCallerAbort, { once: true });
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timedOut = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort(timeout);
-      reject(timeout);
-    }, timeoutMs);
-  });
+  // TEMP (QA, 2026-11-11): request time limit turned off; requests wait for their answer. A caller's
+  // cancel still goes through. Restore the timer below (and the skipped tests) to bring it back.
+  // let timer: ReturnType<typeof setTimeout> | undefined;
+  // const timedOut = new Promise<never>((_, reject) => {
+  //   timer = setTimeout(() => {
+  //     controller.abort(timeout);
+  //     reject(timeout);
+  //   }, timeoutMs);
+  // });
 
-  return Promise.race([task(controller.signal), timedOut])
+  // return Promise.race([task(controller.signal), timedOut])
+  return task(controller.signal)
     .catch((error: unknown) => {
       // fetch rejects with an AbortError once we abort it; report it as the timeout it was
       if (controller.signal.reason === timeout) throw timeout;
       throw error;
     })
     .finally(() => {
-      clearTimeout(timer);
+      // clearTimeout(timer);
       signal?.removeEventListener('abort', onCallerAbort);
     });
 }

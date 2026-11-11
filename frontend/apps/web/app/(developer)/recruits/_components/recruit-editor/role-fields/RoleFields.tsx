@@ -2,6 +2,7 @@
 
 // Own region: the repeating "role + headcount" rows of 20 (POL-R-1, 04 ch. 5 edit exceptions)
 import { AddBoldIcon } from '@solar-icons/static/bold/add';
+import { ForbiddenCircleLinearIcon } from '@solar-icons/static/linear/forbidden-circle';
 import { MinusLinearIcon } from '@solar-icons/static/linear/minus';
 import type { ReactNode } from 'react';
 import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form';
@@ -11,7 +12,7 @@ import { RECRUIT_ROLE_LABELS, RECRUIT_ROLES } from '@/features/recruit/recruit-l
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { RECRUIT } from '@/lib/policy';
 
-import type { RecruitFormValues } from '../../../_lib/schema';
+import { FREE_TEAM_HEADCOUNT_MESSAGE, type RecruitFormValues } from '../../../_lib/schema';
 import styles from '../RecruitEditor.module.css';
 import { RoleSheet } from './RoleSheet';
 
@@ -24,6 +25,8 @@ type RoleFieldsProps = {
   minHeadcountByRole: Record<string, number>;
   /** Shared required-field dot + sr-only text, built once in RecruitEditor (Figma 257:2592) */
   requiredDot: ReactNode;
+  /** Most people across all roles for the chosen team; null = Flex, no cap (POL-R-1) */
+  headcountTotalMax: number | null;
 };
 
 const { min: HEADCOUNT_MIN, max: HEADCOUNT_MAX } = RECRUIT.headcountPerRole;
@@ -34,6 +37,7 @@ export function RoleFields({
   lockedRoleIds,
   minHeadcountByRole,
   requiredDot,
+  headcountTotalMax,
 }: RoleFieldsProps) {
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'roles' });
   const roles = useWatch({ control: form.control, name: 'roles' }) ?? [];
@@ -41,6 +45,10 @@ export function RoleFields({
   const unused = RECRUIT_ROLES.filter((role) => !roles.some((item) => item?.role === role));
   const headingId = `${idPrefix}-heading`;
   const roleSheet = useOverlay('recruit-role');
+  const total = roles.reduce((sum, item) => sum + (Number(item?.headcount) || 0), 0);
+  // Non-Flex team at its cap: no more people, so neither "+" nor a new role (which adds one)
+  const atTotalCap = headcountTotalMax !== null && total >= headcountTotalMax;
+  const capHintId = `${idPrefix}-cap-hint`;
 
   const setHeadcount = (index: number, next: number) =>
     form.setValue(`roles.${index}.headcount`, next, {
@@ -103,7 +111,8 @@ export function RoleFields({
                   <button
                     type="button"
                     className={styles.stepButton}
-                    disabled={headcount >= HEADCOUNT_MAX}
+                    disabled={headcount >= HEADCOUNT_MAX || atTotalCap}
+                    aria-describedby={atTotalCap ? capHintId : undefined}
                     onClick={() => setHeadcount(index, Math.min(HEADCOUNT_MAX, headcount + 1))}
                   >
                     <span className={styles.stepButtonBox}>
@@ -117,7 +126,7 @@ export function RoleFields({
                       className={styles.removeButton}
                       onClick={() => remove(index)}
                     >
-                      <span className={styles.removeButtonBox} aria-hidden />
+                      <Icon svg={ForbiddenCircleLinearIcon} className={styles.removeIcon} />
                       <span className="sr-only">{label} 역할 빼기</span>
                     </button>
                   )}
@@ -138,13 +147,20 @@ export function RoleFields({
       <button
         type="button"
         className={styles.addRoleButton}
-        disabled={unused.length === 0}
+        disabled={unused.length === 0 || atTotalCap}
+        aria-describedby={atTotalCap ? capHintId : undefined}
         onClick={() => roleSheet.open()}
       >
         역할 추가
         <Icon svg={AddBoldIcon} className={styles.addRoleIcon} />
       </button>
       {unused.length === 0 && <p className={styles.hint}>모든 역할을 추가했어요.</p>}
+      {/* Says why "+" and "역할 추가" went pale, so the state isn't color alone */}
+      {atTotalCap && (
+        <p id={capHintId} className={styles.hint}>
+          {FREE_TEAM_HEADCOUNT_MESSAGE}
+        </p>
+      )}
 
       <RoleSheet
         overlay={roleSheet}

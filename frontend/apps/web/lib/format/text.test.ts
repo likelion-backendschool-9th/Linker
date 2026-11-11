@@ -1,4 +1,11 @@
-import { hasEmoji, stripEmoji } from './text';
+import { hasEmoji, stripEmoji, truncateChars } from './text';
+
+it('cuts at N characters as the policy counts them, never splitting an emoji', () => {
+  expect(truncateChars('  짧은 소개  ', 200)).toEqual({ text: '짧은 소개', truncated: false });
+  expect(truncateChars('가'.repeat(201), 200)).toEqual({ text: '가'.repeat(200), truncated: true });
+  expect(truncateChars('👨‍👩‍👧'.repeat(3), 2)).toEqual({ text: '👨‍👩‍👧'.repeat(2), truncated: true });
+  expect(truncateChars('공연 정보 플랫폼', 6)).toEqual({ text: '공연 정보', truncated: true });
+});
 
 it('strips emoji so nothing hasEmoji would catch is left', () => {
   expect(stripEmoji('배포 완료 🚀')).toBe('배포 완료 ');

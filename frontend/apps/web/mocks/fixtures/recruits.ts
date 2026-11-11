@@ -88,7 +88,9 @@ export const RECRUITS: MockRecruit[] = [
     author: brief(seoyeon!),
     teamId: null,
     title: 'Flutter 앱 사이드 프로젝트 팀원',
-    intro: '출시까지 같이 갈 분을 찾아요. 아직 팀은 만들지 않았어요.',
+    // Longer than the 19 card preview (200), so the list shows "...자세히 보기"
+    intro:
+      '출시까지 같이 갈 분을 찾아요. 아직 팀은 만들지 않았어요. 연극·뮤지컬·무용·국악·콘서트 같은 공연 정보를 공연장과 예매처마다 따로 찾지 않고 한 번에 모아 보는 앱을 만들고 있어요. 관심 공연을 저장하면 예매 오픈과 공연 일정을 캘린더로 알려 주고, 함께 갈 친구에게 공유할 수도 있어요. 기획과 디자인 초안은 나와 있고, Flutter로 첫 화면을 만들어 두었어요. 주 1회 서울에서 오프라인으로 만나고 나머지는 온라인으로 진행해요. 출시 후에도 같이 운영할 분이면 더 좋아요.',
     format: 'HYBRID',
     region: '서울',
     goal: 'LAUNCH',
@@ -228,6 +230,7 @@ export function recruitCard(item: MockRecruit) {
   return {
     id: item.id,
     title: item.title,
+    intro: item.intro,
     author: item.author,
     format: item.format,
     region: item.region,

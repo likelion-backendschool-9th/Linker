@@ -4,6 +4,7 @@
 import { ChatRoundLinearIcon } from '@solar-icons/static/linear/chat-round';
 import { HeartBoldIcon } from '@solar-icons/static/bold/heart';
 import { LinkMinimalisticBoldIcon } from '@solar-icons/static/bold/link-minimalistic';
+import { AltArrowRightLinearIcon } from '@solar-icons/static/linear/alt-arrow-right';
 import { HeartOutlineIcon } from '@solar-icons/static/outline/heart';
 import { Plane3OutlineIcon } from '@solar-icons/static/outline/plane-3';
 import type { Route } from 'next';
@@ -13,11 +14,12 @@ import Link from 'next/link';
 import { ErrorState } from '@/components/ui/error-state/ErrorState';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton/Skeleton';
+import { openExternalNow } from '@/features/external-link/open-external';
 import { useOpenExternal } from '@/features/external-link/use-open-external';
 import { GitHubMark } from '@/features/github/github-mark/GithubMark';
-import { ShareButton } from '@/features/share/share-button';
 import { formatWrittenDate, toKstIso } from '@/lib/format/time';
 
+import { ShareDrawer } from '../../../../_components/share-drawer';
 import { linkify } from '../../_lib/linkify';
 import type { PostDetail as Detail } from '../../_lib/post-detail-queries';
 import { CommentSection } from '../comment-section';
@@ -46,6 +48,13 @@ export function PostDetail({ postId }: { postId: string }) {
   if (detail.isError || !post) return <ErrorState onRetry={() => void detail.refetch()} />;
 
   const [owner = '', repoName = post.repo.fullName] = post.repo.fullName.split('/');
+  // 22 saves up to 4 picked roles joined with ", " (POL-P-2); each gets its own chip (Figma 285:238)
+  const roles = post.myRole
+    ? post.myRole
+        .split(',')
+        .map((role) => role.trim())
+        .filter(Boolean)
+    : [];
 
   return (
     <>
@@ -63,14 +72,17 @@ export function PostDetail({ postId }: { postId: string }) {
         <div className={styles.content}>
           <header className={styles.head}>
             <div className={styles.titleLead}>
-              {(post.myRole || post.repo.isFork) && (
+              {(roles.length > 0 || post.repo.isFork) && (
                 <p className={styles.chips}>
-                  {post.myRole && (
-                    <span className={styles.roleChip}>
-                      <span className="sr-only">내 역할 </span>
-                      {post.myRole}
+                  {roles.length > 0 && <span className="sr-only">내 역할 </span>}
+                  {roles.map((role, index) => (
+                    <span
+                      key={role}
+                      className={index % 2 === 0 ? styles.roleChip : styles.roleChipAlt}
+                    >
+                      {role}
                     </span>
-                  )}
+                  ))}
                   {/* Forked repo (04 ch. 4 exceptions): same chip as the role, next to it */}
                   {post.repo.isFork && (
                     <span className={styles.roleChip}>
@@ -110,6 +122,8 @@ export function PostDetail({ postId }: { postId: string }) {
 
       <PostMenuSheet post={post} />
       <LikersSheet postId={postId} />
+      {/* Same "공유하기" board as 24's feed cards (Figma 780:584) */}
+      {post.visibility === 'VISIBLE' && <ShareDrawer />}
     </>
   );
 }
@@ -206,10 +220,14 @@ function DemoLinks({ links }: { links: string[] }) {
   );
 }
 
-/** Figma 287:399: GitHub mark, repo name, owner. Private or deleted → "레포를 볼 수 없음" (POL-P-1) */
+/**
+ * Figma 287:399: GitHub mark, repo name, owner. Private or deleted → "레포를 볼 수 없음" (POL-P-1).
+ * Opens GitHub straight away, without the "외부 사이트로 이동합니다" sheet (04 ch. 2 exception: the
+ * repo card's own github.com link); the app still hands it to the system browser.
+ */
 function RepoCard({ post, owner, repoName }: { post: Detail; owner: string; repoName: string }) {
-  const openExternal = useOpenExternal();
   const available = post.repo.state === 'PUBLIC';
+  const href = `https://github.com/${post.repo.fullName}`;
 
   const summary = (
     <>
@@ -222,14 +240,20 @@ function RepoCard({ post, owner, repoName }: { post: Detail; owner: string; repo
   );
 
   return available ? (
-    <button
-      type="button"
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className={styles.repoCard}
-      onClick={() => openExternal(`https://github.com/${post.repo.fullName}`)}
+      onClick={(event) => {
+        event.preventDefault();
+        openExternalNow(href);
+      }}
     >
       {summary}
-      <span className="sr-only"> GitHub에서 보기</span>
-    </button>
+      <span className="sr-only"> GitHub에서 보기 (새 창)</span>
+      <Icon svg={AltArrowRightLinearIcon} className={styles.repoChevron} />
+    </a>
   ) : (
     <div className={styles.repoCard}>{summary}</div>
   );
@@ -237,10 +261,8 @@ function RepoCard({ post, owner, repoName }: { post: Detail; owner: string; repo
 
 /** Figma 287:450: like (toggle) + count (likers sheet), comment count, share */
 function ReactionBar({ post, canReact }: { post: Detail; canReact: boolean }) {
-  const { likedByMe, likeCount, commentCount, toggleLike, openLikers } = useReactionBar(
-    post,
-    canReact,
-  );
+  const { likedByMe, likeCount, commentCount, toggleLike, openLikers, prefetchRooms, openShare } =
+    useReactionBar(post, canReact);
   const heart = (
     <Icon svg={likedByMe ? HeartBoldIcon : HeartOutlineIcon} className={styles.heart} />
   );
@@ -278,15 +300,17 @@ function ReactionBar({ post, canReact }: { post: Detail; canReact: boolean }) {
         </span>
       </span>
       {post.visibility === 'VISIBLE' && (
-        <ShareButton
-          target={{ targetType: 'POST', targetId: post.id, path: `/posts/${post.id}` }}
-          trigger={
-            <button type="button" className={styles.statButton}>
-              <Icon svg={Plane3OutlineIcon} className={styles.statIcon} />
-              <span className="sr-only">공유</span>
-            </button>
-          }
-        />
+        <button
+          type="button"
+          className={styles.statButton}
+          aria-haspopup="dialog"
+          onPointerDown={prefetchRooms}
+          onFocus={prefetchRooms}
+          onClick={openShare}
+        >
+          <Icon svg={Plane3OutlineIcon} className={styles.statIcon} />
+          <span className="sr-only">채팅방에 공유</span>
+        </button>
       )}
     </div>
   );

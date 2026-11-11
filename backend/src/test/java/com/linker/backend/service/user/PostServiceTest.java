@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ import com.linker.backend.entity.file.UploadedFile;
 import com.linker.backend.entity.file.type.UploadPurpose;
 import com.linker.backend.entity.github.GithubRepo;
 import com.linker.backend.entity.post.Post;
+import com.linker.backend.entity.post.PostTag;
 import com.linker.backend.entity.post.PostLike;
 import com.linker.backend.global.config.PlanLimits;
 import com.linker.backend.global.error.ApiException;
@@ -41,7 +43,6 @@ import com.linker.backend.repository.post.FeedSeenPostRepository;
 import com.linker.backend.repository.post.PinnedPostRepository;
 import com.linker.backend.repository.post.PostLikeRepository;
 import com.linker.backend.repository.post.PostRepository;
-import com.linker.backend.repository.profile.TechTagRepository;
 import com.linker.backend.repository.team.TeamRepository;
 import com.linker.backend.dto.recruit.mapper.RecruitCardMapper;
 import com.linker.backend.dto.team.response.TeamConnectionView.LinkedRepo;
@@ -67,8 +68,6 @@ class PostServiceTest {
 	PostRepository posts;
 	@Mock
 	UserRepository users;
-	@Mock
-	TechTagRepository techTags;
 	@Mock
 	UploadService uploads;
 	@Mock
@@ -104,7 +103,7 @@ class PostServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new PostService(
-				repos, posts, users, techTags, uploads,
+				repos, posts, users, uploads,
 				likes, comments, seenPosts, pins, blocks, notifications, authors, pro, teams,
 				github, userTechTags, follows, transactions, CLOCK);
 		developer = new AuthenticatedUser(
@@ -399,6 +398,44 @@ class PostServiceTest {
 
 		assertThat(post.getEditedAt()).isEqualTo(NOW);
 		assertThat(post.getSummary()).isEqualTo("한 줄 소개입니다");
+	}
+
+	@Test
+	void updateKeepsFreeTextTagsAsTypedAndCapsTheirLength() {
+		Post post = ownedPost();
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		PostWriteRequest base = writeRequest(null, readyPhoto());
+
+		// POL-P-2: any text, not only tech stack names, trimmed and deduplicated
+		service.update(developer, 42L, withTags(base, List.of(" 주니어 개발자 ", "ci/cd", "ci/cd")));
+		assertThat(post.getTags()).extracting(PostTag::getName).containsExactly("주니어 개발자", "ci/cd");
+
+		assertThatThrownBy(() -> service.update(developer, 42L, withTags(base, List.of("가".repeat(41)))))
+				.isInstanceOf(ApiException.class)
+				.hasMessage("태그는 40자까지 쓸 수 있어요");
+	}
+
+	private PostWriteRequest withTags(PostWriteRequest request, List<String> tags) {
+		return new PostWriteRequest(request.repoId(), request.intro(), request.body(), request.photos(),
+				request.myRole(), request.demoLinks(), request.period(), request.teamSize(), tags);
+	}
+
+	@Test
+	void updateDeletesOldPhotoAndTagRowsBeforeAddingTheKeptOnes() {
+		Post post = ownedPost();
+		when(posts.findDetailedById(42L)).thenReturn(Optional.of(post));
+		// The flush must run while the collections are empty, or the kept photo would be inserted
+		// next to its old row and break post_images_post_file_uk (edits always resend photos)
+		doAnswer(invocation -> {
+			assertThat(post.getImages()).isEmpty();
+			assertThat(post.getTags()).isEmpty();
+			return null;
+		}).when(posts).flush();
+
+		service.update(developer, 42L, writeRequest(null, readyPhoto()));
+
+		verify(posts).flush();
+		assertThat(post.getImages()).hasSize(1);
 	}
 
 	@Test

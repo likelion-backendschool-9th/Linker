@@ -1,21 +1,22 @@
 'use client';
 
-// Title-row dropdown: non-author → 신고/공유; author → 수정/마감·재모집/삭제
-import { MenuDotsVerticalBoldIcon } from '@solar-icons/static/bold/menu-dots-vertical';
-import { Flag, Lock, LockOpen, Pencil, Share2, Trash2 } from 'lucide-react';
+// App-bar "더보기" dropdown (Figma 92:578 262:88): non-author → 신고/공유; author → 수정/마감·재모집/삭제
+import { EllipsisVertical, Flag, Lock, LockOpen, Pencil, Share2, Trash2 } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu } from 'radix-ui';
 
 import { ConfirmDialog } from '@/components/overlay/confirm-dialog/ConfirmDialog';
 import { DeleteConfirmDialog } from '@/components/overlay/delete-confirm-dialog/DeleteConfirmDialog';
-import { Icon } from '@/components/ui/icon';
 import { ShareButton } from '@/features/share/share-button';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 
 import type { RecruitDetail } from '../../_lib/detail-queries';
 import styles from './RecruitMenuSheet.module.css';
 import { useRecruitMenuSheet } from './hook';
+
+/** The dropdown ends at the 16px gutter while the header icon box ends 6px from the edge (as on 23) */
+const MENU_ALIGN_OFFSET = 10;
 
 export function RecruitMenuSheet({ recruit }: { recruit: RecruitDetail }) {
   const router = useRouter();
@@ -42,8 +43,8 @@ export function RecruitMenuSheet({ recruit }: { recruit: RecruitDetail }) {
     <>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button type="button" className={styles.trigger} aria-label="더보기" aria-haspopup="menu">
-            <Icon svg={MenuDotsVerticalBoldIcon} />
+          <button type="button" className={styles.trigger} aria-label="모집 글 더보기">
+            <EllipsisVertical aria-hidden className={styles.triggerIcon} />
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
@@ -51,8 +52,9 @@ export function RecruitMenuSheet({ recruit }: { recruit: RecruitDetail }) {
             className={styles.panel}
             side="bottom"
             align="end"
-            sideOffset={8}
-            collisionPadding={12}
+            alignOffset={MENU_ALIGN_OFFSET}
+            sideOffset={5}
+            collisionPadding={16}
           >
             {recruit.isAuthor ? (
               <>

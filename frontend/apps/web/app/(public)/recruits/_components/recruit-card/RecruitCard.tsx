@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useId, useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
+import { truncateChars } from '@/lib/format/text';
+import { RECRUIT } from '@/lib/policy';
 
 import styles from './RecruitCard.module.css';
 
@@ -17,7 +19,7 @@ export type RecruitCardData = {
   deadlineLabel: string;
   deadlineFullLabel: string;
   title: string;
-  /** Optional body preview; public list cards omit intro today. */
+  /** The project intro; the card shows its first `RECRUIT.cardIntroPreview` characters (POL-R-2) */
   description?: string;
   roles: string[];
   /** "모집 직군" in the detail panel (Figma 346:573): a single summary value, independent of `roles` */
@@ -29,6 +31,11 @@ export type RecruitCardData = {
 export function RecruitCard({ recruit }: { recruit: RecruitCardData }) {
   const [expanded, setExpanded] = useState(false);
   const detailId = useId();
+  // One paragraph on the card: the author's line breaks become spaces
+  const intro = truncateChars(
+    (recruit.description ?? '').replace(/\s+/g, ' '),
+    RECRUIT.cardIntroPreview,
+  );
 
   return (
     <article className={styles.card} data-expanded={expanded}>
@@ -44,7 +51,20 @@ export function RecruitCard({ recruit }: { recruit: RecruitCardData }) {
           <h2 className={styles.title}>
             <Link href={recruit.href}>{recruit.title}</Link>
           </h2>
-          {recruit.description ? <p className={styles.description}>{recruit.description}</p> : null}
+          {intro.text ? (
+            <p className={styles.description}>
+              {intro.text}
+              {intro.truncated && (
+                <>
+                  ...
+                  <Link href={recruit.href} className={styles.more}>
+                    자세히 보기
+                    <span className="sr-only"> ({recruit.title} 모집글 전체 보기)</span>
+                  </Link>
+                </>
+              )}
+            </p>
+          ) : null}
         </div>
       </div>
       <div className={styles.meta}>

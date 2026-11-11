@@ -201,7 +201,7 @@ public class PostService {
 				post.getDemoLinks().stream().map(PostDemoLink::getUrl).toList(),
 				toPeriod(post),
 				post.getTeamSize(),
-				post.getTags().stream().map(tag -> tag.getTag().getName()).toList(),
+				post.getTags().stream().map(PostTag::getName).toList(),
 				post.getLikeCount(),
 				post.getCommentCount(),
 				post.getViewCount(),
@@ -408,7 +408,7 @@ public class PostService {
 		if (!myTags.isEmpty()) {
 			Set<String> postTags = new HashSet<>();
 			for (PostTag tag : post.getTags()) {
-				postTags.add(tag.getTag().getName());
+				postTags.add(tag.getName());
 			}
 			for (String tag : myTags) {
 				if (postTags.contains(tag)) {
@@ -681,7 +681,7 @@ public class PostService {
 				cover,
 				available ? post.getRepo().getFullName() : "",
 				available ? post.getRepo().getPrimaryLanguage() : null,
-				post.getTags().stream().map(PostTag::getTag).map(tag -> tag.getName()).toList(),
+				post.getTags().stream().map(PostTag::getName).toList(),
 				post.getLikeCount(),
 				likedByMe,
 				post.getCommentCount(),

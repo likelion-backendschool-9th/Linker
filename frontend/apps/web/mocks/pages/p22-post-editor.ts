@@ -88,7 +88,12 @@ export const routes: MockRoute[] = [
       return {
         items: repos
           .filter((r) => !q || r.fullName.toLowerCase().includes(q))
-          .filter((r) => !teamId || String(r.teamId) === teamId)
+          // POL-P-1: only repos on my own profile (forks included); a team (from 09) lists its repos
+          .filter((r) =>
+            teamId
+              ? String(r.teamId) === teamId
+              : r.fullName.toLowerCase().startsWith(`${ME.login.toLowerCase()}/`),
+          )
           .map((r) => ({
             ...r,
             // Already posted: one post per repo (POL-P-1)

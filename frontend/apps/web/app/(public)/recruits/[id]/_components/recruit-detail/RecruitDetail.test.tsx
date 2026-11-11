@@ -81,7 +81,7 @@ async function openDrawerAndInvite() {
   await user.click(await screen.findByRole('button', { name: '지원자 1명 보기' }));
   const drawer = await screen.findByRole('dialog', { name: '지원자' });
   await user.click(within(drawer).getByRole('radio', { name: '정태양 선택' }));
-  await user.click(within(drawer).getByRole('button', { name: '초대하기' }));
+  await user.click(within(drawer).getByRole('button', { name: '수락하기' }));
 }
 
 it('shows the post to guests and sends "지원하기" to the login prompt', async () => {
@@ -90,7 +90,10 @@ it('shows the post to guests and sends "지원하기" to the login prompt', asyn
   const onUrlUpdate = vi.fn();
   const { container } = renderWithProviders(<RecruitDetail recruitId="1" />, { onUrlUpdate });
   expect(await screen.findByRole('heading', { name: base.title })).toBeVisible();
-  expect(screen.getByText('전체 3명 중 2명 모집 완료')).toBeVisible();
+  // "2명 모집 완료" is its own blue span (Figma 93:335); the line still reads as one sentence
+  expect(screen.getByText('2명 모집 완료').parentElement).toHaveTextContent(
+    '전체 3명 중 2명 모집 완료',
+  );
   expect(screen.getByText('1/2')).toBeVisible();
   expect(screen.getByText('모집 중')).toBeVisible();
   expect(screen.getByText('1/1')).toBeVisible();
@@ -130,14 +133,23 @@ it('lets a developer apply with one open role', async () => {
   );
 });
 
-it('shows a pending application with cancel, and nothing for recruiters', async () => {
+it('swaps the CTA for "지원 취소 하기" once applied, and confirms in the login-prompt layout', async () => {
   serve({ ...base, myApplication: { id: 4, status: 'PENDING', roleId: 11, teamChatRoomId: null } });
+  const user = userEvent.setup();
   const { unmount } = renderWithProviders(<RecruitDetail recruitId="1" />, {
     viewer: { role: 'developer', login: 'developer' },
   });
-  expect(await screen.findByText('검토 중')).toBeVisible();
-  expect(screen.getByText('지원 역할 백엔드')).toBeVisible();
-  expect(screen.getByRole('button', { name: '지원 취소' })).toBeVisible();
+  await user.click(await screen.findByRole('button', { name: '지원 취소 하기' }));
+  expect(screen.queryByRole('button', { name: '지원하기' })).not.toBeInTheDocument();
+  const dialog = await screen.findByRole('alertdialog', { name: '지원 취소' });
+  expect(dialog).toHaveAccessibleDescription(
+    '지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?',
+  );
+  expect(within(dialog).getByRole('button', { name: '지원 유지' })).toBeVisible();
+  await user.click(within(dialog).getByRole('button', { name: '취소하기' }));
+  await waitFor(() =>
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/user/me/applications/4', { method: 'DELETE' }),
+  );
   unmount();
 
   serve(base);
@@ -146,6 +158,20 @@ it('shows a pending application with cancel, and nothing for recruiters', async 
   });
   expect(await screen.findByRole('heading', { name: base.title })).toBeVisible();
   expect(screen.queryByRole('button', { name: '지원하기' })).not.toBeInTheDocument();
+});
+
+it('shows no bottom CTA to someone already on the team (not the author)', async () => {
+  serve({
+    ...base,
+    isTeamMember: true,
+    myApplication: { id: 4, status: 'PENDING', roleId: 11, teamChatRoomId: null },
+  });
+  renderWithProviders(<RecruitDetail recruitId="1" />, {
+    viewer: { role: 'developer', login: 'developer' },
+  });
+  expect(await screen.findByRole('heading', { name: base.title })).toBeVisible();
+  expect(screen.queryByRole('button', { name: '지원하기' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '지원 취소 하기' })).not.toBeInTheDocument();
 });
 
 it('lets the author open the applicants drawer and hit ROLE_FULL on accept', async () => {
@@ -168,7 +194,7 @@ it('lets the author open the applicants drawer and hit ROLE_FULL on accept', asy
 
   expect(within(card).getByRole('button', { name: '거절' })).toBeVisible();
   await user.click(within(card).getByRole('radio', { name: '정태양 선택' }));
-  await user.click(within(drawer).getByRole('button', { name: '초대하기' }));
+  await user.click(within(drawer).getByRole('button', { name: '수락하기' }));
   expect(await screen.findByRole('dialog', { name: '이 역할은 자리가 다 찼어요' })).toBeVisible();
   expect(screen.getByText('백엔드 2명 → 3명')).toBeVisible();
 });

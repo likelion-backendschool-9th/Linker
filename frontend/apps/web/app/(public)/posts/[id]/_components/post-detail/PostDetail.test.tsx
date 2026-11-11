@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 
@@ -223,6 +223,66 @@ it('follows the author from the author row and hides the button from recruiters'
   });
   expect(await screen.findByRole('heading', { name: base.intro })).toBeVisible();
   expect(screen.queryByRole('button', { name: '팔로우' })).not.toBeInTheDocument();
+});
+
+it('shows each saved role as its own chip and a "›" on the repo card', async () => {
+  serve({ ...base, myRole: '풀스택, 디자인' });
+  renderWithProviders(<PostDetail postId="1" />);
+  expect(await screen.findByText('풀스택')).toBeVisible();
+  expect(screen.getByText('디자인')).toBeVisible();
+  expect(screen.queryByText('풀스택, 디자인')).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /linker-web.*GitHub에서 보기/ })).toBeVisible();
+});
+
+it('opens the GitHub repo straight away, without the external-site sheet', async () => {
+  serve(base);
+  const user = userEvent.setup();
+  const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  const onUrlUpdate = vi.fn();
+  renderWithProviders(<PostDetail postId="1" />, { onUrlUpdate });
+  await user.click(await screen.findByRole('link', { name: /linker-web.*GitHub에서 보기/ }));
+  expect(open).toHaveBeenCalledWith(
+    'https://github.com/linker-hack/linker-web',
+    '_blank',
+    'noopener,noreferrer',
+  );
+  expect(onUrlUpdate).not.toHaveBeenCalledWith(
+    expect.objectContaining({ queryString: expect.stringContaining('overlay=external-link') }),
+  );
+  open.mockRestore();
+});
+
+it('hides the follow button on my own post', async () => {
+  serve({ ...base, isAuthor: true });
+  renderWithProviders(<PostDetail postId="1" />, {
+    viewer: { role: 'developer', login: 'linker' },
+  });
+  expect(await screen.findByRole('heading', { name: base.intro })).toBeVisible();
+  expect(screen.queryByRole('button', { name: /팔로우|팔로잉/ })).not.toBeInTheDocument();
+});
+
+it('opens the 24 "공유하기" board from the share icon, and the login prompt for guests', async () => {
+  serve(base);
+  const user = userEvent.setup();
+  const { unmount } = renderWithProviders(<PostDetail postId="1" />, {
+    viewer: { role: 'developer', login: 'developer' },
+  });
+  await user.click(await screen.findByRole('button', { name: '채팅방에 공유' }));
+  const board = await screen.findByRole('dialog', { name: '공유하기' });
+  expect(within(board).getByRole('searchbox', { name: '채팅방 검색' })).toBeVisible();
+  expect(within(board).getByRole('button', { name: '링크 복사하기' })).toBeVisible();
+  unmount();
+
+  serve(base);
+  const onUrlUpdate = vi.fn();
+  renderWithProviders(<PostDetail postId="1" />, { onUrlUpdate });
+  await user.click(await screen.findByRole('button', { name: '채팅방에 공유' }));
+  await waitFor(() =>
+    expect(onUrlUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ queryString: expect.stringContaining('overlay=login') }),
+    ),
+  );
+  expect(screen.queryByRole('dialog', { name: '공유하기' })).not.toBeInTheDocument();
 });
 
 it('edits my own comment and only offers a report on others', async () => {
