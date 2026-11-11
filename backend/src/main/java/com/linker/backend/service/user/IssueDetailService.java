@@ -12,6 +12,7 @@ import com.linker.backend.dto.issue.response.IssueDetailResponse.SubIssueCounts;
 import com.linker.backend.dto.issue.response.IssueDetailResponse.SubIssues;
 import com.linker.backend.dto.issue.response.IssueListResponse;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
 import com.linker.backend.entity.notification.type.NotificationTypes;
@@ -607,7 +608,9 @@ public class IssueDetailService {
                           null,
                           null,
                           "/teams/" + job.team() + "/issues/" + job.issue(),
-                          null,
+                          NotificationText.json(
+                              assignedTitle(user.login()),
+                              s.repo.fullName() + " #" + actual.number() + " · " + actual.title()),
                           "issue-assigned:" + job.id() + ":" + assigned.id()));
                 }
             syncJobs.finishEdit(id, job.issue());
@@ -664,6 +667,13 @@ public class IssueDetailService {
     access.member(user, selected.context.teamId());
     if (!issueRepository.context(selected.context.teamId()).equals(selected.context))
       throw conflict("팀 연결 정보가 바뀌었어요");
+  }
+
+  /** ISSUE_ASSIGNED title; the actor is named by GitHub login, as everywhere on the issue screens. */
+  static String assignedTitle(String login) {
+    return login == null || login.isBlank()
+        ? "이슈에 배정됐어요."
+        : login + "님이 회원님을 이슈에 배정했어요.";
   }
 
   private static void identity(Selected s, IssueSource.Issue issue) {

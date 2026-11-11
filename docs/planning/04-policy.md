@@ -747,6 +747,15 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Chat notification | ○○님이 메시지를 보냈어요. Body: the message, whitespace collapsed, first 100 characters + "…"; photo only → 사진을 보냈어요. Team rooms prefix "{team name} · " |
 | Chat mention notification | {team name} · ○○님이 회원님을 언급했어요. Body as above |
 | Message request notification | ○○님이 메시지 요청을 보냈어요. Body: the first message, as above |
+| Application received notification | ○○님이 회원님의 모집글에 지원했어요. Body: {recruit post title} · {role} |
+| Application accepted notification | {team name} 팀 지원이 수락됐어요. Body: 팀 채팅방에서 인사해 보세요 |
+| Application rejected notification | 지원이 거절됐어요. Body: the recruit post title |
+| Application expired notification | 지원이 만료됐어요. (14 days unhandled) / 모집글이 삭제돼 지원이 종료됐어요. (post deleted). Body: the recruit post title |
+| Comment notification | ○○님이 회원님의 게시물에 댓글을 남겼어요. Reply: ○○님이 회원님의 댓글에 답글을 남겼어요. Body: the comment, as chat |
+| Issue assignment notification | {GitHub login}님이 회원님을 이슈에 배정했어요. Body: {owner/repo} #{number} · {issue title} |
+| Team member removed notification | Owners: ○○님이 {team name} 팀에서 내보내졌어요. GitHub org removal: {team name} 팀에서 제외됐어요. · GitHub 조직에서 빠져 팀에서도 제외됐어요 (the member) / {team name} 팀에서 팀원이 제외됐어요. · GitHub 조직에서 빠진 팀원이 있어요 (owners) |
+| GitHub App removed notification | {team name} 팀의 GitHub 앱 연결이 끊겼어요. Body: 팀이 읽기 전용이 됐어요. 설정에서 다시 연결해 주세요 |
+| Auto-hide notification (operators) | 신고가 쌓여 {게시물이 / 댓글이 / 모집글이 / 프로필이 / 메시지가 / 채용 광고가} 자동으로 숨겨졌어요. Body: 신고 관리에서 확인해 주세요 |
 | Notification without text | 새 알림이 도착했어요 |
 
 ## 13. Policies for later-phase features
