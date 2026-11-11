@@ -29,7 +29,7 @@ it('marks all read, updates the count, and exposes readable status with no axe v
   const { container } = renderWithProviders(<NotificationList />, {
     viewer: { role: 'developer', login: 'developer' },
   });
-  await screen.findByRole('link', { name: /^읽지 않음,\s*팀 채팅$/ });
+  await screen.findByRole('link', { name: /^읽지 않음,\s*팀 채팅 새 메시지$/ });
   expect(await axe(container)).toHaveNoViolations();
   fetchMock.mockImplementation(async (url) =>
     url.endsWith('unread-count')
@@ -43,13 +43,13 @@ it('marks all read, updates the count, and exposes readable status with no axe v
     }),
   );
   await screen.findByText('읽지 않은 알림 0개');
-  expect(await screen.findByRole('link', { name: '팀 채팅' })).toBeVisible();
+  expect(await screen.findByRole('link', { name: '팀 채팅 새 메시지' })).toBeVisible();
   expect(screen.getByRole('button', { name: '전체 읽기' })).toBeDisabled();
 });
-it('shows only the title of each row, grouped under its day', async () => {
+it('shows the title and body of each row, grouped under its day', async () => {
   renderWithProviders(<NotificationList />, { viewer: { role: 'developer', login: 'developer' } });
-  await screen.findByRole('link', { name: /^읽지 않음,\s*팀 채팅$/ });
-  expect(screen.queryByText('새 메시지')).not.toBeInTheDocument();
+  await screen.findByRole('link', { name: /^읽지 않음,\s*팀 채팅 새 메시지$/ });
+  expect(screen.getByText('새 메시지')).toBeVisible();
   expect(screen.getByRole('heading', { level: 2, name: /11월 1일/ })).toBeVisible();
 });
 it('asks the server for unread rows on the "읽지 않음" tab and keeps the tab in the URL', async () => {

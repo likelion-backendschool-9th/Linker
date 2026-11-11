@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.dto.post.request.CommentWriteRequest;
 import com.linker.backend.dto.post.request.FeedSeenRequest;
 import com.linker.backend.dto.post.request.PinPostsRequest;
@@ -75,6 +76,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service("userPostService")
 public class PostService {
@@ -82,6 +84,7 @@ public class PostService {
 	private static final Logger log = LoggerFactory.getLogger(PostService.class);
 	private static final String UNAVAILABLE = "삭제되었거나 볼 수 없는 콘텐츠예요";
 	private static final String DELETED_COMMENT = "삭제된 댓글입니다";
+	private final JsonMapper notificationJson = JsonMapper.builder().build();
 
 	private final GithubRepoRepository repos;
 	private final PostRepository posts;
@@ -461,7 +464,9 @@ public class PostService {
 					"POST",
 					postId,
 					"/posts/" + postId,
-					null,
+					notificationJson.writeValueAsString(Map.of(
+							"title", actor.visibleName() + "님이 회원님의 게시물을 좋아했어요.",
+							"body", post.getSummary())),
 					"post-like:" + postId + ":" + user.userId()
 			));
 		}
@@ -512,7 +517,7 @@ public class PostService {
 		enforceCommentLimits(user.userId());
 		Comment comment = comments.save(Comment.write(post, author, null, text));
 		post.increaseCommentCount();
-		notifyComment(post, null, user.userId(), comment.getId());
+		notifyComment(post, null, author, comment);
 		return toCommentResponse(comment);
 	}
 
@@ -855,7 +860,10 @@ public class PostService {
 		return count;
 	}
 
-	private void notifyComment(Post post, Comment parent, long actorId, long commentId) {
+	private void notifyComment(Post post, Comment parent, User actor, Comment comment) {
+		long actorId = actor.getId();
+		long commentId = comment.getId();
+		String preview = NotificationText.preview(comment.getBody());
 		long postAuthorId = post.getAuthor().getId();
 		if (postAuthorId != actorId) {
 			notifications.create(new CreateNotificationCommand(
@@ -865,7 +873,7 @@ public class PostService {
 					"COMMENT",
 					commentId,
 					"/posts/" + post.getId(),
-					null,
+					NotificationText.json(actor.visibleName() + "님이 회원님의 게시물에 댓글을 남겼어요.", preview),
 					"post-comment:" + post.getId() + ":" + commentId
 			));
 		}
@@ -879,7 +887,7 @@ public class PostService {
 						"COMMENT",
 						commentId,
 						"/posts/" + post.getId(),
-						null,
+						NotificationText.json(actor.visibleName() + "님이 회원님의 댓글에 답글을 남겼어요.", preview),
 						"comment-reply:" + parent.getId() + ":" + commentId
 				));
 			}

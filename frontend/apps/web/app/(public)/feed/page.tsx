@@ -22,8 +22,9 @@ export default async function FeedPage({ searchParams }: PageProps<'/feed'>) {
   // guests on "팔로잉" get a login notice, not a request
   const offersOnly = role === 'recruiter' && query.offersOnly === 'true' && tab === 'recommended';
   const client = getQueryClient();
+  const title = typeof query.q === 'string' ? query.q : '';
   if (!(tab === 'following' && role === 'guest')) {
-    await client.prefetchInfiniteQuery(feedOptions(session?.login ?? null, offersOnly, tab));
+    await client.prefetchInfiniteQuery(feedOptions(session?.login ?? null, offersOnly, tab, title));
   }
 
   return (

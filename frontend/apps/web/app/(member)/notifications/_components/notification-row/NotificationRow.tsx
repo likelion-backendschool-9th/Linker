@@ -16,7 +16,10 @@ type Props = {
   onReadInBackground: (id: number) => void;
 };
 
-/** Figma 248:1387 / 248:1391: dot + one line. Unread uses the dark dot and text, read the muted ones. */
+/**
+ * Figma 248:1387 / 248:1391: dot + title, with the server body (message preview, post or issue
+ * title) on a second line. Unread uses the dark dot and text, read the muted ones.
+ */
 export function NotificationRow({ item, pending, onOpen, onReadInBackground }: Props) {
   const target = notificationTarget(item.targetUrl);
   const state = item.read ? 'read' : 'unread';
@@ -25,7 +28,13 @@ export function NotificationRow({ item, pending, onOpen, onReadInBackground }: P
       <span className={styles.dot} aria-hidden="true" />
       <span className={styles.text}>
         {!item.read && <span className="sr-only">읽지 않음, </span>}
-        {item.title}
+        <span className={styles.title}>{item.title}</span>
+        {item.body && (
+          <>
+            {' '}
+            <span className={styles.body}>{item.body}</span>
+          </>
+        )}
         {item.appeal && (
           <span className={styles.appeal}>
             {item.appeal.submitted ? '이의 제기 완료' : '이의 제기하기'}

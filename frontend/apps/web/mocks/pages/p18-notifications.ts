@@ -42,8 +42,8 @@ const items: Notification[] = [
   {
     id: 2,
     type: 'ISSUE_ASSIGNED',
-    title: '이슈가 배정됐어요',
-    body: '#18 이슈 필터 시트 접근성 개선',
+    title: 'doyun-lee님이 회원님을 이슈에 배정했어요.',
+    body: 'linker-team/web #18 · 이슈 필터 시트 접근성 개선',
     targetUrl: '/teams/1/issues/1018',
     read: false,
     createdAt: hoursAgo(3),
@@ -60,8 +60,8 @@ const items: Notification[] = [
   {
     id: 4,
     type: 'APPLICATION_RECEIVED',
-    title: '새 지원이 들어왔어요',
-    body: '윤태양님이 백엔드에 지원했어요',
+    title: '윤태양님이 회원님의 모집글에 지원했어요.',
+    body: '해커톤 백엔드 팀원 모집 · 백엔드',
     targetUrl: '/recruits/1',
     read: false,
     createdAt: daysAgo(2),
@@ -69,8 +69,8 @@ const items: Notification[] = [
   {
     id: 5,
     type: 'COMMENT',
-    title: '댓글이 달렸어요',
-    body: '박서연: 구조가 깔끔해서 참고하고 있어요',
+    title: '박서연님이 회원님의 게시물에 댓글을 남겼어요.',
+    body: '구조가 깔끔해서 참고하고 있어요',
     targetUrl: '/posts/1',
     read: true,
     createdAt: daysAgo(2),

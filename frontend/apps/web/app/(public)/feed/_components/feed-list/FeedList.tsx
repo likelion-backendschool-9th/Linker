@@ -33,6 +33,7 @@ export function FeedList() {
   const idBase = useId();
   const {
     viewer,
+    query,
     recruiter,
     tab,
     tabs,
@@ -72,7 +73,8 @@ export function FeedList() {
           />
         ) : (
           <FeedBody
-            key={tab}
+            key={`${tab}:${query}`}
+            query={query}
             viewer={viewer}
             recruiter={recruiter}
             following={following}
@@ -99,6 +101,7 @@ type FeedState = ReturnType<typeof useFeedList>;
 
 /** One tab's list; keyed by tab so the virtualizer starts fresh on a switch */
 function FeedBody({
+  query,
   viewer,
   recruiter,
   following,
@@ -111,6 +114,7 @@ function FeedBody({
   showAd,
 }: Pick<
   FeedState,
+  | 'query'
   | 'viewer'
   | 'recruiter'
   | 'following'
@@ -148,7 +152,9 @@ function FeedBody({
       ) : feed.isError && !feed.data ? (
         <ErrorState onRetry={() => void feed.refetch()} />
       ) : items.length === 0 ? (
-        following ? (
+        query.trim() ? (
+          <EmptyState title="검색 결과가 없어요." />
+        ) : following ? (
           <EmptyState title="팔로잉한 사용자가 없습니다." />
         ) : (
           <>
