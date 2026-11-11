@@ -94,6 +94,15 @@ public class ChatRoom {
 		this.respondedAt = when;
 	}
 
+	/** Opens this pair so a recruiter can enter and talk with the developer. */
+	public void openRecruiting(long recruiterId, Instant when) {
+		this.dmStatus = DmStatus.ACCEPTED;
+		this.requestKind = RequestKind.RECRUITING;
+		this.requesterId = recruiterId;
+		this.requestExpiresAt = null;
+		this.respondedAt = when;
+	}
+
 	public void markRejected(Instant when) {
 		this.dmStatus = DmStatus.REJECTED;
 		this.respondedAt = when;

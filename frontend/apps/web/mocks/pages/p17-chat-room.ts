@@ -17,9 +17,9 @@ import {
 } from '../core/define';
 import { findRoom, MESSAGES, ROOMS, UNREAD } from '../fixtures/chat';
 import { findTeam, TEAM_MEMBERS } from '../fixtures/teams';
-import { brief, ME } from '../fixtures/users';
+import { brief, DEVELOPERS, ME } from '../fixtures/users';
 import { isBlocked } from './p00-common';
-import { isRecruiterRoom } from './p33-recruiter-offers';
+import { isRecruiterRoom, OFFERS } from './p33-recruiter-offers';
 import { lastMessage, nextMessageId } from '../fixtures/chat';
 
 /**
@@ -104,6 +104,7 @@ export const routes: MockRoute[] = [
     const team = room.teamId ? findTeam(room.teamId) : undefined;
     return {
       ...room,
+      title: room.counterpart?.name ?? room.title,
       members: room.teamId
         ? (TEAM_MEMBERS[room.teamId] ?? []).map((m) => ({ ...m.user, role: m.role }))
         : [
@@ -496,10 +497,48 @@ export const routes: MockRoute[] = [
     return response;
   }),
 
-  // `[Included]` Recruiting offer (recruiter → developer). 1,000 chars, no photos (POL-H-3)
+  // Recruiter → developer. Reuses the pair when a room already exists and opens it.
   post('/api/v1/recruiter/chat-requests', ({ body }) => {
     const text = String(body.text ?? '');
     if (text.length > 1000) fail(400, 'TOO_LONG', '1,000자까지 보낼 수 있어요');
-    return { roomId: newId(), status: 'REQUESTED' };
+    const developer = DEVELOPERS.find((user) => user.id === Number(body.userId));
+    if (!developer || isBlocked(developer.id)) fail(404, 'NOT_FOUND', '사용자를 찾을 수 없어요');
+    const existing = ROOMS.find(
+      (room) =>
+        isRecruiterRoom(room.id) &&
+        (room.kind === 'DIRECT' || room.kind === 'REQUEST') &&
+        room.counterpart?.id === developer.id,
+    );
+    if (existing) {
+      existing.kind = 'DIRECT';
+      existing.requestDirection = null;
+      const offer = OFFERS.find((item) => item.roomId === existing.id);
+      if (offer) offer.status = 'TALKING';
+      return { roomId: existing.id, kind: 'DIRECT' as const };
+    }
+    const roomId = newId();
+    const sentAt = new Date().toISOString();
+    ROOMS.push({
+      id: roomId,
+      kind: 'DIRECT',
+      teamId: null,
+      title: developer.name,
+      counterpart: brief(developer),
+      requestKind: 'RECRUITING',
+      requestDirection: null,
+      muted: false,
+      memberCount: 2,
+      createdAt: sentAt,
+    });
+    OFFERS.unshift({
+      roomId,
+      developer: brief(developer),
+      status: 'TALKING',
+      firstMessage: text,
+      sentAt,
+      techStack: developer.techStack,
+      unavailable: false,
+    });
+    return { roomId, kind: 'DIRECT' as const };
   }),
 ];

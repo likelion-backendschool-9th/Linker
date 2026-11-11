@@ -41,11 +41,20 @@ export function ProfileChatButton({
         const conversation = items.find(
           (offer) => offer.status === 'TALKING' && offer.developer?.login === profile.login,
         );
-        if (!conversation) {
-          setError('진행 중인 채팅방을 찾지 못했어요.');
+        if (conversation) {
+          router.push(`/chats/${conversation.roomId}` as Route);
           return;
         }
-        router.push(`/chats/${conversation.roomId}` as Route);
+        const created = await apiFetch<DirectResult>('/api/v1/recruiter/chat-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: profile.id }),
+        });
+        if (created.roomId) {
+          router.push(`/chats/${created.roomId}` as Route);
+          return;
+        }
+        setError('채팅방을 만들지 못했어요.');
         return;
       }
 

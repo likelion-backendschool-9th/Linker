@@ -6,34 +6,11 @@ test.beforeEach(async ({ context }) => {
   ]);
 });
 
-test('header search from another tab finds titles, retains the URL and clears the filter', async ({ page }, info) => {
-  await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto('/workspace');
-  await page.getByRole('button', { name: '검색', exact: true }).click();
-  await page.getByRole('searchbox', { name: '검색어를 입력해 주세요' }).fill('  spring  ');
-  await page.getByRole('searchbox').press('Enter');
-  await expect(page).toHaveURL('/feed?q=spring');
-  await expect(page.getByRole('article', { name: 'Spring Boot로 만든 STOMP 채팅 서버' })).toBeVisible();
-  await expect(page.getByRole('article', { name: 'Show moa', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '검색', exact: true }).click();
-  await expect(page.getByRole('searchbox')).toHaveValue('spring');
-  for (const width of [375, 360, 600, 1440]) {
-    await page.setViewportSize({ width, height: 800 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+test('tab headers have no search icon', async ({ page }) => {
+  for (const path of ['/feed', '/recruits', '/workspace', '/chats']) {
+    await page.goto(path);
+    await expect(page.getByRole('banner').getByRole('button', { name: '검색', exact: true })).toHaveCount(0);
   }
-  await page.setViewportSize({ width: 375, height: 800 });
-  await page.screenshot({
-    path: info.outputPath('feed-title-search.png'),
-    scale: 'css',
-    animations: 'disabled',
-    style: 'nextjs-portal, details[class*="MockRoleSwitcher"] { visibility: hidden !important; }',
-  });
-  await page.getByRole('button', { name: '검색어 지우기' }).click();
-  await expect(page).toHaveURL('/feed');
-  await expect(page.getByRole('article', { name: 'Show moa', exact: true })).toBeVisible();
-  await page.goBack();
-  await expect(page).toHaveURL('/feed?q=spring');
-  await expect(page.getByRole('article', { name: 'Spring Boot로 만든 STOMP 채팅 서버' })).toBeVisible();
 });
 
 test('title search excludes body-only matches and works for guests', async ({ page, context }) => {
