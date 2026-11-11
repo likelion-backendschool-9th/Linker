@@ -41,13 +41,25 @@ const aiSettings = new Map<number, boolean>();
 export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/settings', ({ params }) => {
     const team = teamOr404(params.teamId);
+    let status = team.status;
+    try {
+      // Page-09 browser QA only; leave shared team fixtures and production contracts intact.
+      if (
+        typeof window !== 'undefined' &&
+        window.sessionStorage.getItem('linker_mock_readonly_team') === String(team.id)
+      ) {
+        status = 'READ_ONLY';
+      }
+    } catch {
+      /* Storage may be blocked in private browsing. */
+    }
     return {
       id: team.id,
       name: team.name,
       description: team.description,
       orgLogin: team.orgLogin,
       orgAvatarUrl: team.orgAvatarUrl,
-      status: team.status,
+      status,
       plan: team.plan,
       myRole: team.myRole,
       permissions: permissions(team.myRole),
