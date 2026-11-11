@@ -1,6 +1,7 @@
 package com.linker.backend.service.user;
 
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.dto.team.request.*;
 import com.linker.backend.dto.team.response.TeamSettingsResponse;
 import com.linker.backend.dto.team.response.TeamSettingsResponse.*;
@@ -210,12 +211,15 @@ public class TeamManagementService {
     close(teamId, target, TeamLeaveType.KICKED);
     Set<Long> recipients = new HashSet<>(teams.currentOwnerIds(teamId, false));
     recipients.add(targetId);
+    String targetName = users.findById(targetId).map(User::visibleName).orElse("팀원");
     for (long recipient : recipients) {
       if (teams.canReceiveNotification(recipient))
         notifications.create(new CreateNotificationCommand(recipient, "TEAM_MEMBER_REMOVED",
             principal.userId(), "TEAM", teamId, "/workspace",
             recipient == targetId ? notificationText("팀에서 내보내졌어요", team.getName()
-                + " 팀에서 내보내졌어요. 7일 동안 이 팀에 다시 지원할 수 없어요.") : null, null));
+                + " 팀에서 내보내졌어요. 7일 동안 이 팀에 다시 지원할 수 없어요.")
+                : NotificationText.json(targetName + "님이 " + team.getName() + " 팀에서 내보내졌어요.", null),
+            null));
     }
   }
 

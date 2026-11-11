@@ -13,6 +13,7 @@ import com.linker.backend.dto.chat.event.ChatMessageModerated;
 import com.linker.backend.dto.chat.event.ChatRoomsChanged;
 import com.linker.backend.dto.moderation.response.BlockView;
 import com.linker.backend.dto.notification.request.CreateNotificationCommand;
+import com.linker.backend.dto.notification.request.NotificationText;
 import com.linker.backend.entity.account.User;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.chat.ChatMessage;
@@ -387,6 +388,9 @@ public class ModerationService {
 		Set<Long> excluded = new HashSet<>(reports.findReporterIdsByReportCaseId(caseId));
 		excluded.add(reportCase.getTargetUserId());
 		String groupKey = "report-auto-hidden:" + caseId;
+		String payload = NotificationText.json(
+				"신고가 쌓여 " + targetSubject(reportCase.getTargetType()) + " 자동으로 숨겨졌어요.",
+				"신고 관리에서 확인해 주세요");
 		for (Long operatorUserId : admins.findActiveOperatorUserIds()) {
 			if (excluded.contains(operatorUserId)) {
 				continue;
@@ -398,10 +402,22 @@ public class ModerationService {
 					null,
 					null,
 					"/admin/reports",
-					null,
+					payload,
 					groupKey
 			));
 		}
+	}
+
+	/** Subject of the auto-hide title, with its particle. */
+	private static String targetSubject(ReportTargetType type) {
+		return switch (type) {
+			case USER -> "프로필이";
+			case POST -> "게시물이";
+			case COMMENT -> "댓글이";
+			case RECRUIT_POST -> "모집글이";
+			case TEAM_MESSAGE, DM_MESSAGE -> "메시지가";
+			case RECRUITER_AD -> "채용 광고가";
+		};
 	}
 
 	private long resolveTargetUserId(ReportTargetType type, long targetId, long reporterId) {
