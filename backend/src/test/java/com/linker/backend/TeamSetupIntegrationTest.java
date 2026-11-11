@@ -852,6 +852,7 @@ class TeamSetupIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"installationId\":\"42\",\"state\":\"" + installState(own) + "\"}"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.result").value("INSTALLED"))
         .andExpect(jsonPath("$.teamId").value(team));
   }
 
@@ -861,6 +862,68 @@ class TeamSetupIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
     return json.readTree(result.getResponse().getContentAsString()).path("state").asString("");
+  }
+
+  @Test
+  void ownerCanResumeReinstallationWithoutDuplicatingTeamChatOrConnections() throws Exception {
+    var owner = user("owner", UserType.DEVELOPER);
+    identity(owner,700);
+    var session = cookie(owner);
+    long team = create(session);
+    link(session, team);
+    board(session, team);
+    Long chat = jdbc.queryForObject("select id from chat_rooms where team_id=?",Long.class,team);
+    for (String teamStatus : java.util.List.of("ACTIVE", "READ_ONLY", "COMPLETED")) {
+      jdbc.update("update teams set status=? where id=?",teamStatus,team);
+      mvc.perform(post("/api/v1/user/team-setup/installations/verify").cookie(session)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"installationId\":\"43\",\"setupAction\":\"install\",\"state\":\""+installState(session)+"\"}"))
+          .andExpect(status().isOk()).andExpect(jsonPath("$.result").value("INSTALLED"))
+          .andExpect(jsonPath("$.installationId").value("43"))
+          .andExpect(jsonPath("$.teamId").value(team));
+    }
+    jdbc.update("update teams set status='READ_ONLY' where id=?",team);
+    mvc.perform(post("/api/v1/user/teams").cookie(session).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"installationId\":\"43\",\"name\":\"org\",\"description\":\"연결 복구\"}"))
+        .andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(team))
+        .andExpect(jsonPath("$.chatRoomId").value(chat));
+    assertThat(jdbc.queryForObject("select count(*) from teams",Long.class)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from chat_rooms",Long.class)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from team_repos where team_id=?",Long.class,team)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from team_project_boards where team_id=?",Long.class,team)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select i.github_installation_id from teams t join github_installations i on i.id=t.installation_id where t.id=?",Long.class,team)).isEqualTo(43);
+    assertThat(jdbc.queryForObject("select status from teams where id=?",String.class,team)).isEqualTo("ACTIVE");
+    // Also covers the race where the installation webhook updates the team before the callback.
+    mvc.perform(post("/api/v1/user/team-setup/installations/verify").cookie(session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"installationId\":\"43\",\"state\":\""+installState(session)+"\"}"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.result").value("INSTALLED"));
+    complete(session,team).andExpect(status().isAccepted()).andExpect(jsonPath("$.state").value("QUEUED"));
+    sync.drain();
+    complete(session,team).andExpect(status().isAccepted()).andExpect(jsonPath("$.state").value("COMPLETED"));
+  }
+
+  @Test
+  void reinstallationStillRejectsNonOwnersAndArchivedOrDeletedTeamRecovery() throws Exception {
+    var session = cookie(user("owner",UserType.DEVELOPER));
+    long team = create(session);
+    var member = user("member",UserType.DEVELOPER);
+    jdbc.update("insert into team_members(team_id,user_id,role,github_org_state,joined_at,created_at,updated_at) values (?,?,'ADMIN','MEMBER',now(),now(),now())",team,member.getId());
+    var memberSession = cookie(member);
+    mvc.perform(post("/api/v1/user/team-setup/installations/verify").cookie(memberSession)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"installationId\":\"43\",\"state\":\""+installState(memberSession)+"\"}"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.result").value("ALREADY_LINKED"));
+    mvc.perform(post("/api/v1/user/teams").cookie(memberSession).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"installationId\":\"43\",\"name\":\"org\"}"))
+        .andExpect(status().isConflict());
+    for (String teamStatus : java.util.List.of("ARCHIVED", "DELETED")) {
+      jdbc.update("update teams set status=? where id=?",teamStatus,team);
+      mvc.perform(post("/api/v1/user/team-setup/installations/verify").cookie(session)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"installationId\":\"43\",\"state\":\""+installState(session)+"\"}"))
+          .andExpect(status().isOk()).andExpect(jsonPath("$.result").value("ALREADY_LINKED"));
+    }
   }
 
   @Test
