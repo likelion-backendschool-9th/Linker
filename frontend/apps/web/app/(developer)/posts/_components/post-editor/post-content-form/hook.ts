@@ -21,6 +21,7 @@ import type { UploadedImage } from '@/features/image-upload/upload-image';
 import { useImageUpload } from '@/features/image-upload/use-image-upload';
 import { ApiError } from '@/lib/api/api-error';
 import { noEmojiField } from '@/lib/format/no-emoji-field';
+import { countChars } from '@/lib/format/text';
 import { PLAN_LIMITS, POST } from '@/lib/policy';
 import { useAppSignalStore } from '@/stores/app-signal-store';
 import { toast } from '@/stores/toast-store';
@@ -239,6 +240,12 @@ export function usePostContentForm({
     // Other fields are wrong too: name the missing photo in the same pass
     () => setPhotoMissing(noPhotos),
   );
+  // Past the cap the message shows right away (POL-P-2), before any submit
+  const teamSizeOver = Number(watched.teamSize || 0) > POST.teamSize.max;
+  // Bottom CTA turns blue once the required inputs are in: one-line intro and photos all uploaded.
+  // Like 20 it stays clickable while pale, so submitting still points at what's missing.
+  const canSubmit =
+    Boolean(watched.intro?.trim()) && !noPhotos && uploader.allDone && !teamSizeOver;
   const describe = (...ids: (string | false | undefined)[]) =>
     ids.filter(Boolean).join(' ') || undefined;
 
@@ -250,13 +257,20 @@ export function usePostContentForm({
     );
   }
 
-  /** Adds typed tags (trimmed, no repeats) up to POST.tagsMax */
+  /** Adds typed tags (trimmed, no repeats) up to POST.tagsMax; longer than POST.tagMaxLength is refused */
+  const [tagTooLong, setTagTooLong] = useState(false);
   function addTags(names: string[]) {
     const next = [...tags];
+    let tooLong = false;
     for (const raw of names) {
       const name = raw.trim();
+      if (countChars(name) > POST.tagMaxLength) {
+        tooLong = true;
+        continue;
+      }
       if (name && !next.includes(name) && next.length < POST.tagsMax) next.push(name);
     }
+    setTagTooLong(tooLong);
     if (next.length !== tags.length) form.setValue('tags', next, { shouldDirty: true });
   }
 
@@ -308,6 +322,9 @@ export function usePostContentForm({
     registerIntro,
     registerBody,
     registerTeamSize,
+    tagTooLong,
+    teamSizeOver,
+    canSubmit,
     save,
     submit,
     describe,

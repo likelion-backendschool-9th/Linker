@@ -1,6 +1,6 @@
 'use client';
 
-// Author applicants drawer: radio select → bottom 초대하기; row 거절 on the right
+// Author applicants drawer: radio select → bottom 수락하기; row 거절 on the right
 import type { Route } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -14,12 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton/Skeleton';
 
 import type { ApplicantRow, RecruitDetail } from '../../_lib/detail-queries';
 import styles from './ApplicantList.module.css';
-import {
-  isInviteable,
-  useApplicantActions,
-  useApplicantList,
-  useApplicantsSheet,
-} from './hook';
+import { isInviteable, useApplicantActions, useApplicantList, useApplicantsSheet } from './hook';
 
 /** Bottom-sheet drawer of applicants; open with `useOverlay('recruit-applicants')`. */
 export function ApplicantsSheet({ recruit }: { recruit: RecruitDetail }) {
@@ -135,7 +130,7 @@ function ApplicantsBody({
           aria-disabled={!canInvite || invitePending}
           onClick={() => selected && canInvite && invite(selected)}
         >
-          {invitePending ? '초대 중…' : '초대하기'}
+          {invitePending ? '수락하는 중…' : '수락하기'}
         </Button>
       </div>
     </div>

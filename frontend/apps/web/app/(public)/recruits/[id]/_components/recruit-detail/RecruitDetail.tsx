@@ -18,7 +18,6 @@ import type { RecruitDetail as Detail, RecruitTeamMember } from '../../_lib/deta
 import { AcceptExceptionSheets } from '../accept-exception-sheets';
 import { ApplicantsSheet } from '../applicant-list';
 import { RecruitApplySheet } from '../recruit-apply-sheet';
-import { RecruitMenuSheet } from '../recruit-menu-sheet';
 import { RejectDialog } from '../reject-dialog';
 import styles from './RecruitDetail.module.css';
 import { useActionPanel, usePostView, useRecruitDetail } from './hook';
@@ -77,29 +76,26 @@ function PostView({ recruit }: { recruit: Detail }) {
   return (
     <div className={hideBottomBar ? styles.layoutNoCta : styles.layout}>
       <article aria-labelledby="recruit-title" className={styles.main}>
+        {/* Figma 92:578: chips with the deadline on their right, then the title; "더보기" moved
+            up to the app bar (RecruitHeaderMenu) */}
         <header className={styles.head}>
           <div className={styles.titleBlock}>
-            <div className={styles.titleLead}>
+            <div className={styles.chipRow}>
               <div className={styles.chips}>
                 <span className={styles.formatChip}>{RECRUIT_FORMAT_LABELS[recruit.format]}</span>
                 {recruit.goal && (
                   <span className={styles.goalChip}>{RECRUIT_GOAL_LABELS[recruit.goal]}</span>
                 )}
               </div>
-              <div className={styles.titleRow}>
-                <h2 id="recruit-title" className={styles.title}>
-                  {recruit.title}
-                </h2>
-                <div className={styles.titleActions}>
-                  <RecruitMenuSheet recruit={recruit} />
-                </div>
-              </div>
+              <p className={styles.deadline}>
+                <time dateTime={recruit.deadline}>
+                  {closed ? '모집 마감' : formatDeadlineDate(recruit.deadline)}
+                </time>
+              </p>
             </div>
-            <p className={styles.deadline}>
-              <time dateTime={recruit.deadline}>
-                {closed ? '모집 마감' : formatDeadlineDate(recruit.deadline)}
-              </time>
-            </p>
+            <h2 id="recruit-title" className={styles.title}>
+              {recruit.title}
+            </h2>
           </div>
           <p className={styles.intro}>{recruit.intro}</p>
           {recruit.techTags.length > 0 && (
@@ -124,7 +120,8 @@ function PostView({ recruit }: { recruit: Detail }) {
               모집 역할
             </h3>
             <p className={styles.sectionMeta}>
-              전체 {totalHeadcount}명 중 {totalFilled}명 모집 완료
+              전체 {totalHeadcount}명 중{' '}
+              <span className={styles.sectionMetaStrong}>{totalFilled}명 모집 완료</span>
             </p>
           </div>
           <ul className={styles.roles}>
@@ -226,17 +223,16 @@ function ActionPanel({ recruit, closed }: ActionPanelProps) {
       </Button>
     );
   } else if (mine?.status === 'PENDING') {
-    const roleName = recruit.roles.find((role) => role.id === mine.roleId)?.name;
+    // Figma 1095:391: an applied post swaps "지원하기" for a red full-width cancel CTA
     content = (
-      <div className={styles.actionRow}>
-        <p className={styles.actionStatus}>
-          <span className={styles.pendingBadge}>검토 중</span>
-          {roleName && <span>지원 역할 {roleName}</span>}
-        </p>
-        <Button variant="danger" disabled={cancelPending || suspended} onClick={openCancel}>
-          지원 취소
-        </Button>
-      </div>
+      <Button
+        block
+        className={styles.cancelCta}
+        disabled={cancelPending || suspended}
+        onClick={openCancel}
+      >
+        지원 취소 하기
+      </Button>
     );
   } else if (mine?.status === 'ACCEPTED') {
     content = (
@@ -268,12 +264,13 @@ function ActionPanel({ recruit, closed }: ActionPanelProps) {
   return (
     <div className={styles.actionBar}>
       {content}
+      {/* Same chrome and button order as the login prompt (Figma 577:484) */}
       <ConfirmDialog
         overlay={confirm}
-        title="지원을 취소할까요?"
-        description="취소한 모집 글에는 한 번만 다시 지원할 수 있어요."
-        confirmLabel="지원 취소"
-        destructive
+        title="지원 취소"
+        description="지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?"
+        confirmLabel="취소하기"
+        cancelLabel="지원 유지"
         pending={cancelPending}
         onConfirm={confirmCancel}
       />

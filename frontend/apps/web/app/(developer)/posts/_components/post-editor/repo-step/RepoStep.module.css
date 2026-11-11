@@ -4,8 +4,35 @@
   display: grid;
   gap: var(--space-md);
   min-width: 0;
-  /* Room for the viewport-fixed CTA (Figma 265:217) */
-  padding-bottom: calc(var(--control-height-sheet) + var(--space-md) + env(safe-area-inset-bottom));
+  /* Room for the viewport-fixed CTA (Figma 265:217), same bottom offset as .submitBar */
+  padding-bottom: calc(
+    var(--control-height-sheet) + max(var(--space-home-indicator), env(safe-area-inset-bottom)) +
+      var(--space-md)
+  );
+}
+
+/* No public repo on my profile (Figma 1100:562): centered two lines, 10 apart, the title 180 below
+   where the step heading would start */
+.empty {
+  display: grid;
+  gap: var(--space-row-block);
+  justify-items: center;
+  padding-top: var(--space-post-repo-empty);
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-title-cool);
+}
+
+.emptyText {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+  color: var(--color-text-muted-cool);
 }
 
 .intro {
@@ -86,7 +113,6 @@
   align-items: center;
   gap: var(--space-row-block);
   min-height: var(--touch-target-min);
-  padding-block: var(--space-sm);
   cursor: pointer;
 }
 
@@ -139,7 +165,8 @@
   border-radius: var(--radius-xxs);
 }
 
-/* Viewport-fixed bottom CTA (Figma 265:217); bar fill stays transparent */
+/* Viewport-fixed bottom CTA (Figma 265:217), one indicator area (24) above the edge — or the safe
+   area where that is larger — like 20 and 21; bar fill stays transparent */
 .submitBar {
   position: fixed;
   inset-inline: 0;
@@ -148,7 +175,7 @@
   width: 100%;
   max-width: var(--content-max-width);
   margin-inline: auto;
-  padding: var(--space-sm) var(--page-gutter) calc(var(--space-sm) + env(safe-area-inset-bottom));
+  padding: 0 var(--page-gutter) max(var(--space-home-indicator), env(safe-area-inset-bottom));
   background-color: transparent;
 }
 
@@ -159,15 +186,16 @@
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-title);
-  color: var(--color-on-primary);
-  background-color: var(--color-cta-cool);
+  color: var(--color-on-cta-bottom);
+  background-color: var(--color-cta-bottom);
   border: 0;
   border-radius: var(--radius-control-md);
 }
 
+/* Figma 1100:580: #d3e0fb with a white label (shared page bottom-CTA disabled pair) */
 .cta:disabled {
   cursor: not-allowed;
-  color: var(--color-on-primary);
-  background-color: var(--color-cta-cool-disabled);
+  color: var(--color-on-cta-bottom-disabled);
+  background-color: var(--color-cta-bottom-disabled);
   opacity: 1;
 }

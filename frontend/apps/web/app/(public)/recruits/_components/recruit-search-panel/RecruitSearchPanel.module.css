@@ -7,7 +7,8 @@
   transition: max-height var(--duration-chrome-collapse) var(--ease-standard);
 }
 
-:global(html.tab-chrome-collapsed) .panel {
+:global(html.tab-chrome-collapsed) .panel,
+.panel[data-pinned] {
   max-height: var(--recruit-search-panel-height);
 }
 
@@ -25,7 +26,8 @@
     transform var(--duration-chrome-collapse) var(--ease-standard);
 }
 
-:global(html.tab-chrome-collapsed) .inner {
+:global(html.tab-chrome-collapsed) .inner,
+.panel[data-pinned] .inner {
   opacity: 1;
   transform: translateY(0);
 }
@@ -37,16 +39,17 @@
  * box-shadow paints outside the layout box entirely, so neither the outer size nor the inner
  * content ever moves when the width changes.
  */
+/* Figma 248:1523: 2px #e5e7eb at rest, icon 10 in, 14 from the icon to the text */
 .searchField {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-search-icon);
   height: var(--touch-target-min);
-  padding: 0 var(--space-sm);
+  padding: 0 var(--space-sm) 0 var(--space-row-block);
   background-color: var(--color-canvas);
   border: none;
   border-radius: var(--radius-control-lg);
-  box-shadow: inset 0 0 0 1px var(--color-hairline-cool);
+  box-shadow: inset 0 0 0 2px transparent;
 }
 
 /* Figma 346:360: the one input that swaps its own border color/width instead of the global
@@ -55,9 +58,20 @@
   box-shadow: inset 0 0 0 2px var(--color-focus-ring-search);
 }
 
+/* The magnifier runs the search (Enter does too); typing alone never requests */
+.searchButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--color-text-slate);
+  background: none;
+  border: none;
+}
+
 .searchIcon {
   flex-shrink: 0;
-  color: var(--color-text-slate);
 }
 
 .searchInput {
@@ -100,10 +114,11 @@
   --icon-box-size: var(--icon-size-sm);
 }
 
+/* Figma 248:1531: 5 between chips */
 .chips {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-row-inline);
 }
 
 .chip {
@@ -112,7 +127,7 @@
   align-items: center;
   gap: var(--space-row-inline);
   min-height: var(--control-height-chip);
-  padding: var(--space-chip-block) var(--space-xs);
+  padding: var(--space-chip-block) var(--space-row-block);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-compact);
@@ -128,9 +143,4 @@
   position: absolute;
   inset: calc((var(--control-height-chip) - var(--touch-target-min)) / 2) 0;
   content: '';
-}
-
-.chipIcon {
-  --icon-box-size: 18px;
-  --icon-stroke-width: 1.5;
 }

@@ -2,8 +2,6 @@ package com.linker.backend.entity.post;
 
 import java.time.Instant;
 
-import com.linker.backend.entity.profile.TechTag;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,6 +14,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+/** A free-text tag on a project post (POL-P-2), typed on 22 — not a tech stack catalog pick */
 @Entity
 @Table(name = "post_tags")
 public class PostTag {
@@ -28,9 +27,8 @@ public class PostTag {
 	@JoinColumn(name = "post_id", nullable = false)
 	private Post post;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "tag_id", nullable = false)
-	private TechTag tag;
+	@Column(nullable = false, length = 40)
+	private String name;
 
 	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
@@ -43,9 +41,9 @@ public class PostTag {
 	protected PostTag() {
 	}
 
-	public static PostTag of(TechTag tag) {
+	public static PostTag of(String name) {
 		PostTag item = new PostTag();
-		item.tag = tag;
+		item.name = name;
 		return item;
 	}
 
@@ -53,8 +51,8 @@ public class PostTag {
 		this.post = post;
 	}
 
-	public TechTag getTag() {
-		return tag;
+	public String getName() {
+		return name;
 	}
 
 	public Instant getCreatedAt() {

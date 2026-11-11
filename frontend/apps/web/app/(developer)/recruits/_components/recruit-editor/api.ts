@@ -7,7 +7,10 @@ export {
   type RecruitEditForm,
 } from '../../_lib/editor-queries';
 export {
+  durationMonthsFromText,
   EMPTY_RECRUIT_FORM,
+  FREE_TEAM_HEADCOUNT_MESSAGE,
+  headcountTotalMax,
   recruitFormSchema,
   toRecruitRequest,
   type RecruitFormValues,

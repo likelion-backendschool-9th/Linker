@@ -5,8 +5,8 @@ import { apiFetch } from '@/lib/api/api-fetch';
 
 /** Provisional WBS 20 `RecruitmentController` contract; replace with Orval types when OpenAPI is available. */
 export type EditorOptions = {
-  /** Teams I can link: owner / admin (POL-R-1) */
-  teams: { id: number; name: string }[];
+  /** Teams I can link: owner / admin (POL-R-1). `flex`: no free-team headcount cap */
+  teams: { id: number; name: string; flex: boolean }[];
   /** Open posts now and the plan's cap (3, Pro 10) */
   openCount: number;
   openLimit: number;

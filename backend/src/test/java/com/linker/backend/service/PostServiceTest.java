@@ -470,7 +470,7 @@ class PostServiceTest {
 		ReflectionTestUtils.setField(post, "createdAt", createdAt);
 		List<PostTag> postTags = new ArrayList<>();
 		for (TechTag tag : tags) {
-			postTags.add(PostTag.of(tag));
+			postTags.add(PostTag.of(tag.getName()));
 		}
 		ReflectionTestUtils.setField(post, "tags", postTags);
 		return post;

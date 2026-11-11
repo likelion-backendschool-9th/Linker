@@ -11,7 +11,8 @@
   --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
   --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
   --color-gnb-current: #2563eb; /* active bottom GNB icon/label (Figma 453:227/258, 455:316) */
-  --color-gnb-inactive: #b2b7c3; /* inactive bottom GNB icon/label */
+  --color-gnb-inactive: #b2b7c3; /* 21 radio/check borders and muted text (formerly the inactive bottom GNB color) */
+  --color-gnb-idle: #878a92; /* inactive bottom GNB icon/label (Figma 1083:280) */
 
   /* Surface */
   --color-canvas: #ffffff; /* page and card background */
@@ -27,9 +28,7 @@
   --color-header-stack-bg: rgb(
     255 255 255 / 0.9
   ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
-  --color-gnb-bg: rgb(
-    255 255 255 / 0.95
-  ); /* bottom GNB pill frosted fill, with --blur-chrome and --shadow-gnb (Figma 800:1299) */
+  --color-gnb-bg: #f5f5f5; /* bottom GNB pill fill, with --blur-chrome and --shadow-gnb; also the unread chip's rim (Figma 1083:280) */
   --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
   /* Border */
@@ -88,7 +87,7 @@
   --color-settings-choice-unselected: #98a3b4; /* 06 settings job-status sheet, reference screenshot */
   --color-settings-block-handle: #98a3b4; /* 06 settings blocked-user handle, reference screenshot */
   --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
-  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
+  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border and 19 unselected tab underline */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
   --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill, tech stack chip and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
   --color-selection: #2563eb; /* 07 sheet selected radio; also 20 selected segmented button fill */
@@ -110,8 +109,22 @@
   --color-cta-cool: #2563eb; /* apply CTA fill; on-white text uses --color-on-primary */
   --color-role-filled: #028714; /* filled headcount "1/1" before "마감" */
 
+  /* Page bottom CTA (the fixed button at the foot of a screen, not one inside a sheet). Reuse these
+     for every such CTA: active fill + white label, disabled pale fill + white label. The disabled
+     pair is decorative-low-contrast on purpose (WCAG exempts inactive controls); first used on 20 */
+  --color-cta-bottom: #2563eb; /* active fill: white label 5.17:1 */
+  --color-on-cta-bottom: #ffffff;
+  --color-cta-bottom-disabled: #d3e0fb; /* disabled fill */
+  --color-on-cta-bottom-disabled: #ffffff; /* disabled label */
+
+  /* Danger page bottom CTA (21 "지원 취소 하기", Figma 1095:391): white label 4.6:1 */
+  --color-cta-danger: #ed0004;
+  --color-on-cta-danger: #ffffff;
+
+  /* 20 recruit editor */
+  --color-role-remove: #ed0004; /* role row delete icon (Figma 1085:316, Solar forbidden-circle-linear): 4.6:1 on white */
+
   /* 22 post editor (Figma 265:142): cool CTA disabled + fork chip + list disabled text */
-  --color-cta-cool-disabled: #92b1f5; /* bottom CTA when nothing selected; white label kept by Figma */
   --color-chip-fork-bg: rgb(230 46 0 / 0.1); /* Fork chip fill (#E62E00 @ 10%) */
   --color-text-disabled-cool: #b2b7c3; /* already-posted repo name / unselected check */
 

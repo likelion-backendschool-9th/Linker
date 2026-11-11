@@ -1,5 +1,5 @@
 /* Overlays the GNB chat icon's top-right corner; the icon wrapper (.iconSlot) is position:relative.
-   Figma 455:350: 18 circle, #2563eb with a light 1px rim, 12 regular white numeral at -3%.
+   Figma 1083:310: 18 circle, #2563eb with a 2px rim in the pill's #f5f5f5, 12 regular white numeral at -3%.
    min-width lets a 3-digit count grow into a pill instead of overflowing the circle */
 .badge {
   position: absolute;
@@ -10,7 +10,7 @@
   justify-content: center;
   min-width: var(--chip-size);
   height: var(--chip-size);
-  border: 1px solid var(--color-canvas-soft);
+  border: 2px solid var(--color-gnb-bg);
   border-radius: var(--radius-full);
   background: var(--color-gnb-current);
   color: var(--color-on-primary);

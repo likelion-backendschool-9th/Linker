@@ -24,7 +24,7 @@ Rules applied to every feature. Unless a feature policy says otherwise, these va
 | Item | Rule |
 | --- | --- |
 | Character count | Counted after trimming leading/trailing whitespace. Korean, English, digits, emoji all count as 1. Keep at most 2 consecutive line breaks |
-| Links | https only. External links open in the browser outside the app; first time per domain, confirm "외부 사이트로 이동합니다" (leaving to an external site) |
+| Links | https only. External links open in the browser outside the app; first time per domain, confirm "외부 사이트로 이동합니다" (leaving to an external site). Exception: the GitHub repo card on 23 opens github.com straight away (no confirm) |
 | Banned words | No automatic word filter in MVP; handled via reports. Profanity filter reviewed in phase 2 if reports pile up |
 | Time display | Chat messages: fixed sent time in KST, e.g. "오후 3:12"; the date divider supplies the date. Other screens: KST. < 1 min "방금", < 1 hour "N분 전", < 24 hours "N시간 전", this year "10월 16일", previous years "2025. 10. 16." |
 | Number display | < 1,000 as-is; ≥ 1,000 "1.2천"; ≥ 10,000 "1.2만" |
@@ -255,12 +255,12 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 
 | Policy | Details |
 | --- | --- |
-| POL-P-1 Repo selection | Only **public** repos of the user's account or orgs they belong to. Private repos can't be selected. One post per repo (progress updates are phase 2) |
+| POL-P-1 Repo selection | Only **public** repos on the user's own GitHub profile (owned by their account, forks included — a fork brought in from an org shows "Fork" after the name). Org repos aren't listed, except the team's repos when arriving from 09's "작업물 올리기". Private repos can't be selected. One post per repo: already-posted repos stay in the list but can't be picked (progress updates are phase 2). No public repo at all → "저장소를 선택할 수 없습니다" / "사용자 프로필에 공개 된 저장소가 없습니다" |
 | POL-P-1 Repo changes | If the repo becomes private or is deleted, keep the post, show the repo card as "레포를 볼 수 없음" (repo unavailable), hide the README toggle |
 | POL-P-2 Required fields | Repo, one-line intro (1–60 chars), at least 1 photo ("사진을 1장 이상 올려 주세요.") |
 | POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links. The one-line intro and body take no emoji: the input drops emoji as they are typed or pasted, with no error message |
 | POL-P-2 Photos | 1 to Free 5 / Pro 10, 10MB each, JPG/PNG/WebP/GIF. Resize long side to 2,048px and strip EXIF on upload. First photo is the cover and the post's link-preview (OG) image |
-| POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
+| POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–5; above 5 the field shows "5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다" as typed and the server rejects it), up to 5 tags (free text split at "#", each up to 40 chars — not limited to the tech stack list) |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
 | POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so they get only "추천" (no "팔로잉" tab, even with `?tab=following`) and no "팔로우" chip on feed cards. The "제안 받는 개발자만" toggle is on "추천" only |
@@ -272,7 +272,7 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 | POL-P-7 Share button | Posts, recruit posts and profiles have a share button. It opens a bottom sheet with only two options: "링크 복사" (Copy link) / "채팅방에 공유" (Share to chat room). Guests can only copy the link; "Share to chat room" shows the login prompt |
 | POL-P-7 Copy link | Copies the page's public URL and shows a "링크를 복사했어요" (link copied) toast. A share marker (`?from=share`) is appended so the visit counts as traffic source "external link" |
 | POL-P-7 Share to chat room | Pick one room from my chat room list (most recent first, search by name); it is sent immediately as a card message with no extra confirmation, and a "○○에 공유했어요 · 채팅방으로 가기" (shared to ○○ · go to chat room) toast appears. The list contains only team chat rooms I belong to and 1:1 rooms whose conversation is open (excludes pending requests, request box, blocked partners, read-only or archived teams) |
-| POL-P-7 Feed share drawer | Only on the 24 feed card: its paper-plane icon opens the "공유하기" (Share) drawer directly instead of the two-option sheet. It is a centered card (at most 600px tall; past that only the room list scrolls, with no visible scrollbar) with a × close, a "검색어를 입력해 주세요" room search (partial name, same rules as above), one list of my chat rooms most recent first, and a "링크 복사하기" (Copy link) button at the bottom. Each row shows the photo (team photo / the other person's photo) and name, with a blue "팀" (team) after team room names, and its own "공유하기" (Share) button that sends the card to that room at once, closes the drawer and shows the same toast as above. "링크 복사하기" works like Copy link above and closes the drawer. No tabs, no radio, no default selection; recruiters see only their 1:1 rooms. Same room list rules as above. Guests get the login prompt. Other share buttons (23, 21, 04) keep the two-option sheet above |
+| POL-P-7 Feed share drawer | On the 24 feed card and the 23 post detail: the paper-plane icon opens the "공유하기" (Share) drawer directly instead of the two-option sheet. It is a centered card (at most 600px tall; past that only the room list scrolls, with no visible scrollbar) with a × close, a "검색어를 입력해 주세요" room search (partial name, same rules as above), one list of my chat rooms most recent first, and a "링크 복사하기" (Copy link) button at the bottom. Each row shows the photo (team photo / the other person's photo) and name, with a blue "팀" (team) after team room names, and its own "공유하기" (Share) button that sends the card to that room at once, closes the drawer and shows the same toast as above. "링크 복사하기" works like Copy link above and closes the drawer. No tabs, no radio, no default selection; recruiters see only their 1:1 rooms. Same room list rules as above. Guests get the login prompt. Other share buttons (21, 04) keep the two-option sheet above |
 | POL-P-7 Share card | Post: cover photo, repo name, one-line intro, author. Recruit post: title, remaining roles, closing date. Profile: name, handle, tech stack. The card doesn't copy content at send time; it reads the latest state when shown. If the original was deleted or hidden, or the viewer blocked the author, it shows "볼 수 없는 게시물이에요" (this post is unavailable) |
 | Blocking | Follows ch. 9 "Blocking" |
 
@@ -307,12 +307,13 @@ Recruit posts have only two states: open → closed. Closed posts leave the list
 | POL-R-1 Who can write | Any logged-in developer who can link an active team they own or admin (POL-T-1); completed, read-only, archived and deleted teams can't be linked. The team is a required field because invites (POL-R-4) add people to it — writing without a team is not allowed. Under the field: "팀이 없으면 모집글을 작성할 수 없습니다." |
 | POL-R-1 Concurrent posts | Max 3 open posts per person (Pro 10) |
 | POL-R-1 Required fields | Title (40 chars), intro (1,000 chars), needed roles and headcount (1–10 per role), format (online/offline/hybrid), deadline (today through 6 months from today) |
-| POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration, region (required if offline), goal (contest/hackathon/launch/learning) |
-| POL-R-1 No emoji | Title, intro, region and expected duration take no emoji (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. The inputs drop emoji as they are typed or pasted, with no error message; the server still rejects them ("이모지는 입력할 수 없어요.") |
+| POL-R-1 Optional fields | Up to 10 tech stack tags, expected duration (whole months, 1–99: the field takes digits only and the unit is fixed to 개월; saved as "N개월"), region (required if offline), goal (contest/hackathon/launch/learning) |
+| POL-R-1 Free team headcount | When the linked team isn't on Flex, all roles together recruit at most 5 people (free team size 6 − the owner). At 5, the editor turns off each role's "+" and "역할 추가" and shows "Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요." Flex teams have no total cap (still 1–10 per role) |
+| POL-R-1 No emoji | Title, intro and region take no emoji (expected duration takes digits only) (pictures, flags, emoji-style symbols, keycaps). Plain text symbols such as © or ↔ are allowed. The inputs drop emoji as they are typed or pasted, with no error message; the server still rejects them ("이모지는 입력할 수 없어요.") |
 | POL-R-1 Who can edit | The author, and only while they still own or admin the linked team. If they have lost that role, saving an edit shows "글을 수정할 권한이 없습니다." |
 | POL-R-1 Auto-close | Closes automatically when the deadline passes or all roles are filled |
-| POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL |
-| POL-R-2 Search (19) | Search box on 19's All tab. Case-insensitive match on part of the recruit post title only (not intro, roles or tech stack); leading/trailing spaces ignored, blank = no search. Max 40 characters, the title limit (longer is rejected). Combined with the filters and sort, kept in the URL (`q`) |
+| POL-R-2 List | Open posts only, newest or closing soon. Filters stored in URL. Each card shows the project intro under the title: the first 200 characters (line breaks as spaces), then "...자세히 보기" linking to the post when it is longer |
+| POL-R-2 Search (19) | Search box on 19's All tab. Case-insensitive match on part of the recruit post title only (not intro, roles or tech stack); leading/trailing spaces ignored, blank = no search. Max 40 characters, the title limit (longer is rejected). Combined with the filters and sort, kept in the URL (`q`). Runs on Enter or the magnifier, not while typing. While a search or filter is in the URL, the search and filter area stays open at the top of the page too |
 | POL-R-3 Apply | Choose one role that still has slots; a role filled in the meantime is rejected with "해당 역할은 마감됐어요." Once per post (re-apply once after cancelling). Not allowed on own posts or with a block relationship. No free-text "하고 싶은 말"; the author judges from the applicant's profile |
 | POL-R-3 Application | Author opens the applicant's public profile to review (tech stack, graph, posts, completion record). No separate in-product application dossier sheet |
 | POL-R-4 Handling | Author invites or rejects from the applicants drawer. Auto-expires after 14 days unhandled, with notification to applicant |
@@ -704,6 +705,9 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | --- | --- |
 | Rate limit reached | 오늘은 더 할 수 없어요. 내일 다시 시도해 주세요. |
 | Recruit post daily limit (ch. 2) | 하루 모집글의 최대 한도는 N번 입니다. (N = 5) |
+| Post team size over the cap (22, POL-P-2) | 5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다 |
+| Cancel application (21, POL-R-3) | Title "지원 취소" · "지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?" · buttons "취소하기" / "지원 유지" |
+| Recruit headcount on a non-Flex team (POL-R-1) | Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요. |
 | No GitHub permission | 이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. |
 | GitHub connection failed | GitHub에 연결하지 못했어요. 작성한 내용은 저장해 두었어요. |
 | Not org owner | GitHub 조직 오너만 앱을 설치할 수 있어요. 오너에게 설치를 요청할까요? |

@@ -238,7 +238,6 @@ erDiagram
   uploaded_files ||--o| post_images : "file"
   posts ||--o{ post_demo_links : "demo links"
   posts ||--o{ post_tags : "tags"
-  tech_tags ||--o{ post_tags : "tag"
   posts ||--o{ post_likes : "likes"
   users ||--o{ post_likes : "likes"
   posts ||--o{ comments : "comments"
@@ -301,7 +300,7 @@ erDiagram
   post_tags {
     bigint id PK
     bigint post_id FK
-    bigint tag_id FK
+    varchar name
   }
   post_likes {
     bigint id PK
@@ -1039,7 +1038,7 @@ erDiagram
 | posts | 🟢 | Repo-based project posts | P-1, P-2 |
 | post_images | 🟢 | Post photos, first is cover | P-2, free 5 / Pro 10 |
 | post_demo_links | 🟢 | Demo links, max 3 | POL-P-2 |
-| post_tags | 🟢 | Post tags, max 5 | POL-P-2 |
+| post_tags | 🟢 | Post tags, max 5: free text typed on 22 (`name` ≤ 40 chars, unique per post), not tech_tags picks | POL-P-2 |
 | post_likes | 🟢 | Likes, once per post | P-5 |
 | comments | 🟢 | Comments and one-level replies | P-5 |
 | follows | 🟢 | Follows, mutual follow, feed "팔로잉" tab | P-5, P-4 |

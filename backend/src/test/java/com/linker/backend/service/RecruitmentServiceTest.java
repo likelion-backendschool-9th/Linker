@@ -85,6 +85,8 @@ class RecruitmentServiceTest {
 
 		assertThat(page.items()).hasSize(1);
 		assertThat(page.items().getFirst().title()).isEqualTo("Linker 모집");
+		// The card shows the project intro under the title (19, POL-R-2)
+		assertThat(page.items().getFirst().intro()).isEqualTo("소개");
 		assertThat(page.items().getFirst().roles()).hasSize(1);
 		assertThat(page.nextCursor()).isNull();
 	}
