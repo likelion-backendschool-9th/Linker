@@ -17,7 +17,7 @@ export function useWorkspaceView() {
   const selection = useMyIssuesSection();
   const [filter, setFilter] = useQueryState(
     'status',
-    parseAsStringLiteral(FILTERS).withDefault('COMPLETED'),
+    parseAsStringLiteral(FILTERS).withDefault('ACTIVE'),
   );
   const overlay = useOverlay('my-issues-team');
   const [rawTeamId] = useQueryState('teamId');

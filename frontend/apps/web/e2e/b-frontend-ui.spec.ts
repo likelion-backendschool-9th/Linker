@@ -16,14 +16,16 @@ test('workspace filters teams and reuses the team switcher without a navigation 
 }) => {
   await page.goto('/workspace');
   await expect(page.getByRole('heading', { name: '팀 목록', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '완료 1', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: '활성 2', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
+  await expect(page.getByRole('article', { name: 'Linker 해커톤팀', exact: true })).toBeVisible();
+  await expect(page.getByRole('article', { name: '졸업작품 TF' })).toHaveCount(0);
+  await page.getByRole('button', { name: '완료 1', exact: true }).click();
+  await expect(page).toHaveURL(/status=COMPLETED/);
   await expect(page.getByRole('article', { name: '졸업작품 TF' })).toBeVisible();
-  await expect(page.getByRole('article', { name: 'Linker 해커톤팀', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '활성 2', exact: true }).click();
-  await expect(page).toHaveURL(/status=ACTIVE/);
   await page.getByRole('article', { name: 'Linker 해커톤팀' }).getByRole('link').click();
   await expect(page).toHaveURL(/\/teams\/1\/issues$/);
   await page.getByRole('button', { name: /Linker 해커톤팀.*팀 변경/ }).click();
