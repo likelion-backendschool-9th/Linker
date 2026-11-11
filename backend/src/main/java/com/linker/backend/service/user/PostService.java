@@ -628,8 +628,11 @@ public class PostService {
 		List<PostDemoLink> demoLinks = normalizeDemoLinks(request.demoLinks());
 		PeriodDates period = parsePeriod(request.period());
 		Integer teamSize = request.teamSize();
-		if (teamSize != null
-				&& (teamSize < PlanLimits.POST_TEAM_SIZE_MIN || teamSize > PlanLimits.POST_TEAM_SIZE_MAX)) {
+		if (teamSize != null && teamSize > PlanLimits.POST_TEAM_SIZE_MAX) {
+			throw new ApiException(400, "VALIDATION_ERROR",
+					PlanLimits.POST_TEAM_SIZE_MAX + "명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다");
+		}
+		if (teamSize != null && teamSize < PlanLimits.POST_TEAM_SIZE_MIN) {
 			throw new ApiException(400, "VALIDATION_ERROR", "팀 규모를 확인해 주세요");
 		}
 		List<PostTag> tags = toPostTags(normalizeTags(request.tags()));

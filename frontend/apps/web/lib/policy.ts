@@ -74,7 +74,8 @@ export const POST = {
   roleMax: 40,
   rolePickMax: 4, // 22 "내 역할" sheet: up to 4 roles, saved joined into roleMax (Figma 666:611)
   demoLinksMax: 3,
-  teamSize: { min: 1, max: 50 },
+  /** POL-P-2: above 5, people come from building a team and paying (Flex) */
+  teamSize: { min: 1, max: 5 },
   tagsMax: 5,
   commentMax: 500,
 } as const;

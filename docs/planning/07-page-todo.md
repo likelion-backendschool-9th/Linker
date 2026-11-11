@@ -627,8 +627,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Step 1: Choose repo**
 
-- [ ] Only public repos from my account and orgs I belong to, with search
-- [ ] Already-posted repos disabled; forks show "포크"
+- [ ] Only public repos on my own profile (forks included; no org repos), with search. None at all → centered "저장소를 선택할 수 없습니다" / "사용자 프로필에 공개 된 저장소가 없습니다" with "다음" disabled (Figma 1100:562)
+- [ ] Already-posted repos disabled; forks show "Fork"
 - [ ] Coming from a completed team's "작업물 올리기" (09 settings) pre-selects the team repo
 
 **Step 2: Content**
@@ -637,7 +637,8 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Required: one-line intro (1–60 chars, emoji dropped as typed)
 - [ ] Body (2,000 chars, line breaks and links only, emoji dropped as typed)
 - [ ] Photos (required, at least 1): Free 5 / Pro 10, reorder, first is the cover, retry partial failures, publish only after all uploaded, subscription prompt if over the limit
-- [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags (sheet)
+- [ ] Optional: my role (40 chars), up to 3 demo links (https), period (start/end month), team size (1–5; above 5 → "5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다" right away), up to 5 tags (sheet)
+- [ ] Step 2 fields: 2px `#E5E7EB` border at rest, blue on focus. "게시하기" uses the shared bottom-CTA colors: `#D3E0FB` until the one-line intro and all photos are in, then `#2563EB`
 - [ ] Edited posts show "수정됨"; 10/day (only published posts count); leaving mid-writing → restore draft
 
 ### 23. Project post detail `[Required]` · `/posts/[id]`

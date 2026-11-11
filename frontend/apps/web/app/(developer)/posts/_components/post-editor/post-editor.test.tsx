@@ -21,11 +21,11 @@ const developer = { viewer: { role: 'developer' as const, login: 'developer' } }
 const repos: EditorRepo[] = [
   {
     repoId: 11,
-    fullName: 'linker-hack/linker-web',
+    fullName: 'seojun-han/linker-web',
     language: 'TypeScript',
     stars: 28,
     isFork: false,
-    teamId: 1,
+    teamId: null,
     alreadyPosted: true,
   },
   {
@@ -84,7 +84,8 @@ it('lists repos with forks and already-posted ones disabled', async () => {
   const { container } = renderWithProviders(<Harness />, developer);
   expect(await screen.findByText('저장소를 선택해 주세요')).toBeVisible();
   expect(screen.getByPlaceholderText('저장소 검색하기')).toBeVisible();
-  expect(await screen.findByText('포크')).toBeVisible();
+  // Fork chip right of the name (Figma 276:377)
+  expect(await screen.findByText('Fork')).toBeVisible();
   expect(screen.getByRole('radio', { name: /linker-web/ })).toBeDisabled();
   expect(screen.getByText('(이미 피드에 올린 레포)')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
@@ -95,6 +96,23 @@ it('lists repos with forks and already-posted ones disabled', async () => {
   expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
   await user.click(screen.getByRole('button', { name: '다음' }));
   expect(onNext).toHaveBeenCalledWith(42);
+});
+
+it('shows the Figma notice when my profile has no public repo', async () => {
+  fetchMock.mockImplementation(async (url) => {
+    if (url.startsWith('/api/v1/user/post-editor/repos')) return { items: [] };
+    return undefined;
+  });
+  const { container } = renderWithProviders(
+    <RepoStep teamId={null} repoId={null} onSelect={vi.fn()} onNext={vi.fn()} />,
+    developer,
+  );
+  expect(await screen.findByRole('heading', { name: '저장소를 선택할 수 없습니다' })).toBeVisible();
+  expect(screen.getByText('사용자 프로필에 공개 된 저장소가 없습니다')).toBeVisible();
+  // Nothing to search or pick: the heading and search give way to the notice (Figma 1100:562)
+  expect(screen.queryByPlaceholderText('저장소 검색하기')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+  expect(await axe(container)).toHaveNoViolations();
 });
 
 const cover = { fileId: 'a', url: '/mock/cover-1.svg' };

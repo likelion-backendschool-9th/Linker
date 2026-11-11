@@ -1,6 +1,6 @@
 'use client';
 
-// Own region: step 1 of 22, pick one public repo (POL-P-1, Figma 265:142)
+// Own region: step 1 of 22, pick one public repo on my own profile (POL-P-1, Figma 265:142, 1100:562)
 import { CheckCircleLinearIcon } from '@solar-icons/static/linear/check-circle';
 import { MagnifierLinearIcon } from '@solar-icons/static/linear/magnifier';
 
@@ -32,6 +32,23 @@ export function RepoStep({ teamId, repoId, onSelect, onNext }: RepoStepProps) {
     onSelect,
   });
   const canNext = repoId !== null;
+  // No public repo on my profile at all (not a search miss): Figma 1100:562 replaces the heading,
+  // search and list with one centered notice; "다음" stays disabled below it
+  const noRepos = !teamId && !q && !text.trim() && repos.isSuccess && items.length === 0;
+
+  if (noRepos) {
+    return (
+      <section aria-labelledby={`${id}-title`} className={styles.step}>
+        <div className={styles.empty}>
+          <h2 id={`${id}-title`} className={styles.emptyTitle}>
+            저장소를 선택할 수 없습니다
+          </h2>
+          <p className={styles.emptyText}>사용자 프로필에 공개 된 저장소가 없습니다</p>
+        </div>
+        <NextBar canNext={false} onNext={() => {}} />
+      </section>
+    );
+  }
 
   return (
     <section aria-labelledby={`${id}-title`} className={styles.step}>
@@ -68,9 +85,9 @@ export function RepoStep({ teamId, repoId, onSelect, onNext }: RepoStepProps) {
         <ErrorState title="레포를 불러오지 못했어요" onRetry={() => void repos.refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
-          title={q ? '검색한 레포가 없어요.' : '고를 수 있는 공개 레포가 없어요.'}
+          title={q ? '검색한 저장소가 없어요.' : '고를 수 있는 공개 저장소가 없어요.'}
           description={
-            q ? '다른 이름으로 찾아보세요.' : 'GitHub에서 레포를 공개로 바꾸면 여기에 보여요.'
+            q ? '다른 이름으로 찾아보세요.' : 'GitHub에서 저장소를 공개로 바꾸면 여기에 보여요.'
           }
         />
       ) : (
@@ -98,9 +115,11 @@ export function RepoStep({ teamId, repoId, onSelect, onNext }: RepoStepProps) {
                     <Icon svg={CheckCircleLinearIcon} className={styles.check} />
                     <span className={styles.repoName} title={repo.fullName}>
                       {name}
-                      {repo.alreadyPosted && <span className="sr-only"> (이미 피드에 올린 레포)</span>}
+                      {repo.alreadyPosted && (
+                        <span className="sr-only"> (이미 피드에 올린 레포)</span>
+                      )}
                     </span>
-                    {repo.isFork && <span className={styles.fork}>포크</span>}
+                    {repo.isFork && <span className={styles.fork}>Fork</span>}
                   </label>
                 </li>
               );
@@ -109,18 +128,23 @@ export function RepoStep({ teamId, repoId, onSelect, onNext }: RepoStepProps) {
         </fieldset>
       )}
 
-      <div className={styles.submitBar}>
-        <button
-          type="button"
-          className={styles.cta}
-          disabled={!canNext}
-          onClick={() => {
-            if (repoId !== null) onNext(repoId);
-          }}
-        >
-          다음
-        </button>
-      </div>
+      <NextBar
+        canNext={canNext}
+        onNext={() => {
+          if (repoId !== null) onNext(repoId);
+        }}
+      />
     </section>
+  );
+}
+
+/** Viewport-fixed "다음" (Figma 265:217): shared page bottom-CTA colors */
+function NextBar({ canNext, onNext }: { canNext: boolean; onNext: () => void }) {
+  return (
+    <div className={styles.submitBar}>
+      <button type="button" className={styles.cta} disabled={!canNext} onClick={onNext}>
+        다음
+      </button>
+    </div>
   );
 }

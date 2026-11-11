@@ -239,6 +239,12 @@ export function usePostContentForm({
     // Other fields are wrong too: name the missing photo in the same pass
     () => setPhotoMissing(noPhotos),
   );
+  // Past the cap the message shows right away (POL-P-2), before any submit
+  const teamSizeOver = Number(watched.teamSize || 0) > POST.teamSize.max;
+  // Bottom CTA turns blue once the required inputs are in: one-line intro and photos all uploaded.
+  // Like 20 it stays clickable while pale, so submitting still points at what's missing.
+  const canSubmit =
+    Boolean(watched.intro?.trim()) && !noPhotos && uploader.allDone && !teamSizeOver;
   const describe = (...ids: (string | false | undefined)[]) =>
     ids.filter(Boolean).join(' ') || undefined;
 
@@ -308,6 +314,8 @@ export function usePostContentForm({
     registerIntro,
     registerBody,
     registerTeamSize,
+    teamSizeOver,
+    canSubmit,
     save,
     submit,
     describe,

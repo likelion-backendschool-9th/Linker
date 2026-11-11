@@ -255,12 +255,12 @@ Login is a condition for "actions," not an entrance gate. Anyone can read; only 
 
 | Policy | Details |
 | --- | --- |
-| POL-P-1 Repo selection | Only **public** repos of the user's account or orgs they belong to. Private repos can't be selected. One post per repo (progress updates are phase 2) |
+| POL-P-1 Repo selection | Only **public** repos on the user's own GitHub profile (owned by their account, forks included — a fork brought in from an org shows "Fork" after the name). Org repos aren't listed, except the team's repos when arriving from 09's "작업물 올리기". Private repos can't be selected. One post per repo: already-posted repos stay in the list but can't be picked (progress updates are phase 2). No public repo at all → "저장소를 선택할 수 없습니다" / "사용자 프로필에 공개 된 저장소가 없습니다" |
 | POL-P-1 Repo changes | If the repo becomes private or is deleted, keep the post, show the repo card as "레포를 볼 수 없음" (repo unavailable), hide the README toggle |
 | POL-P-2 Required fields | Repo, one-line intro (1–60 chars), at least 1 photo ("사진을 1장 이상 올려 주세요.") |
 | POL-P-2 Body | ≤ 2,000 chars, no markdown, only line breaks and links. The one-line intro and body take no emoji: the input drops emoji as they are typed or pasted, with no error message |
 | POL-P-2 Photos | 1 to Free 5 / Pro 10, 10MB each, JPG/PNG/WebP/GIF. Resize long side to 2,048px and strip EXIF on upload. First photo is the cover and the post's link-preview (OG) image |
-| POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–50), up to 5 tags |
+| POL-P-2 Optional fields | My role 40 chars, up to 3 demo links (https), period (start/end month), team size (1–5; above 5 the field shows "5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다" as typed and the server rejects it), up to 5 tags |
 | POL-P-2 Edit/delete | Author can edit/delete anytime. Edited posts show "수정됨" (edited). Deleting also deletes likes and comments |
 | POL-P-3 README | Collapsed by default. Cached for 1 hour rather than fetched from GitHub each time. Scripts and HTML stripped before display |
 | POL-P-4 Feed tabs | The home feed has two tabs, "추천" (Recommended) and "팔로잉" (Following), for every role; "추천" is the default. "팔로잉" lists only posts by people I follow, newest first, with no job ads. Guests follow nobody, so "팔로잉" shows "로그인하지 않으면 팔로잉 피드를 불러올 수 없어요." (Can't load the following feed without logging in) with a "로그인 하러 가기" (Go to login) button that opens the login prompt. An empty "팔로잉" shows "팔로잉한 사용자가 없습니다." (You don't follow anyone). Recruiters can't follow, so they get only "추천" (no "팔로잉" tab, even with `?tab=following`) and no "팔로우" chip on feed cards. The "제안 받는 개발자만" toggle is on "추천" only |
@@ -705,6 +705,7 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | --- | --- |
 | Rate limit reached | 오늘은 더 할 수 없어요. 내일 다시 시도해 주세요. |
 | Recruit post daily limit (ch. 2) | 하루 모집글의 최대 한도는 N번 입니다. (N = 5) |
+| Post team size over the cap (22, POL-P-2) | 5명 이상은 팀 구축 후 결제를 통해 인원을 늘릴 수 있습니다 |
 | Cancel application (21, POL-R-3) | Title "지원 취소" · "지원 취소한 게시물에 다시 지원을 하실 수 있습니다. 지원 취소 하시겠습니까?" · buttons "취소하기" / "지원 유지" |
 | Recruit headcount on a non-Flex team (POL-R-1) | Flex를 구독하지 않은 팀은 모든 역할을 합쳐 5명까지 모집할 수 있어요. |
 | No GitHub permission | 이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요. |

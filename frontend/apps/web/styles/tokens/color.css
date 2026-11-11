@@ -121,7 +121,6 @@
   --color-role-remove: #ed0004; /* role row delete icon (Figma 1085:316, Solar forbidden-circle-linear): 4.6:1 on white */
 
   /* 22 post editor (Figma 265:142): cool CTA disabled + fork chip + list disabled text */
-  --color-cta-cool-disabled: #92b1f5; /* bottom CTA when nothing selected; white label kept by Figma */
   --color-chip-fork-bg: rgb(230 46 0 / 0.1); /* Fork chip fill (#E62E00 @ 10%) */
   --color-text-disabled-cool: #b2b7c3; /* already-posted repo name / unselected check */
 

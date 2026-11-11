@@ -18,6 +18,7 @@ import { POST } from '@/lib/policy';
 import { PostPeriodSheet, type PeriodField } from '../post-period-sheet';
 import { PostRoleSheet } from '../post-role-sheet';
 import { RepoChangeSheet } from '../repo-change-sheet';
+import { TEAM_SIZE_OVER_MESSAGE } from './api';
 import styles from './PostContentForm.module.css';
 import { usePhotoRowFit, usePostContentForm, type PostContentFormProps } from './hook';
 
@@ -99,6 +100,8 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
     registerIntro,
     registerBody,
     registerTeamSize,
+    teamSizeOver,
+    canSubmit,
     save,
     submit,
     describe,
@@ -440,16 +443,17 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            maxLength={String(POST.teamSize.max).length}
+            // One digit past the cap, so "10" can be typed and gets the cap message too
+            maxLength={String(POST.teamSize.max).length + 1}
             className={styles.input}
             placeholder="팀 인원을 작성해 주세요"
-            aria-invalid={errors.teamSize ? true : undefined}
-            aria-describedby={errors.teamSize ? errorId('team') : undefined}
+            aria-invalid={teamSizeOver || errors.teamSize ? true : undefined}
+            aria-describedby={teamSizeOver || errors.teamSize ? errorId('team') : undefined}
             {...registerTeamSize}
           />
-          {errors.teamSize && (
+          {(teamSizeOver || errors.teamSize) && (
             <p id={errorId('team')} className={styles.error}>
-              {errors.teamSize.message}
+              {teamSizeOver ? TEAM_SIZE_OVER_MESSAGE : errors.teamSize?.message}
             </p>
           )}
         </div>
@@ -492,7 +496,11 @@ export function PostContentForm({ repoChange, ...props }: PostContentFormProps) 
         )}
 
         <div className={styles.submitBar}>
-          <button type="submit" className={styles.cta} aria-disabled={save.isPending || undefined}>
+          <button
+            type="submit"
+            className={styles.cta}
+            aria-disabled={save.isPending || !canSubmit || undefined}
+          >
             {save.isPending ? '저장하는 중…' : creating ? '게시하기' : '수정 완료'}
           </button>
         </div>

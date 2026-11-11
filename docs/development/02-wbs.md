@@ -437,7 +437,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 04 | A | GET | `/api/v1/public/user/{login}/posts` | 2nd pass: project posts (pinned first) | public |
 | 04 | A | PUT | `/api/v1/user/me/pinned-posts` | 2nd pass `[Included]`: replace featured posts and order (free 1, Pro 5; saved pins stay after Pro ends) | user · developers only |
-| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos of my account and my orgs, marking already-posted and forks; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
+| 22 | E | GET | `/api/v1/user/post-editor/repos?q=&teamId=` | Public repos on my own profile (no org repos; forks included), marking already-posted and forks; a team's repos with `teamId`; preselected when coming from a team. The unfiltered personal list first syncs my own public repos (forks included) from GitHub into `github_repos`; on GitHub failure it shows the cache | user · developers only |
 | 22 | E | GET | `/api/v1/user/post-editor/repos/{repoId}/summary` | Repo card (name, language, stars, description), my commit count, issues handled in Linker | user · developers only |
 | 22 | E | POST | `/api/v1/user/posts` | Publish (10/day counting published posts only, photos 1–5 / Pro 10 required, no emoji in intro/body) | user · developers only |
 | 22 | E | GET | `/api/v1/user/posts/{postId}/edit-form` | Edit form values | author |
