@@ -75,3 +75,24 @@ it('sends already-member developers to the team issues screen', async () => {
   );
   await waitFor(() => expect(replace).toHaveBeenCalledWith('/teams/2/issues'));
 });
+
+it.each([
+  ['EXPIRED', 'ALREADY_MEMBER'],
+  ['REVOKED', 'ALREADY_MEMBER'],
+  ['EXPIRED', 'ACCEPTED'],
+  ['REVOKED', 'ACCEPTED'],
+] as const)('keeps a %s link on the landing even for %s', async (status, state) => {
+  renderWithProviders(<InviteAcceptArea invite={{ ...base, status, participation: { state } }} />, {
+    viewer: { role: 'developer' },
+  });
+  await userEvent.click(screen.getByRole('button', { name: '팀에 합류 하기' }));
+  expect(replace).not.toHaveBeenCalled();
+  expect(acceptInvite).not.toHaveBeenCalled();
+  expect(startGithubLogin).not.toHaveBeenCalled();
+  expect(toast).toHaveBeenCalledWith(
+    status === 'EXPIRED'
+      ? '초대 링크의 유효 기간이 지났어요.'
+      : '더 이상 쓸 수 없는 초대 링크예요.',
+    { tone: 'error' },
+  );
+});

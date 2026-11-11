@@ -506,6 +506,9 @@ class TeamManagementIntegrationTest {
         .andExpect(status().isNoContent());
     mvc.perform(get("/api/v1/public/invites/" + code))
         .andExpect(jsonPath("$.status").value("REVOKED"));
+    mvc.perform(get("/api/v1/public/invites/" + code).cookie(cookie(owner)))
+        .andExpect(jsonPath("$.status").value("REVOKED"))
+        .andExpect(jsonPath("$.participation.state").value("ALREADY_MEMBER"));
     send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
         .andExpect(status().isGone());
   }
@@ -577,6 +580,9 @@ class TeamManagementIntegrationTest {
     String code = link.path("code").asString();
     jdbc.update(
         "update team_invite_links set expires_at=now() where id=?", link.path("id").asLong());
+    mvc.perform(get("/api/v1/public/invites/" + code).cookie(cookie(owner)))
+        .andExpect(jsonPath("$.status").value("EXPIRED"))
+        .andExpect(jsonPath("$.participation.state").value("ALREADY_MEMBER"));
     send(post("/api/v1/user/invites/" + code + "/accept"), outsider, "{}")
         .andExpect(status().isGone());
     jdbc.update(
