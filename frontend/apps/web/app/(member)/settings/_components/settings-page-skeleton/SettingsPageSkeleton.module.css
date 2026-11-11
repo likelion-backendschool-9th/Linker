@@ -1,0 +1,104 @@
+/* Figma 982:491 "6-스켈레톤" — account card with trailing value bones */
+
+.content {
+  --settings-row-height: 25px;
+  display: grid;
+  gap: var(--space-group);
+  width: min(100%, var(--content-max-width));
+  margin: 0 auto;
+  padding: var(--space-row-inline) 0 var(--space-xxl);
+}
+
+.group {
+  display: grid;
+  gap: var(--space-row-block);
+}
+
+.groupTitle {
+  margin: 0;
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-row-block);
+  padding: var(--space-manage-block);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: var(--settings-row-height);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-manage-divider);
+  background: transparent;
+  color: var(--color-text-slate);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--size-settings-skeleton-value-h);
+  text-align: left;
+}
+
+.card > :last-child {
+  min-height: var(--size-settings-skeleton-value-h);
+  border-bottom: 0;
+}
+
+.trailing {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-left: auto;
+}
+
+.bone {
+  display: block;
+  height: var(--size-settings-skeleton-value-h);
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.github {
+  width: var(--size-settings-skeleton-github-w);
+}
+
+.email {
+  width: var(--size-settings-skeleton-email-w);
+}
+
+.plan {
+  width: var(--size-settings-skeleton-plan-w);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}
