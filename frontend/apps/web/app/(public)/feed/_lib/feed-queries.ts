@@ -49,8 +49,8 @@ export type FeedTab = (typeof FEED_TABS)[number];
 
 export const feedKeys = {
   // Per account: guests, developers and recruiters get different mixes
-  feed: (login: string | null, offersOnly: boolean, tab: FeedTab = 'recommended') =>
-    ['feed', login, offersOnly, tab] as const,
+  feed: (login: string | null, offersOnly: boolean, tab: FeedTab = 'recommended', q = '') =>
+    ['feed', login, offersOnly, tab, q.trim()] as const,
   recommended: (login: string | null) => ['feed', login, 'recommended-users'] as const,
 };
 
@@ -63,14 +63,16 @@ export function feedOptions(
   login: string | null,
   offersOnly: boolean,
   tab: FeedTab = 'recommended',
+  q = '',
 ) {
   const following = tab === 'following';
   return infiniteQueryOptions({
-    queryKey: feedKeys.feed(login, following ? false : offersOnly, tab),
+    queryKey: feedKeys.feed(login, following ? false : offersOnly, tab, q),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => {
       const query = new URLSearchParams();
       if (following) query.set('tab', 'following');
+      if (q.trim()) query.set('q', q.trim());
       if (pageParam) query.set('cursor', pageParam);
       if (offersOnly && !following) query.set('offersOnly', 'true');
       return apiFetch<FeedPage>(`/api/v1/public/feed${query.size ? `?${query}` : ''}`, { signal });

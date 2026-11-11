@@ -75,6 +75,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service("userPostService")
 public class PostService {
@@ -82,6 +83,7 @@ public class PostService {
 	private static final Logger log = LoggerFactory.getLogger(PostService.class);
 	private static final String UNAVAILABLE = "삭제되었거나 볼 수 없는 콘텐츠예요";
 	private static final String DELETED_COMMENT = "삭제된 댓글입니다";
+	private final JsonMapper notificationJson = JsonMapper.builder().build();
 
 	private final GithubRepoRepository repos;
 	private final PostRepository posts;
@@ -461,7 +463,9 @@ public class PostService {
 					"POST",
 					postId,
 					"/posts/" + postId,
-					null,
+					notificationJson.writeValueAsString(Map.of(
+							"title", actor.visibleName() + "님이 회원님의 게시물을 좋아했어요.",
+							"body", post.getSummary())),
 					"post-like:" + postId + ":" + user.userId()
 			));
 		}

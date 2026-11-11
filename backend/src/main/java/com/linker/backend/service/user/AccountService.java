@@ -64,6 +64,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Paired entry for {@link com.linker.backend.controller.user.AccountController}. */
 @Service("userAccountService")
@@ -92,6 +93,7 @@ public class AccountService {
 	private final GithubUserAuthClient githubUsers;
 	private final PlatformTransactionManager transactions;
 	private final Clock clock;
+	private final JsonMapper notificationJson = JsonMapper.builder().build();
 	private final TeamManagementService teamMemberships;
 
 	public AccountService(
@@ -663,7 +665,8 @@ public class AccountService {
 				"USER",
 				follower.getId(),
 				"/user/" + follower.getUsername(),
-				null,
+				notificationJson.writeValueAsString(Map.of(
+						"title", follower.visibleName() + "님이 회원님을 팔로우했어요.")),
 				null));
 	}
 
