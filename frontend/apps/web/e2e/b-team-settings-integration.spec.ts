@@ -6,6 +6,18 @@ test.beforeEach(async ({ page }) => {
     .addCookies([{ name: 'linker_mock_role', value: 'developer', url: 'http://localhost:3000' }]);
 });
 
+// The header now opens team change; existing management overlays keep their direct URL contract.
+async function openTeamSettingsMenu(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('overlay', 'team-settings-action');
+    url.searchParams.set('oid', 'settings');
+    window.history.pushState(null, '', url.toString());
+  });
+  await expect(page.getByRole('dialog', { name: '팀 설정', exact: true })).toBeVisible();
+}
+
 test('09 reads live-shaped members and enables the implemented invitation APIs', async ({
   page,
 }) => {
@@ -39,7 +51,7 @@ test('09 requires typed confirmation and leaves member controls disabled for an 
   page,
 }, info) => {
   await page.goto('/teams/1/settings');
-  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
+  await openTeamSettingsMenu(page);
   await page.getByRole('button', { name: '팀 정보 편집', exact: true }).click();
   await expect(page.getByLabel('팀 소개', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -185,7 +197,7 @@ test('09 ownership and AI sheets submit only explicit input', async ({page}, inf
 
 test('09 exposes required settings without changing the main page body', async ({page}, info) => {
   await page.goto('/teams/1/settings');
-  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  await openTeamSettingsMenu(page);
   const menu=page.getByRole('dialog',{name:'팀 설정',exact:true});
   await expect(menu.getByRole('button',{name:'소유권 이전',exact:true})).toBeEnabled();
   await expect(menu.getByRole('button',{name:'프로젝트 완료',exact:true})).toBeEnabled();
@@ -211,7 +223,7 @@ test('09 read-only owner can return to setup without exposing team mutations', a
   await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
   await expect(page.getByRole('button', { name: '초대 링크 복사', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '저장소 추가', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
+  await openTeamSettingsMenu(page);
   const menu = page.getByRole('dialog', { name: '팀 설정', exact: true });
   await expect(menu.getByRole('button', { name: '팀 정보 편집' })).toHaveCount(0);
   await expect(menu.getByRole('button', { name: 'GitHub로 시작하기' })).toBeEnabled();
@@ -227,7 +239,7 @@ test('09 read-only owner can return to setup without exposing team mutations', a
 
 test('09 manages invite metadata and shares only a newly available original code', async ({page}, info) => {
   await page.goto('/teams/1/settings');
-  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  await openTeamSettingsMenu(page);
   await page.getByRole('button',{name:'초대 링크 관리',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'초대 링크 관리',exact:true});
   await expect(dialog.getByRole('button',{name:'초대 링크 폐기'}).first()).toBeVisible();
@@ -239,7 +251,7 @@ test('09 manages invite metadata and shares only a newly available original code
   await dialog.getByRole('button',{name:'초대 링크 폐기'}).last().click();
   await page.getByRole('dialog').getByRole('button',{name:'확인',exact:true}).click();
   await expect(page.getByRole('dialog')).toBeHidden();
-  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  await openTeamSettingsMenu(page);
   await page.getByRole('button',{name:'초대 링크 관리',exact:true}).click();
   await expect(dialog.getByRole('button',{name:'초대 링크 폐기'})).toHaveCount(before-1);
   await expect(dialog.getByRole('button',{name:'공유',exact:true})).toHaveCount(0);
@@ -247,7 +259,7 @@ test('09 manages invite metadata and shares only a newly available original code
 
 test('09 lets a recipient open the existing incoming ownership request', async ({page}) => {
   await page.goto('/teams/2/settings');
-  await page.getByRole('button',{name:'팀 설정',exact:true}).click();
+  await openTeamSettingsMenu(page);
   const menu=page.getByRole('dialog',{name:'팀 설정',exact:true});
   await expect(menu.getByRole('button',{name:'소유권 이전',exact:true})).toHaveCount(0);
   await menu.getByRole('button',{name:'소유권 이전 수락',exact:true}).click();

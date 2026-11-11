@@ -7,9 +7,14 @@ import com.linker.backend.global.security.AuthenticatedUser;
 import com.linker.backend.integration.github.*;
 import com.linker.backend.dto.issue.response.IssuePersistenceView.*;
 import com.linker.backend.repository.issue.IssueRepository;
+import java.time.Duration;
 import java.util.*;
+import java.util.function.Supplier;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service("userIssueTemplateService")
 @Transactional(propagation = Propagation.NEVER)
@@ -19,18 +24,22 @@ public class IssueTemplateService {
   private final GithubAppClient app;
   private final GithubIssueClient github;
   private final IssueTemplateParser parser;
+  private final StringRedisTemplate redis;
+  private final JsonMapper json = JsonMapper.builder().build();
 
   public IssueTemplateService(
       UserIssueAccess access,
       IssueRepository issueRepository,
       GithubAppClient app,
       GithubIssueClient github,
-      IssueTemplateParser parser) {
+      IssueTemplateParser parser,
+      StringRedisTemplate redis) {
     this.access = access;
     this.issueRepository = issueRepository;
     this.app = app;
     this.github = github;
     this.parser = parser;
+    this.redis = redis;
   }
 
   public record Selection(Context context, Repo repo) {}
@@ -46,7 +55,15 @@ public class IssueTemplateService {
             .orElseThrow(() -> new ApiException(404, "NOT_FOUND", "연결된 저장소를 찾을 수 없어요")));
   }
 
+  // Opening the sheet and picking a template reuse one GitHub download (POL-I-1).
   private List<IssueTemplateResponse> load(Selection s) {
+    return cached(
+        "issues:templates:" + s.repo().githubId(),
+        new TypeReference<List<IssueTemplateResponse>>() {},
+        () -> download(s));
+  }
+
+  private List<IssueTemplateResponse> download(Selection s) {
     String token = app.installationReadToken(s.context().installationId());
     var files = github.templates(s.repo(), token);
     String source = "REPOSITORY";
@@ -113,6 +130,7 @@ public class IssueTemplateService {
     return result;
   }
 
+  /** Live GitHub check. Creation uses this right before writing. */
   public List<IssueDetailResponse.Person> candidates(Selection s) {
     String token = app.installationReadToken(s.context().installationId());
     return issueRepository.assigneeCandidates(s.context().teamId()).stream()
@@ -120,12 +138,60 @@ public class IssueTemplateService {
         .toList();
   }
 
+  // Team membership stays live; only each member's repo read check is reused.
+  private List<IssueDetailResponse.Person> sheetCandidates(Selection s) {
+    String token = app.installationReadToken(s.context().installationId());
+    return issueRepository.assigneeCandidates(s.context().teamId()).stream()
+        .filter(
+            p ->
+                p.login() == null
+                    ? github.candidateCanRead(s.repo(), p.login(), token)
+                    : cached(
+                        "issues:repo-read:"
+                            + s.repo().githubId()
+                            + ":"
+                            + p.login().toLowerCase(Locale.ROOT),
+                        new TypeReference<Boolean>() {},
+                        () -> github.candidateCanRead(s.repo(), p.login(), token)))
+        .toList();
+  }
+
+  private List<IssueSource.Label> sheetLabels(Selection s) {
+    return cached(
+        "issues:labels:" + s.repo().githubId(),
+        new TypeReference<List<IssueSource.Label>>() {},
+        () ->
+            github.labelOptions(
+                s.repo(), app.installationReadToken(s.context().installationId())));
+  }
+
+  /** Redis trouble or an old cached shape falls back to GitHub. */
+  private <T> T cached(String key, TypeReference<T> type, Supplier<T> source) {
+    try {
+      String hit = redis.opsForValue().get(key);
+      if (hit != null) return json.readValue(hit, type);
+    } catch (RuntimeException ignored) {
+      /* read GitHub below */
+    }
+    T value = source.get();
+    try {
+      redis
+          .opsForValue()
+          .set(
+              key,
+              json.writeValueAsString(value),
+              Duration.ofMinutes(PlanLimits.ISSUE_TEMPLATE_CACHE_MINUTES));
+    } catch (RuntimeException ignored) {
+      /* the next sheet reads GitHub again */
+    }
+    return value;
+  }
+
   public IssueTemplateResponse.ListResponse list(AuthenticatedUser u, long team, long repo) {
     var s = select(u, team, repo);
     var templates = load(s);
-    var candidates = candidates(s);
-    var labels =
-        github.labelOptions(s.repo(), app.installationReadToken(s.context().installationId()));
+    var candidates = sheetCandidates(s);
+    var labels = sheetLabels(s);
     access.member(u, team);
     if (!issueRepository.context(team).equals(s.context()))
       throw new ApiException(409, "STATE_CONFLICT", "팀 연결 정보가 바뀌었어요");
