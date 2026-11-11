@@ -113,10 +113,20 @@ class AdminAuditIntegrationTest {
   }
   @Test void approvedNonOwnerRoleCanAppendAndReadButCannotChangeOrDeleteAuditRows() throws Exception {
     jdbc.execute("create role audit_app_test nologin nosuperuser nocreaterole");
+    assertAuditProtection("audit_app_test",3);
+    assertAuditProtection("audit_missing_role",3);
     var script=java.nio.file.Files.readAllBytes(java.nio.file.Path.of("../scripts/database/admin-actions-append-only.sql"));
     PG.copyFileToContainer(org.testcontainers.images.builder.Transferable.of(script),"/tmp/audit-grants.sql");
     var applied=PG.execInContainer("psql","-U",PG.getUsername(),"-d",PG.getDatabaseName(),"-v","app_role=audit_app_test","-f","/tmp/audit-grants.sql");
     assertThat(applied.getExitCode()).as(applied.getStderr()).isZero();
+    assertAuditProtection("audit_app_test",0);
+    assertAuditProtection(PG.getUsername(),3);
+    for (String path:java.util.List.of("/tmp/audit-grants.sql","/tmp/check-audit-grants.sql")) {
+      var missingRole=PG.execInContainer("psql","-X","-U",PG.getUsername(),"-d",PG.getDatabaseName(),"-f",path);
+      assertThat(missingRole.getExitCode()).as(missingRole.getStdout()+missingRole.getStderr()).isEqualTo(3);
+      assertThat(missingRole.getStderr()).contains("app_role is required");
+    }
+    assertAuditProtection("audit_app_test",0);
     long admin=admins.findByUser_Id(operator.getId()).orElseThrow().getId();
     // Real DB permissions, never a mocked repository. SET ROLE is confined to this container's session.
     var append=PG.execInContainer("psql","-U",PG.getUsername(),"-d",PG.getDatabaseName(),"-v","ON_ERROR_STOP=1","-c",
@@ -128,6 +138,29 @@ class AdminAuditIntegrationTest {
     }
     var owner=PG.execInContainer("psql","-U",PG.getUsername(),"-d",PG.getDatabaseName(),"-v","app_role="+PG.getUsername(),"-f","/tmp/audit-grants.sql");
     assertThat(owner.getExitCode()).isNotZero();
+    // A NOINHERIT role can still SET ROLE: direct table privileges alone are insufficient.
+    jdbc.execute("create role audit_owner_member nologin noinherit");
+    jdbc.execute("grant audit_app_test to audit_owner_member");
+    jdbc.execute("grant "+PG.getUsername()+" to audit_owner_member");
+    assertThat(assertAuditProtection("audit_owner_member",3)).contains("\"owner_role_access\":true");
+    jdbc.execute("create role audit_role_manager nologin createrole");
+    jdbc.execute("create role audit_manager_member nologin noinherit");
+    jdbc.execute("grant audit_role_manager to audit_manager_member");
+    assertThat(assertAuditProtection("audit_manager_member",3)).contains("\"elevated_role_access\":true");
+    var elevated=PG.execInContainer("psql","-X","-U",PG.getUsername(),"-d",PG.getDatabaseName(),
+        "-v","app_role=audit_manager_member","-f","/tmp/audit-grants.sql");
+    assertThat(elevated.getExitCode()).as(elevated.getStderr()).isEqualTo(3);
+  }
+  private String assertAuditProtection(String role,int expectedExit) throws Exception {
+    var script=java.nio.file.Files.readAllBytes(java.nio.file.Path.of("../scripts/database/check-admin-actions-append-only.sql"));
+    PG.copyFileToContainer(org.testcontainers.images.builder.Transferable.of(script),"/tmp/check-audit-grants.sql");
+    long before=count("admin_actions");
+    var checked=PG.execInContainer("psql","-X","-U",PG.getUsername(),"-d",PG.getDatabaseName(),
+        "-v","app_role="+role,"-f","/tmp/check-audit-grants.sql");
+    assertThat(checked.getExitCode()).as(checked.getStdout()+checked.getStderr()).isEqualTo(expectedExit);
+    assertThat(checked.getStdout()).contains("\"ready\":"+(expectedExit==0));
+    assertThat(count("admin_actions")).isEqualTo(before);
+    return checked.getStdout();
   }
   @Test void openApiPublishesSuccessfulAuditResponsesWithoutGenericItemCollision() throws Exception {
     var result=mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
