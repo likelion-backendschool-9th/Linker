@@ -6,6 +6,7 @@ import com.linker.backend.dto.github.response.InstallUrlResponse;
 import com.linker.backend.dto.github.response.VerifyInstallationResponse;
 import com.linker.backend.entity.account.type.UserStatus;
 import com.linker.backend.entity.account.type.UserType;
+import com.linker.backend.entity.team.type.TeamStatus;
 import com.linker.backend.global.config.GithubAppProperties;
 import com.linker.backend.global.error.ApiException;
 import com.linker.backend.global.security.AuthenticatedUser;
@@ -84,8 +85,16 @@ public class GithubService {
     GithubInstallationView verified =
         github.verifyUserInstallation(tokens.tokenFor(user.userId()), id);
     Long linked = teams.linkedOrg(verified.orgId());
+    boolean reconnect = false;
+    if (linked != null && teams.currentOwner(user.userId(), linked)) {
+      // Let the owner reach create(), which revalidates permissions and reuses the
+      // team/chat. A webhook may already have replaced the installation ID before this callback.
+      reconnect = teams.findConnection(linked)
+          .filter(team -> java.util.List.of(TeamStatus.ACTIVE, TeamStatus.COMPLETED, TeamStatus.READ_ONLY).contains(team.status()))
+          .isPresent();
+    }
     return new VerifyInstallationResponse(
-        linked == null ? "INSTALLED" : "ALREADY_LINKED",
+        linked == null || reconnect ? "INSTALLED" : "ALREADY_LINKED",
         new VerifyInstallationResponse.Organization(
             verified.orgId(), verified.login(), verified.avatarUrl()),
         Long.toString(verified.installationId()),
