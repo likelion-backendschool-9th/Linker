@@ -102,18 +102,16 @@ test('a card can be dragged to another column (and back)', async ({ page }) => {
   await expect(column(page, '작업 전').getByRole('heading', { name: title })).toBeVisible();
 });
 
-test('read-only team: the status menu stays closed and explains why', async ({ page }) => {
+test('a member without repo write can move a card from the status menu', async ({ page }) => {
   await page.goto('/teams/2/board');
-  const status = page.getByRole('main').getByRole('button', { name: /^상태 작업/ }).first();
-  await expect(status).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByRole('link', { name: '이슈 작성' })).toHaveCount(0);
-  // aria-disabled stays focusable and pressable (Playwright won't click it), so press it from the keyboard
-  await status.focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('menu')).toHaveCount(0);
-  await expect(
-    page.getByText('이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.', { exact: true }),
-  ).toBeVisible();
+  const card = column(page, '작업 전').getByRole('article').first();
+  const title = (await card.getByRole('heading', { level: 3 }).textContent())!.trim();
+  const status = card.getByRole('button', { name: /^상태 작업 전, / });
+  await expect(status).not.toHaveAttribute('aria-disabled', 'true');
+  await status.click();
+  await page.getByRole('menuitemradio', { name: '작업 중' }).click();
+  await expect(column(page, '작업 중').getByRole('heading', { name: title })).toBeVisible();
 });
 
 for (const width of [360, 375, 600]) {

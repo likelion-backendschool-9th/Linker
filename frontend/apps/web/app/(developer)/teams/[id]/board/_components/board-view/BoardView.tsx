@@ -31,12 +31,13 @@ const SORT_ITEMS = BOARD_SORTS.map((sort) => ({ value: sort, label: BOARD_SORT_L
 /**
  * 14 Status board (07 TODO 14, POL-I-4), Figma 14 (200:1028): "필터" (one status column, 368:3562) and
  * "최신순 / 오래 된 순" (368:3414) menus, then the status columns side by side (pan, no scrollbar).
- * Cards move by dragging (write permission only) or by their status menu (368:3741).
+ * Cards move by dragging or by their status menu (368:3741). Every member of a writable team can do both.
  */
 export function BoardView({ teamId }: { teamId: string }) {
   const {
     board,
-    canWrite,
+    canCreate,
+    canMove,
     columns,
     statusFilter,
     sort,
@@ -119,7 +120,7 @@ export function BoardView({ teamId }: { teamId: string }) {
               <BoardColumn
                 key={column.status}
                 teamId={teamId}
-                canWrite={canWrite}
+                canWrite={canCreate}
                 status={column.status}
                 statusColor={column.statusColor}
                 count={column.cards.length}
@@ -133,7 +134,7 @@ export function BoardView({ teamId }: { teamId: string }) {
                           card={card}
                           status={statusOf(card)}
                           statusColor={statusColorOf(card)}
-                          canWrite={canWrite}
+                          canWrite={canMove}
                           moving={moves[card.id] !== undefined}
                           onMove={(to) => void move(card, to)}
                           onBlocked={onBlocked}

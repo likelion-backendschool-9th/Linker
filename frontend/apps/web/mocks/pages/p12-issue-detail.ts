@@ -128,7 +128,6 @@ export const routes: MockRoute[] = [
   }),
   // Done closes the issue, moving back reopens it (POL-I-3). Borrowed by 14.
   put('/api/v1/user/teams/:teamId/issues/:issueId/status', ({ params, body }) => {
-    requireWrite(params.teamId!);
     const issue = issueOr404(params.teamId!, params.issueId!);
     const status = body.status as IssueStatus;
     issue.status = status;

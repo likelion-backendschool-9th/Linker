@@ -43,8 +43,8 @@ type BoardCardProps = {
 
 /**
  * Card of Figma 14 (214:104): "{담당자} 담당" + due date, repo #번호, title (opens 12), labels and the
- * status field whose menu moves the card (368:3741). With write permission the whole card can be dragged
- * (long press on touch); the status menu is the keyboard and screen-reader way to move it.
+ * status field whose menu moves the card (368:3741). Members of a writable team can drag the card
+ * (long press on touch). The status control stops the drag pointer so a tap always opens the menu.
  */
 export function BoardCard({
   teamId,
@@ -73,7 +73,11 @@ export function BoardCard({
       {...listeners}
     >
       <CardContent teamId={teamId} card={card} titleId={titleId} />
-      <BoardMenu
+      <div
+        onPointerDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <BoardMenu
         label={`${card.title} 상태`}
         appearance="status"
         items={STATUS_ITEMS}
@@ -84,6 +88,7 @@ export function BoardCard({
       >
         <StatusName status={status} statusColor={statusColor} />
       </BoardMenu>
+      </div>
     </article>
   );
 }

@@ -80,6 +80,11 @@ public class IssueDetailService {
   private record Selected(Context context, Repo repo, Row row) {}
 
   private Selected select(AuthenticatedUser user, long team, long issue, boolean write) {
+    return select(user, team, issue, write, true);
+  }
+
+  private Selected select(
+      AuthenticatedUser user, long team, long issue, boolean write, boolean requireRepoWrite) {
     access.member(user, team);
     var ctx = issueRepository.context(team);
     var row = issueRepository.detail(team, issue);
@@ -93,10 +98,19 @@ public class IssueDetailService {
       if (actor.status() != UserStatus.ACTIVE || actor.userType() != UserType.DEVELOPER)
         throw new ApiException(403, "SUSPENDED", "정지된 계정은 이슈를 변경할 수 없어요");
       if (!ctx.writable() || row.deleted()) throw conflict("읽기 전용이거나 이동·삭제된 이슈예요");
-      if (!github.canWrite(repo, user.userId()))
+      if (requireRepoWrite && !github.canWrite(repo, user.userId()))
         throw new ApiException(403, "FORBIDDEN", "이 레포에 쓸 권한이 없어요. 레포 관리자에게 권한을 요청해 주세요.");
     }
     return new Selected(ctx, repo, row);
+  }
+
+  /** Personal repo write, when GitHub can answer. Status moves fall back to the installation token. */
+  private boolean userCanWrite(Selected s, AuthenticatedUser user) {
+    try {
+      return github.canWrite(s.repo, user.userId());
+    } catch (ApiException e) {
+      return false;
+    }
   }
 
   private record ReadDetail(
@@ -376,7 +390,7 @@ public class IssueDetailService {
     return issueRepository.withTeamLock(
         team,
         () -> {
-          var s = select(user, team, issue, true);
+          var s = select(user, team, issue, true, !"SET_STATUS".equals(step));
           validate(user, s, step, json.valueToTree(payload));
           var durable = new LinkedHashMap<String, Object>(payload);
           durable.put("connection", connection(s));
@@ -447,7 +461,7 @@ public class IssueDetailService {
     }
     tx.executeWithoutResult(status -> syncJobs.startEdit(id, clock.instant().plusSeconds(60)));
     try {
-      var s = select(user, job.team(), job.issue(), true);
+      var s = select(user, job.team(), job.issue(), true, !"SET_STATUS".equals(job.step()));
       var payload = json.readTree(job.payload());
       if (!List.of("SET_ASSIGNEES", "SET_LABELS").contains(job.step()))
         validate(user, s, job.step(), payload);
@@ -522,19 +536,18 @@ public class IssueDetailService {
         }
         case "SET_STATUS" -> {
           String desired = payload.path("status").asString();
-          github.projectField(
-              s.context,
-              item.id(),
-              s.context.board().statusField(),
-              option(s.context, desired),
-              null,
-              user.userId());
-          response =
-              github.editIssue(
-                  s.repo,
-                  s.row.number(),
-                  Map.of("state", desired.equals("DONE") ? "closed" : "open"),
-                  user.userId());
+          String optionId = option(s.context, desired);
+          Map<String, String> state = Map.of("state", desired.equals("DONE") ? "closed" : "open");
+          if (userCanWrite(s, user)) {
+            github.projectField(
+                s.context, item.id(), s.context.board().statusField(), optionId, null, user.userId());
+            response = github.editIssue(s.repo, s.row.number(), state, user.userId());
+          } else {
+            String writeToken = app.installationWriteToken(s.context.installationId());
+            github.projectField(
+                s.context, item.id(), s.context.board().statusField(), optionId, null, writeToken);
+            response = github.editIssue(s.repo, s.row.number(), state, writeToken);
+          }
           identity(s, response);
         }
         default -> throw conflict("지원하지 않는 동기화 작업이에요");

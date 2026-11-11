@@ -22,6 +22,7 @@ public class GithubAppClient {
 	private final Clock clock;
 	private final RestClient client;
 	private final Map<Long, CachedToken> tokens = new ConcurrentHashMap<>();
+	private final Map<Long, CachedToken> writeTokens = new ConcurrentHashMap<>();
 
 	public GithubAppClient(GithubAppProperties properties, GithubAppJwt jwt, Clock clock, RestClient.Builder builder) {
 		this.properties = properties;
@@ -73,20 +74,33 @@ public class GithubAppClient {
 
 	/** Read-only installation token, returned only inside the server. */
 	public synchronized String installationReadToken(long installationId) {
+		return cachedToken(installationId, tokens, Map.of("metadata", "read", "contents", "read", "issues", "read",
+				"pull_requests", "read", "organization_projects", "read"));
+	}
+
+	/**
+	 * Installation token that can update issue state and organization project fields.
+	 * Separate from the read token so a cached read grant is never reused for a write.
+	 */
+	public synchronized String installationWriteToken(long installationId) {
+		return cachedToken(installationId, writeTokens,
+				Map.of("metadata", "read", "issues", "write", "organization_projects", "write"));
+	}
+
+	private String cachedToken(long installationId, Map<Long, CachedToken> cache, Map<String, String> permissions) {
 		outsideTransaction();
 		if (installationId <= 0) {
 			throw forbidden();
 		}
 		Instant now = clock.instant();
-		tokens.entrySet().removeIf(entry -> !entry.getValue().expiresAt.isAfter(now.plusSeconds(60)));
-		CachedToken cached = tokens.get(installationId);
+		cache.entrySet().removeIf(entry -> !entry.getValue().expiresAt.isAfter(now.plusSeconds(60)));
+		CachedToken cached = cache.get(installationId);
 		if (cached != null) {
 			return cached.token;
 		}
 		JsonNode response = request(() -> client.post().uri("/app/installations/{id}/access_tokens", installationId)
 				.headers(headers -> headers.setBearerAuth(jwt.issue())).contentType(MediaType.APPLICATION_JSON)
-				.body(Map.of("permissions", Map.of("metadata", "read", "contents", "read", "issues", "read",
-						"pull_requests", "read", "organization_projects", "read")))
+				.body(Map.of("permissions", permissions))
 				.retrieve().onStatus(status -> status.isError(), (req, res) -> { throw upstream(res.getStatusCode().value(), res.getHeaders(), false); })
 				.body(JsonNode.class));
 		String token = response.path("token").asString("");
@@ -100,12 +114,13 @@ public class GithubAppClient {
 		if (token.isBlank() || !expiresAt.isAfter(now.plusSeconds(60))) {
 			throw unavailable();
 		}
-		tokens.put(installationId, new CachedToken(token, expiresAt));
+		cache.put(installationId, new CachedToken(token, expiresAt));
 		return token;
 	}
 
 	public void invalidateInstallationToken(long installationId) {
 		tokens.remove(installationId);
+		writeTokens.remove(installationId);
 	}
 
 	private JsonNode request(java.util.function.Supplier<JsonNode> work) {
