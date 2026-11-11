@@ -1,5 +1,4 @@
 import {
-  cancelApplication,
   list as listOpenRecruits,
   myApplications,
   myRecruits,
@@ -28,6 +27,8 @@ export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
 export type RecruitCard = {
   id: number;
   title: string;
+  /** The whole project intro; the card shows the first `RECRUIT.cardIntroPreview` characters */
+  intro: string;
   author: { id: number; login: string; name: string; avatarUrl: string };
   format: RecruitFormat;
   region: string | null;
@@ -145,10 +146,6 @@ export function myApplicationsOptions(login: string | null) {
   });
 }
 
-export function cancelMyApplication(applicationId: number) {
-  return cancelApplication(applicationId);
-}
-
 /** Map API card → 19 list card view model (Figma 254:2255). */
 export function toRecruitCardData(card: RecruitCard): RecruitCardData {
   const openRoles = card.roles.filter((role) => role.remaining > 0);
@@ -161,6 +158,7 @@ export function toRecruitCardData(card: RecruitCard): RecruitCardData {
     deadlineLabel: formatDeadlineDate(card.deadline),
     deadlineFullLabel: `${formatFullDate(card.deadline)} 마감`,
     title: card.title,
+    description: card.intro,
     roles: card.roles.map((role) => `${role.name} ${role.remaining}명`),
     recruitingRoleLabel: roleSource
       .map((role) => `${RECRUIT_ROLE_LABELS[role.role] ?? role.name} ${role.remaining}명`)

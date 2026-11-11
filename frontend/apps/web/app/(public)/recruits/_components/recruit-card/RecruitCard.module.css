@@ -16,7 +16,7 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-card-info);
+  gap: var(--space-card-head);
 }
 
 .chipRow {
@@ -35,7 +35,7 @@
 .formatChip,
 .goalChip {
   padding: var(--space-row-inline) var(--space-row-block);
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
   color: var(--color-text-sheet-title);
   white-space: nowrap;
@@ -60,7 +60,7 @@
 .textBlock {
   display: flex;
   flex-direction: column;
-  gap: var(--space-list-action);
+  gap: var(--space-card-title);
 }
 
 .title {
@@ -68,7 +68,7 @@
   overflow: hidden;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-board-control);
   color: var(--color-text-sheet-title);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -80,16 +80,20 @@
   text-decoration: none;
 }
 
+/* Up to RECRUIT.cardIntroPreview characters, cut in the component (no line clamp) */
 .description {
   margin: 0;
-  overflow: hidden;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-card-desc);
   color: var(--color-text-slate);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+/* "...자세히 보기" after a cut intro (Figma 254:2272): same size, selection blue */
+.more {
+  color: var(--color-selection);
+  text-decoration: none;
 }
 
 .meta {
@@ -133,9 +137,10 @@
   gap: var(--space-row-inline);
   width: 100%;
   min-height: var(--touch-target-min);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-micro);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted-cool);
+  line-height: var(--line-height-compact);
+  color: var(--color-text-slate);
   background: none;
   border: none;
 }
@@ -166,10 +171,11 @@
   overflow: hidden;
 }
 
+/* Figma 361:981: 10 between rows */
 .detailList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sheet-block);
+  gap: var(--space-row-block);
   margin: 0;
   padding: var(--space-detail-block) var(--space-md);
   background-color: var(--color-canvas-cool);
@@ -198,7 +204,7 @@
 .techList {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs);
+  gap: var(--space-row-block) var(--space-card-tech);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -207,7 +213,7 @@
 .techList li {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-card-tech);
 }
 
 /* Dot separator between tech names, not after the last one on each wrapped line */
@@ -216,6 +222,5 @@
   width: var(--separator-dot-size);
   height: var(--separator-dot-size);
   background-color: var(--color-text-slate);
-  opacity: 0.6;
   border-radius: var(--radius-full);
 }

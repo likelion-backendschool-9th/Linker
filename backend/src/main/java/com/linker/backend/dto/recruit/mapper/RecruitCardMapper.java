@@ -25,6 +25,7 @@ public class RecruitCardMapper {
 		return new RecruitCardResponse(
 				post.getId(),
 				post.getTitle(),
+				post.getDescription(),
 				toAuthor(author),
 				post.getWorkMode().name(),
 				post.getRegion(),

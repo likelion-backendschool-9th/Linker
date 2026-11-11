@@ -33,14 +33,15 @@ Tokens in `tokens/color.css`. Surface is white (`--color-canvas`) unless noted; 
 | `--color-auth-start-github` | `#121212` | Page 01 GitHub button (Figma 109:1932) |
 | `--color-on-primary` | `#ffffff` | Text and icons on `--color-primary` (18.4:1) |
 | `--color-accent` | `#0066ff` | Popular/new badges, savings emphasis. **NEVER** a CTA fill |
-| `--color-gnb-current` | `#2563eb` | Active bottom GNB label/icon on the white pill (5.17:1 on white) |
-| `--color-gnb-inactive` | `#b2b7c3` | Inactive bottom GNB label/icon (2.01:1 on white — below AA text contrast; accepted because every tab keeps an icon + label, and the active tab's `--color-gnb-current` carries the real affordance, not color alone) |
+| `--color-gnb-current` | `#2563eb` | Active bottom GNB label/icon on the `#f5f5f5` pill (4.74:1) |
+| `--color-gnb-idle` | `#878a92` | Inactive bottom GNB label/icon (Figma 1083:280; 3.17:1 on the `#f5f5f5` pill — below AA for 14px text; accepted because every tab keeps an icon + SemiBold label, and the active tab's `--color-gnb-current` carries the real affordance, not color alone) |
+| `--color-gnb-inactive` | `#b2b7c3` | Page 21 radio/check borders and muted text (the bottom GNB's former inactive color) |
 | `--color-canvas` | `#ffffff` | Page and card background |
 | `--color-canvas-outside` | `#0c0c0c` | `body` background outside the 600px app column on wide browsers (Figma 472:415); AdminShell overrides back to `--color-canvas` |
 | `--color-canvas-soft` | `#f3f3f3` | Nav pill, featured card, accordion row, toggle track, soft pill |
 | `--color-field` | `#f0f0f0` | Input fill |
 | `--color-header-bg` | `rgb(255 255 255 / 0.8)` | Sticky header / open search panel frosted fill, with `--blur-chrome` (`--blur-header-open` when the panel is down) |
-| `--color-gnb-bg` | `rgb(255 255 255 / 0.95)` | Bottom GNB pill frosted fill, with `--blur-chrome` and `--shadow-gnb` (Figma 800:1299) |
+| `--color-gnb-bg` | `#f5f5f5` | Bottom GNB pill fill, with `--blur-chrome` and `--shadow-gnb` (0 4px 4px, 20% black); also the 2px rim of the chat unread chip (Figma 1083:280) |
 | `--color-hairline-soft` | `#f0f0f0` | 1px outline of cards on white |
 | `--color-hairline` | `#e0e0e0` | Outline buttons and interactive control borders |
 | `--color-scrim` | `rgb(20 20 20 / 0.5)` | Behind bottom sheets, dialogs, drawers |
@@ -130,8 +131,8 @@ Measured ratios, so nobody has to recompute:
 | `#adadad` (palette "Faint") | white | 2.24 | **fail** → never on a light surface |
 | `#adadad` inverse-secondary | `#141414` | 8.21 | pass |
 | `#0066ff` accent text | white / `#f3f3f3` | 4.83 / 4.36 | accent text only on white |
-| `#2563eb` GNB current text | white | 5.17 | pass; use `--color-gnb-current` for the active tab |
-| `#b2b7c3` GNB inactive text | white | 2.01 | **fail** by itself — accepted only because every tab always shows an icon + label, never color alone |
+| `#2563eb` GNB current text | `#f5f5f5` | 4.74 | pass; use `--color-gnb-current` for the active tab |
+| `#878a92` GNB inactive text | `#f5f5f5` | 3.17 | **fail** for 14px text by itself — accepted only because every tab always shows an icon + label, never color alone |
 | `#ffffff` on accent badge | `#0066ff` | 4.83 | pass |
 | `#4b5563` slate | white / `#f3f4f6` | 7.56 / 6.87 | pass |
 | `#e62e00` overdue | white | 4.42 | **below 4.5**, Figma value kept (team decision, page 07) |
@@ -232,7 +233,7 @@ Apply on app screens (WebView and mobile Safari):
 | Layer | Rule |
 | --- | --- |
 | Top safe zone | `env(safe-area-inset-top)` on the sticky header / status area so content clears the notch |
-| Bottom home indicator | `env(safe-area-inset-bottom)` on the bottom tab bar, chat/composer bars, sheets, and toasts |
+| Bottom home indicator | `env(safe-area-inset-bottom)` on chat/composer bars, sheets, and toasts. The bottom GNB pill sits `max(26px, inset + 8px)` above the screen edge (`--space-gnb-bottom`, Figma 254:2124), so the gap and the indicator never add up |
 | Header clearance | Main content top padding accounts for `--header-height` + top safe inset when the header is sticky |
 | Tab / composer clearance | Main content (and toasts) sit above `--tab-bar-height` (or the composer height) + bottom safe inset |
 | Sheets | Cap height with `--sheet-max-height`; respect top/bottom safe insets so grabber and actions stay tappable |

@@ -11,7 +11,8 @@
   --color-on-primary: #ffffff; /* text on --color-primary: 18.4:1 */
   --color-accent: #0066ff; /* badges and savings emphasis only, never a CTA fill */
   --color-gnb-current: #2563eb; /* active bottom GNB icon/label (Figma 453:227/258, 455:316) */
-  --color-gnb-inactive: #b2b7c3; /* inactive bottom GNB icon/label */
+  --color-gnb-inactive: #b2b7c3; /* 21 radio/check borders and muted text (formerly the inactive bottom GNB color) */
+  --color-gnb-idle: #878a92; /* inactive bottom GNB icon/label (Figma 1083:280) */
 
   /* Surface */
   --color-canvas: #ffffff; /* page and card background */
@@ -23,9 +24,7 @@
   --color-header-stack-bg: rgb(
     255 255 255 / 0.9
   ); /* stack header frosted fill, with --blur-chrome (Figma 364:1884) */
-  --color-gnb-bg: rgb(
-    255 255 255 / 0.95
-  ); /* bottom GNB pill frosted fill, with --blur-chrome and --shadow-gnb (Figma 800:1299) */
+  --color-gnb-bg: #f5f5f5; /* bottom GNB pill fill, with --blur-chrome and --shadow-gnb; also the unread chip's rim (Figma 1083:280) */
   --color-canvas-outside: #0c0c0c; /* desktop backdrop behind the 600px app column (Figma 472:415); admin keeps --color-canvas */
 
   /* Border */
@@ -84,7 +83,7 @@
   --color-settings-choice-unselected: #98a3b4; /* 06 settings job-status sheet, reference screenshot */
   --color-settings-block-handle: #98a3b4; /* 06 settings blocked-user handle, reference screenshot */
   --color-status-overdue: #e62e00; /* 07·11 overdue date (date only, no "마감 지남" text). Low contrast: 4.42:1 */
-  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border */
+  --color-hairline-cool: #e5e7eb; /* 07 issue rows and selected-team card; also 20 text input border and 19 unselected tab underline */
   --color-hairline-faint: #f5f5f5; /* 07 sheet option divider */
   --color-canvas-cool: #f3f4f6; /* 07 compact link fill; also 20 field fill, tech stack chip and disabled submit fill (Figma uses #f2f4f6, 1 step darker — visually indistinguishable, reused rather than adding a near-duplicate token) */
   --color-selection: #2563eb; /* 07 sheet selected radio; also 20 selected segmented button fill */

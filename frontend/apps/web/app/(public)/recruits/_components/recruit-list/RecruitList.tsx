@@ -2,7 +2,6 @@
 
 import { AddBoldIcon } from '@solar-icons/static/bold/add';
 import { AltArrowDownLinearIcon } from '@solar-icons/static/linear/alt-arrow-down';
-import type { Route } from 'next';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button/Button';
@@ -14,15 +13,8 @@ import { RecruitFilterSheet } from '../recruit-filter-sheet';
 import { RecruitSearchPanel } from '../recruit-search-panel';
 import { RecruitTabs } from '../recruit-tabs';
 import { TabChromeCollapseEffect } from '../../../_components/tab-chrome-collapse';
-import { useCancelApplication, useLoadMoreSentinel, useRecruitList } from './hook';
+import { useLoadMoreSentinel, useRecruitList } from './hook';
 import styles from './RecruitList.module.css';
-
-const APPLICATION_COPY: Record<MyApplication['status'], string> = {
-  PENDING: '검토 중',
-  ACCEPTED: '팀 채팅 바로가기',
-  REJECTED: '이번엔 함께하지 못하게 됐어요',
-  EXPIRED: '모집이 끝났어요',
-};
 
 /** 19 recruit list (Figma 254:2124). Filter/sort sheets are scenario 5 (Figma 352:958). */
 export function RecruitList() {
@@ -35,7 +27,9 @@ export function RecruitList() {
     search,
     selectedFilters,
     chipFilters,
-    handleSelect,
+    searchActive,
+    resetSearch,
+    applyFilter,
     recruits,
     applications,
     count,
@@ -62,6 +56,8 @@ export function RecruitList() {
               filterOverlay={filterOverlay}
               search={search}
               selectedFilters={chipFilters}
+              pinned={searchActive}
+              onReset={resetSearch}
             />
           )}
         </div>
@@ -104,7 +100,8 @@ export function RecruitList() {
             </div>
           ) : tab === 'applied' ? (
             applications.length === 0 ? (
-              <p className={styles.empty}>지원한 모집글이 없어요.</p>
+              // Writing lives on the FAB, so an empty tab is just a quiet line
+              <p className={styles.emptyNotice}>지원한 게시물이 없습니다</p>
             ) : (
               <ul className={styles.list}>
                 {applications.map((application) => (
@@ -113,9 +110,11 @@ export function RecruitList() {
               </ul>
             )
           ) : recruits.length === 0 ? (
-            <p className={styles.empty}>
-              {tab === 'all' ? '필터를 줄여 보세요' : '작성한 모집글이 없어요.'}
-            </p>
+            tab === 'all' ? (
+              <p className={styles.empty}>필터를 줄여 보세요</p>
+            ) : (
+              <p className={styles.emptyNotice}>팀을 모으고 있지 않아요</p>
+            )
           ) : (
             <ul className={styles.list}>
               {recruits.map((recruit) => (
@@ -152,41 +151,17 @@ export function RecruitList() {
       <RecruitFilterSheet
         overlay={filterOverlay}
         selected={selectedFilters}
-        onSelect={handleSelect}
+        onApply={applyFilter}
       />
     </div>
   );
 }
 
+/** "내 지원" tab: just the post I applied to (no role/status line or actions); cancel lives on 21 */
 function ApplicationRow({ application }: { application: MyApplication }) {
-  const cancel = useCancelApplication();
-  const card = toRecruitCardData(application.recruit);
-  const status = APPLICATION_COPY[application.status];
-
   return (
-    <li className={styles.application}>
-      <RecruitCard recruit={card} />
-      <div className={styles.applicationActions}>
-        <p className={styles.applicationStatus}>
-          {application.roleName} · {status}
-        </p>
-        {application.status === 'PENDING' && (
-          <Button
-            variant="outline"
-            aria-disabled={cancel.isPending}
-            onClick={() => {
-              if (!cancel.isPending) cancel.mutate(application.id);
-            }}
-          >
-            지원 취소
-          </Button>
-        )}
-        {application.status === 'ACCEPTED' && application.teamChatRoomId != null && (
-          <Button asChild>
-            <Link href={`/chats/${application.teamChatRoomId}` as Route}>팀 채팅 바로가기</Link>
-          </Button>
-        )}
-      </div>
+    <li>
+      <RecruitCard recruit={toRecruitCardData(application.recruit)} />
     </li>
   );
 }

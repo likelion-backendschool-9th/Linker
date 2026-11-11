@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { OverlaySheet } from '@/components/overlay/overlay-sheet';
 import {
@@ -56,18 +57,45 @@ const FIELD_CONFIG: Record<FilterField, { sheetTitle: string; options: Option[] 
 /**
  * 19 recruit list area B / counter-row single-select sheet (scenario 5, Figma 352:958). One sheet,
  * reused for all 4 triggers via `overlay.id` (role/tech/format/sort) as the field discriminator.
+ * Picking only marks the option; "완료" closes the sheet first and then applies it, so the list
+ * doesn't change behind the sheet and closing (history back) can't undo the new filter. ×, the
+ * scrim or back drop the pick.
  */
 export function RecruitFilterSheet({
   overlay,
   selected,
-  onSelect,
+  onApply,
 }: {
   overlay: OverlayControl;
   selected: FilterState;
-  onSelect: (field: FilterField, value: string) => void;
+  onApply: (field: FilterField, value: string | null) => void;
 }) {
   const field = (overlay.id as FilterField | null) ?? 'sort';
+  return (
+    // A fresh pick each time the sheet opens, starting from what the list shows now
+    <SheetBody
+      key={`${field}-${overlay.isOpen}`}
+      overlay={overlay}
+      field={field}
+      current={selected[field]}
+      onApply={onApply}
+    />
+  );
+}
+
+function SheetBody({
+  overlay,
+  field,
+  current,
+  onApply,
+}: {
+  overlay: OverlayControl;
+  field: FilterField;
+  current: string | null;
+  onApply: (field: FilterField, value: string | null) => void;
+}) {
   const config = FIELD_CONFIG[field];
+  const [draft, setDraft] = useState(current);
   const techTags = useQuery({ ...techTagsOptions(), enabled: overlay.isOpen && field === 'tech' });
   const options =
     field === 'tech'
@@ -80,33 +108,66 @@ export function RecruitFilterSheet({
       title={config.sheetTitle}
       description={`${config.sheetTitle} 선택`}
       describeHidden
-      classNames={{ title: styles.title }}
+      classNames={{ sheet: styles.sheet, title: styles.title }}
     >
       {field === 'tech' && techTags.isPending ? (
         <p className={styles.status}>불러오는 중…</p>
       ) : field === 'tech' && techTags.isError ? (
         <p className={styles.status}>기술 스택을 불러오지 못했어요.</p>
       ) : null}
-      <ul className={styles.list} role="radiogroup" aria-label={config.sheetTitle}>
-        {options.map((option) => {
-          const isSelected = selected[field] === option.value;
-          return (
-            <li key={option.value}>
+      {field === 'tech' ? (
+        // Figma 301:1914: gray chips, the picked one blue; one pick, tapping it again clears it
+        <div className={styles.chips} role="radiogroup" aria-label={config.sheetTitle}>
+          {options.map((option) => {
+            const isSelected = draft === option.value;
+            return (
               <button
+                key={option.value}
                 type="button"
                 role="radio"
                 aria-checked={isSelected}
-                className={styles.option}
+                className={styles.chip}
                 data-selected={isSelected}
-                onClick={() => onSelect(field, option.value)}
+                onClick={() => setDraft(isSelected ? null : option.value)}
               >
                 {option.label}
               </button>
-            </li>
-          );
-        })}
-      </ul>
-      <button type="button" className={styles.cta} onClick={() => overlay.close()}>
+            );
+          })}
+        </div>
+      ) : (
+        <ul className={styles.list} role="radiogroup" aria-label={config.sheetTitle}>
+          {options.map((option) => {
+            const isSelected = draft === option.value;
+            return (
+              <li key={option.value}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  className={styles.option}
+                  data-selected={isSelected}
+                  // Sort always has one; role/tech/format clear when the picked one is tapped again
+                  onClick={() =>
+                    setDraft(field !== 'sort' && draft === option.value ? null : option.value)
+                  }
+                >
+                  {option.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <button
+        type="button"
+        className={styles.cta}
+        onClick={() =>
+          void overlay.closeAnd(() => {
+            if (draft !== current) onApply(field, draft);
+          })
+        }
+      >
         완료
       </button>
     </OverlaySheet>

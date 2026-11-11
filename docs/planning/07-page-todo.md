@@ -564,11 +564,11 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: R-2, R-3 · Needs first: 04 · Merged: my applications → tab
 
 - [ ] Tabs: 전체 (all) / 내 모집 글 (my posts) / 내 지원 (my applications) (guests: All tab only; other tabs and "모집 글 쓰기" show login prompt)
-- [ ] Recruit card: title, remaining slots per role, tech stack, format, deadline D-day
-- [ ] Title search box (All tab, POL-R-2): part of the title, case-insensitive, max 40 chars; combined with filters and sort, stored in URL `q` (nuqs)
-- [ ] (sheet) Filters: role, tech stack, online/offline. Stored in URL (nuqs)
+- [ ] Recruit card: title, project intro (first 200 characters, longer → "...자세히 보기" to 21), remaining slots per role, tech stack, format, deadline D-day; "자세히 보기 ∨" opens the detail rows 10px apart (Figma 254:2255, 361:981)
+- [ ] Title search box (All tab, POL-R-2): part of the title, case-insensitive, max 40 chars; combined with filters and sort, stored in URL `q` (nuqs); runs on Enter or the magnifier only. The search + filter area (Figma 253:2122) shows once scrolled, and also at the top while `q` or a filter is set
+- [ ] (sheet) Filters: role, tech stack, online/offline. Stored in URL (nuqs). Picking only marks the option; "완료" applies it, and the chip then shows the picked value instead of its name (역할 → 프론트엔드). Long lists scroll in the sheet without a visible scrollbar. Tech stack is one pick from gray chips, the picked one blue (Figma 301:1914). A last "초기화" chip clears the search, the filters and the sort (Figma 248:1531)
 - [ ] Sort: newest / closing soon; infinite scroll; open posts only
-- [ ] My applications tab: 검토 중 (under review) / accepted ("팀 채팅 바로가기") / rejected ("이번엔 함께하지 못하게 됐어요") / expired ("모집이 끝났어요"); cancel while under review
+- [ ] My applications tab: the recruit posts I applied to, as plain list cards (no role/status line or actions). The status, cancel while under review and the team chat shortcut are on 21. Empty "내 지원" → "지원한 게시물이 없습니다", empty "내 모집 글" → "팀을 모으고 있지 않아요": one 14px Medium #98a3b4 line, centered, 200px below the list top (writing stays on the FAB)
 - [ ] "모집 글 쓰기" (write recruit post) button → 20
 - [ ] Exclude posts by blocked people; no results → "필터를 줄여 보세요"
 

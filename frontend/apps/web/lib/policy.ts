@@ -85,6 +85,8 @@ export const RECRUIT = {
   /** POL-R-2 19 title search, no longer than a title */
   searchMaxLength: 40,
   introMax: 1000,
+  /** POL-R-2 19 list card: the intro's first N characters, then "...자세히 보기" to the post */
+  cardIntroPreview: 200,
   headcountPerRole: { min: 1, max: 10 },
   /** Deadline: today through today + 6 calendar months (the server sends the exact last date) */
   deadlineWithinMonths: 6,

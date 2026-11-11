@@ -407,10 +407,10 @@
 
 | 원래 페이지 | 구현자 | 메서드 | 경로 | 기존 기능·범위 | 권한 |
 | --- | --- | --- | --- | --- | --- |
-| 19 | E | GET | `/api/v1/public/recruits?q=&role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; `q` = title search (POL-R-2); excludes blocked relations if logged in | public |
+| 19 | E | GET | `/api/v1/public/recruits?q=&role=&tech=&mode=&sort=` | Open posts, newest / deadline soon; `q` = title search (POL-R-2); excludes blocked relations if logged in. Each card carries `intro` (the list shows its first 200 characters) | public |
 | 19 | E | GET | `/api/v1/user/me/recruits` | My recruit posts tab | user · developers only |
-| 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired) | user · developers only |
-| 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — also borrowed by 21 | user · developers only |
+| 19 | E | GET | `/api/v1/user/me/applications?status=` | My applications tab (in review, accepted, rejected, expired): 19 shows only the post cards | user · developers only |
+| 19 | E | DELETE | `/api/v1/user/me/applications/{applicationId}` | Cancel an in-review application — used on 21 (19's applications tab no longer has the button) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruit-editor/options` | Teams that can be linked (owner/admin), remaining concurrent posts (3/10) | user · developers only |
 | 20 | E | POST | `/api/v1/user/recruits` | Create (linked team required, 5/day counting published posts only → 429 `RATE_LIMITED`, concurrent 3 / Pro 10 → 403 `PLAN_LIMIT`) | user · developers only |
 | 20 | E | GET | `/api/v1/user/recruits/{recruitId}/edit-form` | Edit form values + roles that can't be removed, minimum headcounts | author |
