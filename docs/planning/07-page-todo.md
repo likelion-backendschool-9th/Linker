@@ -670,7 +670,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Guest feed: "추천" in random order with no "why shown", write button shows login prompt, seen posts not recorded
 - [ ] Server "추천" for developers and operators: posts sharing a tag with my tech stack or whose author picked one of my job categories first (by popularity score), then the rest in random order; posts seen on an earlier visit last; max 2 consecutive by the same author
 - [ ] Server "추천" for guests and recruiters: every post in random order, fixed for one visit (cursor carries the visit start, so scrolling never repeats or skips; reshuffled on the next visit)
-- [ ] Server: exclusions (own posts, blocked people, hidden posts)
+- [ ] Server: exclusions (blocked people, hidden posts). My own posts stay in "추천", placed by the same rules, with no "why shown"
 - [ ] Server: popularity score (like 1, comment by others 2, decays with age, likes from accounts < 7 days old excluded)
 - [ ] "Why shown" copy (one, by priority): "React를 쓰는 사람들의 인기 글" > "프론트엔드 직군의 인기 글"
 - [ ] `[Included]` Recruiter feed (after 31): "추천" in random order, no write button, top toggle "제안 받는 개발자만" (only posts whose author is Seeking / Open to offers; filter kept in URL); only the "추천" tab (no "팔로잉") and no follow chip on cards
