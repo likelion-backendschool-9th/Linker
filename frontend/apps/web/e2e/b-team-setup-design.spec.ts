@@ -104,6 +104,17 @@ test('08-2 matches the selected form and keeps unverified URL fields from enabli
   await expect(name).toHaveAttribute('maxlength', '50');
   await expect(description).toHaveAttribute('maxlength', '100');
   await expect(page.getByText('0/100', { exact: true })).toBeVisible();
+  await expect(name).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(description.locator('..')).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(name).toHaveCSS('color', 'rgb(64, 64, 64)');
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toHaveCSS(
+    'background-color',
+    'rgb(242, 244, 246)',
+  );
+  await expect(page.getByRole('button', { name: '다음', exact: true })).toHaveCSS(
+    'color',
+    'rgb(176, 184, 193)',
+  );
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
   await expect(page.getByText('화면 미리보기예요.', { exact: false })).toHaveCount(0);
   for (const width of [375, 360, 600, 1440]) {
@@ -237,6 +248,10 @@ test('08-4 connects the selected board by option ID and retains mapping after br
   const next = page.getByRole('button', { name: '다음', exact: true });
   await expect(next).toBeDisabled();
   await page.getByRole('radio', { name: 'ShowMoa', exact: true }).check();
+  await expect(page.getByRole('radio', { name: 'ShowMoa', exact: true }).locator('..')).toHaveCSS(
+    'color',
+    'rgb(17, 24, 39)',
+  );
   await expect(page.getByText('ShowMoa · 카드 18개')).toBeVisible();
   await expect(next).toBeDisabled();
   for (const [name, status] of [
