@@ -54,7 +54,7 @@
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
-  line-height: var(--line-height-title);
+  line-height: var(--line-height-board-control);
   letter-spacing: 0.1em;
   color: var(--color-photo-count);
   background-color: var(--color-photo-count-bg);

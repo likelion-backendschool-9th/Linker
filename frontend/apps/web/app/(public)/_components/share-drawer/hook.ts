@@ -12,7 +12,7 @@ import { toast } from '@/stores/toast-store';
 
 import { publicShareUrl, shareCard, shareRoomsOptions, type ShareRoom } from './api';
 
-/** One drawer for the whole feed; `?overlay=feed-share&oid={postId}` says which post */
+/** One drawer per screen (24 feed, 23 post detail); `?overlay=feed-share&oid={postId}` says which post */
 export function useShareDrawer() {
   const overlay = useOverlay('feed-share');
   const viewer = useViewer();

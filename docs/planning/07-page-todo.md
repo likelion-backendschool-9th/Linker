@@ -646,7 +646,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: P-3, P-5, P-7, S-4 · Needs first: 22
 
 - [ ] Author (→ 04) with "팔로우"/"팔로잉" (04 follow API; hidden for the author and recruiters, guests get the login prompt), photo swipe + full-screen viewer
-- [ ] Repo card ("레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields. Commit and issue counts: follow-up work
+- [ ] Repo card (tap opens the GitHub repo straight away, no "외부 사이트로 이동합니다" sheet; "레포를 볼 수 없음" if made private/deleted), one-line intro (role chip and, for a forked repo, a "Fork" chip above it), body, optional fields. Commit and issue counts: follow-up work
 - [ ] `[Included]` README toggle: collapsed by default, 1-hour cache, scripts/HTML stripped, wide tables and code scroll horizontally
 - [ ] Like (applied first, reverted on failure), (sheet) people who liked (logged-in users only, 20 at a time with infinite scroll)
 - [ ] Guests: body, README, comment list and like count visible; like, comment input and more show login prompt
@@ -655,7 +655,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] When a recruiter views (after 31): like and comment input hidden (lists visible); if the author is Seeking / Open to offers, "채용 제안 보내기" in the author menu
 - [ ] Other posts for this repo (teammates posting the same repo)
 - [ ] Hidden by reports → author sees "검토 중", others see unavailable content
-- [ ] `[Included]` Share button → 00 share sheet (share to chat room after 17)
+- [ ] `[Included]` Share button → the same "공유하기" board as 24's feed cards (Figma 780:584: room search, per-room "공유하기", "링크 복사하기"); guests get the login prompt first
 - [ ] `generateMetadata` (summary line, first 120 chars of body) + OG image (cover photo; every post has one since photos are required). Default when deleted/hidden; strip `?from=share` from canonical (blueprint 8-3)
 - [ ] Server: comment and like notifications, view logging with traffic source (feed, profile, recruit post, chat share, external link `?from=share`) → for 30 stats; start collecting early
 - [ ] Do 04 profile pass 2 (post list, pinned posts) now

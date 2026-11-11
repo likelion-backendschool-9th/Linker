@@ -13,27 +13,27 @@
   gap: var(--space-xs);
 }
 
-/* Field (287:317): 42 high, radius 14, text inset 12, send button 4 from the edges.
+/* Field (287:317): 46 high, radius 14, text inset 12, send button 6 from the edges.
    Guests get the same field as a button.
-   The line is an inside outline, not a border: outlines take no layout space, so 1px → 2px on
-   focus (364:1950, #2563eb inside stroke) never moves the text or the send button. */
+   A 2px #e5e7eb line drawn outside the box (Figma outside stroke) that turns #2563eb on focus
+   (364:1950). It's an outline, not a border, so it takes no layout space and nothing moves. */
 .field {
   display: flex;
   align-items: flex-end;
   gap: var(--space-xs);
   width: 100%;
   min-height: var(--control-height-comment);
-  padding: var(--space-xxs) var(--space-xxs) var(--space-xxs) var(--space-sm);
+  padding: var(--space-comment-send-inset) var(--space-comment-send-inset)
+    var(--space-comment-send-inset) var(--space-sm);
   text-align: left;
   background-color: var(--color-canvas-cool);
   border-radius: var(--radius-control-md);
-  outline: var(--border-width-comment) solid transparent;
-  outline-offset: calc(-1 * var(--border-width-comment));
+  outline: var(--border-width-field) solid var(--color-hairline-cool);
+  outline-offset: 0;
 }
 
 .field:focus-within {
-  outline: var(--border-width-comment-focus) solid var(--color-focus-ring-search);
-  outline-offset: calc(-1 * var(--border-width-comment-focus));
+  outline-color: var(--color-focus-ring-search);
 }
 
 .field:has([aria-invalid='true']) {
@@ -135,7 +135,7 @@
 
 .authorText {
   display: grid;
-  gap: var(--space-row-inline);
+  gap: var(--space-comment-name);
   min-width: 0;
 }
 
@@ -148,7 +148,7 @@
 
 .login {
   overflow: hidden;
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-caption);
   line-height: var(--line-height-board-control);
   color: var(--color-text-muted-cool);
   text-overflow: ellipsis;
@@ -159,7 +159,7 @@
 .date {
   flex-shrink: 0;
   padding-top: var(--space-xxs);
-  font-size: var(--font-size-micro);
+  font-size: var(--font-size-caption);
   line-height: var(--line-height-board-control);
   color: var(--color-text-muted-cool);
 }

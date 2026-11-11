@@ -1,6 +1,6 @@
 'use client';
 
-// overlay: the feed card's paper-plane icon opens "공유하기" (Figma 780:584)
+// overlay: the paper-plane icon on a feed card (24) or a post detail (23) opens "공유하기" (Figma 780:584)
 import { MagnifierLinearIcon } from '@solar-icons/static/linear/magnifier';
 import { X } from 'lucide-react';
 import Image from 'next/image';

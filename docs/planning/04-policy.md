@@ -24,7 +24,7 @@ Rules applied to every feature. Unless a feature policy says otherwise, these va
 | Item | Rule |
 | --- | --- |
 | Character count | Counted after trimming leading/trailing whitespace. Korean, English, digits, emoji all count as 1. Keep at most 2 consecutive line breaks |
-| Links | https only. External links open in the browser outside the app; first time per domain, confirm "외부 사이트로 이동합니다" (leaving to an external site) |
+| Links | https only. External links open in the browser outside the app; first time per domain, confirm "외부 사이트로 이동합니다" (leaving to an external site). Exception: the GitHub repo card on 23 opens github.com straight away (no confirm) |
 | Banned words | No automatic word filter in MVP; handled via reports. Profanity filter reviewed in phase 2 if reports pile up |
 | Time display | Chat messages: fixed sent time in KST, e.g. "오후 3:12"; the date divider supplies the date. Other screens: KST. < 1 min "방금", < 1 hour "N분 전", < 24 hours "N시간 전", this year "10월 16일", previous years "2025. 10. 16." |
 | Number display | < 1,000 as-is; ≥ 1,000 "1.2천"; ≥ 10,000 "1.2만" |
