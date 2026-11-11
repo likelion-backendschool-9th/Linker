@@ -1,6 +1,6 @@
 /*
- * 01 callback. Frames "1-2-로딩 처리" and "1-2-로딩 실패-타임 아웃" (375×800):
- * three centered dots, and a bottom button only after failure.
+ * 01 callback (375×800). The pending exchange has no loading mark.
+ * "1-2-로딩 실패-타임 아웃" keeps the three centered dots and a bottom button.
  * The home indicator is safe-area, not a drawn bar.
  */
 
