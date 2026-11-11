@@ -11,13 +11,14 @@ export const routes: MockRoute[] = [
   get('/api/v1/user/teams/:teamId/board', (ctx) => {
     const issues = filterIssues(ctx, ctx.params.teamId!).filter((item) => item.inProject);
     const team = findTeam(ctx.params.teamId);
-    const canWrite = team !== undefined && team.id !== 2 && team.status !== 'READ_ONLY';
+    const readOnlyTeam = team?.status === 'READ_ONLY' || team?.status === 'ARCHIVED';
+    // Team 2 is an active team whose mock user has no repo push. Moves stay open; "+" does not.
+    const canWrite = team !== undefined && team.id !== 2 && !readOnlyTeam;
     return {
-      // Repo write on any linked repo + writable team; team 2 is read-only for the mock user
       canWrite,
       writePermissionReason: canWrite
         ? null
-        : team?.status === 'READ_ONLY' || team?.id === 2
+        : readOnlyTeam
           ? 'READ_ONLY_TEAM'
           : 'NO_REPOSITORY_WRITE_PERMISSION',
       columns: COLUMNS.map((status) => ({

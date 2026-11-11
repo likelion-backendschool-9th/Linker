@@ -1668,6 +1668,25 @@ class IssueReadIntegrationTest {
   }
 
   @Test
+  void page14MemberWithoutRepoWriteCanMoveStatus() {
+    long id = firstIssue();
+    jdbc.update(
+        "INSERT INTO board_status_mappings(id,board_id,github_option_id,linker_status,"
+            + "github_option_name,color,created_at,updated_at)"
+            + " VALUES(2,1,'FINISHED','DONE','Done','GREEN',now(),now())");
+    writable = false;
+    try {
+      assertThat(reads.status(member(), 10, id, "DONE").state()).isEqualTo("CLOSED");
+      assertThatThrownBy(() -> reads.labels(member(), 10, id, List.of()))
+          .isInstanceOf(ApiException.class)
+          .extracting("status")
+          .isEqualTo(403);
+    } finally {
+      writable = true;
+    }
+  }
+
+  @Test
   void page12DoneClosesAndBlockedReopens() {
     long id = firstIssue();
     jdbc.update(
