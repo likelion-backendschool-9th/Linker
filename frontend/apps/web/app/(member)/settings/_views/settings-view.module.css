@@ -86,6 +86,22 @@
   border-bottom: 1.5px solid var(--color-text-muted-cool);
   transform: rotate(-45deg);
 }
+.arrowButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--space-row-inline) + 1px);
+  height: calc(var(--space-row-inline) + 1px);
+  margin-right: var(--space-xxs);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+}
+.arrowButton .chevron { margin-right: 0; }
+.arrowButton:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
 
 .searchField input:focus-visible,
 .unblock:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
@@ -209,6 +225,8 @@
 .logoutScrim {
   position: fixed;
   inset: 0;
+  right: max(0px, calc((100% - var(--content-max-width)) / 2));
+  left: max(0px, calc((100% - var(--content-max-width)) / 2));
   z-index: var(--z-overlay);
   background: var(--color-scrim-team-picker);
   backdrop-filter: var(--blur-scrim);
@@ -307,7 +325,9 @@
   background: var(--color-on-primary);
 }
 
-.jobStatusScrim {
+.jobStatusScrim.jobStatusScrim {
+  right: max(0px, calc((100% - var(--content-max-width)) / 2));
+  left: max(0px, calc((100% - var(--content-max-width)) / 2));
   background: var(--color-scrim-team-picker);
   backdrop-filter: var(--blur-scrim);
 }
