@@ -530,7 +530,10 @@ pageInfo{hasNextPage endCursor} nodes{__typename
   }
 
   public Issue editIssue(Repo repo, int number, Map<String, ?> fields, long userId) {
-    String token = userTokens.tokenFor(userId);
+    return editIssue(repo, number, fields, userTokens.tokenFor(userId));
+  }
+
+  public Issue editIssue(Repo repo, int number, Map<String, ?> fields, String token) {
     verifyRepository(repo, token);
     outside();
     try {
@@ -556,6 +559,11 @@ pageInfo{hasNextPage endCursor} nodes{__typename
 
   public void projectField(
       Context context, String item, String field, String option, LocalDate date, long userId) {
+    projectField(context, item, field, option, date, userTokens.tokenFor(userId));
+  }
+
+  public void projectField(
+      Context context, String item, String field, String option, LocalDate date, String token) {
     if (field == null || field.isBlank())
       throw new ApiException(409, "STATE_CONFLICT", "프로젝트 필드 연결이 필요해요");
     Map<String, Object> vars = new LinkedHashMap<>();
@@ -575,7 +583,7 @@ pageInfo{hasNextPage endCursor} nodes{__typename
       mutation =
           "mutation($project:ID!,$item:ID!,$field:ID!,$value:ProjectV2FieldValue!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:$value}){projectV2Item{id}}}";
     }
-    var data = graphql(mutation, vars, userTokens.tokenFor(userId));
+    var data = graphql(mutation, vars, token);
     String operation =
         option == null && date == null
             ? "clearProjectV2ItemFieldValue"

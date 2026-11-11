@@ -73,7 +73,7 @@ Handling × on direct URL entry: **guests** see the login-prompt sheet and are s
 | 08 | Create team | Prompt | ○ | × | Same as developer |
 | 09 | Team settings & members | × | Per team role (ch. 6) | × | Same as developer |
 | 10 | Accept invite | View slim landing (logo + join CTAs); accept / GitHub start = login | ○ | × "개발자 계정만 팀에 참여할 수 있어요" (only developer accounts can join teams) | Same as developer |
-| 11–15 | Issue list/detail/create, board, calendar | × | Team members only; writes need repo write permission (ch. 7). The progress card above the issue list is Flex teams only (POL-T-7) | × | Same as developer |
+| 11–15 | Issue list/detail/create, board, calendar | × | Team members only. Creating an issue and changing assignees, labels, or dates need repo write permission (ch. 7). Moving a board card does not (POL-I-4). The progress card above the issue list is Flex teams only (POL-T-7) | × | Same as developer |
 | 16 | Chat list | Prompt | ○ team / 1:1 / requests | ○ 1:1 tab only | Same as developer |
 | 17 | Chat room | × | ○ team & 1:1 | ○ 1:1 only; conversations start only via request | Same as developer |
 | 18 | Notifications | Prompt | ○ | ○ | Same as developer |
@@ -395,7 +395,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 
 | Policy | Details |
 | --- | --- |
-| POL-I-1 Source of truth | Issues, assignees, labels: GitHub Issues. Dates and status: GitHub Projects. Linker writes to GitHub with the author's own permission and refreshes its cache via webhooks |
+| POL-I-1 Source of truth | Issues, assignees, labels: GitHub Issues. Dates and status: GitHub Projects. Linker writes to GitHub with the author's own permission and refreshes its cache via webhooks. A board status change by a member without repo write uses the GitHub App installation token (Issues write, Organization Projects write) |
 | POL-I-1 Templates | 3 default templates (bug/feature/task) + the repo's .github/ISSUE_TEMPLATE. If both exist, repo templates go on top. If the repo has none, use the org's public .github repo templates (GitHub rule). Issue forms (YAML) render as in-app inputs; answers are written to the body in GitHub's format ("### question" then the answer, empty = _No response_). labels/assignees/projects/type in the form are applied by Linker. File upload fields are phase 2 (hidden in MVP with "첨부는 GitHub에서" — attach on GitHub) |
 | POL-I-1 Create failure | If GitHub permission is missing or the request fails, keep the input as a draft and show the reason. Never create Linker-only issues |
 | POL-I-2 Assignees | Only team members with access to that repo (max 10 due to GitHub). Members with read permission can still be assigned. If the person assigning lacks repo write permission, GitHub silently ignores it, so disable assignee/label buttons and show the reason in a toast on tap. After saving, verify from GitHub's response that the assignee was actually set |
@@ -404,7 +404,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 | POL-I-3 Dates | Start ≤ due. Issues without a due date don't appear on the calendar; they're listed under "일정 없음" (no schedule) |
 | Concurrent edits | If the same value changes in Linker and GitHub at once, the later arrival wins. The user's screen refreshes to the latest value |
 | POL-I-4 Overdue | Issues past due and not done are shown in red. Team timezone is KST |
-| POL-I-4 Status board | Change via drag or the "상태 바꾸기" (change status) menu. If writing to GitHub fails, move the card back to its original column and notify |
+| POL-I-4 Status board | Every member of a writable team can move a card by drag or the status menu, on desktop and mobile. A read-only or archived team and a suspended account cannot. If writing to GitHub fails, move the card back to its original column and notify |
 | POL-I-5 My issues (07) | Not a cross-team list. The user selects one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at` desc; prefer non-archived). Selection kept in the URL (`teamId`). Invalid / non-member `teamId` falls back to the default team. Sort by due urgency: overdue first (oldest due first), then soonest due, then no due date. `/workspace` shows a short UI-limited preview (not a fixed count); “내 이슈 전체 보기” opens `/workspace/issues` for the full selected-team list. Team-wide (all members’) issues are on page 11, not here |
 | POL-I-6 Issue search (11) | Search box on page 11 only. Case-insensitive match on part of the issue title; leading/trailing spaces ignored, blank = no search. Max 100 characters (longer is rejected). Combined with the other filters and kept in the URL (`q`). The "일정 없음" view has no search: searching returns to all issues |
 
@@ -418,7 +418,7 @@ Team roles: owner, admin, member. Actions that write to GitHub (issues, PRs) fol
 
 - On webhook receipt, refresh the cache immediately. In case webhooks are missed, full sync every 15 min for active teams and once a day for others.
 - Pulling down on a screen re-fetches only that screen's issues from GitHub (once per minute).
-- Sync and webhook follow-up reads use per-org installation tokens (5,000–12,500/hour); user tokens (5,000/hour, shared with other apps) are used only for writes needing the user's identity (create issue, assign, org invite).
+- Sync and webhook follow-up reads use per-org installation tokens (5,000–12,500/hour); user tokens (5,000/hour, shared with other apps) are used only for writes needing the user's identity (create issue, assign, org invite). Board status uses the installation token when the member has no repo write.
 - Creating one issue makes separate calls: create issue → add to project → start date → due date → status. If a middle step fails, the server retries remaining steps; if it keeps failing, the issue card shows "일정이 GitHub에 반영되지 않았어요" (schedule not applied to GitHub). Closing on move-to-Done is also a separate call.
 - The GitHub API can't upload files to issues, so images Linker puts in issue bodies are stored on the Linker server and inserted as long, hard-to-guess links. Whether images uploaded to private-repo issues on GitHub are visible in Linker is tested early in development.
 

@@ -45,7 +45,7 @@ const collision: CollisionDetection = (args) => {
   return hits.length > 0 ? hits : rectIntersection(args);
 };
 
-/** Board-level drag: lock read-only / no-repo-write / suspended; not GH lookup failures. */
+/** Create (+) still needs repo write. Lookup failure keeps the button, same as before. */
 export function boardDragAllowed(
   board: Pick<Board, 'canWrite' | 'writePermissionReason'> | undefined,
   viewerStatus: string | null | undefined,
@@ -54,6 +54,19 @@ export function boardDragAllowed(
   if (!board) return false;
   if (board.canWrite) return true;
   return board.writePermissionReason === 'GITHUB_PERMISSION_UNAVAILABLE';
+}
+
+/** Moving a card is for every member of a writable team, including people without repo push. */
+export function boardMoveAllowed(
+  board: Pick<Board, 'writePermissionReason'> | undefined,
+  viewerStatus: string | null | undefined,
+): boolean {
+  if (viewerStatus === 'SUSPENDED') return false;
+  if (!board) return false;
+  return (
+    board.writePermissionReason !== 'READ_ONLY_TEAM' &&
+    board.writePermissionReason !== 'SUSPENDED'
+  );
 }
 
 function isRepoPermissionError(error: unknown): boolean {
@@ -126,7 +139,8 @@ export function useBoardView(teamId: string) {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
 
-  const canWrite = boardDragAllowed(board.data, viewer.status);
+  const canCreate = boardDragAllowed(board.data, viewer.status);
+  const canMove = boardMoveAllowed(board.data, viewer.status);
   const serverColumns = board.data?.columns ?? [];
   const cards = serverColumns.flatMap((column) => column.cards);
   // The column a card came in (NONE cards sit in 기타 with their own status)
@@ -246,7 +260,8 @@ export function useBoardView(teamId: string) {
 
   return {
     board,
-    canWrite,
+    canCreate,
+    canMove,
     columns,
     statusFilter: filters.status,
     sort,

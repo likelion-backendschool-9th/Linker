@@ -112,11 +112,27 @@ class GithubAppClientTest {
 	}
 
 	@Test
+	void installationWriteTokenRequestsIssueAndProjectWriteAndStaysSeparateFromRead() {
+		expectToken("synthetic-read-token", 3600);
+		server.expect(requestTo("https://api.github.com/app/installations/42/access_tokens"))
+				.andExpect(method(HttpMethod.POST)).andExpect(header("Authorization", "Bearer synthetic-app-jwt"))
+				.andExpect(content().json("""
+						{"permissions":{"metadata":"read","issues":"write","organization_projects":"write"}}
+						"""))
+				.andRespond(withSuccess("{\"token\":\"synthetic-write-token\",\"expires_at\":\"" + NOW.plusSeconds(3600) + "\"}", MediaType.APPLICATION_JSON));
+		assertThat(client.installationReadToken(42)).isEqualTo("synthetic-read-token");
+		assertThat(client.installationWriteToken(42)).isEqualTo("synthetic-write-token");
+		assertThat(client.installationWriteToken(42)).isEqualTo("synthetic-write-token");
+		server.verify();
+	}
+
+	@Test
 	void rejectsCallsFromAnOpenDatabaseTransaction() {
 		TransactionSynchronizationManager.setActualTransactionActive(true);
 		try {
 			assertThatThrownBy(() -> client.verifyUserInstallation("synthetic-user-token", 42)).isInstanceOf(IllegalStateException.class);
 			assertThatThrownBy(() -> client.installationReadToken(42)).isInstanceOf(IllegalStateException.class);
+			assertThatThrownBy(() -> client.installationWriteToken(42)).isInstanceOf(IllegalStateException.class);
 		}
 		finally { TransactionSynchronizationManager.setActualTransactionActive(false); }
 	}

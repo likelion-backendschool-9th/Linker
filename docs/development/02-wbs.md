@@ -322,7 +322,7 @@
 | 12 | C | GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/label-options` | Label sheet | team MEMBER |
 | 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/labels` | Labels | team MEMBER + repo write |
 | 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/schedule` | Start and due date (start ≤ due) | team MEMBER + repo write |
-| 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/status` | Todo / In Progress / Blocked / Done (Done = close; reverting reopens) — borrowed by 14 | team MEMBER + repo write |
+| 12 | C | PUT | `/api/v1/user/teams/{teamId}/issues/{issueId}/status` | Todo / In Progress / Blocked / Done (Done = close; reverting reopens) — borrowed by 14 | team MEMBER of a writable team. Repo write is not required; the member token is used when they have it, otherwise the installation token |
 | 12 | C | GET | `/api/v1/user/teams/{teamId}/issues/{issueId}/sub-issues` | `[Included]` Sub-issue progress | team MEMBER |
 | 13 | C | GET | `/api/v1/user/teams/{teamId}/issue-templates?repoId=` | Repo templates → org `.github` templates → 3 defaults | team MEMBER |
 | 13 | C | GET | `/api/v1/user/teams/{teamId}/issue-templates/{templateKey}?repoId=` | Parsed template (Markdown body or issue form field list + default labels/assignees); falls back to default template on failure | team MEMBER |
