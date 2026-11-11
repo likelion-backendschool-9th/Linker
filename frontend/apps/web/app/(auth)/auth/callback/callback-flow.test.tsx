@@ -6,10 +6,21 @@ import { apiFetch } from '@/lib/api/api-fetch';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { CallbackFlow } from './callback-flow';
+import styles from './callback-flow.module.css';
 
 vi.mock('@/lib/api/api-fetch', () => ({ apiFetch: vi.fn() }));
 
+it('keeps the login callback pending screen free of the three-dot loading mark', () => {
+  vi.mocked(apiFetch).mockImplementation(() => new Promise(() => {}));
+  const { container } = renderWithProviders(
+    <CallbackFlow code="code" state="state" returnTo="/feed" errorCode="" />,
+  );
+
+  expect(container.querySelector(`.${styles.dots}`)).toBeNull();
+});
+
 it('exchanges once in the WebView and refreshes server session data after login', async () => {
+  vi.mocked(apiFetch).mockClear();
   const router = {
     bfcacheId: 'test',
     push: vi.fn(),

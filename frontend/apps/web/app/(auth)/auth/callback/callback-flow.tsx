@@ -103,11 +103,13 @@ export function CallbackFlow({
         aria-labelledby="callback-title"
         aria-live="polite"
       >
-        <div className={styles.dots} aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        {!pending && (
+          <div className={styles.dots} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
         {pending ? (
           <>
             <h1 id="callback-title" className="sr-only">
