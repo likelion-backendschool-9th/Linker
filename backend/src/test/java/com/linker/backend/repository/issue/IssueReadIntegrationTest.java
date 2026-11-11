@@ -84,6 +84,7 @@ class IssueReadIntegrationTest {
   static final JsonMapper JSON = JsonMapper.builder().build();
   static final List<String> REQUESTS = new CopyOnWriteArrayList<>();
   static final AtomicInteger MUTATIONS = new AtomicInteger();
+  static final AtomicInteger BOARD_SCANS = new AtomicInteger();
   static volatile boolean failRest,
       failMutation,
       writable = true,
@@ -391,7 +392,8 @@ class IssueReadIntegrationTest {
             } else if (body.contains("projectItems(first:20)")) {
               String contentId = JSON.readTree(body).path("variables").path("id").asString("");
               var nodes = new ArrayList<Object>();
-              if ("ISSUE3".equals(contentId) && createdProject) nodes.add(attached(3));
+              if ("ISSUE1".equals(contentId)) nodes.add(attached(1));
+              else if ("ISSUE3".equals(contentId) && createdProject) nodes.add(attached(3));
               else if ("ISSUE2".equals(contentId) && projectAdded) nodes.add(attached(2));
               response =
                   Map.of(
@@ -418,6 +420,7 @@ class IssueReadIntegrationTest {
             } else if (graphqlError)
               response = Map.of("errors", List.of(Map.of("message", "denied")));
             else {
+              BOARD_SCANS.incrementAndGet();
               var items = new ArrayList<Object>();
               boolean second =
                   JSON.readTree(body)
@@ -694,6 +697,7 @@ class IssueReadIntegrationTest {
     issueTitle = "로그인 오류";
     updated = "2026-11-05T01:00:00Z";
     MUTATIONS.set(0);
+    BOARD_SCANS.set(0);
     REQUESTS.clear();
   }
 
@@ -869,6 +873,19 @@ class IssueReadIntegrationTest {
     failRest = false;
     graphqlError = true;
     assertThatThrownBy(() -> sync.fullSync(10)).isInstanceOf(ApiException.class);
+  }
+
+  @Test
+  void detailReadsOnlyItsOwnBoardCard() throws Exception {
+    sync.fullSync(10);
+    long id = jdbc.queryForObject("SELECT id FROM issues WHERE number=1", Long.class);
+    BOARD_SCANS.set(0);
+    mvc.perform(get("/api/v1/user/teams/10/issues/" + id).cookie(login(1)))
+        .andExpect(status().isOk());
+    assertThat(BOARD_SCANS).hasValue(0);
+    assertThat(
+            jdbc.queryForObject("SELECT project_item_id FROM issues WHERE id=?", String.class, id))
+        .isEqualTo("ITEM1");
   }
 
   @Test
