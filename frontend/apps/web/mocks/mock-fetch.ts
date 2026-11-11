@@ -5,6 +5,7 @@ import { ADMIN } from '@/lib/policy';
 import { fail, type MockContext, type MockRoute, type ParamName } from './core/define';
 import { buildViewer } from './core/viewer';
 import { persistCreatedIssues, syncCreatedIssues } from './fixtures/issues';
+import { persistCreatedRecruiterRooms, syncCreatedRecruiterRooms } from './fixtures/recruiter-rooms';
 import { routes } from './routes';
 
 /**
@@ -143,8 +144,10 @@ export async function mockFetch<T>(url: string, init: RequestInit = {}): Promise
   authorize(entry, ctx);
 
   await syncCreatedIssues();
+  await syncCreatedRecruiterRooms();
   const result = await entry.route.handle(ctx);
   persistCreatedIssues();
+  persistCreatedRecruiterRooms();
   if (entry.route.path === '/api/v1/admin/otp/verify' && otpVerified(result)) {
     adminOtpLastActiveAt = Date.now();
   }
