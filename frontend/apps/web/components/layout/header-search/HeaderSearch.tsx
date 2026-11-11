@@ -2,9 +2,10 @@
 
 import { CloseLinearIcon } from '@solar-icons/static/linear/close';
 import { MagnifierLinearIcon } from '@solar-icons/static/linear/magnifier';
-import { useId, useRef, useState } from 'react';
+import { useId, useRef } from 'react';
 
 import { Icon } from '@/components/ui/icon';
+import { useHeaderSearch } from './hook';
 
 import styles from '../header.module.css';
 
@@ -15,12 +16,20 @@ type HeaderSearchProps = {
 
 /** Top nav search field: blur/focus/active states (04 frontend task 4). Rendered in the panel below the search icon. */
 export function HeaderSearch({ className }: HeaderSearchProps) {
-  const [value, setValue] = useState('');
+  const { value, setValue, search, clear } = useHeaderSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
 
   return (
-    <div className={`${styles.search} ${className ?? ''}`}>
+    <form
+      role="search"
+      aria-label="피드 게시물 제목 검색"
+      className={`${styles.search} ${className ?? ''}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        search();
+      }}
+    >
       <Icon svg={MagnifierLinearIcon} className={`${styles.searchIcon} ${styles.magnifierIcon}`} />
       <label htmlFor={inputId} className="sr-only">
         검색어를 입력해 주세요
@@ -29,6 +38,7 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
         ref={inputRef}
         id={inputId}
         type="search"
+        enterKeyHint="search"
         placeholder="검색어를 입력해 주세요"
         className={styles.searchInput}
         value={value}
@@ -39,7 +49,7 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
           type="button"
           className={styles.searchClear}
           onClick={() => {
-            setValue('');
+            clear();
             inputRef.current?.focus();
           }}
         >
@@ -47,6 +57,6 @@ export function HeaderSearch({ className }: HeaderSearchProps) {
           <span className="sr-only">검색어 지우기</span>
         </button>
       )}
-    </div>
+    </form>
   );
 }

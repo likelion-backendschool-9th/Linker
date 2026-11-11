@@ -742,6 +742,8 @@ Error and empty-state copy says what didn't work and what to do next. Tone: poli
 | Refund: past 7 days | 결제 후 7일이 지나 환불할 수 없어요. |
 | Cancel: subscription already ended | 이미 끝난 구독이에요. |
 | Team invite notification | ○○ 팀에 초대됐어요. · 확인하기 |
+| Post like notification | ○○님이 회원님의 게시물을 좋아했어요. Body: the post title |
+| Follow notification | ○○님이 회원님을 팔로우했어요. |
 | Chat notification | ○○님이 메시지를 보냈어요. Body: the message, whitespace collapsed, first 100 characters + "…"; photo only → 사진을 보냈어요. Team rooms prefix "{team name} · " |
 | Chat mention notification | {team name} · ○○님이 회원님을 언급했어요. Body as above |
 | Message request notification | ○○님이 메시지 요청을 보냈어요. Body: the first message, as above |

@@ -31,13 +31,17 @@ export const routes: MockRoute[] = [
   get('/api/v1/public/feed', ({ query, viewer }) => {
     const offersOnly = query.get('offersOnly') === 'true';
     const logged = Boolean(viewer.me);
+    const title = query.get('q')?.trim().toLocaleLowerCase() ?? '';
+    const candidates = title
+      ? POSTS.filter((p) => p.intro.toLocaleLowerCase().includes(title))
+      : POSTS;
 
     // "팔로잉" tab: posts by people I follow, newest first, no ads. Guests and recruiters follow
     // nobody (recruiters can't follow, 04 ch. 2), so they get an empty list.
     if (query.get('tab') === 'following') {
       const following =
         viewer.role === 'developer' || viewer.role === 'operator'
-          ? POSTS.filter((p) => FOLLOWING_LOGINS.has(p.author.login))
+          ? candidates.filter((p) => FOLLOWING_LOGINS.has(p.author.login))
           : [];
       const rows = [...following]
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -55,11 +59,12 @@ export const routes: MockRoute[] = [
     // "추천": developers and operators get matches first (by likes), then the rest shuffled;
     // guests and recruiters get everything shuffled with no "why shown"
     const matching = viewer.role === 'developer' || viewer.role === 'operator';
-    const shuffled = [...POSTS].sort((a, b) => shuffleKey(a.id) - shuffleKey(b.id));
-    const matched = matching
-      ? POSTS.filter((p) => MATCHED[p.id]).sort((a, b) => b.likeCount - a.likeCount)
+    const shuffled = [...candidates].sort((a, b) => shuffleKey(a.id) - shuffleKey(b.id));
+    const matched = matching && !title
+      ? candidates.filter((p) => MATCHED[p.id]).sort((a, b) => b.likeCount - a.likeCount)
       : [];
     let posts = [...matched, ...shuffled.filter((p) => !matched.includes(p))];
+    if (title) posts.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
     // Recruiter toggle "제안 받는 개발자만" (Only developers open to offers)
     if (offersOnly) posts = posts.filter((p) => p.author.jobStatus !== 'OFF');
 
@@ -70,11 +75,11 @@ export const routes: MockRoute[] = [
         likedByMe: logged && LIKED_POST_IDS.has(post.id),
         author: { ...post.author, isFollowing: logged && FOLLOWING_LOGINS.has(post.author.login) },
       },
-      whyShown: matching ? (MATCHED[post.id] ?? null) : null,
+      whyShown: matching && !title ? (MATCHED[post.id] ?? null) : null,
     }));
 
     // One ad per 10 posts, never on the first screen; logged-in developers with matching categories only
-    const withAd = matching
+    const withAd = matching && !title
       ? dismissedAds.has(ad.adId)
         ? rows
         : [...rows.slice(0, 4), ad, ...rows.slice(4)]
