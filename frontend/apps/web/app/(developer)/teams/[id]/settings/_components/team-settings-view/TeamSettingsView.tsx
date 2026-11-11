@@ -226,7 +226,7 @@ export function TeamSettingsView({ teamId }: { teamId: string }) {
           },
         }}
         title="팀 나가기"
-        description="팀을 나가고 다시 들어오실려면 오너의 승인이 필요 합니다. 나가시겠습니까?"
+        description="팀을 나가시겠습니까?"
         confirmLabel="팀 나가기"
         pending={leave.isPending}
         error={leave.error?.message}
