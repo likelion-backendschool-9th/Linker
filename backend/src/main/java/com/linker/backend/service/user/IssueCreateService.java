@@ -285,18 +285,16 @@ public class IssueCreateService {
           token);
       verifyMetadata(p, issue);
       // Cache only a real GitHub issue. No phantom/local-only issue is ever inserted.
-      local = store(s, p, issue, github.project(s.context(), token), u, id, false);
-      var items = github.project(s.context(), token);
-      var item = items.get(issue.nodeId());
+      var item = github.projectItem(s.context(), issue.nodeId(), s.repo().fullName(), token);
+      var items = new LinkedHashMap<String, IssueSource.ProjectItem>();
+      if (item != null) items.put(issue.nodeId(), item);
+      local = store(s, p, issue, items, u, id, false);
       if (item != null && item.archived()) throw conflict("보관된 프로젝트 항목이에요");
+      String itemId;
       if (item == null) {
         recheck(u, s);
-        github.addToProject(s.context().board().nodeId(), issue.nodeId(), u.userId());
-        items = github.project(s.context(), token);
-        item = items.get(issue.nodeId());
-      }
-      if (item == null) throw conflict("프로젝트에 추가된 이슈를 확인하지 못했어요");
-      String itemId = item.id();
+        itemId = github.addToProject(s.context().board().nodeId(), issue.nodeId(), u.userId());
+      } else itemId = item.id();
       p.put("phase", "SET_START");
       checkpoint(id, p, local);
       if (p.has("start")) {
@@ -345,8 +343,7 @@ public class IssueCreateService {
       identity(p, issue);
       verifyMetadata(p, issue);
       if (done != issue.state().equals("CLOSED")) throw conflict("GitHub 이슈 상태 반영을 확인하지 못했어요");
-      items = github.project(s.context(), token);
-      item = items.get(issue.nodeId());
+      item = github.projectItem(s.context(), issue.nodeId(), s.repo().fullName(), token);
       if (item == null
           || item.archived()
           || !item.status().equals(p.path("status").asString())
@@ -355,7 +352,7 @@ public class IssueCreateService {
           || p.has("due") && !Objects.equals(item.due(), LocalDate.parse(p.path("due").asString())))
         throw conflict("GitHub 프로젝트 반영을 확인하지 못했어요");
       p.put("phase", "DONE");
-      store(s, p, issue, items, u, id, true);
+      store(s, p, issue, Map.of(issue.nodeId(), item), u, id, true);
     } catch (RuntimeException e) {
       boolean terminal =
           e instanceof ApiException a
