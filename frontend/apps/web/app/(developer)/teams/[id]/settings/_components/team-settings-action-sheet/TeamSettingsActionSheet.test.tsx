@@ -60,6 +60,30 @@ beforeEach(() => {
   resetOverlayHistory();
 });
 
+it.each([
+  ['OWNER', 'READ_ONLY', 'ACTIVE', true],
+  ['ADMIN', 'READ_ONLY', 'ACTIVE', false],
+  ['MEMBER', 'READ_ONLY', 'ACTIVE', false],
+  ['OWNER', 'ACTIVE', 'ACTIVE', false],
+  ['OWNER', 'ARCHIVED', 'ACTIVE', false],
+  ['OWNER', 'READ_ONLY', 'SUSPENDED', false],
+] as const)(
+  'reconnection entry for %s / %s / %s is %s',
+  (myRole, status, accountStatus, visible) => {
+    renderWithProviders(
+      <TeamSettingsActionSheet team={{ ...team, myRole, status }} members={[]} />,
+      {
+        viewer: { role: 'developer', login: 'me', status: accountStatus },
+        searchParams: '?overlay=team-settings-action&oid=settings',
+      },
+    );
+    const reconnect = screen.queryByRole('button', { name: 'GitHub로 시작하기' });
+    if (visible) expect(reconnect).toBeEnabled();
+    else expect(reconnect).not.toBeInTheDocument();
+    expect(apiFetch).not.toHaveBeenCalled();
+  },
+);
+
 it('keeps the selected role and confirmation consistent when member management is reopened', async () => {
   const owner = {
     ...team,
