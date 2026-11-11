@@ -24,11 +24,14 @@ export function renderWithProviders(
     suspendedUntil: null,
     ...viewer,
   };
-  return render(
+  return {
+    queryClient,
+    ...render(
     <QueryClientProvider client={queryClient}>
       <NuqsTestingAdapter searchParams={searchParams} onUrlUpdate={onUrlUpdate} hasMemory>
         <ViewerProvider viewer={fullViewer}>{ui}</ViewerProvider>
       </NuqsTestingAdapter>
-    </QueryClientProvider>,
-  );
+      </QueryClientProvider>,
+    ),
+  };
 }

@@ -1,10 +1,12 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { getMyProfile, updateMyProfile } from '@linker/api/p05-profile-edit/p05-profile-edit';
 import { OverlaySheet } from '@/components/overlay/overlay-sheet/OverlaySheet';
+import { profileQueryKey, type PublicProfile } from '@/features/profile/profile-types';
+import { apiFetch } from '@/lib/api/api-fetch';
 import { useOverlay } from '@/lib/navigation/use-overlay';
 import { toast } from '@/stores/toast-store';
 
@@ -25,6 +27,7 @@ export function DeveloperSettingsView({
   jobStatus: keyof typeof JOB_STATUS_LABEL;
   blockCount: number;
 }) {
+  const queryClient = useQueryClient();
   const jobStatusOverlay = useOverlay('profile-edit-job');
   const [appliedJobStatus, setAppliedJobStatus] = useState(jobStatus);
   const [selectedJobStatus, setSelectedJobStatus] = useState(jobStatus);
@@ -41,8 +44,23 @@ export function DeveloperSettingsView({
         jobCategories: profile.jobCategories,
       });
     },
-    onSuccess: (saved, next) => {
-      setAppliedJobStatus(isJobStatus(saved.jobStatus) ? saved.jobStatus : next);
+    onSuccess: async (saved, next) => {
+      const status = isJobStatus(saved.jobStatus) ? saved.jobStatus : next;
+      setAppliedJobStatus(status);
+      const key = profileQueryKey(login);
+      // /user/{login} keeps this copy for 30s and ignores a newer server render.
+      // Write the saved status before the sheet closes so the badge is already current.
+      queryClient.setQueryData<PublicProfile>(key, (current) =>
+        current ? { ...current, jobStatus: status } : current,
+      );
+      try {
+        const fresh = await apiFetch<PublicProfile>(
+          `/api/v1/public/user/${encodeURIComponent(login)}`,
+        );
+        if (fresh?.login) queryClient.setQueryData(key, { ...fresh, jobStatus: status });
+      } catch {
+        await queryClient.invalidateQueries({ queryKey: key });
+      }
       jobStatusOverlay.close();
     },
     onError: () => toast('구직 상태를 저장하지 못했어요. 다시 시도해 주세요.', { tone: 'error' }),
