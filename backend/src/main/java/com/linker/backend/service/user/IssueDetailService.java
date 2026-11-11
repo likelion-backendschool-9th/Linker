@@ -154,13 +154,16 @@ public class IssueDetailService {
             // A newer cached copy stays. A failed board refresh must not hide the issue.
             if (!live.issue().updated().isBefore(s.row.updated())) {
               try {
-                var project = github.project(s.context, token);
+                // Only this issue's card, not every card on the board.
+                var item =
+                    github.projectItem(
+                        s.context, live.issue().nodeId(), s.repo.fullName(), token);
                 access.member(user, team);
                 issueRepository.apply(
                     s.context,
                     new IssueSource.Snapshot(
                         List.of(new IssueSource.RepositoryIssues(s.repo, List.of(live.issue()))),
-                        project),
+                        item == null ? Map.of() : Map.of(live.issue().nodeId(), item)),
                     false,
                     clock.instant());
               } catch (ApiException ignored) {
