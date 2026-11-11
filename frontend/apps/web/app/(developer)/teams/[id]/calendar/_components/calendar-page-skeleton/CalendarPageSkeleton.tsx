@@ -28,9 +28,9 @@ export function CalendarLoadingActions() {
 }
 
 /** Figma 982:1598 "15-스켈레톤" — month chrome, chip bones, weekday/day grid, chat FAB. */
-export function CalendarPageSkeleton({ teamId: teamIdProp }: { teamId?: string } = {}) {
+export function CalendarPageSkeleton() {
   const params = useParams<{ id: string }>();
-  const teamId = teamIdProp ?? params.id ?? 'preview';
+  const teamId = params.id;
   const today = todayKst();
   const { weeks } = calendarRange('month', today);
   useLoaderPresence();

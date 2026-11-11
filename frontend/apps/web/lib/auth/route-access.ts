@@ -34,8 +34,6 @@ const DEVELOPERS = ['developer', 'operator'] as const;
 const DEVELOPERS_DENY = { guest: 'login', recruiter: 'home' } as const;
 
 export const ROUTE_ACCESS: readonly AccessRule[] = [
-  // Dev preview of page loading skeletons (no auth); keep ahead of catch-alls
-  { page: 'test', match: /^\/test\/skeletons(\/[^/]+)?$/, allow: 'all' },
   { page: '01', match: /^\/$/, allow: ['guest'], deny: 'home' },
   { page: '01', match: /^\/auth\/callback$/, allow: 'all' },
   { page: '02', match: /^\/onboarding$/, allow: DEVELOPERS, deny: DEVELOPERS_DENY },
@@ -87,7 +85,7 @@ export const ROUTE_ACCESS: readonly AccessRule[] = [
 
 /** Paths an onboarding-incomplete developer may still open: (auth), /legal/*, /onboarding (blueprint §4-2) */
 const ONBOARDING_EXEMPT =
-  /^\/($|auth\/callback$|recruiter\/(signup|login|reset)$|legal\/|onboarding$|test\/skeletons(\/|$))/;
+  /^\/($|auth\/callback$|recruiter\/(signup|login|reset)$|legal\/|onboarding$)/;
 
 export function findRule(pathname: string): AccessRule | undefined {
   return ROUTE_ACCESS.find((rule) => rule.match.test(pathname));
