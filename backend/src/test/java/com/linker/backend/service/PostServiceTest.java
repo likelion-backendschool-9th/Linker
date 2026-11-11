@@ -283,7 +283,7 @@ class PostServiceTest {
 	}
 
 	@Test
-	void developerRecommendedFeedPutsStackAndJobCategoryMatchesFirst() {
+	void developerRecommendedFeedPutsStackAndJobCategoryMatchesFirstAndKeepsMyOwnPosts() {
 		TechTag react = techTag(1L, "React");
 		TechTag spring = techTag(2L, "Spring");
 		Post own = postWithId(1L, 99L, PostVisibility.VISIBLE, NOW.minusSeconds(100), react);
@@ -313,15 +313,17 @@ class PostServiceTest {
 
 		var page = service.feed(null, null, null);
 
+		// My own React post (1) stays, ranked with the matches (no likes → after them) but with no
+		// "why shown"; only the blocked author's post (2) is left out
 		assertThat(page.items()).extracting(item -> item.post().id())
-				.doesNotContain(1L, 2L)
-				.startsWith(4L, 6L, 5L)
+				.doesNotContain(2L)
+				.startsWith(4L, 6L, 5L, 1L)
 				.endsWith(3L)
-				.containsExactlyInAnyOrder(3L, 4L, 5L, 6L, 7L, 8L);
+				.containsExactlyInAnyOrder(1L, 3L, 4L, 5L, 6L, 7L, 8L);
 		assertThat(page.items().get(0).whyShown()).isEqualTo("React를 쓰는 사람들의 인기 글");
 		assertThat(page.items().get(1).whyShown()).isEqualTo("프론트엔드 직군의 인기 글");
 		assertThat(page.items().get(2).whyShown()).isEqualTo("React를 쓰는 사람들의 인기 글");
-		assertThat(page.items().subList(3, 6)).extracting(item -> item.whyShown()).containsOnlyNulls();
+		assertThat(page.items().subList(3, 7)).extracting(item -> item.whyShown()).containsOnlyNulls();
 	}
 
 	@Test

@@ -359,15 +359,11 @@ public class PostService {
 	/**
 	 * "추천" for developers and operators: unseen posts that share my tech stack tag or whose author picked
 	 * one of my job categories, by popularity; then the other unseen posts shuffled; then posts already
-	 * seen before this session, shuffled. Own posts are left out.
+	 * seen before this session, shuffled. My own posts stay in (POL-P-4) and are placed by the same rules,
+	 * but never carry a "why shown".
 	 */
 	private List<ScoredPost> matchedFeed(AuthenticatedUser viewer, List<Post> candidates, FeedCursor position) {
-		List<Post> pool = new ArrayList<>();
-		for (Post post : candidates) {
-			if (post.getAuthor().getId() != viewer.userId()) {
-				pool.add(post);
-			}
-		}
+		List<Post> pool = new ArrayList<>(candidates);
 		Set<Long> seen = new HashSet<>(seenPosts.findPostIdsSeenBefore(viewer.userId(), position.startedAt()));
 		List<String> myTags = techTags.findSelected(viewer.userId()).stream().map(UserTechTag::tagName).toList();
 		List<JobCategory> myCategories = jobCategories.findByUser_IdOrderByIdAsc(viewer.userId()).stream()
@@ -387,10 +383,11 @@ public class PostService {
 				continue;
 			}
 			String why = matchReason(post, myTags, myCategories, authorCategories);
+			boolean own = post.getAuthor().getId() == viewer.userId();
 			if (why == null) {
 				unmatched.add(post);
 			} else {
-				matched.add(new ScoredPost(post, scores.getOrDefault(post.getId(), 0.0), why));
+				matched.add(new ScoredPost(post, scores.getOrDefault(post.getId(), 0.0), own ? null : why));
 			}
 		}
 		matched.sort(BY_POPULARITY);
