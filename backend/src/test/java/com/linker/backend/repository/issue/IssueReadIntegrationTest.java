@@ -2214,6 +2214,41 @@ class IssueReadIntegrationTest {
   }
 
   @Test
+  void templateSheetReusesGithubDownloads() throws Exception {
+    templateFile = "bug.yml";
+    templateContent =
+        "name: 저장소 양식\nbody:\n  - type: input\n    id: symptom\n    attributes:\n      label: 증상\n";
+    var first =
+        mvc.perform(
+                get("/api/v1/user/teams/10/issue-templates")
+                    .param("repoId", "100")
+                    .cookie(login(1)))
+            .andExpect(status().isOk())
+            .andReturn();
+    String key =
+        JSON.readTree(first.getResponse().getContentAsString())
+            .path("templates")
+            .get(0)
+            .path("key")
+            .asString();
+    REQUESTS.clear();
+    mvc.perform(
+            get("/api/v1/user/teams/10/issue-templates").param("repoId", "100").cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.templates[0].source").value("REPOSITORY"))
+        .andExpect(jsonPath("$.assigneeCandidates[0].id").value(1))
+        .andExpect(jsonPath("$.labelOptions.length()").value(2));
+    mvc.perform(
+            get("/api/v1/user/teams/10/issue-templates/" + key)
+                .param("repoId", "100")
+                .cookie(login(1)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.fields[0].id").value("symptom"));
+    assertThat(REQUESTS)
+        .noneMatch(r -> r.contains("ISSUE_TEMPLATE") || r.contains("/labels") || r.contains("/collaborators"));
+  }
+
+  @Test
   void organizationTemplatesAreInheritedOnlyWithoutRepositoryFiles() throws Exception {
     orgTemplateContent = "name: 조직 양식\nbody:\n  - type: input\n    attributes:\n      label: 내용\n";
     mvc.perform(
