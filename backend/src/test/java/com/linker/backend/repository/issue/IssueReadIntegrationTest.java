@@ -388,6 +388,15 @@ class IssueReadIntegrationTest {
                             "addProjectV2ItemById",
                             Map.of("item", Map.of("id", createdProject ? "ITEM3" : "ITEM2"))));
               }
+            } else if (body.contains("projectItems(first:20)")) {
+              String contentId = JSON.readTree(body).path("variables").path("id").asString("");
+              var nodes = new ArrayList<Object>();
+              if ("ISSUE3".equals(contentId) && createdProject) nodes.add(attached(3));
+              else if ("ISSUE2".equals(contentId) && projectAdded) nodes.add(attached(2));
+              response =
+                  Map.of(
+                      "data",
+                      Map.of("node", Map.of("projectItems", Map.of("nodes", nodes))));
             } else if (body.contains("... on ProjectV2Item{fieldValues")) {
               response =
                   Map.of(
@@ -496,6 +505,12 @@ class IssueReadIntegrationTest {
     if (n == 1 && editedAssignees != null) map.put("assignees", editedAssignees);
     if (n == 1 && editedLabels != null) map.put("labels", editedLabels);
     return map;
+  }
+
+  static Map<String, Object> attached(int n) {
+    var item = new LinkedHashMap<String, Object>(project(n));
+    item.put("project", Map.of("id", "BOARD"));
+    return item;
   }
 
   static Map<String, Object> project(int n) {

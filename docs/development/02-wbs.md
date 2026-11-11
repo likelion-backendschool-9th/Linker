@@ -702,7 +702,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 - Tables: new none · shared teams, team_members, issues, issue_assignees
 - [ ] Frontend: team cards, empty state ("팀 만들기" (Create team) + "팀 찾으러 가기" (Find a team)), team switcher sheet (header of 11–15), 10-team limit notice
 - [ ] Frontend `[Included]` (C): my-issues team picker; default = max `joinedAt` (non-archived preferred); URL `teamId` (nuqs); list scoped to the selected team
-- Frontend handoff (PR #35): B's “내 이슈 전체 보기” links to C's `/workspace/issues`; the list's back fallback is `/workspace`. Both URLs belong to page 07; no additional controller or endpoint is introduced. Visible copy is「내 이슈 전체 보기」(c-role-audit #6). Hide create `+` on read-only/archived teams (#7, PR3).
+- Frontend handoff (PR #35): B's “내 이슈 전체 보기” links to C's `/workspace/issues`; the list's back fallback is `/workspace`. Both URLs belong to page 07; no additional controller or endpoint is introduced. Visible copy is「더 보기」with the screen-reader name「내 이슈 전체 보기」(B first QA, PR #412; replaces c-role-audit #6). Hide create `+` on read-only/archived teams (#7, PR3).
 
 </details>
 
@@ -1066,7 +1066,7 @@ B의 PR 자동 게시와 C의 AI 공유는 생성 업무에 맞는 역할별 채
 <summary>원본 세부 작업·재사용 API·신규/공유 테이블</summary>
 
 - Tables: new none · shared admin_actions, admins
-- [ ] Server: `admin_actions` is append-only (no update/delete API; DB grants INSERT and SELECT only)
+- [ ] Server: `admin_actions` is append-only (no update/delete API; DB grants INSERT and SELECT only). Apply the grants with `scripts/database/admin-actions-append-only.sql` and verify them read-only with `scripts/database/check-admin-actions-append-only.sql` (both take `-v app_role=`, the backend DB role; PR #401)
 - [ ] Frontend: filters + table
 
 </details>
