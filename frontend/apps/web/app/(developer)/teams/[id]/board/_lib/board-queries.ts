@@ -8,8 +8,8 @@ import type { BoardStatusColor, IssueStatus } from '../../../../_lib/issue-statu
 
 /**
  * 14 `IssueController` board. Moves borrow 12's status API.
- * `writePermissionReason`: READ_ONLY_TEAM / SUSPENDED / NO_REPOSITORY_WRITE_PERMISSION /
- * GITHUB_PERMISSION_UNAVAILABLE (lookup failed — UI still allows a move; the server decides).
+ * `writePermissionReason`: READ_ONLY_TEAM / SUSPENDED block moves.
+ * NO_REPOSITORY_WRITE_PERMISSION and GITHUB_PERMISSION_UNAVAILABLE still allow a move.
  */
 export type BoardColumn = {
   status: IssueStatus;
