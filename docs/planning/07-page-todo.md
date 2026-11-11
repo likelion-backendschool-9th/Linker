@@ -268,14 +268,14 @@ Not a page, but everything every page relies on. Adding it later means reworking
 > Basis: T-1, I-5 · Needs first: 01 · Merged: my team list + my issues → one page
 > First screen of the Workspace tab. By team decision (PR #35, 2026-11-01), C implements My issues at `/workspace/issues`; B links “내 이슈 전체 보기” from `/workspace`. This remains page 07 with the same access rules; the team list uses `TeamController` and My issues uses `IssueController` (WBS §4-7, §4-8).
 > **2026-11-03**: My issues are no longer a cross-team dump. The user picks one of their teams; the list shows only issues assigned to them in that team. Default team = most recently joined (`team_members.joined_at`).
-> **2026-11-03 (home preview)**: `/workspace` shows a **short preview** of those issues (UI-limited; roughly a few rows — not a fixed count), ordered by due urgency. The full selected-team list lives on `/workspace/issues` via “내 이슈 전체 보기”. Team-wide issues (everyone’s) remain on 11.
+> **2026-11-03 (home preview)**: `/workspace` shows a **short preview** of those issues (UI-limited; roughly a few rows — not a fixed count), ordered by due urgency. The full selected-team list lives on `/workspace/issues` via the “더 보기” link. Team-wide issues (everyone’s) remain on 11.
 
-- [ ] My teams: grouped active / completed / read-only / archived; team card (org avatar, team name, member count, status) → tap opens **11** (`/teams/[id]/issues`) for that team’s full issue list
+- [ ] My teams: grouped active / completed / read-only / archived (tabs 활성 / 완료 / 읽기 전용 / 보관, kept in the URL `status`; default 활성); team card (org avatar, team name, member count, status) → tap opens **11** (`/teams/[id]/issues`) for that team’s full issue list
 - [ ] "팀 만들기" (create team) button → 08
 - [ ] No teams: "팀 만들기" + "팀 찾으러 가기" (go find a team, 19)
 - [ ] `[Included]` My issues on `/workspace` (preview): team picker; changing the team reloads the preview. Short preview of open issues assigned to me in the selected team (UI-limited; not a hard N). Sort by due urgency: overdue first (oldest due first), then soonest due date, then no due date last. Overdue in red. Tap → 12. Empty: "배정된 이슈가 없어요"
 - [ ] Default selected team = the one I joined most recently (`team_members.joined_at` desc). Prefer non-archived; if every membership is archived, fall back to the newest archived. Keep the choice in the URL (`teamId`, nuqs) so back/refresh keeps it
-- [ ] “내 이슈 전체 보기” → `/workspace/issues?teamId=` (same team; **full** list of my assigned issues in that team, same sort, no preview cap); back fallback `/workspace`. B owns the entry link; C owns preview, full list, team picker and data query. **Visible copy is exactly「내 이슈 전체 보기」(not「더 보기」; c-role-audit #6)**
+- [ ] “더 보기” link (screen-reader name “내 이슈 전체 보기”) → `/workspace/issues?teamId=` (same team; **full** list of my assigned issues in that team, same sort, no preview cap); back fallback `/workspace`. B owns the entry link; C owns preview, full list, team picker and data query. **Visible copy is「더 보기」 (B first QA, PR #412; replaces c-role-audit #6「내 이슈 전체 보기」)**
 - [ ] Create-issue `+` on 07/11: hide for read-only and archived teams (c-role-audit #7; code PR3)
 - [ ] (sheet) Team switcher: opened from the header inside team pages (used in 11–15). Distinct from the 07 my-issues team picker: switcher navigates into a team; the picker only filters the my-issues list
 
@@ -299,7 +299,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 - [ ] Server: don't trust the installation id in the return URL; verify by calling `GET /user/installations` with the user token
 - [ ] If not owner and it ended as an "install request" → status screen "오너에게 설치 요청을 보냈어요" (sent install request to owner)
-- [ ] If the org is already linked to another team, explain
+- [ ] If the org is already linked to another team, explain. Exception: when the current owner of the linked team reinstalls the app (team active, completed or read-only), treat it as a reconnect: continue the steps and reuse the existing team and chat (PR #403)
 
 **Step 2: Team info**
 
@@ -354,7 +354,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] At the free team member limit (6), invite links can't be accepted + reason + Flex prompt (Flex has no limit)
 - [ ] Removed members can't apply to the same team's recruit posts for 7 days
 - [ ] Removed from the GitHub org (webhook) → automatically removed from the Linker team + notify them and the owner
-- [ ] Read-only team: settings view-only, reinstall guidance
+- [ ] Read-only team: settings view-only, reinstall guidance. The owner (not suspended) sees "GitHub로 시작하기" in the action sheet's GitHub organization section → 08 to reinstall (PR #405)
 
 ### 10. Accept invite `[Required]` · `/invite/[code]`
 
@@ -372,7 +372,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 
 **Errors & metadata**
 
-- [ ] Expired/revoked link, already a member, team at member limit, over 10 teams → toast or one-line error from accept API codes (no separate status pages). Already a member may go straight to 11
+- [ ] Expired/revoked link, already a member, team at member limit, over 10 teams → toast or one-line error from accept API codes (no separate status pages). Already a member may go straight to 11, but only from a valid link: an expired or revoked link stays on the landing with its error even for members (PR #406)
 - [ ] Static metadata title "팀 초대", root default OG, `noindex` (not content-based OG; blueprint 8-3)
 
 ---
