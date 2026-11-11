@@ -669,7 +669,7 @@ Not a page, but everything every page relies on. Adding it later means reworking
 - [ ] Infinite scroll + virtualization
 - [ ] Write button → 22
 - [ ] Card comment icon → comment sheet (Figma 374:3944)
-- [ ] Card paper-plane icon → feed share drawer (Figma 780:584, POL-P-7 feed share drawer): centered card, max 600px tall (only the room list scrolls, scrollbar hidden); title "공유하기" + ×, room search (blue border on focus), one room list (photo + name, blue "팀" after team rooms, per-row "공유하기" sends the card), "링크 복사하기" at the bottom. Recruiters: 1:1 rooms only. Guests get the login prompt. Feed only; 23, 21, 04 keep the 00 share sheet
+- [ ] Card paper-plane icon → feed share drawer (Figma 780:584, POL-P-7 feed share drawer): centered card, max 600px tall (only the room list scrolls, scrollbar hidden); title "공유하기" + ×, room search (blue border on focus), one room list (photo + name, blue "팀" after team rooms, per-row "공유하기" sends the card), "링크 복사하기" at the bottom. Recruiters: 1:1 rooms only. Guests get the login prompt. Also used by 23's share icon; 21 and 04 keep the 00 share sheet
 - [ ] Empty "추천" (no visible posts at all): up to 5 developers recommended by my tech stack, most shared tags first, excluding people I follow or have a block with (with follow buttons)
 - [ ] Guest feed: "추천" in random order with no "why shown", write button shows login prompt, seen posts not recorded
 - [ ] Server "추천" for developers and operators: posts sharing a tag with my tech stack or whose author picked one of my job categories first (by popularity score), then the rest in random order; posts seen on an earlier visit last; max 2 consecutive by the same author
