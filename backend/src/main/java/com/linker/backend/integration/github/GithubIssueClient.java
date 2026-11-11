@@ -149,9 +149,8 @@ fieldValues(first:100){pageInfo{hasNextPage endCursor} nodes{__typename
       if (!connection.path("nodes").isArray()) throw unavailable();
       for (var item : connection.path("nodes")) {
         var content = item.path("content");
-        if ("DraftIssue".equals(content.path("__typename").asString(""))
-            || "PullRequest".equals(content.path("__typename").asString(""))) continue;
-        if (!"Issue".equals(content.path("__typename").asString(""))) throw unavailable();
+        // Drafts, pull requests, and cards whose issue was deleted are not Linker issues.
+        if (!"Issue".equals(content.path("__typename").asString(""))) continue;
         String repoName = text(content.path("repository"), "nameWithOwner");
         if (ctx.repos().stream().noneMatch(r -> r.fullName().equalsIgnoreCase(repoName))) continue;
         if (!item.path("isArchived").isBoolean()
@@ -206,6 +205,52 @@ pageInfo{hasNextPage endCursor} nodes{__typename
       cursor = after;
     }
     throw unavailable();
+  }
+
+  /**
+   * The one project card for this issue. Null until GitHub has attached it, so creation can add
+   * the issue without reading every other card on the board.
+   */
+  public ProjectItem projectItem(Context ctx, String issueNodeId, String repoFullName, String token) {
+    var nodes =
+        graphql(
+                """
+query($id:ID!){node(id:$id){... on Issue{projectItems(first:20){nodes{id isArchived project{id}
+fieldValues(first:50){nodes{__typename
+... on ProjectV2ItemFieldDateValue{date field{... on ProjectV2Field{id}}}
+... on ProjectV2ItemFieldSingleSelectValue{optionId field{... on ProjectV2SingleSelectField{id}}}}}}}}}}
+""",
+                Map.of("id", issueNodeId),
+                token)
+            .path("node")
+            .path("projectItems")
+            .path("nodes");
+    if (!nodes.isArray()) return null;
+    for (var item : nodes) {
+      if (!ctx.board().nodeId().equals(item.path("project").path("id").asString(""))) continue;
+      if (!item.path("isArchived").isBoolean() || !item.path("fieldValues").path("nodes").isArray())
+        throw unavailable();
+      String status = "NONE";
+      LocalDate start = null, due = null;
+      for (var field : item.path("fieldValues").path("nodes")) {
+        String id = field.path("field").path("id").asString("");
+        if (id.equals(ctx.board().statusField()) && field.path("optionId").isString())
+          status = ctx.board().statuses().getOrDefault(field.path("optionId").asString(), "OTHER");
+        if (id.equals(ctx.board().startField()) && field.path("date").isString())
+          start = date(field.path("date").asString());
+        if (id.equals(ctx.board().dueField()) && field.path("date").isString())
+          due = date(field.path("date").asString());
+      }
+      return new ProjectItem(
+          text(item, "id"),
+          issueNodeId,
+          repoFullName,
+          status,
+          start,
+          due,
+          item.path("isArchived").asBoolean(false));
+    }
+    return null;
   }
 
   public record Detail(
