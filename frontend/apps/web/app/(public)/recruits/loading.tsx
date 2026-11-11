@@ -1,6 +1,12 @@
-import { PageLoading } from '@/components/ui/page-loading';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 
-/** Full-screen loading (Figma 301:294) */
+import { RecruitListPageSkeleton } from './_components/recruit-list-page-skeleton/RecruitListPageSkeleton';
+
+/** Figma 999:761 "19-스켈레톤" — app chrome, recruit tabs, count/card bones, write FAB. */
 export default function RecruitsLoading() {
-  return <PageLoading />;
+  return (
+    <PageFrame title="팀 찾기" hideTitle>
+      <RecruitListPageSkeleton />
+    </PageFrame>
+  );
 }

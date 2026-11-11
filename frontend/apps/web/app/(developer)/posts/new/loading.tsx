@@ -1,6 +1,12 @@
-import { PageLoading } from '@/components/ui/page-loading';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 
-/** Full-screen loading (Figma 301:294) */
+import { PostWritePageSkeleton } from '../_components/post-editor/post-write-page-skeleton/PostWritePageSkeleton';
+
+/** Figma 999:1015 "22-스켈레톤" — stack header, stepper, repo-step chrome, name bone. */
 export default function PostNewLoading() {
-  return <PageLoading />;
+  return (
+    <PageFrame title="피드 작성" variant="stack" backHref="/feed">
+      <PostWritePageSkeleton />
+    </PageFrame>
+  );
 }

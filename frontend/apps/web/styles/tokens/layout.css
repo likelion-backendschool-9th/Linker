@@ -128,6 +128,71 @@
   --icon-size-progress-md: 22px; /* 11 "정지" card icon (Figma frame) */
   --avatar-size-team: 50px; /* 07 selected-team image */
   --avatar-size-profile: 60px; /* 04 developer profile image (Figma 301:572) */
+  --size-profile-skeleton-name-w: 147px; /* 04 skeleton name bar (Figma 982:482) */
+  --size-profile-skeleton-name-h: 26px;
+  --size-profile-skeleton-meta-w: 125px; /* 04 skeleton follow line (Figma 982:483) */
+  --size-profile-skeleton-meta-h: 17px;
+  --size-profile-skeleton-bio-w: 227px; /* 04 skeleton bio line (Figma 982:485) */
+  --size-profile-skeleton-bio-h: 16px;
+  --size-settings-skeleton-github-w: 52px; /* 06 skeleton GitHub status (Figma 982:565) */
+  --size-settings-skeleton-email-w: 119px; /* 06 skeleton email (Figma 982:566) */
+  --size-settings-skeleton-plan-w: 97px; /* 06 skeleton plan (Figma 982:568) */
+  --size-settings-skeleton-value-h: 14px; /* 06 skeleton trailing values (Figma 982:565–568) */
+  --size-workspace-skeleton-team-h: 71px; /* 07 skeleton team card (Figma 982:739) */
+  --size-workspace-skeleton-issue-title-w: 158px; /* 07 skeleton issue heading (Figma 1029:1477) */
+  --size-workspace-skeleton-issue-title-h: 17px;
+  --size-workspace-skeleton-issue-row-h: 38px; /* 07 skeleton issue row (Figma 982:740) */
+  --size-team-settings-skeleton-count-w: 37px; /* 09 skeleton member count (Figma 982:861) */
+  --size-team-settings-skeleton-count-h: 18px;
+  --size-team-settings-skeleton-avatar: 40px; /* 09 skeleton member avatar (Figma 982:859) */
+  --size-team-settings-skeleton-role-w: 57px; /* 09 skeleton role (Figma 982:856) */
+  --size-team-settings-skeleton-name-w: 137px; /* 09 skeleton name (Figma 982:857) */
+  --size-team-settings-skeleton-line-h: 18px;
+  --size-issue-progress-skeleton-line-w: 114px; /* 11 skeleton progress card caption (Figma 982:1045) */
+  --size-issue-progress-skeleton-line-h: 19px;
+  --size-issue-detail-skeleton-title-w: 132px; /* 12 skeleton title (Figma 982:1289) */
+  --size-issue-detail-skeleton-meta-w: 223px; /* 12 skeleton meta (Figma 982:1291) */
+  --size-issue-detail-skeleton-value-w: 97px; /* 12 skeleton status/label/dates (Figma 982:1293) */
+  --size-issue-detail-skeleton-assignee-w: 32px; /* 12 skeleton assignee (Figma 982:1297) */
+  --size-issue-detail-skeleton-line-h: 22px;
+  --size-board-skeleton-title-w: 75px; /* 14 skeleton column title (Figma 982:1594) */
+  --size-board-skeleton-title-h: 22px;
+  --size-board-skeleton-card-w: 210px; /* 14 skeleton issue card (Figma 982:1483) */
+  --size-board-skeleton-card-h: 200px;
+  --size-calendar-skeleton-chip-w: 67px; /* 15 skeleton status chip (Figma 982:1630) */
+  --size-calendar-skeleton-chip-h: 27px;
+  --size-chat-list-skeleton-title-w: 79px; /* 16 skeleton room title (Figma 999:1416) */
+  --size-chat-list-skeleton-title-h: 19px;
+  --size-chat-list-skeleton-preview-w: 206px; /* 16 skeleton last message (Figma 999:1417) */
+  --size-chat-list-skeleton-preview-h: 19px;
+  --size-notification-skeleton-line-w: 247px; /* 18 skeleton notification text (Figma 1025:1420) */
+  --size-notification-skeleton-line-h: 19px;
+  --size-recruit-list-skeleton-count-w: 90px; /* 19 skeleton count (Figma 1025:1423) */
+  --size-recruit-list-skeleton-count-h: 19px;
+  --size-recruit-list-skeleton-badge-w: 52px; /* 19 skeleton format chip (Figma 1025:1425) */
+  --size-recruit-list-skeleton-badge-h: 24px;
+  --size-recruit-list-skeleton-title-w: 300px; /* 19 skeleton title (Figma 1025:1427) */
+  --size-recruit-list-skeleton-title-h: 24px;
+  --size-recruit-list-skeleton-body-w: 340px; /* 19 skeleton description (Figma 1025:1429) */
+  --size-recruit-list-skeleton-body-h: 43px;
+  --size-recruit-detail-skeleton-meta-w: 81px; /* 21 skeleton deadline (Figma 1025:1435) */
+  --size-recruit-detail-skeleton-meta-h: 16px;
+  --size-recruit-detail-skeleton-body-w: 342px; /* 21 skeleton intro (Figma 1025:1437) */
+  --size-recruit-detail-skeleton-body-h: 44px;
+  --size-post-write-skeleton-repo-w: 140px; /* 22 skeleton repo name (Figma 1025:1441) */
+  --size-post-write-skeleton-repo-h: 24px;
+  --size-post-detail-skeleton-name-w: 47px; /* 23 skeleton author name (Figma 1025:1444) */
+  --size-post-detail-skeleton-name-h: 20px;
+  --size-post-detail-skeleton-login-w: 83px; /* 23 skeleton @login (Figma 1025:1446) */
+  --size-post-detail-skeleton-login-h: 14px;
+  --size-post-detail-skeleton-follow-w: 49px; /* 23 skeleton follow (Figma 1025:1450) */
+  --size-post-detail-skeleton-follow-h: 25px;
+  --size-feed-skeleton-card-h: 359px; /* 24 skeleton card shell (Figma 1025:1462) */
+  --size-feed-skeleton-meta-w: 141px; /* 24 skeleton reactions / title (Figma 1025:1466) */
+  --size-feed-skeleton-meta-h: 17px;
+  --size-feed-skeleton-time-w: 50px; /* 24 skeleton relative time (Figma 1025:1464) */
+  --size-subscription-skeleton-card-h: 148px; /* 29 skeleton plan card (Figma 1029:1488) */
+  --size-subscription-skeleton-line-h: 21px; /* 29 skeleton info rows (Figma 1029:1490) */
   --profile-identity-width: 306px; /* 04 other-member profile summary row (Figma 301:572) */
   --control-height-profile-github: 42px; /* 04 "GitHub" and "팔로우/팔로잉" buttons (Figma 708:2430, 301:1033) */
   --radius-profile-follow: 5px; /* 04 "팔로우/팔로잉" button (Figma 301:1033) */

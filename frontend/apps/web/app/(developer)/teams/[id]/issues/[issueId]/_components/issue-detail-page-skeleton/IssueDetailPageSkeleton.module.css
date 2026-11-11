@@ -1,0 +1,132 @@
+/* Figma 982:1171 "12-스켈레톤" — title/meta bones + info-card value bones */
+
+.page {
+  display: grid;
+  gap: var(--space-group);
+  padding-top: var(--space-xs);
+}
+
+.head {
+  display: grid;
+  gap: var(--space-row-inline);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+}
+
+.external {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-slate);
+}
+
+.externalIcon {
+  display: block;
+  width: var(--icon-size-team-entry);
+  height: var(--icon-size-team-entry);
+}
+
+.externalIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card {
+  display: grid;
+  margin: 0;
+  padding: var(--space-row-inline) var(--space-card-gap);
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-sm);
+}
+
+.card > li:not(:last-child) {
+  border-bottom: 1px solid var(--color-hairline-faint);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-row-block) var(--space-row-inline);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-board-control);
+}
+
+.term {
+  flex: none;
+}
+
+.bone {
+  display: block;
+  height: var(--size-issue-detail-skeleton-line-h);
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.title {
+  width: var(--size-issue-detail-skeleton-title-w);
+}
+
+.meta {
+  width: var(--size-issue-detail-skeleton-meta-w);
+  max-width: 100%;
+}
+
+.value {
+  width: var(--size-issue-detail-skeleton-value-w);
+}
+
+.assignee {
+  width: var(--size-issue-detail-skeleton-assignee-w);
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  color: var(--color-text-black);
+  background: transparent;
+  border: 0;
+}
+
+.headerIcon:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

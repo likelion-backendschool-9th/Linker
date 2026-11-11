@@ -1,0 +1,92 @@
+/* Figma 982:578 "7-스켈레톤" — team card + issue preview bones + create-team FAB */
+
+.workspace {
+  display: grid;
+  gap: var(--space-group);
+  min-width: 0;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text-black);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: normal;
+}
+
+.bone {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.teamCard {
+  width: 100%;
+  height: var(--size-workspace-skeleton-team-h);
+}
+
+.issueTitle {
+  width: var(--size-workspace-skeleton-issue-title-w);
+  height: var(--size-workspace-skeleton-issue-title-h);
+}
+
+.issueRow {
+  width: 100%;
+  height: var(--size-workspace-skeleton-issue-row-h);
+}
+
+.fab {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: calc(
+    var(--tab-bar-height) + var(--space-list-action) - 2px + env(safe-area-inset-bottom)
+  );
+  z-index: var(--z-chrome);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-fab-icon);
+  background: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.fab::after {
+  position: absolute;
+  inset: calc((var(--fab-size) - var(--touch-target-min)) / 2);
+  content: '';
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

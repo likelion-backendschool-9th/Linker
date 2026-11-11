@@ -132,22 +132,21 @@ export function SettingsCommon({
             <span className={styles.emailValue}>{settings.notificationEmail}</span>
           </div>
           <AccountPlan settings={settings} />
-          <button type="button" className={styles.row} onClick={() => logoutOverlay.open()}>
+          <div className={styles.row}>
             <span>로그아웃</span>
-            <span className={styles.chevron} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={styles.row}
-            onClick={() => {
-              setWithdrawalError(null);
-              setShowOwnedTeamGuard(false);
-              withdrawalSheet.open();
-            }}
-          >
+            <SettingsArrowButton label="로그아웃" onClick={() => logoutOverlay.open()} />
+          </div>
+          <div className={styles.row}>
             <span>계정 삭제</span>
-            <span className={styles.chevron} aria-hidden="true" />
-          </button>
+            <SettingsArrowButton
+              label="계정 삭제"
+              onClick={() => {
+                setWithdrawalError(null);
+                setShowOwnedTeamGuard(false);
+                withdrawalSheet.open();
+              }}
+            />
+          </div>
         </div>
       </section>
 
@@ -157,18 +156,27 @@ export function SettingsCommon({
         <h2 id="personal-heading" className={styles.groupTitle}>개인 정보</h2>
         <div className={styles.card}>
           {personal}
-          <button type="button" className={styles.row} onClick={() => blocksOverlay.open()}>
+          <div className={styles.row}>
             <span>차단 사용자</span>
-            <span className={styles.trailing}><span className={styles.value}>{`${blocks.isSuccess && Array.isArray(blocks.data) ? blocks.data.length : (blockCount ?? 0)}명`}</span><span className={styles.chevron} aria-hidden="true" /></span>
-          </button>
+            <span className={styles.trailing}>
+              <span className={styles.value}>{`${blocks.isSuccess && Array.isArray(blocks.data) ? blocks.data.length : (blockCount ?? 0)}명`}</span>
+              <SettingsArrowButton label="차단 사용자" onClick={() => blocksOverlay.open()} />
+            </span>
+          </div>
         </div>
       </section>
 
       <section className={styles.group} aria-labelledby="info-heading">
         <h2 id="info-heading" className={styles.groupTitle}>기타</h2>
         <nav className={styles.card} aria-label="약관 및 정책">
-          <Link className={styles.row} href="/legal/terms"><span>이용약관</span><span className={styles.trailing}><span className={styles.value}>동의함</span><span className={styles.chevron} aria-hidden="true" /></span></Link>
-          <Link className={styles.row} href="/legal/privacy"><span>개인정보 처리방침</span><span className={styles.trailing}><span className={styles.value}>동의함</span><span className={styles.chevron} aria-hidden="true" /></span></Link>
+          <div className={styles.row}>
+            <span>이용약관</span>
+            <span className={styles.trailing}><span className={styles.value}>동의함</span><SettingsArrowLink label="이용약관" href="/legal/terms" /></span>
+          </div>
+          <div className={styles.row}>
+            <span>개인정보 처리방침</span>
+            <span className={styles.trailing}><span className={styles.value}>동의함</span><SettingsArrowLink label="개인정보 처리방침" href="/legal/privacy" /></span>
+          </div>
         </nav>
       </section>
 
@@ -321,13 +329,38 @@ export function AccountPlan({ settings }: { settings: SettingsData }) {
   const planLabel = settings.plan.label.replace(/\s+\d+\/\d+명$/, '');
 
   return (
-    <Link className={styles.row} href="/settings/subscription" aria-label="구독과 결제">
+    <div className={styles.row}>
       <span>구독과 결제</span>
-      <span className={styles.trailing}><span className={styles.value}>{planLabel}</span><span className={styles.chevron} aria-hidden="true" /></span>
-    </Link>
+      <span className={styles.trailing}>
+        <span className={styles.value}>{planLabel}</span>
+        <SettingsArrowLink label="구독과 결제" href="/settings/subscription" />
+      </span>
+    </div>
   );
 }
 
 export function errorMessage(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback;
+}
+
+export function SettingsArrowButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className={styles.arrowButton} aria-label={label} onClick={onClick}>
+      <span className={styles.chevron} aria-hidden="true" />
+    </button>
+  );
+}
+
+export function SettingsArrowLink<RouteType extends string>({
+  label,
+  href,
+}: {
+  label: string;
+  href: Route<RouteType>;
+}) {
+  return (
+    <Link className={styles.arrowButton} href={href} aria-label={label}>
+      <span className={styles.chevron} aria-hidden="true" />
+    </Link>
+  );
 }

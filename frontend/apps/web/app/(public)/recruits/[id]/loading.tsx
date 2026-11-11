@@ -1,6 +1,12 @@
-import { PageLoading } from '@/components/ui/page-loading';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 
-/** Full-screen loading (Figma 301:294) */
+import { RecruitDetailPageSkeleton } from './_components/recruit-detail-page-skeleton/RecruitDetailPageSkeleton';
+
+/** Figma 999:908 "21-스켈레톤" — stack header, chip/title/deadline/intro bones. */
 export default function RecruitDetailLoading() {
-  return <PageLoading />;
+  return (
+    <PageFrame title="모집 글 상세" variant="stack" backHref="/recruits">
+      <RecruitDetailPageSkeleton />
+    </PageFrame>
+  );
 }

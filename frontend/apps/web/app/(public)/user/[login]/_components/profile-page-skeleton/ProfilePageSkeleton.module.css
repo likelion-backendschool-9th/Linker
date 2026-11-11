@@ -1,0 +1,96 @@
+/* Figma 982:366 "4-스켈레톤" — own-profile chrome + identity/bio bones */
+
+.stage {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-profile-top) var(--page-gutter) 0;
+}
+
+.identityRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-profile-identity);
+  width: 100%;
+  height: var(--avatar-size-profile);
+  min-width: 0;
+}
+
+.avatar {
+  flex: none;
+  width: var(--avatar-size-profile);
+  height: var(--avatar-size-profile);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-avatar-from) 0%,
+    var(--color-skeleton-avatar-mid) 50%,
+    var(--color-skeleton-avatar-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.identityText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.bone {
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.name {
+  width: var(--size-profile-skeleton-name-w);
+  max-width: 100%;
+  height: var(--size-profile-skeleton-name-h);
+}
+
+.meta {
+  width: var(--size-profile-skeleton-meta-w);
+  max-width: 100%;
+  height: var(--size-profile-skeleton-meta-h);
+}
+
+.bio {
+  width: var(--size-profile-skeleton-bio-w);
+  max-width: 100%;
+  height: var(--size-profile-skeleton-bio-h);
+}
+
+.settings {
+  display: inline-flex;
+  flex: none;
+  margin-right: var(--space-xxs);
+  color: var(--color-profile-settings);
+  --icon-stroke-width: 1.5;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar,
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

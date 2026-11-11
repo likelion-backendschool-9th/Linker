@@ -1,0 +1,182 @@
+/* Figma 999:761 "19-스켈레톤" — tabs + 최신순 chrome, count/chip/title/body bones, write FAB */
+
+.page {
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter))
+    calc(-1 * (var(--tab-bar-height) + var(--space-xxl) + env(safe-area-inset-bottom)));
+  padding-bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  height: var(--tabs-row-height);
+  background-color: var(--color-canvas);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-tab-divider);
+}
+
+.tab[aria-current='page'] {
+  color: var(--color-text-sheet-title);
+  border-bottom: 2px solid var(--color-text-slate);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-md);
+  background-color: var(--color-canvas);
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-icon-text-compact);
+  min-height: var(--touch-target-min);
+  color: var(--color-text-slate);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-compact);
+  pointer-events: none;
+  background: none;
+  border: 0;
+}
+
+.sortIcon {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.sortIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-card-info);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-list-action);
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.count {
+  width: var(--size-recruit-list-skeleton-count-w);
+  height: var(--size-recruit-list-skeleton-count-h);
+}
+
+.badge {
+  width: var(--size-recruit-list-skeleton-badge-w);
+  height: var(--size-recruit-list-skeleton-badge-h);
+  border-radius: var(--radius-full);
+}
+
+.title {
+  width: var(--size-recruit-list-skeleton-title-w);
+  max-width: 100%;
+  height: var(--size-recruit-list-skeleton-title-h);
+}
+
+.body {
+  width: var(--size-recruit-list-skeleton-body-w);
+  max-width: 100%;
+  height: var(--size-recruit-list-skeleton-body-h);
+}
+
+.fabLayer {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-xs));
+  left: 0;
+  z-index: var(--z-chrome);
+  display: flex;
+  justify-content: flex-end;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  pointer-events: none;
+}
+
+.fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+}
+
+.fabVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-text-inverse);
+  background-color: var(--color-fab-bg);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.fabIcon {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.fabIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}
