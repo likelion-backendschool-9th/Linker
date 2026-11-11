@@ -37,6 +37,7 @@ export function useInviteAcceptArea(invite: Invite) {
 
   useEffect(() => {
     if (redirected.current) return;
+    if (invite.status !== 'VALID') return;
     if (viewer.role !== 'developer' && viewer.role !== 'operator') return;
     if (
       invite.participation.state !== 'ALREADY_MEMBER' &&
@@ -46,7 +47,7 @@ export function useInviteAcceptArea(invite: Invite) {
     if (!invite.team.id) return;
     redirected.current = true;
     router.replace(issuesHref(invite.team.id));
-  }, [invite.participation.state, invite.team.id, router, viewer.role]);
+  }, [invite.status, invite.participation.state, invite.team.id, router, viewer.role]);
 
   async function startGithub() {
     setPending(true);

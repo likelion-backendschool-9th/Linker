@@ -1,0 +1,69 @@
+/* Figma 999:908 "21-스켈레톤" — format chip, title, deadline, intro bones */
+
+.page {
+  display: grid;
+  gap: var(--space-card-info);
+}
+
+.titleBlock {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.titleLead {
+  display: grid;
+  gap: var(--space-row-block);
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.badge {
+  width: var(--size-recruit-list-skeleton-badge-w);
+  height: var(--size-recruit-list-skeleton-badge-h);
+  border-radius: var(--radius-full);
+}
+
+.title {
+  width: var(--size-recruit-list-skeleton-title-w);
+  max-width: 100%;
+  height: var(--size-recruit-list-skeleton-title-h);
+}
+
+.meta {
+  width: var(--size-recruit-detail-skeleton-meta-w);
+  height: var(--size-recruit-detail-skeleton-meta-h);
+}
+
+.body {
+  width: var(--size-recruit-detail-skeleton-body-w);
+  max-width: 100%;
+  height: var(--size-recruit-detail-skeleton-body-h);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

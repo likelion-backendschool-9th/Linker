@@ -1,22 +1,18 @@
-import { LoadingOrb } from '../page-loading/LoadingOrb';
-import styles from '../page-loading/PageLoading.module.css';
+import styles from './Skeleton.module.css';
 
 type SkeletonProps = {
-  /** Kept for existing call sites; every section now shows the same loading orb */
+  /** Card-shaped block or a text line */
   variant?: 'card' | 'line';
   count?: number;
 };
 
-/**
- * Section loading (Suspense fallbacks, `isPending` regions): the "working" orb from the full-screen
- * loading (Figma 301:294), centered in the section instead of skeleton bars. Hidden from screen
- * readers; the region sets `aria-busy`.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function Skeleton(_props: SkeletonProps) {
+/** Loading placeholder for Suspense / `isPending` regions. Hidden from screen readers; the region sets `aria-busy`. */
+export function Skeleton({ variant = 'card', count = 1 }: SkeletonProps) {
   return (
-    <div className={styles.inline} aria-hidden>
-      <LoadingOrb />
+    <div className={styles.stack} aria-hidden>
+      {Array.from({ length: count }, (_, index) => (
+        <div key={index} className={`${styles.block} ${styles[variant]}`} />
+      ))}
     </div>
   );
 }

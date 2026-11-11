@@ -1,0 +1,164 @@
+/* Figma 982:746 "9스켈레톤" — member list bones; TeamNav / chat FAB are real chrome */
+
+.page {
+  display: grid;
+  padding: calc(var(--space-team-settings-top) - var(--space-md)) 0 0;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-row-inline);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  line-height: 19px;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-row-block);
+  width: 100%;
+  margin: 0;
+  padding: var(--space-manage-block);
+  list-style: none;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-control-md);
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  height: 51px;
+  min-width: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--color-hairline-cool);
+}
+
+.row:last-child {
+  height: 40px;
+  border-bottom: none;
+}
+
+.text {
+  display: grid;
+  flex: 1;
+  gap: var(--space-team-member-name);
+  min-width: 0;
+  margin-top: 3px;
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.count {
+  width: var(--size-team-settings-skeleton-count-w);
+  height: var(--size-team-settings-skeleton-count-h);
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: var(--size-team-settings-skeleton-avatar);
+  height: var(--size-team-settings-skeleton-avatar);
+  border-radius: var(--radius-full);
+}
+
+.role {
+  width: var(--size-team-settings-skeleton-role-w);
+  height: var(--size-team-settings-skeleton-line-h);
+}
+
+.name {
+  width: var(--size-team-settings-skeleton-name-w);
+  max-width: 100%;
+  height: var(--size-team-settings-skeleton-line-h);
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  color: var(--color-text-black);
+  background: transparent;
+  border: 0;
+}
+
+.headerIcon:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.chat {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: max(
+    var(--space-fab-bottom),
+    calc(env(safe-area-inset-bottom) + var(--space-row-block))
+  );
+  z-index: var(--z-chrome);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-text-inverse);
+  pointer-events: none;
+  background-color: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.chatIcon {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.chatIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone,
+  .avatar {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

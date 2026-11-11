@@ -5,13 +5,17 @@ import { useAppSignalStore } from '@/stores/app-signal-store';
 import { renderWithProviders } from '@/test/render-with-providers';
 
 import { LoadTimeoutScreen } from './LoadTimeoutScreen';
-import { PageLoading } from './PageLoading';
+import { useLoaderPresence } from './hook';
 
 beforeEach(() => useAppSignalStore.setState({ loadTimedOutAt: 0, loadersMounted: 0 }));
 
-it('shows the loading orb and counts as loading while mounted', () => {
-  const { unmount } = renderWithProviders(<PageLoading />);
-  expect(screen.getByRole('status')).toHaveTextContent('불러오는 중이에요');
+function PresenceProbe() {
+  useLoaderPresence();
+  return <div role="status">loading</div>;
+}
+
+it('counts a mounted loader via useLoaderPresence', () => {
+  const { unmount } = renderWithProviders(<PresenceProbe />);
   expect(useAppSignalStore.getState().loadersMounted).toBe(1);
   unmount();
   expect(useAppSignalStore.getState().loadersMounted).toBe(0);

@@ -4,8 +4,9 @@
 \set ON_ERROR_STOP on
 \if :{?app_role}
 \else
-\echo 'app_role is required; use a team-approved non-owner application role.'
-\quit 3
+DO $$ BEGIN
+  RAISE EXCEPTION 'app_role is required; use a team-approved non-owner application role.';
+END $$;
 \endif
 BEGIN;
 SELECT set_config('linker.audit_app_role', :'app_role', true);
@@ -18,7 +19,8 @@ DECLARE
 BEGIN
   SELECT oid INTO app_oid FROM pg_roles WHERE rolname=app_name;
   SELECT relowner INTO owner_oid FROM pg_class WHERE oid='public.admin_actions'::regclass;
-  IF app_oid IS NULL OR EXISTS (SELECT 1 FROM pg_roles WHERE oid=app_oid AND (rolsuper OR rolcreaterole))
+  IF app_oid IS NULL OR EXISTS (SELECT 1 FROM pg_roles elevated
+      WHERE (elevated.rolsuper OR elevated.rolcreaterole) AND pg_has_role(app_oid,elevated.oid,'MEMBER'))
       OR pg_has_role(app_oid,owner_oid,'MEMBER') THEN
     RAISE EXCEPTION 'Application role must exist and must not own/inherit ownership of admin_actions or manage roles';
   END IF;

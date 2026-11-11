@@ -1,6 +1,20 @@
-import { PageLoading } from '@/components/ui/page-loading';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 
-/** Full-screen loading (Figma 301:294) */
-export default function Loading() {
-  return <PageLoading />;
+import {
+  TeamSettingsLoadingActions,
+  TeamSettingsPageSkeleton,
+} from './_components/team-settings-page-skeleton/TeamSettingsPageSkeleton';
+
+/** Figma 982:746 "9스켈레톤" — stack header, team tabs, member bones, chat FAB. */
+export default function TeamSettingsLoading() {
+  return (
+    <PageFrame
+      title="팀 설정"
+      variant="stack"
+      backHref="/workspace"
+      actions={<TeamSettingsLoadingActions />}
+    >
+      <TeamSettingsPageSkeleton />
+    </PageFrame>
+  );
 }

@@ -1,0 +1,96 @@
+/* Figma 999:479 "16-스켈레톤" — tab chrome + one room row bones */
+
+.tabs {
+  display: flex;
+  height: var(--tabs-row-height);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--page-gutter)) 0;
+  background-color: var(--color-canvas);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  color: var(--color-text-muted-cool);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-tab-divider);
+}
+
+.tab[aria-pressed='true'] {
+  color: var(--color-text-title-cool);
+  font-weight: var(--font-weight-semibold);
+  border-bottom: 2px solid var(--color-text-slate);
+}
+
+.content {
+  padding-top: var(--space-chat-list-top);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+}
+
+.avatar {
+  flex: none;
+  width: var(--chat-list-avatar-size);
+  height: var(--chat-list-avatar-size);
+  border-radius: var(--radius-full);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-row-block);
+  min-width: 0;
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.title {
+  width: var(--size-chat-list-skeleton-title-w);
+  height: var(--size-chat-list-skeleton-title-h);
+}
+
+.preview {
+  width: var(--size-chat-list-skeleton-preview-w);
+  max-width: 100%;
+  height: var(--size-chat-list-skeleton-preview-h);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

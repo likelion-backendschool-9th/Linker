@@ -1,0 +1,156 @@
+/* Figma 982:865 "11-스켈레톤" — progress band with real card chrome + caption bones */
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: calc(-1 * var(--space-md));
+}
+
+.band {
+  display: grid;
+  gap: var(--space-card-gap);
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding: var(--space-section-inset) var(--page-gutter) var(--space-group);
+  background-color: var(--color-canvas-cool);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-title-cool);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: normal;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-card-gap) var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-width: 0;
+  min-height: var(--card-height-progress);
+  padding: var(--space-row-block) var(--space-search-icon) var(--space-md) var(--space-sm);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline-cool);
+  border-radius: var(--radius-card-compact);
+}
+
+.icon {
+  display: block;
+  flex-shrink: 0;
+  color: var(--color-text-slate);
+}
+
+.icon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.iconMd {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.iconSm {
+  width: var(--icon-size-progress-sm);
+  height: var(--icon-size-progress-sm);
+}
+
+.iconXm {
+  width: var(--icon-size-progress-md);
+  height: var(--icon-size-progress-md);
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  color: var(--color-text-black);
+  background: transparent;
+  border: 0;
+}
+
+.headerIcon:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.bone {
+  display: block;
+  width: var(--size-issue-progress-skeleton-line-w);
+  max-width: 100%;
+  height: var(--size-issue-progress-skeleton-line-h);
+  margin-inline-start: var(--space-icon-text-compact);
+  border-radius: var(--radius-xxs);
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-from) 0%,
+    var(--color-skeleton-mid) 50%,
+    var(--color-skeleton-from) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.chat {
+  position: fixed;
+  right: max(var(--page-gutter), calc((100vw - var(--content-max-width)) / 2 + var(--page-gutter)));
+  bottom: max(
+    var(--space-fab-bottom),
+    calc(env(safe-area-inset-bottom) + var(--space-row-block))
+  );
+  z-index: var(--z-chrome);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  color: var(--color-text-inverse);
+  pointer-events: none;
+  background-color: var(--color-fab);
+  border: 1px solid var(--color-fab-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-fab);
+}
+
+.chatIcon {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.chatIcon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+    background: var(--color-skeleton-from);
+  }
+}

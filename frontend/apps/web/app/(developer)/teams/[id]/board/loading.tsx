@@ -1,6 +1,20 @@
-import { PageLoading } from '@/components/ui/page-loading';
+import { PageFrame } from '@/components/layout/page-frame/PageFrame';
 
-/** Full-screen loading (Figma 301:294) */
+import {
+  BoardLoadingActions,
+  BoardPageSkeleton,
+} from './_components/board-page-skeleton/BoardPageSkeleton';
+
+/** Figma 982:1449 "14-스켈레톤" — stack header, team tabs, filter chrome, column bones. */
 export default function BoardLoading() {
-  return <PageLoading />;
+  return (
+    <PageFrame
+      title="상태 보드"
+      variant="stack"
+      backHref="/workspace"
+      actions={<BoardLoadingActions />}
+    >
+      <BoardPageSkeleton />
+    </PageFrame>
+  );
 }
